@@ -170,7 +170,9 @@ In such case, we can set the workflow as
 ```python
 [('train', 1), ('val', 1)]
 ```
-so that 1 epochs for training and 1 epoch for validation will be ran iteratively.
+so that 1 epoch for training and 1 epoch for validation will be ran iteratively.
+It is noted parameters of the model won't be updated during val epoch.
+There is another keyword `total_epoch` in the config, here we clarify that it only counts the training epoch.
 
 
 ## Customize hooks
