@@ -102,7 +102,6 @@ class BBoxTestMixin(object):
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
                                      scale_factor, flip, flip_direction)
             rois = bbox2roi([proposals])
-            # recompute feature maps to save GPU memory
             bbox_results = self._bbox_forward(x, rois)
             bboxes, scores = self.bbox_head.get_bboxes(
                 rois,
