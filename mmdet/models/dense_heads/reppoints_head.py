@@ -664,7 +664,7 @@ class RepPointsHead(AnchorFreeHead):
                    img_metas,
                    cfg=None,
                    rescale=False,
-                   nms=True):
+                   with_nms=True):
         assert len(cls_scores) == len(pts_preds_refine)
         bbox_preds_refine = [
             self.points2bbox(pts_pred_refine)
@@ -690,7 +690,7 @@ class RepPointsHead(AnchorFreeHead):
             proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
                                                 mlvl_points, img_shape,
                                                 scale_factor, cfg, rescale,
-                                                nms)
+                                                with_nms)
             result_list.append(proposals)
         return result_list
 
@@ -702,7 +702,7 @@ class RepPointsHead(AnchorFreeHead):
                            scale_factor,
                            cfg,
                            rescale=False,
-                           nms=True):
+                           with_nms=True):
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
@@ -749,7 +749,7 @@ class RepPointsHead(AnchorFreeHead):
             # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        if nms:
+        if with_nms:
             det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                     cfg.score_thr, cfg.nms,
                                                     cfg.max_per_img)
