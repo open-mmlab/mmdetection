@@ -29,6 +29,7 @@ class MaskTextSpotter(MaskRCNN):
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
+                      gt_texts=None,
                       proposals=None,
                       **kwargs):
         """
@@ -82,6 +83,7 @@ class MaskTextSpotter(MaskRCNN):
         roi_losses = self.roi_head.forward_train(x, img_metas, proposal_list,
                                                  gt_bboxes, gt_labels,
                                                  gt_bboxes_ignore, gt_masks,
+                                                 gt_texts ,
                                                  **kwargs)
         losses.update(roi_losses)
 
