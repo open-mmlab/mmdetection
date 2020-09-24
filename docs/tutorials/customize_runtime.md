@@ -161,18 +161,26 @@ We support many other learning rate schedule [here](https://github.com/open-mmla
 
 Workflow is a list of (phase, epochs) to specify the running order and epochs.
 By default it is set to be
+
 ```python
 workflow = [('train', 1)]
 ```
+
 which means running 1 epoch for training.
 Sometimes user may want to check some metrics (e.g. loss, accuracy) about the model on the validate set.
 In such case, we can set the workflow as
+
 ```python
 [('train', 1), ('val', 1)]
 ```
+
 so that 1 epoch for training and 1 epoch for validation will be ran iteratively.
-It is noted parameters of the model won't be updated during val epoch.
-There is another keyword `total_epoch` in the config, here we clarify that it only counts the training epoch.
+
+**Note**: 
+
+1. The parameters of model will not be updated during val epoch.
+
+2. Keyword `total_epochs` in the config only controls the number of training epochs and will not affect the validation workflow.
 
 
 ## Customize hooks
@@ -276,6 +284,7 @@ The above-mentioned tutorials already covers how to modify `optimizer_config`, `
 Here we reveals how what we can do with `log_config`, `checkpoint_config`, and `evaluation`.
 
 #### Checkpoint config
+
 The MMCV runner will use `checkpoint_config` to initialize [`CheckpointHook`](https://github.com/open-mmlab/mmcv/blob/9ecd6b0d5ff9d2172c49a182eaa669e9f27bb8e7/mmcv/runner/hooks/checkpoint.py#L9).
 
 ```python
