@@ -30,60 +30,24 @@ class ResBlock(nn.Module):
 
     def __init__(self,
                  in_channels,
+                 yolo_version='v3',
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(ResBlock, self).__init__()
-        assert in_channels % 2 == 0  # ensure the in_channels is even
-        half_in_channels = in_channels // 2
+        assert yolo_version in ('v3', 'v4')
 
         # shortcut
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
-        self.conv1 = ConvModule(in_channels, half_in_channels, 1, **cfg)
-        self.conv2 = ConvModule(
-            half_in_channels, in_channels, 3, padding=1, **cfg)
+        if yolo_version == 'v3':
+            assert in_channels % 2 == 0  # ensure the in_channels is even
+            mid_channels = in_channels // 2
+        else:
+            mid_channels = in_channels
 
-    def forward(self, x):
-        residual = x
-        out = self.conv1(x)
-        out = self.conv2(out)
-        out = out + residual
-
-        return out
-
-
-class ResBlockV4(nn.Module):
-    """The basic residual block used in Darknet. Each ResBlock consists of two
-    ConvModules and the input is added to the final output. Each ConvModule is
-    composed of Conv, BN, and LeakyReLU. In YoloV3 paper, the first convLayer
-    has half of the number of the filters as much as the second convLayer. The
-    first convLayer has filter size of 1x1 and the second one has the filter
-    size of 3x3.
-
-    Args:
-        in_channels (int): The input channels. Must be even.
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True)
-        act_cfg (dict): Config dict for activation layer.
-            Default: dict(type='LeakyReLU', negative_slope=0.1).
-    """
-
-    def __init__(self,
-                 in_channels,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN', requires_grad=True),
-                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
-        super(ResBlockV4, self).__init__()
-        # assert in_channels % 2 == 0  # ensure the in_channels is even
-        # half_in_channels = in_channels // 2
-
-        # shortcut
-        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
-
-        self.conv1 = ConvModule(in_channels, in_channels, 1, **cfg)
-        self.conv2 = ConvModule(in_channels, in_channels, 3, padding=1, **cfg)
+        self.conv1 = ConvModule(in_channels, mid_channels, 1, **cfg)
+        self.conv2 = ConvModule(mid_channels, in_channels, 3, padding=1, **cfg)
 
     def forward(self, x):
         residual = x
@@ -103,6 +67,9 @@ class Darknet(nn.Module):
         out_indices (Sequence[int]): Output from which stages.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
             -1 means not freezing any parameters. Default: -1.
+        csp_on (bool): Whether the Darknet uses csp (cross stage partial
+            network). This is a feature of YOLO v4, see details at
+            https://arxiv.org/abs/1911.11929. Default: False.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
@@ -137,8 +104,8 @@ class Darknet(nn.Module):
                  depth=53,
                  out_indices=(3, 4, 5),
                  frozen_stages=-1,
-                 conv_cfg=None,
                  csp_on=False,
+                 conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
                  norm_eval=True):
@@ -247,6 +214,23 @@ class Darknet(nn.Module):
 
 
 class Csp_conv_res_block(nn.Module):
+    """This class makes the conv_res_block in YOLO v4. It has CSP integrated,
+    hence different from the regular conv_res_block build with
+    `make_conv_res_block`.
+
+    Args:
+        in_channels (int): The number of input channels.
+        out_channels (int): The number of output channels.
+        res_repeat (int): The number of ResBlocks.
+        is_first_block (bool): Whether the Csp_conv_res_block is the
+            first in the Darknet. This affects the structure of the
+            block. Default: False,
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict): Config dict for activation layer.
+            Default: dict(type='LeakyReLU', negative_slope=0.1).
+    """
 
     def __init__(self,
                  in_channels,
@@ -274,8 +258,9 @@ class Csp_conv_res_block(nn.Module):
                 self.blocks.add_module('res{}'.format(idx),
                                        ResBlock(bottleneck_channels, **cfg))
             else:
-                self.blocks.add_module('res{}'.format(idx),
-                                       ResBlockV4(bottleneck_channels, **cfg))
+                self.blocks.add_module(
+                    'res{}'.format(idx),
+                    ResBlock(bottleneck_channels, yolo_version='v4', **cfg))
 
         self.postconv = ConvModule(
             bottleneck_channels, bottleneck_channels, 1, stride=1, **cfg)
