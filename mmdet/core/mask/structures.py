@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -152,6 +153,25 @@ class BaseInstanceMasks(metaclass=ABCMeta):
 
         Returns:
             ndarray: Sheared masks.
+        """
+        pass
+
+    @abstractmethod
+    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+        """Rotate the masks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            angle (int | float): Rotation angle in degrees. Positive values
+                mean counter-clockwise rotation.
+            center (tuple[float], optional): Center point (w, h) of the
+                rotation in source image. If not specified, the center of
+                the image will be used.
+            scale (int | float): Isotropic scale factor.
+            fill_val (int | float): Border value. Default 0 for masks.
+
+        Returns:
+            Rotated masks.
         """
         pass
 
@@ -354,6 +374,38 @@ class BitmapMasks(BaseInstanceMasks):
             sheared_masks = sheared_masks.transpose(
                 (2, 0, 1)).astype(self.masks.dtype)
         return BitmapMasks(sheared_masks, *out_shape)
+
+    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+        """Rotate the BitmapMasks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            angle (int | float): Rotation angle in degrees. Positive values
+                mean counter-clockwise rotation.
+            center (tuple[float], optional): Center point (w, h) of the
+                rotation in source image. If not specified, the center of
+                the image will be used.
+            scale (int | float): Isotropic scale factor.
+            fill_val (int | float): Border value. Default 0 for masks.
+
+        Returns:
+            BitmapMasks: Rotated BitmapMasks.
+        """
+        if len(self.masks) == 0:
+            rotated_masks = np.empty((0, *out_shape), dtype=self.masks.dtype)
+        else:
+            rotated_masks = mmcv.imrotate(
+                self.masks.transpose((1, 2, 0)),
+                angle,
+                center=center,
+                scale=scale,
+                border_value=fill_val)
+            if rotated_masks.ndim == 2:
+                # case when only one mask, (h, w)
+                rotated_masks = rotated_masks[:, :, None]  # (h, w, 1)
+            rotated_masks = rotated_masks.transpose(
+                (2, 0, 1)).astype(self.masks.dtype)
+        return BitmapMasks(rotated_masks, *out_shape)
 
     @property
     def areas(self):
@@ -587,6 +639,35 @@ class PolygonMasks(BaseInstanceMasks):
                 sheared_masks.append(sheared_poly)
             sheared_masks = PolygonMasks(sheared_masks, *out_shape)
         return sheared_masks
+
+    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+        """See :func:`BaseInstanceMasks.rotate`."""
+        if len(self.masks) == 0:
+            rotated_masks = PolygonMasks([], *out_shape)
+        else:
+            rotated_masks = []
+            rotate_matrix = cv2.getRotationMatrix2D(center, -angle, scale)
+            for poly_per_obj in self.masks:
+                rotated_poly = []
+                for p in poly_per_obj:
+                    p = p.copy()
+                    coords = np.stack([p[0::2], p[1::2]], axis=1)  # [n, 2]
+                    # pad 1 to convert from format [x, y] to homogeneous
+                    # coordinates format [x, y, 1]
+                    coords = np.concatenate(
+                        (coords, np.ones((coords.shape[0], 1), coords.dtype)),
+                        axis=1)  # [n, 3]
+                    rotated_coords = np.matmul(
+                        rotate_matrix[None, :, :],
+                        coords[:, :, None])[..., 0]  # [n, 2, 1] -> [n, 2]
+                    rotated_coords[:, 0] = np.clip(rotated_coords[:, 0], 0,
+                                                   out_shape[1])
+                    rotated_coords[:, 1] = np.clip(rotated_coords[:, 1], 0,
+                                                   out_shape[0])
+                    rotated_poly.append(rotated_coords.reshape(-1))
+                rotated_masks.append(rotated_poly)
+            rotated_masks = PolygonMasks(rotated_masks, *out_shape)
+        return rotated_masks
 
     def to_bitmap(self):
         """convert polygon masks to bitmap masks."""
