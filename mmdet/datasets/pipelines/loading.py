@@ -175,12 +175,14 @@ class LoadAnnotations(object):
                  with_mask=False,
                  with_seg=False,
                  poly2mask=True,
+                 with_text=False,
                  file_client_args=dict(backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
+        self.with_text = with_text
         self.file_client_args = file_client_args.copy()
         self.file_client = None
 
@@ -193,6 +195,12 @@ class LoadAnnotations(object):
             results['gt_bboxes_ignore'] = gt_bboxes_ignore.copy()
             results['bbox_fields'].append('gt_bboxes_ignore')
         results['bbox_fields'].append('gt_bboxes')
+        return results
+    
+    def _load_texts(self, results):
+        ann_info = results['ann_info']
+        results['gt_texts'] = ann_info['texts'].copy()
+        results['text_fields'].append('gt_texts')
         return results
 
     def _load_labels(self, results):
@@ -267,6 +275,9 @@ class LoadAnnotations(object):
             results = self._load_masks(results)
         if self.with_seg:
             results = self._load_semantic_seg(results)
+        if self.with_text:
+            results = self._load_texts(results)
+
         return results
 
     def __repr__(self):
@@ -274,9 +285,10 @@ class LoadAnnotations(object):
         repr_str += f'(with_bbox={self.with_bbox}, '
         repr_str += f'with_label={self.with_label}, '
         repr_str += f'with_mask={self.with_mask}, '
-        repr_str += f'with_seg={self.with_seg})'
-        repr_str += f'poly2mask={self.poly2mask})'
-        repr_str += f'poly2mask={self.file_client_args})'
+        repr_str += f'with_seg={self.with_seg}, '
+        repr_str += f'poly2mask={self.poly2mask}, '
+        repr_str += f'with_text={self.with_text}, '
+        repr_str += f'file_client_args={self.file_client_args})'
         return repr_str
 
 

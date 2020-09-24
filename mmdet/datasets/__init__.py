@@ -1,6 +1,7 @@
 from .builder import DATASETS, PIPELINES, build_dataloader, build_dataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
+from .coco_with_text import CocoWithTextDataset
 from .custom import CustomDataset
 from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset,
                                RepeatDataset)
@@ -16,5 +17,5 @@ __all__ = [
     'CityscapesDataset', 'LVISDataset', 'DeepFashionDataset', 'GroupSampler',
     'DistributedGroupSampler', 'DistributedSampler', 'build_dataloader',
     'ConcatDataset', 'RepeatDataset', 'ClassBalancedDataset',
-    'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset'
+    'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset', 'CocoWithTextDataset'
 ]
