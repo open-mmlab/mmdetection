@@ -205,3 +205,22 @@ def test_rotate():
     gt_masks = [[np.array([0, 0, 0, 0, 1, 0, 1, 0], dtype=np.float)]]
     results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
     check_rotate(results_gt, results_rotated)
+
+    # test AutoAugment equipped with Rotate
+    policies = [[dict(type='Rotate', level=10, prob=1.)]]
+    autoaug = dict(type='AutoAugment', policies=policies)
+    autoaug_module = build_from_cfg(autoaug, PIPELINES)
+    autoaug_module(copy.deepcopy(results))
+
+    policies = [[
+        dict(type='Rotate', level=10, prob=1.),
+        dict(
+            type='Rotate',
+            level=8,
+            max_rotate_angle=90,
+            center=(0),
+            img_fill_val=img_fill_val)
+    ]]
+    autoaug = dict(type='AutoAugment', policies=policies)
+    autoaug_module = build_from_cfg(autoaug, PIPELINES)
+    autoaug_module(copy.deepcopy(results))
