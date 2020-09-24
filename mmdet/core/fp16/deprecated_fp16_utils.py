@@ -6,10 +6,10 @@ from mmcv.runner import (Fp16OptimizerHook, auto_fp16, force_fp32,
 
 class Depr_Fp16OptimizerHook(Fp16OptimizerHook):
     """A wrapper class for the FP16 optimizer hook. This class wraps
-    Fp16OptimizerHook in "mmcv.runner" and shows a warning that the
-    Fp16OptimizerHook from "mmdet.core" will be deprecated.
+    :class:`Fp16OptimizerHook` in `mmcv.runner` and shows a warning that the
+    :class:`Fp16OptimizerHook` from `mmdet.core` will be deprecated.
 
-    Refer to Fp16OptimizerHook in mmcv.runner for more details.
+    Refer to :class:`Fp16OptimizerHook` in `mmcv.runner` for more details.
 
     Args:
         loss_scale (float): Scale factor multiplied with loss.
