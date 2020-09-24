@@ -134,6 +134,29 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def shear(self,
+              out_shape,
+              magnitude,
+              direction='horizontal',
+              border_value=0,
+              interpolation='bilinear'):
+        """Shear the masks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            magnitude (int | float): The magnitude used for shear.
+            direction (str): The shear direction, either "horizontal"
+                or "vertical".
+            border_value (int | tuple[int]): Value used in case of a
+                constant border. Default 0.
+            interpolation (str): Same as in :func:`mmcv.imshear`.
+
+        Returns:
+            ndarray: Sheared masks.
+        """
+        pass
+
+    @abstractmethod
     def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
         """Rotate the masks.
 
@@ -316,6 +339,41 @@ class BitmapMasks(BaseInstanceMasks):
             expanded_mask[:, top:top + self.height,
                           left:left + self.width] = self.masks
         return BitmapMasks(expanded_mask, expanded_h, expanded_w)
+
+    def shear(self,
+              out_shape,
+              magnitude,
+              direction='horizontal',
+              border_value=0,
+              interpolation='bilinear'):
+        """Shear the BitmapMasks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            magnitude (int | float): The magnitude used for shear.
+            direction (str): The shear direction, either "horizontal"
+                or "vertical".
+            border_value (int | tuple[int]): Value used in case of a
+                constant border.
+            interpolation (str): Same as in :func:`mmcv.imshear`.
+
+        Returns:
+            BitmapMasks: The sheared masks.
+        """
+        if len(self.masks) == 0:
+            sheared_masks = np.empty((0, *out_shape), dtype=np.uint8)
+        else:
+            sheared_masks = mmcv.imshear(
+                self.masks.transpose((1, 2, 0)),
+                magnitude,
+                direction,
+                border_value=border_value,
+                interpolation=interpolation)
+            if sheared_masks.ndim == 2:
+                sheared_masks = sheared_masks[:, :, None]
+            sheared_masks = sheared_masks.transpose(
+                (2, 0, 1)).astype(self.masks.dtype)
+        return BitmapMasks(sheared_masks, *out_shape)
 
     def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
         """Rotate the BitmapMasks.
@@ -550,6 +608,38 @@ class PolygonMasks(BaseInstanceMasks):
             resized_masks.append(resized_mask)
         return PolygonMasks(resized_masks, *out_shape)
 
+    def shear(self,
+              out_shape,
+              magnitude,
+              direction='horizontal',
+              border_value=0,
+              interpolation='bilinear'):
+        """See :func:`BaseInstanceMasks.shear`."""
+        if len(self.masks) == 0:
+            sheared_masks = PolygonMasks([], *out_shape)
+        else:
+            sheared_masks = []
+            if direction == 'horizontal':
+                shear_matrix = np.stack([[1, magnitude],
+                                         [0, 1]]).astype(np.float32)
+            elif direction == 'vertical':
+                shear_matrix = np.stack([[1, 0], [magnitude,
+                                                  1]]).astype(np.float32)
+            for poly_per_obj in self.masks:
+                sheared_poly = []
+                for p in poly_per_obj:
+                    p = np.stack([p[0::2], p[1::2]], axis=0)  # [2, n]
+                    new_coords = np.matmul(shear_matrix, p)  # [2, n]
+                    new_coords[0, :] = np.clip(new_coords[0, :], 0,
+                                               out_shape[1])
+                    new_coords[1, :] = np.clip(new_coords[1, :], 0,
+                                               out_shape[0])
+                    sheared_poly.append(
+                        new_coords.transpose((1, 0)).reshape(-1))
+                sheared_masks.append(sheared_poly)
+            sheared_masks = PolygonMasks(sheared_masks, *out_shape)
+        return sheared_masks
+
     def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
         """See :func:`BaseInstanceMasks.rotate`."""
         if len(self.masks) == 0:
@@ -588,7 +678,7 @@ class PolygonMasks(BaseInstanceMasks):
     def areas(self):
         """Compute areas of masks.
 
-        This func is modified from `detectron2.
+        This func is modified from `detectron2
         <https://github.com/facebookresearch/detectron2/blob/ffff8acc35ea88ad1cb1806ab0f00b4c1c5dbfd9/detectron2/structures/masks.py#L387>`_.
         The function only works with Polygons using the shoelace formula.
 
