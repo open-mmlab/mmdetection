@@ -20,7 +20,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from segmentoly.utils.weights import msra_fill
+
+from mmdet.models.builder import HEADS
 
 
 class Encoder(nn.Module):
@@ -43,8 +44,8 @@ class Encoder(nn.Module):
 
     def _init_weights(self):
         for m in self.modules():
-            if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
-                msra_fill(m.weight)
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, feature):
@@ -149,7 +150,7 @@ class DecoderAttention2d(nn.Module):
         if isinstance(self.decoder, nn.GRU):
             return output, hidden, attn_weights
 
-
+@HEADS.register_module()
 class TextRecognitionHeadAttention(nn.Module):
 
     def __init__(self,
