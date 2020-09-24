@@ -586,10 +586,12 @@ class PolygonMasks(BaseInstanceMasks):
 
     @property
     def areas(self):
-        """Compute areas of masks. This func is modified from `detectron2.
+        """Compute areas of masks.
 
+        This func is modified from `detectron2.
         <https://github.com/facebookresearch/detectron2/blob/ffff8acc35ea88ad1cb1806ab0f00b4c1c5dbfd9/detectron2/structures/masks.py#L387>`_.
         The function only works with Polygons using the shoelace formula.
+
         Return:
             ndarray: areas of each instance
         """  # noqa: W501
@@ -606,9 +608,11 @@ class PolygonMasks(BaseInstanceMasks):
 
         Using the shoelace formula:
         https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+
         Args:
             x (ndarray): x coordinates of the component
             y (ndarray): y coordinates of the component
+
         Return:
             float: the are of the component
         """  # noqa: 501
@@ -642,6 +646,7 @@ def polygon_to_bitmap(polygons, height, width):
         polygons (list[ndarray]): masks in polygon representation
         height (int): mask height
         width (int): mask width
+
     Return:
         ndarray: the converted masks in bitmap representation
     """
