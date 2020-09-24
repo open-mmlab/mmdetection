@@ -343,6 +343,8 @@ class Rotate(object):
             should be in range 0 to 1.
         max_rotate_angle (int | float): The maximum angles for rotate
             transformation.
+        random_negative_prob (float): The probability that turns the
+             offset negative.
     """
 
     def __init__(self,
@@ -353,38 +355,37 @@ class Rotate(object):
                  seg_ignore_label=255,
                  prob=0.5,
                  max_rotate_angle=30,
-                 *args,
-                 **kwargs):
+                 random_negative_prob=0.5):
         assert isinstance(level, (int, float)), \
-            'The level must be type int or float.'
+            f'The level must be type int or float. got {type(level)}.'
         assert 0 <= level <= _MAX_LEVEL, \
-            'The level used for calculating Translate\'s offset should be ' \
-            'in range (0,_MAX_LEVEL]'
+            f'The level should be in range (0,{_MAX_LEVEL}]. got {level}.'
         assert isinstance(scale, (int, float)), \
-            'The scale must be type int or float.'
+            f'The scale must be type int or float. got type {type(scale)}.'
         if isinstance(center, (int, float)):
             center = (center, center)
         elif isinstance(center, tuple):
-            assert len(center) == 2, \
-                'center with type tuple must have 2 elements.'
+            assert len(center) == 2, 'center with type tuple must have '\
+                f'2 elements. got {len(center)} elements.'
         else:
-            assert center is None, \
-                'center must be None or type int, float, tuple'
+            assert center is None, 'center must be None or type int, '\
+                f'float or tuple, got type {type(center)}.'
         if isinstance(img_fill_val, (float, int)):
             img_fill_val = tuple([float(img_fill_val)] * 3)
         elif isinstance(img_fill_val, tuple):
-            assert len(img_fill_val) == 3, \
-                'img_fill_val as tuple must have 3 elements.'
+            assert len(img_fill_val) == 3, 'img_fill_val as tuple must '\
+                f'have 3 elements. got {len(img_fill_val)}.'
             img_fill_val = tuple([float(val) for val in img_fill_val])
         else:
             raise ValueError(
                 'img_fill_val must be float or tuple with 3 elements.')
         assert np.all([0 <= val <= 255 for val in img_fill_val]), \
-            'all elements of img_fill_val should between range [0,255].'
-        assert 0 <= prob <= 1.0, \
-            'The probability of translation should be in range 0 to 1.'
-        assert isinstance(max_rotate_angle, (int, float)), \
-            'max_rotate_angle should be type int or float.'
+            'all elements of img_fill_val should between range [0,255]. '\
+            f'got {img_fill_val}.'
+        assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
+            'got {prob}.'
+        assert isinstance(max_rotate_angle, (int, float)), 'max_rotate_angle '\
+            f'should be type int or float. got type {type(max_rotate_angle)}.'
         self.level = level
         self.scale = scale
         # Rotation angle in degrees. Positive values mean
@@ -395,6 +396,7 @@ class Rotate(object):
         self.seg_ignore_label = seg_ignore_label
         self.prob = prob
         self.max_rotate_angle = max_rotate_angle
+        self.random_negative_prob = random_negative_prob
 
     def _rotate_img(self, results, angle, center=None, scale=1.0):
         """Rotate the image.
@@ -493,14 +495,12 @@ class Rotate(object):
             if mask_key in results:
                 results[mask_key] = results[mask_key][valid_inds]
 
-    def __call__(self, results, random_negative_prob=0.5):
+    def __call__(self, results):
         """Call function to rotate images, bounding boxes, masks and semantic
         segmentation maps.
 
         Args:
             results (dict): Result dict from loading pipeline.
-            random_negative_prob (float): The probability that turns the
-             offset negative.
 
         Returns:
             dict: Rotated results.
@@ -511,7 +511,7 @@ class Rotate(object):
         center = self.center
         if center is None:
             center = ((w - 1) * 0.5, (h - 1) * 0.5)
-        angle = random_negative(self.angle, random_negative_prob)
+        angle = random_negative(self.angle, self.random_negative_prob)
         self._rotate_img(results, angle, center, self.scale)
         rotate_matrix = cv2.getRotationMatrix2D(center, -angle, self.scale)
         self._rotate_bboxes(results, rotate_matrix)
@@ -529,5 +529,6 @@ class Rotate(object):
         repr_str += f'img_fill_val={self.img_fill_val}, '
         repr_str += f'seg_ignore_label={self.seg_ignore_label}, '
         repr_str += f'prob={self.prob}, '
-        repr_str += f'max_rotate_angle={self.max_rotate_angle})'
+        repr_str += f'max_rotate_angle={self.max_rotate_angle}, '
+        repr_str += f'random_negative_prob={self.random_negative_prob})'
         return repr_str
