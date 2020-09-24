@@ -176,10 +176,9 @@ In such case, we can set the workflow as
 
 so that 1 epoch for training and 1 epoch for validation will be ran iteratively.
 
-**Note**: 
+**Note**:
 
 1. The parameters of model will not be updated during val epoch.
-
 2. Keyword `total_epochs` in the config only controls the number of training epochs and will not affect the validation workflow.
 
 
