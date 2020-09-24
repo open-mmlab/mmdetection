@@ -11,11 +11,12 @@ from .mask_scoring_roi_head import MaskScoringRoIHead
 from .pisa_roi_head import PISARoIHead
 from .roi_extractors import SingleRoIExtractor
 from .shared_heads import ResLayer
+from .text_heads import TextRecognitionHeadAttention
 
 __all__ = [
     'BaseRoIHead', 'CascadeRoIHead', 'DoubleHeadRoIHead', 'MaskScoringRoIHead',
     'HybridTaskCascadeRoIHead', 'GridRoIHead', 'ResLayer', 'BBoxHead',
     'ConvFCBBoxHead', 'Shared2FCBBoxHead', 'Shared4Conv1FCBBoxHead',
     'DoubleConvFCBBoxHead', 'FCNMaskHead', 'HTCMaskHead', 'FusedSemanticHead',
-    'GridHead', 'MaskIoUHead', 'SingleRoIExtractor', 'PISARoIHead'
+    'GridHead', 'MaskIoUHead', 'SingleRoIExtractor', 'PISARoIHead', 'TextRecognitionHeadAttention'
 ]
