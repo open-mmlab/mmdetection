@@ -1,11 +1,10 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import kaiming_init, normal_init
-from mmcv.ops import Conv2d, Linear, MaxPool2d
+from mmcv.cnn import Conv2d, Linear, MaxPool2d, kaiming_init, normal_init
+from mmcv.runner import force_fp32
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import force_fp32
 from mmdet.models.builder import HEADS, build_loss
 
 
