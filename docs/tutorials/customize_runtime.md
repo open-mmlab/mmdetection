@@ -5,7 +5,7 @@
 ### Customize optimizer supported by Pytorch
 
 We already support to use all the optimizers implemented by PyTorch, and the only modification is to change the `optimizer` field of config files.
-For example, if you want to use `ADAM` (note that the performance will drop a lot), the modification could be as the following.
+For example, if you want to use `ADAM` (note that the performance could drop a lot), the modification could be as the following.
 
 ```python
 optimizer = dict(type='Adam', lr=0.0003, weight_decay=0.0001)
@@ -174,13 +174,13 @@ In such case, we can set the workflow as
 [('train', 1), ('val', 1)]
 ```
 
-so that 1 epoch for training and 1 epoch for validation will be ran iteratively.
+so that 1 epoch for training and 1 epoch for validation will be run iteratively.
 
 **Note**:
 
 1. The parameters of model will not be updated during val epoch.
 2. Keyword `total_epochs` in the config only controls the number of training epochs and will not affect the validation workflow.
-
+3. Workflows `[('train', 1), ('val', 1)]` and `[('train', 1)]` will not change the behavior of `EvalHook` because `EvalHook` is called by `after_train_epoch` and validation workflow only affect hooks that are called through `after_val_epoch`. Therefore, the only difference between `[('train', 1), ('val', 1)]` and ``[('train', 1)]` is that the runner will calculate losses on validation set after each training epoch.
 
 ## Customize hooks
 
@@ -258,6 +258,8 @@ custom_hooks = [
 ]
 ```
 
+By default the hook's priority is set as `NORMAL` during registration.
+
 ### Use hooks implemented in MMCV
 
 If the hook is already implemented in MMCV, you can directly modify the config to use the hook as below
@@ -279,6 +281,7 @@ There are some common hooks that are not registerd through `custom_hooks`, they 
 - optimizer_config
 - momentum_config
 
+In those hooks, only the logger hook has the `VERY_LOW` priority, others' priority are `NORMAL`.
 The above-mentioned tutorials already covers how to modify `optimizer_config`, `momentum_config`, and `lr_config`.
 Here we reveals how what we can do with `log_config`, `checkpoint_config`, and `evaluation`.
 
