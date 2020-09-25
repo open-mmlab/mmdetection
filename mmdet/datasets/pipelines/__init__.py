@@ -1,4 +1,4 @@
-from .auto_augment import AutoAugment, Rotate, Shear
+from .auto_augment import AutoAugment, Rotate, Shear, Translate
 from .compose import Compose
 from .formating import (Collect, DefaultFormatBundle, ImageToTensor,
                         ToDataContainer, ToTensor, Transpose, to_tensor)
@@ -9,7 +9,6 @@ from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Albu, CutOut, Expand, MinIoURandomCrop, Normalize,
                          Pad, PhotoMetricDistortion, RandomCenterCropPad,
                          RandomCrop, RandomFlip, Resize, SegRescale)
-from .translate import Translate
 
 __all__ = [
     'Compose', 'to_tensor', 'ToTensor', 'ImageToTensor', 'ToDataContainer',

@@ -495,3 +495,21 @@ def test_translate():
         translated_gt = _translated_gt(masks, 'horizontal', offset, (h, w))
         assert np.equal(results_translated[key].to_ndarray(),
                         translated_gt.to_ndarray()).all()
+
+    # test AutoAugment equipped with Translate
+    policies = [[dict(type='Translate', level=10, prob=1.)]]
+    autoaug = dict(type='AutoAugment', policies=policies)
+    autoaug_module = build_from_cfg(autoaug, PIPELINES)
+    autoaug_module(copy.deepcopy(results))
+
+    policies = [[
+        dict(type='Translate', level=10, prob=1.),
+        dict(
+            type='Translate',
+            level=8,
+            img_fill_val=img_fill_val,
+            direction='vertical')
+    ]]
+    autoaug = dict(type='AutoAugment', policies=policies)
+    autoaug_module = build_from_cfg(autoaug, PIPELINES)
+    autoaug_module(copy.deepcopy(results))

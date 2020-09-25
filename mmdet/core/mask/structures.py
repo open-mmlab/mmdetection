@@ -667,8 +667,8 @@ class PolygonMasks(BaseInstanceMasks):
                   out_shape,
                   offset,
                   direction='horizontal',
-                  fill_val=0,
-                  interpolation='bilinear'):
+                  fill_val=None,
+                  interpolation=None):
         """Translate the PolygonMasks."""
         if len(self.masks) == 0:
             translated_masks = PolygonMasks([], *out_shape)
