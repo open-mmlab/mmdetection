@@ -480,7 +480,7 @@ class VFNetHead(ATSSHead, FCOSHead):
                    img_metas,
                    cfg=None,
                    rescale=None,
-                   nms=True):
+                   with_nms=True):
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
@@ -495,7 +495,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used
             rescale (bool): If True, return boxes in original image space
-            nms (bool): If True, perform nms
+            with_nms (bool): If True, perform nms
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
@@ -525,7 +525,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             det_bboxes = self._get_bboxes_single(cls_score_list,
                                                  bbox_pred_list, mlvl_points,
                                                  img_shape, scale_factor, cfg,
-                                                 rescale, nms)
+                                                 rescale, with_nms)
             result_list.append(det_bboxes)
         return result_list
 
@@ -537,7 +537,7 @@ class VFNetHead(ATSSHead, FCOSHead):
                            scale_factor,
                            cfg,
                            rescale=False,
-                           nms=True):
+                           with_nms=True):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -554,7 +554,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
-            nms (bool): If True, perform nms.
+            with_nms (bool): If True, perform nms.
 
         Returns:
             Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
@@ -590,7 +590,7 @@ class VFNetHead(ATSSHead, FCOSHead):
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        if nms:
+        if with_nms:
             det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                     cfg.score_thr, cfg.nms,
                                                     cfg.max_per_img)
