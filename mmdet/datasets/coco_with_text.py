@@ -32,6 +32,7 @@ class CocoWithTextDataset(CocoDataset):
         super().__init__(*args, **kwargs)
         self.alphabet = alphabet
         self.max_text_len = 33
+        self.EOS = 1
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)
@@ -135,12 +136,13 @@ class CocoWithTextDataset(CocoDataset):
                 gt_labels.append(self.cat2label[ann['category_id']])
                 gt_masks_ann.append(ann['segmentation'])
 
-
                 assert ' ' not in text
 
                 text = [self.alphabet.find(l) for l in text]
                 if -1 in text:
                     text = []
+                else:
+                    text.append(self.EOS)
                 # while len(text) < self.max_text_len:
                 #     text.append(-1)
                 text = np.array(text)
