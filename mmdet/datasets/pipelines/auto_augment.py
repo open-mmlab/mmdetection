@@ -557,7 +557,6 @@ class Translate(object):
             Translate.
         random_negative_prob (float): The probability that turns the
             offset negative.
-        interpolation (str): Same as :func:`mmcv.imtranslate`.
         min_size (int | float): The minimum pixel for filtering
             invalid bboxes after the translation.
     """
@@ -570,7 +569,6 @@ class Translate(object):
                  direction='horizontal',
                  max_translate_offset=250.,
                  random_negative_prob=0.5,
-                 interpolation='bilinear',
                  min_size=0):
         assert isinstance(level, (int, float)), \
             'The level must be type int or float.'
@@ -602,14 +600,9 @@ class Translate(object):
         self.direction = direction
         self.max_translate_offset = max_translate_offset
         self.random_negative_prob = random_negative_prob
-        self.interpolation = interpolation
         self.min_size = min_size
 
-    def _translate_img(self,
-                       results,
-                       offset,
-                       direction='horizontal',
-                       interpolation='bilinear'):
+    def _translate_img(self, results, offset, direction='horizontal'):
         """Translate the image.
 
         Args:
@@ -617,13 +610,11 @@ class Translate(object):
             offset (int | float): The offset for translate.
             direction (str): The translate direction, either "horizontal"
                 or "vertical".
-            interpolation (str): Same as :func:`mmcv.imtranslate`.
         """
         for key in results.get('img_fields', ['img']):
             img = results[key].copy()
-            results[key] = mmcv.imtranslate(img, offset, direction,
-                                            self.img_fill_val,
-                                            interpolation).astype(img.dtype)
+            results[key] = mmcv.imtranslate(
+                img, offset, direction, self.img_fill_val).astype(img.dtype)
 
     def _translate_bboxes(self, results, offset):
         """Shift bboxes horizontally or vertically, according to offset."""
@@ -647,26 +638,23 @@ class Translate(object):
                          results,
                          offset,
                          direction='horizontal',
-                         fill_val=0,
-                         interpolation='bilinear'):
+                         fill_val=0):
         """Translate masks horizontally or vertically."""
         h, w, c = results['img_shape']
         for key in results.get('mask_fields', []):
             masks = results[key]
-            results[key] = masks.translate((h, w), offset, direction, fill_val,
-                                           interpolation)
+            results[key] = masks.translate((h, w), offset, direction, fill_val)
 
     def _translate_seg(self,
                        results,
                        offset,
                        direction='horizontal',
-                       fill_val=255,
-                       interpolation='bilinear'):
+                       fill_val=255):
         """Translate segmentation maps horizontally or vertically."""
         for key in results.get('seg_fields', []):
             seg = results[key].copy()
-            results[key] = mmcv.imtranslate(seg, offset, direction, fill_val,
-                                            interpolation).astype(seg.dtype)
+            results[key] = mmcv.imtranslate(seg, offset, direction,
+                                            fill_val).astype(seg.dtype)
 
     def _filter_invalid(self, results, min_size=0):
         """Filter bboxes and masks too small or translated out of image."""
@@ -700,24 +688,14 @@ class Translate(object):
         if np.random.rand() > self.prob:
             return results
         offset = random_negative(self.offset, self.random_negative_prob)
-        self._translate_img(results, offset, self.direction,
-                            self.interpolation)
+        self._translate_img(results, offset, self.direction)
         self._translate_bboxes(results, offset)
         # fill_val set to 0 for background of mask.
-        self._translate_masks(
-            results,
-            offset,
-            self.direction,
-            fill_val=0,
-            interpolation=self.interpolation)
+        self._translate_masks(results, offset, self.direction, fill_val=0)
         # fill_val set to ``seg_ignore_label`` for the ignored value
         # of segmentation map.
         self._translate_seg(
-            results,
-            offset,
-            self.direction,
-            fill_val=self.seg_ignore_label,
-            interpolation=self.interpolation)
+            results, offset, self.direction, fill_val=self.seg_ignore_label)
         self._filter_invalid(results, min_size=self.min_size)
         return results
 
@@ -730,6 +708,5 @@ class Translate(object):
         repr_str += f'direction={self.direction}, '
         repr_str += f'max_translate_offset={self.max_translate_offset}, '
         repr_str += f'random_negative_prob={self.random_negative_prob}, '
-        repr_str += f'interpolation={self.interpolation}, '
         repr_str += f'min_size={self.min_size})'
         return repr_str
