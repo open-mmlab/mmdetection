@@ -206,8 +206,7 @@ class DistEvalHook(EvalHook):
                  interval=1,
                  tmpdir=None,
                  gpu_collect=False,
-                 save_best=False,
-                 key_indicator='bbox_mAP',
+                 save_best=None,
                  rule=None,
                  **eval_kwargs):
         super().__init__(
@@ -215,7 +214,6 @@ class DistEvalHook(EvalHook):
             start=start,
             interval=interval,
             save_best=save_best,
-            key_indicator=key_indicator,
             rule=rule,
             **eval_kwargs)
         self.tmpdir = tmpdir
