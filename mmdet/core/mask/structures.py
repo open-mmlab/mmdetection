@@ -520,7 +520,7 @@ class PolygonMasks(BaseInstanceMasks):
             except Exception:
                 raise ValueError(
                     f'Unsupported input of type {type(index)} for indexing!')
-        if isinstance(masks[0], np.ndarray):
+        if len(masks) and isinstance(masks[0], np.ndarray):
             masks = [masks]  # ensure a list of three levels
         return PolygonMasks(masks, self.height, self.width)
 
