@@ -157,8 +157,11 @@ class StandardRoIHeadWithText(StandardRoIHead):
             assert bbox_feats is not None
             text_feats = bbox_feats[pos_inds]
 
-        loss_text = self.text_head.forward(text_feats, matched_gt_texts)
-        return dict(loss_text=loss_text)
+        text_results = self.text_head.forward(text_feats, matched_gt_texts)
+        if self.training:
+            return dict(loss_text=text_results)
+        else:
+            return dict(text_results=text_results)
 
     def _text_forward_train(self, x, sampling_results, bbox_feats, gt_masks, gt_texts,
                             img_metas):
@@ -263,6 +266,59 @@ class StandardRoIHeadWithText(StandardRoIHead):
                 mask_test_cfg=self.test_cfg.get('mask'))
             return bbox_results, segm_results
 
+    def simple_test_text(self,
+                         x,
+                         img_metas,
+                         det_bboxes,
+                         det_masks,
+                         rescale=False):
+        # # image shape of the first image in the batch (only one)
+        ori_shape = img_metas[0]['ori_shape']
+        scale_factor = img_metas[0]['scale_factor']
+        if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
+            # If there are no detection there is nothing to do for a mask head.
+            # But during ONNX export we should run mask head
+            # for it to appear in the graph.
+            # So add one zero / dummy ROI that will be mapped
+            # to an Identity op in the graph.
+            TBD
+            det_bboxes = dummy_pad(det_bboxes, (0, 0, 0, 1))
+            det_labels = dummy_pad(det_labels, (0, 1))
+
+        if det_bboxes.shape[0] == 0:
+            TBD
+            segm_result = torch.empty([0, 0, 0],
+                                    dtype=det_bboxes.dtype,
+                                    device=det_bboxes.device)
+        else:
+
+            import string
+            alphabet='  ' + string.ascii_letters + string.digits
+            # if det_bboxes is rescaled to the original image size, we need to
+            # rescale it back to the testing scale to obtain RoIs.
+            if rescale and not isinstance(scale_factor, float):
+                scale_factor = torch.from_numpy(scale_factor).to(
+                    det_bboxes.device)
+            _bboxes = (
+                det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
+            text_rois = bbox2roi([_bboxes])
+            text_results = self._text_forward(x, text_rois)
+            text_results = text_results['text_results'].permute(1, 0, 2)
+            decoded_texts = []
+            for text in text_results:
+                encoded = text.topk(1)[1].cpu().numpy().reshape(-1)
+                decoded = ''
+                for l in encoded:
+                    if l == 1:
+                        break
+                    decoded = decoded + alphabet[l]
+                decoded_texts.append(decoded)
+                
+            # segm_result = self.mask_head.get_seg_masks(
+            #     mask_results['mask_pred'], _bboxes, det_labels, self.test_cfg,
+            #     ori_shape, scale_factor, rescale)
+        return decoded_texts
+
     def simple_test(self,
                     x,
                     proposal_list,
@@ -281,9 +337,12 @@ class StandardRoIHeadWithText(StandardRoIHead):
             det_masks = self.simple_test_mask(
                 x, img_metas, det_bboxes, det_labels, rescale=False)
 
+        det_texts = self.simple_test_text(x, img_metas, det_bboxes, det_masks)
+
         if postprocess:
-            return self.postprocess(
+            bbox_results, segm_results = self.postprocess(
                 det_bboxes, det_labels, det_masks, img_metas, rescale=rescale)
+            return bbox_results, segm_results, det_texts
         else:
             if det_masks is None:
                 return det_bboxes, det_labels
