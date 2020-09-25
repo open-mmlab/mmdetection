@@ -61,4 +61,4 @@ Only `'loss_bbox'`, `'loss_cls'` will be used during back propagation,
 `'acc'` will only be used as a metric to monitor training process.
 
 By default, only values whose keys contain `'loss'` will be back propagated.
-This behavior could be changed by modifying ``BaseDetector.train_step()``.
+This behavior could be changed by modifying `BaseDetector.train_step()`.
