@@ -670,6 +670,8 @@ class PolygonMasks(BaseInstanceMasks):
                   fill_val=None,
                   interpolation=None):
         """Translate the PolygonMasks."""
+        assert fill_val is None or fill_val == 0, 'Here fill_val is not '\
+            'used, and defaultly should be None or 0. got {fill_val}.'
         if len(self.masks) == 0:
             translated_masks = PolygonMasks([], *out_shape)
         else:
