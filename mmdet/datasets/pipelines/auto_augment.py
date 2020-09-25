@@ -690,8 +690,8 @@ class Translate(object):
         offset = random_negative(self.offset, self.random_negative_prob)
         self._translate_img(results, offset, self.direction)
         self._translate_bboxes(results, offset)
-        # fill_val set to 0 for background of mask.
-        self._translate_masks(results, offset, self.direction, fill_val=0)
+        # fill_val defaultly 0 for BitmapMasks and None for PolygonMasks.
+        self._translate_masks(results, offset, self.direction)
         # fill_val set to ``seg_ignore_label`` for the ignored value
         # of segmentation map.
         self._translate_seg(
