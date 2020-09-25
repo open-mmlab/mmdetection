@@ -1,5 +1,6 @@
 from .auto_augment import (AutoAugment, BrightnessTransform, ColorTransform,
-                           ContrastTransform, EqualizeTransform, Rotate, Shear)
+                           ContrastTransform, EqualizeTransform, Rotate, Shear,
+                           Translate)
 from .compose import Compose
 from .formating import (Collect, DefaultFormatBundle, ImageToTensor,
                         ToDataContainer, ToTensor, Transpose, to_tensor)
@@ -20,5 +21,5 @@ __all__ = [
     'MinIoURandomCrop', 'Expand', 'PhotoMetricDistortion', 'Albu',
     'InstaBoost', 'RandomCenterCropPad', 'AutoAugment', 'CutOut', 'Shear',
     'Rotate', 'ColorTransform', 'EqualizeTransform', 'BrightnessTransform',
-    'ContrastTransform'
+    'ContrastTransform', 'Translate'
 ]
