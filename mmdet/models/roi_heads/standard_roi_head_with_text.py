@@ -286,10 +286,10 @@ class StandardRoIHeadWithText(StandardRoIHead):
             det_labels = dummy_pad(det_labels, (0, 1))
 
         if det_bboxes.shape[0] == 0:
-            TBD
-            segm_result = torch.empty([0, 0, 0],
-                                    dtype=det_bboxes.dtype,
-                                    device=det_bboxes.device)
+            decoded_texts = []
+            # segm_result = torch.empty([0, 0, 0],
+            #                         dtype=det_bboxes.dtype,
+            #                         device=det_bboxes.device)
         else:
 
             import string

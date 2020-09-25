@@ -195,19 +195,17 @@ class TextRecognitionHeadAttention(nn.Module):
 
     def __forward_train(self, features, targets, masks):
         if not all([len(target) <= self.decoder_max_seq_len for target in targets if len(target)]):
-            return torch.tensor(0.0, device=features.device), torch.tensor(0.0, device=features.device)
+            return torch.tensor(0.0, device=features.device)
 
         valid_targets_indexes = torch.tensor([ind for ind, target in enumerate(targets) if len(target)], device=features.device)
 
         if len(valid_targets_indexes) == 0:
-            return torch.tensor(0.0, device=features.device), torch.tensor(0.0, device=features.device)
+            return torch.tensor(0.0, device=features.device)
         targets = [np.array(target) for target in targets if len(target)]
         targets = [np.pad(target, (0, self.decoder_max_seq_len - len(target))) for target in targets]
         targets = np.array(targets)
 
         batch_size = targets.shape[0]
-
-        print(batch_size)
 
         features = features[valid_targets_indexes]
         features = features.view(features.shape[0], features.shape[1], -1)  # B C H*W
