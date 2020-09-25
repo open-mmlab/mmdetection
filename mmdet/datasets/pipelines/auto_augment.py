@@ -555,17 +555,23 @@ class Translate(object):
             or "vertical".
         max_translate_offset (int | float): The maximum pixel's offset for
             Translate.
+        random_negative_prob (float): The probability that turns the
+            offset negative.
+        interpolation (str): Same as :func:`mmcv.imtranslate`.
+        min_size (int | float): The minimum pixel for filtering
+            invalid bboxes after the translation.
     """
 
-    def __init__(
-        self,
-        level,
-        prob=0.5,
-        img_fill_val=128,
-        seg_ignore_label=255,
-        direction='horizontal',
-        max_translate_offset=250.,
-    ):
+    def __init__(self,
+                 level,
+                 prob=0.5,
+                 img_fill_val=128,
+                 seg_ignore_label=255,
+                 direction='horizontal',
+                 max_translate_offset=250.,
+                 random_negative_prob=0.5,
+                 interpolation='bilinear',
+                 min_size=0):
         assert isinstance(level, (int, float)), \
             'The level must be type int or float.'
         assert 0 <= level <= _MAX_LEVEL, \
@@ -595,6 +601,9 @@ class Translate(object):
         self.seg_ignore_label = seg_ignore_label
         self.direction = direction
         self.max_translate_offset = max_translate_offset
+        self.random_negative_prob = random_negative_prob
+        self.interpolation = interpolation
+        self.min_size = min_size
 
     def _translate_img(self,
                        results,
@@ -678,29 +687,21 @@ class Translate(object):
                 results[mask_key] = results[mask_key][valid_inds]
         return results
 
-    def __call__(self,
-                 results,
-                 random_negative_prob=0.5,
-                 interpolation='bilinear',
-                 min_size=0.0):
+    def __call__(self, results):
         """Call function to translate images, bounding boxes, masks and
         semantic segmentation maps.
 
         Args:
             results (dict): Result dict from loading pipeline.
-            random_negative_prob (float): The probability that turns the
-                offset negative.
-            interpolation (str): Same as :func:`mmcv.imtranslate`.
-            min_size (int | float): The minimum pixel for filtering
-                invalid bboxes.
 
         Returns:
             dict: Translated results.
         """
         if np.random.rand() > self.prob:
             return results
-        offset = random_negative(self.offset, random_negative_prob)
-        self._translate_img(results, offset, self.direction, interpolation)
+        offset = random_negative(self.offset, self.random_negative_prob)
+        self._translate_img(results, offset, self.direction,
+                            self.interpolation)
         self._translate_bboxes(results, offset)
         # fill_val set to 0 for background of mask.
         self._translate_masks(
@@ -708,7 +709,7 @@ class Translate(object):
             offset,
             self.direction,
             fill_val=0,
-            interpolation=interpolation)
+            interpolation=self.interpolation)
         # fill_val set to ``seg_ignore_label`` for the ignored value
         # of segmentation map.
         self._translate_seg(
@@ -716,8 +717,8 @@ class Translate(object):
             offset,
             self.direction,
             fill_val=self.seg_ignore_label,
-            interpolation=interpolation)
-        self._filter_invalid(results, min_size=min_size)
+            interpolation=self.interpolation)
+        self._filter_invalid(results, min_size=self.min_size)
         return results
 
     def __repr__(self):
@@ -727,5 +728,8 @@ class Translate(object):
         repr_str += f'img_fill_val={self.img_fill_val}, '
         repr_str += f'seg_ignore_label={self.seg_ignore_label}, '
         repr_str += f'direction={self.direction}, '
-        repr_str += f'max_translate_offset={self.max_translate_offset})'
+        repr_str += f'max_translate_offset={self.max_translate_offset}, '
+        repr_str += f'random_negative_prob={self.random_negative_prob}, '
+        repr_str += f'interpolation={self.interpolation}, '
+        repr_str += f'min_size={self.min_size})'
         return repr_str

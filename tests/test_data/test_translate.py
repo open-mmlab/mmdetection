@@ -378,11 +378,11 @@ def test_translate():
         level=8,
         prob=1.0,
         img_fill_val=img_fill_val,
+        random_negative_prob=1.0,
         seg_ignore_label=seg_ignore_label)
     translate_module = build_from_cfg(transform, PIPELINES)
     offset = translate_module.offset
-    results_translated = translate_module(
-        copy.deepcopy(results), random_negative_prob=1.0)
+    results_translated = translate_module(copy.deepcopy(results))
     check_translate(
         copy.deepcopy(results),
         results_translated,
@@ -393,8 +393,8 @@ def test_translate():
     )
 
     # test case when level>0 and translate horizontally (right shift).
-    results_translated = translate_module(
-        copy.deepcopy(results), random_negative_prob=0.0)
+    translate_module.random_negative_prob = 0.0
+    results_translated = translate_module(copy.deepcopy(results))
     check_translate(
         copy.deepcopy(results),
         results_translated,
@@ -411,18 +411,18 @@ def test_translate():
         prob=1.0,
         img_fill_val=img_fill_val,
         seg_ignore_label=seg_ignore_label,
+        random_negative_prob=1.0,
         direction='vertical')
     translate_module = build_from_cfg(transform, PIPELINES)
     offset = translate_module.offset
-    results_translated = translate_module(
-        copy.deepcopy(results), random_negative_prob=1.0)
+    results_translated = translate_module(copy.deepcopy(results))
     check_translate(
         copy.deepcopy(results), results_translated, -offset, img_fill_val,
         seg_ignore_label, 'vertical')
 
     # test case when level>0 and translate vertically (bottom shift).
-    results_translated = translate_module(
-        copy.deepcopy(results), random_negative_prob=0.0)
+    translate_module.random_negative_prob = 0.0
+    results_translated = translate_module(copy.deepcopy(results))
     check_translate(
         copy.deepcopy(results), results_translated, offset, img_fill_val,
         seg_ignore_label, 'vertical')
@@ -433,10 +433,10 @@ def test_translate():
         level=8,
         prob=0.0,
         img_fill_val=img_fill_val,
+        random_negative_prob=0.0,
         seg_ignore_label=seg_ignore_label)
     translate_module = build_from_cfg(transform, PIPELINES)
-    results_translated = translate_module(
-        copy.deepcopy(results), random_negative_prob=0.0)
+    results_translated = translate_module(copy.deepcopy(results))
 
     # test translate vertically with PolygonMasks (top shift)
     results = construct_toy_data(False)
@@ -449,8 +449,8 @@ def test_translate():
         direction='vertical')
     translate_module = build_from_cfg(transform, PIPELINES)
     offset = translate_module.offset
-    results_translated = translate_module(
-        copy.deepcopy(results), random_negative_prob=1.0)
+    translate_module.random_negative_prob = 1.0
+    results_translated = translate_module(copy.deepcopy(results))
 
     def _translated_gt(masks, direction, offset, out_shape):
         translated_masks = []
@@ -484,11 +484,11 @@ def test_translate():
         level=8,
         prob=1.0,
         img_fill_val=img_fill_val,
+        random_negative_prob=0.0,
         seg_ignore_label=seg_ignore_label)
     translate_module = build_from_cfg(transform, PIPELINES)
     offset = translate_module.offset
-    results_translated = translate_module(
-        copy.deepcopy(results), random_negative_prob=0.0)
+    results_translated = translate_module(copy.deepcopy(results))
     h, w = results['img_shape'][:2]
     for key in results.get('mask_fields', []):
         masks = results[key]
