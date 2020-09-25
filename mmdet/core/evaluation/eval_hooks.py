@@ -23,14 +23,13 @@ class EvalHook(Hook):
             If None, whether to evaluate is merely decided by ``interval``.
             Default: None.
         interval (int): Evaluation interval (by epochs). Default: 1.
-        save_best (bool): Whether to save best checkpoint during evaluation.
-            Default: True.
-        key_indicator (str, optional): Key indicator to measure the best
-            checkpoint during evaluation when ``save_best`` is set to True.
+        save_best (str, optional): If a metric is specified, it would measure
+            the best checkpoint during evaluation. The information about best
+            checkpoint would be save in best.json.
             Options are the evaluation metrics to the test dataset. e.g.,
             ``bbox_mAP``, ``segm_mAP`` for bbox detection and instance
-            segmentation. ``AR@100`` for proposal recall. If not specified,
-            the first key will be used. Default: None.
+            segmentation. ``AR@100`` for proposal recall. If ``save_best`` is
+            ``auto``, the first key will be used. Default: None.
         rule (str, optional): Comparison rule for best score. If set to None,
             it will infer a reasonable rule. Keys such as 'mAP' or 'AR' will
             be inferred by 'greater' rule. Keys contain 'loss' will be inferred
@@ -48,8 +47,7 @@ class EvalHook(Hook):
                  dataloader,
                  start=None,
                  interval=1,
-                 save_best=False,
-                 key_indicator=None,
+                 save_best=None,
                  rule=None,
                  **eval_kwargs):
         if not isinstance(dataloader, DataLoader):
@@ -71,8 +69,8 @@ class EvalHook(Hook):
 
         self.logger = get_root_logger()
 
-        if self.save_best:
-            self._init_rule(rule, key_indicator)
+        if self.save_best is not None:
+            self._init_rule(rule, self.save_best)
             self.best_json = dict()
 
     def _init_rule(self, rule, key_indicator):
@@ -88,7 +86,7 @@ class EvalHook(Hook):
                            f'but got {rule}.')
 
         if rule is None:
-            if key_indicator is not None:
+            if key_indicator != 'auto':
                 if any(key in key_indicator for key in self.greater_keys):
                     rule = 'greater'
                 elif any(key in key_indicator for key in self.less_keys):
@@ -163,12 +161,12 @@ class EvalHook(Hook):
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
         runner.log_buffer.ready = True
-        if self.save_best:
-            if self.key_indicator is None:
-                key_indicator = list(eval_res.keys())[0]
+        if self.save_best is not None:
+            if self.key_indicator == 'auto':
+                self.key_indicator = list(eval_res.keys())[0]
                 # key_indicator is not specified in __init__()
                 # infer from eval_results
-                self._init_rule(self.rule, key_indicator)
+                self._init_rule(self.rule, self.key_indicator)
             return eval_res[self.key_indicator]
         else:
             return None

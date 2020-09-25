@@ -87,7 +87,7 @@ def test_eval_hook():
             sampler=None,
             num_workers=0,
             shuffle=False)
-        EvalHook(data_loader, save_best=True, rule='unsupport')
+        EvalHook(data_loader, save_best='auto', rule='unsupport')
 
     with pytest.raises(ValueError):
         # key_indicator must be valid when rule_map is None
@@ -98,7 +98,7 @@ def test_eval_hook():
             sampler=None,
             num_workers=0,
             shuffle=False)
-        EvalHook(data_loader, save_best=True, key_indicator='unsupport')
+        EvalHook(data_loader, save_best='unsupport')
 
     optimizer_cfg = dict(
         type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
@@ -109,7 +109,7 @@ def test_eval_hook():
     optimizer = build_optimizer(model, optimizer_cfg)
 
     data_loader = DataLoader(test_dataset, batch_size=1)
-    eval_hook = EvalHook(data_loader, save_best=False)
+    eval_hook = EvalHook(data_loader, save_best=None)
     with tempfile.TemporaryDirectory() as tmpdir:
         logger = get_logger('test_eval')
         runner = EpochBasedRunner(
@@ -126,12 +126,11 @@ def test_eval_hook():
         best_json_path = osp.join(tmpdir, 'best.json')
         assert not osp.exists(best_json_path)
 
-    # when `save_best` is True, `key_indicator` is not set, first metric
-    # should be used.
+    # when `save_best` is set to 'auto', first metric will be used.
     loader = DataLoader(EvalDataset(), batch_size=1)
     model = ExampleModel()
     data_loader = DataLoader(EvalDataset(), batch_size=1)
-    eval_hook = EvalHook(data_loader, interval=1, save_best=True)
+    eval_hook = EvalHook(data_loader, interval=1, save_best='auto')
 
     with tempfile.TemporaryDirectory() as tmpdir:
         logger = get_logger('test_eval')
@@ -156,8 +155,7 @@ def test_eval_hook():
     loader = DataLoader(EvalDataset(), batch_size=1)
     model = ExampleModel()
     data_loader = DataLoader(EvalDataset(), batch_size=1)
-    eval_hook = EvalHook(
-        data_loader, interval=1, save_best=True, key_indicator='mAP')
+    eval_hook = EvalHook(data_loader, interval=1, save_best='mAP')
 
     with tempfile.TemporaryDirectory() as tmpdir:
         logger = get_logger('test_eval')
@@ -181,11 +179,7 @@ def test_eval_hook():
 
     data_loader = DataLoader(EvalDataset(), batch_size=1)
     eval_hook = EvalHook(
-        data_loader,
-        interval=1,
-        save_best=True,
-        key_indicator='score',
-        rule='greater')
+        data_loader, interval=1, save_best='score', rule='greater')
     with tempfile.TemporaryDirectory() as tmpdir:
         logger = get_logger('test_eval')
         runner = EpochBasedRunner(
@@ -207,8 +201,7 @@ def test_eval_hook():
         assert best_json['key_indicator'] == 'score'
 
     data_loader = DataLoader(EvalDataset(), batch_size=1)
-    eval_hook = EvalHook(
-        data_loader, save_best=True, rule='less', key_indicator='mAP')
+    eval_hook = EvalHook(data_loader, save_best='mAP', rule='less')
     with tempfile.TemporaryDirectory() as tmpdir:
         logger = get_logger('test_eval')
         runner = EpochBasedRunner(
@@ -230,7 +223,7 @@ def test_eval_hook():
         assert best_json['key_indicator'] == 'mAP'
 
     data_loader = DataLoader(EvalDataset(), batch_size=1)
-    eval_hook = EvalHook(data_loader, save_best=True, key_indicator='mAP')
+    eval_hook = EvalHook(data_loader, save_best='mAP')
     with tempfile.TemporaryDirectory() as tmpdir:
         logger = get_logger('test_eval')
         runner = EpochBasedRunner(
@@ -253,7 +246,7 @@ def test_eval_hook():
 
         resume_from = osp.join(tmpdir, 'latest.pth')
         loader = DataLoader(ExampleDataset(), batch_size=1)
-        eval_hook = EvalHook(data_loader, save_best=True, key_indicator='mAP')
+        eval_hook = EvalHook(data_loader, save_best='mAP')
         runner = EpochBasedRunner(
             model=model,
             batch_processor=None,
