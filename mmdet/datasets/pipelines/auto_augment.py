@@ -702,6 +702,7 @@ class Translate(object):
         self._translate_seg(
             results, offset, self.direction, fill_val=self.seg_ignore_label)
         self._filter_invalid(results, min_size=self.min_size)
+        return results
 
 
 class ColorTransform(object):
