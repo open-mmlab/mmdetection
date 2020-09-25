@@ -163,10 +163,8 @@ class EvalHook(Hook):
         runner.log_buffer.ready = True
         if self.save_best is not None:
             if self.key_indicator == 'auto':
-                self.key_indicator = list(eval_res.keys())[0]
-                # key_indicator is not specified in __init__()
                 # infer from eval_results
-                self._init_rule(self.rule, self.key_indicator)
+                self._init_rule(self.rule, list(eval_res.keys())[0])
             return eval_res[self.key_indicator]
         else:
             return None
@@ -189,13 +187,13 @@ class DistEvalHook(EvalHook):
             processes. Default: None.
         gpu_collect (bool): Whether to use gpu or cpu to collect results.
             Default: False.
-        save_best (bool): Whether to save best checkpoint during evaluation.
-            Default: True.
-        key_indicator (str | None): Key indicator to measure the best
-            checkpoint during evaluation when ``save_best`` is set to True.
+        save_best (str, optional): If a metric is specified, it would measure
+            the best checkpoint during evaluation. The information about best
+            checkpoint would be save in best.json.
             Options are the evaluation metrics to the test dataset. e.g.,
             ``bbox_mAP``, ``segm_mAP`` for bbox detection and instance
-            segmentation. ``AR@100`` for proposal recall. Default: `bbox_mAP`.
+            segmentation. ``AR@100`` for proposal recall. If ``save_best`` is
+            ``auto``, the first key will be used. Default: None.
         rule (str | None): Comparison rule for best score. If set to None,
             it will infer a reasonable rule. Default: 'None'.
         **eval_kwargs: Evaluation arguments fed into the evaluate function of
