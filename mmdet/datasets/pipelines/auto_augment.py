@@ -705,6 +705,7 @@ class Translate(object):
         return results
 
 
+@PIPELINES.register_module()
 class ColorTransform(object):
     """Apply Color transformation to image. The bboxes, masks, and
     segmentations are not modified.
