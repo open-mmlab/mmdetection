@@ -7,12 +7,12 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.ops import DeformConv2d
 
-from mmdet.core import (anchor_inside_flags, bbox_overlaps,
-                        build_anchor_generator, build_assigner, build_sampler,
-                        distance2bbox, force_fp32, images_to_levels,
-                        multi_apply, multiclass_nms, unmap)
+from mmdet.core import (bbox_overlaps, build_anchor_generator, build_assigner,
+                        build_sampler, distance2bbox, force_fp32, multi_apply,
+                        multiclass_nms)
 from ..builder import HEADS, build_loss
-from .anchor_free_head import AnchorFreeHead
+from .atss_head import ATSSHead
+from .fcos_head import FCOSHead
 
 INF = 1e8
 
@@ -30,8 +30,8 @@ def reduce_sum(tensor):
 
 
 @HEADS.register_module()
-class VFNetHead(AnchorFreeHead):
-    """Head of `VarifoclaNet (VFNet): An IoU-aware Dense Object
+class VFNetHead(ATSSHead, FCOSHead):
+    """Head of `VarifocalNet (VFNet): An IoU-aware Dense Object
     Detector.<https://arxiv.org/abs/2008.13367>`_.
 
     The VFNet predicts IoU-aware classification scores which mix the
@@ -123,7 +123,8 @@ class VFNetHead(AnchorFreeHead):
             (-1))
         self.dcn_base_offset = torch.tensor(dcn_base_offset).view(1, -1, 1, 1)
 
-        super().__init__(num_classes, in_channels, norm_cfg=norm_cfg, **kwargs)
+        super(FCOSHead, self).__init__(
+            num_classes, in_channels, norm_cfg=norm_cfg, **kwargs)
         self.regress_ranges = regress_ranges
         self.reg_denoms = [
             regress_range[-1] for regress_range in regress_ranges
@@ -146,7 +147,7 @@ class VFNetHead(AnchorFreeHead):
         self.use_atss = use_atss
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.anchor_generator = build_anchor_generator(anchor_generator)
-        self.anchor_center_offset = self.anchor_generator.center_offset
+        self.anchor_center_offset = anchor_generator['center_offset']
         self.num_anchors = self.anchor_generator.num_base_anchors[0]
         self.sampling = False
         if self.train_cfg:
@@ -156,8 +157,8 @@ class VFNetHead(AnchorFreeHead):
 
     def _init_layers(self):
         """Initialize layers of the head."""
-        super()._init_cls_convs()
-        super()._init_reg_convs()
+        super(FCOSHead, self)._init_cls_convs()
+        super(FCOSHead, self)._init_reg_convs()
         self.relu = nn.ReLU(inplace=True)
         self.vfnet_reg_conv = ConvModule(
             self.feat_channels,
@@ -359,19 +360,9 @@ class VFNetHead(AnchorFreeHead):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                            bbox_preds[0].device)
-        if self.use_atss:
-            labels, label_weights, bbox_targets, bbox_weights = \
-                self.get_atss_targets(cls_scores,
-                                      all_level_points,
-                                      gt_bboxes,
-                                      gt_labels,
-                                      img_metas,
-                                      gt_bboxes_ignore)
-            label_weights = torch.cat(label_weights)
-        else:
-            labels, bbox_targets = self.get_targets(all_level_points,
-                                                    gt_bboxes, gt_labels)
-            label_weights = None
+        labels, label_weights, bbox_targets, bbox_weights = self.get_targets(
+            cls_scores, all_level_points, gt_bboxes, gt_labels, img_metas,
+            gt_bboxes_ignore)
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and bbox_preds_refine
@@ -630,9 +621,51 @@ class VFNetHead(AnchorFreeHead):
                 (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
         return points
 
-    def get_targets(self, points, gt_bboxes_list, gt_labels_list):
-        """Compute regression and classification targets for points in multiple
+    def get_targets(self, cls_scores, mlvl_points, gt_bboxes, gt_labels,
+                    img_metas, gt_bboxes_ignore):
+        """A wrapper for computing ATSS and FCOS targets for points in multiple
         images.
+
+        Args:
+            cls_scores (list[Tensor]): Box iou-aware scores for each scale
+                level with shape (N, num_points * num_classes, H, W)
+            mlvl_points (list[Tensor]): Points of each fpn level, each has
+                shape (num_points, 2).
+            gt_bboxes (list[Tensor]): Ground truth bboxes of each image,
+                each has shape (num_gt, 4).
+            gt_labels (list[Tensor]): Ground truth labels of each box,
+                each has shape (num_gt,).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | Tensor): Ground truth bboxes to be
+                ignored, shape (num_ignored_gts, 4).
+
+        Returns:
+            tuple:
+                labels_list (list[Tensor]): Labels of each level.
+                label_weights (Tensor/None): Label weights of all levels.
+                bbox_targets_list (list[Tensor]): Regression targets of each
+                    level, (l, t, r, b).
+                bbox_weights (Tensor/None): Bbox weights of all levels.
+        """
+        if self.use_atss:
+            return self.get_atss_targets(cls_scores, mlvl_points, gt_bboxes,
+                                         gt_labels, img_metas,
+                                         gt_bboxes_ignore)
+        else:
+            self.norm_on_bbox = False
+            return self.get_fcos_targets(mlvl_points, gt_bboxes, gt_labels)
+
+    def _get_target_single(self, *args, **kwargs):
+        """Avoid ambiguity in multiple inheritance."""
+        if self.use_atss:
+            return ATSSHead._get_target_single(self, *args, **kwargs)
+        else:
+            return FCOSHead._get_target_single(self, *args, **kwargs)
+
+    def get_fcos_targets(self, points, gt_bboxes_list, gt_labels_list):
+        """Compute FCOS regression and classification targets for points in
+        multiple images.
 
         Args:
             points (list[Tensor]): Points of each fpn level, each has shape
@@ -644,144 +677,18 @@ class VFNetHead(AnchorFreeHead):
 
         Returns:
             tuple:
-                concat_lvl_labels (list[Tensor]): Labels of each level.
-                concat_lvl_bbox_targets (list[Tensor]): BBox targets of each
-                    level.
+                labels (list[Tensor]): Labels of each level.
+                label_weights: None, to be compatible with ATSS targets.
+                bbox_targets (list[Tensor]): BBox targets of each level.
+                bbox_weights: None, to be compatible with ATSS targets.
         """
-        assert len(points) == len(self.regress_ranges)
-        num_levels = len(points)
-        # expand regress ranges to align with points
-        expanded_regress_ranges = [
-            points[i].new_tensor(self.regress_ranges[i])[None].expand_as(
-                points[i]) for i in range(num_levels)
-        ]
-        # concat all levels points and regress ranges
-        concat_regress_ranges = torch.cat(expanded_regress_ranges, dim=0)
-        concat_points = torch.cat(points, dim=0)
+        labels, bbox_targets = FCOSHead.get_targets(self, points,
+                                                    gt_bboxes_list,
+                                                    gt_labels_list)
+        label_weights = None
+        bbox_weights = None
+        return labels, label_weights, bbox_targets, bbox_weights
 
-        # the number of points per img, per lvl
-        num_points = [center.size(0) for center in points]
-
-        # get labels and bbox_targets of each image
-        labels_list, bbox_targets_list = multi_apply(
-            self._get_target_single,
-            gt_bboxes_list,
-            gt_labels_list,
-            points=concat_points,
-            regress_ranges=concat_regress_ranges,
-            num_points_per_lvl=num_points)
-
-        # split to per img, per level
-        labels_list = [labels.split(num_points, 0) for labels in labels_list]
-        bbox_targets_list = [
-            bbox_targets.split(num_points, 0)
-            for bbox_targets in bbox_targets_list
-        ]
-
-        # concat per level image
-        concat_lvl_labels = []
-        concat_lvl_bbox_targets = []
-        for i in range(num_levels):
-            concat_lvl_labels.append(
-                torch.cat([labels[i] for labels in labels_list]))
-            bbox_targets = torch.cat(
-                [bbox_targets[i] for bbox_targets in bbox_targets_list])
-            concat_lvl_bbox_targets.append(bbox_targets)
-        return concat_lvl_labels, concat_lvl_bbox_targets
-
-    def _get_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
-                           num_points_per_lvl):
-        """Compute regression and classification targets for a single image."""
-        num_points = points.size(0)
-        num_gts = gt_labels.size(0)
-        if num_gts == 0:
-            return gt_labels.new_full((num_points,), self.background_label), \
-                   gt_bboxes.new_zeros((num_points, 4))
-
-        areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-            gt_bboxes[:, 3] - gt_bboxes[:, 1])
-        # TODO: figure out why these two are different
-        # areas = areas[None].expand(num_points, num_gts)
-        areas = areas[None].repeat(num_points, 1)
-        regress_ranges = regress_ranges[:, None, :].expand(
-            num_points, num_gts, 2)
-        gt_bboxes = gt_bboxes[None].expand(num_points, num_gts, 4)
-        xs, ys = points[:, 0], points[:, 1]
-        xs = xs[:, None].expand(num_points, num_gts)
-        ys = ys[:, None].expand(num_points, num_gts)
-
-        left = xs - gt_bboxes[..., 0]
-        right = gt_bboxes[..., 2] - xs
-        top = ys - gt_bboxes[..., 1]
-        bottom = gt_bboxes[..., 3] - ys
-        bbox_targets = torch.stack((left, top, right, bottom), -1)
-
-        if self.center_sampling:
-            # condition1: inside a `center bbox`
-            radius = self.center_sample_radius
-            center_xs = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) / 2
-            center_ys = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) / 2
-            center_gts = torch.zeros_like(gt_bboxes)
-            stride = center_xs.new_zeros(center_xs.shape)
-
-            # project the points on current lvl back to the `original` sizes
-            lvl_begin = 0
-            for lvl_idx, num_points_lvl in enumerate(num_points_per_lvl):
-                lvl_end = lvl_begin + num_points_lvl
-                stride[lvl_begin:lvl_end] = self.strides[lvl_idx] * radius
-                lvl_begin = lvl_end
-
-            x_mins = center_xs - stride
-            y_mins = center_ys - stride
-            x_maxs = center_xs + stride
-            y_maxs = center_ys + stride
-            center_gts[..., 0] = torch.where(x_mins > gt_bboxes[..., 0],
-                                             x_mins, gt_bboxes[..., 0])
-            center_gts[..., 1] = torch.where(y_mins > gt_bboxes[..., 1],
-                                             y_mins, gt_bboxes[..., 1])
-            center_gts[..., 2] = torch.where(x_maxs > gt_bboxes[..., 2],
-                                             gt_bboxes[..., 2], x_maxs)
-            center_gts[..., 3] = torch.where(y_maxs > gt_bboxes[..., 3],
-                                             gt_bboxes[..., 3], y_maxs)
-
-            cb_dist_left = xs - center_gts[..., 0]
-            cb_dist_right = center_gts[..., 2] - xs
-            cb_dist_top = ys - center_gts[..., 1]
-            cb_dist_bottom = center_gts[..., 3] - ys
-            center_bbox = torch.stack(
-                (cb_dist_left, cb_dist_top, cb_dist_right, cb_dist_bottom), -1)
-            inside_gt_bbox_mask = center_bbox.min(-1)[0] > 0
-        else:
-            # condition1: inside a gt bbox
-            inside_gt_bbox_mask = bbox_targets.min(-1)[0] > 0
-
-        # condition2: limit the regression range for each location
-        max_regress_distance = bbox_targets.max(-1)[0]
-        inside_regress_range = (
-            (max_regress_distance >= regress_ranges[..., 0])
-            & (max_regress_distance <= regress_ranges[..., 1]))
-
-        # if there are still more than one objects for a location,
-        # we choose the one with minimal area
-        areas[inside_gt_bbox_mask == 0] = INF
-        areas[inside_regress_range == 0] = INF
-        min_area, min_area_inds = areas.min(dim=1)
-
-        labels = gt_labels[min_area_inds]
-        labels[min_area == INF] = self.background_label  # set as BG
-        bbox_targets = bbox_targets[range(num_points), min_area_inds]
-
-        return labels, bbox_targets
-
-    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
-                              missing_keys, unexpected_keys, error_msgs):
-        """Override the method in the parent class to avoid changing para's
-        name."""
-        pass
-
-    # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    # below for computing ATSS targets only, adapted from atss_head.py
-    # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def get_atss_targets(self,
                          cls_scores,
                          mlvl_points,
@@ -808,10 +715,10 @@ class VFNetHead(AnchorFreeHead):
         Returns:
             tuple:
                 labels_list (list[Tensor]): Labels of each level.
-                label_weights_list (list[Tensor]): Label weights of each level.
+                label_weights (Tensor): Label weights of all levels.
                 bbox_targets_list (list[Tensor]): Regression targets of each
                     level, (l, t, r, b).
-                bbox_weights_list (list[Tensor]): Bbox weights of each level.
+                bbox_weights (Tensor): Bbox weights of all levels.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.anchor_generator.num_levels
@@ -821,14 +728,16 @@ class VFNetHead(AnchorFreeHead):
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
-        cls_reg_targets = self._get_atss_targets(
+        cls_reg_targets = ATSSHead.get_targets(
+            self,
             anchor_list,
             valid_flag_list,
             gt_bboxes,
             img_metas,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
-            label_channels=label_channels)
+            label_channels=label_channels,
+            unmap_outputs=True)
         if cls_reg_targets is None:
             return None
 
@@ -851,9 +760,9 @@ class VFNetHead(AnchorFreeHead):
         bbox_weights_list = [
             bbox_weights.reshape(-1) for bbox_weights in bbox_weights_list
         ]
-
-        return (labels_list, label_weights_list, bbox_targets_list,
-                bbox_weights_list)
+        label_weights = torch.cat(label_weights_list)
+        bbox_weights = torch.cat(bbox_weights_list)
+        return labels_list, label_weights, bbox_targets_list, bbox_weights
 
     def transform_bbox_targets(self, decoded_bboxes, mlvl_points, num_imgs):
         """Transform bbox_targets (x1, y1, x2, y2) into (l, t, r, b) format.
@@ -883,209 +792,8 @@ class VFNetHead(AnchorFreeHead):
 
         return bbox_targets
 
-    def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
-        """Get anchors according to feature map sizes.
-
-        Args:
-            featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            img_metas (list[dict]): Image meta info.
-            device (torch.device | str): Device for returned tensors
-
-        Returns:
-            tuple:
-                anchor_list (list[Tensor]): Anchors of each image
-                valid_flag_list (list[Tensor]): Valid flags of each image
-        """
-        num_imgs = len(img_metas)
-
-        # since feature map sizes of all images are the same, we only compute
-        # anchors for one time
-        multi_level_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes, device)
-        anchor_list = [multi_level_anchors for _ in range(num_imgs)]
-
-        # for each image, we compute valid flags of multi level anchors
-        valid_flag_list = []
-        for img_id, img_meta in enumerate(img_metas):
-            multi_level_flags = self.anchor_generator.valid_flags(
-                featmap_sizes, img_meta['pad_shape'], device)
-            valid_flag_list.append(multi_level_flags)
-
-        return anchor_list, valid_flag_list
-
-    def _get_atss_targets(self,
-                          anchor_list,
-                          valid_flag_list,
-                          gt_bboxes_list,
-                          img_metas,
-                          gt_bboxes_ignore_list=None,
-                          gt_labels_list=None,
-                          label_channels=1,
-                          unmap_outputs=True):
-        """Get ATSS targets.
-
-        This method is almost the same as `AnchorHead.get_targets()`. Besides
-        returning the targets as the parent method does, it also returns the
-        anchors as the first element of the returned tuple.
-        """
-        num_imgs = len(img_metas)
-        assert len(anchor_list) == len(valid_flag_list) == num_imgs
-
-        # anchor number of multi levels
-        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
-        num_level_anchors_list = [num_level_anchors] * num_imgs
-
-        # concat all level anchors and flags to a single tensor
-        for i in range(num_imgs):
-            assert len(anchor_list[i]) == len(valid_flag_list[i])
-            anchor_list[i] = torch.cat(anchor_list[i])
-            valid_flag_list[i] = torch.cat(valid_flag_list[i])
-
-        # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
-        (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self._get_target_single_atss,
-             anchor_list,
-             valid_flag_list,
-             num_level_anchors_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             gt_labels_list,
-             img_metas,
-             label_channels=label_channels,
-             unmap_outputs=unmap_outputs)
-        # no valid anchors
-        if any([labels is None for labels in all_labels]):
-            return None
-        # sampled anchors of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
-        # split targets to a list w.r.t. multiple levels
-        anchors_list = images_to_levels(all_anchors, num_level_anchors)
-        labels_list = images_to_levels(all_labels, num_level_anchors)
-        label_weights_list = images_to_levels(all_label_weights,
-                                              num_level_anchors)
-        bbox_targets_list = images_to_levels(all_bbox_targets,
-                                             num_level_anchors)
-        bbox_weights_list = images_to_levels(all_bbox_weights,
-                                             num_level_anchors)
-        return (anchors_list, labels_list, label_weights_list,
-                bbox_targets_list, bbox_weights_list, num_total_pos,
-                num_total_neg)
-
-    def _get_target_single_atss(self,
-                                flat_anchors,
-                                valid_flags,
-                                num_level_anchors,
-                                gt_bboxes,
-                                gt_bboxes_ignore,
-                                gt_labels,
-                                img_meta,
-                                label_channels=1,
-                                unmap_outputs=True):
-        """Compute regression, classification targets for anchors in a single
-        image.
-
-        Args:
-            flat_anchors (Tensor): Multi-level anchors of the image, which are
-                concatenated into a single tensor of shape (num_anchors ,4)
-            valid_flags (Tensor): Multi level valid flags of the image,
-                which are concatenated into a single tensor of
-                    shape (num_anchors,).
-            num_level_anchors Tensor): Number of anchors of each scale level.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            img_meta (dict): Meta info of the image.
-            label_channels (int): Channel of label.
-            unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors.
-
-        Returns:
-            tuple: N is the number of total anchors in the image.
-                anchors (Tensor): Anchors in the image with shape (N, 4).
-                labels (Tensor): Labels of all anchors in the image with shape
-                    (N,).
-                label_weights (Tensor): Label weights of all anchor in the
-                    image with shape (N,).
-                bbox_targets (Tensor): BBox targets of all anchors in the
-                    image with shape (N, 4).
-                bbox_weights (Tensor): BBox weights of all anchors in the
-                    image with shape (N, 4)
-                pos_inds (Tensor): Indices of postive anchor with shape
-                    (num_pos,).
-                neg_inds (Tensor): Indices of negative anchor with shape
-                    (num_neg,).
-        """
-        inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
-                                           img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
-        if not inside_flags.any():
-            return (None, ) * 6
-        # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags, :]
-
-        num_level_anchors_inside = self.get_num_level_anchors_inside(
-            num_level_anchors, inside_flags)
-        assign_result = self.assigner.assign(anchors, num_level_anchors_inside,
-                                             gt_bboxes, gt_bboxes_ignore,
-                                             gt_labels)
-
-        sampling_result = self.sampler.sample(assign_result, anchors,
-                                              gt_bboxes)
-
-        num_valid_anchors = anchors.shape[0]
-        bbox_targets = torch.zeros_like(anchors)
-        bbox_weights = torch.zeros_like(anchors)
-        labels = anchors.new_full((num_valid_anchors, ),
-                                  self.background_label,
-                                  dtype=torch.long)
-        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
-
-        pos_inds = sampling_result.pos_inds
-        neg_inds = sampling_result.neg_inds
-        if len(pos_inds) > 0:
-            # pos_bbox_targets = self.bbox_coder.encode(
-            #     sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
-            pos_bbox_targets = sampling_result.pos_gt_bboxes
-            bbox_targets[pos_inds, :] = pos_bbox_targets
-            bbox_weights[pos_inds, :] = 1.0
-            if gt_labels is None:
-                labels[pos_inds] = 1
-            else:
-                labels[pos_inds] = gt_labels[
-                    sampling_result.pos_assigned_gt_inds]
-            if self.train_cfg.pos_weight <= 0:
-                label_weights[pos_inds] = 1.0
-            else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
-        if len(neg_inds) > 0:
-            label_weights[neg_inds] = 1.0
-
-        # map up to original set of anchors
-        if unmap_outputs:
-            num_total_anchors = flat_anchors.size(0)
-            anchors = unmap(anchors, num_total_anchors, inside_flags)
-            labels = unmap(
-                labels, num_total_anchors, inside_flags, fill=self.num_classes)
-            label_weights = unmap(label_weights, num_total_anchors,
-                                  inside_flags)
-            bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
-            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
-
-        return (anchors, labels, label_weights, bbox_targets, bbox_weights,
-                pos_inds, neg_inds)
-
-    def get_num_level_anchors_inside(self, num_level_anchors, inside_flags):
-        split_inside_flags = torch.split(inside_flags, num_level_anchors)
-        num_level_anchors_inside = [
-            int(flags.sum()) for flags in split_inside_flags
-        ]
-        return num_level_anchors_inside
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        """Override the method in the parent class to avoid changing para's
+        name."""
+        pass
