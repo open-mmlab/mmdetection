@@ -33,7 +33,8 @@ class Encoder(nn.Module):
         module_list = []
         for i in range(num_layers):
             module_list.extend([
-                nn.Conv2d(dim_input, dim_internal, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(dim_input, dim_internal,
+                          kernel_size=3, stride=1, padding=1),
                 nn.BatchNorm2d(dim_internal),
                 nn.ReLU(inplace=True)
             ])
@@ -45,7 +46,8 @@ class Encoder(nn.Module):
     def _init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, feature):
@@ -66,7 +68,8 @@ class DecoderAttention2d(nn.Module):
         self.vocab_size = vocab_size
 
         assert len(decoder_input_feature_size) == 2
-        self.flatten_feature_size = decoder_input_feature_size[0] * decoder_input_feature_size[1]
+        self.flatten_feature_size = decoder_input_feature_size[0] * \
+            decoder_input_feature_size[1]
 
         self.embedding = nn.Embedding(vocab_size, self.hidden_size)
 
@@ -77,7 +80,8 @@ class DecoderAttention2d(nn.Module):
 
         self.encoder_outputs_w = nn.Linear(self.hidden_size, self.hidden_size)
         self.hidden_state_w = nn.Linear(self.hidden_size, self.hidden_size)
-        self.v = nn.Parameter(torch.Tensor(self.hidden_size, 1))  # context vector
+        self.v = nn.Parameter(torch.Tensor(
+            self.hidden_size, 1))  # context vector
 
         self.attn = nn.Linear(self.hidden_size * 2, self.flatten_feature_size)
 
@@ -115,7 +119,8 @@ class DecoderAttention2d(nn.Module):
             BATCH_SIZE, encoder_outputs_w.shape[1], self.hidden_size)
 
         s = torch.tanh(encoder_outputs_w + hidden_state_w)
-        assert tuple(s.shape) == (BATCH_SIZE, self.flatten_feature_size, self.hidden_size)
+        assert tuple(s.shape) == (
+            BATCH_SIZE, self.flatten_feature_size, self.hidden_size)
         s = s.reshape(-1, self.hidden_size)
         s = torch.matmul(s, self.v)
         s = s.reshape(-1, self.flatten_feature_size)
@@ -150,6 +155,7 @@ class DecoderAttention2d(nn.Module):
         if isinstance(self.decoder, nn.GRU):
             return output, hidden, attn_weights
 
+
 @HEADS.register_module()
 class TextRecognitionHeadAttention(nn.Module):
 
@@ -170,7 +176,8 @@ class TextRecognitionHeadAttention(nn.Module):
         self.input_feature_size = input_feature_size
         self.encoder_dim_input = encoder_dim_input
 
-        self.encoder = Encoder(encoder_dim_input, encoder_dim_internal, encoder_num_layers)
+        self.encoder = Encoder(
+            encoder_dim_input, encoder_dim_internal, encoder_num_layers)
         self.dropout = nn.Dropout(0.5)
         self.decoder = DecoderAttention2d(hidden_size=decoder_dim_hidden,
                                           vocab_size=decoder_vocab_size,
@@ -186,6 +193,100 @@ class TextRecognitionHeadAttention(nn.Module):
 
         self.criterion = nn.NLLLoss(reduction='none')
 
+    def __forward_train(self, features, targets, masks):
+        if not all([len(target) <= self.decoder_max_seq_len for target in targets if len(target)]):
+            return torch.tensor(0.0, device=features.device), torch.tensor(0.0, device=features.device)
+
+        valid_targets_indexes = torch.tensor([ind for ind, target in enumerate(targets) if len(target)], device=features.device)
+
+        if len(valid_targets_indexes) == 0:
+            return torch.tensor(0.0, device=features.device), torch.tensor(0.0, device=features.device)
+        targets = [np.array(target) for target in targets if len(target)]
+        targets = [np.pad(target, (0, self.decoder_max_seq_len - len(target))) for target in targets]
+        targets = np.array(targets)
+
+        batch_size = targets.shape[0]
+
+        print(batch_size)
+
+        features = features[valid_targets_indexes]
+        features = features.view(features.shape[0], features.shape[1], -1)  # B C H*W
+        features = features.permute(0, 2, 1)  # BxH*WxC or BxTxC
+        features = self.dropout(features)
+
+        decoder_hidden = torch.zeros([1, batch_size, self.decoder_dim_hidden], device=features.device)
+        decoder_cell = torch.zeros([1, batch_size, self.decoder_dim_hidden], device=features.device)
+        loss = 0
+        positive_counter = 0
+        decoder_input = torch.ones([batch_size], device=features.device, dtype=torch.long) * self.decoder_sos_int
+        targets = torch.tensor(targets, device=features.device, dtype=torch.long)
+
+        
+
+        predictions = []
+
+        for di in range(self.decoder_max_seq_len):
+            if isinstance(self.decoder.decoder, nn.GRU):
+                decoder_output, decoder_hidden, decoder_attention = self.decoder(
+                    decoder_input, decoder_hidden, features)
+            elif isinstance(self.decoder.decoder, nn.LSTM):
+                decoder_output, decoder_hidden, decoder_cell, decoder_attention = self.decoder(
+                    decoder_input, decoder_hidden, features, decoder_cell)
+            predictions.append(decoder_output.topk(1)[1].cpu().numpy().reshape(-1))
+            # print(targets[:, di].reshape(-1))
+            # print('---')
+            mask = (targets[:, di] != 0).float()
+            loss += self.criterion(decoder_output, targets[:, di]) * mask
+            mask_sum = torch.sum(mask)
+            if mask_sum == 0:
+                break
+            positive_counter += mask_sum
+            decoder_input = targets[:, di]
+
+        # predictions = np.transpose(predictions)
+        # print(targets.cpu().numpy()[:, :predictions.shape[1]])
+        # print(predictions)
+        # print('----------------')
+        assert positive_counter > 0
+        loss = torch.sum(loss) / positive_counter
+        return loss.to(features.device)
+
+    def __forward_test(self, features, masks):
+        batch_size = features.shape[0]
+        features = features.view(features.shape[0], features.shape[1], -1)
+        features = features.permute(0, 2, 1)
+        decoder_hidden = torch.zeros([1, batch_size, self.decoder_dim_hidden],
+                                     device=features.device)
+        decoder_cell = torch.zeros([1, batch_size, self.decoder_dim_hidden],
+                                   device=features.device)
+        decoder_input = torch.ones([batch_size], device=features.device,
+                                   dtype=torch.long) * self.decoder_sos_int
+        decoder_outputs = []
+        if self.visualize:
+            full_attention_mask = np.zeros([112, 112], dtype=np.uint8)
+        for di in range(self.decoder_max_seq_len):
+            if isinstance(self.decoder.decoder, nn.GRU):
+                decoder_output, decoder_hidden, decoder_attention = self.decoder(
+                    decoder_input, decoder_hidden, features)
+            elif isinstance(self.decoder.decoder, nn.LSTM):
+                decoder_output, decoder_hidden, decoder_cell, decoder_attention = self.decoder(
+                    decoder_input, decoder_hidden, features, decoder_cell)
+            if self.visualize:
+                attention = decoder_attention.cpu().detach().numpy()
+                attention = (np.reshape(attention, (-1, 28))
+                             * 500).astype(np.uint8)
+                attention = cv2.resize(attention, (112, 112))
+                full_attention_mask += attention
+                cv2.imshow('attention', attention)
+                cv2.waitKey(30)
+            topv, topi = decoder_output.topk(1)
+            decoder_outputs.append(decoder_output)
+            decoder_input = topi.detach().view(batch_size)
+        decoder_outputs = torch.stack(decoder_outputs)
+        if self.visualize:
+            cv2.imshow('full', full_attention_mask)
+        return decoder_outputs
+
     def forward(self, features, target=None, masks=None):
         features = self.encoder(features)
         if masks is not None:
@@ -193,108 +294,9 @@ class TextRecognitionHeadAttention(nn.Module):
             features = features * masks
 
         if self.training:
-            if not all([len(t) <= self.decoder_max_seq_len for t in target if t is not None]):
-                return torch.tensor(0.0, device=features.device), torch.tensor(0.0,
-                                                                               device=features.device)
-
-            valid_targets_indexes = torch.tensor(
-                [ind for ind, tgt in enumerate(target) if tgt], device=features.device)
-
-            if len(valid_targets_indexes) == 0:
-                return torch.tensor(0.0, device=features.device), torch.tensor(0.0,
-                                                                               device=features.device)
-
-            target = [np.array(t) for t in target if t]
-            target = [np.pad(t, (0, self.decoder_max_seq_len - len(t))) for t in target]
-            target = np.array(target)
-
-            batch_size = target.shape[0]
-
-            features = features[valid_targets_indexes]
-            features = features.view(features.shape[0], features.shape[1], -1)  # B C H*W
-            features = features.permute(0, 2, 1)  # T=H*W B C
-
-            features = self.dropout(features)
-
-            decoder_hidden = torch.zeros([1, batch_size, self.decoder_dim_hidden],
-                                         device=features.device)
-
-            decoder_cell = torch.zeros([1, batch_size, self.decoder_dim_hidden],
-                                       device=features.device)
-
-            loss = 0
-            positive_counter = 0
-
-            decoder_input = torch.ones([batch_size], device=features.device,
-                                       dtype=torch.long) * self.decoder_sos_int
-
-            target = torch.tensor(target, device=features.device, dtype=torch.long)
-
-            for di in range(self.decoder_max_seq_len):
-                if isinstance(self.decoder.decoder, nn.GRU):
-                    decoder_output, decoder_hidden, decoder_attention = self.decoder(
-                        decoder_input, decoder_hidden, features)
-                elif isinstance(self.decoder.decoder, nn.LSTM):
-                    decoder_output, decoder_hidden, decoder_cell, decoder_attention = self.decoder(
-                        decoder_input, decoder_hidden, features, decoder_cell)
-                mask = (target[:, di] != 0).float()
-                loss += self.criterion(decoder_output, target[:, di]) * mask
-                mask_sum = torch.sum(mask)
-                if mask_sum == 0:
-                    break
-
-                positive_counter += mask_sum
-                decoder_input = target[:, di]
-
-            assert positive_counter > 0
-            loss = torch.sum(loss) / positive_counter
-
-            return loss.to(features.device), torch.tensor(0.0, device=features.device)
+            return self.__forward_train(features, target, masks)
         else:
-            batch_size = features.shape[0]
-            features = features.view(features.shape[0], features.shape[1], -1)
-            features = features.permute(0, 2, 1)
-
-            decoder_hidden = torch.zeros([1, batch_size, self.decoder_dim_hidden],
-                                         device=features.device)
-
-            decoder_cell = torch.zeros([1, batch_size, self.decoder_dim_hidden],
-                                       device=features.device)
-
-            decoder_input = torch.ones([batch_size], device=features.device,
-                                       dtype=torch.long) * self.decoder_sos_int
-
-            decoder_outputs = []
-
-            if self.visualize:
-                full_attention_mask = np.zeros([112, 112], dtype=np.uint8)
-
-            for di in range(self.decoder_max_seq_len):
-                if isinstance(self.decoder.decoder, nn.GRU):
-                    decoder_output, decoder_hidden, decoder_attention = self.decoder(
-                        decoder_input, decoder_hidden, features)
-                elif isinstance(self.decoder.decoder, nn.LSTM):
-                    decoder_output, decoder_hidden, decoder_cell, decoder_attention = self.decoder(
-                        decoder_input, decoder_hidden, features, decoder_cell)
-
-                if self.visualize:
-                    attention = decoder_attention.cpu().detach().numpy()
-                    attention = (np.reshape(attention, (-1, 28)) * 500).astype(np.uint8)
-                    attention = cv2.resize(attention, (112, 112))
-                    full_attention_mask += attention
-                    cv2.imshow('attention', attention)
-                    cv2.waitKey(30)
-
-                topv, topi = decoder_output.topk(1)
-                decoder_outputs.append(decoder_output)
-                decoder_input = topi.detach().view(batch_size)
-
-            decoder_outputs = torch.stack(decoder_outputs)
-
-            if self.visualize:
-                cv2.imshow('full', full_attention_mask)
-
-            return decoder_outputs
+            return self.__forward_test(features, masks)
 
     def dummy_forward(self):
         return torch.zeros((1, self.decoder_max_seq_len, self.decoder.vocab_size),

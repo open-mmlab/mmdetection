@@ -115,7 +115,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
         text_results = self._text_forward_train(x, sampling_results, bbox_results['bbox_feats'],
                                                 gt_masks, gt_texts, img_metas)
         if text_results['loss_text'] is not None:
-            losses.update(text_results['loss_text'])
+            losses.update(text_results)
 
         return losses
 
@@ -145,8 +145,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
         bbox_results.update(loss_bbox=loss_bbox)
         return bbox_results
 
-
-    def _text_forward(self, x, rois=None, pos_inds=None, bbox_feats=None):
+    def _text_forward(self, x, rois=None, pos_inds=None, bbox_feats=None, matched_gt_texts=None):
         assert ((rois is not None) ^
                 (pos_inds is not None and bbox_feats is not None))
         if rois is not None:
@@ -158,27 +157,33 @@ class StandardRoIHeadWithText(StandardRoIHead):
             assert bbox_feats is not None
             text_feats = bbox_feats[pos_inds]
 
-        text_pred = self.text_head(text_feats)
-        text_results = dict(text_pred=text_pred, text_feats=text_feats)
-        return text_results
+        loss_text = self.text_head.forward(text_feats, matched_gt_texts)
+        return dict(loss_text=loss_text)
 
     def _text_forward_train(self, x, sampling_results, bbox_feats, gt_masks, gt_texts,
                             img_metas):
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
+            matched_gt_texts = []
+            for text, res in zip(gt_texts, sampling_results):
+                assigned_gt_indices = list(res.pos_assigned_gt_inds.cpu().numpy())
+                matched_texts = text[assigned_gt_indices]
+                assert len(matched_texts) == len(assigned_gt_indices)
+
+                matched_gt_texts.extend(matched_texts)
             if pos_rois.shape[0] == 0:
                 return dict(loss_mask=None)
-            text_results = self._text_forward(x, pos_rois)
+            
+            text_results = self._text_forward(x, pos_rois, matched_gt_texts=matched_gt_texts)
         else:
             raise NotImplementedError()
 
-        text_targets = self.text_head.get_targets(sampling_results, gt_texts,
-                                                  self.train_cfg)
-        pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
-        loss_text = self.text_head.loss(text_results['text_pred'],
-                                        text_targets, pos_labels)
+        # text_targets = self.text_head.get_targets(sampling_results, gt_texts,
+        #                                           self.train_cfg)
+        # pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
+        # loss_text = self.text_head.loss(text_results['text_pred'],
+        #                                 text_targets, pos_labels)
 
-        text_results.update(loss_text=loss_text, text_targets=text_targets)
         return text_results
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
