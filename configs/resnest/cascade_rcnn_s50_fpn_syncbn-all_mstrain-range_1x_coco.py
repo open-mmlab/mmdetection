@@ -1,7 +1,7 @@
 _base_ = '../cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
-norm_cfg = dict(type='MMSyncBN', requires_grad=True)
+norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
-    pretrained='pretrain_model/resnest50_d2-7497a55b.pth',
+    pretrained='open-mmlab://resnest50',
     backbone=dict(
         type='ResNeSt',
         stem_channels=64,

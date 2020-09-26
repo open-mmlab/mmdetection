@@ -15,7 +15,6 @@ model = dict(
         norm_cfg=norm_cfg,
         norm_eval=False,
         style='pytorch'),
-    neck=dict(norm_cfg=norm_cfg),
     roi_head=dict(
         bbox_head=[
             dict(

@@ -1,4 +1,4 @@
 _base_ = './cascade_rcnn_s50_fpn_syncbn-all_mstrain-range_1x_coco.py'
 model = dict(
-    pretrained='pretrain_model/resnest101_d2-f3b931b2.pth',
+    pretrained='open-mmlab://resnest101',
     backbone=dict(stem_channels=128, depth=101))

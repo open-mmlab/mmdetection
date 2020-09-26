@@ -1,4 +1,4 @@
-_base_ = '../cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = '../cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
     pretrained='open-mmlab://resnest50',
@@ -15,7 +15,6 @@ model = dict(
         norm_cfg=norm_cfg,
         norm_eval=False,
         style='pytorch'),
-    neck=dict(norm_cfg=norm_cfg),
     roi_head=dict(
         bbox_head=[
             dict(
@@ -74,8 +73,7 @@ model = dict(
                     use_sigmoid=False,
                     loss_weight=1.0),
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
-        ],
-        mask_head=dict(norm_cfg=norm_cfg)))
+        ], ))
 # # use ResNeSt img_norm
 img_norm_cfg = dict(
     mean=[123.68, 116.779, 103.939], std=[58.393, 57.12, 57.375], to_rgb=True)
@@ -84,19 +82,18 @@ train_pipeline = [
     dict(
         type='LoadAnnotations',
         with_bbox=True,
-        with_mask=True,
+        with_mask=False,
         poly2mask=False),
     dict(
         type='Resize',
-        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                   (1333, 768), (1333, 800)],
-        multiscale_mode='value',
+        img_scale=[(1333, 640), (1333, 800)],
+        multiscale_mode='range',
         keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
