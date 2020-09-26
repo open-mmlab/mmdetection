@@ -101,6 +101,7 @@ Supported methods:
 - [x] [YOLOv3](configs/yolo/README.md)
 - [x] [PAA](configs/paa/README.md)
 - [x] [YOLACT](configs/yolact/README.md)
+- [x] [CentripetalNet](configs/centripetalnet/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
