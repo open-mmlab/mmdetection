@@ -11,7 +11,8 @@ from ..builder import NECKS
 class HRFPN(nn.Module):
     """HRFPN (High Resolution Feature Pyrmamids)
 
-    arXiv: https://arxiv.org/abs/1904.04514
+    paper: `High-Resolution Representations for Labeling Pixels and Regions
+    <https://arxiv.org/abs/1904.04514>`_.
 
     Args:
         in_channels (list): number of channels for each branch.

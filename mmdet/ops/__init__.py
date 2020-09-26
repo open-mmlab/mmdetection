@@ -1,23 +1,21 @@
-from .context_block import ContextBlock
-from .conv_ws import ConvWS2d, conv_ws_2d
-from .corner_pool import CornerPool
-from .dcn import (DeformConv, DeformConvPack, DeformRoIPooling,
-                  DeformRoIPoolingPack, ModulatedDeformConv,
-                  ModulatedDeformConvPack, ModulatedDeformRoIPoolingPack,
-                  deform_conv, deform_roi_pooling, modulated_deform_conv)
-from .generalized_attention import GeneralizedAttention
-from .masked_conv import MaskedConv2d
-from .nms import batched_nms, nms, nms_match, soft_nms
-from .non_local import NonLocal2D
-from .plugin import build_plugin_layer
-from .point_sample import (SimpleRoIAlign, point_sample,
-                           rel_roi_point_to_rel_img_point)
-from .roi_align import RoIAlign, roi_align
-from .roi_pool import RoIPool, roi_pool
-from .saconv import SAConv2d
-from .sigmoid_focal_loss import SigmoidFocalLoss, sigmoid_focal_loss
-from .utils import get_compiler_version, get_compiling_cuda_version
-from .wrappers import Conv2d, ConvTranspose2d, Linear, MaxPool2d
+# This file is added for back-compatibility. Thus, downstream codebase
+# could still use and import mmdet.ops.
+
+# yapf: disable
+from mmcv.ops import (ContextBlock, Conv2d, ConvTranspose2d, ConvWS2d,
+                      CornerPool, DeformConv, DeformConvPack, DeformRoIPooling,
+                      DeformRoIPoolingPack, GeneralizedAttention, Linear,
+                      MaskedConv2d, MaxPool2d, ModulatedDeformConv,
+                      ModulatedDeformConvPack, ModulatedDeformRoIPoolingPack,
+                      NonLocal2D, RoIAlign, RoIPool, SAConv2d,
+                      SigmoidFocalLoss, SimpleRoIAlign, batched_nms,
+                      build_plugin_layer, conv_ws_2d, deform_conv,
+                      deform_roi_pooling, get_compiler_version,
+                      get_compiling_cuda_version, modulated_deform_conv, nms,
+                      nms_match, point_sample, rel_roi_point_to_rel_img_point,
+                      roi_align, roi_pool, sigmoid_focal_loss, soft_nms)
+
+# yapf: enable
 
 __all__ = [
     'nms', 'soft_nms', 'RoIAlign', 'roi_align', 'RoIPool', 'roi_pool',

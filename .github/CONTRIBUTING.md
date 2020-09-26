@@ -15,7 +15,8 @@ All kinds of contributions are welcome, including but not limited to the followi
 Note
 - If you plan to add some new features that involve large changes, it is encouraged to open an issue for discussion first.
 - If you are the author of some papers and would like to include your method to mmdetection,
-please contact Kai Chen (chenkaidev[at]gmail[dot]com). We will much appreciate your contribution.
+please let us know (open an issue or contact the maintainers). We will much appreciate your contribution.
+- For new features and new modules, unit tests are required to improve the code's robustness.
 
 ## Code style
 
@@ -27,7 +28,7 @@ We use the following tools for linting and formatting:
 - [yapf](https://github.com/google/yapf): formatter
 - [isort](https://github.com/timothycrosley/isort): sort imports
 
-Style configurations of yapf and isort can be found in [.style.yapf](../.style.yapf) and [.isort.cfg](../.isort.cfg).
+Style configurations of yapf and isort can be found in [setup.cfg](../setup.cfg).
 
 We use [pre-commit hook](https://pre-commit.com/) that checks and formats for `flake8`, `yapf`, `isort`, `trailing whitespaces`,
  fixes `end-of-files`, sorts `requirments.txt` automatically on every commit.

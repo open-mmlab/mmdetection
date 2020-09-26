@@ -1,9 +1,5 @@
 matplotlib
-mmcv>=0.6.2
+mmpycocotools
 numpy
-# need older pillow until torchvision is fixed
-Pillow<=6.2.2
 six
 terminaltables
-torch>=1.3
-torchvision

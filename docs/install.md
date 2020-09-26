@@ -9,7 +9,6 @@
 - GCC 5+
 - [mmcv](https://github.com/open-mmlab/mmcv)
 
-
 ### Install mmdetection
 
 a. Create a conda virtual environment and activate it.
@@ -31,40 +30,79 @@ You can check the supported CUDA version for precompiled packages on the [PyTorc
 `E.g.1` If you have CUDA 10.1 installed under `/usr/local/cuda` and would like to install
 PyTorch 1.5, you need to install the prebuilt PyTorch with CUDA 10.1.
 
-```python
+```shell
 conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
 ```
 
 `E.g. 2` If you have CUDA 9.2 installed under `/usr/local/cuda` and would like to install
 PyTorch 1.3.1., you need to install the prebuilt PyTorch with CUDA 9.2.
 
-```python
+```shell
 conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
 ```
 
 If you build PyTorch from source instead of installing the prebuilt pacakge,
 you can use more CUDA versions such as 9.0.
 
-c. Clone the mmdetection repository.
+c. Install mmcv, we recommend you to install the pre-build mmcv as below.
+
+```shell
+pip install mmcv-full==latest+torch1.5.0+cu101 -f http://download.openmmlab.com/mmcv/dist/index.html
+```
+
+See [here](https://github.com/open-mmlab/mmcv#install-with-pip) for different versions of MMCV compatible to different PyTorch and CUDA versions.
+Optionally you can choose to compile mmcv from source by the following command
+
+```shell
+git clone https://github.com/open-mmlab/mmcv.git
+cd mmcv
+MMCV_WITH_OPS=1 pip install -e .  # package mmcv-full will be installed after this step
+cd ..
+```
+
+Or directly run
+
+```shell
+pip install mmcv-full
+```
+
+**Important**:
+
+1. The required versions of MMCV for different versions of MMDetection since V2.0 are as below. Please install the correct version of MMCV to avoid installation issues.
+
+| MMDetection version |    MMCV version     |
+|:-------------------:|:-------------------:|
+| master              | mmcv-full>=1.1.1, <=1.2|
+| 2.4.0               | mmcv-full>=1.1.1, <=1.2|
+| 2.3.0               | mmcv-full==1.0.5|
+| 2.3.0rc0            | mmcv-full>=1.0.2    |
+| 2.2.1               | mmcv==0.6.2         |
+| 2.2.0               | mmcv==0.6.2         |
+| 2.1.0               | mmcv>=0.5.9, <=0.6.1|
+| 2.0.0               | mmcv>=0.5.1, <=0.5.8|
+
+2. You need to run `pip uninstall mmcv` first if you have mmcv installed.
+If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
+
+d. Clone the mmdetection repository.
 
 ```shell
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Install build requirements and then install mmdetection.
+e. Install build requirements and then install mmdetection.
 (We install our forked version of pycocotools via the github repo instead of pypi
 for better compatibility with our repo.)
 
 ```shell
 pip install -r requirements/build.txt
-pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .  # or "python setup.py develop"
 ```
 
 If you build mmdetection on macOS, replace the last command with
 
-```
+```shell
 CC=clang CXX=clang++ CFLAGS='-stdlib=libc++' pip install -e .
 ```
 
@@ -75,7 +113,7 @@ It is recommended that you run step d each time you pull some updates from githu
 
     > Important: Be sure to remove the `./build` folder if you reinstall mmdet with a different CUDA/PyTorch version.
 
-    ```
+    ```shell
     pip uninstall mmdet
     rm -rf ./build
     find . -name "*.so" | xargs rm
@@ -89,6 +127,7 @@ you can install it before installing MMCV.
 4. Some dependencies are optional. Simply running `pip install -v -e .` will only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
 ### Install with CPU only
+
 The code can be built for CPU only environment (where CUDA isn't available).
 
 In CPU mode you can run the demo/webcam_demo.py for example.
@@ -128,10 +167,14 @@ conda activate open-mmlab
 
 # install latest pytorch prebuilt with the default prebuilt CUDA version (usually the latest)
 conda install -c pytorch pytorch torchvision -y
+
+# install the latest mmcv
+pip install mmcv-full
+
+# install mmdetection
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
-pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .
 ```
 

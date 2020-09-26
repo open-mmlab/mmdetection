@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init
+from mmcv.ops import DeformConv2d
 
 from mmdet.core import multi_apply, multiclass_nms
-from mmdet.ops import DeformConv
 from ..builder import HEADS
 from .anchor_free_head import AnchorFreeHead
 
@@ -16,17 +16,17 @@ class FeatureAlign(nn.Module):
                  in_channels,
                  out_channels,
                  kernel_size=3,
-                 deformable_groups=4):
+                 deform_groups=4):
         super(FeatureAlign, self).__init__()
         offset_channels = kernel_size * kernel_size * 2
         self.conv_offset = nn.Conv2d(
-            4, deformable_groups * offset_channels, 1, bias=False)
-        self.conv_adaption = DeformConv(
+            4, deform_groups * offset_channels, 1, bias=False)
+        self.conv_adaption = DeformConv2d(
             in_channels,
             out_channels,
             kernel_size=kernel_size,
             padding=(kernel_size - 1) // 2,
-            deformable_groups=deformable_groups)
+            deform_groups=deform_groups)
         self.relu = nn.ReLU(inplace=True)
 
     def init_weights(self):
@@ -53,13 +53,13 @@ class FoveaHead(AnchorFreeHead):
                                                                          512)),
                  sigma=0.4,
                  with_deform=False,
-                 deformable_groups=4,
+                 deform_groups=4,
                  **kwargs):
         self.base_edge_list = base_edge_list
         self.scale_ranges = scale_ranges
         self.sigma = sigma
         self.with_deform = with_deform
-        self.deformable_groups = deformable_groups
+        self.deform_groups = deform_groups
         super().__init__(num_classes, in_channels, **kwargs)
 
     def _init_layers(self):
@@ -95,7 +95,7 @@ class FoveaHead(AnchorFreeHead):
                 self.feat_channels,
                 self.feat_channels,
                 kernel_size=3,
-                deformable_groups=self.deformable_groups)
+                deform_groups=self.deform_groups)
             self.conv_cls = nn.Conv2d(
                 int(self.feat_channels * 4),
                 self.cls_out_channels,

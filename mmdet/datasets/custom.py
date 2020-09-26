@@ -24,7 +24,7 @@ class CustomDataset(Dataset):
                 'width': 1280,
                 'height': 720,
                 'ann': {
-                    'bboxes': <np.ndarray> (n, 4),
+                    'bboxes': <np.ndarray> (n, 4) in (x1, y1, x2, y2) order.
                     'labels': <np.ndarray> (n, ),
                     'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
                     'labels_ignore': <np.ndarray> (k, 4) (optional field)
@@ -177,7 +177,7 @@ class CustomDataset(Dataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Training/test data (with annotation if `test_mode` is set
+            dict: Training/test data (with annotation if `test_mode` is set \
                 True).
         """
 
@@ -197,7 +197,7 @@ class CustomDataset(Dataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Training data and annotation after pipeline with new keys
+            dict: Training data and annotation after pipeline with new keys \
                 introduced by pipeline.
         """
 
@@ -216,7 +216,7 @@ class CustomDataset(Dataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Testing data after pipeline with new keys intorduced by
+            dict: Testing data after pipeline with new keys intorduced by \
                 piepline.
         """
 

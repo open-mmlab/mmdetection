@@ -274,8 +274,8 @@ def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
     assert (len(config.featmap_strides) == len(roi_extractor.roi_layers))
     assert (config.out_channels == roi_extractor.out_channels)
     from torch.nn.modules.utils import _pair
-    assert (_pair(
-        config.roi_layer.out_size) == roi_extractor.roi_layers[0].out_size)
+    assert (_pair(config.roi_layer.output_size) ==
+            roi_extractor.roi_layers[0].output_size)
 
     if 'use_torchvision' in config.roi_layer:
         assert (config.roi_layer.use_torchvision ==
@@ -324,18 +324,27 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             _check_bbox_head(bbox_cfg, single_bbox_head)
     else:
         assert bbox_cfg['type'] == bbox_head.__class__.__name__
-        assert bbox_cfg.in_channels == bbox_head.in_channels
-        with_cls = bbox_cfg.get('with_cls', True)
-        if with_cls:
-            fc_out_channels = bbox_cfg.get('fc_out_channels', 2048)
-            assert (fc_out_channels == bbox_head.fc_cls.in_features)
-            assert bbox_cfg.num_classes + 1 == bbox_head.fc_cls.out_features
+        if bbox_cfg['type'] == 'SABLHead':
+            assert bbox_cfg.cls_in_channels == bbox_head.cls_in_channels
+            assert bbox_cfg.reg_in_channels == bbox_head.reg_in_channels
 
-        with_reg = bbox_cfg.get('with_reg', True)
-        if with_reg:
-            out_dim = (4 if bbox_cfg.reg_class_agnostic else 4 *
-                       bbox_cfg.num_classes)
-            assert bbox_head.fc_reg.out_features == out_dim
+            cls_out_channels = bbox_cfg.get('cls_out_channels', 1024)
+            assert (cls_out_channels == bbox_head.fc_cls.in_features)
+            assert (bbox_cfg.num_classes + 1 == bbox_head.fc_cls.out_features)
+        else:
+            assert bbox_cfg.in_channels == bbox_head.in_channels
+            with_cls = bbox_cfg.get('with_cls', True)
+            if with_cls:
+                fc_out_channels = bbox_cfg.get('fc_out_channels', 2048)
+                assert (fc_out_channels == bbox_head.fc_cls.in_features)
+                assert (bbox_cfg.num_classes +
+                        1 == bbox_head.fc_cls.out_features)
+
+            with_reg = bbox_cfg.get('with_reg', True)
+            if with_reg:
+                out_dim = (4 if bbox_cfg.reg_class_agnostic else 4 *
+                           bbox_cfg.num_classes)
+                assert bbox_head.fc_reg.out_features == out_dim
 
 
 def _check_anchorhead(config, head):
@@ -350,6 +359,10 @@ def _check_anchorhead(config, head):
         assert (config.feat_channels == head.atss_cls.in_channels)
         assert (config.feat_channels == head.atss_reg.in_channels)
         assert (config.feat_channels == head.atss_centerness.in_channels)
+    elif config['type'] == 'SABLRetinaHead':
+        assert (config.feat_channels == head.retina_cls.in_channels)
+        assert (config.feat_channels == head.retina_bbox_reg.in_channels)
+        assert (config.feat_channels == head.retina_bbox_cls.in_channels)
     else:
         assert (config.in_channels == head.conv_cls.in_channels)
         assert (config.in_channels == head.conv_reg.in_channels)

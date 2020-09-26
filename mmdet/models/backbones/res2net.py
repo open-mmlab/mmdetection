@@ -3,8 +3,12 @@ import math
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
+                      kaiming_init)
+from mmcv.runner import load_checkpoint
+from torch.nn.modules.batchnorm import _BatchNorm
 
+from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
@@ -115,7 +119,7 @@ class Bottle2neck(_Bottleneck):
                 out = self.forward_plugin(out, self.after_conv1_plugin_names)
 
             spx = torch.split(out, self.width, 1)
-            sp = self.convs[0](spx[0])
+            sp = self.convs[0](spx[0].contiguous())
             sp = self.relu(self.bns[0](sp))
             out = sp
             for i in range(1, self.scales - 1):
@@ -123,7 +127,7 @@ class Bottle2neck(_Bottleneck):
                     sp = spx[i]
                 else:
                     sp = sp + spx[i]
-                sp = self.convs[i](sp)
+                sp = self.convs[i](sp.contiguous())
                 sp = self.relu(self.bns[i](sp))
                 out = torch.cat((out, sp), 1)
 
@@ -313,3 +317,35 @@ class Res2Net(ResNet):
             base_width=self.base_width,
             base_channels=self.base_channels,
             **kwargs)
+
+    def init_weights(self, pretrained=None):
+        """Initialize the weights in backbone.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
+        if isinstance(pretrained, str):
+            logger = get_root_logger()
+            load_checkpoint(self, pretrained, strict=False, logger=logger)
+        elif pretrained is None:
+            for m in self.modules():
+                if isinstance(m, nn.Conv2d):
+                    kaiming_init(m)
+                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                    constant_init(m, 1)
+
+            if self.dcn is not None:
+                for m in self.modules():
+                    if isinstance(m, Bottle2neck):
+                        # dcn in Res2Net bottle2neck is in ModuleList
+                        for n in m.convs:
+                            if hasattr(n, 'conv_offset'):
+                                constant_init(n.conv_offset, 0)
+
+            if self.zero_init_residual:
+                for m in self.modules():
+                    if isinstance(m, Bottle2neck):
+                        constant_init(m.norm3, 0)
+        else:
+            raise TypeError('pretrained must be a str or None')

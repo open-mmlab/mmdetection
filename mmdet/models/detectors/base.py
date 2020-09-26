@@ -1,4 +1,3 @@
-import warnings
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 
@@ -7,9 +6,9 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn
+from mmcv.runner import auto_fp16
 from mmcv.utils import print_log
 
-from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
 
 
@@ -30,21 +29,18 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
     @property
     def with_shared_head(self):
         """bool: whether the detector has a shared head in the RoI Head"""
-        return hasattr(self.roi_head,
-                       'shared_head') and self.roi_head.shared_head is not None
+        return hasattr(self, 'roi_head') and self.roi_head.with_shared_head
 
     @property
     def with_bbox(self):
         """bool: whether the detector has a bbox head"""
-        return ((hasattr(self.roi_head, 'bbox_head')
-                 and self.roi_head.bbox_head is not None)
+        return ((hasattr(self, 'roi_head') and self.roi_head.with_bbox)
                 or (hasattr(self, 'bbox_head') and self.bbox_head is not None))
 
     @property
     def with_mask(self):
         """bool: whether the detector has a mask head"""
-        return ((hasattr(self.roi_head, 'mask_head')
-                 and self.roi_head.mask_head is not None)
+        return ((hasattr(self, 'roi_head') and self.roi_head.with_mask)
                 or (hasattr(self, 'mask_head') and self.mask_head is not None))
 
     @abstractmethod
@@ -72,7 +68,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             img (list[Tensor]): List of tensors of shape (1, C, H, W).
                 Typically these should be mean centered and std scaled.
             img_metas (list[dict]): List of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and my also contain
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys, see
                 :class:`mmdet.datasets.pipelines.Collect`.
@@ -139,9 +135,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if num_augs != len(img_metas):
             raise ValueError(f'num of augmentations ({len(imgs)}) '
                              f'!= num of image meta ({len(img_metas)})')
-        # TODO: remove the restriction of samples_per_gpu == 1 when prepared
-        samples_per_gpu = imgs[0].size(0)
-        assert samples_per_gpu == 1
 
         if num_augs == 1:
             # proposals (List[List[Tensor]]): the outer list indicates
@@ -153,6 +146,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 kwargs['proposals'] = kwargs['proposals'][0]
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
+            assert imgs[0].size(0) == 1, 'aug test does not support ' \
+                                         'inference with batch size ' \
+                                         f'{imgs[0].size(0)}'
             # TODO: support test augmentation for predefined proposals
             assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
@@ -181,8 +177,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 losses and other necessary infomation.
 
         Returns:
-            tuple[Tensor, dict]: (loss, log_vars), loss is the loss tensor
-                which may be a weighted sum of all losses, log_vars contains
+            tuple[Tensor, dict]: (loss, log_vars), loss is the loss tensor \
+                which may be a weighted sum of all losses, log_vars contains \
                 all the variables to be sent to the logger.
         """
         log_vars = OrderedDict()
@@ -224,14 +220,15 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 and reserved.
 
         Returns:
-            dict: It should contain at least 3 keys: ``loss``, ``log_vars``,
+            dict: It should contain at least 3 keys: ``loss``, ``log_vars``, \
                 ``num_samples``.
-                ``loss`` is a tensor for back propagation, which can be a
+
+                - ``loss`` is a tensor for back propagation, which can be a \
                 weighted sum of multiple losses.
-                ``log_vars`` contains all the variables to be sent to the
+                - ``log_vars`` contains all the variables to be sent to the
                 logger.
-                ``num_samples`` indicates the batch size (when the model is
-                DDP, it means the batch size on each GPU), which is used for
+                - ``num_samples`` indicates the batch size (when the model is \
+                DDP, it means the batch size on each GPU), which is used for \
                 averaging the logs.
         """
         losses = self(**data)
@@ -340,6 +337,4 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             out_file=out_file)
 
         if not (show or out_file):
-            warnings.warn('show==False and out_file is not specified, only '
-                          'result image will be returned')
             return img

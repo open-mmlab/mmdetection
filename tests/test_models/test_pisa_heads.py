@@ -174,7 +174,7 @@ def test_pisa_roi_head_loss():
 
     bbox_roi_extractor = dict(
         type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=0),
+        roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
         out_channels=1,
         featmap_strides=[1])
 
