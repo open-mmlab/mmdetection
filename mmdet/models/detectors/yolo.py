@@ -16,3 +16,17 @@ class YOLOV3(SingleStageDetector):
                  pretrained=None):
         super(YOLOV3, self).__init__(backbone, neck, bbox_head, train_cfg,
                                      test_cfg, pretrained)
+
+
+@DETECTORS.register_module()
+class YOLOV4(SingleStageDetector):
+
+    def __init__(self,
+                 backbone,
+                 neck,
+                 bbox_head,
+                 train_cfg=None,
+                 test_cfg=None,
+                 pretrained=None):
+        super(YOLOV4, self).__init__(backbone, neck, bbox_head, train_cfg,
+                                     test_cfg, pretrained)
