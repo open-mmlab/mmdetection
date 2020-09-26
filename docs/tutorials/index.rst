@@ -5,4 +5,5 @@
    new_dataset.md
    data_pipeline.md
    new_modules.md
+   customize_runtime.md
    modify_loss.md

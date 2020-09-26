@@ -270,7 +270,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
-        # recompute feats to save memory
         det_bboxes, det_labels = self.aug_test_bboxes(x, img_metas,
                                                       proposal_list,
                                                       self.test_cfg)

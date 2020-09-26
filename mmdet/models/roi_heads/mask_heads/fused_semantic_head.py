@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, kaiming_init
+from mmcv.runner import auto_fp16, force_fp32
 
-from mmdet.core import auto_fp16, force_fp32
 from mmdet.models.builder import HEADS
 
 
