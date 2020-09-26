@@ -292,7 +292,7 @@ class RepPointsHead(AnchorFreeHead):
             pts_out_refine = pts_out_refine + pts_out_init.detach()
         return cls_out, pts_out_init, pts_out_refine
 
-    def get_points(self, featmap_sizes, img_metas):
+    def get_points(self, featmap_sizes, img_metas, device):
         """Get points according to feature map sizes.
 
         Args:
@@ -310,7 +310,7 @@ class RepPointsHead(AnchorFreeHead):
         multi_level_points = []
         for i in range(num_levels):
             points = self.point_generators[i].grid_points(
-                featmap_sizes[i], self.point_strides[i])
+                featmap_sizes[i], self.point_strides[i], device)
             multi_level_points.append(points)
         points_list = [[point.clone() for point in multi_level_points]
                        for _ in range(num_imgs)]
@@ -326,7 +326,7 @@ class RepPointsHead(AnchorFreeHead):
                 valid_feat_h = min(int(np.ceil(h / point_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / point_stride)), feat_w)
                 flags = self.point_generators[i].valid_flags(
-                    (feat_h, feat_w), (valid_feat_h, valid_feat_w))
+                    (feat_h, feat_w), (valid_feat_h, valid_feat_w), device)
                 multi_level_flags.append(flags)
             valid_flag_list.append(multi_level_flags)
 
@@ -534,6 +534,7 @@ class RepPointsHead(AnchorFreeHead):
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
+        cls_score = cls_score.contiguous()
         loss_cls = self.loss_cls(
             cls_score,
             labels,
@@ -572,11 +573,12 @@ class RepPointsHead(AnchorFreeHead):
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.point_generators)
+        device = cls_scores[0].device
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
         # target for initial stage
         center_list, valid_flag_list = self.get_points(featmap_sizes,
-                                                       img_metas)
+                                                       img_metas, device)
         pts_coordinate_preds_init = self.offset_to_pts(center_list,
                                                        pts_preds_init)
         if self.train_cfg.init.assigner['type'] == 'PointAssigner':
@@ -604,7 +606,7 @@ class RepPointsHead(AnchorFreeHead):
 
         # target for refinement stage
         center_list, valid_flag_list = self.get_points(featmap_sizes,
-                                                       img_metas)
+                                                       img_metas, device)
         pts_coordinate_preds_refine = self.offset_to_pts(
             center_list, pts_preds_refine)
         bbox_list = []
@@ -666,6 +668,7 @@ class RepPointsHead(AnchorFreeHead):
                    rescale=False,
                    with_nms=True):
         assert len(cls_scores) == len(pts_preds_refine)
+        device = cls_scores[0].device
         bbox_preds_refine = [
             self.points2bbox(pts_pred_refine)
             for pts_pred_refine in pts_preds_refine
@@ -673,7 +676,7 @@ class RepPointsHead(AnchorFreeHead):
         num_levels = len(cls_scores)
         mlvl_points = [
             self.point_generators[i].grid_points(cls_scores[i].size()[-2:],
-                                                 self.point_strides[i])
+                                                 self.point_strides[i], device)
             for i in range(num_levels)
         ]
         result_list = []
