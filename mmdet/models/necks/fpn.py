@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, xavier_init
+from mmcv.cnn import ConvModule, kaiming_init
 from mmcv.runner import auto_fp16
 
 from ..builder import NECKS
@@ -159,7 +159,12 @@ class FPN(nn.Module):
         """Initialize the weights of FPN module."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
+                kaiming_init(
+                    m,
+                    a=1,
+                    mode='fan_in',
+                    distribution='uniform',
+                    nonlinearity='leaky_relu')
 
     @auto_fp16()
     def forward(self, inputs):
