@@ -1,8 +1,7 @@
 import pytest
 import torch
 
-from mmdet.models.transformer_head.position_encoding import (
-    PositionEmbeddingLearned, PositionEmbeddingSine)
+from mmdet.models.utils import PositionEmbeddingLearned, PositionEmbeddingSine
 
 
 def test_position_encoding_sine(num_pos_feats=16, batch_size=2):
