@@ -6,8 +6,9 @@ from mmdet.models.transformer_head.position_encoding import (
 
 
 def test_position_encoding_sine(num_pos_feats=16, batch_size=2):
-    with pytest.raises(ValueError):
-        module = PositionEmbeddingSine(num_pos_feats, scale=3.)
+    with pytest.raises(AssertionError):
+        module = PositionEmbeddingSine(
+            num_pos_feats, scale=(3., ), normalize=True)
 
     module = PositionEmbeddingSine(num_pos_feats)
     h, w = 10, 6

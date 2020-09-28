@@ -8,8 +8,8 @@ from mmcv.cnn import uniform_init
 class PositionEmbeddingSine(nn.Module):
     """Position encoding with sine and cosine functions.
 
-    See 'End-to-End Object Detection with Transformers'
-    (https://arxiv.org/pdf/2005.12872) for details.
+    See `End-to-End Object Detection with Transformers
+    <https://arxiv.org/pdf/2005.12872>`_ for details.
 
     Args:
         num_pos_feats (int): The feature dimension for each position
@@ -20,7 +20,8 @@ class PositionEmbeddingSine(nn.Module):
         normalize (bool): Whether to do normalization when calculating
             the position embedding. Default False.
         scale (float): A scale factor for calculating the position
-            embedding. Default None. If None, 2*pi will be used.
+            embedding. Default 2*pi. Only when normalize is True then
+            scale will be used.
         eps (float): A value added to the denominator for numerical
             stability. Default 1e-6.
     """
@@ -29,16 +30,20 @@ class PositionEmbeddingSine(nn.Module):
                  num_pos_feats,
                  temperature=10000,
                  normalize=False,
-                 scale=None,
+                 scale=2 * math.pi,
                  eps=1e-6):
         super(PositionEmbeddingSine, self).__init__()
+        # if scale is not None and not normalize:
+        #     raise ValueError('normalize should be True if scale is passed')
+        # if normalize:
+        #     if scale is None:
+        #         scale = 2 * math.pi
+        if normalize:
+            assert isinstance(scale, float), 'when normalize is set, scale '\
+                f'should be provided and type float , found {type(scale)}'
         self.num_pos_feats = num_pos_feats
         self.temperature = temperature
         self.normalize = normalize
-        if scale is not None and not normalize:
-            raise ValueError('normalize should be True if scale is passed')
-        if scale is None:
-            scale = 2 * math.pi
         self.scale = scale
         self.eps = eps
 
