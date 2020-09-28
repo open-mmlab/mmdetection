@@ -33,11 +33,6 @@ class PositionEmbeddingSine(nn.Module):
                  scale=2 * math.pi,
                  eps=1e-6):
         super(PositionEmbeddingSine, self).__init__()
-        # if scale is not None and not normalize:
-        #     raise ValueError('normalize should be True if scale is passed')
-        # if normalize:
-        #     if scale is None:
-        #         scale = 2 * math.pi
         if normalize:
             assert isinstance(scale, float), 'when normalize is set, scale '\
                 f'should be provided and type float , found {type(scale)}'
