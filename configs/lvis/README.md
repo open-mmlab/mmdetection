@@ -14,7 +14,8 @@
 * Please follow [install guide](../../docs/install.md#install-mmdetection) to install open-mmlab forked cocoapi first.
 * Run following scripts to install our forked lvis-api.
     ```
-    pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=lvis"
+    # mmlvis is fully compatible with official lvis
+    pip install mmlvis
     ```
     or
     ```
