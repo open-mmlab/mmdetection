@@ -110,11 +110,11 @@ def _decoder_layer_forward(self,
     return x
 
 
-def test_multihead_attention(embed_dims=256,
-                             num_heads=8,
+def test_multihead_attention(embed_dims=16,
+                             num_heads=4,
                              dropout=0.1,
-                             num_query=100,
-                             num_key=1000,
+                             num_query=10,
+                             num_key=50,
                              batch_size=2):
     module = MultiheadAttention(embed_dims, num_heads, dropout)
     # self attention
@@ -151,10 +151,7 @@ def test_multihead_attention(embed_dims=256,
     assert out.shape == (num_query, batch_size, embed_dims)
 
 
-def test_ffn(embed_dims=256,
-             feedforward_channels=2048,
-             num_fcs=2,
-             batch_size=2):
+def test_ffn(embed_dims=16, feedforward_channels=32, num_fcs=2, batch_size=2):
     # test invalid num_fcs
     with pytest.raises(AssertionError):
         module = FFN(embed_dims, feedforward_channels, 1)
@@ -169,10 +166,10 @@ def test_ffn(embed_dims=256,
     assert out.shape == (batch_size, embed_dims)
 
 
-def test_transformer_encoder_layer(embed_dims=256,
-                                   num_heads=8,
-                                   feedforward_channels=2048,
-                                   num_key=1000,
+def test_transformer_encoder_layer(embed_dims=16,
+                                   num_heads=4,
+                                   feedforward_channels=32,
+                                   num_key=50,
                                    batch_size=2):
     x = torch.rand(num_key, batch_size, embed_dims)
     # test invalid number of order
@@ -236,11 +233,11 @@ def test_transformer_encoder_layer(embed_dims=256,
     test_order()
 
 
-def test_transformer_decoder_layer(embed_dims=256,
-                                   num_heads=8,
-                                   feedforward_channels=2048,
-                                   num_key=1000,
-                                   num_query=100,
+def test_transformer_decoder_layer(embed_dims=16,
+                                   num_heads=4,
+                                   feedforward_channels=32,
+                                   num_key=50,
+                                   num_query=10,
                                    batch_size=2):
     query = torch.rand(num_query, batch_size, embed_dims)
     # test invalid number of order
@@ -352,11 +349,11 @@ def test_transformer_decoder_layer(embed_dims=256,
     test_order()
 
 
-def test_transformer_encoder(num_layers=4,
-                             embed_dims=256,
-                             num_heads=8,
-                             feedforward_channels=2048,
-                             num_key=1000,
+def test_transformer_encoder(num_layers=2,
+                             embed_dims=16,
+                             num_heads=4,
+                             feedforward_channels=32,
+                             num_key=50,
                              batch_size=2):
     module = TransformerEncoder(num_layers, embed_dims, num_heads,
                                 feedforward_channels)
@@ -391,12 +388,12 @@ def test_transformer_encoder(num_layers=4,
     assert out.shape == (num_key, batch_size, embed_dims)
 
 
-def test_transformer_decoder(num_layers=3,
-                             embed_dims=256,
-                             num_heads=8,
-                             feedforward_channels=2048,
-                             num_key=1000,
-                             num_query=100,
+def test_transformer_decoder(num_layers=2,
+                             embed_dims=16,
+                             num_heads=4,
+                             feedforward_channels=32,
+                             num_key=50,
+                             num_query=10,
                              batch_size=2):
     module = TransformerDecoder(num_layers, embed_dims, num_heads,
                                 feedforward_channels)
@@ -473,10 +470,10 @@ def test_transformer_decoder(num_layers=3,
 
 
 def test_transformer(num_enc_layers=2,
-                     num_dec_layers=3,
-                     embed_dims=256,
+                     num_dec_layers=2,
+                     embed_dims=16,
                      num_heads=4,
-                     num_query=100,
+                     num_query=10,
                      batch_size=2):
     module = Transformer(embed_dims, num_heads, num_enc_layers, num_dec_layers)
     height, width = 80, 60
