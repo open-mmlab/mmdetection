@@ -44,6 +44,7 @@ class PositionEmbeddingSine(nn.Module):
 
     def forward(self, mask):
         """Forward function for `PositionEmbeddingSine`.
+
         Args:
             mask (Tensor): ByteTensor mask. Non-zero values representing
                 ignored positions, while zero values means valid positions
@@ -108,6 +109,7 @@ class PositionEmbeddingLearned(nn.Module):
 
     def forward(self, mask):
         """Forward function for `PositionEmbeddingLearned`.
+
         Args:
             mask (Tensor): ByteTensor mask. Non-zero values representing
                 ignored positions, while zero values means valid positions
