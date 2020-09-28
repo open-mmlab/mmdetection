@@ -3,11 +3,9 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from mmdet.models.transformer_head import (FFN, MultiheadAttention,
-                                           Transformer, TransformerDecoder,
-                                           TransformerDecoderLayer,
-                                           TransformerEncoder,
-                                           TransformerEncoderLayer)
+from mmdet.models.utils import (FFN, MultiheadAttention, Transformer,
+                                TransformerDecoder, TransformerDecoderLayer,
+                                TransformerEncoder, TransformerEncoderLayer)
 
 
 def _ffn_forward(self, x, residual=None):
@@ -110,11 +108,11 @@ def _decoder_layer_forward(self,
     return x
 
 
-def test_multihead_attention(embed_dims=16,
-                             num_heads=4,
+def test_multihead_attention(embed_dims=8,
+                             num_heads=2,
                              dropout=0.1,
-                             num_query=10,
-                             num_key=50,
+                             num_query=5,
+                             num_key=10,
                              batch_size=1):
     module = MultiheadAttention(embed_dims, num_heads, dropout)
     # self attention
@@ -151,7 +149,7 @@ def test_multihead_attention(embed_dims=16,
     assert out.shape == (num_query, batch_size, embed_dims)
 
 
-def test_ffn(embed_dims=16, feedforward_channels=32, num_fcs=2, batch_size=1):
+def test_ffn(embed_dims=8, feedforward_channels=8, num_fcs=2, batch_size=1):
     # test invalid num_fcs
     with pytest.raises(AssertionError):
         module = FFN(embed_dims, feedforward_channels, 1)
@@ -166,10 +164,10 @@ def test_ffn(embed_dims=16, feedforward_channels=32, num_fcs=2, batch_size=1):
     assert out.shape == (batch_size, embed_dims)
 
 
-def test_transformer_encoder_layer(embed_dims=16,
-                                   num_heads=4,
-                                   feedforward_channels=32,
-                                   num_key=50,
+def test_transformer_encoder_layer(embed_dims=8,
+                                   num_heads=2,
+                                   feedforward_channels=8,
+                                   num_key=10,
                                    batch_size=1):
     x = torch.rand(num_key, batch_size, embed_dims)
     # test invalid number of order
@@ -210,10 +208,10 @@ def test_transformer_encoder_layer(embed_dims=16,
     out = module(x, pos, attn_mask, key_padding_mask)
     assert out.shape == (num_key, batch_size, embed_dims)
 
-    @patch('mmdet.models.transformer_head.TransformerEncoderLayer.forward',
+    @patch('mmdet.models.utils.TransformerEncoderLayer.forward',
            _encoder_layer_forward)
-    @patch('mmdet.models.transformer_head.FFN.forward', _ffn_forward)
-    @patch('mmdet.models.transformer_head.MultiheadAttention.forward',
+    @patch('mmdet.models.utils.FFN.forward', _ffn_forward)
+    @patch('mmdet.models.utils.MultiheadAttention.forward',
            _multihead_attention_forward)
     def test_order():
         module = TransformerEncoderLayer(embed_dims, num_heads,
@@ -233,11 +231,11 @@ def test_transformer_encoder_layer(embed_dims=16,
     test_order()
 
 
-def test_transformer_decoder_layer(embed_dims=16,
-                                   num_heads=4,
-                                   feedforward_channels=32,
-                                   num_key=50,
-                                   num_query=10,
+def test_transformer_decoder_layer(embed_dims=8,
+                                   num_heads=2,
+                                   feedforward_channels=8,
+                                   num_key=10,
+                                   num_query=5,
                                    batch_size=1):
     query = torch.rand(num_query, batch_size, embed_dims)
     # test invalid number of order
@@ -325,10 +323,10 @@ def test_transformer_decoder_layer(embed_dims=16,
         target_key_padding_mask=target_key_padding_mask)
     assert out.shape == (num_query, batch_size, embed_dims)
 
-    @patch('mmdet.models.transformer_head.TransformerDecoderLayer.forward',
+    @patch('mmdet.models.utils.TransformerDecoderLayer.forward',
            _decoder_layer_forward)
-    @patch('mmdet.models.transformer_head.FFN.forward', _ffn_forward)
-    @patch('mmdet.models.transformer_head.MultiheadAttention.forward',
+    @patch('mmdet.models.utils.FFN.forward', _ffn_forward)
+    @patch('mmdet.models.utils.MultiheadAttention.forward',
            _multihead_attention_forward)
     def test_order():
         module = TransformerDecoderLayer(embed_dims, num_heads,
@@ -350,10 +348,10 @@ def test_transformer_decoder_layer(embed_dims=16,
 
 
 def test_transformer_encoder(num_layers=2,
-                             embed_dims=16,
-                             num_heads=4,
-                             feedforward_channels=32,
-                             num_key=50,
+                             embed_dims=8,
+                             num_heads=2,
+                             feedforward_channels=8,
+                             num_key=10,
                              batch_size=1):
     module = TransformerEncoder(num_layers, embed_dims, num_heads,
                                 feedforward_channels)
@@ -389,11 +387,11 @@ def test_transformer_encoder(num_layers=2,
 
 
 def test_transformer_decoder(num_layers=2,
-                             embed_dims=16,
-                             num_heads=4,
-                             feedforward_channels=32,
-                             num_key=50,
-                             num_query=10,
+                             embed_dims=8,
+                             num_heads=2,
+                             feedforward_channels=8,
+                             num_key=10,
+                             num_query=5,
                              batch_size=1):
     module = TransformerDecoder(num_layers, embed_dims, num_heads,
                                 feedforward_channels)
@@ -471,12 +469,12 @@ def test_transformer_decoder(num_layers=2,
 
 def test_transformer(num_enc_layers=2,
                      num_dec_layers=2,
-                     embed_dims=16,
-                     num_heads=4,
-                     num_query=10,
+                     embed_dims=8,
+                     num_heads=2,
+                     num_query=5,
                      batch_size=1):
     module = Transformer(embed_dims, num_heads, num_enc_layers, num_dec_layers)
-    height, width = 80, 60
+    height, width = 8, 6
     x = torch.rand(batch_size, embed_dims, height, width)
     mask = torch.rand(batch_size, height, width) > 0.5
     query_embed = torch.rand(num_query, embed_dims)
