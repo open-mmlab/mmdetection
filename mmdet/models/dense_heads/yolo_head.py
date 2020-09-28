@@ -381,9 +381,11 @@ class YOLOV3Head(BaseDenseHead):
         target_conf = target_map[..., 4]
         target_label = target_map[..., 5:]
 
-        loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
-        loss_conf = self.loss_conf(
-            pred_conf, target_conf, weight=pos_and_neg_mask)
+        pos_mask_cls = pos_mask.expand(-1, -1, pred_label.shape[-1]).bool()
+        pred_label = pred_label.masked_select(pos_mask_cls)
+        target_label = target_label.masked_select(pos_mask_cls)
+        loss_cls = self.loss_cls(pred_label, target_label)
+        loss_conf = self.loss_conf(pred_conf, target_conf)
 
         if self.using_iou_loss:
             # preparation for box decoding
@@ -398,9 +400,13 @@ class YOLOV3Head(BaseDenseHead):
             pred_box = self.bbox_coder.decode(anchors, pred_xywh,
                                               anchor_strides)
             target_box = target_map[..., :4].reshape(-1, 4).contiguous()
-            pos_mask_ciou = pos_mask.reshape(-1, 1).contiguous().expand(-1, 4)
-            loss_xy = self.loss_bbox(
-                pred_box, target_box, weight=pos_mask_ciou)
+            pos_mask_ciou = pos_mask.reshape(-1,
+                                             1).contiguous().expand(-1,
+                                                                    4).bool()
+            pred_box = pred_box.masked_select(pos_mask_ciou).reshape(-1, 4)
+            target_box = target_box.masked_select(pos_mask_ciou).reshape(-1, 4)
+            loss_xy = self.loss_bbox(pred_box, target_box)
+            # weight=pos_mask_ciou)
             loss_wh = torch.zeros_like(loss_xy)
         else:
             pred_xy = pred_map[..., :2]

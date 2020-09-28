@@ -36,6 +36,54 @@ class BboxOverlaps2D(object):
         return repr_str
 
 
+@IOU_CALCULATORS.register_module()
+class WHIoU(object):
+    """WH IoU Calculator."""
+
+    def __call__(self, bboxes1, bboxes2, mode='iou', is_aligned=False):
+        """Calculate IoU between 2D bboxes.
+
+        Args:
+            bboxes1 (Tensor): bboxes have shape (m, 4) in <x1, y1, x2, y2>
+                format, or shape (m, 5) in <x1, y1, x2, y2, score> format.
+            bboxes2 (Tensor): bboxes have shape (m, 4) in <x1, y1, x2, y2>
+                format, shape (m, 5) in <x1, y1, x2, y2, score> format, or be
+                empty. If is_aligned is ``True``, then m and n must be equal.
+            mode (str): "iou" (intersection over union) or iof (intersection
+                over foreground).
+
+        Returns:
+            ious(Tensor): shape (m, n) if is_aligned == False else shape (m, 1)
+        """
+
+        assert bboxes1.size(-1) == 4
+        assert bboxes2.size(-1) == 4
+
+        wh1 = bboxes1[:, [2, 3]] - bboxes1[:, [0, 1]]
+        wh2 = bboxes2[:, [2, 3]] - bboxes2[:, [0, 1]]
+
+        rows = wh1.size(0)
+        cols = wh2.size(0)
+        if is_aligned:
+            assert rows == cols
+
+        if rows * cols == 0:
+            return wh1.new(rows, 1) if is_aligned else wh1.new(rows, cols)
+        wh1 = wh1[:, None]  # [N,1,2]
+        wh2 = wh2[None]  # [1,M,2]
+        inter = torch.min(wh1, wh2).prod(2)  # [N,M]
+        eps = 1e-6
+        eps = inter.new_tensor([eps])
+        return inter / torch.max(eps,
+                                 (wh1.prod(2) + wh2.prod(2) - inter
+                                  ))  # iou = inter / (area1 + area2 - inter)
+
+    def __repr__(self):
+        """str: a string describing the module"""
+        repr_str = self.__class__.__name__ + '()'
+        return repr_str
+
+
 def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     """Calculate overlap between two set of bboxes.
 
