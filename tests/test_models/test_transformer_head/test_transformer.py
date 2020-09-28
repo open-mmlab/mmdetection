@@ -115,7 +115,7 @@ def test_multihead_attention(embed_dims=16,
                              dropout=0.1,
                              num_query=10,
                              num_key=50,
-                             batch_size=2):
+                             batch_size=1):
     module = MultiheadAttention(embed_dims, num_heads, dropout)
     # self attention
     query = torch.rand(num_query, batch_size, embed_dims)
@@ -151,7 +151,7 @@ def test_multihead_attention(embed_dims=16,
     assert out.shape == (num_query, batch_size, embed_dims)
 
 
-def test_ffn(embed_dims=16, feedforward_channels=32, num_fcs=2, batch_size=2):
+def test_ffn(embed_dims=16, feedforward_channels=32, num_fcs=2, batch_size=1):
     # test invalid num_fcs
     with pytest.raises(AssertionError):
         module = FFN(embed_dims, feedforward_channels, 1)
@@ -170,7 +170,7 @@ def test_transformer_encoder_layer(embed_dims=16,
                                    num_heads=4,
                                    feedforward_channels=32,
                                    num_key=50,
-                                   batch_size=2):
+                                   batch_size=1):
     x = torch.rand(num_key, batch_size, embed_dims)
     # test invalid number of order
     with pytest.raises(AssertionError):
@@ -238,7 +238,7 @@ def test_transformer_decoder_layer(embed_dims=16,
                                    feedforward_channels=32,
                                    num_key=50,
                                    num_query=10,
-                                   batch_size=2):
+                                   batch_size=1):
     query = torch.rand(num_query, batch_size, embed_dims)
     # test invalid number of order
     with pytest.raises(AssertionError):
@@ -354,7 +354,7 @@ def test_transformer_encoder(num_layers=2,
                              num_heads=4,
                              feedforward_channels=32,
                              num_key=50,
-                             batch_size=2):
+                             batch_size=1):
     module = TransformerEncoder(num_layers, embed_dims, num_heads,
                                 feedforward_channels)
     assert not module.pre_norm
@@ -394,7 +394,7 @@ def test_transformer_decoder(num_layers=2,
                              feedforward_channels=32,
                              num_key=50,
                              num_query=10,
-                             batch_size=2):
+                             batch_size=1):
     module = TransformerDecoder(num_layers, embed_dims, num_heads,
                                 feedforward_channels)
     query = torch.rand(num_query, batch_size, embed_dims)
@@ -474,7 +474,7 @@ def test_transformer(num_enc_layers=2,
                      embed_dims=16,
                      num_heads=4,
                      num_query=10,
-                     batch_size=2):
+                     batch_size=1):
     module = Transformer(embed_dims, num_heads, num_enc_layers, num_dec_layers)
     height, width = 80, 60
     x = torch.rand(batch_size, embed_dims, height, width)
