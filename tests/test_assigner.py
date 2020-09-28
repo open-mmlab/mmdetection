@@ -74,7 +74,7 @@ def test_max_iou_assigner_with_empty_gt():
         [5, 5, 15, 15],
         [32, 32, 38, 42],
     ])
-    gt_bboxes = torch.FloatTensor([])
+    gt_bboxes = torch.empty(0, 4)
     assign_result = self.assign(bboxes, gt_bboxes)
 
     expected_gt_inds = torch.LongTensor([0, 0, 0, 0])
