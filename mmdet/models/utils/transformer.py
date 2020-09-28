@@ -590,12 +590,13 @@ class Transformer(nn.Module):
 
     Following the official DETR implementation, this module copy-paste
     from torch.nn.Transformer with modifications:
+
         * positional encodings are passed in MultiheadAttention
         * extra LN at the end of encoder is removed
         * decoder returns a stack of activations from all decoding layers
 
-    See 'End-to-End Object Detection with Transformers'
-    (https://arxiv.org/pdf/2005.12872) for details.
+    See `paper: End-to-End Object Detection with Transformers
+    <https://arxiv.org/pdf/2005.12872>`_ for details.
 
     Args:
         embed_dims (int): The feature dimension.
