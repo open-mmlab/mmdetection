@@ -399,7 +399,9 @@ class SABLRetinaHead(BaseDenseHead):
             bbox_cls_weights[pos_inds, :] = pos_bbox_cls_weights
             bbox_reg_weights[pos_inds, :] = pos_bbox_reg_weights
             if gt_labels is None:
-                labels[pos_inds] = 1
+                # Only rpn gives gt_labels as None
+                # Foreground is the first class
+                labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]

@@ -415,6 +415,8 @@ class RepPointsHead(AnchorFreeHead):
             pos_proposals[pos_inds, :] = proposals[pos_inds, :]
             proposals_weights[pos_inds, :] = 1.0
             if gt_labels is None:
+                # Only rpn gives gt_labels as None
+                # Foreground is the first class
                 labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[

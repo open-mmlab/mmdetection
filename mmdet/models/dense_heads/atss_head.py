@@ -609,6 +609,8 @@ class ATSSHead(AnchorHead):
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
+                # Only rpn gives gt_labels as None
+                # Foreground is the first class since v2.5.0
                 labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[

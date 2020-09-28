@@ -124,6 +124,7 @@ class FSAFHead(RetinaHead):
             # The assigned gt_index for each anchor. (0-based)
             pos_gt_inds[pos_inds] = sampling_result.pos_assigned_gt_inds
             if gt_labels is None:
+                # Only rpn gives gt_labels as None
                 # Foreground is the first class
                 labels[pos_inds] = 0
             else:
