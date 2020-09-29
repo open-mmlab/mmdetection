@@ -17,7 +17,8 @@ except ModuleNotFoundError:
     raise NotImplementedError('please update mmcv to version>=v1.0.4')
 
 
-def pytorch2onnx(model,
+def pytorch2onnx(config_path,
+                 checkpoint_path,
                  input_img,
                  input_shape,
                  opset_version=11,
@@ -25,24 +26,16 @@ def pytorch2onnx(model,
                  output_file='tmp.onnx',
                  verify=False,
                  normalize_cfg=None):
-    model.cpu().eval()
-    # read image
-    one_img = mmcv.imread(input_img)
-    if normalize_cfg:
-        one_img = mmcv.imnormalize(one_img, normalize_cfg['mean'],
-                                   normalize_cfg['std'])
-    one_img = mmcv.imresize(one_img, input_shape[2:]).transpose(2, 0, 1)
-    one_img = torch.from_numpy(one_img).unsqueeze(0).float()
-    (_, C, H, W) = input_shape
-    one_meta = {
-        'img_shape': (H, W, C),
-        'ori_shape': (H, W, C),
-        'pad_shape': (H, W, C),
-        'filename': '<demo>.png',
-        'scale_factor': 1.0,
-        'flip': False
+
+    model = _build_model_from_cfg(config_path, checkpoint_path)
+
+    input_config = {
+        'input_shape': input_shape,
+        'input_path': input_img,
+        'normalize_cfg': normalize_cfg
     }
-    # onnx.export does not support kwargs
+    one_img, one_meta = _preprocess_example_input(input_config)
+
     origin_forward = model.forward
     model.forward = partial(
         model.forward, img_metas=[[one_meta]], return_loss=False)
@@ -88,8 +81,7 @@ def pytorch2onnx(model,
 
 
 def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
-    '''
-    The ONNX export API only accept args, and all inputs should be
+    """The ONNX export API only accept args, and all inputs should be
     torch.Tensor or corresponding types (such as tuple of tensor).
     So if we are not running `pytorch2onnx` directly, we should call this
     function before exporting.
@@ -101,32 +93,23 @@ def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
     we have to replace the forward like:
     `model.forward = partial(model.forward, return_loss=False)`
 
-    Input:
-     config_path (str): the OpenMMLab config for the model we want to
-     export to ONNX
-     checkpoint_path (str): Path to the corresponding checkpoint
-     input_config (dict): the exactly data in this dict depends on the
-     framework. For MMSeg, we can just declare the input shape,
-     and generate the dummy data accordingly. However, for MMDet,
-     we may pass the real img path, or the NMS will return None
-     as there is no legal bbox.
-    Return:
-     model (torch.nn.Module): wrapped model which can be called by
-     model(*tensor_data)
-     tensor_data (list): inputs which are used to execute the model
-     while exporting.
-    '''
-    cfg = mmcv.Config.fromfile(config_path)
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
-    cfg.model.pretrained = None
-    cfg.data.test.test_mode = True
-    # build the model
-    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-    load_checkpoint(model, checkpoint_path, map_location='cpu')
-    model.cpu().eval()
+    Args:
+        config_path (str): the OpenMMLab config for the model we want to
+        export to ONNX
+        checkpoint_path (str): Path to the corresponding checkpoint
+        input_config (dict): the exactly data in this dict depends on the
+        framework. For MMSeg, we can just declare the input shape,
+        and generate the dummy data accordingly. However, for MMDet,
+        we may pass the real img path, or the NMS will return None
+        as there is no legal bbox.
+
+    Returns:
+        tuple: (model, tensor_data) wrapped model which can be called by
+        model(*tensor_data) and a list of inputs which are used to execute the
+        model while exporting.
+    """
+
+    model = _build_model_from_cfg(config_path, checkpoint_path)
     one_img, one_meta = _preprocess_example_input(input_config)
     tensor_data = [one_img]
     model.forward = partial(
@@ -140,23 +123,51 @@ def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
     return model, tensor_data
 
 
+def _build_model_from_cfg(config_path, checkpoint_path):
+    """Build a model from config and load the given checkpoint.
+
+    Args:
+        config_path (str): the OpenMMLab config for the model we want to
+        export to ONNX
+        checkpoint_path (str): Path to the corresponding checkpoint
+
+    Returns:
+        torch.nn.Module: the built model
+    """
+
+    cfg = mmcv.Config.fromfile(config_path)
+    # import modules from string list.
+    if cfg.get('custom_imports', None):
+        from mmcv.utils import import_modules_from_strings
+        import_modules_from_strings(**cfg['custom_imports'])
+    cfg.model.pretrained = None
+    cfg.data.test.test_mode = True
+
+    # build the model
+    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+    load_checkpoint(model, checkpoint_path, map_location='cpu')
+    model.cpu().eval()
+    return model
+
+
 def _preprocess_example_input(input_config):
     """Prepare an example input image for `generate_inputs_and_wrap_model`.
 
-    Input:
-     input_config (dict): customized config describing the example input.
-     Example:
-         input_config: {
+    Args:
+        input_config (dict): customized config describing the example input.
+        Example:
+        input_config: {
             'input_shape':[1,3,224,224],
             'input_path': 'demo/demo.jpg',
             'normalize_cfg': {
-              'mean': [123.675, 116.28, 103.53],
-              'std': [58.395, 57.12, 57.375]
-              }
+                'mean': [123.675, 116.28, 103.53],
+                'std': [58.395, 57.12, 57.375]
             }
-    Return:
-     one_img (torch.Tensor): tensor of the example input image.
-     one_meta (dict): meta information for the example input image.
+        }
+
+    Returns:
+        tuple: (one_img, one_meta), tensor of the example input image and meta
+        information for the example input image.
     """
     input_path = input_config['input_path']
     input_shape = input_config['input_shape']
@@ -236,26 +247,12 @@ if __name__ == '__main__':
     assert len(args.mean) == 3
     assert len(args.std) == 3
 
-    normalize_cfg = {
-        'mean': np.array(args.mean, dtype=np.float32),
-        'std': np.array(args.std, dtype=np.float32)
-    }
+    normalize_cfg = {'mean': args.mean, 'std': args.std}
 
-    cfg = mmcv.Config.fromfile(args.config)
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
-    cfg.model.pretrained = None
-    cfg.data.test.test_mode = True
-
-    # build the model
-    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
-
-    # conver model to onnx file
+    # convert model to onnx file
     pytorch2onnx(
-        model,
+        args.config,
+        args.checkpoint,
         args.input_img,
         input_shape,
         opset_version=args.opset_version,
