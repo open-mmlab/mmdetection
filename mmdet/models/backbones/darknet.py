@@ -67,7 +67,7 @@ class Darknet(nn.Module):
         out_indices (Sequence[int]): Output from which stages.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
             -1 means not freezing any parameters. Default: -1.
-        csp_on (bool): Whether the Darknet uses csp (cross stage partial
+        with_csp (bool): Whether the Darknet uses csp (cross stage partial
             network). This is a feature of YOLO v4, see details at
             https://arxiv.org/abs/1911.11929. Default: False.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
@@ -104,7 +104,7 @@ class Darknet(nn.Module):
                  depth=53,
                  out_indices=(3, 4, 5),
                  frozen_stages=-1,
-                 csp_on=False,
+                 with_csp=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
@@ -125,7 +125,7 @@ class Darknet(nn.Module):
         for i, n_layers in enumerate(self.layers):
             layer_name = f'conv_res_block{i + 1}'
             in_c, out_c = self.channels[i]
-            if csp_on:
+            if with_csp:
                 conv_module = Csp_conv_res_block(
                     in_c, out_c, n_layers, is_first_block=(i == 0), **cfg)
             else:
