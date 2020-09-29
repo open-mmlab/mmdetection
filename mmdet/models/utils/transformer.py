@@ -64,7 +64,7 @@ class MultiheadAttention(nn.Module):
                 Same in `nn.MultiheadAttention.forward`. Default None.
 
         Returns:
-            Tensor: forwarded results from `MultiheadAttention`.
+            Tensor: forwarded results with shape [num_query,bs,embed_dims].
         """
         query = x
         if key is None:
@@ -206,7 +206,7 @@ class TransformerEncoderLayer(nn.Module):
         """Forward function for `TransformerEncoderLayer`.
 
         Args:
-            x (Tensor): The input query with shape [num_query,bs,
+            x (Tensor): The input query with shape [num_key,bs,
                 embed_dims]. Same in `MultiheadAttention.forward`.
             pos (Tensor): The positional encoding for query. Default None.
                 Same as `query_pos` in `MultiheadAttention.forward`.
@@ -216,7 +216,7 @@ class TransformerEncoderLayer(nn.Module):
                 Same in `MultiheadAttention.forward`. Default None.
 
         Returns:
-            Tensor: forwarded results from `TransformerEncoderLayer`.
+            Tensor: forwarded results with shape [num_key,bs,embed_dims].
         """
         norm_cnt = 0
         inp_residual = x
@@ -339,7 +339,7 @@ class TransformerDecoderLayer(nn.Module):
                 `MultiheadAttention.forward`. Default None.
 
         Returns:
-            Tensor: forwarded results from `TransformerDecoderLayer`.
+            Tensor: forwarded results with shape [num_query,bs,embed_dims].
         """
         norm_cnt = 0
         inp_residual = x
@@ -451,7 +451,7 @@ class TransformerEncoder(nn.Module):
                 `TransformerEncoderLayer.forward`. Default None.
 
         Returns:
-            Tensor: forwarded results from `TransformerEncoder`.
+            Tensor: Results with shape [num_key,bs,embed_dims].
         """
         for layer in self.layers:
             x = layer(x, pos, attn_mask, key_padding_mask)
@@ -551,7 +551,7 @@ class TransformerDecoder(nn.Module):
                 `TransformerDecoderLayer.forward`. Default None.
 
         Returns:
-            Tensor: forwarded results from `TransformerDecoder`.
+            Tensor: Results with shape [num_query,bs, embed_dims].
         """
         intermediate = []
         for layer in self.layers:
@@ -686,7 +686,11 @@ class Transformer(nn.Module):
                 decoder, with the same shape as `x`.
 
         Returns:
-            Tensor: forwarded results from `Transformer`.
+            hs (Tensor): Output from decoder. If return_intermediate_dec
+                is True output has shape [num_dec_layers,bs,num_query,
+                embed_dims], else has shape [1,bs,num_query,embed_dims].
+            memory (Tensor): Output results from encoder, with shape
+                [bs,embed_dims,h,w].
         """
         bs, c, h, w = x.shape
         x = x.flatten(2).permute(2, 0, 1)  # [bs,c,h,w] -> [h*w,bs,c]
