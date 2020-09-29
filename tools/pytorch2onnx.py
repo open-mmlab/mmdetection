@@ -125,7 +125,8 @@ def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
     cfg.data.test.test_mode = True
     # build the model
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-    _ = load_checkpoint(model, checkpoint_path, map_location='cpu')
+    load_checkpoint(model, checkpoint_path, map_location='cpu')
+    model.cpu().eval()
     one_img, one_meta = _preprocess_example_input(input_config)
     tensor_data = [one_img]
     model.forward = partial(
