@@ -6,3 +6,4 @@
    data_pipeline.md
    new_modules.md
    customize_runtime.md
+   customize_losses.md
