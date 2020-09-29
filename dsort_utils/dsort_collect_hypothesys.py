@@ -5,7 +5,7 @@ import numpy as np
 def update_ids_next_chunk(hyp_lst_chunk, matches, max_frame_idx, cid):
     
     # create new file with updated track ids
-    filename = "./data/new_hypotheses_%s.txt" % (cid+1)
+    filename = "./dsort_utils/data/new_hypotheses_%s.txt" % (cid+1)
     fp = open(filename, "w")
 
     for frame_num in range(1, max_frame_idx+1):
@@ -39,16 +39,16 @@ def combine_tracks(hyp_lst, last_frame_indices, num_chunks):
 
     # writing result file
     print ("building final output ==>")
-    filename = "./data/all_hypotheses.txt"
+    filename = "./dsort_utils/data/all_hypotheses.txt"
     fp_out = open(filename, "w")
 
     for cid in range(1, num_chunks+1):
         out_file = ""
 
         if cid == 1:
-            out_file = "./data/hypotheses_%d.txt" % (cid)
+            out_file = "./dsort_utils/data/hypotheses_%d.txt" % (cid)
         else:
-            out_file = "./data/new_hypotheses_%s.txt" % (cid)
+            out_file = "./dsort_utils/data/new_hypotheses_%s.txt" % (cid)
 
         offset = -1000
 
