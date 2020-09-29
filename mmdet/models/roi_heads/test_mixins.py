@@ -72,11 +72,20 @@ class BBoxTestMixin(object):
             # some detector with_reg is False, bbox_pred will be None
             bbox_pred = bbox_pred.split(
                 num_proposals_per_img,
-                0) if bbox_pred is not None else [None, None]
+                0) if bbox_pred is not None else (None, ) * len(proposals)
         else:
             # some detector with_reg is False, bbox_pred will be None
-            bbox_pred = (
-                bbox_pred, ) if bbox_pred is not None else [None, None]
+            if bbox_pred is not None:
+                bucket_cls_preds, bucket_offset_preds = bbox_pred
+                bucket_cls_preds = bucket_cls_preds.split(
+                    num_proposals_per_img,
+                    0)
+                bucket_offset_preds = bucket_offset_preds.split(
+                    num_proposals_per_img,
+                    0)
+                bbox_pred = tuple(zip(bucket_cls_preds, bucket_offset_preds))
+            else:
+                bbox_pred = (None, ) * len(proposals)
 
         # apply bbox post-processing to each image individually
         det_bboxes = []
