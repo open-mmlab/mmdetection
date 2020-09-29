@@ -686,11 +686,12 @@ class Transformer(nn.Module):
                 decoder, with the same shape as `x`.
 
         Returns:
-            hs (Tensor): Output from decoder. If return_intermediate_dec
-                is True output has shape [num_dec_layers,bs,num_query,
-                embed_dims], else has shape [1,bs,num_query,embed_dims].
-            memory (Tensor): Output results from encoder, with shape
-                [bs,embed_dims,h,w].
+            tuple[Tensor]: results of decoder containing the following tensor.
+                - out_dec: Output from decoder. If return_intermediate_dec
+                      is True output has shape [num_dec_layers,bs,num_query,
+                      embed_dims], else has shape [1,bs,num_query,embed_dims].
+                - memory: Output results from encoder, with shape
+                      [bs,embed_dims,h,w].
         """
         bs, c, h, w = x.shape
         x = x.flatten(2).permute(2, 0, 1)  # [bs,c,h,w] -> [h*w,bs,c]
@@ -701,8 +702,8 @@ class Transformer(nn.Module):
         memory = self.encoder(
             x, pos=pos_embed, attn_mask=None, key_padding_mask=mask)
         target = torch.zeros_like(query_embed)
-        # hs: [num_layers,num_query,bs,dim]
-        hs = self.decoder(
+        # out_dec: [num_layers,num_query,bs,dim]
+        out_dec = self.decoder(
             target,
             memory,
             memory_pos=pos_embed,
@@ -711,7 +712,10 @@ class Transformer(nn.Module):
             target_attn_mask=None,
             memory_key_padding_mask=mask,
             target_key_padding_mask=None)
-        return hs.transpose(1, 2), memory.permute(1, 2, 0).reshape(bs, c, h, w)
+        out_dec = out_dec.transpose(1,
+                                    2), memory.permute(1, 2,
+                                                       0).reshape(bs, c, h, w)
+        return out_dec
 
     def __repr__(self):
         """str: a string that describes the module"""
