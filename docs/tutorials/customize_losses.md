@@ -1,4 +1,4 @@
-# tutorial 5: Modify Loss
+# tutorial 5:Customize Losses
 
 MMDetection provides users with different loss functions. But the default configuration may be not applicable for different datasets or models, so users may want to modify a specific loss to adapt the new situation.
 
