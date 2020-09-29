@@ -75,9 +75,9 @@ def pytorch2onnx(config_path,
         bbox_results = bbox2result(det_bboxes, det_labels, 1)
         onnx_results = bbox_results[0]
         assert np.allclose(
-            pytorch_result[0][:, 4], onnx_results[:, 4]
-        ), 'The outputs are different between Pytorch and ONNX'
-        print('The numerical values are same between Pytorch and ONNX')
+            pytorch_result[0][0][0][:4], onnx_results[0]
+            [:4]), 'The outputs are different between Pytorch and ONNX'
+        print('The numerical values are the same between Pytorch and ONNX')
 
 
 def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
