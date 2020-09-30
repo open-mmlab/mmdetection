@@ -74,8 +74,12 @@ class BBoxTestMixin(object):
                 num_proposals_per_img,
                 0) if bbox_pred is not None else (None, ) * len(proposals)
         else:
-            bbox_pred = self.bbox_head.bbox_pred_split(
-                bbox_pred, num_proposals_per_img)
+            # some detector with_reg is False, bbox_pred will be None
+            if bbox_pred is not None:
+                bbox_pred = self.bbox_head.bbox_pred_split(
+                    bbox_pred, num_proposals_per_img)
+            else:
+                bbox_pred = (None, ) * len(proposals)
 
         # apply bbox post-processing to each image individually
         det_bboxes = []

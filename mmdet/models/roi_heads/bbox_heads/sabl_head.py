@@ -564,15 +564,11 @@ class SABLHead(nn.Module):
 
     def bbox_pred_split(self, bbox_pred, num_proposals_per_img):
         """Split batch bbox prediction back to each image."""
-        # some detector with_reg is False, bbox_pred will be None
-        if bbox_pred is not None:
-            bucket_cls_preds, bucket_offset_preds = bbox_pred
-            bucket_cls_preds = bucket_cls_preds.split(
-                num_proposals_per_img, 0)
-            bucket_offset_preds = bucket_offset_preds.split(
-                num_proposals_per_img, 0)
-            bbox_pred = tuple(zip(bucket_cls_preds, bucket_offset_preds))
-        else:
-            bbox_pred = (None, ) * len(num_proposals_per_img)
+        bucket_cls_preds, bucket_offset_preds = bbox_pred
+        bucket_cls_preds = bucket_cls_preds.split(
+            num_proposals_per_img, 0)
+        bucket_offset_preds = bucket_offset_preds.split(
+            num_proposals_per_img, 0)
+        bbox_pred = tuple(zip(bucket_cls_preds, bucket_offset_preds))
 
         return bbox_pred
