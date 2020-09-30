@@ -51,7 +51,7 @@ def multiclass_nms(multi_bboxes,
     if score_factors is not None:
         scores = scores * score_factors[:, None]
     scores = torch.masked_select(scores, valid_mask)
-    labels = valid_mask.nonzero()[:, 1]
+    labels = valid_mask.nonzero(as_tuple=False)[:, 1]
 
     if bboxes.numel() == 0:
         bboxes = multi_bboxes.new_zeros((0, 5))
