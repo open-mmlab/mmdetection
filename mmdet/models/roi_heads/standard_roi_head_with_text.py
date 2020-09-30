@@ -293,7 +293,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
         else:
 
             import string
-            alphabet='  ' + string.ascii_letters + string.digits
+            alphabet='  ' + string.ascii_lowercase + string.digits
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
             if rescale and not isinstance(scale_factor, float):

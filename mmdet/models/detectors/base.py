@@ -294,7 +294,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         img = mmcv.imread(img)
         img = img.copy()
         if isinstance(result, tuple):
-            bbox_result, segm_result = result
+            bbox_result, segm_result, text_results = result
             if isinstance(segm_result, tuple):
                 segm_result = segm_result[0]  # ms rcnn
         else:
@@ -314,11 +314,14 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 np.random.randint(0, 256, (1, 3), dtype=np.uint8)
                 for _ in range(max(labels) + 1)
             ]
+            import cv2
             for i in inds:
                 i = int(i)
                 color_mask = color_masks[labels[i]]
                 mask = segms[i].astype(np.bool)
                 img[mask] = img[mask] * 0.5 + color_mask * 0.5
+                p0 = int(bboxes[i][0]), int(bboxes[i][3])
+                cv2.putText(img, text_results[i], p0, cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255))
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
@@ -327,7 +330,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             img,
             bboxes,
             labels,
-            class_names=self.CLASSES,
+            class_names=[''],
             score_thr=score_thr,
             bbox_color=bbox_color,
             text_color=text_color,

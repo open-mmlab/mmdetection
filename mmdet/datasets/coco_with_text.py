@@ -28,7 +28,7 @@ class CocoWithTextDataset(CocoDataset):
         super().pre_pipeline(results)
         results['text_fields'] = []
 
-    def __init__(self, alphabet='  ' + string.ascii_letters + string.digits, *args, **kwargs):
+    def __init__(self, alphabet='  ' + string.ascii_lowercase + string.digits, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.alphabet = alphabet
         self.max_text_len = 33
@@ -116,6 +116,7 @@ class CocoWithTextDataset(CocoDataset):
                 continue
             x1, y1, w, h = ann['bbox']
             text = ann['text']['transcription'] if ann['text']['legible'] else ''
+            text = text.lower()
             assert not ann.get('iscrowd', False) == ann['text']['legible']
             inter_w = max(0, min(x1 + w, img_info['width']) - max(x1, 0))
             inter_h = max(0, min(y1 + h, img_info['height']) - max(y1, 0))
@@ -136,13 +137,14 @@ class CocoWithTextDataset(CocoDataset):
                 gt_labels.append(self.cat2label[ann['category_id']])
                 gt_masks_ann.append(ann['segmentation'])
 
-                assert ' ' not in text
-
-                text = [self.alphabet.find(l) for l in text]
-                if -1 in text:
+                if ' ' in text:
                     text = []
                 else:
-                    text.append(self.EOS)
+                    text = [self.alphabet.find(l) for l in text]
+                    if -1 in text:
+                        text = []
+                    else:
+                        text.append(self.EOS)
                 # while len(text) < self.max_text_len:
                 #     text.append(-1)
                 text = np.array(text)
@@ -219,7 +221,7 @@ class CocoWithTextDataset(CocoDataset):
         segm_json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
-            det, seg = results[idx]
+            det, seg = results[idx][:2]
             for label in range(len(det)):
                 # bbox results
                 bboxes = det[label]
