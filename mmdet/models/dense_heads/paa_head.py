@@ -151,9 +151,9 @@ class PAAHead(ATSSHead):
         bboxes_target = torch.cat(bboxes_target,
                                   0).view(-1, bboxes_target[0].size(-1))
 
-        pos_inds_flatten = (
-            (labels >= 0)
-            & (labels < self.background_label)).nonzero().reshape(-1)
+        pos_inds_flatten = ((labels >= 0)
+                            &
+                            (labels < self.num_classes)).nonzero().reshape(-1)
 
         losses_cls = self.loss_cls(
             cls_scores, labels, labels_weight, avg_factor=num_pos)
@@ -330,7 +330,7 @@ class PAAHead(ATSSHead):
         ignore_inds_after_paa = torch.cat(ignore_inds_after_paa)
         reassign_mask = (pos_inds.unsqueeze(1) != pos_inds_after_paa).all(1)
         reassign_ids = pos_inds[reassign_mask]
-        label[reassign_ids] = self.background_label
+        label[reassign_ids] = self.num_classes
         label_weight[ignore_inds_after_paa] = 0
         bbox_weight[reassign_ids] = 0
         num_pos = len(pos_inds_after_paa)
@@ -456,7 +456,7 @@ class PAAHead(ATSSHead):
         pos_inds = []
         for i, single_labels in enumerate(labels):
             pos_mask = (0 <= single_labels) & (
-                single_labels < self.background_label)
+                single_labels < self.num_classes)
             pos_inds.append(pos_mask.nonzero().view(-1))
 
         gt_inds = [item.pos_assigned_gt_inds for item in sampling_result]

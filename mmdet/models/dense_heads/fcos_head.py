@@ -463,7 +463,7 @@ class FCOSHead(AnchorFreeHead):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
-            return gt_labels.new_full((num_points,), self.background_label), \
+            return gt_labels.new_full((num_points,), self.num_classes), \
                    gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
@@ -536,7 +536,7 @@ class FCOSHead(AnchorFreeHead):
         min_area, min_area_inds = areas.min(dim=1)
 
         labels = gt_labels[min_area_inds]
-        labels[min_area == INF] = self.background_label  # set as BG
+        labels[min_area == INF] = self.num_classes  # set as BG
         bbox_targets = bbox_targets[range(num_points), min_area_inds]
 
         return labels, bbox_targets
