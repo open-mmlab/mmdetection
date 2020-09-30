@@ -83,8 +83,6 @@ class DecoderAttention2d(nn.Module):
         self.v = nn.Parameter(torch.Tensor(
             self.hidden_size, 1))  # context vector
 
-        self.attn = nn.Linear(self.hidden_size * 2, self.flatten_feature_size)
-
         self.attn_combine = nn.Linear(self.hidden_size * 2, self.hidden_size)
 
         self.out = nn.Linear(self.hidden_size, self.vocab_size)
