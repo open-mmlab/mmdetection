@@ -1,4 +1,5 @@
 import os.path as osp
+import warnings
 
 import mmcv
 import numpy as np
@@ -147,6 +148,9 @@ class CustomDataset(Dataset):
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small."""
+        if self.filter_empty_gt:
+            warnings.warn(
+                'CustomeDataset does not support to filter empty gt images.')
         valid_inds = []
         for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) >= min_size:
