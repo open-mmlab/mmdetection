@@ -574,4 +574,5 @@ class SABLHead(nn.Module):
             bbox_pred = tuple(zip(bucket_cls_preds, bucket_offset_preds))
         else:
             bbox_pred = (None, ) * len(num_proposals_per_img)
+
         return bbox_pred
