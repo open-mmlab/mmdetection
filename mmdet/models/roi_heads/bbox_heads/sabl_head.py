@@ -561,7 +561,7 @@ class SABLHead(nn.Module):
             new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
 
         return new_rois
-    
+
     def bbox_pred_split(self, bbox_pred, num_proposals_per_img):
         """Split batch bbox prediction back to each image."""
         # some detector with_reg is False, bbox_pred will be None
