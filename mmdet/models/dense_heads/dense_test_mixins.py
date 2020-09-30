@@ -70,6 +70,8 @@ class BBoxTestMixin(object):
             bbox_outputs = self.get_bboxes(*bbox_inputs)[0]
             aug_bboxes.append(bbox_outputs[0])
             aug_scores.append(bbox_outputs[1])
+            # bbox_outputs of some detectors (e.g., ATSS, FCOS, YOLOv3)
+            # contains additional element to adjust scores before NMS
             if len(bbox_outputs) >= 3:
                 aug_factors.append(bbox_outputs[2])
 
