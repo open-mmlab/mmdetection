@@ -316,7 +316,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 i = int(i)
                 color_mask = color_masks[labels[i]]
                 mask = segms[i]
-                mask = mask if mask.dtype == np.bool else np.array(mask, dtype=bool)
+                if mask.dtype != np.bool:
+                    mask = np.array(mask, dtype=bool)
                 img[mask] = img[mask] * 0.5 + color_mask * 0.5
         # if out_file specified, do not show image in window
         if out_file is not None:
