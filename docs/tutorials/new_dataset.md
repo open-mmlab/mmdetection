@@ -42,7 +42,7 @@ The annotation json files in COCO format has the following necessary keys:
 ```
 
 There are three necessary keys in the json file:
-- `images`: contains a list of images with theire informations like `file_name`, `height`, `width`, and `id`.
+- `images`: contains a list of images with their informations like `file_name`, `height`, `width`, and `id`.
 - `annotations`: contains the list of instance annotations.
 - `categories`: contains the list of categories names and their ID.
 

@@ -102,7 +102,7 @@ class FSAFHead(RetinaHead):
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
         labels = anchors.new_full((num_valid_anchors, ),
-                                  self.background_label,
+                                  self.num_classes,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros((num_valid_anchors, label_channels),
                                           dtype=torch.float)
@@ -124,8 +124,9 @@ class FSAFHead(RetinaHead):
             # The assigned gt_index for each anchor. (0-based)
             pos_gt_inds[pos_inds] = sampling_result.pos_assigned_gt_inds
             if gt_labels is None:
-                # only rpn gives gt_labels as None, this time FG is 1
-                labels[pos_inds] = 1
+                # Only rpn gives gt_labels as None
+                # Foreground is the first class
+                labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]
@@ -150,8 +151,6 @@ class FSAFHead(RetinaHead):
                 idx_, label_ = shadowed_labels[:, 0], shadowed_labels[:, 1]
                 assert (labels[idx_] != label_).all(), \
                     'One label cannot be both positive and ignored'
-                # If background_label is 0. Then all labels increase by 1
-                label_ += int(self.background_label == 0)
                 label_weights[idx_, label_] = 0
             else:
                 label_weights[shadowed_labels] = 0
