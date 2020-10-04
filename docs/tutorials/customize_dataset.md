@@ -1,8 +1,10 @@
-# Tutorial 2: Adding New Dataset
+# Tutorial 2: Customize Datasets
 
-## Customize datasets by reorganizing data
+## Support new data format
 
-### Reorganize dataset to existing format
+To support a new data format, you can either convert them to existing formats (COCO format or PASCAL format) or directly convert them to the middle format. You could also choose to convert them offline (before training by a script) or online (implement a new dataset and do the conversion at training). In MMDetection, we recommand to convert the data into COCO formats and do the conversion offline, thus you only need to modify the config's data annotation pathes and classes after the conversion to your data.
+
+### Reorganize new data formats to existing format
 
 The simplest way is to convert your dataset to existing dataset formats (COCO or PASCAL VOC).
 
@@ -81,7 +83,12 @@ data = dict(
 
 We use this way to support CityScapes dataset. The script is in [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/cityscapes.py) and we also provide the finetuning [configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).
 
-### Reorganize dataset to middle format
+**Note**
+
+1. For instance segmentation datasets, **MMDetection only supports evaluating mask AP of dataset in COCO format for now**.
+2. It is recommanded to convert the data offline before training, thus you can still use `CocoDataset` and only need to modify the path of annotations and the training classes.
+
+### Reorganize new data format to middle format
 
 It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
 Actually, we define a simple annotation format and all existing datasets are
@@ -96,7 +103,8 @@ to cover them.
 
 Here is an example.
 
-```
+```python
+
 [
     {
         'filename': 'a.jpg',
@@ -210,10 +218,14 @@ dataset_A_train = dict(
 )
 ```
 
-## Customize datasets by mixing dataset
+## Customize datasets by dataset wrappers
 
-MMDetection also supports to mix dataset for training.
-Currently it supports to concat and repeat datasets.
+MMDetection also supports many dataset wrappers to mix the dataset or modify the dataset distribution for training.
+Currently it supports to three dataset wrappers as below:
+
+- `RepeatDataset`: simply repeat the whole dataset.
+- `ClassBalancedDataset`: repeat dataset in a class balanced manner.
+- `ConcatDataset`: concat datasets.
 
 ### Repeat dataset
 
@@ -362,12 +374,12 @@ data = dict(
 
 ```
 
-### Modify classes of existing dataset
+## Modify Dataset Classes
 
-With existing dataset types, we can modify the class names of them to train subset of the dataset.
+With existing dataset types, we can modify the class names of them to train subset of the annotations.
 For example, if you want to train only three classes of the current dataset,
 you can modify the classes of dataset.
-The dataset will subtract subset of the data which contains at least one class in the `classes`.
+The dataset will filter out the ground truth boxes of other classes automatically.
 
 ```python
 classes = ('person', 'bicycle', 'car')
@@ -395,3 +407,8 @@ data = dict(
     val=dict(classes=classes),
     test=dict(classes=classes))
 ```
+
+**Note**:
+
+- Before MMDetection v2.5.0, the dataset will filter out the empty GT images automatically if the classes are set and there is no way to disable that through config. This is an undesirable behavior and introduces confusion because if the classes are not set, the dataset only filter the empty GT images when `filter_empty_gt=True` and `test_mode=False`. After MMDetection v2.5.0, we decouple the image filtering process and the classes modification, i.e., the dataset will only filter empty GT images when `filter_empty_gt=True` and `test_mode=False`, no matter whether the classes are set. Thus, setting the classes only influences the annotations of classes used for training and users could decide whether to filter empty GT images by themselves.
+-
