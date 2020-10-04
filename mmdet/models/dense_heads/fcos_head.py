@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Scale, normal_init
+from mmcv.runner import force_fp32
 
-from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
+from mmdet.core import distance2bbox, multi_apply, multiclass_nms
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -256,29 +257,33 @@ class FCOSHead(AnchorFreeHead):
                    centernesses,
                    img_metas,
                    cfg=None,
-                   rescale=None):
+                   rescale=False,
+                   with_nms=True):
         """Transform network output for a batch into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_points * num_classes, H, W)
+                with shape (N, num_points * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_points * 4, H, W)
+                level with shape (N, num_points * 4, H, W).
             centernesses (list[Tensor]): Centerness for each scale level with
-                shape (N, num_points * 1, H, W)
+                shape (N, num_points * 1, H, W).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
+                if None, test_cfg would be used. Default: None.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
-                The first item is an (n, 5) tensor, where the first 4 columns \
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
-                5-th column is a score between 0 and 1. The second item is a \
-                (n,) tensor where each item is the predicted class label of \
-                the corresponding box.
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class label of the
+                corresponding box.
         """
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
@@ -299,11 +304,9 @@ class FCOSHead(AnchorFreeHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self._get_bboxes_single(cls_score_list,
-                                                 bbox_pred_list,
-                                                 centerness_pred_list,
-                                                 mlvl_points, img_shape,
-                                                 scale_factor, cfg, rescale)
+            det_bboxes = self._get_bboxes_single(
+                cls_score_list, bbox_pred_list, centerness_pred_list,
+                mlvl_points, img_shape, scale_factor, cfg, rescale, with_nms)
             result_list.append(det_bboxes)
         return result_list
 
@@ -315,12 +318,13 @@ class FCOSHead(AnchorFreeHead):
                            img_shape,
                            scale_factor,
                            cfg,
-                           rescale=False):
+                           rescale=False,
+                           with_nms=True):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for a single scale level
-                Has shape (num_points * num_classes, H, W).
+                with shape (num_points * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for a single scale
                 level with shape (num_points * 4, H, W).
             centernesses (list[Tensor]): Centerness for a single scale level
@@ -331,14 +335,21 @@ class FCOSHead(AnchorFreeHead):
                 (height, width, 3).
             scale_factor (ndarray): Scale factor of the image arrange as
                 (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns \
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
-                5-th column is a score between 0 and 1.
+            tuple(Tensor):
+                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
+                    the first 4 columns are bounding box positions
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                    between 0 and 1.
+                det_labels (Tensor): A (n,) tensor where each item is the
+                    predicted class label of the corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
@@ -374,14 +385,18 @@ class FCOSHead(AnchorFreeHead):
         # BG cat_id: num_class
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
-        det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes,
-            mlvl_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img,
-            score_factors=mlvl_centerness)
-        return det_bboxes, det_labels
+
+        if with_nms:
+            det_bboxes, det_labels = multiclass_nms(
+                mlvl_bboxes,
+                mlvl_scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=mlvl_centerness)
+            return det_bboxes, det_labels
+        else:
+            return mlvl_bboxes, mlvl_scores, mlvl_centerness
 
     def _get_points_single(self,
                            featmap_size,
@@ -462,7 +477,7 @@ class FCOSHead(AnchorFreeHead):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
-            return gt_labels.new_full((num_points,), self.background_label), \
+            return gt_labels.new_full((num_points,), self.num_classes), \
                    gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
@@ -535,7 +550,7 @@ class FCOSHead(AnchorFreeHead):
         min_area, min_area_inds = areas.min(dim=1)
 
         labels = gt_labels[min_area_inds]
-        labels[min_area == INF] = self.background_label  # set as BG
+        labels[min_area == INF] = self.num_classes  # set as BG
         bbox_targets = bbox_targets[range(num_points), min_area_inds]
 
         return labels, bbox_targets

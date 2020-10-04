@@ -1,7 +1,8 @@
 import numpy as np
 import torch
+from mmcv.runner import force_fp32
 
-from mmdet.core import force_fp32, multi_apply, multiclass_nms
+from mmdet.core import multi_apply, multiclass_nms
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead
@@ -120,7 +121,6 @@ class PAAHead(ATSSHead):
         bbox_preds = [item.reshape(-1, 4) for item in bbox_preds]
         iou_preds = levels_to_images(iou_preds)
         iou_preds = [item.reshape(-1, 1) for item in iou_preds]
-
         pos_losses_list, = multi_apply(self.get_pos_loss, anchor_list,
                                        cls_scores, bbox_preds, labels,
                                        labels_weight, bboxes_target,
@@ -138,6 +138,8 @@ class PAAHead(ATSSHead):
                 anchor_list,
             )
             num_pos = sum(num_pos)
+            if num_pos == 0:
+                num_pos = len(img_metas)
         # convert all tensor list to a flatten tensor
         cls_scores = torch.cat(cls_scores, 0).view(-1, cls_scores[0].size(-1))
         bbox_preds = torch.cat(bbox_preds, 0).view(-1, bbox_preds[0].size(-1))
@@ -149,9 +151,9 @@ class PAAHead(ATSSHead):
         bboxes_target = torch.cat(bboxes_target,
                                   0).view(-1, bboxes_target[0].size(-1))
 
-        pos_inds_flatten = (
-            (labels >= 0)
-            & (labels < self.background_label)).nonzero().reshape(-1)
+        pos_inds_flatten = ((labels >= 0)
+                            &
+                            (labels < self.num_classes)).nonzero().reshape(-1)
 
         losses_cls = self.loss_cls(
             cls_scores, labels, labels_weight, avg_factor=num_pos)
@@ -203,6 +205,8 @@ class PAAHead(ATSSHead):
         Returns:
             Tensor: Losses of all positive samples in single image.
         """
+        if not len(pos_inds):
+            return cls_score.new([]),
         anchors_all_level = torch.cat(anchors, 0)
         pos_scores = cls_score[pos_inds]
         pos_bbox_pred = bbox_pred[pos_inds]
@@ -326,7 +330,7 @@ class PAAHead(ATSSHead):
         ignore_inds_after_paa = torch.cat(ignore_inds_after_paa)
         reassign_mask = (pos_inds.unsqueeze(1) != pos_inds_after_paa).all(1)
         reassign_ids = pos_inds[reassign_mask]
-        label[reassign_ids] = self.background_label
+        label[reassign_ids] = self.num_classes
         label_weight[ignore_inds_after_paa] = 0
         bbox_weight[reassign_ids] = 0
         num_pos = len(pos_inds_after_paa)
@@ -359,6 +363,8 @@ class PAAHead(ATSSHead):
         # https://github.com/kkhoot/PAA/issues/8 and
         # https://github.com/kkhoot/PAA/issues/9.
         fgs = gmm_assignment == 0
+        pos_inds_temp = fgs.new_tensor([], dtype=torch.long)
+        ignore_inds_temp = fgs.new_tensor([], dtype=torch.long)
         if fgs.nonzero().numel():
             _, pos_thr_ind = scores[fgs].topk(1)
             pos_inds_temp = pos_inds_gmm[fgs][:pos_thr_ind + 1]
@@ -450,7 +456,7 @@ class PAAHead(ATSSHead):
         pos_inds = []
         for i, single_labels in enumerate(labels):
             pos_mask = (0 <= single_labels) & (
-                single_labels < self.background_label)
+                single_labels < self.num_classes)
             pos_inds.append(pos_mask.nonzero().view(-1))
 
         gt_inds = [item.pos_assigned_gt_inds for item in sampling_result]

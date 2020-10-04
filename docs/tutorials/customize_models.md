@@ -8,14 +8,7 @@ We basically categorize model components into 5 types.
 - roi extractor: the part for extracting RoI features from feature maps, e.g., RoI Align.
 - loss: the component in head for calculating losses, e.g., FocalLoss, L1Loss, and GHMLoss.
 
-## Customize Backbones
-
-### Customize backbone by config
-
-MMDetection already supports many backbones like ResNet, ResNext, and RegNet etc.
-To use customize them in your model, you can modify the dict of `backbone` as below:
-
-
+## Develop new components
 
 ### Add a new backbone
 

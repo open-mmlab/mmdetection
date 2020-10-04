@@ -47,7 +47,7 @@ you can use more CUDA versions such as 9.0.
 c. Install mmcv, we recommend you to install the pre-build mmcv as below.
 
 ```shell
-pip install mmcv-full==latest+torch1.5.0+cu101 -f http://download.openmmlab.com/mmcv/dist/index.html
+pip install mmcv-full==latest+torch1.5.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
 ```
 
 See [here](https://github.com/open-mmlab/mmcv#install-with-pip) for different versions of MMCV compatible to different PyTorch and CUDA versions.

@@ -44,8 +44,9 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     bboxes1 and bboxes2.
 
     Args:
-        bboxes1 (Tensor): shape (m, 4) in <x1, y1, x2, y2> format or empty.
-        bboxes2 (Tensor): shape (n, 4) in <x1, y1, x2, y2> format or empty.
+        bboxes1 (Tensor): shape (B, m, 4) in <x1, y1, x2, y2> format or empty.
+        bboxes2 (Tensor): shape (B, n, 4) in <x1, y1, x2, y2> format or empty.
+            B indicates the batch dim, in shape (B1, B2, ..., Bn).
             If is_aligned is ``True``, then m and n must be equal.
         mode (str): "iou" (intersection over union) or iof (intersection over
             foreground).
@@ -84,44 +85,54 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     assert (bboxes1.size(-1) == 4 or bboxes1.size(0) == 0)
     assert (bboxes2.size(-1) == 4 or bboxes2.size(0) == 0)
 
-    rows = bboxes1.size(0)
-    cols = bboxes2.size(0)
+    # Batch dim must be the same
+    # Batch dim: (B1, B2, ... Bn)
+    assert bboxes1.shape[:-2] == bboxes2.shape[:-2]
+    batch_shape = bboxes1.shape[:-2]
+
+    rows = bboxes1.size(-2)
+    cols = bboxes2.size(-2)
     if is_aligned:
         assert rows == cols
 
     if rows * cols == 0:
-        return bboxes1.new(rows, 1) if is_aligned else bboxes1.new(rows, cols)
+        if is_aligned:
+            return bboxes1.new(batch_shape + (rows, 1))
+        else:
+            return bboxes1.new(batch_shape + (rows, cols))
 
     if is_aligned:
-        lt = torch.max(bboxes1[:, :2], bboxes2[:, :2])  # [rows, 2]
-        rb = torch.min(bboxes1[:, 2:], bboxes2[:, 2:])  # [rows, 2]
+        lt = torch.max(bboxes1[..., :2], bboxes2[..., :2])  # [B, rows, 2]
+        rb = torch.min(bboxes1[..., 2:], bboxes2[..., 2:])  # [B, rows, 2]
 
-        wh = (rb - lt).clamp(min=0)  # [rows, 2]
-        overlap = wh[:, 0] * wh[:, 1]
-        area1 = (bboxes1[:, 2] - bboxes1[:, 0]) * (
-            bboxes1[:, 3] - bboxes1[:, 1])
+        wh = (rb - lt).clamp(min=0)  # [B, rows, 2]
+        overlap = wh[..., 0] * wh[..., 1]
+        area1 = (bboxes1[..., 2] - bboxes1[..., 0]) * (
+            bboxes1[..., 3] - bboxes1[..., 1])
 
         if mode == 'iou':
-            area2 = (bboxes2[:, 2] - bboxes2[:, 0]) * (
-                bboxes2[:, 3] - bboxes2[:, 1])
+            area2 = (bboxes2[..., 2] - bboxes2[..., 0]) * (
+                bboxes2[..., 3] - bboxes2[..., 1])
             union = area1 + area2 - overlap
         else:
             union = area1
     else:
-        lt = torch.max(bboxes1[:, None, :2], bboxes2[:, :2])  # [rows, cols, 2]
-        rb = torch.min(bboxes1[:, None, 2:], bboxes2[:, 2:])  # [rows, cols, 2]
+        lt = torch.max(bboxes1[..., :, None, :2],
+                       bboxes2[..., None, :, :2])  # [B, rows, cols, 2]
+        rb = torch.min(bboxes1[..., :, None, 2:],
+                       bboxes2[..., None, :, 2:])  # [B, rows, cols, 2]
 
-        wh = (rb - lt).clamp(min=0)  # [rows, cols, 2]
-        overlap = wh[:, :, 0] * wh[:, :, 1]
-        area1 = (bboxes1[:, 2] - bboxes1[:, 0]) * (
-            bboxes1[:, 3] - bboxes1[:, 1])
+        wh = (rb - lt).clamp(min=0)  # [B, rows, cols, 2]
+        overlap = wh[..., 0] * wh[..., 1]
+        area1 = (bboxes1[..., 2] - bboxes1[..., 0]) * (
+            bboxes1[..., 3] - bboxes1[..., 1])
 
         if mode == 'iou':
-            area2 = (bboxes2[:, 2] - bboxes2[:, 0]) * (
-                bboxes2[:, 3] - bboxes2[:, 1])
-            union = area1[:, None] + area2 - overlap
+            area2 = (bboxes2[..., 2] - bboxes2[..., 0]) * (
+                bboxes2[..., 3] - bboxes2[..., 1])
+            union = area1[..., None] + area2[..., None, :] - overlap
         else:
-            union = area1[:, None]
+            union = area1[..., None]
 
     eps = union.new_tensor([eps])
     union = torch.max(union, eps)
