@@ -118,9 +118,9 @@ jobs:
         run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
       - name: Install mmdet dependencies
         run: |
-          pip install mmcv-full==${{matrix.mmcv}} -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
+          MMCV_WITH_OPS=1 pip install git+https://github.com/ZwwWayne/mmcv.git@chech-wrapper
           pip install -r requirements.txt
-          python -c 'import mmcv; print(mmcv.__version__)'
+          python -c 'import mmcv; import mmcv.ops; print(mmcv.__version__)'
       - name: Build and install
         run: |
           rm -rf .eggs
