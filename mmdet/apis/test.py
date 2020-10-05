@@ -94,9 +94,9 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             result = model(return_loss=False, rescale=True, **data)
             # encode mask results
             if isinstance(result, tuple):
-                bbox_results, mask_results = result
+                bbox_results, mask_results, text_results = result
                 encoded_mask_results = encode_mask_results(mask_results)
-                result = bbox_results, encoded_mask_results
+                result = bbox_results, encoded_mask_results, text_results
         results.append(result)
 
         if rank == 0:

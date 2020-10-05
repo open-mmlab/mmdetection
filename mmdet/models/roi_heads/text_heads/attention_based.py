@@ -192,15 +192,19 @@ class TextRecognitionHeadAttention(nn.Module):
         self.criterion = nn.NLLLoss(reduction='none')
 
     def __forward_train(self, features, targets, masks):
-        if not all([len(target) <= self.decoder_max_seq_len for target in targets if len(target)]):
-            return torch.tensor(0.0, device=features.device)
+        decoder_max_seq_len = max(len(target) for target in targets if len(target))
+        decoder_max_seq_len = max(decoder_max_seq_len, 1)
 
         valid_targets_indexes = torch.tensor([ind for ind, target in enumerate(targets) if len(target)], device=features.device)
 
+        do_single_iteration_to_avoid_hanging = False
         if len(valid_targets_indexes) == 0:
-            return torch.tensor(0.0, device=features.device)
-        targets = [np.array(target) for target in targets if len(target)]
-        targets = [np.pad(target, (0, self.decoder_max_seq_len - len(target))) for target in targets]
+            logging.warn(f'if len(valid_targets_indexes) == 0')
+            valid_targets_indexes = torch.tensor([0])
+            do_single_iteration_to_avoid_hanging = True
+
+        targets = [np.array(targets[i]) for i in valid_targets_indexes]
+        targets = [np.pad(target, (0, decoder_max_seq_len - len(target))) for target in targets]
         targets = np.array(targets)
 
         batch_size = targets.shape[0]
@@ -217,17 +221,19 @@ class TextRecognitionHeadAttention(nn.Module):
         decoder_input = torch.ones([batch_size], device=features.device, dtype=torch.long) * self.decoder_sos_int
         targets = torch.tensor(targets, device=features.device, dtype=torch.long)
 
-        
-
         predictions = []
 
-        for di in range(self.decoder_max_seq_len):
+        for di in range(decoder_max_seq_len):
             if isinstance(self.decoder.decoder, nn.GRU):
                 decoder_output, decoder_hidden, decoder_attention = self.decoder(
                     decoder_input, decoder_hidden, features)
             elif isinstance(self.decoder.decoder, nn.LSTM):
                 decoder_output, decoder_hidden, decoder_cell, decoder_attention = self.decoder(
                     decoder_input, decoder_hidden, features, decoder_cell)
+
+            if do_single_iteration_to_avoid_hanging:
+                return torch.sum(decoder_output) * 0.0
+                
             predictions.append(decoder_output.topk(1)[1].cpu().numpy().reshape(-1))
             # print(targets[:, di].reshape(-1))
             # print('---')

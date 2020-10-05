@@ -304,15 +304,22 @@ class StandardRoIHeadWithText(StandardRoIHead):
             text_rois = bbox2roi([_bboxes])
             text_results = self._text_forward(x, text_rois)
             text_results = text_results['text_results'].permute(1, 0, 2)
+            text_results = torch.nn.functional.softmax(text_results, dim=-1)
             decoded_texts = []
             for text in text_results:
-                encoded = text.topk(1)[1].cpu().numpy().reshape(-1)
+                predicted_confidences, encoded = text.topk(1)
+                predicted_confidences = predicted_confidences.cpu().numpy()
+                encoded = encoded.cpu().numpy().reshape(-1)
                 decoded = ''
-                for l in encoded:
+                confidence = 1
+                for l, c in zip(encoded, predicted_confidences):
                     if l == 1:
                         break
                     decoded = decoded + alphabet[l]
-                decoded_texts.append(decoded)
+                    confidence = confidence * c
+                
+                decoded_texts.append(decoded if confidence >= -0.5 else '')
+                    
                 
             # segm_result = self.mask_head.get_seg_masks(
             #     mask_results['mask_pred'], _bboxes, det_labels, self.test_cfg,
