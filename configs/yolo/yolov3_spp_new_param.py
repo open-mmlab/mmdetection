@@ -122,7 +122,7 @@ lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=1000,  # same as burn-in in darknet
-    warmup_ratio=0.1,
+    warmup_ratio=0.00001,
     step=[218, 246])
 # runtime settings
 total_epochs = 273
