@@ -23,6 +23,8 @@ class CascadeRCNN(TwoStageDetector):
             train_cfg=train_cfg,
             test_cfg=test_cfg,
             pretrained=pretrained)
+        
+        self.img_metas = None
 
     def show_result(self, data, result, **kwargs):
         """Show prediction results of the detector."""
