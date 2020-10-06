@@ -70,10 +70,10 @@ train_pipeline = [
         mean=img_norm_cfg['mean'],
         to_rgb=img_norm_cfg['to_rgb'],
         ratio_range=(1, 2)),
-    dict(
-        type='MinIoURandomCrop',
-        min_ious=(0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
-        min_crop_size=0.3),
+    # dict(
+    #     type='MinIoURandomCrop',
+    #     min_ious=(0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
+    #     min_crop_size=0.3),
     dict(type='Resize', img_scale=[(448, 448), (448, 448)], keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.0),
     dict(type='Normalize', **img_norm_cfg),
@@ -102,6 +102,7 @@ data = dict(
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/val1.json',
+        # ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=train_pipeline),
     val=dict(
@@ -129,7 +130,7 @@ lr_config = dict(
     step=[218, 246])
 # runtime settings
 total_epochs = 273
-evaluation = dict(interval=10, metric=['bbox'])
+evaluation = dict(interval=1, metric=['bbox'])
 
 log_config = dict(  # config to register logger hook
     interval=1,  # Interval to print the log

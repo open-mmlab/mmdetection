@@ -306,7 +306,7 @@ class YOLOV3Head(BaseDenseHead):
 
         Args:
             pred_maps (list[Tensor]): Prediction map for each scale level,
-                shape (N, num_anchors * num_attrib, H, W)
+                shape (num_anchors, N, feat_dim, H, W)
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
@@ -337,10 +337,25 @@ class YOLOV3Head(BaseDenseHead):
         target_maps_list, neg_maps_list = self.get_targets(
             anchor_list, responsible_flag_list, gt_bboxes, gt_labels)
 
-        level_idx_list = list(range(len(pred_maps)))
+        # losses_cls = torch.Tensor(.0, device=device)
+        # losses_conf = torch.Tensor(.0, device=device)
+        # losses_xy = torch.Tensor(.0, device=device)
+        # losses_wh = torch.Tensor(.0, device=device)
+        # for i in range(self.num_levels):
+        #     d_losses_cls, d_losses_conf, d_losses_xy, d_losses_wh =
+        #     multi_apply(
+        #         self.loss_single, pred_maps[i], target_maps_list[i],
+        #         neg_maps_list[i],
+        #         multi_level_anchors[i])
+        #     losses_cls += d_losses_cls.sum()
+        #     losses_conf += d_losses_conf.sum()
+        #     losses_xy += d_losses_xy.sum()
+        #     losses_wh += d_losses_wh.sum()
+
+        level_idx_list = list(range(self.num_levels))
         losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
             self.loss_single, pred_maps, target_maps_list, neg_maps_list,
-            anchor_list, level_idx_list)
+            multi_level_anchors, level_idx_list)
 
         return dict(
             loss_cls=losses_cls,
@@ -352,10 +367,15 @@ class YOLOV3Head(BaseDenseHead):
         """Compute loss of a single image from a batch.
 
         Args:
-            pred_map (Tensor): Raw predictions for a single level.
+            pred_map (Tensor): Raw predictions for a single level. Dimension:
+                [batch_size, feat_dim, feat_w, feat_h]
             target_map (Tensor): The Ground-Truth target for a single level.
+                Dimension: [batch_size, num_anchors, 85]
             neg_map (Tensor): The negative masks for a single level.
-            level_idx (int): The index of feature map level
+                Dimension: [batch_size, num_anchors]
+            anchors (Tensor): The anchors for a single level.
+                Dimension: [num_anchors]
+
 
         Returns:
             tuple:
@@ -372,6 +392,7 @@ class YOLOV3Head(BaseDenseHead):
         pos_mask = target_map[..., 4]
         pos_and_neg_mask = neg_mask + pos_mask
         pos_mask = pos_mask.unsqueeze(dim=-1)
+        # pos_and_neg_mask = pos_and_neg_mask.unsqueeze(dim=-1)
         if torch.max(pos_and_neg_mask) > 1.:
             warnings.warn('There is overlap between pos and neg sample.')
             pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
@@ -381,19 +402,23 @@ class YOLOV3Head(BaseDenseHead):
         target_conf = target_map[..., 4]
         target_label = target_map[..., 5:]
 
-        pos_mask_cls = pos_mask.expand(-1, -1, pred_label.shape[-1]).bool()
-        pred_label = pred_label.masked_select(pos_mask_cls)
-        target_label = target_label.masked_select(pos_mask_cls)
+        mask_cls = pos_mask.expand(-1, -1, pred_label.shape[-1]).bool()
+        pred_label = pred_label.masked_select(mask_cls)
+        target_label = target_label.masked_select(mask_cls)
         loss_cls = self.loss_cls(pred_label, target_label)
+
+        # mask_conf = pos_and_neg_mask.expand(-1, -1, pred_conf.shape[-1])
+        # .bool()
+        # pred_conf = pred_conf.masked_select(mask_conf)
+        # target_conf = target_conf.masked_select(mask_conf)
         loss_conf = self.loss_conf(pred_conf, target_conf)
 
         if self.using_iou_loss:
             # preparation for box decoding
             anchor_strides = torch.tensor(
                 self.featmap_strides[level_idx],
-                device=pred_map.device).repeat(len(
-                    anchors[level_idx])).repeat(num_imgs)
-            anchors = anchors[level_idx].repeat(num_imgs, 1)
+                device=pred_map.device).repeat(len(anchors)).repeat(num_imgs)
+            anchors = anchors.repeat(num_imgs, 1)
             assert len(anchor_strides) == len(anchors)
             pred_xywh = pred_map[..., :4].reshape(-1, 4).contiguous()
             # decode box for IoU loss

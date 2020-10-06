@@ -11,24 +11,26 @@ from ..builder import NECKS
 class DetectionBlock(nn.Module):
     """Detection block in YOLO neck.
 
-    Let out_channels = n, the DetectionBlock normally contains 5 ConvModules,
-    Their sizes are 1x1xn, 3x3x2n, 1x1xn, 3x3x2n, and 1x1xn respectively.
-    If the spp is on, the DetectionBlock contains 6 ConvModules and
-    3 pooling layers, sizes are 1x1xn, 3x3x2n, 1x1xn,
-    5x5 maxpool, 9x9 maxpool, 13x13 maxpool, 1x1xn, 3x3x2n, 1x1xn.
-    The input channel is arbitrary (in_channels)
-yolo
-    Args:
-        in_channels (int): The number of input channels.
-        out_channels (int): The number of output channels.
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        spp_on (bool): whether to integrate a spp module. Default: False.
-        spp_pooler_sizes (tuple): A set of sizes for spatial pyramid pooling.
-            Default: (5, 9, 13).
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True).
-        act_cfg (dict): Config dict for activation layer.
-            Default: dict(type='LeakyReLU', negative_slope=0.1).
+        Let out_channels = n, the DetectionBlock normally contains 5
+        ConvModules,
+        Their sizes are 1x1xn, 3x3x2n, 1x1xn, 3x3x2n, and 1x1xn respectively.
+        If the spp is on, the DetectionBlock contains 6 ConvModules and
+        3 pooling layers, sizes are 1x1xn, 3x3x2n, 1x1xn,
+        5x5 maxpool, 9x9 maxpool, 13x13 maxpool, 1x1xn, 3x3x2n, 1x1xn.
+        The input channel is arbitrary (in_channels)
+    yolo
+        Args:
+            in_channels (int): The number of input channels.
+            out_channels (int): The number of output channels.
+            conv_cfg (dict): Config dict for convolution layer. Default: None.
+            spp_on (bool): whether to integrate a spp module. Default: False.
+            spp_pooler_sizes (tuple): A set of sizes for spatial pyramid
+            pooling.
+                Default: (5, 9, 13).
+            norm_cfg (dict): Dictionary to construct and config norm layer.
+                Default: dict(type='BN', requires_grad=True).
+            act_cfg (dict): Config dict for activation layer.
+                Default: dict(type='LeakyReLU', negative_slope=0.1).
     """
 
     def __init__(self,
