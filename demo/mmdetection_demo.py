@@ -24,7 +24,6 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
     
     print('[config] img_scale: {}'.format(model.cfg.data.test.pipeline[1]['img_scale']))
     print('[config] score threshold: {}'.format(model.cfg.test_cfg['rcnn']['score_thr']))
-    # print('[config] iou threshold: {}'.format(model.cfg.test_cfg['rcnn']['nms']['iou_thr']))
     print('[config] iou threshold: {}'.format(model.cfg.test_cfg['rcnn']['nms']['iou_threshold']))
     print('[config] rpn nms threshold: {}'.format(model.cfg.test_cfg['rpn']['nms_thr']))
 
@@ -35,8 +34,8 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
     log_file = open(log_filename, 'w')
 
     start_process = time.time()
-
-    slice_start = frame_offset
+    
+    slice_start = 0 if frame_offset == 0 else frame_offset-1
     slice_end = frame_offset+frame_count
 
     print('[DBG] processing frames from {} - {}'.format(range(slice_start,slice_end)[0], range(slice_start,slice_end)[-1]))
@@ -55,7 +54,7 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
         result = inference_detector(model, frame)
         end_time = time.time()
         
-        bbox_result, segm_result = result, None
+        bbox_result, _ = result, None
         bboxes = np.vstack(bbox_result)
 
         labels = [np.full(bbox.shape[0], i, dtype=np.int32) for i, bbox in enumerate(bbox_result)]
