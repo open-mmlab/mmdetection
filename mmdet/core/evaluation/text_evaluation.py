@@ -53,11 +53,11 @@ def polygon_from_points(points):
     """ Returns a Polygon object to use with the Polygon2 class from a list of 8 points:
         x1,y1,x2,y2,x3,y3,x4,y4 """
 
-    if not (isinstance(points, list) and isinstance(points[0], list)):
-        decoded_mask = mask_utils.decode(points)
-        decoded_mask = np.ascontiguousarray(decoded_mask)
-        contours, _ = cv2.findContours(decoded_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
-        assert len(contours) == 1
+    # if not (isinstance(points, list) and isinstance(points[0], list)):
+    #     decoded_mask = mask_utils.decode(points)
+    #     decoded_mask = np.ascontiguousarray(decoded_mask)
+    #     contours, _ = cv2.findContours(decoded_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+    #     assert len(contours) == 1
     
     point_mat = np.array(points).reshape(-1, 2)
     return plg.Polygon(point_mat)
@@ -206,7 +206,7 @@ def parse_gt_objects(gt_annotation, use_transcription):
             gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
         elif use_transcription:
             if is_word(transcription):
-                transcription = strip(gt_object['transcription'])
+                transcription = strip(transcription)
             else:
                 gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
 
@@ -288,8 +288,8 @@ def match(gt_polygons_list, gt_transcriptions, gt_dont_care_polygon_nums,
                         ) == pr_transcriptions[pr_idx].lower():
                             pr_matched_nums.append(pr_idx)
                         else:
-                            print(gt_transcriptions[gt_idx],
-                                  pr_transcriptions[pr_idx])
+                            # print(gt_transcriptions[gt_idx],
+                            #       pr_transcriptions[pr_idx])
                             pr_matched_but_not_recognized.append(pr_idx)
                     else:
                         pr_matched_nums.append(pr_idx)
@@ -402,6 +402,10 @@ def text_eval(pr_annotations, gt_annotations, conf_thr,
         plt.ylabel("Detected instances, %", fontsize=15)
         plt.title("Recall", fontsize=25)
         plt.show()
+
+    print('matched_sum', matched_sum)
+    print('num_global_care_gt', num_global_care_gt)
+    print('num_global_care_pr', num_global_care_pr)
 
     method_recall = 0 if num_global_care_gt == 0 else float(matched_sum) / num_global_care_gt
     method_precision = 0 if num_global_care_pr == 0 else float(matched_sum) / num_global_care_pr

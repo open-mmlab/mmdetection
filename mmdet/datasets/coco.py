@@ -373,7 +373,7 @@ class CocoDataset(CustomDataset):
                 raise RuntimeError(f'Failed to parse metrics: {metric}')
 
         metrics = metric if isinstance(metric, list) else [metric]
-        allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast', 'f1']
+        allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast', 'f1', 'word_spotting']
         for metric in metrics:
             if get_metrics_name(metric) not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
@@ -401,7 +401,7 @@ class CocoDataset(CustomDataset):
                 print_log(log_msg, logger=logger)
                 continue
 
-            metric_type = 'bbox' if metric == 'f1' else metric
+            metric_type = 'bbox' if metric in ['f1', 'word_spotting'] else metric
             if metric_type not in result_files:
                 raise KeyError(f'{metric_type} is not in results')
             try:
@@ -413,7 +413,7 @@ class CocoDataset(CustomDataset):
                     level=logging.ERROR)
                 break
 
-            iou_type = 'bbox' if metric in {'proposal', 'f1'} else metric
+            iou_type = 'bbox' if metric in {'proposal', 'f1', 'word_spotting'} else metric
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
@@ -431,17 +431,46 @@ class CocoDataset(CustomDataset):
                     val = float(f'{cocoEval.stats[i + 6]:.3f}')
                     eval_results[item] = val
             else:
+                if metric in ['f1', 'word_spotting']:
+                    from pycocotools.mask import decode
+                    import cv2
+                    predictions = []
+                    for res in results:
+                        boxes = res[0][0]
+                        segms = res[1][0]
+                        texts = res[2]
 
-                if metric == 'f1':
-                    predictions = cocoEval.cocoDt.imgToAnns
+                        per_image_predictions = []
+
+                        for bbox, segm, text in zip(boxes, segms, texts):
+                            if text or metric == 'f1':
+                                text = text.upper()
+                                mask = decode(segm)
+                                contours = cv2.findContours(
+                                    mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]
+                                if contours:
+                                    contour = sorted(
+                                        contours, key=lambda x: -cv2.contourArea(x))[0]
+                                    contour = cv2.boxPoints(cv2.minAreaRect(contour)).reshape(-1)
+                                else:
+                                    print('Used bbox')
+                                    xmin, ymin, xmax, ymax, conf = box
+                                    contour = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
+                                contour = [int(round(x)) for x in contour]
+                                per_image_predictions.append({'segmentation': contour, 'score': 1.0, 'text': {
+                                    'transcription': text
+                                }})
+
+                        predictions.append(per_image_predictions)
+                    
                     gt_annotations = cocoEval.cocoGt.imgToAnns
                     recall, precision, hmean, _ = text_eval(
                         predictions, gt_annotations, float(metric_params.get('thr', 0)),
                         show_recall_graph=False,
-                        use_transcriptions=False)
+                        use_transcriptions=metric in ['word_spotting'])
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
                           format(recall, precision, hmean))
-                    eval_results['hmean'] = float(f'{hmean:.3f}')
+                    eval_results[metric] = float(f'{hmean:.3f}')
                     continue
 
                 cocoEval.evaluate()
