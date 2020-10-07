@@ -409,11 +409,14 @@ class YOLOV3Head(BaseDenseHead):
 
         for i in range(num_imgs):
 
+            img_pos_mask = pos_mask[i, :, :]
+            if img_pos_mask.sum() <= 0:
+                continue
+
             img_pred_conf = pred_map[i, :, 4]
             img_pred_label = pred_map[i, :, 5:]
             img_target_conf = target_map[i, :, 4]
             img_target_label = target_map[i, :, 5:]
-            img_pos_mask = pos_mask[i, :, :]
 
             img_cls_mask = img_pos_mask.expand(-1, num_cls).bool()
             img_pred_label = img_pred_label.masked_select(
@@ -450,7 +453,6 @@ class YOLOV3Head(BaseDenseHead):
                 img_pred_wh = pred_map[i, :, 2:4]
                 img_target_xy = target_map[i, :, :2]
                 img_target_wh = target_map[i, :, 2:4]
-                # img_pos_mask = pos_mask[i, :, :]
                 loss_xy += self.loss_xy(
                     img_pred_xy, img_target_xy, weight=img_pos_mask)
                 loss_wh += self.loss_wh(
