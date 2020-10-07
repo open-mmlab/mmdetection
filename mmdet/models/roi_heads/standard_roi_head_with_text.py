@@ -10,15 +10,19 @@ from mmdet.core.bbox.transforms import bbox2result
 from mmdet.core.mask.transforms import mask2result
 import numpy as np
 
+import string
+
 
 @HEADS.register_module()
 class StandardRoIHeadWithText(StandardRoIHead):
     """Simplest base roi head including one bbox head and one mask head.
     """
 
-    def __init__(self, text_roi_extractor, text_head, *args, **kwargs):
+    def __init__(self, text_roi_extractor, text_head, text_thr, alphabet='  ' + string.ascii_lowercase + string.digits, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.init_text_head(text_roi_extractor, text_head)
+        self.alphabet = alphabet
+        self.text_thr = text_thr
 
     def init_text_head(self, text_roi_extractor, text_head):
         self.text_roi_extractor = build_roi_extractor(text_roi_extractor)
@@ -291,9 +295,6 @@ class StandardRoIHeadWithText(StandardRoIHead):
             #                         dtype=det_bboxes.dtype,
             #                         device=det_bboxes.device)
         else:
-
-            import string
-            alphabet='  ' + string.ascii_lowercase + string.digits
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
             if rescale and not isinstance(scale_factor, float):
@@ -315,10 +316,10 @@ class StandardRoIHeadWithText(StandardRoIHead):
                 for l, c in zip(encoded, predicted_confidences):
                     if l == 1:
                         break
-                    decoded = decoded + alphabet[l]
+                    decoded = decoded + self.alphabet[l]
                     confidence = confidence * c
                 
-                decoded_texts.append(decoded if confidence >= -0.5 else '')
+                decoded_texts.append(decoded if confidence >= self.text_thr else '')
                     
                 
             # segm_result = self.mask_head.get_seg_masks(
