@@ -1,5 +1,4 @@
 import warnings
-
 import matplotlib.pyplot as plt
 import mmcv
 import torch
@@ -10,7 +9,7 @@ from mmcv.runner import load_checkpoint
 from mmdet.core import get_classes
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
-
+from mmdet.utils.gpu_augmentation import Augmentation
 
 def init_detector(config, checkpoint=None, device='cuda:0'):
     """Initialize a detector from config file.
@@ -88,31 +87,44 @@ def inference_detector(model, img):
     """
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
-    # build the data pipeline
-    test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
-    test_pipeline = Compose(test_pipeline)
-    # prepare data
-    data = dict(img=img)
-    data = test_pipeline(data)
-    data = collate([data], samples_per_gpu=1)
-    if next(model.parameters()).is_cuda:
-        # scatter to specified GPU
-        data = scatter(data, [device])[0]
-    else:
-        # Use torchvision ops for CPU mode instead
-        for m in model.modules():
-            if isinstance(m, (RoIPool, RoIAlign)):
-                if not m.aligned:
-                    # aligned=False is not implemented on CPU
-                    # set use_torchvision on-the-fly
-                    m.use_torchvision = True
-        warnings.warn('We set use_torchvision=True in CPU mode.')
-        # just get the actual data from DataContainer
-        data['img_metas'] = data['img_metas'][0].data
+    
+    augmentation_pipeline = Augmentation()
+    frame_tensor = augmentation_pipeline(img, cfg)
+    
+    if model.img_metas == None:
+        # build the data pipeline
+        test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
+        test_pipeline = Compose(test_pipeline)
+        # prepare data
+        data = dict(img=img)
+        data = test_pipeline(data)
+        data = collate([data], samples_per_gpu=1)
+        
+        if next(model.parameters()).is_cuda:
+            # scatter to specified GPU
+            data = scatter(data, [device])[0]
+        else:
+            # Use torchvision ops for CPU mode instead
+            for m in model.modules():
+                if isinstance(m, (RoIPool, RoIAlign)):
+                    if not m.aligned:
+                        # aligned=False is not implemented on CPU
+                        # set use_torchvision on-the-fly
+                        m.use_torchvision = True
+            warnings.warn('We set use_torchvision=True in CPU mode.')
+            # just get the actual data from DataContainer
+            data['img_metas'] = data['img_metas'][0].data
+        model.img_metas = data['img_metas']
+        
+    # Re-Use initialized dictionary containing initialized img metas
+    data = dict(img_metas = model.img_metas)
+    # Override image tensor with current augmented frame
+    data["img"] = [frame_tensor]
 
     # forward the model
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
+        
     return result
 
 
