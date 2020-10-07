@@ -28,6 +28,29 @@ For installation instructions, please see [install.md](install.md).
   Note: You need to run `pip uninstall mmcv` first if you have mmcv installed.
   If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
+   We **highly recommend** you to install the pre-build mmcv as below.
+
+   ```shell
+   pip install mmcv-full==latest+torch1.6.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+   ```
+
+   See [here](https://github.com/open-mmlab/mmcv#install-with-pip) for different versions of MMCV compatible to different PyTorch and CUDA versions.
+
+   Optionally you can choose to compile mmcv from source by the following command
+
+   ```shell
+   git clone https://github.com/open-mmlab/mmcv.git
+   cd mmcv
+   MMCV_WITH_OPS=1 pip install -e .  # package mmcv-full will be installed after this step
+   cd ..
+   ```
+   Or directly run
+
+   ```shell
+   pip install mmcv-full
+   ```
+
+
 ## Prepare datasets
 
 It is recommended to symlink the dataset root to `$MMDETECTION/data`.
