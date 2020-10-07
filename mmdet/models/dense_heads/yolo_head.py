@@ -354,7 +354,7 @@ class YOLOV3Head(BaseDenseHead):
 
         level_idx_list = list(range(self.num_levels))
         losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
-            self.loss_single, pred_maps, target_maps_list, neg_maps_list,
+            self.loss_single_level, pred_maps, target_maps_list, neg_maps_list,
             multi_level_anchors, level_idx_list)
 
         return dict(
@@ -363,7 +363,8 @@ class YOLOV3Head(BaseDenseHead):
             loss_xy=losses_xy,
             loss_wh=losses_wh)
 
-    def loss_single(self, pred_map, target_map, neg_map, anchors, level_idx):
+    def loss_single_level(self, pred_map, target_map, neg_map, anchors,
+                          level_idx):
         """Compute loss of a single image from a batch.
 
         Args:
@@ -386,6 +387,10 @@ class YOLOV3Head(BaseDenseHead):
         """
 
         num_imgs = len(pred_map)
+        device = pred_map.device
+        num_cls = self.num_attrib - 5
+        assert num_cls > 0
+
         pred_map = pred_map.permute(0, 2, 3,
                                     1).reshape(num_imgs, -1, self.num_attrib)
         neg_mask = neg_map.float()
@@ -397,51 +402,76 @@ class YOLOV3Head(BaseDenseHead):
             warnings.warn('There is overlap between pos and neg sample.')
             pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
 
-        pred_conf = pred_map[..., 4]
-        pred_label = pred_map[..., 5:]
-        target_conf = target_map[..., 4]
-        target_label = target_map[..., 5:]
+        loss_cls = torch.tensor(.0, device=device)
+        loss_conf = torch.tensor(.0, device=device)
+        loss_xy = torch.tensor(.0, device=device)
+        loss_wh = torch.tensor(.0, device=device)
 
-        mask_cls = pos_mask.expand(-1, -1, pred_label.shape[-1]).bool()
-        pred_label = pred_label.masked_select(mask_cls)
-        target_label = target_label.masked_select(mask_cls)
-        loss_cls = self.loss_cls(pred_label, target_label)
+        for i in range(num_imgs):
 
-        # mask_conf = pos_and_neg_mask.expand(-1, -1, pred_conf.shape[-1])
-        # .bool()
-        # pred_conf = pred_conf.masked_select(mask_conf)
-        # target_conf = target_conf.masked_select(mask_conf)
-        loss_conf = self.loss_conf(pred_conf, target_conf)
+            img_pred_conf = pred_map[i, :, 4]
+            img_pred_label = pred_map[i, :, 5:]
+            img_target_conf = target_map[i, :, 4]
+            img_target_label = target_map[i, :, 5:]
+            img_pos_mask = pos_mask[i, :, :]
 
-        if self.using_iou_loss:
-            # preparation for box decoding
-            anchor_strides = torch.tensor(
-                self.featmap_strides[level_idx],
-                device=pred_map.device).repeat(len(anchors)).repeat(num_imgs)
-            anchors = anchors.repeat(num_imgs, 1)
-            assert len(anchor_strides) == len(anchors)
-            pred_xywh = pred_map[..., :4].reshape(-1, 4).contiguous()
-            # decode box for IoU loss
-            pred_box = self.bbox_coder.decode(anchors, pred_xywh,
-                                              anchor_strides)
-            target_box = target_map[..., :4].reshape(-1, 4).contiguous()
-            pos_mask_ciou = pos_mask.reshape(-1,
-                                             1).contiguous().expand(-1,
+            img_cls_mask = img_pos_mask.expand(-1, num_cls).bool()
+            img_pred_label = img_pred_label.masked_select(
+                img_cls_mask).reshape(-1, num_cls)
+            img_target_label = img_target_label.masked_select(
+                img_cls_mask).reshape(-1, num_cls)
+            loss_cls += self.loss_cls(img_pred_label, img_target_label)
+            loss_conf += self.loss_conf(img_pred_conf, img_target_conf)
+
+            if self.using_iou_loss:
+                # preparation for box decoding
+                anchor_strides = torch.tensor(
+                    self.featmap_strides[level_idx],
+                    device=pred_map.device).repeat(len(anchors))
+                assert len(anchor_strides) == len(anchors)
+                img_pred_xywh = pred_map[i, :, :4].reshape(-1, 4).contiguous()
+                # decode box for IoU loss
+                img_pred_box = self.bbox_coder.decode(anchors, img_pred_xywh,
+                                                      anchor_strides)
+                img_target_box = \
+                    target_map[i, :, :4].reshape(-1, 4).contiguous()
+
+                img_box_mask = \
+                    img_pos_mask.reshape(-1, 1).contiguous().expand(-1,
                                                                     4).bool()
-            pred_box = pred_box.masked_select(pos_mask_ciou).reshape(-1, 4)
-            target_box = target_box.masked_select(pos_mask_ciou).reshape(-1, 4)
-            loss_xy = self.loss_bbox(pred_box, target_box)
-            # weight=pos_mask_ciou)
-            loss_wh = torch.zeros_like(loss_xy)
-        else:
-            pred_xy = pred_map[..., :2]
-            pred_wh = pred_map[..., 2:4]
-            target_xy = target_map[..., :2]
-            target_wh = target_map[..., 2:4]
-            loss_xy = self.loss_xy(pred_xy, target_xy, weight=pos_mask)
-            loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
+                img_pred_box = \
+                    img_pred_box.masked_select(img_box_mask).reshape(-1, 4)
+                img_target_box = \
+                    img_target_box.masked_select(img_box_mask).reshape(-1, 4)
+                loss_xy += self.loss_bbox(img_pred_box, img_target_box)
+                loss_wh += torch.zeros_like(loss_xy)
+            else:
+                img_pred_xy = pred_map[i, :, :2]
+                img_pred_wh = pred_map[i, :, 2:4]
+                img_target_xy = target_map[i, :, :2]
+                img_target_wh = target_map[i, :, 2:4]
+                # img_pos_mask = pos_mask[i, :, :]
+                loss_xy += self.loss_xy(
+                    img_pred_xy, img_target_xy, weight=img_pos_mask)
+                loss_wh += self.loss_wh(
+                    img_pred_wh, img_target_wh, weight=img_pos_mask)
 
         return loss_cls, loss_conf, loss_xy, loss_wh
+
+        # anchors = # need batch_size set of anchors
+        # img_index_list = list(range(num_imgs))
+        # all_losses_per_image = multi_apply(
+        #     self.loss_single_img, pred_map, target_map, neg_map,
+        #     anchors, level_idx_list, img_index_list)
+        #
+        # all_losses = [torch.stack(item, dim=0).sum() for item in
+        #             all_losses_per_image]
+        # # loss_cls, loss_conf, loss_xy, loss_wh = all_losses
+        #
+        # return all_losses  # loss_cls, loss_conf, loss_xy, loss_wh
+
+    # def loss_single_img(self, pred_map, target_map, neg_map, anchors,
+    #                       level_idx):
 
     def get_targets(self, anchor_list, responsible_flag_list, gt_bboxes_list,
                     gt_labels_list):
