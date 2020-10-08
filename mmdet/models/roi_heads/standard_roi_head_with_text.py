@@ -23,6 +23,9 @@ class StandardRoIHeadWithText(StandardRoIHead):
         self.init_text_head(text_roi_extractor, text_head)
         self.alphabet = alphabet
         self.text_thr = text_thr
+        if self.train_cfg:
+            self.text_bbox_assigner = build_assigner(self.train_cfg.text_assigner)
+            self.text_bbox_sampler = build_sampler(self.train_cfg.text_sampler)
 
     def init_text_head(self, text_roi_extractor, text_head):
         self.text_roi_extractor = build_roi_extractor(text_roi_extractor)
@@ -99,6 +102,19 @@ class StandardRoIHeadWithText(StandardRoIHead):
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 sampling_results.append(sampling_result)
 
+            text_sampling_results = []
+            for i in range(num_imgs):
+                assign_result = self.text_bbox_assigner.assign(
+                    proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
+                    gt_labels[i])
+                sampling_result = self.text_bbox_sampler.sample(
+                    assign_result,
+                    proposal_list[i],
+                    gt_bboxes[i],
+                    gt_labels=gt_labels[i],
+                    feats=[lvl_feat[i][None] for lvl_feat in x])
+                text_sampling_results.append(sampling_result)
+
         losses = dict()
         # bbox head forward and loss
         if self.with_bbox:
@@ -116,8 +132,8 @@ class StandardRoIHeadWithText(StandardRoIHead):
             if mask_results['loss_mask'] is not None:
                 losses.update(mask_results['loss_mask'])
 
-        text_results = self._text_forward_train(x, sampling_results, bbox_results['bbox_feats'],
-                                                gt_masks, gt_texts, img_metas)
+
+        text_results = self._text_forward_train(x, text_sampling_results, gt_masks, gt_texts, img_metas)
         if text_results['loss_text'] is not None:
             losses.update(text_results)
 
@@ -167,7 +183,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
         else:
             return dict(text_results=text_results)
 
-    def _text_forward_train(self, x, sampling_results, bbox_feats, gt_masks, gt_texts,
+    def _text_forward_train(self, x, sampling_results, gt_masks, gt_texts,
                             img_metas):
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])

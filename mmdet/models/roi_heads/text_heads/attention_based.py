@@ -221,7 +221,7 @@ class TextRecognitionHeadAttention(nn.Module):
         decoder_input = torch.ones([batch_size], device=features.device, dtype=torch.long) * self.decoder_sos_int
         targets = torch.tensor(targets, device=features.device, dtype=torch.long)
 
-        predictions = []
+        #predictions = []
 
         for di in range(decoder_max_seq_len):
             if isinstance(self.decoder.decoder, nn.GRU):
@@ -234,7 +234,7 @@ class TextRecognitionHeadAttention(nn.Module):
             if do_single_iteration_to_avoid_hanging:
                 return torch.sum(decoder_output) * 0.0
                 
-            predictions.append(decoder_output.topk(1)[1].cpu().numpy().reshape(-1))
+            #predictions.append(decoder_output.topk(1)[1].cpu().numpy().reshape(-1))
             # print(targets[:, di].reshape(-1))
             # print('---')
             mask = (targets[:, di] != 0).float()
