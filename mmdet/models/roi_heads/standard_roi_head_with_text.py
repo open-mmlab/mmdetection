@@ -26,6 +26,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
         if self.train_cfg:
             self.text_bbox_assigner = build_assigner(self.train_cfg.text_assigner)
             self.text_bbox_sampler = build_sampler(self.train_cfg.text_sampler)
+            self.area_per_symbol_thr = self.train_cfg.get('area_per_symbol_thr', 0)
 
     def init_text_head(self, text_roi_extractor, text_head):
         self.text_roi_extractor = build_roi_extractor(text_roi_extractor)
@@ -196,6 +197,19 @@ class StandardRoIHeadWithText(StandardRoIHead):
                 matched_gt_texts.extend(matched_texts)
             if pos_rois.shape[0] == 0:
                 return dict(loss_mask=None)
+
+            areas = (pos_rois[:, 3] - pos_rois[:, 1]) * (pos_rois[:, 4] - pos_rois[:, 2])
+            areas = areas.detach().cpu().numpy().reshape(-1)
+            # since EOS symbol added to text, subtract it
+            text_lenths = np.array([max(len(text) - 1, 1) for text in matched_gt_texts])
+
+            area_per_symbol = areas / text_lenths
+            
+            # removed = [text for text, aps in zip(matched_gt_texts, area_per_symbol) if aps < self.area_per_symbol_thr]
+            # if removed:
+            #    print(removed)
+            
+            matched_gt_texts = [text if aps >= self.area_per_symbol_thr else [] for text, aps in zip(matched_gt_texts, area_per_symbol)]
             
             text_results = self._text_forward(x, pos_rois, matched_gt_texts=matched_gt_texts)
         else:

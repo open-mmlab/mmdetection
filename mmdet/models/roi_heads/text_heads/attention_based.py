@@ -14,6 +14,8 @@
  limitations under the License.
 """
 
+import logging
+
 import cv2
 import numpy as np
 
@@ -193,7 +195,7 @@ class TextRecognitionHeadAttention(nn.Module):
         self.criterion = nn.NLLLoss(reduction='none')
 
     def __forward_train(self, features, targets, masks):
-        decoder_max_seq_len = max(len(target) for target in targets if len(target))
+        decoder_max_seq_len = max(len(target) for target in targets)
         decoder_max_seq_len = max(decoder_max_seq_len, 1)
 
         valid_targets_indexes = torch.tensor([ind for ind, target in enumerate(targets) if len(target)], device=features.device)
