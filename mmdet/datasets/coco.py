@@ -453,7 +453,7 @@ class CocoDataset(CustomDataset):
                                         contours, key=lambda x: -cv2.contourArea(x))[0]
                                     contour = cv2.boxPoints(cv2.minAreaRect(contour)).reshape(-1)
                                 else:
-                                    print('Used bbox')
+                                    # print('Used bbox')
                                     xmin, ymin, xmax, ymax, conf = bbox
                                     contour = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
                                 contour = [int(round(x)) for x in contour]
