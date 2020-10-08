@@ -352,6 +352,7 @@ class VFNetHead(ATSSHead, FCOSHead):
                 image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
+                Default: None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -484,18 +485,20 @@ class VFNetHead(ATSSHead, FCOSHead):
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
-            cls_scores (list[Tensor]): Box iou-aware scores for each scale l
-                evel with shape (N, num_points * num_classes, H, W)
+            cls_scores (list[Tensor]): Box iou-aware scores for each scale
+                level with shape (N, num_points * num_classes, H, W).
             bbox_preds (list[Tensor]): Box offsets for each scale
-                level with shape (N, num_points * 4, H, W)
+                level with shape (N, num_points * 4, H, W).
             bbox_preds_refine (list[Tensor]): Refined Box offsets for
-                each scale level with shape (N, num_points * 4, H, W)
+                each scale level with shape (N, num_points * 4, H, W).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space
-            with_nms (bool): If True, perform nms
+                if None, test_cfg would be used. Default: None.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before returning boxes.
+                Default: True.
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
@@ -542,7 +545,7 @@ class VFNetHead(ATSSHead, FCOSHead):
 
         Args:
             cls_scores (list[Tensor]): Box iou-aware scores for a single scale
-                level. Has shape (num_points * num_classes, H, W).
+                level with shape (num_points * num_classes, H, W).
             bbox_preds (list[Tensor]): Box offsets for a single scale
                 level with shape (num_points * 4, H, W).
             mlvl_points (list[Tensor]): Box reference for a single scale level
@@ -551,15 +554,21 @@ class VFNetHead(ATSSHead, FCOSHead):
                 (height, width, 3).
             scale_factor (ndarray): Scale factor of the image arrange as
                 (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
-            with_nms (bool): If True, perform nms.
+                Default: False.
+            with_nms (bool): If True, do nms before returning boxes.
+                Default: True.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1.
+            tuple(Tensor):
+                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
+                    the first 4 columns are bounding box positions
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                    between 0 and 1.
+                det_labels (Tensor): A (n,) tensor where each item is the
+                    predicted class label of the corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
@@ -628,7 +637,7 @@ class VFNetHead(ATSSHead, FCOSHead):
 
         Args:
             cls_scores (list[Tensor]): Box iou-aware scores for each scale
-                level with shape (N, num_points * num_classes, H, W)
+                level with shape (N, num_points * num_classes, H, W).
             mlvl_points (list[Tensor]): Points of each fpn level, each has
                 shape (num_points, 2).
             gt_bboxes (list[Tensor]): Ground truth bboxes of each image,
@@ -700,7 +709,7 @@ class VFNetHead(ATSSHead, FCOSHead):
 
         Args:
             cls_scores (list[Tensor]): Box iou-aware scores for each scale
-                level with shape (N, num_points * num_classes, H, W)
+                level with shape (N, num_points * num_classes, H, W).
             mlvl_points (list[Tensor]): Points of each fpn level, each has
                 shape (num_points, 2).
             gt_bboxes (list[Tensor]): Ground truth bboxes of each image,
@@ -710,7 +719,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             gt_bboxes_ignore (None | Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
+                ignored, shape (num_ignored_gts, 4). Default: None.
 
         Returns:
             tuple:

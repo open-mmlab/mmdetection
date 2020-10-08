@@ -58,22 +58,26 @@ class XMLDataset(CustomDataset):
 
         return data_infos
 
-    def get_subset_by_classes(self):
-        """Filter imgs by user-defined categories."""
-        subset_data_infos = []
-        for data_info in self.data_infos:
-            img_id = data_info['id']
-            xml_path = osp.join(self.img_prefix, 'Annotations',
-                                f'{img_id}.xml')
-            tree = ET.parse(xml_path)
-            root = tree.getroot()
-            for obj in root.findall('object'):
-                name = obj.find('name').text
-                if name in self.CLASSES:
-                    subset_data_infos.append(data_info)
-                    break
-
-        return subset_data_infos
+    def _filter_imgs(self, min_size=32):
+        """Filter images too small or without annotation."""
+        valid_inds = []
+        for i, img_info in enumerate(self.data_infos):
+            if min(img_info['width'], img_info['height']) < min_size:
+                continue
+            if self.filter_empty_gt:
+                img_id = img_info['id']
+                xml_path = osp.join(self.img_prefix, 'Annotations',
+                                    f'{img_id}.xml')
+                tree = ET.parse(xml_path)
+                root = tree.getroot()
+                for obj in root.findall('object'):
+                    name = obj.find('name').text
+                    if name in self.CLASSES:
+                        valid_inds.append(i)
+                        break
+            else:
+                valid_inds.append(i)
+        return valid_inds
 
     def get_ann_info(self, idx):
         """Get annotation from XML file by index.
