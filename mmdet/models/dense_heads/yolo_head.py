@@ -391,6 +391,8 @@ class YOLOV3Head(BaseDenseHead):
         num_cls = self.num_attrib - 5
         assert num_cls > 0
 
+        print(pred_map.shape)
+
         pred_map = pred_map.permute(0, 2, 3,
                                     1).reshape(num_imgs, -1, self.num_attrib)
         neg_mask = neg_map.float()
@@ -423,8 +425,12 @@ class YOLOV3Head(BaseDenseHead):
                 img_cls_mask).reshape(-1, num_cls)
             img_target_label = img_target_label.masked_select(
                 img_cls_mask).reshape(-1, num_cls)
+
             loss_cls += self.loss_cls(img_pred_label, img_target_label)
             loss_conf += self.loss_conf(img_pred_conf, img_target_conf)
+
+            print(img_target_label.shape)
+            print(loss_cls)
 
             if self.using_iou_loss:
                 # preparation for box decoding

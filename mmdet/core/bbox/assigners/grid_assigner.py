@@ -32,7 +32,8 @@ class GridAssigner(BaseAssigner):
                  neg_iou_thr,
                  min_pos_iou=.0,
                  gt_max_assign_all=True,
-                 iou_calculator=dict(type='WHIoU')):
+                 iou_calculator=dict(type='BboxOverlaps2D')):
+        # iou_calculator=dict(type='WHIoU')):
         self.pos_iou_thr = pos_iou_thr  # TODO: remove this
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
