@@ -1,5 +1,6 @@
 import argparse
 import copy
+import logging
 import os
 import os.path as osp
 import time
@@ -27,6 +28,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
+    parser.add_argument('--tensorboard-dir', help='the dir to save tensorboard logs')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument(
@@ -154,6 +156,13 @@ def main():
     cfg_samples_per_gpu = cfg.data.samples_per_gpu
     if args.update_config is not None:
         cfg.merge_from_dict(args.update_config)
+    if args.tensorboard_dir is not None:
+        hooks = [hook for hook in cfg.log_config.hooks if hook.type == 'TensorboardLoggerHook']
+        if hooks:
+            hooks[0].log_dir = args.tensorboard_dir
+        else:
+            logging.warning('Failed to find TensorboardLoggerHook')
+    
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
