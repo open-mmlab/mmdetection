@@ -391,7 +391,7 @@ class YOLOV3Head(BaseDenseHead):
         num_cls = self.num_attrib - 5
         assert num_cls > 0
 
-        print(pred_map.shape)
+        # print(pred_map.shape)
 
         pred_map = pred_map.permute(0, 2, 3,
                                     1).reshape(num_imgs, -1, self.num_attrib)

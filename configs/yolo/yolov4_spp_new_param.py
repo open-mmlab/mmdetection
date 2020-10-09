@@ -2,8 +2,8 @@ _base_ = '../_base_/default_runtime.py'
 # model settings
 model = dict(
     type='YOLOV4',
-    # TODO: fix pretrained model
-    # pretrained='../checkpoints/yolov4/yolov4.conv.137.pth',
+    # # TODO: fix pretrained model
+    # pretrained='checkpoints/0init.pth',
     backbone=dict(
         type='Darknet',
         depth=53,
@@ -118,14 +118,14 @@ data = dict(
         # img_prefix=data_root + 'val2014/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.937, weight_decay=0.000484)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.937, weight_decay=0.000484)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=1000,  # same as burn-in in darknet
-    warmup_ratio=0.1,
+    warmup_ratio=0.00001,
     step=[218, 246])
 # runtime settings
 total_epochs = 273
