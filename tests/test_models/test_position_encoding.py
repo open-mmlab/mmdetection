@@ -1,15 +1,15 @@
 import pytest
 import torch
 
-from mmdet.models.utils import PositionEmbeddingLearned, PositionEmbeddingSine
+from mmdet.models.utils import LearnedPositionEmbedding, SinePositionEmbedding
 
 
 def test_position_encoding_sine(num_pos_feats=16, batch_size=2):
     with pytest.raises(AssertionError):
-        module = PositionEmbeddingSine(
+        module = SinePositionEmbedding(
             num_pos_feats, scale=(3., ), normalize=True)
 
-    module = PositionEmbeddingSine(num_pos_feats)
+    module = SinePositionEmbedding(num_pos_feats)
     h, w = 10, 6
     mask = torch.rand(batch_size, h, w) > 0.5
     assert not module.normalize
@@ -17,18 +17,20 @@ def test_position_encoding_sine(num_pos_feats=16, batch_size=2):
     assert out.shape == (batch_size, num_pos_feats * 2, h, w)
 
     # set normalize
-    module = PositionEmbeddingSine(num_pos_feats, normalize=True)
+    module = SinePositionEmbedding(num_pos_feats, normalize=True)
     assert module.normalize
     out = module(mask)
     assert out.shape == (batch_size, num_pos_feats * 2, h, w)
 
 
 def test_position_encoding_learned(num_pos_feats=16,
-                                   num_embed=10,
+                                   row_num_embed=10,
+                                   col_num_embed=10,
                                    batch_size=2):
-    module = PositionEmbeddingLearned(num_pos_feats, num_embed)
-    assert module.row_embed.weight.shape == (num_embed, num_pos_feats)
-    assert module.col_embed.weight.shape == (num_embed, num_pos_feats)
+    module = LearnedPositionEmbedding(num_pos_feats, row_num_embed,
+                                      col_num_embed)
+    assert module.row_embed.weight.shape == (row_num_embed, num_pos_feats)
+    assert module.col_embed.weight.shape == (col_num_embed, num_pos_feats)
     h, w = 10, 6
     mask = torch.rand(batch_size, h, w) > 0.5
     out = module(mask)

@@ -1,8 +1,8 @@
 from .gaussian_target import gaussian_radius, gen_gaussian_target
-from .position_encoding import PositionEmbeddingLearned, PositionEmbeddingSine
+from .position_encoding import LearnedPositionEmbedding, SinePositionEmbedding
 from .res_layer import ResLayer
 
 __all__ = [
     'ResLayer', 'gaussian_radius', 'gen_gaussian_target',
-    'PositionEmbeddingSine', 'PositionEmbeddingLearned'
+    'SinePositionEmbedding', 'LearnedPositionEmbedding'
 ]

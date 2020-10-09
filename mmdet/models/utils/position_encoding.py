@@ -5,7 +5,7 @@ import torch.nn as nn
 from mmcv.cnn import uniform_init
 
 
-class PositionEmbeddingSine(nn.Module):
+class SinePositionEmbedding(nn.Module):
     """Position encoding with sine and cosine functions.
 
     See `End-to-End Object Detection with Transformers
@@ -32,7 +32,7 @@ class PositionEmbeddingSine(nn.Module):
                  normalize=False,
                  scale=2 * math.pi,
                  eps=1e-6):
-        super(PositionEmbeddingSine, self).__init__()
+        super(SinePositionEmbedding, self).__init__()
         if normalize:
             assert isinstance(scale, float), 'when normalize is set, scale '\
                 f'should be provided and type float , found {type(scale)}'
@@ -43,16 +43,16 @@ class PositionEmbeddingSine(nn.Module):
         self.eps = eps
 
     def forward(self, mask):
-        """Forward function for `PositionEmbeddingSine`.
+        """Forward function for `SinePositionEmbedding`.
 
         Args:
             mask (Tensor): ByteTensor mask. Non-zero values representing
                 ignored positions, while zero values means valid positions
-                for this image.
+                for this image. Shape [bs, h, w].
 
         Returns:
             pos (Tensor): Returned position embedding with shape
-                [bs,num_pos_feats*2,h,w].
+                [bs, num_pos_feats*2, h, w].
         """
         not_mask = ~mask
         y_embed = not_mask.cumsum(1, dtype=torch.float32)
@@ -85,22 +85,24 @@ class PositionEmbeddingSine(nn.Module):
         return repr_str
 
 
-class PositionEmbeddingLearned(nn.Module):
+class LearnedPositionEmbedding(nn.Module):
     """Position embedding with learnable embedding weights.
 
     Args:
         num_pos_feats (int): The feature dimension for each position
             along x-axis or y-axis. The final returned dimension for
             each position is 2 times of this value.
-        num_embed (int): The dictionary size of embeddings.
+        row_num_embed (int): The dictionary size of row embeddings.
+        col_num_embed (int): The dictionary size of col embeddings.
     """
 
-    def __init__(self, num_pos_feats, num_embed=50):
-        super(PositionEmbeddingLearned, self).__init__()
-        self.row_embed = nn.Embedding(num_embed, num_pos_feats)
-        self.col_embed = nn.Embedding(num_embed, num_pos_feats)
+    def __init__(self, num_pos_feats, row_num_embed=50, col_num_embed=50):
+        super(LearnedPositionEmbedding, self).__init__()
+        self.row_embed = nn.Embedding(row_num_embed, num_pos_feats)
+        self.col_embed = nn.Embedding(col_num_embed, num_pos_feats)
         self.num_pos_feats = num_pos_feats
-        self.num_embed = num_embed
+        self.row_num_embed = row_num_embed
+        self.col_num_embed = col_num_embed
         self.init_weights()
 
     def init_weights(self):
@@ -108,16 +110,16 @@ class PositionEmbeddingLearned(nn.Module):
         uniform_init(self.col_embed)
 
     def forward(self, mask):
-        """Forward function for `PositionEmbeddingLearned`.
+        """Forward function for `LearnedPositionEmbedding`.
 
         Args:
             mask (Tensor): ByteTensor mask. Non-zero values representing
                 ignored positions, while zero values means valid positions
-                for this image.
+                for this image. Shape [bs, h, w].
 
         Returns:
             pos (Tensor): Returned position embedding with shape
-                [bs,num_pos_feats*2,h,w].
+                [bs, num_pos_feats*2, h, w].
         """
         h, w = mask.shape[-2:]
         x = torch.arange(w, device=mask.device)
@@ -135,5 +137,6 @@ class PositionEmbeddingLearned(nn.Module):
         """str: a string that describes the module"""
         repr_str = self.__class__.__name__
         repr_str += f'(num_pos_feats={self.num_pos_feats}, '
-        repr_str += f'num_embed={self.num_embed})'
+        repr_str += f'row_num_embed={self.row_num_embed}, '
+        repr_str += f'col_num_embed={self.col_num_embed})'
         return repr_str
