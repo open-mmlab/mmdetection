@@ -428,9 +428,10 @@ class YOLOV3Head(BaseDenseHead):
 
             loss_cls += self.loss_cls(img_pred_label, img_target_label)
             loss_conf += self.loss_conf(img_pred_conf, img_target_conf)
-
-            print(img_target_label.shape)
-            print(loss_cls)
+            # print(img_target_conf.shape)
+            #
+            # print(img_target_label.shape)
+            # print(loss_cls)
 
             if self.using_iou_loss:
                 # preparation for box decoding
@@ -452,6 +453,26 @@ class YOLOV3Head(BaseDenseHead):
                     img_pred_box.masked_select(img_box_mask).reshape(-1, 4)
                 img_target_box = \
                     img_target_box.masked_select(img_box_mask).reshape(-1, 4)
+
+                # # img_meta = data_batch['img_metas'].data[0]
+                # # img = data_batch['img'].data[0].squeeze().detach().cpu(
+                # # ).numpy()
+                # # img = img.transpose(1, 2, 0)[:,:,::-1]
+                # # # img = img.clip(0.01, 0.99)
+                # # # import numpy as np
+                # # # img = np.float64(img)
+                # # img = img.copy()
+                # import cv2
+                # img = cv2.imread('data/coco/val2017/000000182611.jpg')
+                # img = cv2.resize(img, (352, 448))
+                # # cv2.imshow('img', img)
+                # # cv2.waitKey()
+                # bbox = img_target_box.detach().cpu().numpy()
+                # # print(img_meta)
+                # # print(bbox)
+                # import mmcv
+                # mmcv.imshow_bboxes(img[:], bbox)
+
                 loss_xy += self.loss_bbox(img_pred_box, img_target_box)
                 loss_wh += torch.zeros_like(loss_xy)
             else:
