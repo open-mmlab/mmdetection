@@ -3,6 +3,8 @@ import torch.nn as nn
 from mmcv.cnn import (Linear, build_activation_layer, build_norm_layer,
                       xavier_init)
 
+from .builder import TRANSFORMER
+
 
 class MultiheadAttention(nn.Module):
     """A warpper for torch.nn.MultiheadAttention.
@@ -39,9 +41,9 @@ class MultiheadAttention(nn.Module):
         """Forward function for `MultiheadAttention`.
 
         Args:
-            x (Tensor): The input query with shape [num_query,bs,
+            x (Tensor): The input query with shape [num_query, bs,
                 embed_dims]. Same in `nn.MultiheadAttention.forward`.
-            key (Tensor): The key tensor with shape [num_key,bs,
+            key (Tensor): The key tensor with shape [num_key, bs,
                 embed_dims]. Same in `nn.MultiheadAttention.forward`.
                 Default None. If None, the `query` will be used.
             value (Tensor): The value tensor with same shape as `key`.
@@ -60,11 +62,11 @@ class MultiheadAttention(nn.Module):
             attn_mask (Tensor): ByteTensor mask with shape [num_query,
                 num_key]. Same in `nn.MultiheadAttention.forward`.
                 Default None.
-            key_padding_mask (Tensor): ByteTensor with shape [bs,num_key].
+            key_padding_mask (Tensor): ByteTensor with shape [bs, num_key].
                 Same in `nn.MultiheadAttention.forward`. Default None.
 
         Returns:
-            Tensor: forwarded results with shape [num_query,bs,embed_dims].
+            Tensor: forwarded results with shape [num_query, bs, embed_dims].
         """
         query = x
         if key is None:
@@ -206,17 +208,17 @@ class TransformerEncoderLayer(nn.Module):
         """Forward function for `TransformerEncoderLayer`.
 
         Args:
-            x (Tensor): The input query with shape [num_key,bs,
+            x (Tensor): The input query with shape [num_key, bs,
                 embed_dims]. Same in `MultiheadAttention.forward`.
             pos (Tensor): The positional encoding for query. Default None.
                 Same as `query_pos` in `MultiheadAttention.forward`.
             attn_mask (Tensor): ByteTensor mask with shape [num_key,
                 num_key]. Same in `MultiheadAttention.forward`. Default None.
-            key_padding_mask (Tensor): ByteTensor with shape [bs,num_key].
+            key_padding_mask (Tensor): ByteTensor with shape [bs, num_key].
                 Same in `MultiheadAttention.forward`. Default None.
 
         Returns:
-            Tensor: forwarded results with shape [num_key,bs,embed_dims].
+            Tensor: forwarded results with shape [num_key, bs, embed_dims].
         """
         norm_cnt = 0
         inp_residual = x
@@ -318,28 +320,28 @@ class TransformerDecoderLayer(nn.Module):
         """Forward function for `TransformerDecoderLayer`.
 
         Args:
-            x (Tensor): Input query with shape [num_query,bs,embed_dims].
+            x (Tensor): Input query with shape [num_query, bs, embed_dims].
             memory (Tensor): Tensor got from `TransformerEncoder`, with shape
-                [num_key,bs,embed_dims].
+                [num_key, bs, embed_dims].
             memory_pos (Tensor): The positional encoding for `memory`. Default
                 None. Same as `key_pos` in `MultiheadAttention.forward`.
             query_pos (Tensor): The positional encoding for `query`. Default
                 None. Same as `query_pos` in `MultiheadAttention.forward`.
             memory_attn_mask (Tensor): ByteTensor mask for `memory`, with
-                shape [num_key,num_key]. Same as `attn_mask` in
+                shape [num_key, num_key]. Same as `attn_mask` in
                 `MultiheadAttention.forward`. Default None.
             target_attn_mask (Tensor): ByteTensor mask for `x`, with shape
-                [num_query,num_query]. Same as `attn_mask` in
+                [num_query, num_query]. Same as `attn_mask` in
                 `MultiheadAttention.forward`. Default None.
             memory_key_padding_mask (Tensor): ByteTensor for `memory`, with
-                shape [bs,num_key]. Same as `key_padding_mask` in
+                shape [bs, num_key]. Same as `key_padding_mask` in
                 `MultiheadAttention.forward`. Default None.
             target_key_padding_mask (Tensor): ByteTensor for `x`, with shape
-                [bs,num_query]. Same as `key_padding_mask` in
+                [bs, num_query]. Same as `key_padding_mask` in
                 `MultiheadAttention.forward`. Default None.
 
         Returns:
-            Tensor: forwarded results with shape [num_query,bs,embed_dims].
+            Tensor: forwarded results with shape [num_query, bs, embed_dims].
         """
         norm_cnt = 0
         inp_residual = x
@@ -451,7 +453,7 @@ class TransformerEncoder(nn.Module):
                 `TransformerEncoderLayer.forward`. Default None.
 
         Returns:
-            Tensor: Results with shape [num_key,bs,embed_dims].
+            Tensor: Results with shape [num_key, bs, embed_dims].
         """
         for layer in self.layers:
             x = layer(x, pos, attn_mask, key_padding_mask)
@@ -551,7 +553,7 @@ class TransformerDecoder(nn.Module):
                 `TransformerDecoderLayer.forward`. Default None.
 
         Returns:
-            Tensor: Results with shape [num_query,bs, embed_dims].
+            Tensor: Results with shape [num_query, bs, embed_dims].
         """
         intermediate = []
         for layer in self.layers:
@@ -585,6 +587,7 @@ class TransformerDecoder(nn.Module):
         return repr_str
 
 
+@TRANSFORMER.register_module()
 class Transformer(nn.Module):
     """Implements the DETR transformer.
 
@@ -676,33 +679,35 @@ class Transformer(nn.Module):
         """Forward function for `Transformer`.
 
         Args:
-            x (Tensor): Input query with shape [bs,c,h,w] where
-                c=embed_dims.
+            x (Tensor): Input query with shape [bs, c, h, w] where
+                c = embed_dims.
             mask (Tensor): The key_padding_mask used for encoder and decoder,
-                with shape [bs,h,w].
+                with shape [bs, h, w].
             query_embed (Tensor): The query embedding for decoder, with shape
-                [num_query,c].
+                [num_query, c].
             pos_embed (Tensor): The positional encoding for encoder and
                 decoder, with the same shape as `x`.
 
         Returns:
             tuple[Tensor]: results of decoder containing the following tensor.
-                - out_dec: Output from decoder. If return_intermediate_dec
-                      is True output has shape [num_dec_layers,bs,num_query,
-                      embed_dims], else has shape [1,bs,num_query,embed_dims].
-                - memory: Output results from encoder, with shape
-                      [bs,embed_dims,h,w].
+
+                - out_dec: Output from decoder. If return_intermediate_dec \
+                      is True output has shape [num_dec_layers, bs,
+                      num_query, embed_dims], else has shape [1, bs, \
+                      num_query, embed_dims].
+                - memory: Output results from encoder, with shape \
+                      [bs, embed_dims, h, w].
         """
         bs, c, h, w = x.shape
-        x = x.flatten(2).permute(2, 0, 1)  # [bs,c,h,w] -> [h*w,bs,c]
+        x = x.flatten(2).permute(2, 0, 1)  # [bs, c, h, w] -> [h*w, bs, c]
         pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
         query_embed = query_embed.unsqueeze(1).repeat(
-            1, bs, 1)  # [num_query,dim] -> [num_query,bs,dim]
-        mask = mask.flatten(1)  # [bs,h,w] -> [bs,h*w]
+            1, bs, 1)  # [num_query, dim] -> [num_query, bs, dim]
+        mask = mask.flatten(1)  # [bs, h, w] -> [bs, h*w]
         memory = self.encoder(
             x, pos=pos_embed, attn_mask=None, key_padding_mask=mask)
         target = torch.zeros_like(query_embed)
-        # out_dec: [num_layers,num_query,bs,dim]
+        # out_dec: [num_layers, num_query, bs, dim]
         out_dec = self.decoder(
             target,
             memory,
@@ -712,10 +717,9 @@ class Transformer(nn.Module):
             target_attn_mask=None,
             memory_key_padding_mask=mask,
             target_key_padding_mask=None)
-        out_dec = out_dec.transpose(1,
-                                    2), memory.permute(1, 2,
-                                                       0).reshape(bs, c, h, w)
-        return out_dec
+        out_dec = out_dec.transpose(1, 2)
+        memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
+        return out_dec, memory
 
     def __repr__(self):
         """str: a string that describes the module"""
