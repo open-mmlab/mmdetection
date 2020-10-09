@@ -1,6 +1,5 @@
 import argparse
 import copy
-import logging
 import os
 import os.path as osp
 import time
@@ -156,12 +155,6 @@ def main():
     cfg_samples_per_gpu = cfg.data.samples_per_gpu
     if args.update_config is not None:
         cfg.merge_from_dict(args.update_config)
-    if args.tensorboard_dir is not None:
-        hooks = [hook for hook in cfg.log_config.hooks if hook.type == 'TensorboardLoggerHook']
-        if hooks:
-            hooks[0].log_dir = args.tensorboard_dir
-        else:
-            logging.warning('Failed to find TensorboardLoggerHook')
     
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
@@ -201,6 +194,13 @@ def main():
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
     log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
     logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
+
+    if args.tensorboard_dir is not None:
+        hooks = [hook for hook in cfg.log_config.hooks if hook.type == 'TensorboardLoggerHook']
+        if hooks:
+            hooks[0].log_dir = args.tensorboard_dir
+        else:
+            logger.warning('Failed to find TensorboardLoggerHook')
 
     # init the meta dict to record some important information such as
     # environment info and seed, which will be logged
