@@ -50,7 +50,7 @@ jobs:
         run: pip install torch==${{matrix.torch}}+cpu torchvision==${{matrix.torchvision}}+cpu -f https://download.pytorch.org/whl/torch_stable.html
       - name: Install MMCV
         run: |
-          pip install git+https://github.com/ZwwWayne/mmcv.git@chech-wrapper
+          pip install mmcv-full==1.1.5
           python -c 'import mmcv; print(mmcv.__version__)'
       - name: Install unittest dependencies
         run: pip install -r requirements/tests.txt -r requirements/optional.txt
@@ -118,9 +118,9 @@ jobs:
         run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
       - name: Install mmdet dependencies
         run: |
-          MMCV_WITH_OPS=1 pip install git+https://github.com/ZwwWayne/mmcv.git@chech-wrapper
+          pip install mmcv-full==1.1.5
           pip install -r requirements.txt
-          python -c 'import mmcv; import mmcv.ops; print(mmcv.__version__)'
+          python -c 'import mmcv; print(mmcv.__version__)'
       - name: Build and install
         run: |
           rm -rf .eggs
