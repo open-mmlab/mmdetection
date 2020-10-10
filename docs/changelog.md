@@ -9,14 +9,16 @@
 
 #### Backwards Incompatible Changes
 
-- (#3766, #3822): To unify the FP16 training of OpenMMLab projects, the functions for FP16 training in `mmdet.core.fp16` are moved to `mmcv.runner`, including `force_fp32`, `auto_fp16`, `wrap_fp16_model`, and `Fp16OptimizerHook`. To help the users migrate the API calling from `mmdet.core.fp16` to `mmcv.runner`, warnings will show when the FP16 modules from `mmdet.core.fp16` are used. The Deprecated warnings and modules will be removed in 2.8.0.
-- (#3221): To unify the target assignment in the whole codebase, `self.background_labels` is removed and all the heads use `self.num_classes` to indicates the class index of background labels. Before v2.5.0, the background label for RPN is 0, while all the other dense heads use `[0, N-1]` to indicate the N foreground classes and use `N` for background. This also makes `CrossEntropyLoss` could only be used for RPN head if `use_sigmoid=True` and introduces bug when one-class detection using sigmoid.
+**FP16 related methods are imported from mmcv instead of mmdet. (#3766, #3822)**
+Mixed precision training utils in `mmdet.core.fp16` are moved to `mmcv.runner`, including `force_fp32`, `auto_fp16`, `wrap_fp16_model`, and `Fp16OptimizerHook`. A deprecation warning will be raised if users attempt to import those methods from `mmdet.core.fp16`, and will be finally removed in V2.8.0.
 
-    We fix this issue by assigning 0 to positive samples and 1 to negative samples in RPN, which is consistent with other situations for single-class classification.
+**Background index of target assignment is unified accross the codebase. (#3221)**
+`self.background_labels` in `dense_heads` is removed and all the heads use `self.num_classes` to indicates the class index of background labels. Before v2.5.0, the background label for RPN is 0, while all the other dense heads use `[0, N-1]` to indicate the N foreground classes and use `N` for background. Now we assign assigning 0 to positive samples and 1 to negative samples in RPN. This change also fixes the bugs in `CrossEntropyLoss` if `use_sigmoid=True` is used in single-class classification not in RPN.
 
     The change has no effect on the pre-trained models in the v2.0 model zoo but will affect the model training of all RPN-related detectors. Two-stage detectors whose RPN uses softmax will be affected because the order of category is changed.
 
-- (#3695): Function `get_subset_by_classes` in dataset is refactored and only filters out images when `test_mode=True` and `self.filter_empty_gt=True`.
+**Only call `get_subset_by_classes` when `test_mode=True` and `self.filter_empty_gt=True` (#3695)**
+Function `get_subset_by_classes` in dataset is refactored and only filters out images when `test_mode=True` and `self.filter_empty_gt=True`.
     In the original implementation, `get_subset_by_classes` is not related to the flag `self.filter_empty_gt` and will only be called when the classes is set during initialization no matter `test_mode` is `True` or `False`. This brings ambiguous behavior and potential bugs in many cases. After v2.5.0, if `filter_empty_gt=False`, no matter whether the classes are specified in a dataset, the dataset will use all the images in the annotations. If `filter_empty_gt=True` and `test_mode=True`, no matter whether the classes are specified, the dataset will call ``get_subset_by_classes` to check the images and filter out images containing no GT boxes. Therefore, the users should be responsible for the data filtering/cleaning process for the test dataset.
 
 #### New Features
