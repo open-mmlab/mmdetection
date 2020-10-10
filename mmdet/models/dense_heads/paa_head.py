@@ -497,7 +497,8 @@ class PAAHead(ATSSHead):
                            img_shape,
                            scale_factor,
                            cfg,
-                           rescale=False):
+                           rescale=False,
+                           with_nms=True):
         """Transform outputs for a single batch item into labeled boxes.
 
         This method is almost same as `ATSSHead._get_bboxes_single()`.
@@ -505,6 +506,7 @@ class PAAHead(ATSSHead):
         cls_scores. Besides, score voting is used when `` score_voting``
         is set to True.
         """
+        assert with_nms, 'PAA only supports "with_nms=True" now'
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
