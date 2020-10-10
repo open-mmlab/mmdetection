@@ -109,12 +109,11 @@ Some other methods are also supported in [projects using MMDetection](./docs/pro
 
 Please refer to [install.md](docs/install.md) for installation and dataset preparation.
 
-
 ## Getting Started
 
 Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection.
 We provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
-There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
+There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), and [customizing runtime settings](docs/tutorials/customize_runtime.md).
 
 For trouble shooting, please refer to [trouble_shooting.md](docs/trouble_shooting.md)
 
@@ -126,7 +125,6 @@ We appreciate all contributions to improve MMDetection. Please refer to [CONTRIB
 
 MMDetection is an open source project that is contributed by researchers and engineers from various colleges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
 We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new detectors.
-
 
 ## Citation
 
@@ -145,7 +143,6 @@ If you use this toolbox or benchmark in your research, please cite this project.
   year={2019}
 }
 ```
-
 
 ## Contact
 
