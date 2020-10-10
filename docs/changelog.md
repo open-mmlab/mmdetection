@@ -27,6 +27,7 @@
 - Fix the bug of training ATSS when there is no ground truth boxes (#3702)
 - Fix the bug of using Focal Loss when there is `num_pos` is 0 (#3702)
 - Fix the label index mapping in dataset browser (#3708)
+- Fix Mask R-CNN training stuck problem when ther is no positive rois (#3713)
 - Fix the bug of `self.rpn_head.test_cfg` in `RPNTestMixin` by using `self.rpn_head` in rpn head (#3808)
 - Fix deprecated `Conv2d` from mmcv.ops (#3791)
 - Fix device bug in RepPoints (#3836)
@@ -34,6 +35,9 @@
 - Fix SABL validating bug (#3849)
 - Use `https://download.openmmlab.com/mmcv/dist/index.html` for installing MMCV (#3840)
 - Fix nonzero in NMS for PyTorch 1.6.0 (#3867)
+- Fix the API change bug of PAA (#3883)
+- Fix typo in bbox_flip (#3886)
+- Fix cv2 import error of ligGL.so.1 in Dockerfile (#3891)
 
 #### New Features
 
@@ -51,7 +55,7 @@
 - Update tutorials for changing runtime settings (#3778), modifing loss (#3777)
 - Improve the function of `simple_test_bboxes` in SABL (#3853)
 - Convert mask to bool before using it as img's index for robustness and speedup (#3870)
-
+- Improve documentation of modules and dataset customization (#3821)
 
 ### v2.4.0 (5/9/2020)
 
