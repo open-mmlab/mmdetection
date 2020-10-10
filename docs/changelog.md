@@ -4,7 +4,7 @@
 
 #### Highlights
 
-- Support new methods: [YOLACT](https://arxiv.org/abs/1904.02689), [Centripetal](https://arxiv.org/abs/2003.09119).
+- Support new methods: [YOLACT](https://arxiv.org/abs/1904.02689), [CentripetalNet](https://arxiv.org/abs/2003.09119).
 - Add more documentations for easier and more clear usage.
 
 #### Backwards Incompatible Changes
@@ -13,7 +13,7 @@
 - Clean `background_labels` in the dense heads (#3221):
     To unify the target assignment in dense heads, `self.background_labels` is removed and all the heads use `self.num_classes` to indicates the class index of background labels. Before v2.5.0, the background label for RPN is 0, while all the other dense heads use `[0, N-1]` to indicate the N foreground classes and use `N` for background if the number of classes is `N`. This also makes `CrossEntropyLoss` could only be used for RPN head if `use_sigmoid=True` and introduces potential bugs in some situations, e.g., one-class detection using sigmoid.
 
-    We fixes this issue by assigning 0 to positive samples and 1 to negative samples in RPN, which is consistent with the situation for single-class classification. Thus, the `background_label` is no longer necessary and we uniformly use `num_classes` to indicate background labels in the whole codebase.
+    We fix this issue by assigning 0 to positive samples and 1 to negative samples in RPN, which is consistent with the situation for single-class classification. Thus, the `background_label` is no longer necessary and we uniformly use `num_classes` to indicate background labels in the whole codebase.
 
     The change has no effect on the pre-trained models in the model zoo but will affect the model training of all RPN-related detectors. Two-stage detectors whose RPN uses softmax will be affected because the order of category is changed.
 
@@ -21,6 +21,16 @@
     In the original implementation, `get_subset_by_classes` is not related to the flag `self.filter_empty_gt`. This brings ambiguous behavior and potential bugs when specifying dataset classes. The refactoring makes the behavior of filter empty GT independent to specifying classes. After v2.5.0, if `filter_empty_gt=False`, no matter whether the classes are specified in a dataset, the dataset will use all the images in the annotations. If `filter_empty_gt=True`, no matter whether the classes are specified, the dataset will check the images and filter out images containing no GT boxes.
 
     This PR also changes the logic during `test_mode`. Previously, the dataset will filter out empty-GT images no matter whether it is in test mode. After v2.5.0, it only filters out images in training, i.e., if `test_mode=True`, it will test all the images given in the annotations. Therefore, the users should be responsible for the data filtering/cleaning process for the test dataset.
+
+#### New Features
+
+- Test time augmentation for single stage detectors (#3844, #3638)
+- Support to show the name of experiments during training (#3764)
+- Add `Shear`, `Rotate`, `Translate` Augmentation (#3656, #3619, #3687)
+- Add image-only transformations including `Constrast`, `Equalize`, `Color`, and `Brightness`. (#3643)
+- Support [YOLACT](https://arxiv.org/abs/1904.02689) (#3456)
+- Support [CentripetalNet](https://arxiv.org/abs/2003.09119) (#3390)
+- Support PyTorch 1.6 in docker (#3905)
 
 #### Bug Fixes
 
@@ -31,22 +41,12 @@
 - Fix the bug of `self.rpn_head.test_cfg` in `RPNTestMixin` by using `self.rpn_head` in rpn head (#3808)
 - Fix deprecated `Conv2d` from mmcv.ops (#3791)
 - Fix device bug in RepPoints (#3836)
-- Use hen installing mmcv-full (#3840)
 - Fix SABL validating bug (#3849)
 - Use `https://download.openmmlab.com/mmcv/dist/index.html` for installing MMCV (#3840)
 - Fix nonzero in NMS for PyTorch 1.6.0 (#3867)
 - Fix the API change bug of PAA (#3883)
 - Fix typo in bbox_flip (#3886)
 - Fix cv2 import error of ligGL.so.1 in Dockerfile (#3891)
-
-#### New Features
-
-- Test time augmentation for single stage detectors (#3844, #3638)
-- Support to show the name of experiments during training (#3764)
-- Add `Shear`, `Rotate`, `Translate` Augmentation (#3656, #3619, #3687)
-- Add image-only transformations including `Constrast`, `Equalize`, `Color`, and `Brightness`. (#3643)
-- Support [YOLACT](https://arxiv.org/abs/1904.02689) (#3456)
-- Support [Centripetal](https://arxiv.org/abs/2003.09119) (#3390)
 
 #### Improvements
 
