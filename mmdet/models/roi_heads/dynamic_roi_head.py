@@ -94,9 +94,7 @@ class DynamicRoIHead(StandardRoIHead):
             mask_results = self._mask_forward_train(x, sampling_results,
                                                     bbox_results['bbox_feats'],
                                                     gt_masks, img_metas)
-            # TODO: Support empty tensor input. #2280
-            if mask_results['loss_mask'] is not None:
-                losses.update(mask_results['loss_mask'])
+            losses.update(mask_results['loss_mask'])
 
         # update IoU threshold and SmoothL1 beta
         update_iter_interval = self.train_cfg.dynamic_rcnn.update_iter_interval
