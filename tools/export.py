@@ -18,23 +18,21 @@ import sys
 from subprocess import run, CalledProcessError, DEVNULL
 
 import mmcv
-import numpy as np
 import onnx
 import torch
 from onnx.optimizer import optimize
 from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 
-from mmcv.parallel import collate, scatter
 from mmdet.apis import init_detector
-from mmdet.apis.inference import LoadImage
-from mmdet.datasets.pipelines import Compose
 from mmdet.models import detectors
 from mmdet.models.dense_heads.anchor_head import AnchorHead
 from mmdet.models.roi_heads import SingleRoIExtractor
-from mmdet.parallel.data_cpu import scatter_cpu
 from mmdet.utils.deployment.ssd_export_helpers import *
 from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.tracer_stubs import ROIFeatureExtractorStub
+from mmdet.apis import get_fake_input
+
+from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled, unwrap_nncf_model
 
 
 def export_to_onnx(model,
@@ -81,21 +79,21 @@ def export_to_onnx(model,
             if model.roi_head.with_mask:
                 output_names.append('masks')
                 dynamic_axes['masks'] = {0: 'objects_num'}
-
         with torch.no_grad():
-            model.export(
-                **data,
-                export_name=export_name,
-                verbose=verbose,
-                opset_version=opset,
-                strip_doc_string=strip_doc_string,
-                operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
-                input_names=['image'],
-                output_names=output_names,
-                dynamic_axes=dynamic_axes,
-                keep_initializers_as_inputs=True,
-                **kwargs
-            )
+            with model.forward_export_context(data['img_metas']):
+                torch.onnx.export(model,
+                                  data['img'],
+                                  export_name,
+                                  verbose=verbose,
+                                  opset_version=opset,
+                                  strip_doc_string=strip_doc_string,
+                                  operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
+                                  input_names=['image'],
+                                  output_names=output_names,
+                                  dynamic_axes=dynamic_axes,
+                                  keep_initializers_as_inputs=True,
+                                  **kwargs
+                )
 
 
 def check_onnx_model(export_name):
@@ -155,11 +153,13 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, 
               'openvino/bin/setupvars.sh before running this script.')
         return
 
+    # command_line += ' --static_shape'
     print(command_line)
     run(command_line, shell=True, check=True)
 
 
 def stub_roi_feature_extractor(model, extractor_name):
+    model = unwrap_nncf_model(model)
     if hasattr(model, extractor_name):
         extractor = getattr(model, extractor_name)
         if isinstance(extractor, SingleRoIExtractor):
@@ -168,19 +168,6 @@ def stub_roi_feature_extractor(model, extractor_name):
             for i in range(len(extractor)):
                 if isinstance(extractor[i], SingleRoIExtractor):
                     extractor[i] = ROIFeatureExtractorStub(extractor[i])
-
-
-def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
-    test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
-    test_pipeline = Compose(test_pipeline)
-    data = dict(img=np.zeros(orig_img_shape, dtype=np.uint8))
-    data = test_pipeline(data)
-    if device == torch.device('cpu'):
-        data = scatter_cpu(collate([data], samples_per_gpu=1))[0]
-    else:
-        data = scatter(collate([data], samples_per_gpu=1), [device])[0]
-    return data
-
 
 def optimize_onnx_graph(onnx_model_path):
     onnx_model = onnx.load(onnx_model_path)
@@ -213,6 +200,14 @@ def main(args):
     cfg = model.cfg
     fake_data = get_fake_input(cfg, device=device)
 
+    # BEGIN nncf part
+    if cfg.get('nncf_config'):
+        check_nncf_is_enabled()
+        cfg.nncf_load_from = args.checkpoint
+        compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
+        compression_ctrl.prepare_for_export()
+    # END nncf part
+
     if args.target == 'openvino' and not args.alt_ssd_export:
         if hasattr(model, 'roi_head'):
             stub_roi_feature_extractor(model.roi_head, 'bbox_roi_extractor')
@@ -224,7 +219,8 @@ def main(args):
 
     with torch.no_grad():
         export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=args.opset,
-                       alt_ssd_export=getattr(args, 'alt_ssd_export', False))
+                       alt_ssd_export=getattr(args, 'alt_ssd_export', False),
+                       verbose=True)
         add_node_names(onnx_model_path)
         print(f'ONNX model has been saved to "{onnx_model_path}"')
 

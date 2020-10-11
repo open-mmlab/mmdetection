@@ -7,6 +7,7 @@ from torch.onnx import is_in_onnx_export
 from mmdet.utils.deployment.symbolic import py_symbolic
 from . import nms_ext
 
+from ...core.nncf import no_nncf_trace
 
 def nms(dets, iou_thr, score_thr=0.0, max_num=-1, device_id=None):
     """Dispatch to either CPU or GPU NMS implementations.
@@ -62,7 +63,8 @@ def nms(dets, iou_thr, score_thr=0.0, max_num=-1, device_id=None):
 @py_symbolic()
 def nms_core(dets, iou_thr, score_thr, max_num):
     if is_in_onnx_export():
-        valid_dets_mask = dets[:, 4] > score_thr
+        with no_nncf_trace():
+            valid_dets_mask = dets[:, 4] > score_thr
         dets = dets[valid_dets_mask]
 
     if dets.shape[0] == 0:
@@ -164,7 +166,12 @@ def batched_nms(bboxes, scores, inds, nms_cfg, class_agnostic=False):
     else:
         max_coordinate = bboxes.max()
         offsets = inds.to(bboxes) * (max_coordinate + 1)
-        bboxes_for_nms = bboxes + offsets[:, None]
+
+        with no_nncf_trace():
+            # NB: this trick is required to make class-separate NMS using ONNX NMS operation;
+            #     the ONNX NMS operation supports another way of class separation (class-separate scores), but this is not used here.
+            # TODO: check if it is possible in this architecture use class-separate scores that are supported in ONNX NMS.
+            bboxes_for_nms = bboxes + offsets[:, None]
     nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = eval(nms_type)
     dets, keep = nms_op(

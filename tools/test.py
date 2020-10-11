@@ -1,5 +1,6 @@
 import argparse
 import os
+from collections import OrderedDict
 
 import mmcv
 import torch
@@ -14,6 +15,21 @@ from mmdet.models import build_detector
 from mmdet.utils import ExtendedDictAction
 from mmdet.parallel import MMDataCPU
 
+from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled
+from mmdet.apis import get_fake_input
+
+def load_checkpoint_state_dict(filename):
+    # this code is the common part of mmcv.runner.load_checkpoint and nncf.load_state
+    checkpoint = torch.load(filename, map_location=None)
+    # get state_dict from checkpoint
+    if isinstance(checkpoint, OrderedDict):
+        state_dict = checkpoint
+    elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
+        state_dict = checkpoint['state_dict']
+    else:
+        raise RuntimeError('No state_dict found in checkpoint file {}'.format(filename))
+    return state_dict
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -25,19 +41,19 @@ def parse_args():
         '--fuse-conv-bn',
         action='store_true',
         help='Whether to fuse conv and bn, this will slightly increase'
-        'the inference speed')
+             'the inference speed')
     parser.add_argument(
         '--format-only',
         action='store_true',
         help='Format the output results without perform evaluation. It is'
-        'useful when you want to format the result to a specific format and '
-        'submit it to the test server')
+             'useful when you want to format the result to a specific format and '
+             'submit it to the test server')
     parser.add_argument(
         '--eval',
         type=str,
         nargs='+',
         help='evaluation metrics, which depends on the dataset, e.g., "bbox",'
-        ' "segm", "proposal", "f1" for COCO, and "mAP", "recall" for PASCAL VOC')
+             ' "segm", "proposal", "f1" for COCO, and "mAP", "recall" for PASCAL VOC')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument(
         '--show-dir', help='directory where painted images will be saved')
@@ -53,7 +69,7 @@ def parse_args():
     parser.add_argument(
         '--tmpdir',
         help='tmp directory used for collecting results from multiple '
-        'workers, available when gpu-collect is not specified')
+             'workers, available when gpu-collect is not specified')
     parser.add_argument(
         '--options', nargs='+', action=DictAction, help='arguments in dict')
     parser.add_argument(
@@ -75,7 +91,7 @@ def main():
     args = parse_args()
 
     assert args.out or args.eval or args.format_only or args.show \
-        or args.show_dir, \
+           or args.show_dir, \
         ('Please specify at least one operation (save/eval/format/show the '
          'results / save the results) with the argument "--out", "--eval"'
          ', "--format-only", "--show" or "--show-dir"')
@@ -114,16 +130,27 @@ def main():
 
     # build the model and load checkpoint
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-    fp16_cfg = cfg.get('fp16', None)
-    if fp16_cfg is not None:
-        wrap_fp16_model(model)
-    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
-    if args.fuse_conv_bn:
-        from tools.fuse_conv_bn import fuse_module
-        model = fuse_module(model)
+
+    # nncf model wrapper
+    if cfg.get('nncf_config'):
+        check_nncf_is_enabled()
+        cfg.nncf_load_from = args.checkpoint
+        model.cuda()  # for wrap_nncf_model
+        _, model = wrap_nncf_model(model, cfg, None, get_fake_input)
+        checkpoint = load_checkpoint_state_dict(args.checkpoint)
+        # FIXME: TODO: check why checkpoint does not have "meta" inside
+    else:
+        fp16_cfg = cfg.get('fp16', None)
+        if fp16_cfg is not None:
+            wrap_fp16_model(model)
+        checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
+        if args.fuse_conv_bn: #TODO: FIXME: should it be inside this 'else' branch???
+            from tools.fuse_conv_bn import fuse_module
+            model = fuse_module(model)
+
     # old versions did not save class info in checkpoints, this walkaround is
     # for backward compatibility
-    if 'CLASSES' in checkpoint['meta']:
+    if 'CLASSES' in checkpoint.get('meta', {}):
         model.CLASSES = checkpoint['meta']['CLASSES']
     else:
         model.CLASSES = dataset.CLASSES
