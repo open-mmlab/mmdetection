@@ -21,7 +21,6 @@ else:
     class DummyInitializingDataLoader:
         pass
 
-
     class_InitializingDataLoader = DummyInitializingDataLoader
 
 
