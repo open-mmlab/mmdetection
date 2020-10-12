@@ -95,15 +95,25 @@ def preprocess_example_input(input_config):
             meta information for the example input image.
 
     Examples:
+        >>> from mmdet.core.export import preprocess_example_input
         >>> input_config = {
-        >>>         'input_shape':[1,3,224,224],
+        >>>         'input_shape': (1,3,224,224),
         >>>         'input_path': 'demo/demo.jpg',
         >>>         'normalize_cfg': {
-        >>>             'mean': [123.675, 116.28, 103.53],
-        >>>             'std': [58.395, 57.12, 57.375]
+        >>>             'mean': (123.675, 116.28, 103.53),
+        >>>             'std': (58.395, 57.12, 57.375)
         >>>             }
         >>>         }
-        >>> preprocess_example_input(input_config)
+        >>> one_img, one_meta = preprocess_example_input(input_config)
+        >>> print(one_img.shape)
+        torch.Size([1, 3, 224, 224])
+        >>> print(one_meta)
+        {'img_shape': (224, 224, 3),
+        'ori_shape': (224, 224, 3),
+        'pad_shape': (224, 224, 3),
+        'filename': '<demo>.png',
+        'scale_factor': 1.0,
+        'flip': False}
     """
     input_path = input_config['input_path']
     input_shape = input_config['input_shape']
