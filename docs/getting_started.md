@@ -4,7 +4,7 @@ This page provides basic tutorials about the usage of MMDetection.
 
 ## Installation
 
-### Install mmdetection
+### Install MMDetection
 
 1. Create a conda virtual environment and activate it.
 
@@ -62,14 +62,14 @@ This page provides basic tutorials about the usage of MMDetection.
     pip install mmcv-full
     ```
 
-4. Clone the mmdetection repository.
+4. Clone the MMDetection repository.
 
     ```shell
     git clone https://github.com/open-mmlab/mmdetection.git
     cd mmdetection
     ```
 
-5. Install build requirements and then install mmdetection.
+5. Install build requirements and then install MMDetection.
 (We install our forked version of pycocotools via the github repo instead of pypi
 for better compatibility with our repo.)
 
@@ -78,7 +78,7 @@ for better compatibility with our repo.)
     pip install -v -e .  # or "python setup.py develop"
     ```
 
-    If you build mmdetection on macOS, replace the last command with
+    If you build MMDetection on macOS, replace the last command with
 
     ```shell
     CC=clang CXX=clang++ CFLAGS='-stdlib=libc++' pip install -e .
@@ -86,9 +86,7 @@ for better compatibility with our repo.)
 
 Note:
 
-a. The git commit id will be written to the version number with step 4, e.g
-. 0.6.0+2e7045c. The version will also be saved in trained models.
-It is recommended that you run step 4 each time you pull some updates from
+a. It is recommended that you run step 5 each time you pull some updates from
  github. If C++/CUDA codes are modified, then this step is compulsory.
 
     > Important: Be sure to remove the `./build` folder if you reinstall mmdet with a different CUDA/PyTorch version.
@@ -99,7 +97,7 @@ It is recommended that you run step 4 each time you pull some updates from
     find . -name "*.so" | xargs rm
     ```
 
-b. Following the above instructions, mmdetection is installed on `dev` mode
+b. Following the above instructions, MMDetection is installed on `dev` mode
 , any local modifications made to the code will take effect without the need to reinstall it (unless you submit some commits and want to update the version number).
 
 c. If you would like to use `opencv-python-headless` instead of `opencv
@@ -142,7 +140,7 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 
 ### A from-scratch setup script
 
-Here is a full script for setting up mmdetection with conda.
+Here is a full script for setting up MMDetection with conda.
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
