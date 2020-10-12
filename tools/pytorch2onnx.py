@@ -1,18 +1,13 @@
 import argparse
 import os.path as osp
-from functools import partial
 
 import numpy as np
 import onnx
 import onnxruntime as rt
 import torch
 
-from mmdet.core import build_model_from_cfg, preprocess_example_input
-
-try:
-    from mmcv.onnx.symbolic import register_extra_symbolics
-except ModuleNotFoundError:
-    raise NotImplementedError('please update mmcv to version>=v1.0.4')
+from mmdet.core import (build_model_from_cfg, generate_inputs_and_wrap_model,
+                        preprocess_example_input)
 
 
 def pytorch2onnx(config_path,
@@ -25,29 +20,29 @@ def pytorch2onnx(config_path,
                  verify=False,
                  normalize_cfg=None):
 
-    model = build_model_from_cfg(config_path, checkpoint_path)
-
     input_config = {
         'input_shape': input_shape,
         'input_path': input_img,
         'normalize_cfg': normalize_cfg
     }
+
+    # prepare original model and meta for verifying the onnx model
+    orig_model = build_model_from_cfg(config_path, checkpoint_path)
     one_img, one_meta = preprocess_example_input(input_config)
 
-    origin_forward = model.forward
-    model.forward = partial(
-        model.forward, img_metas=[[one_meta]], return_loss=False)
-    # pytorch has some bug in pytorch1.3, we have to fix it
-    # by replacing these existing op
-    register_extra_symbolics(opset_version)
+    model, tensor_data = generate_inputs_and_wrap_model(
+        config_path, checkpoint_path, input_config)
+
     torch.onnx.export(
-        model, ([one_img]),
+        model,
+        tensor_data,
         output_file,
         export_params=True,
         keep_initializers_as_inputs=True,
         verbose=show,
         opset_version=opset_version)
-    model.forward = origin_forward
+
+    model.forward = orig_model.forward
     print(f'Successfully exported ONNX model: {output_file}')
     if verify:
         # check by onnx
@@ -56,7 +51,7 @@ def pytorch2onnx(config_path,
 
         # check the numerical value
         # get pytorch output
-        pytorch_result = model([one_img], [[one_meta]], return_loss=False)
+        pytorch_result = model(tensor_data, [[one_meta]], return_loss=False)
 
         # get onnx output
         input_all = [node.name for node in onnx_model.graph.input]
