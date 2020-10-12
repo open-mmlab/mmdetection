@@ -19,6 +19,11 @@ bbox
 .. automodule:: mmdet.core.bbox
     :members:
 
+export
+^^^^^^^^^^
+.. automodule:: mmdet.core.export
+    :members:
+
 mask
 ^^^^^^^^^^
 .. automodule:: mmdet.core.mask
