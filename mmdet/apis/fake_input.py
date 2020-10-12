@@ -16,9 +16,9 @@
 import numpy as np
 import torch
 from mmcv.parallel import collate, scatter
-from mmdet.parallel.data_cpu import scatter_cpu
 
 from mmdet.datasets.pipelines import Compose
+from mmdet.parallel.data_cpu import scatter_cpu
 from .inference import LoadImage
 
 def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
