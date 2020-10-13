@@ -60,14 +60,16 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
         labels = [np.full(bbox.shape[0], i, dtype=np.int32) for i, bbox in enumerate(bbox_result)]
         labels = np.concatenate(labels)
 
-        if len(bboxes) < 1:
-            if len(last_boxes) < 1:
+        if len(bboxes) == 0:
+            if len(last_boxes) == 0:
+                print('[DBG] both current & previous detection lists for frame %d are empty' % (f_number))
                 log_file.write(str(f_number)+","+str(100.0)+","+str(100.0)+","+str(135.0)+","+str(228.0)+","+str(0.1) + "\n")
             else:
                 for i in range(len(last_boxes)):
+                    print('[DBG] received empty detection list for frame %d copying boxes from previous frame' % (f_number))
                     box = last_boxes[i]
                     d = (box[0], box[1], box[2], box[3], box[4])
-                    cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (255,0,0), 2)
+                    # cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (255,0,0), 2)
                     log_file.write(str(f_number)+","+str(d[0])+","+str(d[1])+","+str(d[2])+","+str(d[3])+","+str(d[4]) + "\n")
         else:
             for i in range(len(bboxes)):
