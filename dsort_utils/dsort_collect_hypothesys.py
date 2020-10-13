@@ -11,6 +11,10 @@ def update_ids_next_chunk(hyp_lst_chunk, matches, max_frame_idx, cid):
     for frame_num in range(1, max_frame_idx+1):
         frame_key = str(frame_num)
 
+        if frame_key not in hyp_lst_chunk.keys():
+            print ('[DBG] no data for frame %s' % (frame_key))
+            continue
+        
         for trset in hyp_lst_chunk[frame_key]:
 
             for m in matches:
