@@ -1,19 +1,28 @@
 # Tutorial 1: Inference, testing and training with predefined models and standard datasets
 
-## Inference with pretrained models
+Welcome to MMDetection's tutorial.
 
-MMDetection provides high-level Python APIs for building detection models and inference on given images.
+MMDetection provides hundreds of predefined and pre-trained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This tutorial will show how to perform common tasks on these pre-trained models and standard datasets, including :
 
-### High-level APIs for testing images
+- Use existing models to inference on given images.
+- Test pre-trained models on standard datasets.
+- Train predefined models on standard datasets.
 
-#### Synchronous interface
+## Inference with pre-trained models
 
-Here is an example of building the model and test given images.
+By inference, we mean using trained models to detect objects on images. In MMDetection, the model structure is defined by a python [configuration file]() and pre-trained model parameters are save in a Pytorch checkpoint file, usually with `.pth` extension name .
+
+To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) with this [configuration](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) and this [checkpoints](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to save the parameter to `checkpoint_file` directory.
+
+### High-level APIs for inference
+
+MMDetection provide high-level Python APIs for inference on images. Here is an example of building the model and test given images.
 
 ```python
 from mmdet.apis import init_detector, inference_detector
 import mmcv
 
+# Specify the path to model config and checkpoint file
 config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
 
@@ -37,9 +46,10 @@ for frame in video:
 
 A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb).
 
-#### Asynchronous interface - supported for Python 3.7+
+### Asynchronous interface - supported for Python 3.7+
 
-Async interface allows not to block CPU on GPU bound inference code and enables better CPU/GPU utilization for single threaded application. Inference can be done concurrently either between different input data samples or between different models of some inference pipeline.
+For Python 3.7+, MMDetection also supports async interfaces.
+It allows not to block CPU on GPU bound inference code and enables better CPU/GPU utilization for single-threaded application. Inference can be done concurrently either between different input data samples or between different models of some inference pipeline.
 
 See `tests/async_benchmark.py` to compare the speed of synchronous and asynchronous interfaces.
 
@@ -81,9 +91,12 @@ asyncio.run(main())
 
 ### Demos
 
-### Image demo
+We also provide two demo scripts, implemented with high-level APIs and supporting functionality codes.
+Source codes are available [here](https://github.com/open-mmlab/mmdetection/tree/master/demo).
 
-We provide a demo script to test a single image.
+#### Image demo
+
+This script performs inference on a single image.
 
 ```shell
 python demo/image_demo.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--score-thr ${SCORE_THR}]
@@ -98,9 +111,9 @@ python demo/image_demo.py demo/demo.jpg \
     --device cpu
 ```
 
-### Webcam demo
+#### Webcam demo
 
-We provide a webcam demo to illustrate the results.
+This is a live demo from a webcam.
 
 ```shell
 python demo/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${SCORE_THR}]
