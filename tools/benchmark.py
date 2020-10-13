@@ -5,8 +5,7 @@ import torch
 from mmcv import Config
 from mmcv.cnn import fuse_conv_bn
 from mmcv.parallel import MMDataParallel
-from mmcv.runner import load_checkpoint
-from mmcv.runner.fp16_utils import wrap_fp16_model
+from mmcv.runner import load_checkpoint, wrap_fp16_model
 
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)

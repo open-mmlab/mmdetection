@@ -1,4 +1,6 @@
-from .auto_augment import AutoAugment
+from .auto_augment import (AutoAugment, BrightnessTransform, ColorTransform,
+                           ContrastTransform, EqualizeTransform, Rotate, Shear,
+                           Translate)
 from .compose import Compose
 from .formating import (Collect, DefaultFormatBundle, ImageToTensor,
                         ToDataContainer, ToTensor, Transpose, to_tensor)
@@ -17,5 +19,7 @@ __all__ = [
     'LoadMultiChannelImageFromFiles', 'LoadProposals', 'MultiScaleFlipAug',
     'Resize', 'RandomFlip', 'Pad', 'RandomCrop', 'Normalize', 'SegRescale',
     'MinIoURandomCrop', 'Expand', 'PhotoMetricDistortion', 'Albu',
-    'InstaBoost', 'RandomCenterCropPad', 'AutoAugment', 'CutOut'
+    'InstaBoost', 'RandomCenterCropPad', 'AutoAugment', 'CutOut', 'Shear',
+    'Rotate', 'ColorTransform', 'EqualizeTransform', 'BrightnessTransform',
+    'ContrastTransform', 'Translate'
 ]

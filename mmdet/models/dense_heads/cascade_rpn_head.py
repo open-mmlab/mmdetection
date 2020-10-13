@@ -6,7 +6,7 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
-from mmdet.ops import DeformConv
+from mmcv.ops import DeformConv2d
 from ..builder import HEADS, build_head
 from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
@@ -34,7 +34,7 @@ class AdaptiveConv(nn.Module):
         assert self.adapt_type in ['offset', 'dilation']
 
         if self.adapt_type == 'offset':
-            self.conv = DeformConv(in_channels, out_channels, 3, padding=1)
+            self.conv = DeformConv2d(in_channels, out_channels, 3, padding=1)
         else:
             dilation = adapt_cfg.get('dilation', 3)
             self.conv = nn.Conv2d(
@@ -68,17 +68,15 @@ class StageCascadeRPNHead(RPNHead):
 
     Args:
         in_channels (int): Number of channels in the input feature map.
-        feat_channels (int): Number of channels of the feature map.
         anchor_generator (dict): anchor generator config.
         adapt_cfg (dict): adaptation config.
         bridged_feature (bool): wheater update rpn feature.
-        with_cls (bool): wheather use cls branch.
+        with_cls (bool): wheather use classification branch.
         sampling (bool): wheather use sampling.
     """
 
     def __init__(self,
                  in_channels,
-                 feat_channels=256,
                  anchor_generator=dict(
                      type='AnchorGenerator',
                      scales=[8],
@@ -295,7 +293,8 @@ class StageCascadeRPNHead(RPNHead):
         Args:
             anchor_list (list[list[tensor])): [NI, NLVL, NA, 4] list of
                 multi-level anchors
-                anchor_strides (list): anchor stride of each level
+            anchor_strides (list[int]): anchor stride of each level
+
         Returns:
             offset_list (list[tensor]): [NLVL, NA, 2, 18]: offset of DeformConv
                 kernel.
@@ -417,6 +416,8 @@ class StageCascadeRPNHead(RPNHead):
         if self.sampling:
             num_total_samples = num_total_pos + num_total_neg
         else:
+            # 200 is hard-coded average factor,
+            # which follows guilded anchoring.
             num_total_samples = sum([label.numel()
                                      for label in labels_list]) / 200.0
 
@@ -485,6 +486,19 @@ class StageCascadeRPNHead(RPNHead):
 
 @HEADS.register_module()
 class CascadeRPNHead(BaseDenseHead):
+    """The CascadeRPNHead will predict more accurate region proposals,
+    which is required for two-stage detectors (such as Fast/Faster R-CNN).
+    CascadeRPN consists of a sequence of RPNStage to progressively improve
+    the accuracy of the detected proposals.
+
+    More details can be found in ``https://arxiv.org/abs/1909.06720``.
+
+    Args:
+        num_stages (int): number of CascadeRPN stages.
+        stages (list[dict]): list of configs to build the stages.
+        train_cfg (list[dict]): list of configs at training time each stage.
+        test_cfg (dict): config at testing time.
+    """
 
     def __init__(self, num_stages, stages, train_cfg, test_cfg):
         super(CascadeRPNHead, self).__init__()
