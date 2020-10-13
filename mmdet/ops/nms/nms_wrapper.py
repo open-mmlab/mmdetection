@@ -170,6 +170,11 @@ def batched_nms(bboxes, scores, inds, nms_cfg, class_agnostic=False):
         with no_nncf_trace():
             # NB: this trick is required to make class-separate NMS using ONNX NMS operation;
             #     the ONNX NMS operation supports another way of class separation (class-separate scores), but this is not used here.
+            # Note that `not_nncf_trace` is required here, since this trick causes accuracy degradation in case of int8 quantization:
+            #      if the output of the addition below is quantized, the maximal output value is about
+            #      ~ max_value_in_inds * max_coordinate,
+            #      usually this value is big, so after int8-quantization different small bounding
+            #      boxes may be squashed into the same bounding box, this may cause accuracy degradation.
             # TODO: check if it is possible in this architecture use class-separate scores that are supported in ONNX NMS.
             bboxes_for_nms = bboxes + offsets[:, None]
     nms_type = nms_cfg_.pop('type', 'nms')
