@@ -123,7 +123,7 @@ def preprocess_example_input(input_config):
         mean = np.array(normalize_cfg['mean'], dtype=np.float32)
         std = np.array(normalize_cfg['std'], dtype=np.float32)
         one_img = mmcv.imnormalize(one_img, mean, std)
-    one_img = mmcv.imresize(one_img, input_shape[2:]).transpose(2, 0, 1)
+    one_img = mmcv.imresize(one_img, input_shape[2:][::-1]).transpose(2, 0, 1)
     one_img = torch.from_numpy(one_img).unsqueeze(0).float().requires_grad_(
         True)
     (_, C, H, W) = input_shape
