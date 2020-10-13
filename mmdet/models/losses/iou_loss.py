@@ -239,6 +239,8 @@ class IoULoss(nn.Module):
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
 
     Args:
+        linear (bool): If True, use linear scale of loss instead of log scale.
+            Default: False.
         eps (float): Eps to avoid log(0).
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Weight of loss.

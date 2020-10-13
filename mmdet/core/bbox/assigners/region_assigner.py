@@ -6,7 +6,8 @@ from .base_assigner import BaseAssigner
 
 
 def calc_region(bbox, ratio, stride, featmap_size=None):
-    """Calculate region of box on feature map."""
+    """Calculate region of the box defined by the ratio, the ratio is from the
+    center of the box to every edge."""
     # project bbox on the feature
     f_bbox = bbox / stride
     x1 = torch.round((1 - ratio) * f_bbox[0] + ratio * f_bbox[2])
@@ -61,11 +62,9 @@ class RegionAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-        pos_iou_thr (float): IoU threshold for positive bboxes.
-        neg_iou_thr (float or tuple): IoU threshold for negative bboxes.
-        min_pos_iou (float): Minimum iou for a bbox to be considered as a
-            positive bbox. Positive samples can have smaller IoU than
-            pos_iou_thr due to the 4th step (assign max IoU sample to each gt).
+        center_ratio: ratio of the region in the center of the bbox to
+            define positive sample.
+        ignore_ratio: ratui of the region to define ignore samples.
     """
 
     # TODO update docs
@@ -103,11 +102,19 @@ class RegionAssigner(BaseAssigner):
             5. Assign anchor outside of image to -1
 
         Args:
-            bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
+            mlvl_anchors (list[Tensor]): Multi level anchors.
+            mlvl_valid_flags (list[Tensor]): Multi level valid flags.
+            gt_bboxes (Tensor): Ground truth bboxes of image
+            img_meta (dict): Meta info of image.
+            featmap_sizes (list[Tensor]): Feature mapsize each level
+            anchor_scale (int): Scale of the anchor.
+            anchor_strides (list[int]): Stride of the anchor.
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
             gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
+            allowed_border (int, optional): The border to allow the valid
+                anchor. Defaults to 0.
 
         Returns:
             :obj:`AssignResult`: The assign result.

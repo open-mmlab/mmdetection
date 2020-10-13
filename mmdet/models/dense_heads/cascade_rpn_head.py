@@ -3,10 +3,10 @@ from __future__ import division
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
+from mmcv.ops import DeformConv2d
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
-from mmcv.ops import DeformConv2d
 from ..builder import HEADS, build_head
 from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
@@ -45,9 +45,11 @@ class AdaptiveConv(nn.Module):
                 dilation=dilation)
 
     def init_weights(self):
+        """Init weights."""
         normal_init(self.conv, std=0.01)
 
     def forward(self, x, offset):
+        """Forward function."""
         if self.adapt_type == 'offset':
             N, _, H, W = x.shape
             assert offset is not None
@@ -107,6 +109,7 @@ class StageCascadeRPNHead(RPNHead):
             self.sampler = build_sampler(sampler_cfg, context=self)
 
     def _init_layers(self):
+        """Init layers of a CascadeRPN stage."""
         self.rpn_conv = AdaptiveConv(self.in_channels, self.feat_channels,
                                      self.adapt_cfg)
         if self.with_cls:
@@ -117,12 +120,14 @@ class StageCascadeRPNHead(RPNHead):
         self.relu = nn.ReLU(inplace=True)
 
     def init_weights(self):
+        """Init weights of a CascadeRPN stage."""
         self.rpn_conv.init_weights()
         normal_init(self.rpn_reg, std=0.01)
         if self.with_cls:
             normal_init(self.rpn_cls, std=0.01)
 
     def forward_single(self, x, offset):
+        """Forward function of single scale."""
         bridged_x = x
         x = self.relu(self.rpn_conv(x, offset))
         if self.bridged_feature:
@@ -132,6 +137,7 @@ class StageCascadeRPNHead(RPNHead):
         return bridged_x, cls_score, bbox_pred
 
     def forward(self, feats, offset_list=None):
+        """Forward function."""
         if offset_list is None:
             offset_list = [None for _ in range(len(feats))]
         return multi_apply(self.forward_single, feats, offset_list)
@@ -202,24 +208,7 @@ class StageCascadeRPNHead(RPNHead):
                        gt_labels_list=None,
                        label_channels=1,
                        unmap_outputs=True):
-        """Compute regression and classification targets for anchors.
-
-        Args:
-            anchor_list (list[list]): Multi level anchors of each image.
-            valid_flag_list (list[list]): Multi level valid flags of each
-                image.
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
-            img_metas (list[dict]): Meta info of each image.
-            featmap_sizes (list[Tensor]): Feature mapsize each level
-            gt_bboxes_ignore_list (list[Tensor]): Ignore bboxes of each images
-            gt_labels_list (list[Tensor]): Ground truth labels of each image
-            label_channels (int): Channel of label.
-            unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors.
-
-        Returns:
-            region_targets (tuple)
-        """
+        """See :func:`StageCascadeRPNHead.get_targets`."""
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
 
@@ -267,6 +256,21 @@ class StageCascadeRPNHead(RPNHead):
                     featmap_sizes,
                     gt_bboxes_ignore=None,
                     label_channels=1):
+        """Compute regression and classification targets for anchors.
+
+        Args:
+            anchor_list (list[list]): Multi level anchors of each image.
+            valid_flag_list (list[list]): Multi level valid flags of each
+                image.
+            gt_bboxes (list[Tensor]): Ground truth bboxes of each image.
+            img_metas (list[dict]): Meta info of each image.
+            featmap_sizes (list[Tensor]): Feature mapsize each level
+            gt_bboxes_ignore (list[Tensor]): Ignore bboxes of each images
+            label_channels (int): Channel of label.
+
+        Returns:
+            cls_reg_targets (tuple)
+        """
         if isinstance(self.assigner, RegionAssigner):
             cls_reg_targets = self.region_targets(
                 anchor_list,
@@ -367,6 +371,7 @@ class StageCascadeRPNHead(RPNHead):
 
     def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):
+        """Loss function on single scale."""
         # classification loss
         if self.with_cls:
             labels = labels.reshape(-1)
@@ -399,6 +404,24 @@ class StageCascadeRPNHead(RPNHead):
              gt_bboxes,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute losses of the head.
+
+        Args:
+            anchor_list (list[list]): Multi level anchors of each image.
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss. Default: None
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         featmap_sizes = [featmap.size()[-2:] for featmap in bbox_preds]
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = self.get_targets(
@@ -449,6 +472,7 @@ class StageCascadeRPNHead(RPNHead):
                    img_metas,
                    cfg,
                    rescale=False):
+        """Get proposal predict."""
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
@@ -469,6 +493,7 @@ class StageCascadeRPNHead(RPNHead):
         return result_list
 
     def refine_bboxes(self, anchor_list, bbox_preds, img_metas):
+        """Refine bboxes through stages."""
         num_levels = len(bbox_preds)
         new_anchor_list = []
         for img_id in range(len(img_metas)):
@@ -486,10 +511,10 @@ class StageCascadeRPNHead(RPNHead):
 
 @HEADS.register_module()
 class CascadeRPNHead(BaseDenseHead):
-    """The CascadeRPNHead will predict more accurate region proposals,
-    which is required for two-stage detectors (such as Fast/Faster R-CNN).
-    CascadeRPN consists of a sequence of RPNStage to progressively improve
-    the accuracy of the detected proposals.
+    """The CascadeRPNHead will predict more accurate region proposals, which is
+    required for two-stage detectors (such as Fast/Faster R-CNN). CascadeRPN
+    consists of a sequence of RPNStage to progressively improve the accuracy of
+    the detected proposals.
 
     More details can be found in ``https://arxiv.org/abs/1909.06720``.
 
@@ -514,15 +539,16 @@ class CascadeRPNHead(BaseDenseHead):
         self.test_cfg = test_cfg
 
     def init_weights(self):
+        """Init weight of CascadeRPN."""
         for i in range(self.num_stages):
             self.stages[i].init_weights()
 
     def loss(self):
-        """loss is implemented in StageCascadeRPNHead."""
+        """loss() is implemented in StageCascadeRPNHead."""
         pass
 
     def get_bboxes(self):
-        """get_bboxes is implemented in StageCascadeRPNHead."""
+        """get_bboxes() is implemented in StageCascadeRPNHead."""
         pass
 
     def forward_train(self,
@@ -532,6 +558,7 @@ class CascadeRPNHead(BaseDenseHead):
                       gt_labels=None,
                       gt_bboxes_ignore=None,
                       proposal_cfg=None):
+        """Forward train function."""
         assert gt_labels is None, 'RPN does not require gt_labels'
 
         featmap_sizes = [featmap.size()[-2:] for featmap in x]
@@ -569,6 +596,7 @@ class CascadeRPNHead(BaseDenseHead):
             return losses, proposal_list
 
     def simple_test_rpn(self, x, img_metas):
+        """Simple forward test function."""
         featmap_sizes = [featmap.size()[-2:] for featmap in x]
         anchor_list, _ = self.stages[0].get_anchors(featmap_sizes, img_metas)
 
@@ -591,4 +619,5 @@ class CascadeRPNHead(BaseDenseHead):
         return proposal_list
 
     def aug_test_rpn(self, x, img_metas):
+        """Augmented forward test function."""
         raise NotImplementedError
