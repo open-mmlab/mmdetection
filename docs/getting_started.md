@@ -170,6 +170,54 @@ PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
 ```
 
 
+## Prerequisites
+
+- Linux or macOS (Windows is not currently officially supported)
+- Python 3.6+
+- PyTorch 1.3+
+- CUDA 9.2+ (If you build PyTorch from source, CUDA 9.0 is also compatible)
+- GCC 5+
+- [mmcv](https://mmcv.readthedocs.io/en/latest/#installation)
+
+  The required versions of MMCV for different versions of MMDetection since V2.0 are as below. Please install the correct version of MMCV to avoid installation issues.
+
+  | MMDetection version |    MMCV version     |
+  |:-------------------:|:-------------------:|
+  | master              | mmcv-full>=1.1.1, <=1.2|
+  | 2.4.0               | mmcv-full>=1.1.1, <=1.2|
+  | 2.3.0               | mmcv-full==1.0.5|
+  | 2.3.0rc0            | mmcv-full>=1.0.2    |
+  | 2.2.1               | mmcv==0.6.2         |
+  | 2.2.0               | mmcv==0.6.2         |
+  | 2.1.0               | mmcv>=0.5.9, <=0.6.1|
+  | 2.0.0               | mmcv>=0.5.1, <=0.5.8|
+
+  Note: You need to run `pip uninstall mmcv` first if you have mmcv installed.
+  If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
+
+   We **highly recommend** you to install the pre-build mmcv as below.
+
+   ```shell
+   pip install mmcv-full==latest+torch1.6.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+   ```
+
+   See [here](https://github.com/open-mmlab/mmcv#install-with-pip) for different versions of MMCV compatible to different PyTorch and CUDA versions.
+
+   Optionally you can choose to compile mmcv from source by the following command
+
+   ```shell
+   git clone https://github.com/open-mmlab/mmcv.git
+   cd mmcv
+   MMCV_WITH_OPS=1 pip install -e .  # package mmcv-full will be installed after this step
+   cd ..
+   ```
+   Or directly run
+
+   ```shell
+   pip install mmcv-full
+   ```
+
+
 ## Prepare datasets
 
 It is recommended to symlink the dataset root to `$MMDETECTION/data`.
