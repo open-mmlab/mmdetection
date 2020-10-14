@@ -23,7 +23,7 @@ class SinePositionEmbedding(nn.Module):
         normalize (bool, optional): Whether to normalize the position
             embedding. Default False.
         scale (float, optional): A scale factor that scales the position
-            embedding. The scale will be used only when normalize is True.
+            embedding. The scale will be used only when `normalize` is True.
             Default 2*pi.
         eps (float, optional): A value added to the denominator for
             numerical stability. Default 1e-6.
