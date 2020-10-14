@@ -1,16 +1,16 @@
-# Tutorial 1: Inference, testing and training with predefined models and standard datasets
+# Tutorial 1: Inference, testing, and training with predefined models and standard datasets
 
 Welcome to MMDetection's tutorial.
 
-MMDetection provides hundreds of predefined and pre-trained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This tutorial will show how to perform common tasks on these pre-trained models and standard datasets, including :
+MMDetection provides hundreds of predefined and pretrained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This tutorial will show how to perform common tasks on these pretrained models and standard datasets, including:
 
 - Use existing models to inference on given images.
-- Test pre-trained models on standard datasets.
+- Test pretrained models on standard datasets.
 - Train predefined models on standard datasets.
 
-## Inference with pre-trained models
+## Inference with pretrained models
 
-By inference, we mean using trained models to detect objects on images. In MMDetection, the model structure is defined by a python [configuration file]() and pre-trained model parameters are save in a Pytorch checkpoint file, usually with `.pth` extension name .
+By inference, we mean using trained models to detect objects on images. In MMDetection, the model structure is defined by a python [configuration file]() and pretrained model parameters are save in a Pytorch checkpoint file, usually with `.pth` extension name .
 
 To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) with this [configuration](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) and this [checkpoints](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to save the parameter to `checkpoint_file` directory.
 
@@ -99,7 +99,12 @@ Source codes are available [here](https://github.com/open-mmlab/mmdetection/tree
 This script performs inference on a single image.
 
 ```shell
-python demo/image_demo.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--score-thr ${SCORE_THR}]
+python demo/image_demo.py \
+    ${IMAGE_FILE} \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--score-thr ${SCORE_THR}]
 ```
 
 Examples:
@@ -116,7 +121,12 @@ python demo/image_demo.py demo/demo.jpg \
 This is a live demo from a webcam.
 
 ```shell
-python demo/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${SCORE_THR}]
+python demo/webcam_demo.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--camera-id ${CAMERA-ID}] \
+    [--score-thr ${SCORE_THR}]
 ```
 
 Examples:
@@ -127,14 +137,19 @@ python demo/webcam_demo.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
-## Testing with existing model on datsets
+## Testing existing models on standard datasets.
 
-## Prepare datasets
+To evaluate a model's accuracy, one usually tests the model on some standard datasets.
+MMDetection supports multiple public datasets including COCO, Pascal VOC, CityScapes, and [more](https://github.com/open-mmlab/mmdetection/tree/master/configs/_base_/datasets).
+With MMDetection, users can easily test their models.
 
+### Prepare datasets
+
+Standard datasets like Pascal VOC and COCO are available from official websites or mirrors.
 It is recommended to symlink the dataset root to `$MMDETECTION/data`.
 If your folder structure is different, you may need to change the corresponding paths in config files.
 
-```
+```plain
 mmdetection
 ├── mmdet
 ├── tools
@@ -163,33 +178,47 @@ The cityscapes annotations have to be converted into the coco format using `tool
 
 ```shell
 pip install cityscapesscripts
-python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out-dir ./data/cityscapes/annotations
+
+python tools/convert_datasets/cityscapes.py \
+    ./data/cityscapes \
+    --nproc 8 \
+    --out-dir ./data/cityscapes/annotations
 ```
 
-Currently the config files in `cityscapes` use COCO pre-trained weights to initialize.
-You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
+TODO : delete
+Currently the config files in `cityscapes` use COCO pretrained weights to initialize.
+You could download the pretrained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
 
+TODO : CHANGE TO NEW PATH
 For using custom datasets, please refer to [Tutorials 2: Adding New Dataset](tutorials/new_dataset.md).
 
-## Inference with pretrained models
+### Test pretrained models
 
-We provide testing scripts to evaluate a whole dataset (COCO, PASCAL VOC, Cityscapes, etc.),
-and also some high-level apis for easier integration to other projects.
-
-### Test a dataset
+We provide testing scripts for evaluating an existing model on the whole dataset (COCO, PASCAL VOC, Cityscapes, etc.).
+Below testing environments are supported:
 
 - single GPU
-- single node multiple GPU
-- multiple node
+- single node multiple GPUs
+- multiple nodes
 
-You can use the following commands to test a dataset.
+Depending on the testing environment, one can choose the proper script to perform testing.
 
 ```shell
 # single-gpu testing
-python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}] [--show]
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--out ${RESULT_FILE}] \
+    [--eval ${EVAL_METRICS}] \
+    [--show]
 
 # multi-gpu testing
-./tools/dist_test.sh ${CONFIG_FILE} ${CHECKPOINT_FILE} ${GPU_NUM} [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}]
+bash tools/dist_test.sh \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    ${GPU_NUM} \
+    [--out ${RESULT_FILE}] \
+    [--eval ${EVAL_METRICS}]
 ```
 
 Optional arguments:
@@ -200,7 +229,7 @@ Optional arguments:
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
 - `--show-score-thr`: If specified, detections with score below this threshold will be removed.
 
-Examples:
+#### Examples
 
 Assume that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
