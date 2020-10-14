@@ -137,11 +137,11 @@ python demo/webcam_demo.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
-## Testing existing models on standard datasets.
+## Testing pretrained models on standard datasets
 
 To evaluate a model's accuracy, one usually tests the model on some standard datasets.
 MMDetection supports multiple public datasets including COCO, Pascal VOC, CityScapes, and [more](https://github.com/open-mmlab/mmdetection/tree/master/configs/_base_/datasets).
-With MMDetection, users can easily test their models.
+This section will show how to test pretrained models on these standard datasets.
 
 ### Prepare datasets
 
@@ -185,23 +185,19 @@ python tools/convert_datasets/cityscapes.py \
     --out-dir ./data/cityscapes/annotations
 ```
 
-TODO : delete
-Currently the config files in `cityscapes` use COCO pretrained weights to initialize.
-You could download the pretrained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
-
-TODO : CHANGE TO NEW PATH
+TODO: CHANGE TO THE NEW PATH
 For using custom datasets, please refer to [Tutorials 2: Adding New Dataset](tutorials/new_dataset.md).
 
 ### Test pretrained models
 
 We provide testing scripts for evaluating an existing model on the whole dataset (COCO, PASCAL VOC, Cityscapes, etc.).
-Below testing environments are supported:
+The following testing environments are supported:
 
 - single GPU
 - single node multiple GPUs
 - multiple nodes
 
-Depending on the testing environment, one can choose the proper script to perform testing.
+Choose the proper script to perform testing depending on the testing environment.
 
 ```shell
 # single-gpu testing
@@ -234,66 +230,97 @@ Optional arguments:
 Assume that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn).
 
    ```shell
-   python tools/test.py configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
+   python tools/test.py \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
        --show
    ```
 
-2. Test Faster R-CNN and save the painted images for latter visualization.
+2. Test Faster R-CNN and save the painted images for future visualization.
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn).
 
    ```shell
-   python tools/test.py configs/faster_rcnn/faster_rcnn_r50_fpn_1x.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
+   python tools/test.py \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
        --show-dir faster_rcnn_r50_fpn_1x_results
    ```
 
 3. Test Faster R-CNN on PASCAL VOC (without saving the test results) and evaluate the mAP.
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/pascal_voc).
 
    ```shell
-   python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
-       checkpoints/SOME_CHECKPOINT.pth \
+   python tools/test.py \
+       configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_voc0712_20200624-c9895d40.pth \
        --eval mAP
    ```
 
 4. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn).
 
    ```shell
-   ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-       8 --out results.pkl --eval bbox segm
+   ./tools/dist_test.sh \
+       configs/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
+       8 \
+       --out results.pkl \
+       --eval bbox segm
    ```
 
 5. Test Mask R-CNN with 8 GPUs, and evaluate the **classwise** bbox and mask AP.
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn).
 
    ```shell
-   ./tools/dist_test.sh configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-       8 --out results.pkl --eval bbox segm --options "classwise=True"
+   ./tools/dist_test.sh \
+       configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
+       8 \
+       --out results.pkl \
+       --eval bbox segm \
+       --options "classwise=True"
    ```
 
-6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
+6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate JSON files for submitting to the official evaluation server.
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn).
 
    ```shell
-   ./tools/dist_test.sh configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-       8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+   ./tools/dist_test.sh \
+       configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
+       8 \
+       -format-only \
+       --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
    ```
 
-   You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+   This command generates two JSON files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
 
-7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate the txt and png files to be submit to the official evaluation server.
+7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate txt and png files for submitting to the official evaluation server.
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/cityscapes).
 
    ```shell
-   ./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
+   ./tools/dist_test.sh \
+       configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
        checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
-       8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+       8 \
+       --format-only \
+       --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
    ```
 
    The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
-## Train with pre-configured models with standard datasets
+## Train predefined models on standard datasets
+
+## Prepare datasets
+
+Training certainly requiring dataset too. See section [Prepare datasets](#prepare-datasets) above for preparing datasets.
+
+**Note**:
+Currently, the config files under `configs/cityscapes` use COCO pretrained weights to initialize.
+You could download the pretrained models in advance if the network connection is unavailable or slow. Otherwise, it would cause errors at the beginning of training.
 
 ## Train a model
 
