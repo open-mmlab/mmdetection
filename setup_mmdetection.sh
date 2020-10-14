@@ -13,7 +13,7 @@ mkdir data
 /# /snap/bin/gsutil
 wget https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/libnccl-dev_2.4.7-1%2Bcuda10.0_amd64.deb
 wget https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/libnccl2_2.4.7-1%2Bcuda10.0_amd64.deb
-wget https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/crcnn_r50_bepro_stitch.pth
+wget https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/crcnn_r50_bepro_stitch_2020.pth
 sudo dpkg -i libnccl2_2.4.7-1+cuda10.0_amd64.deb
 sudo dpkg -i libnccl-dev_2.4.7-1+cuda10.0_amd64.deb
 sudo apt update
@@ -31,4 +31,4 @@ cp -r configs ~/bepro-video-util
 cp crcnn_r50_bepro_stitch.pth ~/bepro-video-util
 
 ## test with
-# python demo/mmdetection_demo.py $input_vid configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_bepro.py crcnn_r50_bepro_stitch.pth 0 1000 ./tmp/
+# python demo/mmdetection_demo.py $input_vid configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_bepro.py crcnn_r50_bepro_stitch_2020.pth 0 1000 ./tmp/
