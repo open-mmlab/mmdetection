@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import torch
-from mmcv.ops import RoIAlign, RoIPool
+from mmcv.ops import RoIPool
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
@@ -109,7 +109,7 @@ def inference_detector(model, img):
     else:
         # Use torchvision ops for CPU mode instead
         for m in model.modules():
-            if isinstance(m, (RoIPool, RoIAlign)):
+            if isinstance(m, RoIPool):
                 if not m.aligned:
                     # aligned=False is not implemented on CPU
                     # set use_torchvision on-the-fly
