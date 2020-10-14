@@ -4,7 +4,10 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import uniform_init
 
+from .builder import POSITION_ENCODING
 
+
+@POSITION_ENCODING.register_module()
 class SinePositionEmbedding(nn.Module):
     """Position encoding with sine and cosine functions.
 
@@ -34,8 +37,9 @@ class SinePositionEmbedding(nn.Module):
                  eps=1e-6):
         super(SinePositionEmbedding, self).__init__()
         if normalize:
-            assert isinstance(scale, float), 'when normalize is set, scale '\
-                f'should be provided and type float , found {type(scale)}'
+            assert isinstance(scale, (float, int)), 'when normalize is set,' \
+                'scale should be provided and in float or int type, ' \
+                f'found {type(scale)}'
         self.num_pos_feats = num_pos_feats
         self.temperature = temperature
         self.normalize = normalize
@@ -85,6 +89,7 @@ class SinePositionEmbedding(nn.Module):
         return repr_str
 
 
+@POSITION_ENCODING.register_module()
 class LearnedPositionEmbedding(nn.Module):
     """Position embedding with learnable embedding weights.
 
