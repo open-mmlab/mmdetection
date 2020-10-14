@@ -15,22 +15,21 @@ class SinePositionEmbedding(nn.Module):
     <https://arxiv.org/pdf/2005.12872>`_ for details.
 
     Args:
-        num_pos_feats (int): The feature dimension for each position
+        num_feats (int): The feature dimension for each position
             along x-axis or y-axis. Note the final returned dimension
             for each position is 2 times of this value.
         temperature (int): The temperature used for scaling the position
             embedding. Default 10000.
         normalize (bool): Whether to normalize the position embedding.
             Default False.
-        scale (float): A scale factor for calculating the position
-            embedding. Default 2*pi. Only when normalize is True then
-            scale will be used.
+        scale (float): A scale factor that scales the position embedding.
+            The scale will be used only when normalize is True. Default 2*pi.
         eps (float): A value added to the denominator for numerical
             stability. Default 1e-6.
     """
 
     def __init__(self,
-                 num_pos_feats,
+                 num_feats,
                  temperature=10000,
                  normalize=False,
                  scale=2 * math.pi,
@@ -40,7 +39,7 @@ class SinePositionEmbedding(nn.Module):
             assert isinstance(scale, (float, int)), 'when normalize is set,' \
                 'scale should be provided and in float or int type, ' \
                 f'found {type(scale)}'
-        self.num_pos_feats = num_pos_feats
+        self.num_feats = num_feats
         self.temperature = temperature
         self.normalize = normalize
         self.scale = scale
@@ -56,7 +55,7 @@ class SinePositionEmbedding(nn.Module):
 
         Returns:
             pos (Tensor): Returned position embedding with shape
-                [bs, num_pos_feats*2, h, w].
+                [bs, num_feats*2, h, w].
         """
         not_mask = ~mask
         y_embed = not_mask.cumsum(1, dtype=torch.float32)
@@ -65,8 +64,8 @@ class SinePositionEmbedding(nn.Module):
             y_embed = y_embed / (y_embed[:, -1:, :] + self.eps) * self.scale
             x_embed = x_embed / (x_embed[:, :, -1:] + self.eps) * self.scale
         dim_t = torch.arange(
-            self.num_pos_feats, dtype=torch.float32, device=mask.device)
-        dim_t = self.temperature**(2 * (dim_t // 2) / self.num_pos_feats)
+            self.num_feats, dtype=torch.float32, device=mask.device)
+        dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
         pos_x = x_embed[:, :, :, None] / dim_t
         pos_y = y_embed[:, :, :, None] / dim_t
         pos_x = torch.stack(
@@ -81,7 +80,7 @@ class SinePositionEmbedding(nn.Module):
     def __repr__(self):
         """str: a string that describes the module"""
         repr_str = self.__class__.__name__
-        repr_str += f'(num_pos_feats={self.num_pos_feats}, '
+        repr_str += f'(num_feats={self.num_feats}, '
         repr_str += f'temperature={self.temperature}, '
         repr_str += f'normalize={self.normalize}, '
         repr_str += f'scale={self.scale}, '
@@ -94,23 +93,26 @@ class LearnedPositionEmbedding(nn.Module):
     """Position embedding with learnable embedding weights.
 
     Args:
-        num_pos_feats (int): The feature dimension for each position
+        num_feats (int): The feature dimension for each position
             along x-axis or y-axis. The final returned dimension for
             each position is 2 times of this value.
-        row_num_embed (int): The dictionary size of row embeddings.
-        col_num_embed (int): The dictionary size of col embeddings.
+        row_num_embed (int, optional): The dictionary size of row embeddings.
+            Default 50.
+        col_num_embed (int, optional): The dictionary size of col embeddings.
+            Default 50.
     """
 
-    def __init__(self, num_pos_feats, row_num_embed=50, col_num_embed=50):
+    def __init__(self, num_feats, row_num_embed=50, col_num_embed=50):
         super(LearnedPositionEmbedding, self).__init__()
-        self.row_embed = nn.Embedding(row_num_embed, num_pos_feats)
-        self.col_embed = nn.Embedding(col_num_embed, num_pos_feats)
-        self.num_pos_feats = num_pos_feats
+        self.row_embed = nn.Embedding(row_num_embed, num_feats)
+        self.col_embed = nn.Embedding(col_num_embed, num_feats)
+        self.num_feats = num_feats
         self.row_num_embed = row_num_embed
         self.col_num_embed = col_num_embed
         self.init_weights()
 
     def init_weights(self):
+        """Initialize the learnable weights."""
         uniform_init(self.row_embed)
         uniform_init(self.col_embed)
 
@@ -124,7 +126,7 @@ class LearnedPositionEmbedding(nn.Module):
 
         Returns:
             pos (Tensor): Returned position embedding with shape
-                [bs, num_pos_feats*2, h, w].
+                [bs, num_feats*2, h, w].
         """
         h, w = mask.shape[-2:]
         x = torch.arange(w, device=mask.device)
@@ -141,7 +143,7 @@ class LearnedPositionEmbedding(nn.Module):
     def __repr__(self):
         """str: a string that describes the module"""
         repr_str = self.__class__.__name__
-        repr_str += f'(num_pos_feats={self.num_pos_feats}, '
+        repr_str += f'(num_feats={self.num_feats}, '
         repr_str += f'row_num_embed={self.row_num_embed}, '
         repr_str += f'col_num_embed={self.col_num_embed})'
         return repr_str
