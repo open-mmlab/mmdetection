@@ -139,3 +139,58 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     ious = overlap / union
 
     return ious
+
+
+def bbox_gious(bboxes1, bboxes2, eps=1e-6):
+    """Calculate gious between each bbox of bboxes1 and bboxes2.
+
+    Args:
+        bboxes1 (Tensor): shape (B, m, 4) in <x1, y1, x2, y2> format or empty.
+        bboxes2 (Tensor): shape (B, n, 4) in <x1, y1, x2, y2> format or empty.
+            B indicates the batch dim, in shape (B1, B2, ..., Bn).
+
+    Returns:
+        gious (Tensor): Calculated gious with shape (B, m, n).
+    """
+
+    # Either the boxes are empty or the length of boxes's last dimenstion is 4
+    assert (bboxes1.size(-1) == 4 or bboxes1.size(0) == 0)
+    assert (bboxes2.size(-1) == 4 or bboxes2.size(0) == 0)
+
+    # Batch dim must be the same
+    # Batch dim: (B1, B2, ... Bn)
+    assert bboxes1.shape[:-2] == bboxes2.shape[:-2]
+    batch_shape = bboxes1.shape[:-2]
+
+    rows = bboxes1.size(-2)
+    cols = bboxes2.size(-2)
+
+    if rows * cols == 0:
+        return bboxes1.new(batch_shape + (rows, cols))
+
+    lt = torch.max(bboxes1[..., :, None, :2],
+                   bboxes2[..., None, :, :2])  # [B, rows, cols, 2]
+    rb = torch.min(bboxes1[..., :, None, 2:],
+                   bboxes2[..., None, :, 2:])  # [B, rows, cols, 2]
+    wh = (rb - lt).clamp(min=0)  # [B, rows, cols, 2]
+    overlap = wh[..., 0] * wh[..., 1]
+    area1 = (bboxes1[..., 2] - bboxes1[..., 0]) * (
+        bboxes1[..., 3] - bboxes1[..., 1])
+    area2 = (bboxes2[..., 2] - bboxes2[..., 0]) * (
+        bboxes2[..., 3] - bboxes2[..., 1])
+    union = area1[..., None] + area2[..., None, :] - overlap
+    eps = union.new_tensor([eps])
+    union = torch.max(union, eps)
+    # calculate ious
+    ious = overlap / union
+    # calculate enclose_area
+    enclose_lt = torch.min(bboxes1[..., :, None, :2], bboxes2[...,
+                                                              None, :, :2])
+    enclose_rb = torch.max(bboxes1[..., :, None, 2:], bboxes2[..., None, :,
+                                                              2:])
+    enclose_wh = (enclose_rb - enclose_lt).clamp(min=0)  # [B, rows, cols, 2]
+    enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
+    enclose_area = torch.max(enclose_area, eps)
+    # calculate gious
+    gious = ious - (enclose_area - union) / enclose_area
+    return gious

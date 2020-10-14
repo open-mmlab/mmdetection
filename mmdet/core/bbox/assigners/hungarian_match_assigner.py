@@ -2,6 +2,7 @@ import torch
 from scipy.optimize import linear_sum_assignment
 
 from ..builder import BBOX_ASSIGNERS
+from ..iou_calculators import bbox_gious
 from ..transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
@@ -23,18 +24,18 @@ class HungarianMatchAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-        cls_wei (int | float, optional): The scale factor for classification
+        cls_weight (int | float, optional): The scale factor for classification
             cost. Default 1.0.
-        bbox_wei (int | float, optional): The scale factor for regression
+        bbox_weight (int | float, optional): The scale factor for regression
             L1 cost. Default 1.0.
-        giou_wei (int | float, optional): The scale factor for regression
+        giou_weight (int | float, optional): The scale factor for regression
             giou cost. Default 1.0.
     """
 
-    def __init__(self, cls_wei=1., bbox_wei=1., giou_wei=1.):
-        self.cls_wei = cls_wei
-        self.bbox_wei = bbox_wei
-        self.giou_wei = giou_wei
+    def __init__(self, cls_weight=1., bbox_weight=1., giou_weight=1.):
+        self.cls_weight = cls_weight
+        self.bbox_weight = bbox_weight
+        self.giou_weight = giou_weight
 
     def assign(self,
                bbox_pred,
@@ -103,7 +104,7 @@ class HungarianMatchAssigner(BaseAssigner):
         # The 1 is a constant that doesn't change the matching,
         # so it can be ommitted.
         cls_score = cls_pred.softmax(-1)
-        cls_cost = -cls_score[:, gt_labels]  # [num_query, num_gt]
+        cls_cost = -cls_score[:, gt_labels]  # [num_bboxes, num_gt]
 
         # regression L1 cost
         img_h, img_w, _ = img_meta['img_shape']
@@ -112,35 +113,17 @@ class HungarianMatchAssigner(BaseAssigner):
         gt_bboxes_normalized = gt_bboxes / factor
         bbox_cost = torch.cdist(
             bbox_pred, bbox_xyxy_to_cxcywh(gt_bboxes_normalized),
-            p=1)  # [num_query, num_gt]
+            p=1)  # [num_bboxes, num_gt]
 
         # regression giou cost
         bboxes = bbox_cxcywh_to_xyxy(bbox_pred) * factor
-        lt = torch.max(bboxes[:, None, :2], gt_bboxes[None, :, :2])
-        rb = torch.min(bboxes[:, None, 2:], gt_bboxes[None, :, 2:])
-        wh = (rb - lt).clamp(min=0)
-        overlap = wh[..., 0] * wh[..., 1]
-        # calculate ious
-        area1 = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
-        area2 = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-            gt_bboxes[:, 3] - gt_bboxes[:, 1])
-        union = area1[:, None] + area2[None, :] - overlap
-        union = union.clamp(min=eps)
-        ious = overlap / union
-        # calculate enclose_area
-        enclose_lt = torch.min(bboxes[:, None, :2], gt_bboxes[None, :, :2])
-        enclose_rb = torch.max(bboxes[:, None, 2:], gt_bboxes[None, :, 2:])
-        enclose_wh = (enclose_rb - enclose_lt).clamp(min=0)
-        enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
-        enclose_area = enclose_area.clamp(min=eps)
-        # calculate giou
-        gious = ious - (enclose_area - union) / enclose_area
+        gious = bbox_gious(bboxes, gt_bboxes)  # [num_bboxes, num_gt]
         # The 1 is a constant that doesn't change the matching, so ommitted.
         giou_cost = -gious
 
         # weighted sum of above three costs
-        cost = self.cls_wei * cls_cost + self.bbox_wei * bbox_cost
-        cost = cost + self.giou_wei * giou_cost
+        cost = self.cls_weight * cls_cost + self.bbox_weight * bbox_cost
+        cost = cost + self.giou_weight * giou_cost
 
         # 3. do Hungarian matching on CPU using linear_sum_assignment
         cost = cost.detach().cpu()
