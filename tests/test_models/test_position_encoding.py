@@ -4,7 +4,8 @@ import torch
 from mmdet.models.utils import LearnedPositionEmbedding, SinePositionEmbedding
 
 
-def test_position_encoding_sine(num_feats=16, batch_size=2):
+def test_sine_position_encoding(num_feats=16, batch_size=2):
+    # test invalid type of scale
     with pytest.raises(AssertionError):
         module = SinePositionEmbedding(num_feats, scale=(3., ), normalize=True)
 
@@ -22,7 +23,7 @@ def test_position_encoding_sine(num_feats=16, batch_size=2):
     assert out.shape == (batch_size, num_feats * 2, h, w)
 
 
-def test_position_encoding_learned(num_feats=16,
+def test_learned_position_encoding(num_feats=16,
                                    row_num_embed=10,
                                    col_num_embed=10,
                                    batch_size=2):
