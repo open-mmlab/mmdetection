@@ -80,9 +80,9 @@ class MultiheadAttention(nn.Module):
                 if query_pos.shape == key.shape:
                     key_pos = query_pos
         if query_pos is not None:
-            query += query_pos
+            query = query + query_pos
         if key_pos is not None:
-            key += key_pos
+            key = key + key_pos
         out = self.attn(
             query,
             key,
@@ -117,7 +117,8 @@ class FFN(nn.Module):
                  feedforward_channels,
                  num_fcs=2,
                  act_cfg=dict(type='ReLU', inplace=True),
-                 dropout=0.0):
+                 dropout=0.0,
+                 add_residual=True):
         super(FFN, self).__init__()
         assert num_fcs >= 2, 'num_fcs should be no less ' \
             f'than 2. got {num_fcs}.'
@@ -139,12 +140,15 @@ class FFN(nn.Module):
         layers.append(Linear(feedforward_channels, embed_dims))
         self.layers = nn.Sequential(*layers)
         self.dropout = nn.Dropout(dropout)
+        self.add_residual = add_residual
 
     def forward(self, x, residual=None):
         """Forward function for `FFN`."""
+        x = self.layers(x)
+        if not self.add_residual:
+            return x
         if residual is None:
             residual = x
-        x = self.layers(x)
         return residual + self.dropout(x)
 
     def __repr__(self):
@@ -154,7 +158,8 @@ class FFN(nn.Module):
         repr_str += f'feedforward_channels={self.feedforward_channels}, '
         repr_str += f'num_fcs={self.num_fcs}, '
         repr_str += f'act_cfg={self.act_cfg}, '
-        repr_str += f'dropout={self.dropout})'
+        repr_str += f'dropout={self.dropout}, '
+        repr_str += f'add_residual={self.add_residual})'
         return repr_str
 
 
