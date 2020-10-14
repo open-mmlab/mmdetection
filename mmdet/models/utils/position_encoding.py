@@ -18,14 +18,15 @@ class SinePositionEmbedding(nn.Module):
         num_feats (int): The feature dimension for each position
             along x-axis or y-axis. Note the final returned dimension
             for each position is 2 times of this value.
-        temperature (int): The temperature used for scaling the position
-            embedding. Default 10000.
-        normalize (bool): Whether to normalize the position embedding.
-            Default False.
-        scale (float): A scale factor that scales the position embedding.
-            The scale will be used only when normalize is True. Default 2*pi.
-        eps (float): A value added to the denominator for numerical
-            stability. Default 1e-6.
+        temperature (int, optional): The temperature used for scaling
+            the position embedding. Default 10000.
+        normalize (bool, optional): Whether to normalize the position
+            embedding. Default False.
+        scale (float, optional): A scale factor that scales the position
+            embedding. The scale will be used only when normalize is True.
+            Default 2*pi.
+        eps (float, optional): A value added to the denominator for
+            numerical stability. Default 1e-6.
     """
 
     def __init__(self,
