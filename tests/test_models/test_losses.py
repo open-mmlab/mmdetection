@@ -93,26 +93,26 @@ def test_accuracy():
 
 def test_giou_loss(eps=1e-7):
 
-    def _construct_bbox(nb_bbox=None):
+    def _construct_bbox(num_bbox=None):
         img_h = int(np.random.randint(3, 1000))
         img_w = int(np.random.randint(3, 1000))
-        if nb_bbox is None:
-            nb_bbox = np.random.randint(1, 10)
-        x1y1 = torch.rand((nb_bbox, 2))
-        x2y2 = torch.max(torch.rand((nb_bbox, 2)), x1y1)
+        if num_bbox is None:
+            num_bbox = np.random.randint(1, 10)
+        x1y1 = torch.rand((num_bbox, 2))
+        x2y2 = torch.max(torch.rand((num_bbox, 2)), x1y1)
         bboxes = torch.cat((x1y1, x2y2), -1)
         bboxes[:, 0::2] *= img_w
         bboxes[:, 1::2] *= img_h
-        return bboxes, nb_bbox
+        return bboxes, num_bbox
 
     # is_aligned is True, bboxes.size(-1) == 5 (include score)
     self = BboxGIoU2D()
-    bboxes1, nb_bbox = _construct_bbox()
-    bboxes2, _ = _construct_bbox(nb_bbox)
-    bboxes1 = torch.cat((bboxes1, torch.rand((nb_bbox, 1))), 1)
-    bboxes2 = torch.cat((bboxes2, torch.rand((nb_bbox, 1))), 1)
+    bboxes1, num_bbox = _construct_bbox()
+    bboxes2, _ = _construct_bbox(num_bbox)
+    bboxes1 = torch.cat((bboxes1, torch.rand((num_bbox, 1))), 1)
+    bboxes2 = torch.cat((bboxes2, torch.rand((num_bbox, 1))), 1)
     gious = self(bboxes1, bboxes2, True)
-    assert gious.size() == (nb_bbox, ), gious.size()
+    assert gious.size() == (num_bbox, ), gious.size()
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
 
     # is_aligned is True, bboxes1.size(-2) == 0
@@ -124,8 +124,8 @@ def test_giou_loss(eps=1e-7):
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
 
     # is_aligned is True, and bboxes.ndims > 2
-    bboxes1, nb_bbox = _construct_bbox()
-    bboxes2, _ = _construct_bbox(nb_bbox)
+    bboxes1, num_bbox = _construct_bbox()
+    bboxes2, _ = _construct_bbox(num_bbox)
     bboxes1 = bboxes1.unsqueeze(0).repeat(2, 1, 1)
     # test assertion when batch dim is not the same
     with pytest.raises(AssertionError):
@@ -133,31 +133,31 @@ def test_giou_loss(eps=1e-7):
     bboxes2 = bboxes2.unsqueeze(0).repeat(2, 1, 1)
     gious = self(bboxes1, bboxes2, True)
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
-    assert gious.size() == (2, nb_bbox)
+    assert gious.size() == (2, num_bbox)
     bboxes1 = bboxes1.unsqueeze(0).repeat(2, 1, 1, 1)
     bboxes2 = bboxes2.unsqueeze(0).repeat(2, 1, 1, 1)
     gious = self(bboxes1, bboxes2, True)
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
-    assert gious.size() == (2, 2, nb_bbox)
+    assert gious.size() == (2, 2, num_bbox)
 
     # is_aligned is False
-    bboxes1, nb_bbox1 = _construct_bbox()
-    bboxes2, nb_bbox2 = _construct_bbox()
+    bboxes1, num_bbox1 = _construct_bbox()
+    bboxes2, num_bbox2 = _construct_bbox()
     gious = self(bboxes1, bboxes2)
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
-    assert gious.size() == (nb_bbox1, nb_bbox2)
+    assert gious.size() == (num_bbox1, num_bbox2)
 
     # is_aligned is False, and bboxes.ndims > 2
     bboxes1 = bboxes1.unsqueeze(0).repeat(2, 1, 1)
     bboxes2 = bboxes2.unsqueeze(0).repeat(2, 1, 1)
     gious = self(bboxes1, bboxes2)
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
-    assert gious.size() == (2, nb_bbox1, nb_bbox2)
+    assert gious.size() == (2, num_bbox1, num_bbox2)
     bboxes1 = bboxes1.unsqueeze(0)
     bboxes2 = bboxes2.unsqueeze(0)
     gious = self(bboxes1, bboxes2)
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
-    assert gious.size() == (1, 2, nb_bbox1, nb_bbox2)
+    assert gious.size() == (1, 2, num_bbox1, num_bbox2)
 
     # is_aligned is False, bboxes1.size(-2) == 0
     gious = self(torch.empty(1, 2, 0, 4), bboxes2)
