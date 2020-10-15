@@ -312,7 +312,11 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 len(proposals) for proposals in proposal_list)
             rois = rois.split(num_proposals_per_img, 0)
             cls_score = cls_score.split(num_proposals_per_img, 0)
-            bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+            if isinstance(bbox_pred, torch.Tensor):
+                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+            else:
+                bbox_pred = self.bbox_head[i].bbox_pred_split(
+                    bbox_pred, num_proposals_per_img)
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
