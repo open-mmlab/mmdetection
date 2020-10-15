@@ -161,8 +161,7 @@ class BboxGIoU2D(object):
                 numerical stability. Default 1e-6.
 
         Returns:
-            gious (Tensor): shape (m, n) if `is_aligned` is False else
-                shape (m,).
+            Tensor: shape (m, n) if `is_aligned` is False else shape (m,).
 
         Example:
             >>> bboxes1 = torch.FloatTensor([
@@ -216,7 +215,8 @@ def bbox_gious(bboxes1, bboxes2, is_aligned=False, eps=1e-6):
             stability. Default 1e-6.
 
     Returns:
-        gious (Tensor): shape (m, n) if `is_aligned` is False else shape (m,).
+        Tensor: calculated gious with shape (m, n) if `is_aligned` is False,
+            otherwise with shape (m,).
     """
 
     # Either the boxes are empty or the length of boxes's last dimenstion is 4

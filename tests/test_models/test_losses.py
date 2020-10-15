@@ -91,7 +91,7 @@ def test_accuracy():
         accuracy(pred[:, :, None], true_label)
 
 
-def test_giou_loss(nb_test=100, eps=1e-7):
+def test_giou_loss(eps=1e-7):
 
     def _construct_bbox(nb_bbox=None):
         img_h = int(np.random.randint(3, 1000))
@@ -176,6 +176,8 @@ def test_giou_loss(nb_test=100, eps=1e-7):
         [0, 10, 10, 19],
         [10, 10, 20, 20],
     ])
-    gious = bbox_gious(bboxes1, bboxes2, is_aligned=True, eps=1e-7)
-    gious_gt = torch.FloatTensor([0.5000, -0.0500, -0.8214])
-    assert torch.allclose(gious, gious_gt, rtol=0, atol=5 * 1e-5)
+    gious = bbox_gious(bboxes1, bboxes2, is_aligned=True, eps=eps)
+    gious = gious.numpy().round(4)
+    # the gt is got with four decimal precision.
+    expected_gious = np.array([0.5000, -0.0500, -0.8214])
+    assert np.allclose(gious, expected_gious, rtol=0, atol=eps)
