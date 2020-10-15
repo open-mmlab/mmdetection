@@ -27,8 +27,9 @@ mkdir demo/dump
 # export LD_LIBRARY_PATH=/usr/local/cuda-10.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
 python setup.py develop
 
-cp -r configs ~/bepro-video-util 
-cp crcnn_r50_bepro_stitch_2020.pth ~/bepro-video-util
+# migration to bepro-python
+# cp -r configs ~/bepro-video-util 
+# cp crcnn_r50_bepro_stitch_2020.pth ~/bepro-video-util
 
 ## test with
 # python demo/mmdetection_demo.py $input_vid configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_bepro.py crcnn_r50_bepro_stitch_2020.pth 0 1000 ./tmp/
