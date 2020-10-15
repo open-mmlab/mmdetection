@@ -137,7 +137,7 @@ python demo/webcam_demo.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
-## Testing pretrained models on standard datasets
+## Test pretrained models on standard datasets
 
 To evaluate a model's accuracy, one usually tests the model on some standard datasets.
 MMDetection supports multiple public datasets including COCO, Pascal VOC, CityScapes, and [more](https://github.com/open-mmlab/mmdetection/tree/master/configs/_base_/datasets).
@@ -221,9 +221,9 @@ Optional arguments:
 
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
 - `EVAL_METRICS`: Items to be evaluated on the results. Allowed values depend on the dataset, e.g., `proposal_fast`, `proposal`, `bbox`, `segm` are available for COCO, `mAP`, `recall` for PASCAL VOC. Cityscapes could be evaluated by `cityscapes` as well as all COCO metrics.
-- `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment, otherwise you may encounter the error like `cannot connect to X server`.
+- `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment. Otherwise, you may encounter an error like `cannot connect to X server`.
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
-- `--show-score-thr`: If specified, detections with score below this threshold will be removed.
+- `--show-score-thr`: If specified, detections with scores below this threshold will be removed.
 
 #### Examples
 
@@ -314,79 +314,72 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 
 ## Train predefined models on standard datasets
 
-## Prepare datasets
+MMDetection provides out-of-the-box tools for training detection models.
+This section will show how to train _predefined_ models under [configs](https://github.com/open-mmlab/mmdetection/tree/master/configs) on standard datasets i.e. COCO.
+For training self-defined models, or training with self-defined datasets. See [Tutorial 2]() and [Tutorial 3]() for details.
 
-Training certainly requiring dataset too. See section [Prepare datasets](#prepare-datasets) above for preparing datasets.
+**Important**: The default learning rate in config files is for 8 GPUs and 2 img/gpu (batch size = 8\*2 = 16).
+According to the [linear scaling rule](https://arxiv.org/abs/1706.02677), you need to set the learning rate proportional to the batch size if you use different GPUs or images per GPU, e.g., `lr=0.01` for 4 GPUs \* 2 imgs/gpu and `lr=0.08` for 16 GPUs \* 4 imgs/gpu.
+
+### Prepare datasets
+
+Training requires preparing datasets too. See section [Prepare datasets](#prepare-datasets) above for details.
 
 **Note**:
 Currently, the config files under `configs/cityscapes` use COCO pretrained weights to initialize.
 You could download the pretrained models in advance if the network connection is unavailable or slow. Otherwise, it would cause errors at the beginning of training.
 
-## Train a model
+### Train on a single GPU
 
-MMDetection implements distributed training and non-distributed training,
-which uses `MMDistributedDataParallel` and `MMDataParallel` respectively.
+We provide `tools/train.py` to launch training jobs on a single GPU.
+The basic usage is as follows.
 
-All outputs (log files and checkpoints) will be saved to the working directory,
-which is specified by `work_dir` in the config file.
+```shell
+python tools/train.py \
+    ${CONFIG_FILE} \
+    [optional arguments]
+```
 
-By default we evaluate the model on the validation set after each epoch, you can change the evaluation interval by adding the interval argument in the training config.
+During training, log files and checkpoints will be saved to the working directory, which is specified by `work_dir` in the config file or via CLI argument `--work-dir`.
+
+By default, the model is evaluated on the validation set every epoch, the evaluation interval can be specified in the config file as shown below.
 
 ```python
-evaluation = dict(interval=12)  # This evaluate the model per 12 epoch.
+# evaluate the model every 12 epoch.
+evaluation = dict(interval=12)
 ```
 
-**\*Important\***: The default learning rate in config files is for 8 GPUs and 2 img/gpu (batch size = 8*2 = 16).
-According to the [Linear Scaling Rule](https://arxiv.org/abs/1706.02677), you need to set the learning rate proportional to the batch size if you use different GPUs or images per GPU, e.g., lr=0.01 for 4 GPUs * 2 img/gpu and lr=0.08 for 16 GPUs \* 4 img/gpu.
+This tool accepts several optional arguments, including:
 
-### Train with a single GPU
-
-```shell
-python tools/train.py ${CONFIG_FILE} [optional arguments]
-```
-
-If you want to specify the working directory in the command, you can add an argument `--work-dir ${YOUR_WORK_DIR}`.
-
-### Train with multiple GPUs
-
-```shell
-./tools/dist_train.sh ${CONFIG_FILE} ${GPU_NUM} [optional arguments]
-```
-
-Optional arguments are:
-
-- `--no-validate` (**not suggested**): By default, the codebase will perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training. To disable this behavior, use `--no-validate`.
-- `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
+- `--no-validate` (**not suggested**): Disable evaluation during training.
+- `--work-dir ${WORK_DIR}`: Override the working directory.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
-- `--options 'Key=value'`: Overide some settings in the used config.
+- `--options 'Key=value'`: Overrides other settings in the used config.
+
+**Note**:
 
 Difference between `resume-from` and `load-from`:
+
 `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
 `load-from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
-### Train with multiple machines
+### Train using multiple GPUs
 
-If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`. (This script also supports single machine training.)
-
-```shell
-[GPUS=${GPUS}] ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
-```
-
-Here is an example of using 16 GPUs to train Mask R-CNN on the dev partition.
+We provide `tools/dist_train.sh` to launch training on multiple GPUs.
+The basic usage is as follows.
 
 ```shell
-GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
+bash ./tools/dist_train.sh \
+    ${CONFIG_FILE} \
+    ${GPU_NUM} \
+    [optional arguments]
 ```
 
-You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
+Optional arguments remain the same as stated [above](#train-with-a-single-GPU)
 
-If you have just multiple machines connected with ethernet, you can refer to
-PyTorch [launch utility](https://pytorch.org/docs/stable/distributed.html#launch-utility).
-Usually it is slow if you do not have high speed networking like InfiniBand.
+#### Launch multiple jobs simultaneously
 
-### Launch multiple jobs on a single machine
-
-If you launch multiple jobs on a single machine, e.g., 2 jobs of 4-GPU training on a machine with 8 GPUs,
+If you would like to launch multiple jobs on a single machine, e.g., 2 jobs of 4-GPU training on a machine with 8 GPUs,
 you need to specify different ports (29500 by default) for each job to avoid communication conflict.
 
 If you use `dist_train.sh` to launch training jobs, you can set the port in commands.
@@ -395,6 +388,33 @@ If you use `dist_train.sh` to launch training jobs, you can set the port in comm
 CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
 CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
+
+### Train using multiple nodes
+
+Distributed training in MMDetection relies on `torch.distributed` package, thus can be launched via Pytorch's launch utility.
+To launch distributed training jobs multiple nodes, please refer to [launch utility](https://pytorch.org/docs/stable/distributed.html#launch-utility).
+
+Usually, training speed is limited by network connection. If you do not have high-speed networking, like InfiniBand, training would be slow.
+
+### Manage jobs with Slurm
+
+If you run MMDetection on a cluster managed with [Slurm](https://slurm.schedmd.com/), you can use `slurm_train.sh` to spawn training jobs. It supports both single-node and multi-node training.
+
+The basic usage is as follows.
+
+```shell
+[GPUS=${GPUS}] ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
+```
+
+Below is an example of using 16 GPUs to train Mask R-CNN on a Slurm partition named _dev_, and set the work-dir to some shared file systems.
+
+```shell
+GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
+```
+
+You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
+
+#### Specity network ports
 
 If you use launch training jobs with Slurm, there are two ways to specify the ports.
 
