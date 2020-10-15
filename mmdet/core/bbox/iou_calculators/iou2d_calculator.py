@@ -109,7 +109,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
 
     if rows * cols == 0:
         if is_aligned:
-            return bboxes1.new(batch_shape + (rows, 1))
+            return bboxes1.new(batch_shape + (rows, ))
         else:
             return bboxes1.new(batch_shape + (rows, cols))
 
