@@ -10,13 +10,13 @@ MMDetection provides hundreds of predefined and pretrained detection models in [
 
 ## Inference with pretrained models
 
-By inference, we mean using trained models to detect objects on images. In MMDetection, the model structure is defined by a python [configuration file]() and pretrained model parameters are save in a Pytorch checkpoint file, usually with `.pth` extension name .
+By inference, we mean using trained models to detect objects on images. In MMDetection, a model is defined by a configuration file and pretrained model parameters are save in a checkpoint file.
 
-To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) with this [configuration](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) and this [checkpoints](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to save the parameter to `checkpoint_file` directory.
+To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) and this [checkpoint file](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
 
 ### High-level APIs for inference
 
-MMDetection provide high-level Python APIs for inference on images. Here is an example of building the model and test given images.
+MMDetection provide high-level Python APIs for inference on images. Here is an example of building the model and inference on given images or videos.
 
 ```python
 from mmdet.apis import init_detector, inference_detector
@@ -49,7 +49,7 @@ A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/o
 ### Asynchronous interface - supported for Python 3.7+
 
 For Python 3.7+, MMDetection also supports async interfaces.
-It allows not to block CPU on GPU bound inference code and enables better CPU/GPU utilization for single-threaded application. Inference can be done concurrently either between different input data samples or between different models of some inference pipeline.
+By utilizing CUDA streams, it allows not to block CPU on GPU bound inference code and enables better CPU/GPU utilization for single-threaded application. Inference can be done concurrently either between different input data samples or between different models of some inference pipeline.
 
 See `tests/async_benchmark.py` to compare the speed of synchronous and asynchronous interfaces.
 
@@ -141,12 +141,12 @@ python demo/webcam_demo.py \
 
 To evaluate a model's accuracy, one usually tests the model on some standard datasets.
 MMDetection supports multiple public datasets including COCO, Pascal VOC, CityScapes, and [more](https://github.com/open-mmlab/mmdetection/tree/master/configs/_base_/datasets).
-This section will show how to test pretrained models on these standard datasets.
+This section will show how to test pretrained models on supported datasets.
 
 ### Prepare datasets
 
-Standard datasets like Pascal VOC and COCO are available from official websites or mirrors.
-It is recommended to symlink the dataset root to `$MMDETECTION/data`.
+Public datasets like Pascal VOC and COCO are available from official websites or mirrors.
+It is recommended to download and extract the dataset somewhere outside the project directory and symlink the dataset root to `$MMDETECTION/data` as below.
 If your folder structure is different, you may need to change the corresponding paths in config files.
 
 ```plain
@@ -174,7 +174,7 @@ mmdetection
 
 ```
 
-The cityscapes annotations have to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
+The cityscapes annotations need to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
 
 ```shell
 pip install cityscapesscripts
@@ -216,6 +216,8 @@ bash tools/dist_test.sh \
     [--out ${RESULT_FILE}] \
     [--eval ${EVAL_METRICS}]
 ```
+
+`tools/dist_test.sh` also supports multi-node testing, but relies on PyTorch's [launch utility](https://pytorch.org/docs/stable/distributed.html#launch-utility).
 
 Optional arguments:
 
@@ -314,9 +316,9 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 
 ## Train predefined models on standard datasets
 
-MMDetection provides out-of-the-box tools for training detection models.
-This section will show how to train _predefined_ models under [configs](https://github.com/open-mmlab/mmdetection/tree/master/configs) on standard datasets i.e. COCO.
-For training self-defined models, or training with self-defined datasets. See [Tutorial 2]() and [Tutorial 3]() for details.
+MMDetection also provides out-of-the-box tools for training detection models.
+This section will show how to train _predefined_ models (under [configs](https://github.com/open-mmlab/mmdetection/tree/master/configs)) on standard datasets i.e. COCO.
+For training self-defined models, or training with custom datasets. See [Tutorial 2]() and [Tutorial 3]() for details.
 
 **Important**: The default learning rate in config files is for 8 GPUs and 2 img/gpu (batch size = 8\*2 = 16).
 According to the [linear scaling rule](https://arxiv.org/abs/1706.02677), you need to set the learning rate proportional to the batch size if you use different GPUs or images per GPU, e.g., `lr=0.01` for 4 GPUs \* 2 imgs/gpu and `lr=0.08` for 16 GPUs \* 4 imgs/gpu.
@@ -329,7 +331,7 @@ Training requires preparing datasets too. See section [Prepare datasets](#prepar
 Currently, the config files under `configs/cityscapes` use COCO pretrained weights to initialize.
 You could download the pretrained models in advance if the network connection is unavailable or slow. Otherwise, it would cause errors at the beginning of training.
 
-### Train on a single GPU
+### Training on a single GPU
 
 We provide `tools/train.py` to launch training jobs on a single GPU.
 The basic usage is as follows.
@@ -363,7 +365,7 @@ Difference between `resume-from` and `load-from`:
 `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
 `load-from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
-### Train using multiple GPUs
+### Training on multiple GPUs
 
 We provide `tools/dist_train.sh` to launch training on multiple GPUs.
 The basic usage is as follows.
@@ -375,7 +377,7 @@ bash ./tools/dist_train.sh \
     [optional arguments]
 ```
 
-Optional arguments remain the same as stated [above](#train-with-a-single-GPU)
+Optional arguments remain the same as stated [above](#train-with-a-single-GPU).
 
 #### Launch multiple jobs simultaneously
 
@@ -389,16 +391,15 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
 CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
-### Train using multiple nodes
+### Training on multiple nodes
 
-Distributed training in MMDetection relies on `torch.distributed` package, thus can be launched via Pytorch's launch utility.
-To launch distributed training jobs multiple nodes, please refer to [launch utility](https://pytorch.org/docs/stable/distributed.html#launch-utility).
-
-Usually, training speed is limited by network connection. If you do not have high-speed networking, like InfiniBand, training would be slow.
+MMDetection relies on `torch.distributed` package for distributed training.
+Thus, as a basic usage, one can launch distributed training via PyTorch's [launch utility](https://pytorch.org/docs/stable/distributed.html#launch-utility).
 
 ### Manage jobs with Slurm
 
-If you run MMDetection on a cluster managed with [Slurm](https://slurm.schedmd.com/), you can use `slurm_train.sh` to spawn training jobs. It supports both single-node and multi-node training.
+[Slurm](https://slurm.schedmd.com/) is a good job scheduling system for computing clusters.
+On a cluster managed by Slurm, you can use `slurm_train.sh` to spawn training jobs. It supports both single-node and multi-node training.
 
 The basic usage is as follows.
 
@@ -412,11 +413,9 @@ Below is an example of using 16 GPUs to train Mask R-CNN on a Slurm partition na
 GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
-You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
+You can check [the source code](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) to review full arguments and environment variables.
 
-#### Specity network ports
-
-If you use launch training jobs with Slurm, there are two ways to specify the ports.
+When using Slurm, the port option need to be set in one of the following ways:
 
 1. Set the port through `--options`. This is more recommended since it does not change the original configs.
 
@@ -425,21 +424,21 @@ If you use launch training jobs with Slurm, there are two ways to specify the po
    CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --options 'dist_params.port=29501'
    ```
 
-2. Modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
+2. Modify the config files to set different communication ports.
 
-   In `config1.py`,
+   In `config1.py`, set
 
    ```python
    dist_params = dict(backend='nccl', port=29500)
    ```
 
-   In `config2.py`,
+   In `config2.py`, set
 
    ```python
    dist_params = dict(backend='nccl', port=29501)
    ```
 
-   Then you can launch two jobs with `config1.py` ang `config2.py`.
+   Then you can launch two jobs with `config1.py` and `config2.py`.
 
    ```shell
    CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR}
