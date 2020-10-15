@@ -3,7 +3,7 @@ import math
 import torch
 import torch.nn as nn
 
-from mmdet.core import bbox_gious, bbox_overlaps
+from mmdet.core import bbox_overlaps
 from ..builder import LOSSES
 from .utils import weighted_loss
 
@@ -88,7 +88,7 @@ def giou_loss(pred, target, eps=1e-7):
     Return:
         Tensor: Loss tensor.
     """
-    gious = bbox_gious(pred, target, is_aligned=True)
+    gious = bbox_overlaps(pred, target, 'giou', is_aligned=True, eps=eps)
     loss = 1 - gious
     return loss
 
