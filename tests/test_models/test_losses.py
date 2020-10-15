@@ -112,15 +112,15 @@ def test_giou_loss(nb_test=100, eps=1e-7):
     bboxes1 = torch.cat((bboxes1, torch.rand((nb_bbox, 1))), 1)
     bboxes2 = torch.cat((bboxes2, torch.rand((nb_bbox, 1))), 1)
     gious = self(bboxes1, bboxes2, True)
-    assert gious.size() == (nb_bbox, 1), gious.size()
+    assert gious.size() == (nb_bbox, ), gious.size()
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
 
     # is_aligned is True, bboxes1.size(-2) == 0
     bboxes1 = torch.empty((0, 4))
     bboxes2 = torch.empty((0, 4))
     gious = self(bboxes1, bboxes2, True)
-    assert gious.size() == (0, 1), gious.size()
-    assert torch.all(gious == torch.empty((0, 1)))
+    assert gious.size() == (0, ), gious.size()
+    assert torch.all(gious == torch.empty((0, )))
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
 
     # is_aligned is True, and bboxes.ndims > 2
@@ -133,12 +133,12 @@ def test_giou_loss(nb_test=100, eps=1e-7):
     bboxes2 = bboxes2.unsqueeze(0).repeat(2, 1, 1)
     gious = self(bboxes1, bboxes2, True)
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
-    assert gious.size() == (2, nb_bbox, 1)
+    assert gious.size() == (2, nb_bbox)
     bboxes1 = bboxes1.unsqueeze(0).repeat(2, 1, 1, 1)
     bboxes2 = bboxes2.unsqueeze(0).repeat(2, 1, 1, 1)
     gious = self(bboxes1, bboxes2, True)
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
-    assert gious.size() == (2, 2, nb_bbox, 1)
+    assert gious.size() == (2, 2, nb_bbox)
 
     # is_aligned is False
     bboxes1, nb_bbox1 = _construct_bbox()
@@ -164,41 +164,18 @@ def test_giou_loss(nb_test=100, eps=1e-7):
     assert torch.all(gious == torch.empty(1, 2, 0, bboxes2.size(-2)))
     assert torch.all(gious >= -1) and torch.all(gious <= 1)
 
-    def _giou_loss(pred, target):
-        """gious loss using bbox_gious."""
-        gious = bbox_gious(pred, target, is_aligned=True, eps=eps)
-        if gious.ndim >= 2 and gious.size(-1) == 1:
-            gious = gious.squeeze(-1)  # [..., n, 1] -> [..., n]
-        loss = 1 - gious
-        return loss
-
-    def _giou_loss_wo(pred, target):
-        """gious loss without using bbox_gious."""
-        # overlap
-        lt = torch.max(pred[:, :2], target[:, :2])
-        rb = torch.min(pred[:, 2:], target[:, 2:])
-        wh = (rb - lt).clamp(min=0)
-        overlap = wh[:, 0] * wh[:, 1]
-        # union
-        ap = (pred[:, 2] - pred[:, 0]) * (pred[:, 3] - pred[:, 1])
-        ag = (target[:, 2] - target[:, 0]) * (target[:, 3] - target[:, 1])
-        union = ap + ag - overlap + eps
-        # IoU
-        ious = overlap / union
-        # enclose area
-        enclose_x1y1 = torch.min(pred[:, :2], target[:, :2])
-        enclose_x2y2 = torch.max(pred[:, 2:], target[:, 2:])
-        enclose_wh = (enclose_x2y2 - enclose_x1y1).clamp(min=0)
-        enclose_area = enclose_wh[:, 0] * enclose_wh[:, 1] + eps
-        # GIoU
-        gious = ious - (enclose_area - union) / enclose_area
-        loss = 1 - gious
-        return loss
-
-    # test allclose between above two functions
-    for _ in range(nb_test):
-        pred, nb_bbox = _construct_bbox()
-        target, _ = _construct_bbox(nb_bbox)
-        giou_loss1 = _giou_loss(pred, target)
-        giou_loss2 = _giou_loss_wo(pred, target)
-        assert torch.allclose(giou_loss1, giou_loss2, rtol=0, atol=eps * 5)
+    # test allclose between bbox_gious and the original official
+    # implementation.
+    bboxes1 = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [32, 32, 38, 42],
+    ])
+    bboxes2 = torch.FloatTensor([
+        [0, 0, 10, 20],
+        [0, 10, 10, 19],
+        [10, 10, 20, 20],
+    ])
+    gious = bbox_gious(bboxes1, bboxes2, is_aligned=True, eps=1e-7)
+    gious_gt = torch.FloatTensor([0.5000, -0.0500, -0.8214])
+    assert torch.allclose(gious, gious_gt, rtol=0, atol=5 * 1e-5)

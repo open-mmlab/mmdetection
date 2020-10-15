@@ -162,7 +162,7 @@ class BboxGIoU2D(object):
 
         Returns:
             gious(Tensor): shape (m, n) if `is_aligned` is False else
-                shape (m, 1).
+                shape (m,).
 
         Example:
             >>> bboxes1 = torch.FloatTensor([
@@ -216,7 +216,7 @@ def bbox_gious(bboxes1, bboxes2, is_aligned=False, eps=1e-6):
             stability. Default 1e-6.
 
     Returns:
-        gious(Tensor): shape (m, n) if `is_aligned` is False else shape (m, 1).
+        gious(Tensor): shape (m, n) if `is_aligned` is False else shape (m,).
     """
 
     # Either the boxes are empty or the length of boxes's last dimenstion is 4
@@ -235,7 +235,7 @@ def bbox_gious(bboxes1, bboxes2, is_aligned=False, eps=1e-6):
 
     if rows * cols == 0:
         if is_aligned:
-            return bboxes1.new(batch_shape + (rows, 1))
+            return bboxes1.new(batch_shape + (rows, ))
         else:
             return bboxes1.new(batch_shape + (rows, cols))
 
@@ -276,7 +276,5 @@ def bbox_gious(bboxes1, bboxes2, is_aligned=False, eps=1e-6):
     enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
     enclose_area = torch.max(enclose_area, eps)
     gious = ious - (enclose_area - union) / enclose_area
-    if is_aligned:
-        gious = gious.unsqueeze(-1)
 
     return gious

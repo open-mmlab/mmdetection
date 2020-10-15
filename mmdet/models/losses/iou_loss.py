@@ -89,8 +89,6 @@ def giou_loss(pred, target, eps=1e-7):
         Tensor: Loss tensor.
     """
     gious = bbox_gious(pred, target, is_aligned=True)
-    if gious.ndim >= 2 and gious.size(-1) == 1:
-        gious = gious.squeeze(-1)  # [..., n, 1] -> [..., n]
     loss = 1 - gious
     return loss
 
