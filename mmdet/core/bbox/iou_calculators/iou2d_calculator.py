@@ -43,9 +43,9 @@ class BboxOverlaps2D(object):
 def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     """Calculate overlap between two set of bboxes.
 
-    If `is_aligned` is ``False``, then calculate the overlaps between each bbox
-    of bboxes1 and bboxes2, otherwise the overlaps between each aligned pair of
-    bboxes1 and bboxes2.
+    If ``is_aligned `` is ``False``, then calculate the overlaps between each
+    bbox of bboxes1 and bboxes2, otherwise the overlaps between each aligned
+    pair of bboxes1 and bboxes2.
 
     Args:
         bboxes1 (Tensor): shape (B, m, 4) in <x1, y1, x2, y2> format or empty.
