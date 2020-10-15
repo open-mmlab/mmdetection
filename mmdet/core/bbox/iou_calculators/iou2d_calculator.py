@@ -161,7 +161,7 @@ class BboxGIoU2D(object):
                 numerical stability. Default 1e-6.
 
         Returns:
-            gious(Tensor): shape (m, n) if `is_aligned` is False else
+            gious (Tensor): shape (m, n) if `is_aligned` is False else
                 shape (m,).
 
         Example:
@@ -216,7 +216,7 @@ def bbox_gious(bboxes1, bboxes2, is_aligned=False, eps=1e-6):
             stability. Default 1e-6.
 
     Returns:
-        gious(Tensor): shape (m, n) if `is_aligned` is False else shape (m,).
+        gious (Tensor): shape (m, n) if `is_aligned` is False else shape (m,).
     """
 
     # Either the boxes are empty or the length of boxes's last dimenstion is 4
