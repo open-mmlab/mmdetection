@@ -1,22 +1,22 @@
 import pathlib
-from .utils import is_nncf_enabled, check_nncf_is_enabled, load_checkpoint
+import torch
+from .utils import is_nncf_enabled, check_nncf_is_enabled, load_checkpoint, get_nncf_version
 
 from mmdet.utils import get_root_logger
 
 if is_nncf_enabled():
     try:
         from nncf.initialization import InitializingDataLoader
-        from nncf.structures import QuantizationRangeInitArgs
 
         from nncf import NNCFConfig
-        from nncf import load_state
         from nncf import create_compressed_model, register_default_init_args
-        from nncf.utils import get_all_modules
         from nncf.nncf_network import NNCFNetwork
 
         class_InitializingDataLoader = InitializingDataLoader
     except:
-        raise RuntimeError("Incompatible version of NNCF")
+        raise RuntimeError('Cannot import the standard functions of NNCF library '
+                           '-- most probably, incompatible version of NNCF. '
+                           'Please, use NNCF version pointed in the documentation.')
 else:
     class DummyInitializingDataLoader:
         pass
@@ -36,6 +36,27 @@ class MMInitializeDataLoader(class_InitializingDataLoader):
         return dataloader_output["gt_bboxes"], dataloader_output["gt_labels"]
 
 
+def get_nncf_metadata():
+    """
+    The function returns NNCF metadata that should be stored into a checkpoint.
+    The metadata is used to check in wrap_nncf_model if the checkpoint should be used
+    to resume NNCF training or initialize NNCF fields of NNCF-wrapped model.
+    """
+    check_nncf_is_enabled()
+    return dict(nncf_enable_compression=True,
+                nncf_version=get_nncf_version())
+
+def is_checkpoint_nncf(path):
+    """
+    The function uses metadata stored in a checkpoint to check if the
+    checkpoint was the result of trainning of NNCF-compressed model.
+    See the function get_nncf_metadata above.
+    """
+    checkpoint = torch.load(path)
+    meta = checkpoint.get('meta', {})
+    nncf_enable_compression = meta.get('nncf_enable_compression', False)
+    return bool(nncf_enable_compression)
+
 def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=None,
                     should_use_dummy_forward_with_export_part=True):
     """
@@ -51,12 +72,24 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
     if data_loader_for_init:
         wrapped_loader = MMInitializeDataLoader(data_loader_for_init)
         nncf_config = register_default_init_args(nncf_config, wrapped_loader)
-    elif not cfg.nncf_load_from:
-        raise RuntimeError("Tried to load NNCF checkpoint, but there is no path")
 
-    if cfg.nncf_load_from:
-        resuming_state_dict = load_checkpoint(model, cfg.nncf_load_from)
-        logger.info(f"Loaded NNCF checkpoint from {cfg.nncf_load_from}")
+    if cfg.get('resume_from'):
+        checkpoint_path = cfg.get('resume_from')
+    elif cfg.get('load_from'):
+        checkpoint_path = cfg.get('load_from')
+    else:
+        checkpoint_path = None
+
+    if checkpoint_path and not is_checkpoint_nncf(checkpoint_path):
+        checkpoint_path = None
+        logger.info('Received non-NNCF checkpoint to start training -- initialization of NNCF fields will be done')
+
+    if not data_loader_for_init and not checkpoint_path:
+        raise RuntimeError("Either data_loader_for_init or NNCF pre-trained model checkpoint should be set")
+
+    if checkpoint_path:
+        resuming_state_dict = load_checkpoint(model, checkpoint_path)
+        logger.info(f"Loaded NNCF checkpoint from {checkpoint_path}")
     else:
         resuming_state_dict = None
 

@@ -5,20 +5,21 @@ import torch
 
 try:
     import nncf
-
     _is_nncf_enabled = True
 except:
     _is_nncf_enabled = False
 
-
 def is_nncf_enabled():
     return _is_nncf_enabled
-
 
 def check_nncf_is_enabled():
     if not is_nncf_enabled():
         raise RuntimeError("Tried to use NNCF, but NNCF is not installed")
 
+def get_nncf_version():
+    if not is_nncf_enabled():
+        return None
+    return nncf.__version__
 
 if is_nncf_enabled():
     try:
@@ -26,8 +27,9 @@ if is_nncf_enabled():
         from nncf.dynamic_graph.context import no_nncf_trace as original_no_nncf_trace
         from nncf.dynamic_graph.context import get_current_context
     except:
-        raise RuntimeError("Incompatible version of NNCF")
-
+        raise RuntimeError('Cannot import the standard functions of NNCF library '
+                           '-- most probably, incompatible version of NNCF. '
+                           'Please, use NNCF version pointed in the documentation.')
 
 def load_checkpoint(model, filename, map_location=None, strict=False):
     """Load checkpoint from a file or URI.

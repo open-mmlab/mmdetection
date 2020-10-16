@@ -89,7 +89,7 @@ def train_detector(model,
         model = model.cuda()
 
     # nncf model wrapper
-    if cfg.ENABLE_COMPRESSION:
+    if cfg.nncf_enable_compression:
         compression_ctrl, model = wrap_nncf_model(model, cfg, data_loaders[0], get_fake_input)
     else:
         compression_ctrl = None
@@ -113,7 +113,7 @@ def train_detector(model,
         model = MMDataCPU(model)
         map_location = 'cpu'
 
-    if cfg.ENABLE_COMPRESSION and distributed:
+    if cfg.nncf_enable_compression and distributed:
         compression_ctrl.distributed()
 
     # build runner
@@ -157,11 +157,11 @@ def train_detector(model,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
         if "should_evaluate_before_run" not in eval_cfg:
-            eval_cfg["should_evaluate_before_run"] = cfg.ENABLE_COMPRESSION
+            eval_cfg["should_evaluate_before_run"] = cfg.nncf_enable_compression
         eval_hook = DistEvalHook if distributed else EvalHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
-    if cfg.ENABLE_COMPRESSION:
+    if cfg.nncf_enable_compression:
         runner.register_hook(CompressionHook(compression_ctrl=compression_ctrl))
 
     if cfg.resume_from:

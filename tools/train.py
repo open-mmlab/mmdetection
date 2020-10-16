@@ -22,7 +22,7 @@ from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector, TwoStageDetector
 from mmdet.utils import collect_env, get_root_logger, ExtendedDictAction
 
-from mmdet.core.nncf import check_nncf_is_enabled
+from mmdet.core.nncf import check_nncf_is_enabled, get_nncf_metadata
 
 
 def parse_args():
@@ -218,12 +218,16 @@ def main():
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
 
-    if cfg.get('nncf_config'):
+    if cfg.get('nncf_config') and cfg.get('nncf_enable_compression', True):
+        # Note that if 'nncf_config' section is present, the field
+        # 'nncf_enable_compression' may be set to False to disable NNCF compression;
+        # if the field is not set, the NNCF compression is enabled by default.
         check_nncf_is_enabled()
         logger.info('NNCF config: {}'.format(cfg.nncf_config))
-        cfg.ENABLE_COMPRESSION = True
+        cfg.nncf_enable_compression = True
+        meta.update(get_nncf_metadata())
     else:
-        cfg.ENABLE_COMPRESSION = False
+        cfg.nncf_enable_compression = False
 
     # set random seeds
     if args.seed is not None:
@@ -269,6 +273,12 @@ def main():
             mmdet_version=__version__,
             config=cfg.pretty_text,
             CLASSES=datasets[0].CLASSES)
+        # also save nncf status in the checkpoint -- it is important,
+        # since it is used in wrap_nncf_model for loading NNCF-compressed models
+        if cfg.nncf_enable_compression:
+            nncf_metadata = get_nncf_metadata()
+            cfg.checkpoint_config.meta.update(nncf_metadata)
+
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
 

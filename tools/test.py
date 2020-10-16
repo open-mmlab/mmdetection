@@ -15,21 +15,8 @@ from mmdet.models import build_detector
 from mmdet.utils import ExtendedDictAction
 from mmdet.parallel import MMDataCPU
 
-from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled
+from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled, is_checkpoint_nncf
 from mmdet.apis import get_fake_input
-
-def load_checkpoint_state_dict(filename):
-    # this code is the common part of mmcv.runner.load_checkpoint and nncf.load_state
-    checkpoint = torch.load(filename, map_location=None)
-    # get state_dict from checkpoint
-    if isinstance(checkpoint, OrderedDict):
-        state_dict = checkpoint
-    elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
-        state_dict = checkpoint['state_dict']
-    else:
-        raise RuntimeError('No state_dict found in checkpoint file {}'.format(filename))
-    return state_dict
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -134,10 +121,13 @@ def main():
     # nncf model wrapper
     if cfg.get('nncf_config'):
         check_nncf_is_enabled()
-        cfg.nncf_load_from = args.checkpoint
+        if not is_checkpoint_nncf(args.checkpoint):
+            raise RuntimeError('Trying to make testing with NNCF compression a model snapshot that was trained with NNCF')
+        cfg.load_from = args.checkpoint
+        cfg.resume_from = None
         model.cuda()  # for wrap_nncf_model
         _, model = wrap_nncf_model(model, cfg, None, get_fake_input)
-        checkpoint = load_checkpoint_state_dict(args.checkpoint)
+        checkpoint = torch.load(args.checkpoint, map_location=None)
         # FIXME: TODO: check why checkpoint does not have "meta" inside
     else:
         fp16_cfg = cfg.get('fp16', None)

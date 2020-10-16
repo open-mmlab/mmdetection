@@ -32,7 +32,7 @@ from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.tracer_stubs import ROIFeatureExtractorStub
 from mmdet.apis import get_fake_input
 
-from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled, unwrap_nncf_model
+from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled, unwrap_nncf_model, is_checkpoint_nncf
 
 
 def export_to_onnx(model,
@@ -203,7 +203,10 @@ def main(args):
     # BEGIN nncf part
     if cfg.get('nncf_config'):
         check_nncf_is_enabled()
-        cfg.nncf_load_from = args.checkpoint
+        if not is_checkpoint_nncf(args.checkpoint):
+            raise RuntimeError('Trying to make export with NNCF compression a model snapshot that was trained with NNCF')
+        cfg.load_from = args.checkpoint
+        cfg.resume_from = None
         compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
         compression_ctrl.prepare_for_export()
     # END nncf part
