@@ -125,7 +125,8 @@ def main():
             raise RuntimeError('Trying to make testing with NNCF compression a model snapshot that was trained with NNCF')
         cfg.load_from = args.checkpoint
         cfg.resume_from = None
-        model.cuda()  # for wrap_nncf_model
+        if torch.cuda.is_available():
+            model = model.cuda()
         _, model = wrap_nncf_model(model, cfg, None, get_fake_input)
         checkpoint = torch.load(args.checkpoint, map_location=None)
     else:
@@ -133,7 +134,7 @@ def main():
         if fp16_cfg is not None:
             wrap_fp16_model(model)
         checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
-        if args.fuse_conv_bn: #TODO: FIXME: should it be inside this 'else' branch???
+        if args.fuse_conv_bn:  # TODO: FIXME: should it be inside this 'else' branch???
             from tools.fuse_conv_bn import fuse_module
             model = fuse_module(model)
 
