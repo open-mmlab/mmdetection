@@ -7,9 +7,8 @@ CommandLine:
 import torch
 
 from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
-                                       CenterRegionAssigner,
-                                       HungarianMatchAssigner, MaxIoUAssigner,
-                                       PointAssigner)
+                                       CenterRegionAssigner, HungarianAssigner,
+                                       MaxIoUAssigner, PointAssigner)
 
 
 def test_max_iou_assigner():
@@ -380,7 +379,7 @@ def test_center_region_assigner_with_empty_gts():
 
 
 def test_hungarian_match_assigner():
-    self = HungarianMatchAssigner()
+    self = HungarianAssigner()
 
     # test no gt bboxes
     bbox_pred = torch.rand((10, 4))
