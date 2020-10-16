@@ -7,6 +7,8 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module()
 class DETR(SingleStageDetector):
+    r"""Implementation of `DETR: End-to-End Object Detection with
+    Transformers <https://arxiv.org/pdf/2005.12872>`_"""
 
     def __init__(self,
                  backbone,
