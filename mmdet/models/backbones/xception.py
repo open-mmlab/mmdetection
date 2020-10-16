@@ -28,7 +28,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
-from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.cnn import (build_conv_layer, build_norm_layer, 
+                      constant_init, kaiming_init)
 
 from ..builder import BACKBONES
 
@@ -44,6 +45,11 @@ class SeparableConv(nn.Module):
                  padding=0,
                  dilation=1,
                  bias=False):
+        """Sepratable Convolution Layer
+        
+        Simple separable convolution layer implementation.
+        Used in ResNet.
+        """
         super(SeparableConv, self).__init__()
         self.conv1d = build_conv_layer(
             conv_cfg,
@@ -73,6 +79,11 @@ class Block(nn.Module):
                  start_with_relu=True,
                  grow_first=True,
                  norm_cfg={'type': 'BN'}):
+        """Basic ResNet Block
+        
+        Common implementation of the block unit in ResNets.
+        Mostly composed of Separatable Convolution Layers. 
+        """
         super(Block, self).__init__()
         self.batch_norm = False if norm_cfg is None else len(norm_cfg) != 0
         self.out_channels = out_filters
@@ -174,9 +185,11 @@ class Xception(nn.Module):
                  conv_cfg=dict(type='Conv2d'),
                  norm_cfg=dict(type='BN'),
                  conv_size=[32, 64, 128, 256, 728, 1024, 1536, 2048]):
-        """ Constructor
-        Args:
-            depth: Number of middle units in the backbone
+        """Xception Backend Network
+        
+        This is a generic implementation of the Xception network as found in:
+        https://arxiv.org/pdf/1610.02357.pdf.
+        This version is adapted from: https://github.com/tstandley/Xception-PyTorch
         """
         super(Xception, self).__init__()
 
@@ -202,34 +215,20 @@ class Xception(nn.Module):
             self.bn2_name, self.bn2 = build_norm_layer(self.norm_cfg,
                                                        self.conv2.out_channels)
         # do relu here
+        last_ch = self.conv2.out_channels
+        for blk in range(3):
+            self.layer = Block(
+                self.conv_cfg,
+                self.conv2.out_channels,
+                self.conv_sizes[2+blk],
+                2,
+                stride=2,
+                start_with_relu=i,
+                grow_first=True,
+                norm_cfg=self.norm_cfg)
+            last_ch = self.layer.out_channels
+            self.add_module(self.layer, 'Block_{}'.format(blk))
 
-        self.block1 = Block(
-            self.conv_cfg,
-            self.conv2.out_channels,
-            self.conv_sizes[2],
-            2,
-            stride=2,
-            start_with_relu=False,
-            grow_first=True,
-            norm_cfg=self.norm_cfg)
-        self.block2 = Block(
-            self.conv_cfg,
-            self.block1.out_channels,
-            self.conv_sizes[3],
-            2,
-            stride=2,
-            start_with_relu=True,
-            grow_first=True,
-            norm_cfg=self.norm_cfg)
-        self.block3 = Block(
-            self.conv_cfg,
-            self.block2.out_channels,
-            self.conv_sizes[4],
-            2,
-            stride=2,
-            start_with_relu=True,
-            grow_first=True,
-            norm_cfg=self.norm_cfg)
 
         self.center = nn.Sequential(
             OrderedDict([('block' + i,
@@ -244,7 +243,7 @@ class Xception(nn.Module):
                               norm_cfg=self.norm_cfg))
                          for i in range(self.depth)]))
 
-        self.last_block = Block(
+        self.last_layer = Block(
             self.conv_cfg,
             self.conv_sizes[4],
             self.conv_sizes[5],
@@ -254,7 +253,7 @@ class Xception(nn.Module):
             grow_first=False,
             norm_cfg=self.norm_cfg)
 
-        self.conv3 = SeparableConv(self.conv_cfg, self.last_block.out_channels,
+        self.conv3 = SeparableConv(self.conv_cfg, self.last_layer.out_channels,
                                    self.conv_sizes[6], 3, 1, 1)
         if self.bn:
             self.bn3_name, self.bn3 = build_norm_layer(self.norm_cfg,
@@ -272,11 +271,9 @@ class Xception(nn.Module):
     def _init_weights(self, ):
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
-                n = torch.prod(module.kernel_size) * module.out_channels
-                module.weight.data.normal_(0, math.sqrt(2. / n))
+                kaiming_init(module)
             elif isinstance(module, nn.BatchNorm2d):
-                module.weight.data.fill_(1)
-                module.bias.data.zero_()
+                constant_init(module, 1)
 
     def forward(self, x):
         x = self.conv1(x)
