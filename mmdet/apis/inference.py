@@ -107,14 +107,10 @@ def inference_detector(model, img):
         # scatter to specified GPU
         data = scatter(data, [device])[0]
     else:
-        # Use torchvision ops for CPU mode instead
+        # RoIPool is not supported for CPU mode
         for m in model.modules():
-            if isinstance(m, RoIPool):
-                if not m.aligned:
-                    # aligned=False is not implemented on CPU
-                    # set use_torchvision on-the-fly
-                    m.use_torchvision = True
-        warnings.warn('We set use_torchvision=True in CPU mode.')
+            assert not isinstance(
+                m, RoIPool), 'RoIPool is not supported currently.'
         # just get the actual data from DataContainer
         data['img_metas'] = data['img_metas'][0].data
 
