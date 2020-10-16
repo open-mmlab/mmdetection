@@ -4,7 +4,7 @@ from .atss_assigner import ATSSAssigner
 from .base_assigner import BaseAssigner
 from .center_region_assigner import CenterRegionAssigner
 from .grid_assigner import GridAssigner
-from .hungarian_match_assigner import HungarianAssigner
+from .hungarian_assigner import HungarianAssigner
 from .max_iou_assigner import MaxIoUAssigner
 from .point_assigner import PointAssigner
 
