@@ -16,6 +16,7 @@ except ImportError:
 try:
     import albumentations
     from albumentations import Compose
+    import mmdet.datasets.pipelines.albumentations_extra as albumentations_extra
 except ImportError:
     albumentations = None
     Compose = None
@@ -843,7 +844,11 @@ class Albu(object):
         if mmcv.is_str(obj_type):
             if albumentations is None:
                 raise RuntimeError('albumentations is not installed')
-            obj_cls = getattr(albumentations, obj_type)
+            try:
+                obj_cls = getattr(albumentations, obj_type)
+            except AttributeError:
+                obj_cls = getattr(albumentations_extra, obj_type)
+
         elif inspect.isclass(obj_type):
             obj_cls = obj_type
         else:
@@ -917,6 +922,13 @@ class Albu(object):
                         results['masks'], results['image'].shape[0],
                         results['image'].shape[1])
 
+                if 'texts' in results:
+                    results['texts'] = np.array(
+                        [results['texts'][i] for i in results['idx_mapper']])
+
+                assert len(results['bboxes']) == len(results['texts'])
+                assert len(results['masks']) == len(results['texts'])
+
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):
                     return None
@@ -938,3 +950,92 @@ class Albu(object):
     def __repr__(self):
         repr_str = self.__class__.__name__ + f'(transforms={self.transforms})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class Visualize(object):
+    def __init__(self,
+                 delay):
+        self.delay = delay
+
+
+    def _resize_img(self, results):
+        for key in results.get('img_fields', ['img']):
+            if self.keep_ratio:
+                img, scale_factor = mmcv.imrescale(
+                    results[key], results['scale'], return_scale=True)
+                # the w_scale and h_scale has minor difference
+                # a real fix should be done in the mmcv.imrescale in the future
+                new_h, new_w = img.shape[:2]
+                h, w = results[key].shape[:2]
+                w_scale = new_w / w
+                h_scale = new_h / h
+            else:
+                img, w_scale, h_scale = mmcv.imresize(
+                    results[key], results['scale'], return_scale=True)
+            results[key] = img
+
+            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
+                                    dtype=np.float32)
+            results['img_shape'] = img.shape
+            # in case that there is no padding
+            results['pad_shape'] = img.shape
+            results['scale_factor'] = scale_factor
+            results['keep_ratio'] = self.keep_ratio
+
+    def _resize_bboxes(self, results):
+        img_shape = results['img_shape']
+        for key in results.get('bbox_fields', []):
+            bboxes = results[key] * results['scale_factor']
+            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
+            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
+            results[key] = bboxes
+
+    def _resize_masks(self, results):
+        for key in results.get('mask_fields', []):
+            if results[key] is None:
+                continue
+            if self.keep_ratio:
+                results[key] = results[key].rescale(results['scale'])
+            else:
+                results[key] = results[key].resize(results['img_shape'][:2])
+
+    def _resize_seg(self, results):
+        for key in results.get('seg_fields', []):
+            if self.keep_ratio:
+                gt_seg = mmcv.imrescale(
+                    results[key], results['scale'], interpolation='nearest')
+            else:
+                gt_seg = mmcv.imresize(
+                    results[key], results['scale'], interpolation='nearest')
+            results['gt_semantic_seg'] = gt_seg
+
+
+    def __call__(self, results):
+        import string
+        import cv2
+        alphabet='  ' + string.ascii_lowercase + string.digits
+        for key in results.get('img_fields', ['img']):
+            image = results[key].astype(np.uint8)
+        bbox_key = results.get('bbox_fields', [])[1]
+        print(bbox_key)
+        text_key = results.get('text_fields', [])[0]
+        for i, box in enumerate(results[bbox_key]):
+            p1 = int(box[0]), int(box[1])
+            p2 = int(box[2]), int(box[3])
+            cv2.rectangle(image, p1, p2, (255, 255, 255), 2)
+            if text_key:
+                text = ''.join([alphabet[j] for j in results[text_key][i]])
+                cv2.putText(image, text, p1, 1, 1.0, (255, 255, 255), 1) 
+
+        print(results.get('mask_fields', []), results.get('seg_fields', []))
+        masks = np.zeros(image.shape[:2], dtype=np.uint8)
+        for key in results.get('mask_fields', []):
+            for m in results[key]:
+                masks += m.astype(np.uint8) * 255
+        cv2.imshow('masks', masks)
+        
+        cv2.imshow('image', image)
+        if cv2.waitKey(self.delay) == 27:
+            exit(0)
+        return results
