@@ -41,16 +41,14 @@ model = dict(
             loss_weight=1.0,
             class_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
-        loss_giou=dict(type='GIoULoss', loss_weight=2.0),
-    ))
+        loss_giou=dict(type='GIoULoss', loss_weight=2.0)))
 # training and testing settings
 train_cfg = dict(
     _delete_=True,
     assigner=dict(
         type='HungarianMatcher', cls_weight=1., bbox_weight=5.,
         giou_weight=2.),
-    pos_weight=-1,
-)
+    pos_weight=-1)
 test_cfg = dict(_delete_=True, max_per_img=100)
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -68,7 +66,7 @@ train_pipeline = [
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=1),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -82,7 +80,7 @@ test_pipeline = [
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=1),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
+            dict(type='Collect', keys=['img'])
         ])
 ]
 data = dict(

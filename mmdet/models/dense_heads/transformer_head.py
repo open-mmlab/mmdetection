@@ -20,17 +20,26 @@ class TransformerHead(AnchorFreeHead):
     Args:
         num_classes (int): Number of categories excluding the background.
         in_channels (int): Number of channels in the input feature map.
-        num_fcs (int): Number of fully-connected layers used in `FFN`,
-            which is then used for the regression head.
-        transformer (dict): Config for transformer.
-        position_encoding (dict): Config for position encoding.
-        loss_cls (dict): Config of the classification loss. Default
-            `CrossEntropyLoss`.
-        loss_bbox (dict): Config of the regression loss. Default `L1Loss`.
-        loss_giou (dict): Config of the regression giou loss. Default
-            `GIoULoss`.
-        tran_cfg (dict): Training config of transformer head.
-        test_cfg (dict): Testing config of transformer head.
+        num_fcs (int, optional): Number of fully-connected layers used in
+            `FFN`, which is then used for the regression head. Default 2.
+        transformer (dict, optional): Config for transformer.
+        position_encoding (dict, optional): Config for position encoding.
+        loss_cls (dict, optional): Config of the classification loss.
+            Default `CrossEntropyLoss`.
+        loss_bbox (dict, optional): Config of the regression loss.
+            Default `L1Loss`.
+        loss_giou (dict, optional): Config of the regression giou loss.
+            Default `GIoULoss`.
+        tran_cfg (dict, optional): Training config of transformer head.
+        test_cfg (dict, optional): Testing config of transformer head.
+
+    Example:
+        >>> import torch
+        >>> self = TransformerHead(80, 2048)
+        >>> x = torch.rand(1, 2048, 32, 32)
+        >>> mask = torch.ones(1, 32, 32).to(x.dtype)
+        >>> mask[:, :16, :15] = 0
+        >>> all_cls_scores, all_bbox_preds = self(x, mask)
     """
 
     def __init__(self,
@@ -79,14 +88,13 @@ class TransformerHead(AnchorFreeHead):
         assert not use_sigmoid_cls, 'setting use_sigmoid_cls as True is ' \
             'not supported in DETR, since background is needed for the ' \
             'matching process.'
-        assert hasattr(transformer, 'embed_dims') and hasattr(
-            position_encoding, 'num_feats')
+        assert 'embed_dims' in transformer and 'num_feats' in position_encoding
         num_feats = position_encoding['num_feats']
         embed_dims = transformer['embed_dims']
         assert num_feats * 2 == embed_dims, 'embed_dims should' \
             f' be exactly 2 times of num_feats. Found {embed_dims}' \
             f' and {num_feats}.'
-        assert test_cfg is not None and hasattr(test_cfg, 'max_per_img')
+        assert test_cfg is not None and 'max_per_img' in test_cfg
         class_weight = loss_cls.get('class_weight', None)
         if class_weight is not None:
             assert isinstance(class_weight, float), 'Expected ' \
@@ -102,10 +110,12 @@ class TransformerHead(AnchorFreeHead):
             # set background class as the last indice
             class_weight[num_classes] = bg_cls_weight
             loss_cls.update({'class_weight': class_weight})
-            if hasattr(loss_cls, 'bg_cls_weight'):
+            if 'bg_cls_weight' in loss_cls:
                 loss_cls.pop('bg_cls_weight')
         if train_cfg:
-            assigner = train_cfg.assigner
+            assert 'assigner' in train_cfg, 'assigner should be provided '\
+                'when train_cfg is set.'
+            assigner = train_cfg['assigner']
             assert loss_cls['loss_weight'] == assigner['cls_weight'], \
                 'The classification weight for loss and matcher should be' \
                 'exactly the same.'
@@ -124,8 +134,6 @@ class TransformerHead(AnchorFreeHead):
         self.cls_out_channels = num_classes + 1
         self.in_channels = in_channels
         self.num_fcs = num_fcs
-        self.transformer = transformer
-        self.position_encoding = position_encoding
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.use_sigmoid_cls = use_sigmoid_cls
@@ -136,27 +144,26 @@ class TransformerHead(AnchorFreeHead):
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.loss_giou = build_loss(loss_giou)
+        self.act_cfg = transformer.get('act_cfg',
+                                       dict(type='ReLU', inplace=True))
+        self.activate = build_activation_layer(self.act_cfg)
+        self.position_encoding = build_position_encoding(position_encoding)
+        self.transformer = build_transformer(transformer)
         self._init_layers()
 
     def _init_layers(self):
         """Initialize layers of the transformer head."""
         self.input_proj = Conv2d(
             self.in_channels, self.embed_dims, kernel_size=1)
-        self.pos_enc = build_position_encoding(self.position_encoding)
-        act_cfg = self.transformer.get('act_cfg',
-                                       dict(type='ReLU', inplace=True))
-        self.activate = build_activation_layer(act_cfg)
-        self.transformer = build_transformer(self.transformer)
-
         self.fc_cls = Linear(self.embed_dims, self.cls_out_channels)
-        self.reg_embed = FFN(
+        self.reg_ffn = FFN(
             self.embed_dims,
             self.embed_dims,
             self.num_fcs,
-            act_cfg,
+            self.act_cfg,
             add_residual=False)
         self.fc_reg = Linear(self.embed_dims, 4)
-        self.query_embed = nn.Embedding(self.num_query, self.embed_dims)
+        self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
 
     def init_weights(self, distribution='uniform'):
         """Initialize weights of the transformer head."""
@@ -218,13 +225,13 @@ class TransformerHead(AnchorFreeHead):
         # interpolate masks to have the same spatial shape with x
         masks = F.interpolate(
             masks.unsqueeze(1), size=x.shape[-2:]).to(torch.bool).squeeze(1)
-        pos_embed = self.pos_enc(masks)  # [bs, embed_dim, h, w]
+        pos_embed = self.position_encoding(masks)  # [bs, embed_dim, h, w]
         # outs_dec: [nb_dec, bs, num_query, embed_dim]
-        outs_dec, _ = self.transformer(x, masks, self.query_embed.weight,
+        outs_dec, _ = self.transformer(x, masks, self.query_embedding.weight,
                                        pos_embed)
         all_cls_scores = self.fc_cls(outs_dec)
         all_bbox_preds = self.fc_reg(self.activate(
-            self.reg_embed(outs_dec))).sigmoid()
+            self.reg_ffn(outs_dec))).sigmoid()
         return all_cls_scores, all_bbox_preds
 
     @force_fp32(apply_to=('all_cls_scores', 'all_bbox_preds'))
@@ -243,7 +250,7 @@ class TransformerHead(AnchorFreeHead):
                 num_query, 4].
             img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
-                image space.
+                image space. Defalut False.
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
@@ -288,7 +295,7 @@ class TransformerHead(AnchorFreeHead):
             scale_factor (ndarray, optional): Scale factor of the image arange
                 as (w_scale, h_scale, w_scale, h_scale).
             rescale (bool, optional): If True, return boxes in original image
-                space.
+                space. Default False.
 
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels.
