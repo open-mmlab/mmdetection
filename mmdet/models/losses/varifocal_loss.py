@@ -35,7 +35,8 @@ def varifocal_loss(pred,
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
     """
-    assert pred.dim() == target.dim()
+    # pred and target should be of the same size
+    assert pred.size() == target.size()
     pred_sigmoid = pred.sigmoid()
     target = target.type_as(pred)
     if iou_weighted:

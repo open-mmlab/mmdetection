@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -7,9 +5,9 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.ops import DeformConv2d
 
-from mmdet.core import (bbox_overlaps, build_anchor_generator, build_assigner,
-                        build_sampler, distance2bbox, force_fp32, multi_apply,
-                        multiclass_nms)
+from mmdet.core import (bbox2distance, bbox_overlaps, build_anchor_generator,
+                        build_assigner, build_sampler, distance2bbox,
+                        force_fp32, multi_apply, multiclass_nms)
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
@@ -17,15 +15,13 @@ from .fcos_head import FCOSHead
 INF = 1e8
 
 
-def get_num_gpus():
-    return int(os.environ['WORLD_SIZE']) if 'WORLD_SIZE' in os.environ else 1
-
-
-def reduce_sum(tensor):
-    if get_num_gpus() <= 1:
+def reduce_mean(tensor):
+    if not (dist.is_available() and dist.is_initialized()):
         return tensor
     tensor = tensor.clone()
-    dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+    dist.all_reduce(
+        tensor.true_divide_(tensor.new_tensor(dist.get_world_size())),
+        op=dist.ReduceOp.SUM)
     return tensor
 
 
@@ -368,15 +364,17 @@ class VFNetHead(ATSSHead, FCOSHead):
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and bbox_preds_refine
         flatten_cls_scores = [
-            cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)
+            cls_score.permute(0, 2, 3,
+                              1).reshape(-1,
+                                         self.cls_out_channels).contiguous()
             for cls_score in cls_scores
         ]
         flatten_bbox_preds = [
-            bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
+            bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4).contiguous()
             for bbox_pred in bbox_preds
         ]
         flatten_bbox_preds_refine = [
-            bbox_pred_refine.permute(0, 2, 3, 1).reshape(-1, 4)
+            bbox_pred_refine.permute(0, 2, 3, 1).reshape(-1, 4).contiguous()
             for bbox_pred_refine in bbox_preds_refine
         ]
         flatten_cls_scores = torch.cat(flatten_cls_scores)
@@ -399,12 +397,10 @@ class VFNetHead(ATSSHead, FCOSHead):
         pos_labels = flatten_labels[pos_inds]
 
         # sync num_pos across all gpus
-        num_gpus = get_num_gpus()
         if self.sync_num_pos:
-            pos_inds_t = pos_inds.clone()
-            total_num_pos = reduce_sum(
-                pos_inds_t.new_tensor([pos_inds_t.numel()])).item()
-            num_pos_avg_per_gpu = max(total_num_pos / float(num_gpus), 1.0)
+            num_pos_avg_per_gpu = reduce_mean(
+                pos_inds.new_tensor(num_pos).float()).item()
+            num_pos_avg_per_gpu = max(num_pos_avg_per_gpu, 1.0)
         else:
             num_pos_avg_per_gpu = num_pos
 
@@ -420,8 +416,8 @@ class VFNetHead(ATSSHead, FCOSHead):
                 pos_decoded_target_preds.detach(),
                 is_aligned=True).clamp(min=1e-6)
             bbox_weights_ini = iou_targets_ini.clone().detach()
-            iou_targets_ini_avg_per_gpu = \
-                reduce_sum(bbox_weights_ini.sum()).item() / float(num_gpus)
+            iou_targets_ini_avg_per_gpu = reduce_mean(
+                bbox_weights_ini.sum()).item()
             bbox_avg_factor_ini = max(iou_targets_ini_avg_per_gpu, 1.0)
             loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
@@ -436,8 +432,8 @@ class VFNetHead(ATSSHead, FCOSHead):
                 pos_decoded_target_preds.detach(),
                 is_aligned=True).clamp(min=1e-6)
             bbox_weights_rf = iou_targets_rf.clone().detach()
-            iou_targets_rf_avg_per_gpu = \
-                reduce_sum(bbox_weights_rf.sum()).item() / float(num_gpus)
+            iou_targets_rf_avg_per_gpu = reduce_mean(
+                bbox_weights_rf.sum()).item()
             bbox_avg_factor_rf = max(iou_targets_rf_avg_per_gpu, 1.0)
             loss_bbox_refine = self.loss_bbox_refine(
                 pos_decoded_bbox_preds_refine,
@@ -451,8 +447,8 @@ class VFNetHead(ATSSHead, FCOSHead):
                 cls_iou_targets = torch.zeros_like(flatten_cls_scores)
                 cls_iou_targets[pos_inds, pos_labels] = pos_ious
         else:
-            loss_bbox = pos_bbox_preds.sum()
-            loss_bbox_refine = pos_bbox_preds_refine.sum()
+            loss_bbox = pos_bbox_preds.sum() * 0
+            loss_bbox_refine = pos_bbox_preds_refine.sum() * 0
             if self.use_vfl:
                 cls_iou_targets = torch.zeros_like(flatten_cls_scores)
 
@@ -578,8 +574,8 @@ class VFNetHead(ATSSHead, FCOSHead):
                                                 mlvl_points):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+                -1, self.cls_out_channels).contiguous().sigmoid()
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).contiguous()
 
             nms_pre = cfg.get('nms_pre', -1)
             if 0 < nms_pre < scores.shape[0]:
@@ -792,12 +788,8 @@ class VFNetHead(ATSSHead, FCOSHead):
         mlvl_points = [points.repeat(num_imgs, 1) for points in mlvl_points]
         bbox_targets = []
         for i in range(num_levels):
-            xs, ys = mlvl_points[i][:, 0], mlvl_points[i][:, 1]
-            left = xs - decoded_bboxes[i][..., 0]
-            right = decoded_bboxes[i][..., 2] - xs
-            top = ys - decoded_bboxes[i][..., 1]
-            bottom = decoded_bboxes[i][..., 3] - ys
-            bbox_targets.append(torch.stack((left, top, right, bottom), -1))
+            bbox_target = bbox2distance(mlvl_points[i], decoded_bboxes[i])
+            bbox_targets.append(bbox_target)
 
         return bbox_targets
 
