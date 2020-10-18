@@ -28,19 +28,25 @@ class HungarianAssigner(BaseAssigner):
             cost. Default 1.0.
         bbox_weight (int | float, optional): The scale factor for regression
             L1 cost. Default 1.0.
-        giou_weight (int | float, optional): The scale factor for regression
-            giou cost. Default 1.0.
+        iou_weight (int | float, optional): The scale factor for regression
+            iou cost. Default 1.0.
+        mode (str, optional): "iou" (intersection over union), "iof"
+            (intersection over foreground), or "giou" (generalized intersection
+            over union). Default "giou".
     """
 
     def __init__(self,
                  cls_weight=1.,
                  bbox_weight=1.,
-                 giou_weight=1.,
-                 iou_calculator=dict(type='BboxOverlaps2D')):
+                 iou_weight=1.,
+                 iou_calculator=dict(type='BboxOverlaps2D'),
+                 mode='giou'):
+        assert mode in ['iou', 'iof', 'giou'], f'Unsupported mode {mode}.'
         self.cls_weight = cls_weight
         self.bbox_weight = bbox_weight
-        self.giou_weight = giou_weight
+        self.iou_weight = iou_weight
         self.iou_calculator = build_iou_calculator(iou_calculator)
+        self.mode = mode
 
     def assign(self,
                bbox_pred,
@@ -120,17 +126,17 @@ class HungarianAssigner(BaseAssigner):
             bbox_pred, bbox_xyxy_to_cxcywh(gt_bboxes_normalized),
             p=1)  # [num_bboxes, num_gt]
 
-        # regression giou cost
+        # regression iou cost, defaultly giou is used in official DETR.
         bboxes = bbox_cxcywh_to_xyxy(bbox_pred) * factor
-        # gious: [num_bboxes, num_gt]
-        gious = self.iou_calculator(
-            bboxes, gt_bboxes, mode='giou', is_aligned=False)
+        # overlaps: [num_bboxes, num_gt]
+        overlaps = self.iou_calculator(
+            bboxes, gt_bboxes, mode=self.mode, is_aligned=False)
         # The 1 is a constant that doesn't change the matching, so ommitted.
-        giou_cost = -gious
+        iou_cost = -overlaps
 
         # weighted sum of above three costs
         cost = self.cls_weight * cls_cost + self.bbox_weight * bbox_cost
-        cost = cost + self.giou_weight * giou_cost
+        cost = cost + self.iou_weight * iou_cost
 
         # 3. do Hungarian matching on CPU using linear_sum_assignment
         cost = cost.detach().cpu()
