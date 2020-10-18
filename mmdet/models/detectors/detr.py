@@ -35,11 +35,6 @@ class DETR(SingleStageDetector):
         assert batch_size == 1, 'Currently only batch_size 1 for inference ' \
             f'mode is supported. Found batch_size {batch_size}.'
         x = self.extract_feat(img)
-
-        # NOTE the batched image size information is needed for the
-        # construction of masks, which is then used for the transformer_head.
-        for img_id in range(batch_size):
-            img_metas[img_id]['input_img_shape'] = tuple(img.size()[-2:])
         outs = self.bbox_head(x, img_metas)
         bbox_list = self.bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
