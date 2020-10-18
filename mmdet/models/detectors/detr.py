@@ -38,7 +38,8 @@ class DETR(SingleStageDetector):
 
         # NOTE the batched image size information is needed for the
         # construction of masks, which is then used for the transformer_head.
-        img_metas[0]['batched_img_shape'] = tuple(img.size()[-2:])
+        for img_id in range(batch_size):
+            img_metas[img_id]['input_img_shape'] = tuple(img.size()[-2:])
         outs = self.bbox_head(x, img_metas)
         bbox_list = self.bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
