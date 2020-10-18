@@ -77,8 +77,11 @@ class ScoreHLRSampler(BaseSampler):
 
         is_tensor = isinstance(gallery, torch.Tensor)
         if not is_tensor:
-            gallery = torch.tensor(
-                gallery, dtype=torch.long, device=torch.cuda.current_device())
+            if torch.cuda.is_available():
+                device = torch.cuda.current_device()
+            else:
+                device = 'cpu'
+            gallery = torch.tensor(gallery, dtype=torch.long, device=device)
         perm = torch.randperm(gallery.numel(), device=gallery.device)[:num]
         rand_inds = gallery[perm]
         if not is_tensor:
