@@ -109,7 +109,19 @@ class GridAssigner(BaseAssigner):
         # positive IOU threshold, the order matters.
         # the prior condition of comparision is to filter out all
         # unrelated anchors, i.e. not box_responsible_flags
-        overlaps[:, ~box_responsible_flags.type(torch.bool)] = -1.
+
+        # ADDED: first expand box_responsible_flag
+        responsible_indices = torch.stack(
+            (box_responsible_flags[box_responsible_flags > 0],
+             torch.where(box_responsible_flags > 0)[0]),
+            dim=-1)
+        expanded_box_responsible_flags = torch.zeros_like(overlaps)
+        for i, j in responsible_indices:
+            expanded_box_responsible_flags[i, j] = 1  # TODO: optimize,
+            # but since dimension is ~100, this works
+
+        # overlaps[:, ~box_responsible_flags.type(torch.bool)] = -1.
+        overlaps[~expanded_box_responsible_flags.type(torch.bool)] = -1.
 
         # calculate max_overlaps again, but this time we only consider IOUs
         # for anchors responsible for prediction

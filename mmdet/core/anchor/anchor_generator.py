@@ -721,7 +721,9 @@ class YOLOAnchorGenerator(AnchorGenerator):
 
         responsible_grid = torch.zeros(
             feat_h * feat_w, dtype=torch.uint8, device=device)
-        responsible_grid[gt_bboxes_grid_idx] = 1
+
+        for i, idx in enumerate(gt_bboxes_grid_idx):
+            responsible_grid[idx] = i
 
         responsible_grid = responsible_grid[:, None].expand(
             responsible_grid.size(0), num_base_anchors).contiguous().view(-1)

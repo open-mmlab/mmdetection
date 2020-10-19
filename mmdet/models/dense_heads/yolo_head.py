@@ -2,6 +2,8 @@
 
 import warnings
 
+import cv2
+import mmcv
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -391,7 +393,7 @@ class YOLOV3Head(BaseDenseHead):
         num_cls = self.num_attrib - 5
         assert num_cls > 0
 
-        # print(pred_map.shape)
+        print(pred_map.shape)
 
         pred_map = pred_map.permute(0, 2, 3,
                                     1).reshape(num_imgs, -1, self.num_attrib)
@@ -429,9 +431,9 @@ class YOLOV3Head(BaseDenseHead):
             loss_cls += self.loss_cls(img_pred_label, img_target_label)
             loss_conf += self.loss_conf(img_pred_conf, img_target_conf)
             #
-            # print(img_target_conf.shape)
-            # print(img_target_label.shape)
-            # print(loss_cls)
+            print(img_target_conf.shape)
+            print(img_target_label.shape)
+            print(loss_cls)
 
             if self.using_iou_loss:
                 # preparation for box decoding
@@ -464,17 +466,10 @@ class YOLOV3Head(BaseDenseHead):
                 # # img = img.clip(0.01, 0.99)
                 # # import numpy as np
                 # # img = np.float64(img)
-                # img = img.copy()
-                # import cv2
-                # img = cv2.imread('data/coco/val2017/000000182611.jpg')
-                # img = cv2.resize(img, (352, 448))
-                # # cv2.imshow('img', img)
-                # # cv2.waitKey()
-                # bbox = img_target_box.detach().cpu().numpy()
-                # # print(img_meta)
-                # # print(bbox)
-                # import mmcv
-                # mmcv.imshow_bboxes(img[:], bbox)
+                # # img = img.copy()
+
+                # if level_idx == 0:
+                #     self.show_img(img_pred_box, img_target_box)
 
                 loss_xy += self.loss_bbox(img_pred_box, img_target_box)
                 loss_wh += torch.zeros_like(loss_xy)
@@ -504,6 +499,29 @@ class YOLOV3Head(BaseDenseHead):
 
     # def loss_single_img(self, pred_map, target_map, neg_map, anchors,
     #                       level_idx):
+
+    def show_img(self, img_pred_box, img_target_box=None, center=False):
+
+        def center_box(boxes):
+            import numpy as np
+            xy = boxes[:, 0:2] + 0.5 * (boxes[:, 2:4] - boxes[:, 0:2])
+            wh = np.ones_like(xy) * 5
+            return np.hstack((xy - wh, xy + wh))
+
+        img = cv2.imread('data/coco/val2017/000000182611.jpg')
+        img = cv2.resize(img, (480, 640))
+        if not center:
+            bbox = img_pred_box.detach().cpu().numpy()
+            mmcv.imshow_bboxes(img[:], bbox)
+            if img_target_box is not None:
+                bbox2 = img_target_box.detach().cpu().numpy()
+                mmcv.imshow_bboxes(img[:], bbox2, 'red')
+        else:
+            bbox = center_box(img_pred_box.detach().cpu().numpy())
+            mmcv.imshow_bboxes(img[:], bbox)
+            if img_target_box is not None:
+                bbox2 = center_box(img_target_box.detach().cpu().numpy())
+                mmcv.imshow_bboxes(img[:], bbox2, 'red')
 
     def get_targets(self, anchor_list, responsible_flag_list, gt_bboxes_list,
                     gt_labels_list):
@@ -580,6 +598,11 @@ class YOLOV3Head(BaseDenseHead):
 
         target_map = concat_anchors.new_zeros(
             concat_anchors.size(0), self.num_attrib)
+
+        self.show_img(
+            sampling_result.pos_bboxes[:17, :],
+            sampling_result.pos_gt_bboxes[:17, :],
+            center=False)
 
         if self.using_iou_loss:
             target_map[sampling_result.pos_inds, :4] = \
