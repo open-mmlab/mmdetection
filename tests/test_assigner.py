@@ -380,6 +380,7 @@ def test_center_region_assigner_with_empty_gts():
 
 def test_hungarian_match_assigner():
     self = HungarianAssigner()
+    assert self.mode == 'giou'
 
     # test no gt bboxes
     bbox_pred = torch.rand((10, 4))
@@ -402,7 +403,9 @@ def test_hungarian_match_assigner():
     assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)
 
     # test iou mode
-    self = HungarianAssigner(mode='iou')
+    self = HungarianAssigner(
+        iou_calculator=dict(type='BboxOverlaps2D', mode='iou'))
+    assert self.mode == 'iou'
     assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
                                 img_meta)
     assert torch.all(assign_result.gt_inds > -1)

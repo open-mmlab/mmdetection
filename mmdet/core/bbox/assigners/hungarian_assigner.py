@@ -14,7 +14,7 @@ class HungarianAssigner(BaseAssigner):
 
     This class computes an assignment between the targets and the predictions
     based on the costs. The costs are weighted sum of three components:
-    classfication cost, regression L1 cost and regression giou cost. The
+    classfication cost, regression L1 cost and regression iou cost. The
     targets don't include the no_object, so generally there are more
     predictions than targets. After the one-to-one matching, the un-matched
     are treated as backgrounds. Thus each query prediction will be assigned
@@ -30,23 +30,27 @@ class HungarianAssigner(BaseAssigner):
             L1 cost. Default 1.0.
         iou_weight (int | float, optional): The scale factor for regression
             iou cost. Default 1.0.
-        mode (str, optional): "iou" (intersection over union), "iof"
-            (intersection over foreground), or "giou" (generalized intersection
-            over union). Default "giou".
+        iou_calculator (dict | optional): The config for the iou calculation.
+            Default type `BboxOverlaps2D` and defalut mode 'giou'. The valid
+            mode is "iou" (intersection over union), "iof" (intersection over
+            foreground), or "giou" (generalized intersection over union).
     """
 
     def __init__(self,
                  cls_weight=1.,
                  bbox_weight=1.,
                  iou_weight=1.,
-                 iou_calculator=dict(type='BboxOverlaps2D'),
-                 mode='giou'):
-        assert mode in ['iou', 'iof', 'giou'], f'Unsupported mode {mode}.'
+                 iou_calculator=dict(type='BboxOverlaps2D', mode='giou')):
+        # defaultly giou cost is used in the official DETR repo.
+        mode = 'giou'
+        if 'mode' in iou_calculator:
+            mode = iou_calculator['mode']
+            iou_calculator.pop('mode')
+        self.mode = mode
         self.cls_weight = cls_weight
         self.bbox_weight = bbox_weight
         self.iou_weight = iou_weight
         self.iou_calculator = build_iou_calculator(iou_calculator)
-        self.mode = mode
 
     def assign(self,
                bbox_pred,
@@ -62,7 +66,7 @@ class HungarianAssigner(BaseAssigner):
         background. The `assigned_gt_inds` with -1 means don't care,
         0 means negative sample, and positive number is the index (1-based)
         of assigned gt.
-        The assignment is done in following steps, the order matters.
+        The assignment is done in the following steps, the order matters.
 
         1. assign every prediction to -1
         2. compute the weighted costs
