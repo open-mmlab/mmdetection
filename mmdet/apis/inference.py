@@ -107,10 +107,10 @@ def inference_detector(model, img):
         # scatter to specified GPU
         data = scatter(data, [device])[0]
     else:
-        # RoIPool is not supported for CPU mode
         for m in model.modules():
             assert not isinstance(
-                m, RoIPool), 'RoIPool is not supported currently.'
+                m, RoIPool
+            ), 'CPU inference with RoIPool is not supported currently.'
         # just get the actual data from DataContainer
         data['img_metas'] = data['img_metas'][0].data
 
