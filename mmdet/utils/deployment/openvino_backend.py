@@ -80,9 +80,6 @@ class ModelOpenVINO:
         self.configure_inputs(required_inputs)
         self.configure_outputs(required_outputs)
 
-        if 'CPU' in device:
-            self.check_cpu_support(ie, self.net)
-
         logging.info('Loading network to plugin...')
         self.max_num_requests = max_num_requests
         self.exec_net = ie.load_network(network=self.net, device_name=device, num_requests=max_num_requests)
@@ -97,21 +94,6 @@ class ModelOpenVINO:
                 cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
             if classes is not None:
                 self.pt_model.CLASSES = classes
-
-    @staticmethod
-    def check_cpu_support(ie, net):
-        logging.info('Check that all layers are supported...')
-        supported_layers = ie.query_network(net, 'CPU')
-        not_supported_layers = [l for l in net.layers.keys() if l not in supported_layers]
-        if len(not_supported_layers) != 0:
-            unsupported_info = '\n\t'.join('{} ({} with params {})'.format(layer_id,
-                                                                           net.layers[layer_id].type,
-                                                                           str(net.layers[layer_id].params))
-                                           for layer_id in not_supported_layers)
-            logging.warning('Following layers are not supported '
-                            'by the CPU plugin:\n\t{}'.format(unsupported_info))
-            logging.warning('Please try to specify cpu extensions library path.')
-            raise ValueError('Some of the layers are not supported.')
 
     def get_mapping(self, mapping_file_path=None):
         mapping = {}
@@ -205,7 +187,7 @@ class DetectorOpenVINO(ModelOpenVINO):
         self.with_detection_output = False
         self.with_mask = False
         super().__init__(*args,
-                         required_inputs=('image', ),
+                         required_inputs=('image',),
                          required_outputs=None,
                          **kwargs)
         self.n, self.c, self.h, self.w = self.net.input_info['image'].input_data.shape
