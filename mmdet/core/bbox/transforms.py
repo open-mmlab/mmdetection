@@ -11,7 +11,6 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
         direction (str): Flip direction, options are "horizontal", "vertical",
             "diagonal". Default: "horizontal"
 
-
     Returns:
         Tensor: Flipped bboxes.
     """
@@ -27,7 +26,7 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
     else:
         flipped[..., 0::4] = img_shape[1] - bboxes[..., 2::4]
         flipped[..., 1::4] = img_shape[0] - bboxes[..., 3::4]
-        flipped[..., 2::4] = img_shape[1] - bboxes[...:, 0::4]
+        flipped[..., 2::4] = img_shape[1] - bboxes[..., 0::4]
         flipped[..., 3::4] = img_shape[0] - bboxes[..., 1::4]
     return flipped
 

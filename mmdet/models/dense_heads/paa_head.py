@@ -150,9 +150,9 @@ class PAAHead(ATSSHead):
         bboxes_target = torch.cat(bboxes_target,
                                   0).view(-1, bboxes_target[0].size(-1))
 
-        pos_inds_flatten = (
-            (labels >= 0)
-            & (labels < self.background_label)).nonzero().reshape(-1)
+        pos_inds_flatten = ((labels >= 0)
+                            &
+                            (labels < self.num_classes)).nonzero().reshape(-1)
 
         losses_cls = self.loss_cls(
             cls_scores,
@@ -332,7 +332,7 @@ class PAAHead(ATSSHead):
         ignore_inds_after_paa = torch.cat(ignore_inds_after_paa)
         reassign_mask = (pos_inds.unsqueeze(1) != pos_inds_after_paa).all(1)
         reassign_ids = pos_inds[reassign_mask]
-        label[reassign_ids] = self.background_label
+        label[reassign_ids] = self.num_classes
         label_weight[ignore_inds_after_paa] = 0
         bbox_weight[reassign_ids] = 0
         num_pos = len(pos_inds_after_paa)
@@ -458,7 +458,7 @@ class PAAHead(ATSSHead):
         pos_inds = []
         for i, single_labels in enumerate(labels):
             pos_mask = (0 <= single_labels) & (
-                single_labels < self.background_label)
+                single_labels < self.num_classes)
             pos_inds.append(pos_mask.nonzero().view(-1))
 
         gt_inds = [item.pos_assigned_gt_inds for item in sampling_result]
@@ -499,7 +499,8 @@ class PAAHead(ATSSHead):
                            img_shape,
                            scale_factor,
                            cfg,
-                           rescale=False):
+                           rescale=False,
+                           with_nms=True):
         """Transform outputs for a single batch item into labeled boxes.
 
         This method is almost same as `ATSSHead._get_bboxes_single()`.
@@ -507,6 +508,7 @@ class PAAHead(ATSSHead):
         cls_scores. Besides, score voting is used when `` score_voting``
         is set to True.
         """
+        assert with_nms, 'PAA only supports "with_nms=True" now'
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []

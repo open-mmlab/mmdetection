@@ -429,7 +429,7 @@ model = dict(
     neck=dict(...))
 ```
 
-The `_delete_=True` would replace all old keys in `backbone` field with new keys new keys.
+The `_delete_=True` would replace all old keys in `backbone` field with new keys.
 
 ### Use intermediate variables in configs
 

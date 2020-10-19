@@ -274,6 +274,15 @@ class SABLHead(nn.Module):
         feat = torch.cat([feat_fl, feat_fr], dim=-1)
         return feat
 
+    def bbox_pred_split(self, bbox_pred, num_proposals_per_img):
+        """Split batch bbox prediction back to each image."""
+        bucket_cls_preds, bucket_offset_preds = bbox_pred
+        bucket_cls_preds = bucket_cls_preds.split(num_proposals_per_img, 0)
+        bucket_offset_preds = bucket_offset_preds.split(
+            num_proposals_per_img, 0)
+        bbox_pred = tuple(zip(bucket_cls_preds, bucket_offset_preds))
+        return bbox_pred
+
     def reg_forward(self, reg_x):
         outs = self.side_aware_feature_extractor(reg_x)
         edge_offset_preds = []
