@@ -257,9 +257,11 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             # (h, w, num_anchors*num_attrib) -> (h*w*num_anchors, num_attrib)
             pred_map = pred_map.permute(1, 2, 0).reshape(-1, self.num_attrib)
 
-            pred_map[..., :2] = torch.sigmoid(pred_map[..., :2])
-            bbox_pred = self.bbox_coder.decode(multi_lvl_anchors[i],
-                                               pred_map[..., :4], stride)
+            xy = torch.sigmoid(pred_map[..., :2])
+            xywh = torch.cat((xy, pred_map[..., 2:4]), axis=-1)
+            bbox_pred = self.bbox_coder.decode(multi_lvl_anchors[i], xywh,
+                                               stride)
+
             # conf and cls
             conf_pred = torch.sigmoid(pred_map[..., 4]).view(-1)
             cls_pred = torch.sigmoid(pred_map[..., 5:]).view(
@@ -267,10 +269,11 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
             # Filtering out all predictions with conf < conf_thr
             conf_thr = cfg.get('conf_thr', -1)
-            conf_inds = conf_pred.ge(conf_thr).nonzero().flatten()
-            bbox_pred = bbox_pred[conf_inds, :]
-            cls_pred = cls_pred[conf_inds, :]
-            conf_pred = conf_pred[conf_inds]
+            if conf_thr >= 0:
+                conf_inds = conf_pred > conf_thr
+                bbox_pred = bbox_pred[conf_inds, :]
+                cls_pred = cls_pred[conf_inds, :]
+                conf_pred = conf_pred[conf_inds]
 
             # Get top-k prediction
             nms_pre = cfg.get('nms_pre', -1)
@@ -303,7 +306,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         multi_lvl_cls_scores = torch.cat([multi_lvl_cls_scores, padding],
                                          dim=1)
 
-        if with_nms:
+        if with_nms and cfg.get('nms', None) is not None:
             det_bboxes, det_labels = multiclass_nms(
                 multi_lvl_bboxes,
                 multi_lvl_cls_scores,
