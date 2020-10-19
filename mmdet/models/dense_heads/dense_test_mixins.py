@@ -62,21 +62,30 @@ class BBoxTestMixin(object):
 
         aug_bboxes = []
         aug_scores = []
+        aug_factors = []  # score_factors for NMS
         for x, img_meta in zip(feats, img_metas):
             # only one image in the batch
             outs = self.forward(x)
             bbox_inputs = outs + (img_meta, self.test_cfg, False, False)
-            det_bboxes, det_scores = self.get_bboxes(*bbox_inputs)[0]
-            aug_bboxes.append(det_bboxes)
-            aug_scores.append(det_scores)
+            bbox_outputs = self.get_bboxes(*bbox_inputs)[0]
+            aug_bboxes.append(bbox_outputs[0])
+            aug_scores.append(bbox_outputs[1])
+            # bbox_outputs of some detectors (e.g., ATSS, FCOS, YOLOv3)
+            # contains additional element to adjust scores before NMS
+            if len(bbox_outputs) >= 3:
+                aug_factors.append(bbox_outputs[2])
 
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = self.merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas)
-        det_bboxes, det_labels = multiclass_nms(merged_bboxes, merged_scores,
-                                                self.test_cfg.score_thr,
-                                                self.test_cfg.nms,
-                                                self.test_cfg.max_per_img)
+        merged_factors = torch.cat(aug_factors, dim=0) if aug_factors else None
+        det_bboxes, det_labels = multiclass_nms(
+            merged_bboxes,
+            merged_scores,
+            self.test_cfg.score_thr,
+            self.test_cfg.nms,
+            self.test_cfg.max_per_img,
+            score_factors=merged_factors)
 
         if rescale:
             _det_bboxes = det_bboxes

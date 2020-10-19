@@ -187,10 +187,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         """Run forward function and calculate loss for mask head in
         training."""
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-        if len(pos_rois) == 0:
-            # If there are no predicted and/or truth boxes, then we cannot
-            # compute head / mask losses
-            return dict(loss_mask=None)
         mask_results = self._mask_forward(stage, x, pos_rois)
 
         mask_targets = self.mask_head[stage].get_targets(
@@ -271,11 +267,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 mask_results = self._mask_forward_train(
                     i, x, sampling_results, gt_masks, rcnn_train_cfg,
                     bbox_results['bbox_feats'])
-                # TODO: Support empty tensor input. #2280
-                if mask_results['loss_mask'] is not None:
-                    for name, value in mask_results['loss_mask'].items():
-                        losses[f's{i}.{name}'] = (
-                            value * lw if 'loss' in name else value)
+                for name, value in mask_results['loss_mask'].items():
+                    losses[f's{i}.{name}'] = (
+                        value * lw if 'loss' in name else value)
 
             # refine bboxes
             if i < self.num_stages - 1:
@@ -318,7 +312,11 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 len(proposals) for proposals in proposal_list)
             rois = rois.split(num_proposals_per_img, 0)
             cls_score = cls_score.split(num_proposals_per_img, 0)
-            bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+            if isinstance(bbox_pred, torch.Tensor):
+                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+            else:
+                bbox_pred = self.bbox_head[i].bbox_pred_split(
+                    bbox_pred, num_proposals_per_img)
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
