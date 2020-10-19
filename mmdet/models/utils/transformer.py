@@ -144,12 +144,12 @@ class FFN(nn.Module):
 
     def forward(self, x, residual=None):
         """Forward function for `FFN`."""
-        x = self.layers(x)
+        out = self.layers(x)
         if not self.add_residual:
-            return x
+            return out
         if residual is None:
             residual = x
-        return residual + self.dropout(x)
+        return residual + self.dropout(out)
 
     def __repr__(self):
         """str: a string that describes the module"""
