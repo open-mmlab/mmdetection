@@ -2,6 +2,8 @@ from abc import ABCMeta, abstractmethod
 
 import torch.nn as nn
 
+from mmdet.core import multi_apply
+
 
 class BaseDenseHead(nn.Module, metaclass=ABCMeta):
     """Base class for DenseHeads."""
@@ -13,6 +15,21 @@ class BaseDenseHead(nn.Module, metaclass=ABCMeta):
     def loss(self, **kwargs):
         """Compute losses of the head."""
         pass
+
+    def forward_multi_apply_func(self, func, *args, **kwargs):
+        """The function used in the forward function to deal with multi-level
+        feature maps."""
+        return multi_apply(func, *args, **kwargs)
+
+    def get_targets_multi_apply_func(self, func, *args, **kwargs):
+        """The function used in the get_targets function to deal with multi-
+        level feature maps."""
+        return multi_apply(func, *args, **kwargs)
+
+    def loss_multi_apply_func(self, func, *args, **kwargs):
+        """The function used in the loss function to deal with multi-level
+        feature maps."""
+        return multi_apply(func, *args, **kwargs)
 
     @abstractmethod
     def get_bboxes(self, **kwargs):

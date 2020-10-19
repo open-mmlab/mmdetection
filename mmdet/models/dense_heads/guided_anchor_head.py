@@ -231,7 +231,7 @@ class GuidedAnchorHead(AnchorHead):
         return cls_score, bbox_pred, shape_pred, loc_pred
 
     def forward(self, feats):
-        return multi_apply(self.forward_single, feats)
+        return self.forward_multi_apply_func(self.forward_single, feats)
 
     def get_sampled_approxs(self, featmap_sizes, img_metas, device='cuda'):
         """Get sampled approxs and inside flags according to feature map sizes.
@@ -700,7 +700,7 @@ class GuidedAnchorHead(AnchorHead):
                                            num_level_anchors)
 
         # get classification and bbox regression losses
-        losses_cls, losses_bbox = multi_apply(
+        losses_cls, losses_bbox = self.loss_multi_apply_func(
             self.loss_single,
             cls_scores,
             bbox_preds,

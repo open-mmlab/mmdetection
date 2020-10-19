@@ -6,7 +6,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
-                        multi_apply, multiclass_nms, unmap)
+                        multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .guided_anchor_head import GuidedAnchorHead
@@ -190,7 +190,7 @@ class SABLRetinaHead(BaseDenseHead):
         return cls_score, bbox_pred
 
     def forward(self, feats):
-        return multi_apply(self.forward_single, feats)
+        return self.forward_multi_apply_func(self.forward_single, feats)
 
     def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
         """Get squares according to feature map sizes and guided anchors.
@@ -279,7 +279,7 @@ class SABLRetinaHead(BaseDenseHead):
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_labels, all_label_weights, all_bbox_cls_targets,
          all_bbox_cls_weights, all_bbox_reg_targets, all_bbox_reg_weights,
-         pos_inds_list, neg_inds_list) = multi_apply(
+         pos_inds_list, neg_inds_list) = self.get_targets_multi_apply_func(
              self._get_target_single,
              approx_flat_list,
              inside_flag_flat_list,
@@ -500,17 +500,18 @@ class SABLRetinaHead(BaseDenseHead):
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (
             num_total_pos + num_total_neg if self.sampling else num_total_pos)
-        losses_cls, losses_bbox_cls, losses_bbox_reg = multi_apply(
-            self.loss_single,
-            cls_scores,
-            bbox_preds,
-            labels_list,
-            label_weights_list,
-            bbox_cls_targets_list,
-            bbox_cls_weights_list,
-            bbox_reg_targets_list,
-            bbox_reg_weights_list,
-            num_total_samples=num_total_samples)
+        (losses_cls, losses_bbox_cls,
+         losses_bbox_reg) = self.loss_multi_apply_func(
+             self.loss_single,
+             cls_scores,
+             bbox_preds,
+             labels_list,
+             label_weights_list,
+             bbox_cls_targets_list,
+             bbox_cls_weights_list,
+             bbox_reg_targets_list,
+             bbox_reg_weights_list,
+             num_total_samples=num_total_samples)
         return dict(
             loss_cls=losses_cls,
             loss_bbox_cls=losses_bbox_cls,

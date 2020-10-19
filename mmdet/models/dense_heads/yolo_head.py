@@ -10,7 +10,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
-                        multi_apply, multiclass_nms)
+                        multiclass_nms)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -358,8 +358,10 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         target_maps_list, neg_maps_list = self.get_targets(
             anchor_list, responsible_flag_list, gt_bboxes, gt_labels)
 
-        losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
-            self.loss_single, pred_maps, target_maps_list, neg_maps_list)
+        (losses_cls, losses_conf, losses_xy,
+         losses_wh) = self.loss_multi_apply_func(self.loss_single, pred_maps,
+                                                 target_maps_list,
+                                                 neg_maps_list)
 
         return dict(
             loss_cls=losses_cls,
@@ -437,9 +439,11 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         # anchor number of multi levels
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
 
-        results = multi_apply(self._get_targets_single, anchor_list,
-                              responsible_flag_list, gt_bboxes_list,
-                              gt_labels_list)
+        results = self.get_targets_multi_apply_func(self._get_targets_single,
+                                                    anchor_list,
+                                                    responsible_flag_list,
+                                                    gt_bboxes_list,
+                                                    gt_labels_list)
 
         all_target_maps, all_neg_maps = results
         assert num_imgs == len(all_target_maps) == len(all_neg_maps)

@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
 from mmdet.core import (build_anchor_generator, build_assigner,
-                        build_bbox_coder, build_sampler, multi_apply)
+                        build_bbox_coder, build_sampler)
 from ..builder import HEADS
 from ..losses import smooth_l1_loss
 from .anchor_head import AnchorHead
@@ -243,7 +243,7 @@ class SSDHead(AnchorHead):
         assert torch.isfinite(all_bbox_preds).all().item(), \
             'bbox predications become infinite or NaN!'
 
-        losses_cls, losses_bbox = multi_apply(
+        losses_cls, losses_bbox = self.loss_multi_apply_func(
             self.loss_single,
             all_cls_scores,
             all_bbox_preds,

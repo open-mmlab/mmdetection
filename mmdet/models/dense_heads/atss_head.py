@@ -5,7 +5,7 @@ from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+                        images_to_levels, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -119,7 +119,8 @@ class ATSSHead(AnchorHead):
                     levels, each is a 4D-tensor, the channels number is
                     num_anchors * 4.
         """
-        return multi_apply(self.forward_single, feats, self.scales)
+        return self.forward_multi_apply_func(self.forward_single, feats,
+                                             self.scales)
 
     def forward_single(self, x, scale):
         """Forward feature of a single scale level.
@@ -281,7 +282,7 @@ class ATSSHead(AnchorHead):
         num_total_samples = max(num_total_samples, 1.0)
 
         losses_cls, losses_bbox, loss_centerness,\
-            bbox_avg_factor = multi_apply(
+            bbox_avg_factor = self.loss_multi_apply_func(
                 self.loss_single,
                 anchor_list,
                 cls_scores,
@@ -510,7 +511,8 @@ class ATSSHead(AnchorHead):
         if gt_labels_list is None:
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
+         all_bbox_weights, pos_inds_list, neg_inds_list) = \
+            self.get_targets_multi_apply_func(
              self._get_target_single,
              anchor_list,
              valid_flag_list,

@@ -5,7 +5,7 @@ from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 from mmcv.ops import DeformConv2d
 
 from mmdet.core import (PointGenerator, build_assigner, build_sampler,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+                        images_to_levels, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -248,7 +248,7 @@ class RepPointsHead(AnchorFreeHead):
         return grid_yx, regressed_bbox
 
     def forward(self, feats):
-        return multi_apply(self.forward_single, feats)
+        return self.forward_multi_apply_func(self.forward_single, feats)
 
     def forward_single(self, x):
         """Forward feature map of a single FPN level."""
@@ -501,7 +501,8 @@ class RepPointsHead(AnchorFreeHead):
         if gt_labels_list is None:
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_labels, all_label_weights, all_bbox_gt, all_proposals,
-         all_proposal_weights, pos_inds_list, neg_inds_list) = multi_apply(
+         all_proposal_weights, pos_inds_list,
+         neg_inds_list) = self.get_targets_multi_apply_func(
              self._point_target_single,
              proposals_list,
              valid_flag_list,
@@ -640,20 +641,21 @@ class RepPointsHead(AnchorFreeHead):
             num_total_neg_refine if self.sampling else num_total_pos_refine)
 
         # compute loss
-        losses_cls, losses_pts_init, losses_pts_refine = multi_apply(
-            self.loss_single,
-            cls_scores,
-            pts_coordinate_preds_init,
-            pts_coordinate_preds_refine,
-            labels_list,
-            label_weights_list,
-            bbox_gt_list_init,
-            bbox_weights_list_init,
-            bbox_gt_list_refine,
-            bbox_weights_list_refine,
-            self.point_strides,
-            num_total_samples_init=num_total_samples_init,
-            num_total_samples_refine=num_total_samples_refine)
+        (losses_cls, losses_pts_init,
+         losses_pts_refine) = self.loss_multi_apply_func(
+             self.loss_single,
+             cls_scores,
+             pts_coordinate_preds_init,
+             pts_coordinate_preds_refine,
+             labels_list,
+             label_weights_list,
+             bbox_gt_list_init,
+             bbox_weights_list_init,
+             bbox_gt_list_refine,
+             bbox_weights_list_refine,
+             self.point_strides,
+             num_total_samples_init=num_total_samples_init,
+             num_total_samples_refine=num_total_samples_refine)
         loss_dict_all = {
             'loss_cls': losses_cls,
             'loss_pts_init': losses_pts_init,

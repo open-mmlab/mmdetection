@@ -3,7 +3,7 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init
 from mmcv.ops import DeformConv2d
 
-from mmdet.core import multi_apply, multiclass_nms
+from mmdet.core import multiclass_nms
 from ..builder import HEADS
 from .anchor_free_head import AnchorFreeHead
 
@@ -175,7 +175,7 @@ class FoveaHead(AnchorFreeHead):
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
     def get_targets(self, gt_bbox_list, gt_label_list, featmap_sizes, points):
-        label_list, bbox_target_list = multi_apply(
+        label_list, bbox_target_list = self.get_targets_multi_apply_func(
             self._get_target_single,
             gt_bbox_list,
             gt_label_list,

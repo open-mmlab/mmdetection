@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
 from mmcv.runner import force_fp32
 
-from mmdet.core import build_sampler, fast_nms, images_to_levels, multi_apply
+from mmdet.core import build_sampler, fast_nms, images_to_levels
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -220,7 +220,7 @@ class YOLACTHead(AnchorHead):
             assert torch.isfinite(all_bbox_preds).all().item(), \
                 'bbox predications become infinite or NaN!'
 
-            losses_cls, losses_bbox = multi_apply(
+            losses_cls, losses_bbox = self.loss_multi_apply_func(
                 self.loss_single_OHEM,
                 all_cls_scores,
                 all_bbox_preds,
@@ -243,7 +243,7 @@ class YOLACTHead(AnchorHead):
                 concat_anchor_list.append(torch.cat(anchor_list[i]))
             all_anchor_list = images_to_levels(concat_anchor_list,
                                                num_level_anchors)
-            losses_cls, losses_bbox = multi_apply(
+            losses_cls, losses_bbox = self.loss_multi_apply_func(
                 self.loss_single,
                 cls_scores,
                 bbox_preds,

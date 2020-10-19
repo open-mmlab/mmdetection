@@ -1,6 +1,5 @@
 import torch
 
-from mmdet.core import multi_apply
 from ..builder import HEADS
 from ..losses import CrossEntropyLoss, SmoothL1Loss, carl_loss, isr_p
 from .ssd_head import SSDHead
@@ -123,7 +122,7 @@ class PISASSDHead(SSDHead):
         assert torch.isfinite(all_bbox_preds).all().item(), \
             'bbox predications become infinite or NaN!'
 
-        losses_cls, losses_bbox = multi_apply(
+        losses_cls, losses_bbox = self.loss_multi_apply_func(
             self.loss_single,
             all_cls_scores,
             all_bbox_preds,

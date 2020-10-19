@@ -5,7 +5,6 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
 
-from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -194,7 +193,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                     level, each is a 4D-tensor, the channel number is
                     num_points * 4.
         """
-        return multi_apply(self.forward_single, feats)[:2]
+        return self.forward_multi_apply_func(self.forward_single, feats)[:2]
 
     def forward_single(self, x):
         """Forward features of a single scale levle.

@@ -121,10 +121,9 @@ class PAAHead(ATSSHead):
         bbox_preds = [item.reshape(-1, 4) for item in bbox_preds]
         iou_preds = levels_to_images(iou_preds)
         iou_preds = [item.reshape(-1, 1) for item in iou_preds]
-        pos_losses_list, = multi_apply(self.get_pos_loss, anchor_list,
-                                       cls_scores, bbox_preds, labels,
-                                       labels_weight, bboxes_target,
-                                       bboxes_weight, pos_inds)
+        pos_losses_list, = self.loss_multi_apply_func(
+            self.get_pos_loss, anchor_list, cls_scores, bbox_preds, labels,
+            labels_weight, bboxes_target, bboxes_weight, pos_inds)
 
         with torch.no_grad():
             labels, label_weights, bbox_weights, num_pos = multi_apply(
@@ -439,7 +438,7 @@ class PAAHead(ATSSHead):
             gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
         if gt_labels_list is None:
             gt_labels_list = [None for _ in range(num_imgs)]
-        results = multi_apply(
+        results = self.get_targets_multi_apply_func(
             self._get_targets_single,
             concat_anchor_list,
             concat_valid_flag_list,

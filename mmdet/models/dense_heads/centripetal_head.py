@@ -2,7 +2,6 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init
 from mmcv.ops import DeformConv2d
 
-from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from .corner_head import CornerHead
 
@@ -261,11 +260,11 @@ class CentripetalHead(CornerHead):
             with_guiding_shift=True,
             with_centripetal_shift=True)
         mlvl_targets = [targets for _ in range(self.num_feat_levels)]
-        [det_losses, off_losses, guiding_losses, centripetal_losses
-         ] = multi_apply(self.loss_single, tl_heats, br_heats, tl_offs,
-                         br_offs, tl_guiding_shifts, br_guiding_shifts,
-                         tl_centripetal_shifts, br_centripetal_shifts,
-                         mlvl_targets)
+        [det_losses, off_losses, guiding_losses,
+         centripetal_losses] = self.loss_multi_apply_func(
+             self.loss_single, tl_heats, br_heats, tl_offs, br_offs,
+             tl_guiding_shifts, br_guiding_shifts, tl_centripetal_shifts,
+             br_centripetal_shifts, mlvl_targets)
         loss_dict = dict(
             det_loss=det_losses,
             off_loss=off_losses,

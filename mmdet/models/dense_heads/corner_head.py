@@ -6,7 +6,6 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, bias_init_with_prob
 from mmcv.ops import CornerPool, batched_nms
 
-from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
 from .base_dense_head import BaseDenseHead
@@ -259,7 +258,8 @@ class CornerHead(BaseDenseHead):
                   corner_offset_channels.
         """
         lvl_ind = list(range(self.num_feat_levels))
-        return multi_apply(self.forward_single, feats, lvl_ind)
+        return self.forward_multi_apply_func(self.forward_single, feats,
+                                             lvl_ind)
 
     def forward_single(self, x, lvl_ind, return_pool=False):
         """Forward feature of a single level.
@@ -548,9 +548,11 @@ class CornerHead(BaseDenseHead):
             img_metas[0]['pad_shape'],
             with_corner_emb=self.with_corner_emb)
         mlvl_targets = [targets for _ in range(self.num_feat_levels)]
-        det_losses, pull_losses, push_losses, off_losses = multi_apply(
-            self.loss_single, tl_heats, br_heats, tl_embs, br_embs, tl_offs,
-            br_offs, mlvl_targets)
+        (det_losses, pull_losses, push_losses,
+         off_losses) = self.loss_multi_apply_func(self.loss_single, tl_heats,
+                                                  br_heats, tl_embs, br_embs,
+                                                  tl_offs, br_offs,
+                                                  mlvl_targets)
         loss_dict = dict(det_loss=det_losses, off_loss=off_losses)
         if self.with_corner_emb:
             loss_dict.update(pull_loss=pull_losses, push_loss=push_losses)

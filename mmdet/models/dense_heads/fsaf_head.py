@@ -231,7 +231,7 @@ class FSAFHead(RetinaHead):
             concat_anchor_list.append(torch.cat(anchor_list[i]))
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
-        losses_cls, losses_bbox = multi_apply(
+        losses_cls, losses_bbox = self.loss_multi_apply_func(
             self.loss_single,
             cls_scores,
             bbox_preds,

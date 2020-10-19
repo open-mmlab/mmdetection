@@ -7,7 +7,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
                         build_assigner, build_sampler, distance2bbox,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+                        images_to_levels, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -173,7 +173,8 @@ class GFLHead(AnchorHead):
                     scale levels, each is a 4D-tensor, the channel number is
                     4*(n+1), n is max value of integral set.
         """
-        return multi_apply(self.forward_single, feats, self.scales)
+        return self.forward_multi_apply_func(self.forward_single, feats,
+                                             self.scales)
 
     def forward_single(self, x, scale):
         """Forward feature of a single scale level.
@@ -357,7 +358,7 @@ class GFLHead(AnchorHead):
         num_total_samples = max(num_total_samples, 1.0)
 
         losses_cls, losses_bbox, losses_dfl,\
-            avg_factor = multi_apply(
+            avg_factor = self.loss_multi_apply_func(
                 self.loss_single,
                 anchor_list,
                 cls_scores,
@@ -495,7 +496,8 @@ class GFLHead(AnchorHead):
         if gt_labels_list is None:
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
+         all_bbox_weights, pos_inds_list,
+         neg_inds_list) = self.get_targets_multi_apply_func(
              self._get_target_single,
              anchor_list,
              valid_flag_list,

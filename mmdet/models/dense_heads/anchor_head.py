@@ -5,7 +5,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+                        images_to_levels, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -136,7 +136,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     scale levels, each is a 4D-tensor, the channels number \
                     is num_anchors * 4.
         """
-        return multi_apply(self.forward_single, feats)
+        return self.forward_multi_apply_func(self.forward_single, feats)
 
     def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
         """Get anchors according to feature map sizes.
@@ -333,7 +333,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
         if gt_labels_list is None:
             gt_labels_list = [None for _ in range(num_imgs)]
-        results = multi_apply(
+        results = self.get_targets_multi_apply_func(
             self._get_targets_single,
             concat_anchor_list,
             concat_valid_flag_list,
@@ -474,7 +474,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
 
-        losses_cls, losses_bbox = multi_apply(
+        losses_cls, losses_bbox = self.loss_multi_apply_func(
             self.loss_single,
             cls_scores,
             bbox_preds,

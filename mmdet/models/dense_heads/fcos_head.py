@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import Scale, normal_init
 from mmcv.runner import force_fp32
 
-from mmdet.core import distance2bbox, multi_apply, multiclass_nms
+from mmdet.core import distance2bbox, multiclass_nms
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -119,8 +119,8 @@ class FCOSHead(AnchorFreeHead):
                 centernesses (list[Tensor]): Centerss for each scale level, \
                     each is a 4D-tensor, the channel number is num_points * 1.
         """
-        return multi_apply(self.forward_single, feats, self.scales,
-                           self.strides)
+        return self.forward_multi_apply_func(self.forward_single, feats,
+                                             self.scales, self.strides)
 
     def forward_single(self, x, scale, stride):
         """Forward features of a single scale levle.
@@ -443,7 +443,7 @@ class FCOSHead(AnchorFreeHead):
         num_points = [center.size(0) for center in points]
 
         # get labels and bbox_targets of each image
-        labels_list, bbox_targets_list = multi_apply(
+        labels_list, bbox_targets_list = self.get_targets_multi_apply_func(
             self._get_target_single,
             gt_bboxes_list,
             gt_labels_list,
