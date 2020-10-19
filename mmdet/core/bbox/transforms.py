@@ -202,6 +202,7 @@ def bbox_cxcywh_to_xyxy(bbox):
 
     Args:
         bbox (Tensor): Shape (n, 4) for bboxes.
+
     Returns:
         Tensor: Converted bboxes.
     """
@@ -215,6 +216,7 @@ def bbox_xyxy_to_cxcywh(bbox):
 
     Args:
         bbox (Tensor): Shape (n, 4) for bboxes.
+
     Returns:
         Tensor: Converted bboxes.
     """

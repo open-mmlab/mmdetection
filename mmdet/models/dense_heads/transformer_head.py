@@ -28,7 +28,7 @@ class TransformerHead(AnchorFreeHead):
             Default `CrossEntropyLoss`.
         loss_bbox (dict, optional): Config of the regression loss.
             Default `L1Loss`.
-        loss_giou (dict, optional): Config of the regression giou loss.
+        loss_iou (dict, optional): Config of the regression iou loss.
             Default `GIoULoss`.
         tran_cfg (dict, optional): Training config of transformer head.
         test_cfg (dict, optional): Testing config of transformer head.
@@ -70,13 +70,13 @@ class TransformerHead(AnchorFreeHead):
                      loss_weight=1.0,
                      class_weight=1.0),
                  loss_bbox=dict(type='L1Loss', loss_weight=5.0),
-                 loss_giou=dict(type='GIoULoss', loss_weight=2.0),
+                 loss_iou=dict(type='GIoULoss', loss_weight=2.0),
                  train_cfg=dict(
                      assigner=dict(
                          type='HungarianMatcher',
                          cls_weight=1.,
                          bbox_weight=5.,
-                         giou_weight=2.),
+                         iou_weight=2.),
                      pos_weight=-1),
                  test_cfg=dict(max_per_img=100),
                  **kwargs):
@@ -124,8 +124,8 @@ class TransformerHead(AnchorFreeHead):
             assert loss_bbox['loss_weight'] == assigner['bbox_weight'], \
                 'The regression L1 weight for loss and matcher should be' \
                 'exactly the same.'
-            assert loss_giou['loss_weight'] == assigner['giou_weight'], \
-                'The regression giou weight for loss and matcher should be' \
+            assert loss_iou['loss_weight'] == assigner['iou_weight'], \
+                'The regression iou weight for loss and matcher should be' \
                 'exactly the same.'
             # TODO self.assigner = build_assigner(assigner)
             self.assigner = None
@@ -145,7 +145,7 @@ class TransformerHead(AnchorFreeHead):
         self.fp16_enabled = False
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
-        self.loss_giou = build_loss(loss_giou)
+        self.loss_iou = build_loss(loss_iou)
         self.act_cfg = transformer.get('act_cfg',
                                        dict(type='ReLU', inplace=True))
         self.activate = build_activation_layer(self.act_cfg)
@@ -269,12 +269,12 @@ class TransformerHead(AnchorFreeHead):
                 image space. Defalut False.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of the
-                corresponding box.
+            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
+                The first item is an (n, 5) tensor, where the first 4 columns \
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
+                5-th column is a score between 0 and 1. The second item is a \
+                (n,) tensor where each item is the predicted class label of \
+                the corresponding box.
         """
         # NOTE defaultly only using outputs from the last feature level,
         # and only the ouputs from the last decoder layer is used.
