@@ -21,6 +21,8 @@ class ResBlock(nn.Module):
 
     Args:
         in_channels (int): The input channels. Must be even.
+        yolo_version (str): The version of YOLO to build, must be 'v3' or 'v4',
+            Default: 'v3'
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
@@ -35,7 +37,8 @@ class ResBlock(nn.Module):
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(ResBlock, self).__init__()
-        assert yolo_version in ('v3', 'v4')
+        if yolo_version not in ('v3', 'v4'):
+            raise NotImplementedError('Only YOLO v3 and v4 are supported.')
 
         # shortcut
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
@@ -69,7 +72,7 @@ class Darknet(nn.Module):
             -1 means not freezing any parameters. Default: -1.
         with_csp (bool): Whether the Darknet uses csp (cross stage partial
             network). This is a feature of YOLO v4, see details at
-            https://arxiv.org/abs/1911.11929. Default: False.
+            `https://arxiv.org/abs/1911.11929`_ Default: False.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
@@ -126,7 +129,7 @@ class Darknet(nn.Module):
             layer_name = f'conv_res_block{i + 1}'
             in_c, out_c = self.channels[i]
             if with_csp:
-                conv_module = Csp_conv_res_block(
+                conv_module = CspResBlock(
                     in_c, out_c, n_layers, is_first_block=(i == 0), **cfg)
             else:
                 conv_module = self.make_conv_res_block(in_c, out_c, n_layers,
@@ -213,7 +216,7 @@ class Darknet(nn.Module):
         return model
 
 
-class Csp_conv_res_block(nn.Module):
+class CspResBlock(nn.Module):
     """This class makes the conv_res_block in YOLO v4. It has CSP integrated,
     hence different from the regular conv_res_block build with
     `make_conv_res_block`.
@@ -222,7 +225,7 @@ class Csp_conv_res_block(nn.Module):
         in_channels (int): The number of input channels.
         out_channels (int): The number of output channels.
         res_repeat (int): The number of ResBlocks.
-        is_first_block (bool): Whether the Csp_conv_res_block is the
+        is_first_block (bool): Whether the CspResBlock is the
             first in the Darknet. This affects the structure of the
             block. Default: False,
         conv_cfg (dict): Config dict for convolution layer. Default: None.
@@ -240,7 +243,7 @@ class Csp_conv_res_block(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
-        super(Csp_conv_res_block, self).__init__()
+        super(CspResBlock, self).__init__()
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
         bottleneck_channels = out_channels if is_first_block else in_channels
