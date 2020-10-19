@@ -91,7 +91,7 @@ class HungarianAssigner(BaseAssigner):
                 numerical stability. Default 1e-7.
 
         Returns:
-            AssignResult: The assigned result.
+            :obj:`AssignResult`: The assigned result.
         """
         assert gt_bboxes_ignore is None, \
             'Only case when gt_bboxes_ignore is None is supported.'
