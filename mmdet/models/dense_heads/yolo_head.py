@@ -393,7 +393,7 @@ class YOLOV3Head(BaseDenseHead):
         num_cls = self.num_attrib - 5
         assert num_cls > 0
 
-        print(pred_map.shape)
+        # print(pred_map.shape)
 
         pred_map = pred_map.permute(0, 2, 3,
                                     1).reshape(num_imgs, -1, self.num_attrib)
@@ -599,10 +599,11 @@ class YOLOV3Head(BaseDenseHead):
         target_map = concat_anchors.new_zeros(
             concat_anchors.size(0), self.num_attrib)
 
-        self.show_img(
-            sampling_result.pos_bboxes[:17, :],
-            sampling_result.pos_gt_bboxes[:17, :],
-            center=False)
+        # for i in range(sampling_result.pos_bboxes.shape[0]):
+        #     self.show_img(
+        #         sampling_result.pos_bboxes[i:i+1, :],
+        #         sampling_result.pos_gt_bboxes[i:i+1, :],
+        #         center=False)
 
         if self.using_iou_loss:
             target_map[sampling_result.pos_inds, :4] = \

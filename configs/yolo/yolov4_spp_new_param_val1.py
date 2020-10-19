@@ -119,7 +119,7 @@ data = dict(
         # img_prefix=data_root + 'val2014/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.0001, momentum=0.9, weight_decay=0.0005)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
@@ -130,10 +130,11 @@ lr_config = dict(
     step=[21800, 24600])
 # runtime settings
 total_epochs = 27300
-evaluation = dict(interval=1, metric=['bbox'])
-checkpoint_config = dict(interval=100)
+evaluation = dict(interval=10, metric=['bbox'])
+checkpoint_config = dict(interval=1000)
 log_config = dict(  # config to register logger hook
     interval=1,  # Interval to print the log
-    hooks=[dict(type='TensorboardLoggerHook'),
-           dict(type='TextLoggerHook')
-           ])  # The logger used to record the training process.
+    hooks=[
+        # dict(type='TensorboardLoggerHook'),
+        dict(type='TextLoggerHook')
+    ])  # The logger used to record the training process.

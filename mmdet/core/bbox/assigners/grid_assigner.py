@@ -32,8 +32,8 @@ class GridAssigner(BaseAssigner):
                  neg_iou_thr,
                  min_pos_iou=.0,
                  gt_max_assign_all=True,
-                 iou_calculator=dict(type='BboxOverlaps2D')):
-        # iou_calculator=dict(type='WHIoU')):
+                 iou_calculator=dict(type='WHIoU')):
+        # iou_calculator=dict(type='BboxOverlaps2D')):
         self.pos_iou_thr = pos_iou_thr  # TODO: remove this
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
@@ -120,6 +120,11 @@ class GridAssigner(BaseAssigner):
             expanded_box_responsible_flags[i, j] = 1  # TODO: optimize,
             # but since dimension is ~100, this works
 
+        gt_max_overlaps, gt_argmax_overlaps = overlaps.max(dim=1)
+        # for i in range(num_gts):
+        #     if gt_max_overlaps[i] > 0:
+        #         assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
+
         # overlaps[:, ~box_responsible_flags.type(torch.bool)] = -1.
         overlaps[~expanded_box_responsible_flags.type(torch.bool)] = -1.
 
@@ -132,8 +137,7 @@ class GridAssigner(BaseAssigner):
         # shape of gt_max_overlaps == gt_argmax_overlaps == num_gts
         # gt_max_overlaps, gt_argmax_overlaps = overlaps.max(dim=1)
 
-        pos_inds = torch.logical_and((max_overlaps > self.neg_iou_thr),
-                                     box_responsible_flags.type(torch.bool))
+        pos_inds = max_overlaps > self.neg_iou_thr
         assigned_gt_inds[pos_inds] = argmax_overlaps[pos_inds] + 1
 
         # 4. assign positive to max overlapped anchors within responsible cell
