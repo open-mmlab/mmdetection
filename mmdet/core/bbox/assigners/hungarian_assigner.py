@@ -31,22 +31,20 @@ class HungarianAssigner(BaseAssigner):
         iou_weight (int | float, optional): The scale factor for regression
             iou cost. Default 1.0.
         iou_calculator (dict | optional): The config for the iou calculation.
-            Default type `BboxOverlaps2D` and defalut mode 'giou'. The valid
-            mode is "iou" (intersection over union), "iof" (intersection over
-            foreground), or "giou" (generalized intersection over union).
+            Default type `BboxOverlaps2D`.
+        iou_mode (str | optional): "iou" (intersection over union), "iof"
+                (intersection over foreground), or "giou" (generalized
+                intersection over union). Default "giou".
     """
 
     def __init__(self,
                  cls_weight=1.,
                  bbox_weight=1.,
                  iou_weight=1.,
-                 iou_calculator=dict(type='BboxOverlaps2D', mode='giou')):
+                 iou_calculator=dict(type='BboxOverlaps2D'),
+                 iou_mode='giou'):
         # defaultly giou cost is used in the official DETR repo.
-        mode = 'giou'
-        if 'mode' in iou_calculator:
-            mode = iou_calculator['mode']
-            iou_calculator.pop('mode')
-        self.mode = mode
+        self.iou_mode = iou_mode
         self.cls_weight = cls_weight
         self.bbox_weight = bbox_weight
         self.iou_weight = iou_weight
@@ -134,7 +132,7 @@ class HungarianAssigner(BaseAssigner):
         bboxes = bbox_cxcywh_to_xyxy(bbox_pred) * factor
         # overlaps: [num_bboxes, num_gt]
         overlaps = self.iou_calculator(
-            bboxes, gt_bboxes, mode=self.mode, is_aligned=False)
+            bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
         # The 1 is a constant that doesn't change the matching, so ommitted.
         iou_cost = -overlaps
 
