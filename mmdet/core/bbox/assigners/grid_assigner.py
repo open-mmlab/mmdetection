@@ -112,8 +112,8 @@ class GridAssigner(BaseAssigner):
 
         # ADDED: first expand box_responsible_flag
         responsible_indices = torch.stack(
-            (box_responsible_flags[box_responsible_flags > 0],
-             torch.where(box_responsible_flags > 0)[0]),
+            (box_responsible_flags[box_responsible_flags > 0].long(),
+             torch.where(box_responsible_flags > 0)[0].long()),
             dim=-1)
         expanded_box_responsible_flags = torch.zeros_like(overlaps)
         for i, j in responsible_indices:
