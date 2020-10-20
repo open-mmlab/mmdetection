@@ -89,6 +89,13 @@ class SingleStageDetector(BaseDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+        # NOTE the batched image size information may be useful, e.g.
+        # in DETR, this is needed for the construction of masks, which is
+        # then used for the transformer_head.
+        input_img_shape = tuple(img.size()[-2:])
+        for img_meta in img_metas:
+            img_meta['input_img_shape'] = input_img_shape
+
         x = self.extract_feat(img)
         losses = self.bbox_head.forward_train(x, img_metas, gt_bboxes,
                                               gt_labels, gt_bboxes_ignore)

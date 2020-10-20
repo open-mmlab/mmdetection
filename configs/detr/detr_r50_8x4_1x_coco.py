@@ -45,7 +45,8 @@ model = dict(
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
-        type='HungarianMatcher', cls_weight=1., bbox_weight=5., iou_weight=2.),
+        type='HungarianAssigner', cls_weight=1., bbox_weight=5.,
+        iou_weight=2.),
     pos_weight=-1)
 test_cfg = dict(max_per_img=100)
 img_norm_cfg = dict(
@@ -92,6 +93,14 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-# TODO optimizer
-
-# TODO learning policy
+# optimizer
+optimizer = dict(_delete_=True, type='AdamW', lr=0.0001, weight_decay=0.0001)
+# learning policy
+lr_config = dict(
+    _delete_=True,
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=0.1,
+    step=[200])
+total_epochs = 300

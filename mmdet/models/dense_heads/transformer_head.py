@@ -4,7 +4,8 @@ import torch.nn.functional as F
 from mmcv.cnn import Conv2d, Linear, build_activation_layer, xavier_init
 from mmcv.runner import force_fp32
 
-from mmdet.core import bbox_cxcywh_to_xyxy, build_sampler, multi_apply
+from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
+                        build_assigner, build_sampler, multi_apply)
 from mmdet.models.utils import FFN, build_position_encoding, build_transformer
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
@@ -73,10 +74,12 @@ class TransformerHead(AnchorFreeHead):
                  loss_iou=dict(type='GIoULoss', loss_weight=2.0),
                  train_cfg=dict(
                      assigner=dict(
-                         type='HungarianMatcher',
+                         type='HungarianAssigner',
                          cls_weight=1.,
                          bbox_weight=5.,
-                         iou_weight=2.),
+                         iou_weight=2.,
+                         iou_calculator=dict(type='BboxOverlaps2D'),
+                         iou_mode='giou'),
                      pos_weight=-1),
                  test_cfg=dict(max_per_img=100),
                  **kwargs):
@@ -127,8 +130,7 @@ class TransformerHead(AnchorFreeHead):
             assert loss_iou['loss_weight'] == assigner['iou_weight'], \
                 'The regression iou weight for loss and matcher should be' \
                 'exactly the same.'
-            # TODO self.assigner = build_assigner(assigner)
-            self.assigner = None
+            self.assigner = build_assigner(assigner)
             # DETR sampling=False, so use PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
@@ -250,6 +252,188 @@ class TransformerHead(AnchorFreeHead):
             self.reg_ffn(outs_dec))).sigmoid()
         return all_cls_scores, all_bbox_preds
 
+    @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
+    def loss(self,
+             all_cls_scores_list,
+             all_bbox_preds_list,
+             gt_bboxes_list,
+             gt_labels_list,
+             img_metas,
+             gt_bboxes_ignore=None):
+        # NOTE defaultly only the outputs from the last feature scale is used.
+        # all_cls_scores: [num_dec_layer, bs, num_query, nb_class]
+        # all_bbox_preds: [num_dec_layer, bs, num_query, 4]
+        all_cls_scores = all_cls_scores_list[-1]
+        all_bbox_preds = all_bbox_preds_list[-1]
+        assert gt_bboxes_ignore is None, \
+            'Only supports for gt_bboxes_ignore setting to None.'
+        num_dec_layers = len(all_cls_scores)
+        all_gt_bboxes_list = [gt_bboxes_list for _ in range(num_dec_layers)]
+        all_gt_labels_list = [gt_labels_list for _ in range(num_dec_layers)]
+        all_gt_bboxes_ignore_list = [
+            gt_bboxes_ignore for _ in range(num_dec_layers)
+        ]
+        img_metas_list = [img_metas for _ in range(num_dec_layers)]
+        # TODO check detr use sum for loss_single here?
+        losses_cls, losses_bbox, losses_iou = multi_apply(
+            self.loss_single, all_cls_scores, all_bbox_preds,
+            all_gt_bboxes_list, all_gt_labels_list, img_metas_list,
+            all_gt_bboxes_ignore_list)
+        return dict(
+            loss_cls=losses_cls, loss_bbox=losses_bbox, loss_iou=losses_iou)
+
+    def loss_single(self,
+                    cls_scores,
+                    bbox_preds,
+                    gt_bboxes_list,
+                    gt_labels_list,
+                    img_metas,
+                    gt_bboxes_ignore_list=None):
+        # labels: [bs, num_query], cls_scores: [bs, num_query, nb_class]
+        num_imgs = cls_scores.size(0)
+        cls_scores_list = [cls_scores[i] for i in range(num_imgs)]
+        bbox_preds_list = [bbox_preds[i] for i in range(num_imgs)]
+        cls_reg_targets = self.get_targets(cls_scores_list, bbox_preds_list,
+                                           gt_bboxes_list, gt_labels_list,
+                                           img_metas, gt_bboxes_ignore_list)
+        (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
+         num_total_pos, num_total_neg) = cls_reg_targets
+        labels = torch.cat(labels_list, 0)
+        label_weights = torch.cat(label_weights_list, 0)
+        bbox_targets = torch.cat(bbox_targets_list, 0)
+        bbox_weights = torch.cat(bbox_weights_list, 0)
+
+        # construct factors used for rescale bboxes
+        factors = []
+        for img_meta, bbox_pred in zip(img_metas, bbox_preds):
+            img_h, img_w, _ = img_meta['img_shape']
+            factor = torch.Tensor([img_w, img_h, img_w,
+                                   img_h]).unsqueeze(0).repeat(
+                                       bbox_pred.size(0),
+                                       1).to(bbox_pred.device)
+            factors.append(factor)
+        factors = torch.cat(factors, 0)
+
+        # classification loss
+        cls_scores = cls_scores.reshape(-1, self.cls_out_channels)
+        num_total_samples = num_total_neg + num_total_pos
+        num_total_samples = max(num_total_samples, 1)
+        # TODO num_total_pos all reduce like DETR official
+        num_total_pos = max(num_total_pos, 1)
+        # TODO check avg_factor in cls head.
+        loss_cls = self.loss_cls(
+            cls_scores, labels, label_weights, avg_factor=num_total_samples)
+
+        # regression L1 loss
+        bbox_preds = bbox_preds.reshape(-1, 4)
+        loss_bbox = self.loss_bbox(
+            bbox_preds, bbox_targets, bbox_weights, avg_factor=num_total_pos)
+
+        # regression iou loss, defaultly giou loss
+        bboxes = bbox_cxcywh_to_xyxy(bbox_preds) * factors
+        bboxes_gt = bbox_cxcywh_to_xyxy(bbox_targets) * factors
+        loss_iou = self.loss_iou(
+            bboxes, bboxes_gt, bbox_weights, avg_factor=num_total_pos)
+        return loss_cls, loss_bbox, loss_iou
+
+    def get_targets(self,
+                    cls_scores_list,
+                    bbox_preds_list,
+                    gt_bboxes_list,
+                    gt_labels_list,
+                    img_metas,
+                    gt_bboxes_ignore_list=None):
+        # labels: [bs, num_query], label_weights, num_total_samples
+        # bbox_targets: [bs, num_query, 4], bbox_weights
+        assert gt_bboxes_ignore_list is None, \
+            'Only supports for gt_bboxes_ignore setting to None.'
+        num_imgs = len(cls_scores_list)
+        gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+        (labels_list, label_weights_list, bbox_targets_list,
+         bbox_weights_list, pos_inds_list, neg_inds_list) = multi_apply(
+             self._get_target_single, cls_scores_list, bbox_preds_list,
+             gt_bboxes_list, gt_labels_list, img_metas, gt_bboxes_ignore_list)
+        num_total_pos = sum((inds.numel() for inds in pos_inds_list))
+        num_total_neg = sum((inds.numel() for inds in neg_inds_list))
+        return (labels_list, label_weights_list, bbox_targets_list,
+                bbox_weights_list, num_total_pos, num_total_neg)
+
+    def _get_target_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           gt_bboxes,
+                           gt_labels,
+                           img_meta,
+                           gt_bboxes_ignore=None):
+        num_bboxes = bbox_preds.size(0)
+        # assigner and sampler
+        assign_result = self.assigner.assign(bbox_preds, cls_scores, gt_bboxes,
+                                             gt_labels, img_meta,
+                                             gt_bboxes_ignore)
+        sampling_result = self.sampler.sample(assign_result, bbox_preds,
+                                              gt_bboxes)
+        pos_inds = sampling_result.pos_inds
+        neg_inds = sampling_result.neg_inds
+
+        # label targets
+        labels = gt_bboxes.new_full((num_bboxes, ),
+                                    self.background_label,
+                                    dtype=torch.long)
+        label_weights = gt_bboxes.new_ones(num_bboxes, dtype=torch.float)
+        labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds]
+        if self.train_cfg.pos_weight > 0:
+            label_weights[pos_inds] = self.train_cfg.pos_weight
+
+        # bbox targets
+        bbox_targets = torch.zeros_like(bbox_preds)
+        bbox_weights = torch.zeros_like(bbox_preds)
+        bbox_weights[pos_inds] = 1.0
+        img_h, img_w, _ = img_meta['img_shape']
+        factor = torch.Tensor([img_w, img_h, img_w,
+                               img_h]).unsqueeze(0).to(bbox_preds.device)
+        pos_gt_bboxes_normalized = sampling_result.pos_gt_bboxes / factor
+        pos_gt_bboxes_targets = bbox_xyxy_to_cxcywh(pos_gt_bboxes_normalized)
+        bbox_targets[pos_inds] = pos_gt_bboxes_targets
+        return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
+                neg_inds)
+
+    # over-write because img_metas are needed as inputs for bbox_head.
+    def forward_train(self,
+                      x,
+                      img_metas,
+                      gt_bboxes,
+                      gt_labels=None,
+                      gt_bboxes_ignore=None,
+                      proposal_cfg=None,
+                      **kwargs):
+        """
+        Args:
+            x (list[Tensor]): Features from backbone.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes (Tensor): Ground truth bboxes of the image,
+                shape (num_gts, 4).
+            gt_labels (Tensor): Ground truth labels of each box,
+                shape (num_gts,).
+            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
+                ignored, shape (num_ignored_gts, 4).
+            proposal_cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used
+        Returns:
+            tuple:
+                losses: (dict[str, Tensor]): A dictionary of loss components.
+                # proposal_list (list[Tensor]): Proposals of each image.
+        """
+        assert proposal_cfg is None, 'Only when case that proposal_cfg is ' \
+            'None is supported.'
+        outs = self(x, img_metas)
+        if gt_labels is None:
+            loss_inputs = outs + (gt_bboxes, img_metas)
+        else:
+            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas)
+        losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        return losses
+
     @force_fp32(apply_to=('all_cls_scores', 'all_bbox_preds'))
     def get_bboxes(self,
                    all_cls_scores,
@@ -336,24 +520,3 @@ class TransformerHead(AnchorFreeHead):
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(1)), -1)
         return det_bboxes, det_labels
-
-    def get_targets(self,
-                    cls_scores_list,
-                    bbox_preds_list,
-                    gt_bboxes_list,
-                    gt_labels_list,
-                    img_metas,
-                    gt_bboxes_ignore_list=None):
-        """Compute regression, classification and centerss targets."""
-        pass
-
-    @force_fp32(apply_to=('all_cls_scores', 'all_bbox_preds'))
-    def loss(self,
-             all_cls_scores,
-             all_bbox_preds,
-             gt_bboxes_list,
-             gt_labels_list,
-             img_metas,
-             gt_bboxes_ignore=None):
-        """Compute loss of the head."""
-        pass
