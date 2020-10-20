@@ -69,12 +69,12 @@ train_pipeline = [
         type='Expand',
         mean=img_norm_cfg['mean'],
         to_rgb=img_norm_cfg['to_rgb'],
-        ratio_range=(1, 2)),
+        ratio_range=(1, 1)),
     # dict(
     #     type='MinIoURandomCrop',
     #     min_ious=(0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
     #     min_crop_size=0.3),
-    dict(type='Resize', img_scale=[(448, 448), (448, 448)], keep_ratio=True),
+    dict(type='Resize', img_scale=[(448, 448)], keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -118,7 +118,7 @@ data = dict(
         # img_prefix=data_root + 'val2014/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.001, momentum=0.937, weight_decay=0.000484)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0005)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
@@ -133,7 +133,6 @@ evaluation = dict(interval=1, metric=['bbox'])
 
 log_config = dict(  # config to register logger hook
     interval=50,  # Interval to print the log
-    hooks=[
-        # dict(type='TensorboardLoggerHook'),
-        dict(type='TextLoggerHook')
-    ])  # The logger used to record the training process.
+    hooks=[dict(type='TensorboardLoggerHook'),
+           dict(type='TextLoggerHook')
+           ])  # The logger used to record the training process.
