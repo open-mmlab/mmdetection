@@ -1,4 +1,4 @@
-albumentations>=0.3.2
+albumentations==0.4.6
 cityscapesscripts
 imagecorruptions
 scikit-learn
