@@ -47,7 +47,7 @@ you can use more CUDA versions such as 9.0.
 c. Install mmcv, we recommend you to install the pre-build mmcv as below.
 
 ```shell
-pip install mmcv-full==latest+torch1.5.0+cu101 -f http://download.openmmlab.com/mmcv/dist/index.html
+pip install mmcv-full==latest+torch1.5.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
 ```
 
 See [here](https://github.com/open-mmlab/mmcv#install-with-pip) for different versions of MMCV compatible to different PyTorch and CUDA versions.
@@ -72,7 +72,8 @@ pip install mmcv-full
 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
-| master              | mmcv-full>=1.1.1, <=1.2|
+| master              | mmcv-full>=1.1.5, <=1.2|
+| 2.5.0               | mmcv-full>=1.1.5, <=1.2|
 | 2.4.0               | mmcv-full>=1.1.1, <=1.2|
 | 2.3.0               | mmcv-full==1.0.5|
 | 2.3.0rc0            | mmcv-full>=1.0.2    |
@@ -147,7 +148,7 @@ Note: We set `use_torchvision=True` on-the-fly in CPU mode for `RoIPool` and `Ro
 We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image.
 
 ```shell
-# build an image with PyTorch 1.5, CUDA 10.1
+# build an image with PyTorch 1.6, CUDA 10.1
 docker build -t mmdetection docker/
 ```
 

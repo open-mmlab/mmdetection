@@ -138,7 +138,7 @@ class FCNMaskHead(nn.Module):
     def loss(self, mask_pred, mask_targets, labels):
         loss = dict()
         if mask_pred.size(0) == 0:
-            loss_mask = mask_pred.sum() * 0
+            loss_mask = mask_pred.sum()
         else:
             if self.class_agnostic:
                 loss_mask = self.loss_mask(mask_pred, mask_targets,
