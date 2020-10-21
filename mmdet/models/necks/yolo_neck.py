@@ -22,7 +22,7 @@ class DetectionBlock(nn.Module):
         in_channels (int): The number of input channels.
         out_channels (int): The number of output channels.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
-        spp_scales (tuple): A set of sizes for spatial pyramid pooling.
+        spp_scales (tuple | None): A set of sizes for spatial pyramid pooling.
             When set to None, the spp is disabled. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True).
@@ -131,8 +131,7 @@ class YOLONeck(nn.Module):
         # If spp is enabled, the first DetectionBlock is built with a spp
         # module inserted into it and the other DetectionBlock stays unchanged.
         self.detect1 = DetectionBlock(self.in_channels[0],
-                                      self.out_channels[0], self.spp_on,
-                                      spp_scales, **cfg)
+                                      self.out_channels[0], spp_scales, **cfg)
 
         # To support arbitrary scales, the code looks awful, but it works.
         # Better solution is welcomed.
