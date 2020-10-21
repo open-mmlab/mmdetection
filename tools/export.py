@@ -81,6 +81,8 @@ def export_to_onnx(model,
             if model.roi_head.with_mask:
                 output_names.append('masks')
                 dynamic_axes['masks'] = {0: 'objects_num'}
+                output_names.append('texts')
+                dynamic_axes['texts'] = {0: 'objects_num'}
 
         with torch.no_grad():
             model.export(
@@ -217,6 +219,7 @@ def main(args):
         if hasattr(model, 'roi_head'):
             stub_roi_feature_extractor(model.roi_head, 'bbox_roi_extractor')
             stub_roi_feature_extractor(model.roi_head, 'mask_roi_extractor')
+            stub_roi_feature_extractor(model.roi_head, 'text_roi_extractor')
 
     mmcv.mkdir_or_exist(osp.abspath(args.output_dir))
     onnx_model_path = osp.join(args.output_dir,

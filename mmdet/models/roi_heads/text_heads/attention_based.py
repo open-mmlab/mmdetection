@@ -155,6 +155,9 @@ class DecoderAttention2d(nn.Module):
         if isinstance(self.decoder, nn.GRU):
             return output, hidden, attn_weights
 
+    def export(self, path):
+        print('I am here', path)
+
 
 @HEADS.register_module()
 class TextRecognitionHeadAttention(nn.Module):
@@ -294,6 +297,8 @@ class TextRecognitionHeadAttention(nn.Module):
 
     def forward(self, features, target=None, masks=None):
         features = self.encoder(features)
+        if torch.onnx.is_in_onnx_export():
+            return features
         if masks is not None:
             masks = masks.expand(-1, features.shape[1], -1, -1)
             features = features * masks

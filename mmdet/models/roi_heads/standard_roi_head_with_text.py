@@ -4,7 +4,7 @@ import torch.nn as nn
 from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from ..builder import HEADS, build_head, build_roi_extractor
 from .standard_roi_head import StandardRoIHead
-from .test_mixins import BBoxTestMixin, MaskTestMixin
+from .test_mixins import BBoxTestMixin, MaskTestMixin, dummy_pad
 
 from mmdet.core.bbox.transforms import bbox2result
 from mmdet.core.mask.transforms import mask2result
@@ -315,12 +315,12 @@ class StandardRoIHeadWithText(StandardRoIHead):
             # for it to appear in the graph.
             # So add one zero / dummy ROI that will be mapped
             # to an Identity op in the graph.
-            TBD
             det_bboxes = dummy_pad(det_bboxes, (0, 0, 0, 1))
-            det_labels = dummy_pad(det_labels, (0, 1))
 
         if det_bboxes.shape[0] == 0:
-            decoded_texts = []
+            decoded_texts = torch.empty([0, 0, 0],
+                                    dtype=det_bboxes.dtype,
+                                    device=det_bboxes.device)
             # segm_result = torch.empty([0, 0, 0],
             #                         dtype=det_bboxes.dtype,
             #                         device=det_bboxes.device)
@@ -334,6 +334,8 @@ class StandardRoIHeadWithText(StandardRoIHead):
                 det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
             text_rois = bbox2roi([_bboxes])
             text_results = self._text_forward(x, text_rois)
+            if torch.onnx.is_in_onnx_export():
+                return text_results
             text_results = text_results['text_results'].permute(1, 0, 2)
             text_results = torch.nn.functional.softmax(text_results, dim=-1)
             decoded_texts = []
@@ -367,6 +369,8 @@ class StandardRoIHeadWithText(StandardRoIHead):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
 
+ 
+
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=False)
 
@@ -385,7 +389,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
             if det_masks is None:
                 return det_bboxes, det_labels
             else:
-                return det_bboxes, det_labels, det_masks
+                return det_bboxes, det_labels, det_masks, det_texts
 
     def postprocess(self,
                     det_bboxes,

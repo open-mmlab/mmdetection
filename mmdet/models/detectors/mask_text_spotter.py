@@ -1,3 +1,5 @@
+import torch
+
 from ..builder import DETECTORS
 from .mask_rcnn import MaskRCNN
 
@@ -88,3 +90,12 @@ class MaskTextSpotter(MaskRCNN):
         losses.update(roi_losses)
 
         return losses
+
+
+    def export(self, img, img_metas, export_name='', **kwargs):
+        self.img_metas = img_metas
+        self.forward_backup = self.forward
+        self.forward = self.forward_export
+        torch.onnx.export(self, img, export_name, **kwargs)
+        self.forward = self.forward_backup
+        self.roi_head.text_head.decoder.export(export_name.replace('.onnx', '_text_recognition_head_decoder.onnx'))
