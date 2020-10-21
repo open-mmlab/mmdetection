@@ -1,23 +1,17 @@
 import argparse
 import os.path as osp
-from functools import partial
 
-import mmcv
 import numpy as np
 import onnx
 import onnxruntime as rt
 import torch
-from mmcv.runner import load_checkpoint
 
-from mmdet.models import build_detector
-
-try:
-    from mmcv.onnx.symbolic import register_extra_symbolics
-except ModuleNotFoundError:
-    raise NotImplementedError('please update mmcv to version>=v1.0.4')
+from mmdet.core import (build_model_from_cfg, generate_inputs_and_wrap_model,
+                        preprocess_example_input)
 
 
-def pytorch2onnx(model,
+def pytorch2onnx(config_path,
+                 checkpoint_path,
                  input_img,
                  input_shape,
                  opset_version=11,
@@ -25,38 +19,30 @@ def pytorch2onnx(model,
                  output_file='tmp.onnx',
                  verify=False,
                  normalize_cfg=None):
-    model.cpu().eval()
-    # read image
-    one_img = mmcv.imread(input_img)
-    if normalize_cfg:
-        one_img = mmcv.imnormalize(one_img, normalize_cfg['mean'],
-                                   normalize_cfg['std'])
-    one_img = mmcv.imresize(one_img, input_shape[2:]).transpose(2, 0, 1)
-    one_img = torch.from_numpy(one_img).unsqueeze(0).float()
-    (_, C, H, W) = input_shape
-    one_meta = {
-        'img_shape': (H, W, C),
-        'ori_shape': (H, W, C),
-        'pad_shape': (H, W, C),
-        'filename': '<demo>.png',
-        'scale_factor': 1.0,
-        'flip': False
+
+    input_config = {
+        'input_shape': input_shape,
+        'input_path': input_img,
+        'normalize_cfg': normalize_cfg
     }
-    # onnx.export does not support kwargs
-    origin_forward = model.forward
-    model.forward = partial(
-        model.forward, img_metas=[[one_meta]], return_loss=False)
-    # pytorch has some bug in pytorch1.3, we have to fix it
-    # by replacing these existing op
-    register_extra_symbolics(opset_version)
+
+    # prepare original model and meta for verifying the onnx model
+    orig_model = build_model_from_cfg(config_path, checkpoint_path)
+    one_img, one_meta = preprocess_example_input(input_config)
+
+    model, tensor_data = generate_inputs_and_wrap_model(
+        config_path, checkpoint_path, input_config)
+
     torch.onnx.export(
-        model, ([one_img]),
+        model,
+        tensor_data,
         output_file,
         export_params=True,
         keep_initializers_as_inputs=True,
         verbose=show,
         opset_version=opset_version)
-    model.forward = origin_forward
+
+    model.forward = orig_model.forward
     print(f'Successfully exported ONNX model: {output_file}')
     if verify:
         # check by onnx
@@ -65,7 +51,7 @@ def pytorch2onnx(model,
 
         # check the numerical value
         # get pytorch output
-        pytorch_result = model([one_img], [[one_meta]], return_loss=False)
+        pytorch_result = model(tensor_data, [[one_meta]], return_loss=False)
 
         # get onnx output
         input_all = [node.name for node in onnx_model.graph.input]
@@ -82,9 +68,9 @@ def pytorch2onnx(model,
         bbox_results = bbox2result(det_bboxes, det_labels, 1)
         onnx_results = bbox_results[0]
         assert np.allclose(
-            pytorch_result[0][:, 4], onnx_results[:, 4]
-        ), 'The outputs are different between Pytorch and ONNX'
-        print('The numerical values are same between Pytorch and ONNX')
+            pytorch_result[0][0][0][:4], onnx_results[0]
+            [:4]), 'The outputs are different between Pytorch and ONNX'
+        print('The numerical values are the same between Pytorch and ONNX')
 
 
 def parse_args():
@@ -108,13 +94,13 @@ def parse_args():
         help='input image size')
     parser.add_argument(
         '--mean',
-        type=int,
+        type=float,
         nargs='+',
         default=[123.675, 116.28, 103.53],
         help='mean value used for preprocess input data')
     parser.add_argument(
         '--std',
-        type=int,
+        type=float,
         nargs='+',
         default=[58.395, 57.12, 57.375],
         help='variance value used for preprocess input data')
@@ -141,26 +127,12 @@ if __name__ == '__main__':
     assert len(args.mean) == 3
     assert len(args.std) == 3
 
-    normalize_cfg = {
-        'mean': np.array(args.mean, dtype=np.float32),
-        'std': np.array(args.std, dtype=np.float32)
-    }
+    normalize_cfg = {'mean': args.mean, 'std': args.std}
 
-    cfg = mmcv.Config.fromfile(args.config)
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
-    cfg.model.pretrained = None
-    cfg.data.test.test_mode = True
-
-    # build the model
-    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
-
-    # conver model to onnx file
+    # convert model to onnx file
     pytorch2onnx(
-        model,
+        args.config,
+        args.checkpoint,
         args.input_img,
         input_shape,
         opset_version=args.opset_version,
