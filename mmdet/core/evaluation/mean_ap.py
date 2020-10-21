@@ -434,6 +434,7 @@ def print_map_summary(mean_ap,
     if dataset is None:
         label_names = [str(i) for i in range(num_classes)]
     elif mmcv.is_str(dataset):
+        dataset = 'my_new'
         label_names = get_classes(dataset)
     else:
         label_names = dataset
