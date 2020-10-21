@@ -22,8 +22,6 @@ from .single_stage import SingleStageDetector
 from .two_stage import TwoStageDetector
 from .yolact import YOLACT
 from .yolo import YOLOV3, YOLOV4
-from .yolo import YOLOV3
-
 
 __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
