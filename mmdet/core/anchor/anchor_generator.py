@@ -719,12 +719,15 @@ class YOLOAnchorGenerator(AnchorGenerator):
         # row major indexing
         gt_bboxes_grid_idx = gt_bboxes_grid_y * feat_w + gt_bboxes_grid_x
 
-        responsible_grid = torch.zeros(
-            feat_h * feat_w, dtype=torch.uint8, device=device)
+        responsible_grid = torch.zeros((gt_bboxes.shape[0], feat_h * feat_w),
+                                       dtype=torch.uint8,
+                                       device=device)
 
         for i, idx in enumerate(gt_bboxes_grid_idx):
-            responsible_grid[idx] = i
+            # plus 1 such that it will not be 0
+            responsible_grid[i, idx] = 1
 
-        responsible_grid = responsible_grid[:, None].expand(
-            responsible_grid.size(0), num_base_anchors).contiguous().view(-1)
+        responsible_grid = responsible_grid[..., None].expand(
+            gt_bboxes.shape[0], responsible_grid.size(1),
+            num_base_anchors).contiguous().view(gt_bboxes.shape[0], -1)
         return responsible_grid

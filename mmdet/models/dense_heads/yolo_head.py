@@ -431,9 +431,9 @@ class YOLOV3Head(BaseDenseHead):
             loss_cls += self.loss_cls(img_pred_label, img_target_label)
             loss_conf += self.loss_conf(img_pred_conf, img_target_conf)
             #
-            # print(img_target_conf.shape)
-            # print(img_target_label.shape)
-            # print(loss_cls)
+            print(img_target_conf.shape)
+            print(img_target_label.shape)
+            print(loss_cls)
 
             if self.using_iou_loss:
                 # preparation for box decoding
@@ -534,7 +534,7 @@ class YOLOV3Head(BaseDenseHead):
                 the inner list is a tensor of shape (num_total_anchors, 4).
             responsible_flag_list (list[list[Tensor]]): Multi level responsible
                 flags of each image. Each element is a tensor of shape
-                (num_total_anchors, )
+                (Num_total_gt, num_total_anchors)
             gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
             gt_labels_list (list[Tensor]): Ground truth labels of each box.
 
@@ -585,11 +585,11 @@ class YOLOV3Head(BaseDenseHead):
                 torch.tensor(self.featmap_strides[i],
                              device=gt_bboxes.device).repeat(len(anchors[i])))
         concat_anchors = torch.cat(anchors)
-        concat_responsible_flags = torch.cat(responsible_flags)
+        concat_responsible_flags = torch.cat(responsible_flags, dim=1)
 
         anchor_strides = torch.cat(anchor_strides)
         assert len(anchor_strides) == len(concat_anchors) == \
-               len(concat_responsible_flags)
+               concat_responsible_flags.shape[1]
         assign_result = self.assigner.assign(concat_anchors,
                                              concat_responsible_flags,
                                              gt_bboxes)

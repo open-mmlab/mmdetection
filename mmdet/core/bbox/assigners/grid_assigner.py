@@ -111,22 +111,28 @@ class GridAssigner(BaseAssigner):
         # unrelated anchors, i.e. not box_responsible_flags
 
         # ADDED: first expand box_responsible_flag
-        responsible_indices = torch.stack(
-            (box_responsible_flags[box_responsible_flags > 0].long(),
-             torch.where(box_responsible_flags > 0)[0].long()),
-            dim=-1)
-        expanded_box_responsible_flags = torch.zeros_like(overlaps)
-        for i, j in responsible_indices:
-            expanded_box_responsible_flags[i, j] = 1  # TODO: optimize,
-            # but since dimension is ~100, this works
+        # responsible_indices = torch.stack(
+        #     (box_responsible_flags[box_responsible_flags > 0].long() - 1,
+        #      torch.where(box_responsible_flags > 0)[0].long()),
+        #     dim=-1)
+        # expanded_box_responsible_flags = torch.zeros_like(overlaps)
+        # for i, j in responsible_indices:
+        #     expanded_box_responsible_flags[i, j] = 1  # TODO: optimize,
+        # but since dimension is ~100, this works
 
-        gt_max_overlaps, gt_argmax_overlaps = overlaps.max(dim=1)
+        # gt_max_overlaps, gt_argmax_overlaps = overlaps.max(dim=1)
         # for i in range(num_gts):
         #     if gt_max_overlaps[i] > 0:
         #         assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
 
         # overlaps[:, ~box_responsible_flags.type(torch.bool)] = -1.
-        overlaps[~expanded_box_responsible_flags.type(torch.bool)] = -1.
+        # overlaps[~expanded_box_responsible_flags.type(torch.bool)] = 0.
+        overlaps[~box_responsible_flags.type(torch.bool)] = 0.
+
+        # overlaps: gt_num, total anchor num e.g. 25, 18900
+        # overlaps[overlaps <= self.neg_iou_thr] = 0
+        # overlaps.nonzero()
+        # assigned_gt_inds[pos_inds] = argmax_overlaps[pos_inds] + 1
 
         # calculate max_overlaps again, but this time we only consider IOUs
         # for anchors responsible for prediction
@@ -145,7 +151,7 @@ class GridAssigner(BaseAssigner):
         #     if gt_max_overlaps[i] > self.min_pos_iou:
         #         if self.gt_max_assign_all:
         #             max_iou_inds = (overlaps[i, :] == gt_max_overlaps[i]) & \
-        #                  box_responsible_flags.type(torch.bool)
+        #                  box_responsible_flags.type(torch.bool)[i]
         #             assigned_gt_inds[max_iou_inds] = i + 1
         #         elif box_responsible_flags[gt_argmax_overlaps[i]]:
         #             assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
