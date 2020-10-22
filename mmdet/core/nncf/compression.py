@@ -157,7 +157,7 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
     return compression_ctrl, model
 
 
-def unwrap_nncf_model(module):
+def get_uncompressed_model(module):
     if not is_nncf_enabled():
         return module
     if isinstance(module, NNCFNetwork):

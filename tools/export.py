@@ -32,7 +32,7 @@ from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.tracer_stubs import ROIFeatureExtractorStub
 from mmdet.apis import get_fake_input
 
-from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled, unwrap_nncf_model, is_checkpoint_nncf
+from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled, get_uncompressed_model, is_checkpoint_nncf
 
 
 def export_to_onnx(model,
@@ -158,7 +158,7 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, 
 
 
 def stub_roi_feature_extractor(model, extractor_name):
-    model = unwrap_nncf_model(model)
+    model = get_uncompressed_model(model)
     if hasattr(model, extractor_name):
         extractor = getattr(model, extractor_name)
         if isinstance(extractor, SingleRoIExtractor):
