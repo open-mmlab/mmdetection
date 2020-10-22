@@ -1,4 +1,3 @@
-from texttable import Texttable
 from mmcv.runner.hooks.hook import Hook
 
 
@@ -18,8 +17,14 @@ class CompressionHook(Hook):
 
 
 def print_statistics(stats, logger):
+    try:
+        from texttable import Texttable
+        texttable_imported = True
+    except ImportError:
+        texttable_imported = False
+
     for key, val in stats.items():
-        if isinstance(val, Texttable):
+        if texttable_imported and isinstance(val, Texttable):
             logger.info(key)
             logger.info(val.draw())
         else:
