@@ -15,10 +15,12 @@ if is_nncf_enabled():
 
         class_InitializingDataLoader = InitializingDataLoader
     except:  # noqa: E722
-        raise RuntimeError('Cannot import the standard functions of NNCF library '
-                           '-- most probably, incompatible version of NNCF. '
-                           'Please, use NNCF version pointed in the documentation.')
+        raise RuntimeError(
+            'Cannot import the standard functions of NNCF library '
+            '-- most probably, incompatible version of NNCF. '
+            'Please, use NNCF version pointed in the documentation.')
 else:
+
     class DummyInitializingDataLoader:
         pass
 
@@ -44,8 +46,7 @@ def get_nncf_metadata():
     to resume NNCF training or initialize NNCF fields of NNCF-wrapped model.
     """
     check_nncf_is_enabled()
-    return dict(nncf_enable_compression=True,
-                nncf_version=get_nncf_version())
+    return dict(nncf_enable_compression=True, nncf_version=get_nncf_version())
 
 
 def is_checkpoint_nncf(path):
@@ -60,7 +61,10 @@ def is_checkpoint_nncf(path):
     return bool(nncf_enable_compression)
 
 
-def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=None,
+def wrap_nncf_model(model,
+                    cfg,
+                    data_loader_for_init=None,
+                    get_fake_input_func=None,
                     should_use_dummy_forward_with_export_part=True):
     """
     The function wraps mmdet model by NNCF
@@ -85,17 +89,21 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
 
     if checkpoint_path and not is_checkpoint_nncf(checkpoint_path):
         checkpoint_path = None
-        logger.info('Received non-NNCF checkpoint to start training -- initialization of NNCF fields will be done')
+        logger.info('Received non-NNCF checkpoint to start training '
+                    '-- initialization of NNCF fields will be done')
 
     if not data_loader_for_init and not checkpoint_path:
-        raise RuntimeError("Either data_loader_for_init or NNCF pre-trained model checkpoint should be set")
+        raise RuntimeError('Either data_loader_for_init or NNCF pre-trained '
+                           'model checkpoint should be set')
 
     if checkpoint_path:
-        logger.info(f"Loading NNCF checkpoint from {checkpoint_path}")
-        logger.info("Please, note that this first loading is made before addition of NNCF FakeQuantize "
-                    "nodes to the model, so there may be some warnings on unexpected keys")
+        logger.info(f'Loading NNCF checkpoint from {checkpoint_path}')
+        logger.info(
+            'Please, note that this first loading is made before addition of '
+            'NNCF FakeQuantize nodes to the model, so there may be some '
+            'warnings on unexpected keys')
         resuming_state_dict = load_checkpoint(model, checkpoint_path)
-        logger.info(f"Loaded NNCF checkpoint from {checkpoint_path}")
+        logger.info(f'Loaded NNCF checkpoint from {checkpoint_path}')
     else:
         resuming_state_dict = None
 
@@ -114,13 +122,17 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
         device = next(model.parameters()).device
 
         # NB: the full cfg is required here!
-        fake_data = get_fake_input_func(cfg, orig_img_shape=orig_img_shape, device=device)
+        fake_data = get_fake_input_func(cfg,
+                                        orig_img_shape=orig_img_shape,
+                                        device=device)
         return fake_data
 
     def dummy_forward_without_export_part(model):
         # based on the method `export` of BaseDetector from mmdet/models/detectors/base.py
         # and on the script tools/export.py
-        fake_data = _get_fake_data_for_forward(cfg, nncf_config, get_fake_input_func)
+        fake_data = _get_fake_data_for_forward(cfg,
+                                               nncf_config,
+                                               get_fake_input_func)
         img, img_metas = fake_data["img"], fake_data["img_metas"]
         img = nncf_model_input(img)
         with model.forward_dummy_context(img_metas):
@@ -129,7 +141,8 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
     def dummy_forward_with_export_part(model):
         # based on the method `export` of BaseDetector from mmdet/models/detectors/base.py
         # and on the script tools/export.py
-        fake_data = _get_fake_data_for_forward(cfg, nncf_config, get_fake_input_func)
+        fake_data = _get_fake_data_for_forward(cfg, nncf_config,
+                                               get_fake_input_func)
         img, img_metas = fake_data["img"], fake_data["img_metas"]
         img = nncf_model_input(img)
         with model.forward_export_context(img_metas):
@@ -145,8 +158,10 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
         #     `dummy_forward_without_export_part` is our fallback decision.
         #     When we manage to enable NNCF compression for sufficiently many models,
         #     we should keep one choice only.
-        should_use_dummy_forward_with_export_part = cfg.get("nncf_should_use_dummy_forward_with_export_part")
-        logger.debug(f"set should_use_dummy_forward_with_export_part={should_use_dummy_forward_with_export_part}")
+        should_use_dummy_forward_with_export_part = \
+                cfg.get('nncf_should_use_dummy_forward_with_export_part')
+        logger.debug('set should_use_dummy_forward_with_export_part='
+                     f'{should_use_dummy_forward_with_export_part}')
 
     if should_use_dummy_forward_with_export_part:
         logger.debug("dummy_forward = dummy_forward_with_export_part")
@@ -157,7 +172,9 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
 
     model.dummy_forward_fn = dummy_forward
 
-    compression_ctrl, model = create_compressed_model(model, nncf_config, dummy_forward_fn=dummy_forward,
+    compression_ctrl, model = create_compressed_model(model,
+                                                      nncf_config,
+                                                      dummy_forward_fn=dummy_forward,
                                                       resuming_state_dict=resuming_state_dict)
     return compression_ctrl, model
 

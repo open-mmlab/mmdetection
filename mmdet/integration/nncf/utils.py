@@ -31,9 +31,10 @@ if is_nncf_enabled():
         from nncf.dynamic_graph.context import no_nncf_trace as original_no_nncf_trace
         from nncf.dynamic_graph.context import get_current_context
     except:  # noqa: E722
-        raise RuntimeError('Cannot import the standard functions of NNCF library '
-                           '-- most probably, incompatible version of NNCF. '
-                           'Please, use NNCF version pointed in the documentation.')
+        raise RuntimeError(
+            'Cannot import the standard functions of NNCF library '
+            '-- most probably, incompatible version of NNCF. '
+            'Please, use NNCF version pointed in the documentation.')
 
 
 def load_checkpoint(model, filename, map_location=None, strict=False):
@@ -56,7 +57,8 @@ def load_checkpoint(model, filename, map_location=None, strict=False):
     elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
         state_dict = checkpoint['state_dict']
     else:
-        raise RuntimeError('No state_dict found in checkpoint file {}'.format(filename))
+        raise RuntimeError(
+            'No state_dict found in checkpoint file {}'.format(filename))
     _ = load_state(model, state_dict, strict)
     return checkpoint
 
