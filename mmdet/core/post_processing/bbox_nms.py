@@ -10,7 +10,7 @@ from torch.onnx.symbolic_opset10 import _slice
 from ..utils.misc import topk, dummy_pad
 from ...ops.nms import batched_nms
 from ...utils.deployment.symbolic import py_symbolic
-from ..nncf.utils import no_nncf_trace
+from mmdet.integration.nncf import no_nncf_trace
 
 
 def multiclass_nms(multi_bboxes,

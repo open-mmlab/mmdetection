@@ -6,12 +6,12 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, OptimizerHook,
                          build_optimizer, LoggerHook, load_checkpoint)
 
-from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook, CompressionHook
+from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.utils import get_root_logger
 from mmdet.parallel import MMDataCPU
 
-from mmdet.core.nncf import wrap_nncf_model
+from mmdet.integration.nncf import wrap_nncf_model, CompressionHook
 from .fake_input import get_fake_input
 
 

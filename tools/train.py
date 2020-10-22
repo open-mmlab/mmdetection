@@ -22,7 +22,7 @@ from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector, TwoStageDetector
 from mmdet.utils import collect_env, get_root_logger, ExtendedDictAction
 
-from mmdet.core.nncf import check_nncf_is_enabled, get_nncf_metadata
+from mmdet.integration.nncf import check_nncf_is_enabled, get_nncf_metadata
 
 
 def parse_args():

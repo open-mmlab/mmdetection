@@ -15,7 +15,7 @@ from mmdet.models import build_detector
 from mmdet.utils import ExtendedDictAction
 from mmdet.parallel import MMDataCPU
 
-from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled, is_checkpoint_nncf
+from mmdet.integration.nncf import wrap_nncf_model, check_nncf_is_enabled, is_checkpoint_nncf
 from mmdet.apis import get_fake_input
 
 def parse_args():

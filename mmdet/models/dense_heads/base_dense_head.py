@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 import torch.nn as nn
-from mmdet.core.nncf import no_nncf_trace
+from mmdet.integration.nncf import no_nncf_trace
 
 
 class BaseDenseHead(nn.Module, metaclass=ABCMeta):

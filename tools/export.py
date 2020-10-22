@@ -32,7 +32,7 @@ from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.tracer_stubs import ROIFeatureExtractorStub
 from mmdet.apis import get_fake_input
 
-from mmdet.core.nncf import wrap_nncf_model, check_nncf_is_enabled, get_uncompressed_model, is_checkpoint_nncf
+from mmdet.integration.nncf import wrap_nncf_model, check_nncf_is_enabled, get_uncompressed_model, is_checkpoint_nncf
 
 
 def export_to_onnx(model,
