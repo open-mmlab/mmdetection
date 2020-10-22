@@ -327,22 +327,25 @@ class ATSSHead(AnchorHead):
                    centernesses,
                    img_metas,
                    cfg=None,
-                   rescale=False):
+                   rescale=False,
+                   with_nms=True):
         """Transform network output for a batch into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W)
+                with shape (N, num_anchors * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
-            centernesses (list[Tensor]): Centerness for each scale
-                level with shape (N, num_anchors * 1, H, W)
+                level with shape (N, num_anchors * 4, H, W).
+            centernesses (list[Tensor]): Centerness for each scale level with
+                shape (N, num_anchors * 1, H, W).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used. Default: None.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
@@ -376,7 +379,8 @@ class ATSSHead(AnchorHead):
             proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
                                                 centerness_pred_list,
                                                 mlvl_anchors, img_shape,
-                                                scale_factor, cfg, rescale)
+                                                scale_factor, cfg, rescale,
+                                                with_nms)
             result_list.append(proposals)
         return result_list
 
@@ -388,26 +392,29 @@ class ATSSHead(AnchorHead):
                            img_shape,
                            scale_factor,
                            cfg,
-                           rescale=False):
+                           rescale=False,
+                           with_nms=True):
         """Transform outputs for a single batch item into labeled boxes.
 
         Args:
             cls_scores (list[Tensor]): Box scores for a single scale level
-                Has shape (num_anchors * num_classes, H, W).
+                with shape (num_anchors * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for a single
                 scale level with shape (num_anchors * 4, H, W).
             centernesses (list[Tensor]): Centerness for a single scale level
-                Has shape (num_anchors * 1, H, W).
+                with shape (num_anchors * 1, H, W).
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
             img_shape (tuple[int]): Shape of the input image,
                 (height, width, 3).
-            scale_factor (ndarray): Scale factor of the image arange as
+            scale_factor (ndarray): Scale factor of the image arrange as
                 (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
 
         Returns:
             tuple(Tensor):
@@ -457,14 +464,17 @@ class ATSSHead(AnchorHead):
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
 
-        det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes,
-            mlvl_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img,
-            score_factors=mlvl_centerness)
-        return det_bboxes, det_labels
+        if with_nms:
+            det_bboxes, det_labels = multiclass_nms(
+                mlvl_bboxes,
+                mlvl_scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=mlvl_centerness)
+            return det_bboxes, det_labels
+        else:
+            return mlvl_bboxes, mlvl_scores, mlvl_centerness
 
     def get_targets(self,
                     anchor_list,
@@ -597,7 +607,7 @@ class ATSSHead(AnchorHead):
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
         labels = anchors.new_full((num_valid_anchors, ),
-                                  self.background_label,
+                                  self.num_classes,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
@@ -609,7 +619,9 @@ class ATSSHead(AnchorHead):
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
-                labels[pos_inds] = 1
+                # Only rpn gives gt_labels as None
+                # Foreground is the first class since v2.5.0
+                labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]

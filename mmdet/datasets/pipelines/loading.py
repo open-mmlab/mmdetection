@@ -427,3 +427,32 @@ class LoadProposals(object):
     def __repr__(self):
         return self.__class__.__name__ + \
             f'(num_max_proposals={self.num_max_proposals})'
+
+
+@PIPELINES.register_module()
+class FilterAnnotations(object):
+    """Filter invalid annotations.
+
+    Args:
+        min_gt_bbox_wh (tuple[int]): Minimum width and height of ground truth
+            boxes.
+    """
+
+    def __init__(self, min_gt_bbox_wh):
+        # TODO: add more filter options
+        self.min_gt_bbox_wh = min_gt_bbox_wh
+
+    def __call__(self, results):
+        assert 'gt_bboxes' in results
+        gt_bboxes = results['gt_bboxes']
+        w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+        h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
+        keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
+        if not keep.any():
+            return None
+        else:
+            keys = ('gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg')
+            for key in keys:
+                if key in results:
+                    results[key] = results[key][keep]
+            return results

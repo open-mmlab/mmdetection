@@ -339,3 +339,43 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
         'gt_masks': gt_masks,
     }
     return mm_inputs
+
+
+def test_yolact_forward():
+    model, train_cfg, test_cfg = _get_detector_cfg(
+        'yolact/yolact_r50_1x8_coco.py')
+    model['pretrained'] = None
+
+    from mmdet.models import build_detector
+    detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+
+    input_shape = (1, 3, 550, 550)
+    mm_inputs = _demo_mm_inputs(input_shape)
+
+    imgs = mm_inputs.pop('imgs')
+    img_metas = mm_inputs.pop('img_metas')
+
+    # Test forward train
+    detector.train()
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_labels = mm_inputs['gt_labels']
+    gt_masks = mm_inputs['gt_masks']
+    losses = detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        gt_masks=gt_masks,
+        return_loss=True)
+    assert isinstance(losses, dict)
+
+    # Test forward test
+    detector.eval()
+    with torch.no_grad():
+        img_list = [g[None, :] for g in imgs]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      rescale=True,
+                                      return_loss=False)
+            batch_results.append(result)
