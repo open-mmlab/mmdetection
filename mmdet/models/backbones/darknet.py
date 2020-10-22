@@ -2,6 +2,7 @@
 
 import logging
 
+import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
@@ -20,6 +21,8 @@ class ResBlock(nn.Module):
 
     Args:
         in_channels (int): The input channels. Must be even.
+        yolo_version (str): The version of YOLO to build, must be 'v3' or 'v4',
+            Default: 'v3'
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
@@ -29,19 +32,25 @@ class ResBlock(nn.Module):
 
     def __init__(self,
                  in_channels,
+                 yolo_version='v3',
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(ResBlock, self).__init__()
-        assert in_channels % 2 == 0  # ensure the in_channels is even
-        half_in_channels = in_channels // 2
+        if yolo_version not in ('v3', 'v4'):
+            raise NotImplementedError('Only YOLO v3 and v4 are supported.')
 
         # shortcut
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
-        self.conv1 = ConvModule(in_channels, half_in_channels, 1, **cfg)
-        self.conv2 = ConvModule(
-            half_in_channels, in_channels, 3, padding=1, **cfg)
+        if yolo_version == 'v3':
+            assert in_channels % 2 == 0  # ensure the in_channels is even
+            mid_channels = in_channels // 2
+        else:
+            mid_channels = in_channels
+
+        self.conv1 = ConvModule(in_channels, mid_channels, 1, **cfg)
+        self.conv2 = ConvModule(mid_channels, in_channels, 3, padding=1, **cfg)
 
     def forward(self, x):
         residual = x
@@ -61,6 +70,9 @@ class Darknet(nn.Module):
         out_indices (Sequence[int]): Output from which stages.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
             -1 means not freezing any parameters. Default: -1.
+        with_csp (bool): Whether the Darknet uses csp (cross stage partial
+            network). This is a feature of YOLO v4, see details at
+            `https://arxiv.org/abs/1911.11929`_ Default: False.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
@@ -95,6 +107,7 @@ class Darknet(nn.Module):
                  depth=53,
                  out_indices=(3, 4, 5),
                  frozen_stages=-1,
+                 with_csp=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
@@ -115,9 +128,13 @@ class Darknet(nn.Module):
         for i, n_layers in enumerate(self.layers):
             layer_name = f'conv_res_block{i + 1}'
             in_c, out_c = self.channels[i]
-            self.add_module(
-                layer_name,
-                self.make_conv_res_block(in_c, out_c, n_layers, **cfg))
+            if with_csp:
+                conv_module = CspResBlock(
+                    in_c, out_c, n_layers, is_first_block=(i == 0), **cfg)
+            else:
+                conv_module = self.make_conv_res_block(in_c, out_c, n_layers,
+                                                       **cfg)
+            self.add_module(layer_name, conv_module)
             self.cr_blocks.append(layer_name)
 
         self.norm_eval = norm_eval
@@ -197,3 +214,68 @@ class Darknet(nn.Module):
             model.add_module('res{}'.format(idx),
                              ResBlock(out_channels, **cfg))
         return model
+
+
+class CspResBlock(nn.Module):
+    """This class makes the conv_res_block in YOLO v4. It has CSP integrated,
+    hence different from the regular conv_res_block build with
+    `make_conv_res_block`.
+
+    Args:
+        in_channels (int): The number of input channels.
+        out_channels (int): The number of output channels.
+        res_repeat (int): The number of ResBlocks.
+        is_first_block (bool): Whether the CspResBlock is the
+            first in the Darknet. This affects the structure of the
+            block. Default: False,
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict): Config dict for activation layer.
+            Default: dict(type='LeakyReLU', negative_slope=0.1).
+    """
+
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 res_repeat,
+                 is_first_block=False,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
+        super(CspResBlock, self).__init__()
+        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
+
+        bottleneck_channels = out_channels if is_first_block else in_channels
+
+        self.preconv = ConvModule(
+            in_channels, out_channels, 3, stride=2, padding=1, **cfg)
+        self.shortconv = ConvModule(
+            out_channels, bottleneck_channels, 1, stride=1, **cfg)
+        self.mainconv = ConvModule(
+            out_channels, bottleneck_channels, 1, stride=1, **cfg)
+
+        self.blocks = nn.Sequential()
+        for idx in range(res_repeat):
+            if is_first_block:
+                self.blocks.add_module('res{}'.format(idx),
+                                       ResBlock(bottleneck_channels, **cfg))
+            else:
+                self.blocks.add_module(
+                    'res{}'.format(idx),
+                    ResBlock(bottleneck_channels, yolo_version='v4', **cfg))
+
+        self.postconv = ConvModule(
+            bottleneck_channels, bottleneck_channels, 1, stride=1, **cfg)
+        self.finalconv = ConvModule(
+            2 * bottleneck_channels, out_channels, 1, stride=1, **cfg)
+
+    def forward(self, x):
+        x = self.preconv(x)
+        x_short = self.shortconv(x)
+        x_main = self.mainconv(x)
+        x_main = self.blocks(x_main)
+        x_main = self.postconv(x_main)
+        x_final = torch.cat((x_main, x_short), 1)
+        x_final = self.finalconv(x_final)
+        return x_final

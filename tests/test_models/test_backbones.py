@@ -4,7 +4,8 @@ from mmcv.ops import DeformConv2dPack
 from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.backbones import RegNet, Res2Net, ResNet, ResNetV1d, ResNeXt
+from mmdet.models.backbones import (Darknet, RegNet, Res2Net, ResNet,
+                                    ResNetV1d, ResNeXt)
 from mmdet.models.backbones.hourglass import HourglassNet
 from mmdet.models.backbones.res2net import Bottle2neck
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
@@ -854,3 +855,33 @@ def test_hourglass_backbone():
     assert len(feat) == 2
     assert feat[0].shape == torch.Size([1, 256, 128, 128])
     assert feat[1].shape == torch.Size([1, 256, 128, 128])
+
+
+def test_darknet_backbone():
+    with pytest.raises(KeyError):
+        # Darknet depth should be 53
+        Darknet(depth=50)
+
+    # Test Darknet v3
+    model = Darknet(depth=53, with_csp=False)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 416, 416)
+    feat = model(imgs)
+    assert len(feat) == 3
+    assert feat[0].shape == torch.Size([1, 256, 52, 52])
+    assert feat[1].shape == torch.Size([1, 512, 26, 26])
+    assert feat[2].shape == torch.Size([1, 1024, 13, 13])
+
+    # Test Darknet v4
+    model = Darknet(depth=53, with_csp=True)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 416, 416)
+    feat = model(imgs)
+    assert len(feat) == 3
+    assert feat[0].shape == torch.Size([1, 256, 52, 52])
+    assert feat[1].shape == torch.Size([1, 512, 26, 26])
+    assert feat[2].shape == torch.Size([1, 1024, 13, 13])

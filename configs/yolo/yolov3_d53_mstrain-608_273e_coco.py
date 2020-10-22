@@ -5,7 +5,8 @@ model = dict(
     pretrained='open-mmlab://darknet53',
     backbone=dict(type='Darknet', depth=53, out_indices=(3, 4, 5)),
     neck=dict(
-        type='YOLOV3Neck',
+        type='YOLONeck',
+        yolo_version='v3',
         num_scales=3,
         in_channels=[1024, 512, 256],
         out_channels=[512, 256, 128]),
