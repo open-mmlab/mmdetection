@@ -14,7 +14,7 @@ if is_nncf_enabled():
         from nncf.nncf_network import NNCFNetwork
 
         class_InitializingDataLoader = InitializingDataLoader
-    except:
+    except:  # noqa: E722
         raise RuntimeError('Cannot import the standard functions of NNCF library '
                            '-- most probably, incompatible version of NNCF. '
                            'Please, use NNCF version pointed in the documentation.')
@@ -47,6 +47,7 @@ def get_nncf_metadata():
     return dict(nncf_enable_compression=True,
                 nncf_version=get_nncf_version())
 
+
 def is_checkpoint_nncf(path):
     """
     The function uses metadata stored in a checkpoint to check if the
@@ -57,6 +58,7 @@ def is_checkpoint_nncf(path):
     meta = checkpoint.get('meta', {})
     nncf_enable_compression = meta.get('nncf_enable_compression', False)
     return bool(nncf_enable_compression)
+
 
 def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=None,
                     should_use_dummy_forward_with_export_part=True):
@@ -147,10 +149,10 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
         logger.debug(f"set should_use_dummy_forward_with_export_part={should_use_dummy_forward_with_export_part}")
 
     if should_use_dummy_forward_with_export_part:
-        logger.debug(f"dummy_forward = dummy_forward_with_export_part")
+        logger.debug("dummy_forward = dummy_forward_with_export_part")
         dummy_forward = dummy_forward_with_export_part
     else:
-        logger.debug(f"dummy_forward = dummy_forward_without_export_part")
+        logger.debug("dummy_forward = dummy_forward_without_export_part")
         dummy_forward = dummy_forward_without_export_part
 
     model.dummy_forward_fn = dummy_forward

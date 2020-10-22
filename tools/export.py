@@ -25,9 +25,8 @@ from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 
 from mmdet.apis import init_detector
 from mmdet.models import detectors
-from mmdet.models.dense_heads.anchor_head import AnchorHead
 from mmdet.models.roi_heads import SingleRoIExtractor
-from mmdet.utils.deployment.ssd_export_helpers import *
+from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
 from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.tracer_stubs import ROIFeatureExtractorStub
 from mmdet.apis import get_fake_input
@@ -167,6 +166,7 @@ def stub_roi_feature_extractor(model, extractor_name):
             for i in range(len(extractor)):
                 if isinstance(extractor[i], SingleRoIExtractor):
                     extractor[i] = ROIFeatureExtractorStub(extractor[i])
+
 
 def optimize_onnx_graph(onnx_model_path):
     onnx_model = onnx.load(onnx_model_path)

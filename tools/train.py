@@ -3,7 +3,6 @@ import copy
 import os
 import os.path as osp
 import time
-import sys
 
 import mmcv
 import numpy as np
@@ -248,7 +247,7 @@ def main():
     assert dataset_len_per_gpu > 0
     if cfg.data.samples_per_gpu == 'auto':
         if torch.cuda.is_available():
-            logger.info(f'Auto-selection of samples per gpu (batch size).')
+            logger.info('Auto-selection of samples per gpu (batch size).')
             cfg.data.samples_per_gpu = determine_max_batch_size(cfg, distributed, dataset_len_per_gpu)
             logger.info(f'Auto selected batch size: {cfg.data.samples_per_gpu} {dataset_len_per_gpu}')
             cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
