@@ -65,7 +65,7 @@ class PAAHead(ATSSHead):
             - 'tied': all components share the same general covariance matrix
             - 'diag': each component has its own diagonal covariance matrix
             - 'spherical': each component has its own single variance
-            Default: 'diag'. From 'full' to 'spherical', the gmm fitting
+            Default: 'full'. From 'full' to 'spherical', the gmm fitting
             process is faster yet the performance could be influenced. For most
             cases, 'diag' may be a good choice.
     """
