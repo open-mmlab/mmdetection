@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import sys
-
 import argparse
 import cv2
-import numpy as np
 import mmcv
+import numpy as np
+import sys
 from mmcv.parallel import collate
 
 from mmdet.apis.inference import LoadImage

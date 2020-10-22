@@ -1,6 +1,6 @@
+import torch.nn as nn
 from abc import ABCMeta, abstractmethod
 
-import torch.nn as nn
 from mmdet.integration.nncf import no_nncf_trace
 
 

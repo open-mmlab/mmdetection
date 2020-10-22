@@ -1,16 +1,16 @@
 import pathlib
 import torch
-from .utils import is_nncf_enabled, check_nncf_is_enabled, load_checkpoint, get_nncf_version
 
 from mmdet.utils import get_root_logger
+from .utils import (check_nncf_is_enabled, get_nncf_version, is_nncf_enabled,
+                    load_checkpoint)
 
 if is_nncf_enabled():
     try:
-        from nncf.initialization import InitializingDataLoader
+        from nncf import (NNCFConfig, create_compressed_model,
+                          register_default_init_args)
         from nncf.dynamic_graph.patch_pytorch import nncf_model_input
-
-        from nncf import NNCFConfig
-        from nncf import create_compressed_model, register_default_init_args
+        from nncf.initialization import InitializingDataLoader
         from nncf.nncf_network import NNCFNetwork
 
         class_InitializingDataLoader = InitializingDataLoader

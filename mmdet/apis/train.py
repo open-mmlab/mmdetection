@@ -1,17 +1,15 @@
-import random
-
 import numpy as np
+import random
 import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, OptimizerHook,
-                         build_optimizer, LoggerHook, load_checkpoint)
+from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, LoggerHook,
+                         OptimizerHook, build_optimizer, load_checkpoint)
 
 from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook
 from mmdet.datasets import build_dataloader, build_dataset
-from mmdet.utils import get_root_logger
+from mmdet.integration.nncf import CompressionHook, wrap_nncf_model
 from mmdet.parallel import MMDataCPU
-
-from mmdet.integration.nncf import wrap_nncf_model, CompressionHook
+from mmdet.utils import get_root_logger
 from .fake_input import get_fake_input
 
 

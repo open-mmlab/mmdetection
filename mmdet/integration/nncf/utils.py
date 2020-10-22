@@ -1,7 +1,6 @@
+import torch
 from collections import OrderedDict
 from contextlib import contextmanager
-
-import torch
 
 try:
     import nncf
@@ -28,8 +27,9 @@ def get_nncf_version():
 if is_nncf_enabled():
     try:
         from nncf import load_state
-        from nncf.dynamic_graph.context import no_nncf_trace as original_no_nncf_trace
         from nncf.dynamic_graph.context import get_current_context
+        from nncf.dynamic_graph.context import \
+            no_nncf_trace as original_no_nncf_trace
     except:  # noqa: E722
         raise RuntimeError(
             'Cannot import the standard functions of NNCF library '

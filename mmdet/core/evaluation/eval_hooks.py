@@ -1,5 +1,4 @@
 import os.path as osp
-
 from mmcv.runner import Hook
 from torch.utils.data import DataLoader
 

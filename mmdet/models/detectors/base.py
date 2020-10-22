@@ -1,23 +1,20 @@
-import warnings
-from abc import ABCMeta, abstractmethod
-from collections import OrderedDict
-
 import mmcv
 import numpy as np
-from contextlib import contextmanager
-from functools import partial
-
 import pycocotools.mask as maskUtils
 import torch
 import torch.distributed as dist
-
 import torch.nn as nn
+import warnings
+from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
+from contextlib import contextmanager
+from functools import partial
 from mmcv.utils import print_log
+from nncf.dynamic_graph.context import no_nncf_trace
 
 from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
 
-from nncf.dynamic_graph.context import no_nncf_trace
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
     """Base class for detectors"""

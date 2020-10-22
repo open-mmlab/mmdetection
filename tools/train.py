@@ -1,27 +1,26 @@
 import argparse
 import copy
-import os
-import os.path as osp
-import time
-
 import mmcv
 import numpy as np
+import os
+import os.path as osp
 import pycocotools.mask as maskUtils
+import time
 import torch
 import torch.distributed as dist
 from mmcv import Config
 from mmcv.parallel import collate, scatter
-from mmcv.runner import init_dist, get_dist_info
+from mmcv.runner import get_dist_info, init_dist
+
 from mmdet import __version__
 from mmdet.apis import set_random_seed, train_detector
 from mmdet.apis.inference import LoadImage
 from mmdet.core import BitmapMasks
 from mmdet.datasets import build_dataset
 from mmdet.datasets.pipelines import Compose
-from mmdet.models import build_detector, TwoStageDetector
-from mmdet.utils import collect_env, get_root_logger, ExtendedDictAction
-
 from mmdet.integration.nncf import check_nncf_is_enabled, get_nncf_metadata
+from mmdet.models import TwoStageDetector, build_detector
+from mmdet.utils import ExtendedDictAction, collect_env, get_root_logger
 
 
 def parse_args():

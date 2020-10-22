@@ -13,25 +13,24 @@
 # and limitations under the License.
 
 import argparse
-import os.path as osp
-import sys
-from subprocess import run, CalledProcessError, DEVNULL
-
 import mmcv
 import onnx
+import os.path as osp
+import sys
 import torch
 from onnx.optimizer import optimize
+from subprocess import DEVNULL, CalledProcessError, run
 from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 
-from mmdet.apis import init_detector
+from mmdet.apis import get_fake_input, init_detector
+from mmdet.integration.nncf import (check_nncf_is_enabled,
+                                    get_uncompressed_model, is_checkpoint_nncf,
+                                    wrap_nncf_model)
 from mmdet.models import detectors
 from mmdet.models.roi_heads import SingleRoIExtractor
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
 from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.tracer_stubs import ROIFeatureExtractorStub
-from mmdet.apis import get_fake_input
-
-from mmdet.integration.nncf import wrap_nncf_model, check_nncf_is_enabled, get_uncompressed_model, is_checkpoint_nncf
 
 
 def export_to_onnx(model,
