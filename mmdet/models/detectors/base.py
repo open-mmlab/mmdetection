@@ -117,6 +117,11 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             img_metas (List[List[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
+
+        Note that if `kwargs` contains either `forward_dummy=True` or
+        `dummy_forward=True` parameters, one of special branches of code is
+        enabled for ONNX export
+        (see the methods `forward_export` and `forward_dummy`).
         """
         if kwargs.get("forward_export"):
             logger = get_root_logger()
@@ -159,7 +164,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         pass
 
     @auto_fp16(apply_to=('img',))
-    def forward(self, img, img_metas=[], return_loss=True, **kwargs):
+    def forward(self, img, img_metas=None, return_loss=True, **kwargs):
         """
         Calls either forward_train or forward_test depending on whether
         return_loss=True. Note this setting will change the expected inputs.
@@ -167,6 +172,12 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         Tensor and List[dict]), and when `resturn_loss=False`, img and img_meta
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
+
+        The parameter `img_metas` has the default value `None` for ONNX export only,
+        in this case `return_loss` should be `False`, and `kwargs` should contain
+        either `forward_dummy=True` or `dummy_forward=True` parameters to enable
+        a special branch of code for ONNX tracer
+        (see the method `forward_test`).
         """
         if return_loss:
             return self.forward_train(img, img_metas, **kwargs)

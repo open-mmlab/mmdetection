@@ -128,7 +128,6 @@ def main():
         model.cuda()  # for wrap_nncf_model
         _, model = wrap_nncf_model(model, cfg, None, get_fake_input)
         checkpoint = torch.load(args.checkpoint, map_location=None)
-        # FIXME: TODO: check why checkpoint does not have "meta" inside
     else:
         fp16_cfg = cfg.get('fp16', None)
         if fp16_cfg is not None:
