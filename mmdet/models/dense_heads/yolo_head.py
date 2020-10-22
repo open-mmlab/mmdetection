@@ -431,9 +431,9 @@ class YOLOV3Head(BaseDenseHead):
             loss_cls += self.loss_cls(img_pred_label, img_target_label)
             loss_conf += self.loss_conf(img_pred_conf, img_target_conf)
             #
-            print(img_target_conf.shape)
-            print(img_target_label.shape)
-            print(loss_cls)
+            # print(img_target_conf.shape)
+            # print(img_target_label.shape)
+            # print(loss_cls)
 
             if self.using_iou_loss:
                 # preparation for box decoding
