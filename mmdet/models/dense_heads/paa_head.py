@@ -166,15 +166,15 @@ class PAAHead(ATSSHead):
         bboxes_target = torch.cat(bboxes_target,
                                   0).view(-1, bboxes_target[0].size(-1))
 
-        pos_inds_flatten = (
-            (labels >= 0)
-            & (labels < self.background_label)).nonzero().reshape(-1)
+        pos_inds_flatten = ((labels >= 0)
+                            &
+                            (labels < self.num_classes)).nonzero().reshape(-1)
 
         losses_cls = self.loss_cls(
             cls_scores,
             labels,
             labels_weight,
-            avg_factor=np.max([num_pos, len(img_metas)]))  # avoid num_pos=0
+            avg_factor=max(num_pos, len(img_metas)))  # avoid num_pos=0
         if num_pos:
             pos_bbox_pred = self.bbox_coder.decode(
                 flatten_anchors[pos_inds_flatten],
@@ -322,9 +322,13 @@ class PAAHead(ATSSHead):
             pos_inds_gmm = pos_inds_gmm[sort_inds]
             pos_loss_gmm = pos_loss_gmm.view(-1, 1).cpu().numpy()
             min_loss, max_loss = pos_loss_gmm.min(), pos_loss_gmm.max()
-            means_init = [[min_loss], [max_loss]]
-            weights_init = [0.5, 0.5]
-            precisions_init = [[1.0], [1.0]]
+            means_init = np.array([min_loss, max_loss]).reshape(2, 1)
+            weights_init = np.array([0.5, 0.5])
+            precisions_init = np.array([1.0, 1.0]).reshape(2, 1, 1)
+            if self.covariance_type == 'spherical':
+                precisions_init = precisions_init.reshape(2)
+            elif self.covariance_type == 'diag':
+                precisions_init = precisions_init.reshape(2, 1)
             if skm is None:
                 raise ImportError('Please run "pip install sklearn" '
                                   'to install sklearn first.')
@@ -349,7 +353,7 @@ class PAAHead(ATSSHead):
         ignore_inds_after_paa = torch.cat(ignore_inds_after_paa)
         reassign_mask = (pos_inds.unsqueeze(1) != pos_inds_after_paa).all(1)
         reassign_ids = pos_inds[reassign_mask]
-        label[reassign_ids] = self.background_label
+        label[reassign_ids] = self.num_classes
         label_weight[ignore_inds_after_paa] = 0
         bbox_weight[reassign_ids] = 0
         num_pos = len(pos_inds_after_paa)
@@ -475,7 +479,7 @@ class PAAHead(ATSSHead):
         pos_inds = []
         for i, single_labels in enumerate(labels):
             pos_mask = (0 <= single_labels) & (
-                single_labels < self.background_label)
+                single_labels < self.num_classes)
             pos_inds.append(pos_mask.nonzero().view(-1))
 
         gt_inds = [item.pos_assigned_gt_inds for item in sampling_result]
@@ -516,7 +520,8 @@ class PAAHead(ATSSHead):
                            img_shape,
                            scale_factor,
                            cfg,
-                           rescale=False):
+                           rescale=False,
+                           with_nms=True):
         """Transform outputs for a single batch item into labeled boxes.
 
         This method is almost same as `ATSSHead._get_bboxes_single()`.
@@ -524,6 +529,7 @@ class PAAHead(ATSSHead):
         cls_scores. Besides, score voting is used when `` score_voting``
         is set to True.
         """
+        assert with_nms, 'PAA only supports "with_nms=True" now'
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
