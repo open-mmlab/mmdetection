@@ -153,7 +153,6 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, 
               'openvino/bin/setupvars.sh before running this script.')
         return
 
-    # command_line += ' --static_shape'
     print(command_line)
     run(command_line, shell=True, check=True)
 

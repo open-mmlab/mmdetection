@@ -88,6 +88,9 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
         raise RuntimeError("Either data_loader_for_init or NNCF pre-trained model checkpoint should be set")
 
     if checkpoint_path:
+        logger.info(f"Loading NNCF checkpoint from {checkpoint_path}")
+        logger.info("Please, note that this first loading is made before addition of NNCF FakeQuantize "
+                    "nodes to the model, so there may be some warnings on unexpected keys")
         resuming_state_dict = load_checkpoint(model, checkpoint_path)
         logger.info(f"Loaded NNCF checkpoint from {checkpoint_path}")
     else:
@@ -128,7 +131,15 @@ def wrap_nncf_model(model, cfg, data_loader_for_init=None, get_fake_input_func=N
             model(img)
 
     if "nncf_should_use_dummy_forward_with_export_part" in cfg:
-        # TODO: this parameter is for debugging, remove it later
+        # NB: This parameter is used to choose if we should try to make NNCF compression
+        #     for a whole model graph including postprocessing (`dummy_forward_with_export_part`),
+        #     or make NNCF compression of the part of the model without postprocessing
+        #     (`dummy_forward_without_export_part`).
+        #     Our primary goal is to make NNCF compression of such big part of the model as
+        #     possible, so `dummy_forward_with_export_part` is our primary choice, whereas
+        #     `dummy_forward_without_export_part` is our fallback decision.
+        #     When we manage to enable NNCF compression for sufficiently many models,
+        #     we should keep one choice only.
         should_use_dummy_forward_with_export_part = cfg.get("nncf_should_use_dummy_forward_with_export_part")
         logger.debug(f"set should_use_dummy_forward_with_export_part={should_use_dummy_forward_with_export_part}")
 
