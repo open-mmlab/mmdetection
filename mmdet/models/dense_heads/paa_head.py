@@ -324,11 +324,13 @@ class PAAHead(ATSSHead):
             min_loss, max_loss = pos_loss_gmm.min(), pos_loss_gmm.max()
             means_init = np.array([min_loss, max_loss]).reshape(2, 1)
             weights_init = np.array([0.5, 0.5])
-            precisions_init = np.array([1.0, 1.0]).reshape(2, 1, 1)
+            precisions_init = np.array([1.0, 1.0]).reshape(2, 1, 1)  # full
             if self.covariance_type == 'spherical':
                 precisions_init = precisions_init.reshape(2)
             elif self.covariance_type == 'diag':
                 precisions_init = precisions_init.reshape(2, 1)
+            elif self.covariance_type == 'tied':
+                precisions_init = np.array([[1.0]])
             if skm is None:
                 raise ImportError('Please run "pip install sklearn" '
                                   'to install sklearn first.')
