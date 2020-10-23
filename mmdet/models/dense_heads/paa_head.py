@@ -65,16 +65,16 @@ class PAAHead(ATSSHead):
             - 'tied': all components share the same general covariance matrix
             - 'diag': each component has its own diagonal covariance matrix
             - 'spherical': each component has its own single variance
-            Default: 'full'. From 'full' to 'spherical', the gmm fitting
+            Default: 'diag'. From 'full' to 'spherical', the gmm fitting
             process is faster yet the performance could be influenced. For most
-            cases, 'diag' may be a good choice.
+            cases, 'diag' should be a good choice.
     """
 
     def __init__(self,
                  *args,
                  topk=9,
                  score_voting=True,
-                 covariance_type='full',
+                 covariance_type='diag',
                  **kwargs):
         # topk used in paa reassign process
         self.topk = topk
