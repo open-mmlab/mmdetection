@@ -61,6 +61,8 @@ def single_gpu_test(model,
                 result = bbox_results, encoded_mask_results
             else:
                 result = bbox_results, encoded_mask_results, text_results
+            print(text_results)
+            exit(0)
         results.append(result)
 
         batch_size = len(data['img_metas'][0].data)

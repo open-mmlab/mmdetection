@@ -93,9 +93,63 @@ class MaskTextSpotter(MaskRCNN):
 
 
     def export(self, img, img_metas, export_name='', **kwargs):
+
+        def export_to_onnx_text_recognition_decoder(net, input_size, path_to_onnx):
+            import os
+
+            import numpy as np
+            import onnx
+
+            import torch.nn as nn
+
+            net.eval()
+
+            dim = net.hidden_size
+            prev_input = np.random.randn(1).astype(np.float32)
+            pev_hidden = np.random.randn(1, 1, dim).astype(np.float32)
+            prev_cell = np.random.randn(1, 1, dim).astype(np.float32)
+            encoder_outputs = np.random.randn(1, input_size[0] * input_size[1], dim).astype(np.float32)
+            prev_input = torch.tensor(prev_input)
+            pev_hidden = torch.tensor(pev_hidden)
+            prev_cell = torch.tensor(prev_cell)
+            encoder_outputs = torch.tensor(encoder_outputs)
+            if torch.cuda.is_available():
+                net = net.cuda()
+                prev_input = prev_input.cuda()
+                pev_hidden = pev_hidden.cuda()
+                prev_cell = prev_cell.cuda()
+                encoder_outputs = encoder_outputs.cuda()
+            prev_input.requires_grad = False
+            pev_hidden.requires_grad = True
+            prev_cell.requires_grad = True
+            encoder_outputs.requires_grad = True
+            if isinstance(net.decoder, nn.GRU):
+                torch.onnx.export(net, (prev_input, pev_hidden, encoder_outputs),
+                                  path_to_onnx, verbose=True,
+                                  input_names=['prev_symbol', 'prev_hidden', 'encoder_outputs'],
+                                  output_names=['output', 'hidden', 'attention']
+                                  )
+            elif isinstance(net.decoder, nn.LSTM):
+                torch.onnx.export(net, (prev_input, pev_hidden, encoder_outputs, prev_cell),
+                                  path_to_onnx, verbose=True,
+                                  input_names=['prev_symbol', 'prev_hidden', 'encoder_outputs', 'prev_cell'],
+                                  output_names=['output', 'hidden', 'cell', 'attention']
+                                  )
+
+            printable_graph = onnx.helper.printable_graph(onnx.load(path_to_onnx).graph)
+            print(printable_graph)
+
+            return printable_graph
+
         self.img_metas = img_metas
         self.forward_backup = self.forward
         self.forward = self.forward_export
         torch.onnx.export(self, img, export_name, **kwargs)
         self.forward = self.forward_backup
-        self.roi_head.text_head.decoder.export(export_name.replace('.onnx', '_text_recognition_head_decoder.onnx'))
+
+        # Export of text recognition decoder
+        export_to_onnx_text_recognition_decoder(
+            self.roi_head.text_head.decoder,
+            self.roi_head.text_head.input_feature_size,
+            export_name.replace('.onnx', '_text_recognition_head_decoder.onnx')
+        )

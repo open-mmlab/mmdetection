@@ -24,6 +24,10 @@ from openvino.inference_engine import IECore
 
 from ...models import build_detector
 
+from scipy.special import softmax
+
+import string
+
 
 class PerformanceCounters:
     def __init__(self):
@@ -80,8 +84,8 @@ class ModelOpenVINO:
         self.configure_inputs(required_inputs)
         self.configure_outputs(required_outputs)
 
-        if 'CPU' in device:
-            self.check_cpu_support(ie, self.net)
+        # if 'CPU' in device:
+        #     self.check_cpu_support(ie, self.net)
 
         logging.info('Loading network to plugin...')
         self.max_num_requests = max_num_requests
@@ -259,5 +263,101 @@ class DetectorOpenVINO(ModelOpenVINO):
         output['boxes'] = output['boxes'][valid_detections_mask]
         if 'masks' in output:
             output['masks'] = output['masks'][valid_detections_mask]
+
+        return output
+
+
+class MaskTextSpotterOpenVINO(ModelOpenVINO):
+    def __init__(self, *args, **kwargs):
+        self.with_mask = False
+        super().__init__(*args,
+                         required_inputs=('image', ),
+                         required_outputs=None,
+                         **kwargs)
+        self.n, self.c, self.h, self.w = self.net.input_info['image'].input_data.shape
+        assert self.n == 1, 'Only batch 1 is supported.'
+
+        xml_path = args[0].replace('.xml', '_text_recognition_head_decoder.xml')
+        self.text_decoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
+        print(self.text_decoder.net.inputs)
+
+        self.alphabet='  ' + string.ascii_lowercase + string.digits
+
+
+    def configure_outputs(self, required):
+        extra_outputs = ['boxes', 'labels', 'masks', 'texts']
+
+        for output in extra_outputs:
+            if output not in self.orig_ir_mapping and output in self.net.outputs:
+                self.orig_ir_mapping[output] = output
+
+        self.try_add_extra_outputs(extra_outputs)
+        outputs = []
+
+        self.check_required(self.orig_ir_mapping.keys(), ['boxes', 'labels', 'texts'])
+        self.with_detection_output = False
+        outputs.extend(['boxes', 'labels', 'texts'])
+
+        try:
+            self.check_required(self.orig_ir_mapping.keys(), ['masks'])
+            self.with_mask = True
+            outputs.append('masks')
+        except ValueError:
+            self.with_mask = False
+
+        self.set_outputs(outputs)
+
+    def __call__(self, inputs, **kwargs):
+        inputs = self.unify_inputs(inputs)
+        data_h, data_w = inputs['image'].shape[-2:]
+        inputs['image'] = np.pad(inputs['image'],
+                                 ((0, 0), (0, 0), (0, self.h - data_h), (0, self.w - data_w)),
+                                 mode='constant')
+
+        output = super().__call__(inputs)
+
+        valid_detections_mask = output['boxes'][:,-1] >= 0.5
+        output['labels'] = output['labels'][valid_detections_mask]
+        output['boxes'] = output['boxes'][valid_detections_mask]
+        output['texts'] = output['texts'][valid_detections_mask]
+
+        if 'masks' in output:
+            output['masks'] = output['masks'][valid_detections_mask]
+
+        texts = []
+        for feature in output['texts']:
+            feature = np.expand_dims(feature, 0)
+            #feature = self.text_encoder({'input': feature})['output']
+            feature = np.reshape(feature, (feature.shape[0], feature.shape[1], -1))
+            feature = np.transpose(feature, (0, 2, 1))
+
+            hidden = np.zeros([1, 1, 64])
+            prev_symbol = np.zeros((1,))
+
+            eos = 1
+            max_seq_len = 28
+            vocab_size = 38
+            per_feature_outputs = np.zeros([max_seq_len, vocab_size])
+
+            decoded = ''
+            confidence = 1
+
+            for i in range(max_seq_len):
+                o = self.text_decoder(
+                    {'prev_symbol': prev_symbol, 'prev_hidden': hidden, 'encoder_outputs': feature})
+                per_feature_outputs[i] = o['output']
+                softmaxed = softmax(o['output'], axis=1)
+                softmaxed_max = np.max(softmaxed, axis=1)
+                confidence = confidence * softmaxed_max[0]
+                prev_symbol = np.argmax(softmaxed, axis=1)[0]
+                if prev_symbol == eos:
+                    break
+                hidden = o['hidden']
+                decoded = decoded + self.alphabet[prev_symbol]
+
+            texts.append(decoded if confidence >= 0.5 else '')
+
+        texts = np.array(texts)
+        output['texts'] = texts
 
         return output

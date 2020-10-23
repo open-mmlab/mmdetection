@@ -26,12 +26,14 @@ from mmdet.core.bbox.transforms import bbox2result
 from mmdet.core.mask.transforms import mask2result
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.datasets.pipelines import Compose
+from mmdet.utils import ExtendedDictAction
 
 
 def postprocess(result, img_meta, num_classes=80, rescale=True):
     det_bboxes = result['boxes']
     det_labels = result['labels']
     det_masks = result.get('masks', None)
+    det_texts = result['texts']
 
     if rescale:
         img_h, img_w = img_meta[0]['ori_shape'][:2]
@@ -53,7 +55,7 @@ def postprocess(result, img_meta, num_classes=80, rescale=True):
             mask_thr_binary=0.5,
             img_size=(img_h, img_w))
         segm_results = encode_mask_results(segm_results)
-        return bbox_results, segm_results
+        return bbox_results, segm_results, det_texts
     return bbox_results
 
 
@@ -105,6 +107,8 @@ def main(args):
         raise ValueError('Unknown model type.')
 
     cfg = mmcv.Config.fromfile(args.config)
+    if args.update_config:
+        cfg.merge_from_dict(args.update_config)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
@@ -134,12 +138,19 @@ def main(args):
     classes_num = len(dataset.CLASSES) + 1
 
     if backend == 'openvino':
-        from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO
-        model = DetectorOpenVINO(args.model,
-                                 args.model[:-3] + 'bin',
-                                 mapping_file_path=args.model[:-3] + 'mapping',
-                                 cfg=cfg,
-                                 classes=dataset.CLASSES)
+        from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO, MaskTextSpotterOpenVINO
+        if cfg.model.type == 'MaskTextSpotter':
+            model = MaskTextSpotterOpenVINO(args.model,
+                                            args.model[:-3] + 'bin',
+                                            mapping_file_path=args.model[:-3] + 'mapping',
+                                            cfg=cfg,
+                                            classes=dataset.CLASSES)
+        else:
+            model = DetectorOpenVINO(args.model,
+                                     args.model[:-3] + 'bin',
+                                     mapping_file_path=args.model[:-3] + 'mapping',
+                                     cfg=cfg,
+                                     classes=dataset.CLASSES)
     else:
         from mmdet.utils.deployment.onnxruntime_backend import ModelONNXRuntime
         model = ModelONNXRuntime(args.model, cfg=cfg, classes=dataset.CLASSES)
@@ -148,20 +159,20 @@ def main(args):
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         im_data = data['img'][0].cpu().numpy()
-        try:
-            result = model(im_data)
-            result = postprocess(
+        #try:
+        result = model(im_data)
+        result = postprocess(
                 result,
                 data['img_metas'][0].data[0],
                 num_classes=classes_num,
                 rescale=not args.show)
-        except Exception as ex:
-            print(f'\nException raised while processing item {i}:')
-            print(ex)
-            with_mask = hasattr(model.pt_model, 'with_mask') and model.pt_model.with_mask
-            result = empty_result(
-                num_classes=classes_num,
-                with_mask=with_mask)
+        # except Exception as ex:
+        #     print(f'\nException raised while processing item {i}:')
+        #     print(ex)
+        #     with_mask = hasattr(model.pt_model, 'with_mask') and model.pt_model.with_mask
+        #     result = empty_result(
+        #         num_classes=classes_num,
+        #         with_mask=with_mask)
         results.append(result)
 
         if args.show:
@@ -197,12 +208,14 @@ def parse_args():
     parser.add_argument('--out', type=str, help='path to file with inference results')
     parser.add_argument('--json_out', type=str, help='output result file name without extension')
     parser.add_argument('--eval', type=str, nargs='+',
-                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints', 'f1'],
+                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints', 'f1', 'word_spotting'],
                         help='eval types')
     parser.add_argument('--video', default=None, help='run model on the video rather than the dataset')
     parser.add_argument('--show', action='store_true', help='visualize results')
     parser.add_argument('--score_thr', type=float, default=0.3,
                         help='show only detections with confidence larger than the threshold')
+    parser.add_argument('--update_config', nargs='+', action=ExtendedDictAction,
+                        help='Update configuration file by parameters specified here.')
     args = parser.parse_args()
     return args
 
