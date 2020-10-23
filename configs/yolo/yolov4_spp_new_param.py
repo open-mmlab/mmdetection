@@ -74,7 +74,7 @@ train_pipeline = [
     #     type='MinIoURandomCrop',
     #     min_ious=(0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
     #     min_crop_size=0.3),
-    dict(type='Resize', img_scale=[(448, 448)], keep_ratio=True),
+    dict(type='Resize', img_scale=(416, 416), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -118,21 +118,22 @@ data = dict(
         # img_prefix=data_root + 'val2014/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0005)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
+# optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=1000,  # same as burn-in in darknet
-    warmup_ratio=0.00001,
+    warmup_iters=2000,  # same as burn-in in darknet
+    warmup_ratio=0.001,
     step=[218, 246])
 # runtime settings
 total_epochs = 273
 evaluation = dict(interval=1, metric=['bbox'])
-
+checkpoint_config = dict(interval=1)
 log_config = dict(  # config to register logger hook
-    interval=50,  # Interval to print the log
+    interval=20,  # Interval to print the log
     hooks=[dict(type='TensorboardLoggerHook'),
            dict(type='TextLoggerHook')
            ])  # The logger used to record the training process.

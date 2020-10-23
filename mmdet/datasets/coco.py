@@ -43,7 +43,7 @@ class CocoDataset(CustomDataset):
                'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
 
     # def __len__(self):
-    #     return 200
+    #     return 2
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.

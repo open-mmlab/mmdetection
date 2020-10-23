@@ -406,10 +406,10 @@ class YOLOV3Head(BaseDenseHead):
             warnings.warn('There is overlap between pos and neg sample.')
             pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
 
-        loss_cls = torch.tensor(.0, device=device)
-        loss_conf = torch.tensor(.0, device=device)
-        loss_xy = torch.tensor(.0, device=device)
-        loss_wh = torch.tensor(.0, device=device)
+        loss_cls = torch.tensor(.0, device=device, requires_grad=True)
+        loss_conf = torch.tensor(.0, device=device, requires_grad=True)
+        loss_xy = torch.tensor(.0, device=device, requires_grad=True)
+        loss_wh = torch.tensor(.0, device=device, requires_grad=True)
 
         for i in range(num_imgs):
 
@@ -428,8 +428,10 @@ class YOLOV3Head(BaseDenseHead):
             img_target_label = img_target_label.masked_select(
                 img_cls_mask).reshape(-1, num_cls)
 
-            loss_cls += self.loss_cls(img_pred_label, img_target_label)
-            loss_conf += self.loss_conf(img_pred_conf, img_target_conf)
+            loss_cls = loss_cls + self.loss_cls(img_pred_label,
+                                                img_target_label)
+            loss_conf = loss_conf + self.loss_conf(img_pred_conf,
+                                                   img_target_conf)
             #
             # print(img_target_conf.shape)
             # print(img_target_label.shape)
@@ -471,16 +473,17 @@ class YOLOV3Head(BaseDenseHead):
                 # if level_idx == 0:
                 #     self.show_img(img_pred_box, img_target_box)
 
-                loss_xy += self.loss_bbox(img_pred_box, img_target_box)
-                loss_wh += torch.zeros_like(loss_xy)
+                loss_xy = loss_xy + self.loss_bbox(img_pred_box,
+                                                   img_target_box)
+                loss_wh = loss_wh + torch.zeros_like(loss_xy)
             else:
                 img_pred_xy = pred_map[i, :, :2]
                 img_pred_wh = pred_map[i, :, 2:4]
                 img_target_xy = target_map[i, :, :2]
                 img_target_wh = target_map[i, :, 2:4]
-                loss_xy += self.loss_xy(
+                loss_xy = loss_xy + self.loss_xy(
                     img_pred_xy, img_target_xy, weight=img_pos_mask)
-                loss_wh += self.loss_wh(
+                loss_wh = loss_wh + self.loss_wh(
                     img_pred_wh, img_target_wh, weight=img_pos_mask)
 
         return loss_cls, loss_conf, loss_xy, loss_wh
