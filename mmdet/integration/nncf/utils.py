@@ -15,7 +15,7 @@ def is_nncf_enabled():
 
 def check_nncf_is_enabled():
     if not is_nncf_enabled():
-        raise RuntimeError("Tried to use NNCF, but NNCF is not installed")
+        raise RuntimeError('Tried to use NNCF, but NNCF is not installed')
 
 
 def get_nncf_version():

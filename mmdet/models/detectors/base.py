@@ -120,12 +120,12 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         enabled for ONNX export
         (see the methods `forward_export` and `forward_dummy`).
         """
-        if kwargs.get("forward_export"):
+        if kwargs.get('forward_export'):
             logger = get_root_logger()
-            logger.info("Calling forward_export inside forward_test")
+            logger.info('Calling forward_export inside forward_test')
             return self.forward_export(imgs)
 
-        if kwargs.get("dummy_forward"):
+        if kwargs.get('dummy_forward'):
             return self.forward_dummy(imgs[0])
 
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
@@ -183,19 +183,19 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     def forward_export(self, imgs):
         from torch.onnx.operators import shape_as_tensor
-        assert self.img_metas, "Error: forward_export should be called inside forward_export_context"
+        assert self.img_metas, 'Error: forward_export should be called inside forward_export_context'
 
         img_shape = shape_as_tensor(imgs[0])
         imgs_per_gpu = int(imgs[0].size(0))
         assert imgs_per_gpu == 1
-        assert len(self.img_metas[0]) == imgs_per_gpu, f"self.img_metas={self.img_metas}"
+        assert len(self.img_metas[0]) == imgs_per_gpu, f'self.img_metas={self.img_metas}'
         self.img_metas[0][0]['img_shape'] = img_shape[2:4]
 
         return self.simple_test(imgs[0], self.img_metas[0], postprocess=False)
 
     @contextmanager
     def forward_export_context(self, img_metas):
-        assert self.img_metas is None and self.forward_backup is None, "Error: one forward context inside another forward context"
+        assert self.img_metas is None and self.forward_backup is None, 'Error: one forward context inside another forward context'
 
         self.img_metas = img_metas
         self.forward_backup = self.forward
@@ -207,7 +207,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     @contextmanager
     def forward_dummy_context(self, img_metas):
-        assert self.img_metas is None and self.forward_backup is None, "Error: one forward context inside another forward context"
+        assert self.img_metas is None and self.forward_backup is None, 'Error: one forward context inside another forward context'
 
         self.img_metas = img_metas
         self.forward_backup = self.forward

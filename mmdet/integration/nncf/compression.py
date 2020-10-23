@@ -36,7 +36,7 @@ class MMInitializeDataLoader(class_InitializingDataLoader):
 
     # TODO: not tested; need to test
     def get_target(self, dataloader_output):
-        return dataloader_output["gt_bboxes"], dataloader_output["gt_labels"]
+        return dataloader_output['gt_bboxes'], dataloader_output['gt_labels']
 
 
 def get_nncf_metadata():
@@ -112,7 +112,7 @@ def wrap_nncf_model(model,
         # and on the script tools/export.py
         assert get_fake_input_func is not None
 
-        input_size = nncf_config.get("input_info").get('sample_size')
+        input_size = nncf_config.get('input_info').get('sample_size')
         assert len(input_size) == 4 and input_size[0] == 1
 
         H, W = input_size[-2:]
@@ -133,7 +133,7 @@ def wrap_nncf_model(model,
         fake_data = _get_fake_data_for_forward(cfg,
                                                nncf_config,
                                                get_fake_input_func)
-        img, img_metas = fake_data["img"], fake_data["img_metas"]
+        img, img_metas = fake_data['img'], fake_data['img_metas']
         img = nncf_model_input(img)
         with model.forward_dummy_context(img_metas):
             model(img)
@@ -143,12 +143,12 @@ def wrap_nncf_model(model,
         # and on the script tools/export.py
         fake_data = _get_fake_data_for_forward(cfg, nncf_config,
                                                get_fake_input_func)
-        img, img_metas = fake_data["img"], fake_data["img_metas"]
+        img, img_metas = fake_data['img'], fake_data['img_metas']
         img = nncf_model_input(img)
         with model.forward_export_context(img_metas):
             model(img)
 
-    if "nncf_should_use_dummy_forward_with_export_part" in cfg:
+    if 'nncf_should_use_dummy_forward_with_export_part' in cfg:
         # NB: This parameter is used to choose if we should try to make NNCF compression
         #     for a whole model graph including postprocessing (`dummy_forward_with_export_part`),
         #     or make NNCF compression of the part of the model without postprocessing
@@ -164,10 +164,10 @@ def wrap_nncf_model(model,
                      f'{should_use_dummy_forward_with_export_part}')
 
     if should_use_dummy_forward_with_export_part:
-        logger.debug("dummy_forward = dummy_forward_with_export_part")
+        logger.debug('dummy_forward = dummy_forward_with_export_part')
         dummy_forward = dummy_forward_with_export_part
     else:
-        logger.debug("dummy_forward = dummy_forward_without_export_part")
+        logger.debug('dummy_forward = dummy_forward_without_export_part')
         dummy_forward = dummy_forward_without_export_part
 
     model.dummy_forward_fn = dummy_forward
