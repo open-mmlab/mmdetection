@@ -132,7 +132,7 @@ def convert(in_file, out_file, num_classes):
     # MMDetection v2.5.0 unifies the class order in RPN
     # if the model is trained in version<v2.5.0
     # The RPN model should be upgraded to be used in version>=2.5.0
-    if meta_info['mmdet_version'] <= '2.5.0':
+    if meta_info['mmdet_version'] < '2.5.0':
         upgrade_rpn = True
     else:
         upgrade_rpn = False
