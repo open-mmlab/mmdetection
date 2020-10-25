@@ -216,16 +216,10 @@ def main():
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
 
-    if cfg.get('nncf_config') and cfg.get('nncf_enable_compression', True):
-        # Note that if 'nncf_config' section is present, the field
-        # 'nncf_enable_compression' may be set to False to disable NNCF compression;
-        # if the field is not set, the NNCF compression is enabled by default.
+    if cfg.get('nncf_config'):
         check_nncf_is_enabled()
         logger.info('NNCF config: {}'.format(cfg.nncf_config))
-        cfg.nncf_enable_compression = True
         meta.update(get_nncf_metadata())
-    else:
-        cfg.nncf_enable_compression = False
 
     # set random seeds
     if args.seed is not None:
@@ -273,9 +267,14 @@ def main():
             CLASSES=datasets[0].CLASSES)
         # also save nncf status in the checkpoint -- it is important,
         # since it is used in wrap_nncf_model for loading NNCF-compressed models
-        if cfg.nncf_enable_compression:
+        if cfg.get('nncf_config'):
             nncf_metadata = get_nncf_metadata()
             cfg.checkpoint_config.meta.update(nncf_metadata)
+    else:
+        # cfg.checkpoint_config is None
+        assert not cfg.get('nncf_config'), (
+                "NNCF is enabled, but checkpoint_config is not set -- "
+                "cannot store NNCF metainfo into checkpoints")
 
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES

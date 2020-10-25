@@ -65,7 +65,7 @@ def wrap_nncf_model(model,
                     cfg,
                     data_loader_for_init=None,
                     get_fake_input_func=None,
-                    should_use_dummy_forward_with_export_part=True):
+                    should_compress_postprocessing=True):
     """
     The function wraps mmdet model by NNCF
     Note that the parameter `get_fake_input_func` should be the function `get_fake_input`
@@ -148,7 +148,7 @@ def wrap_nncf_model(model,
         with model.forward_export_context(img_metas):
             model(img)
 
-    if 'nncf_should_use_dummy_forward_with_export_part' in cfg:
+    if 'nncf_should_compress_postprocessing' in cfg:
         # NB: This parameter is used to choose if we should try to make NNCF compression
         #     for a whole model graph including postprocessing (`dummy_forward_with_export_part`),
         #     or make NNCF compression of the part of the model without postprocessing
@@ -158,12 +158,12 @@ def wrap_nncf_model(model,
         #     `dummy_forward_without_export_part` is our fallback decision.
         #     When we manage to enable NNCF compression for sufficiently many models,
         #     we should keep one choice only.
-        should_use_dummy_forward_with_export_part = \
-                cfg.get('nncf_should_use_dummy_forward_with_export_part')
-        logger.debug('set should_use_dummy_forward_with_export_part='
-                     f'{should_use_dummy_forward_with_export_part}')
+        should_compress_postprocessing = \
+                cfg.get('nncf_should_compress_postprocessing')
+        logger.debug('set should_compress_postprocessing='
+                     f'{should_compress_postprocessing}')
 
-    if should_use_dummy_forward_with_export_part:
+    if should_compress_postprocessing:
         logger.debug('dummy_forward = dummy_forward_with_export_part')
         dummy_forward = dummy_forward_with_export_part
     else:
