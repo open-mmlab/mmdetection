@@ -37,7 +37,7 @@ model = dict(
         in_channels=256,
         fc_out_channels=1024,
         roi_feat_size=7,
-        num_classes=81,
+        num_classes=5,
         target_means=[0., 0., 0., 0.],
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
@@ -99,13 +99,13 @@ test_cfg = dict(
 )
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/bdd100k/images/'
+data_root = 'data/FridgeObjects/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+    dict(type='Resize', img_scale=(499, 374), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -116,7 +116,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
+        img_scale=(499, 374),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -133,20 +133,20 @@ data = dict(
     train=dict(
         type=dataset_type,
 #        ann_file=data_root + 'annotations/instances_train2017.json',
-        ann_file=data_root + 'labels/bdd100k_labels_images_det_coco_train.json',
+        ann_file=data_root + 'Annotations/train.json',
         img_prefix=data_root + 'train/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
 #        ann_file=data_root + 'annotations/instances_val2017.json',
-        ann_file=data_root + 'labels/bdd100k_labels_images_det_coco_val.json',
+        ann_file=data_root + 'Annotations/val.json',
         img_prefix=data_root + 'val/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
 #        ann_file=data_root + 'annotations/instances_val2017.json',
-        ann_file=data_root + 'labels/bdd100k_labels_images_det_coco_val.json',
-        img_prefix=data_root + 'val/',
+        ann_file=data_root + 'Annotations/val.json',
+        img_prefix=data_root + 'val',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='bbox')
 # optimizer
@@ -172,7 +172,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/faster_rcnn_r50_fpn_1x'
+work_dir = './work_dirs/faster_rcnn_r50_fpn_1x_test'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

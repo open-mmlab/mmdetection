@@ -128,6 +128,8 @@ def main():
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
+    model.CLASSES = ('water_bottle','carton','milk_bottle','can')
+    datasets[0].CLASSES=('water_bottle','carton','milk_bottle','can')
     train_detector(
         model,
         datasets,

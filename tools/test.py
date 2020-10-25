@@ -286,6 +286,7 @@ def main():
     # for backward compatibility
     if 'CLASSES' in checkpoint['meta']:
         model.CLASSES = checkpoint['meta']['CLASSES']
+        model.CLASSES = ('water_bottle', 'carton', 'milk_bottle', 'can')
     else:
         model.CLASSES = dataset.CLASSES
 

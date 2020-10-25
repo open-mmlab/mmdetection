@@ -1,0 +1,5 @@
+opencv-python>=3.2,<4.0
+future
+dicttoxml
+xmltodict
+cityscapesscripts
