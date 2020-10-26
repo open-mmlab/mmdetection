@@ -8,7 +8,7 @@ First of all, it should be noted that NNCF is not a part of OTEDetection and is 
 installed by OTEDetection, and integration of OTEDetection with NNCF framework is made in a
 transparent way:  
 if NNCF options are not set in the config file, the NNCF framework is not used and the
-OTEDetection will work "in a normal way" if NNCF is not installed.
+OTEDetection will work "in a normal way" even if NNCF is not installed.
 
 If the config file of a model contains section `nncf_config`, and the section is not empty,
 but the NNCF network is not installed, a corresponding exception will be raised.
