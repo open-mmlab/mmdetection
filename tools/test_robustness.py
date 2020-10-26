@@ -295,7 +295,7 @@ def main():
                     if not osp.exists(show_dir):
                         osp.makedirs(show_dir)
                 outputs = single_gpu_test(model, data_loader, args.show,
-                                          args.show_dir, args.show_score_thr)
+                                          show_dir, args.show_score_thr)
             else:
                 model = MMDistributedDataParallel(
                     model.cuda(),
