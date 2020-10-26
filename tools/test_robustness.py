@@ -135,6 +135,14 @@ def parse_args():
     parser.add_argument(
         '--workers', type=int, default=32, help='workers per gpu')
     parser.add_argument('--show', action='store_true', help='show results')
+    parser.add_argument(
+        type=str,
+        '--show-dir', help='directory where painted images will be saved')
+    parser.add_argument(
+        '--show-score-thr',
+        type=float,
+        default=0.3,
+        help='score threshold (default: 0.3)')
     parser.add_argument('--tmpdir', help='tmp dir for writing some results')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
     parser.add_argument(
@@ -284,7 +292,9 @@ def main():
 
             if not distributed:
                 model = MMDataParallel(model, device_ids=[0])
-                outputs = single_gpu_test(model, data_loader, args.show)
+                outputs = single_gpu_test(model, data_loader, args.show,
+                    args.show_dir, args.show_score_thr
+                )
             else:
                 model = MMDistributedDataParallel(
                     model.cuda(),
