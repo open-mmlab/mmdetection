@@ -2,12 +2,9 @@ import argparse
 import copy
 import os
 import os.path as osp
-import shutil
-import tempfile
 
 import mmcv
 import torch
-import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
@@ -16,8 +13,8 @@ from pycocotools.cocoeval import COCOeval
 from robustness_eval import get_results
 
 from mmdet import datasets
-from mmdet.apis import set_random_seed, single_gpu_test, multi_gpu_test
-from mmdet.core import encode_mask_results, eval_map, wrap_fp16_model
+from mmdet.apis import multi_gpu_test, set_random_seed, single_gpu_test
+from mmdet.core import eval_map
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
@@ -136,7 +133,6 @@ def parse_args():
         '--workers', type=int, default=32, help='workers per gpu')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument(
-        type=str,
         '--show-dir', help='directory where painted images will be saved')
     parser.add_argument(
         '--show-score-thr',
@@ -293,8 +289,7 @@ def main():
             if not distributed:
                 model = MMDataParallel(model, device_ids=[0])
                 outputs = single_gpu_test(model, data_loader, args.show,
-                    args.show_dir, args.show_score_thr
-                )
+                                          args.show_dir, args.show_score_thr)
             else:
                 model = MMDistributedDataParallel(
                     model.cuda(),
