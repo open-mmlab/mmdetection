@@ -26,7 +26,7 @@ model = dict(
             # scales=[8],
             # ratios=[0.5, 1.0, 2.0],
             # strides=[4, 8, 16, 32, 64]),
-            scales=[5.5],
+            scales=[8],
             ratios=[0.5, 1.0, 2.0],
             strides=[4, 8, 16, 32]),
         bbox_coder=dict(
@@ -182,6 +182,6 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.70,
+        score_thr=0.60,
         nms=dict(type='nms', iou_threshold=0.10),
         max_per_img=100))
