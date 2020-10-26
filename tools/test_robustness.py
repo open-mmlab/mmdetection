@@ -288,6 +288,12 @@ def main():
 
             if not distributed:
                 model = MMDataParallel(model, device_ids=[0])
+                show_dir = args.show_dir
+                if show_dir is not None:
+                    show_dir = osp.join(show_dir, corruption)
+                    show_dir = osp.join(show_dir, corruption_severity)
+                    if not osp.exists(show_dir):
+                        osp.makedirs(show_dir)
                 outputs = single_gpu_test(model, data_loader, args.show,
                                           args.show_dir, args.show_score_thr)
             else:
