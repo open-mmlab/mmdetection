@@ -27,9 +27,6 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         conv_bias (bool | str): If specified as `auto`, it will be decided by
             the norm_cfg. Bias of conv will be set as True if `norm_cfg` is
             None, otherwise False. Default: "auto".
-        background_label (int | None): Label ID of background, set as 0 for
-            RPN and num_classes for other heads. It will automatically set as
-            num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
@@ -48,7 +45,6 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                  strides=(4, 8, 16, 32, 64),
                  dcn_on_last_conv=False,
                  conv_bias='auto',
-                 background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -77,11 +73,6 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
 
         self._init_layers()
 
