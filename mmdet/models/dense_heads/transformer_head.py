@@ -79,8 +79,7 @@ class TransformerHead(AnchorFreeHead):
                          bbox_weight=5.,
                          iou_weight=2.,
                          iou_calculator=dict(type='BboxOverlaps2D'),
-                         iou_mode='giou'),
-                     pos_weight=-1),
+                         iou_mode='giou')),
                  test_cfg=dict(max_per_img=100),
                  **kwargs):
         # NOTE here use `AnchorFreeHead` instead of `TransformerHead`,
@@ -116,6 +115,7 @@ class TransformerHead(AnchorFreeHead):
             loss_cls.update({'class_weight': class_weight})
             if 'bg_cls_weight' in loss_cls:
                 loss_cls.pop('bg_cls_weight')
+            self.bg_cls_weight = bg_cls_weight
 
         if train_cfg:
             assert 'assigner' in train_cfg, 'assigner should be provided '\
@@ -247,9 +247,28 @@ class TransformerHead(AnchorFreeHead):
         # outs_dec: [nb_dec, bs, num_query, embed_dim]
         outs_dec, _ = self.transformer(x, masks, self.query_embedding.weight,
                                        pos_embed)
+
         all_cls_scores = self.fc_cls(outs_dec)
         all_bbox_preds = self.fc_reg(self.activate(
             self.reg_ffn(outs_dec))).sigmoid()
+
+        # path = './train_debug/model_out4.pth'
+        # res = torch.load(path)
+        # # img = res['img']
+        # # img_size = res['img_size']
+        # output = res['out']
+        # # gt_instances = res['gt_instances']
+        # pred_logits = output['pred_logits']
+        # pred_boxes = output['pred_boxes']
+        # aux_outputs = output['aux_outputs']
+        # pred_logits_i = [
+        #     aux_output['pred_logits'] for aux_output in aux_outputs
+        # ]
+        # pred_boxes_i = [aux_output['pred_boxes'] for
+        # aux_output in aux_outputs]
+        # all_cls_scores = torch.stack(pred_logits_i + [pred_logits], axis=0)
+        # all_bbox_preds = torch.stack(pred_boxes_i + [pred_boxes], axis=0)
+
         return all_cls_scores, all_bbox_preds
 
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
@@ -267,6 +286,17 @@ class TransformerHead(AnchorFreeHead):
         all_bbox_preds = all_bbox_preds_list[-1]
         assert gt_bboxes_ignore is None, \
             'Only supports for gt_bboxes_ignore setting to None.'
+
+        # path = './train_debug/model_out4.pth'
+        # res = torch.load(path)
+        # gt_bboxes_list = res['gt_boxes']
+        # gt_labels_list = res['gt_labels']
+        # assert len(res['img_size']) == 2 == len(img_metas), '{} {}'.format(
+        #     len(res['img_size']), len(img_metas))
+        # for i in range(len(res['img_size'])):
+        #     h, w = res['img_size'][i]
+        #     img_metas[i]['img_shape'] = tuple((h, w, 3))
+
         num_dec_layers = len(all_cls_scores)
         all_gt_bboxes_list = [gt_bboxes_list for _ in range(num_dec_layers)]
         all_gt_labels_list = [gt_labels_list for _ in range(num_dec_layers)]
@@ -274,6 +304,7 @@ class TransformerHead(AnchorFreeHead):
             gt_bboxes_ignore for _ in range(num_dec_layers)
         ]
         img_metas_list = [img_metas for _ in range(num_dec_layers)]
+
         # TODO check detr use sum for loss_single here?
         losses_cls, losses_bbox, losses_iou = multi_apply(
             self.loss_single, all_cls_scores, all_bbox_preds,
@@ -290,6 +321,14 @@ class TransformerHead(AnchorFreeHead):
                     img_metas,
                     gt_bboxes_ignore_list=None):
         # labels: [bs, num_query], cls_scores: [bs, num_query, nb_class]
+
+        # path = './train_debug/match.pth'
+        # res_ = torch.load(path)
+        # cls_scores = res_['pred_logits']
+        # bbox_preds = res_['pred_boxes']
+        # for img_meta in img_metas:
+        #     img_meta['img_shape'] = tuple((512, 700, 3))
+
         num_imgs = cls_scores.size(0)
         cls_scores_list = [cls_scores[i] for i in range(num_imgs)]
         bbox_preds_list = [bbox_preds[i] for i in range(num_imgs)]
@@ -318,13 +357,17 @@ class TransformerHead(AnchorFreeHead):
         cls_scores = cls_scores.reshape(-1, self.cls_out_channels)
         num_total_samples = num_total_neg + num_total_pos
         num_total_samples = max(num_total_samples, 1)
-        # TODO num_total_pos all reduce like DETR official
-        num_total_pos = max(num_total_pos, 1)
-        # TODO check avg_factor in cls head.
+
+        # TODO check avg_factor in cls head. TODO avg factor
+        # construct weighted avg_factor to match with the official DETR repo.
+        cls_avg_factor = num_total_pos * 1.0 + \
+            num_total_neg * self.bg_cls_weight
         loss_cls = self.loss_cls(
-            cls_scores, labels, label_weights, avg_factor=num_total_samples)
+            cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
 
         # regression L1 loss
+        # TODO num_total_pos all reduce like DETR official
+        num_total_pos = max(num_total_pos, 1)
         bbox_preds = bbox_preds.reshape(-1, 4)
         loss_bbox = self.loss_bbox(
             bbox_preds, bbox_targets, bbox_weights, avg_factor=num_total_pos)
@@ -334,6 +377,19 @@ class TransformerHead(AnchorFreeHead):
         bboxes_gt = bbox_cxcywh_to_xyxy(bbox_targets) * factors
         loss_iou = self.loss_iou(
             bboxes, bboxes_gt, bbox_weights, avg_factor=num_total_pos)
+
+        # import os
+        # path = './train_debug/ce_loss.pth'
+        # res = dict()
+        # res['cls_scores'] = cls_scores
+        # res['labels'] = labels
+        # res['label_weights'] = label_weights
+        # # res['num_total_pos'] = num_total_pos
+        # res['loss_cls'] = loss_cls
+        # if not os.path.exists(path):
+        #     torch.save(res, path)
+        #     print('finished saving ce_loss ----------------------- ')
+
         return loss_cls, loss_bbox, loss_iou
 
     def get_targets(self,
@@ -349,6 +405,7 @@ class TransformerHead(AnchorFreeHead):
             'Only supports for gt_bboxes_ignore setting to None.'
         num_imgs = len(cls_scores_list)
         gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+
         (labels_list, label_weights_list, bbox_targets_list,
          bbox_weights_list, pos_inds_list, neg_inds_list) = multi_apply(
              self._get_target_single, cls_scores_list, bbox_preds_list,
@@ -365,6 +422,7 @@ class TransformerHead(AnchorFreeHead):
                            gt_labels,
                            img_meta,
                            gt_bboxes_ignore=None):
+
         num_bboxes = bbox_preds.size(0)
         # assigner and sampler
         assign_result = self.assigner.assign(bbox_preds, cls_scores, gt_bboxes,
@@ -379,10 +437,15 @@ class TransformerHead(AnchorFreeHead):
         labels = gt_bboxes.new_full((num_bboxes, ),
                                     self.background_label,
                                     dtype=torch.long)
-        label_weights = gt_bboxes.new_ones(num_bboxes, dtype=torch.float)
         labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds]
-        if self.train_cfg.pos_weight > 0:
-            label_weights[pos_inds] = self.train_cfg.pos_weight
+
+        # label_weights = gt_bboxes.new_ones(num_bboxes, dtype=torch.float)
+        # * self.bg_cls_weight
+        # # following the official DETR, set label weights for positives to 1.
+        # # if self.train_cfg.pos_weight > 0:
+        # #     label_weights[pos_inds] = self.train_cfg.pos_weight
+        # label_weights[pos_inds] = 1.
+        label_weights = gt_bboxes.new_ones(num_bboxes)
 
         # bbox targets
         bbox_targets = torch.zeros_like(bbox_preds)

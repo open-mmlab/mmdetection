@@ -89,6 +89,7 @@ class MultiheadAttention(nn.Module):
             value=value,
             attn_mask=attn_mask,
             key_padding_mask=key_padding_mask)[0]
+
         return residual + self.dropout(out)
 
     def __repr__(self):

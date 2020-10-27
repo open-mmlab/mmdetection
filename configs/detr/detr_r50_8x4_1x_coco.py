@@ -46,8 +46,7 @@ model = dict(
 train_cfg = dict(
     assigner=dict(
         type='HungarianAssigner', cls_weight=1., bbox_weight=5.,
-        iou_weight=2.),
-    pos_weight=-1)
+        iou_weight=2.))  # pos_weight=-1
 test_cfg = dict(max_per_img=100)
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -88,8 +87,10 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=4,
+    # samples_per_gpu=4,
+    # workers_per_gpu=4,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
@@ -104,3 +105,4 @@ lr_config = dict(
     warmup_ratio=0.1,
     step=[200])
 total_epochs = 300
+dist_params = dict(backend='nccl', port=29501)
