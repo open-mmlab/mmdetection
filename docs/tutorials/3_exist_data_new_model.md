@@ -10,7 +10,7 @@ The basic steps are as below:
 
 ### Prepare the standard dataset
 
-In this tutorial, as we use the standard cityscapes dataset as an example, to prepare the dataset please follow the tutorial [getting_started](./getting_started.md).
+In this tutorial, as we use the standard cityscapes dataset as an example, to prepare the dataset please follow the tutorial [getting_started](https://github.com/open-mmlab/mmdetection/blob/master/docs/getting_started.md).
 
 
 
@@ -115,7 +115,7 @@ To train a model with the new config, you can simply run
 python tools/train.py configs/cityscapes/cascade_mask_rcnn_r50_fpn_1x_cityscapes.py
 ```
 
-For more detailed usages, please refer to the [tutorial 1](./tutorials/1_exist_data_model.md).
+For more detailed usages, please refer to the tutorial 1.
 
 ### Test and inference
 
@@ -125,4 +125,4 @@ To test the trained model, you can simply run
 python tools/test.py configs/cityscapes/cascade_mask_rcnn_r50_fpn_1x_cityscapes.py work_dirs/cascade_mask_rcnn_r50_fpn_1x_cityscapes/latest.pth --eval bbox segm
 ```
 
-For more detailed usages, please refer to the [tutorial 1](./tutorials/1_exist_data_model.md).
+For more detailed usages, please refer to the tutorial 1.
