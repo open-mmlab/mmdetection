@@ -38,8 +38,8 @@ Integration of OTEDetection with NNCF framework is made in a transparent way:
 
 * If the config file of a model contains a parameter `nncf_config`, and the parameter is a non-empty dict,
   NNCF will be used for the model compression:  
-  - If NNCF **is not** installed, a corresponding exception will be raised.  
-  - If NNCF **is** installed, the dict that is the value of the parameter `nncf_config`
+  If NNCF **is not** installed, a corresponding exception will be raised.  
+  If NNCF **is** installed, the dict that is the value of the parameter `nncf_config`
     will be passed to the NNCF framework as its config without changes.
 
 Example of NNCF parameter `nncf_config` that may be used for int8 quantization of `ssd300_coco`:
@@ -72,9 +72,9 @@ Also you can see parameters of different NNCF compression algorithms in the
 
 ## Example of config files for models compressed by NNCF
 
-You can see the examples of the config files in the folder [./configs/nncf_compression](./configs/nncf_compression).
+You can see the examples of the config files in the folder [configs/nncf_compression](../configs/nncf_compression).
 
-## How to start/resume NNCF compression.
+## Typical pipeline of NNCF compression with OTEDetection. How to start/resume NNCF compression.
 
 Typically, the pipeline of compression with NNCF looks as follows:
 
