@@ -43,7 +43,7 @@ python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out-di
 Currently the config files in `cityscapes` use COCO pre-trained weights to initialize.
 You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
 
-For using custom datasets, please refer to [Tutorials 2: Adding New Dataset](tutorials/new_dataset.md).
+For using custom datasets, please refer to [Tutorials 2: Customize Datasets](tutorials/customize_dataset.md).
 
 ## Inference with pretrained models
 
@@ -461,5 +461,5 @@ If you need a lightweight GUI for visualizing the detection results, you can ref
 
 ## Tutorials
 
-Currently, we provide four tutorials for users to [finetune models](tutorials/finetune.md), [add new dataset](tutorials/new_dataset.md), [design data pipeline](tutorials/data_pipeline.md) and [add new modules](tutorials/new_modules.md).
+Currently, we provide four tutorials for users to [finetune models](tutorials/finetune.md), [customize datasets](tutorials/customize_dataset.md), [design data pipeline](tutorials/data_pipeline.md), [customize modules](tutorials/customize_models.md), [customize runtime settings](tutorials/customize_runtime.md), and [customize losses](tutorials/customize_losses.md).
 We also provide a full description about the [config system](config.md).
