@@ -277,9 +277,11 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
         self.n, self.c, self.h, self.w = self.net.input_info['image'].input_data.shape
         assert self.n == 1, 'Only batch 1 is supported.'
 
+        xml_path = args[0].replace('.xml', '_text_recognition_head_encoder.xml')
+        self.text_encoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
+
         xml_path = args[0].replace('.xml', '_text_recognition_head_decoder.xml')
         self.text_decoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
-        print(self.text_decoder.net.inputs)
 
         self.alphabet='  ' + string.ascii_lowercase + string.digits
 
@@ -290,6 +292,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
         for output in extra_outputs:
             if output not in self.orig_ir_mapping and output in self.net.outputs:
                 self.orig_ir_mapping[output] = output
+            print(self.orig_ir_mapping[output], output)
 
         self.try_add_extra_outputs(extra_outputs)
         outputs = []
@@ -327,7 +330,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
         texts = []
         for feature in output['texts']:
             feature = np.expand_dims(feature, 0)
-            #feature = self.text_encoder({'input': feature})['output']
+            feature = self.text_encoder({'input': feature})['output']
             feature = np.reshape(feature, (feature.shape[0], feature.shape[1], -1))
             feature = np.transpose(feature, (0, 2, 1))
 

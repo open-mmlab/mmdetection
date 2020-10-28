@@ -1,4 +1,9 @@
+import os
+
+import numpy as np
+import onnx
 import torch
+import torch.nn as nn
 
 from ..builder import DETECTORS
 from .mask_rcnn import MaskRCNN
@@ -95,13 +100,6 @@ class MaskTextSpotter(MaskRCNN):
     def export(self, img, img_metas, export_name='', **kwargs):
 
         def export_to_onnx_text_recognition_decoder(net, input_size, path_to_onnx):
-            import os
-
-            import numpy as np
-            import onnx
-
-            import torch.nn as nn
-
             net.eval()
 
             dim = net.hidden_size
@@ -141,11 +139,36 @@ class MaskTextSpotter(MaskRCNN):
 
             return printable_graph
 
+
+        def export_to_onnx_text_recognition_encoder(net, input_size, path_to_onnx):
+            net.eval()
+            dim = net.dim_input
+            input = np.random.randn(1, dim, *input_size).astype(np.float32)
+            input = torch.tensor(input)
+            if torch.cuda.is_available():
+                net = net.cuda()
+                input = input.cuda()
+            input.requires_grad = True
+            torch.onnx.export(net, input, path_to_onnx, verbose=True,
+                              input_names=['input'], output_names=['output'])
+
+            printable_graph = onnx.helper.printable_graph(onnx.load(path_to_onnx).graph)
+            print(printable_graph)
+
+            return printable_graph
+
         self.img_metas = img_metas
         self.forward_backup = self.forward
         self.forward = self.forward_export
         torch.onnx.export(self, img, export_name, **kwargs)
         self.forward = self.forward_backup
+
+        # Export of text recognition encoder
+        export_to_onnx_text_recognition_encoder(
+            self.roi_head.text_head.encoder,
+            self.roi_head.text_head.input_feature_size,
+            export_name.replace('.onnx', '_text_recognition_head_encoder.onnx')
+        )
 
         # Export of text recognition decoder
         export_to_onnx_text_recognition_decoder(

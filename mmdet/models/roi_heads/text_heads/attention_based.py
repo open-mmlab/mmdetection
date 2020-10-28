@@ -296,9 +296,11 @@ class TextRecognitionHeadAttention(nn.Module):
         return decoder_outputs
 
     def forward(self, features, target=None, masks=None):
-        features = self.encoder(features)
         if torch.onnx.is_in_onnx_export():
             return features
+
+        features = self.encoder(features)
+
         if masks is not None:
             masks = masks.expand(-1, features.shape[1], -1, -1)
             features = features * masks
