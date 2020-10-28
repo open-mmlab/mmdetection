@@ -783,6 +783,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             bbox_targets (list[Tensor]): Regression targets of each level in
                 the form of (l, t, r, b).
         """
+        # TODO: Re-implemented in Class PointCoder
         assert len(decoded_bboxes) == len(mlvl_points)
         num_levels = len(decoded_bboxes)
         mlvl_points = [points.repeat(num_imgs, 1) for points in mlvl_points]
