@@ -12,7 +12,7 @@ lr_config = dict(policy='step', step=[3])
 # runtime settings
 total_epochs = 4  # actual epoch = 4 * 3 = 12
 
-load_from = "https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/pascal_voc/retinanet_r50_fpn_1x_voc0712/retinanet_r50_fpn_1x_voc0712_20200617-47cbdd0e.pth"
+load_from = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/pascal_voc/retinanet_r50_fpn_1x_voc0712/retinanet_r50_fpn_1x_voc0712_20200617-47cbdd0e.pth'
 
 data = dict(
     samples_per_gpu=8,  # Batch size of a single GPU
@@ -27,32 +27,30 @@ work_dir = './output'
 workflow = [('train', 1)]
 
 find_unused_parameters = True
-nncf_load_from = None
 
-nncf_config = {
-    "input_info": {
-        "sample_size": [1, 3, 1000, 600]
-    },
-    "compression": [
-        {
-            "algorithm": "quantization",
-            "initializer": {
-                "range": {
-                    "num_init_steps": 10
-                },
-                "batchnorm_adaptation": {
-                    "num_bn_adaptation_steps": 30,
-                }
-
-            }
-        },
-        {
-            "algorithm": "filter_pruning",
-            "params": {
-                "schedule": "baseline",
-                "pruning_target": 0.3
-            }
-        }
+nncf_config = dict(
+    input_info=dict(
+        sample_size=[1, 3, 1000, 600]
+    ),
+    compression=[
+        dict(
+            algorithm='quantization',
+            initializer=dict(
+                range=dict(
+                    num_init_steps=10
+                ),
+                batchnorm_adaptation=dict(
+                    num_bn_adaptation_steps=30,
+                )
+            )
+        ),
+        dict(
+            algorithm='filter_pruning',
+            params=dict(
+                schedule='baseline',
+                pruning_target=0.3
+            )
+        )
     ],
-    "log_dir": work_dir
-}
+    log_dir=work_dir
+)

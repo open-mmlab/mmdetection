@@ -148,43 +148,42 @@ work_dir = './output'
 resume_from = None
 workflow = [('train', 1)]
 
-load_from = "https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/face-detection-0200.pth"
+load_from = 'https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/face-detection-0200.pth'
 
 find_unused_parameters = True
-nncf_load_from = None
 
-nncf_config = {
-    "input_info": {
-        "sample_size": [1, 3, 256, 256]
-    },
-    "compression": [
-        {
-            "algorithm": "quantization",
-            "initializer": {
-                "range": {
-                    "num_init_steps": 10
-                },
-                "batchnorm_adaptation": {
-                    "num_bn_adaptation_steps": 30,
-                }
+nncf_config = dict(
+    input_info=dict(
+        sample_size=[1, 3, 256, 256]
+    ),
+    compression=[
+        dict(
+            algorithm='quantization',
+            initializer=dict(
+                range=dict(
+                    num_init_steps=10
+                ),
+                batchnorm_adaptation=dict(
+                    num_bn_adaptation_steps=30,
+                )
 
-            }
-        },
-        {
-            "algorithm": "magnitude_sparsity",
-            "params": {
-                "schedule": "multistep",
-                "multistep_sparsity_levels": [
+            )
+        ),
+        dict(
+            algorithm='magnitude_sparsity',
+            params=dict(
+                schedule='multistep',
+                multistep_sparsity_levels=[
                     0.3,
                     0.5,
                     0.7
                 ],
-                "multistep_steps": [
+                multistep_steps=[
                     40,
                     80
                 ]
-            }
-        },
+            )
+        )
     ],
-    "log_dir": work_dir
-}
+    log_dir=work_dir
+)

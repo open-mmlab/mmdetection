@@ -160,26 +160,23 @@ resume_from = None
 workflow = [('train', 1)]
 
 find_unused_parameters = True
-nncf_load_from = None
 
-nncf_config = {
-    "input_info": {
-        "sample_size": [1, 3, input_size, input_size]
-    },
-    "compression": [
-        {
-            "algorithm": "quantization",
-            "initializer": {
-                "range": {
-                    "num_init_steps": 10
-                },
-                "batchnorm_adaptation": {
-                    "num_bn_adaptation_steps": 30,
-                }
-
-            }
-        },
-
+nncf_config = dict(
+    input_info=dict(
+        sample_size=[1, 3, input_size, input_size]
+    ),
+    compression=[
+        dict(
+            algorithm='quantization',
+            initializer=dict(
+                range=dict(
+                    num_init_steps=10
+                ),
+                batchnorm_adaptation=dict(
+                    num_bn_adaptation_steps=30,
+                )
+            )
+        ),
     ],
-    "log_dir": work_dir
-}
+    log_dir=work_dir
+)
