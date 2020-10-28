@@ -350,11 +350,15 @@ If you use launch training jobs with Slurm, there are two ways to specify the po
 
 ## Useful tools
 
-We provide lots of useful tools under `tools/` directory.
+Apart from training / testing scripts, We provide lots of useful tools under
+ `tools/` directory.
 
-### Analyze logs
+### Visualizations
 
-You can plot loss/mAP curves given a training log file. Run `pip install seaborn` first to install the dependency.
+#### Visualizing and analyzing logs
+
+`tools/analyze_logs.py` helps users to plot loss/mAP curves given a training
+ log file. Run `pip install seaborn` first to install the dependency.
 
 ![loss curve image](../resources/loss_curve.png)
 
@@ -366,42 +370,61 @@ Examples:
 
 - Plot the classification loss of some run.
 
-```shell
-python tools/analyze_logs.py plot_curve log.json --keys loss_cls --legend loss_cls
-```
+    ```shell
+    python tools/analyze_logs.py plot_curve log.json --keys loss_cls --legend loss_cls
+    ```
 
 - Plot the classification and regression loss of some run, and save the figure to a pdf.
 
-```shell
-python tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_bbox --out losses.pdf
-```
+    ```shell
+    python tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_bbox --out losses.pdf
+    ```
 
 - Compare the bbox mAP of two runs in the same figure.
 
-```shell
-python tools/analyze_logs.py plot_curve log1.json log2.json --keys bbox_mAP --legend run1 run2
-```
+    ```shell
+    python tools/analyze_logs.py plot_curve log1.json log2.json --keys bbox_mAP --legend run1 run2
+    ```
 
-You can also compute the average training speed.
+- Compute the average training speed.
 
-```shell
-python tools/analyze_logs.py cal_train_time log.json [--include-outliers]
-```
+    ```shell
+    python tools/analyze_logs.py cal_train_time log.json [--include-outliers]
+    ```
 
-The output is expected to be like the following.
+    The output is expected to be like the following.
 
-```
------Analyze train time of work_dirs/some_exp/20190611_192040.log.json-----
-slowest epoch 11, average time is 1.2024
-fastest epoch 1, average time is 1.1909
-time std over epochs is 0.0028
-average iter time: 1.1959 s/iter
+    ```
+    -----Analyze train time of work_dirs/some_exp/20190611_192040.log.json-----
+    slowest epoch 11, average time is 1.2024
+    fastest epoch 1, average time is 1.1909
+    time std over epochs is 0.0028
+    average iter time: 1.1959 s/iter
+    ```
 
-```
+#### Visualizing datasets
 
-### Get the FLOPs and params (experimental)
 
-We provide a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
+
+#### Visualizing models
+
+First, convert the model to ONNX as described
+[here](#convert-mmdetection-model-to-onnx-experimental).
+Note that currently only RetinaNet is supported, support for other models
+ will be coming in later versions.
+The converted model could be visualized by tools like [Netron](https://github.com/lutzroeder/netron).
+
+#### Visualizing the output results
+
+If you need a lightweight GUI for visualizing the detection results, you can refer [DetVisGUI project](https://github.com/Chien-Hung/DetVisGUI/tree/mmdetection).
+
+### Analysis
+
+#### Analyzing COCO errors
+
+#### Get the FLOPs and number of params (experimental)
+
+`tools/get_flops.py` is a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
 
 ```shell
 python tools/get_flops.py ${CONFIG_FILE} [--shape ${INPUT_SHAPE}]
@@ -419,15 +442,27 @@ Params: 37.74 M
 
 **Note**: This tool is still experimental and we do not guarantee that the number is correct. You may well use the result for simple comparisons, but double check it before you adopt it in technical reports or papers.
 
-(1) FLOPs are related to the input shape while parameters are not. The default input shape is (1, 3, 1280, 800).
-(2) Some operators are not counted into FLOPs like GN and custom operators. Refer to [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/flops_counter.py) for details.
-(3) The FLOPs of two-stage detectors is dependent on the number of proposals.
+1. FLOPs are related to the input shape while parameters are not. The default
+ input shape is (1, 3, 1280, 800).
+2. Some operators are not counted into FLOPs like GN and custom operators
+. Refer to [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/flops_counter.py) for details.
+3. The FLOPs of two-stage detectors is dependent on the number of proposals.
 
-### Publish a model
+#### Print the entire config
+
+#### Evaluating a metric
+
+### Model conversion
+
+#### Prepare a model for publishing
+
+`tools/publish_model.py` helps users to prepare their model for publishing.
 
 Before you upload a model to AWS, you may want to
-(1) convert model weights to CPU tensors, (2) delete the optimizer states and
-(3) compute the hash of the checkpoint file and append the hash id to the filename.
+1. convert model weights to CPU tensors
+2. delete the optimizer states and
+3. compute the hash of the checkpoint file and append the hash id to the
+ filename.
 
 ```shell
 python tools/publish_model.py ${INPUT_FILENAME} ${OUTPUT_FILENAME}
@@ -441,13 +476,11 @@ python tools/publish_model.py work_dirs/faster_rcnn/latest.pth faster_rcnn_r50_f
 
 The final output filename will be `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth`.
 
-### Test the robustness of detectors
 
-Please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
+#### MMDetection model to ONNX (experimental)
 
-### Convert to ONNX (experimental)
-
-We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. The converted model could be visualized by tools like [Netron](https://github.com/lutzroeder/netron). Besides, we also support comparing the output results between Pytorch and ONNX model.
+We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. We also support comparing the output results between Pytorch and
+ ONNX model for verification.
 
 ```shell
 python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output_file ${ONNX_FILE} [--shape ${INPUT_SHAPE} --verify]
@@ -455,9 +488,20 @@ python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output_file ${O
 
 **Note**: This tool is still experimental. Some customized operators are not supported for now. We only support exporting RetinaNet model at this moment.
 
-### Visualize the output results
+#### Detectron model to Pytorch
 
-If you need a lightweight GUI for visualizing the detection results, you can refer [DetVisGUI project](https://github.com/Chien-Hung/DetVisGUI/tree/mmdetection).
+#### Regnet model to MMDetection
+
+#### MMDetection 1.x model to MMDetection 2.x
+
+### Miscellaneous
+
+
+#### Test the robustness of detectors
+
+Please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
+
+
 
 ## Tutorials
 
