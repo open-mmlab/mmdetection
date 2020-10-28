@@ -169,9 +169,9 @@ def parse_args():
 def main():
     args = parse_args()
 
-    assert args.out or args.show, \
+    assert args.out or args.show or args.show_dir, \
         ('Please specify at least one operation (save or show the results) '
-         'with the argument "--out" or "--show"')
+         'with the argument "--out", "--show" or "show-dir"')
 
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
@@ -291,7 +291,7 @@ def main():
                 show_dir = args.show_dir
                 if show_dir is not None:
                     show_dir = osp.join(show_dir, corruption)
-                    show_dir = osp.join(show_dir, corruption_severity)
+                    show_dir = osp.join(show_dir, str(corruption_severity))
                     if not osp.exists(show_dir):
                         osp.makedirs(show_dir)
                 outputs = single_gpu_test(model, data_loader, args.show,
