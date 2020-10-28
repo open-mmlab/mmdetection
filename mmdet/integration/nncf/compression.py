@@ -82,15 +82,17 @@ def wrap_nncf_model(model,
 
     if cfg.get('resume_from'):
         checkpoint_path = cfg.get('resume_from')
+        assert is_checkpoint_nncf(checkpoint_path), (
+                'It is possible to resume training with NNCF compression from NNCF checkpoints only. '
+                'Use "load_from" with non-compressed model for further compression by NNCF.')
     elif cfg.get('load_from'):
         checkpoint_path = cfg.get('load_from')
+        if not is_checkpoint_nncf(checkpoint_path):
+            checkpoint_path = None
+            logger.info('Received non-NNCF checkpoint to start training '
+                        '-- initialization of NNCF fields will be done')
     else:
         checkpoint_path = None
-
-    if checkpoint_path and not is_checkpoint_nncf(checkpoint_path):
-        checkpoint_path = None
-        logger.info('Received non-NNCF checkpoint to start training '
-                    '-- initialization of NNCF fields will be done')
 
     if not data_loader_for_init and not checkpoint_path:
         raise RuntimeError('Either data_loader_for_init or NNCF pre-trained '
