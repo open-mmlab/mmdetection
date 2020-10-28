@@ -27,6 +27,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
+    parser.add_argument('--tensorboard-dir', help='the dir to save tensorboard logs')
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument(
@@ -192,6 +193,13 @@ def main():
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
     log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
     logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
+
+    if args.tensorboard_dir is not None:
+        hooks = [hook for hook in cfg.log_config.hooks if hook.type == 'TensorboardLoggerHook']
+        if hooks:
+            hooks[0].log_dir = args.tensorboard_dir
+        else:
+            logger.warning('Failed to find TensorboardLoggerHook')
 
     # init the meta dict to record some important information such as
     # environment info and seed, which will be logged

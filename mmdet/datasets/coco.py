@@ -337,7 +337,7 @@ class CocoDataset(CustomDataset):
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05),
-                 test_cfg=None):
+                 score_thr=None):
         """Evaluation in COCO protocol.
 
         Args:
@@ -355,6 +355,8 @@ class CocoDataset(CustomDataset):
             iou_thrs (Sequence[float]): IoU threshold used for evaluating
                 recalls. If set to a list, the average recall of all IoUs will
                 also be computed. Default: 0.5.
+            score_thr (float): Score threshold used to calculate
+                f1-score for text detection task.
 
         Returns:
             dict[str: float]
@@ -462,7 +464,7 @@ class CocoDataset(CustomDataset):
                                 }})
 
                         predictions.append(per_image_predictions)
-                    
+
                     gt_annotations = cocoEval.cocoGt.imgToAnns
                     recall, precision, hmean, _ = text_eval(
                         predictions, gt_annotations, float(metric_params.get('thr', 0)),
@@ -470,7 +472,9 @@ class CocoDataset(CustomDataset):
                         use_transcriptions=metric in ['word_spotting'])
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
                           format(recall, precision, hmean))
-                    eval_results[metric] = float(f'{hmean:.3f}')
+                    eval_results['hmean'] = float(f'{hmean:.3f}')
+                    eval_results['precision'] = float(f'{precision:.3f}')
+                    eval_results['recall'] = float(f'{recall:.3f}')
                     continue
 
                 cocoEval.evaluate()
