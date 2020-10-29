@@ -350,21 +350,21 @@ If you use launch training jobs with Slurm, there are two ways to specify the po
 
 ## Useful tools
 
-Apart from training / testing scripts, We provide lots of useful tools under
+Apart from training/testing scripts, We provide lots of useful tools under the
  `tools/` directory.
 
 ### Visualizations
 
 #### Visualizing and analyzing logs
 
-`tools/analyze_logs.py` helps users to plot loss/mAP curves given a training
+`tools/analyze_logs.py` plots loss/mAP curves given a training
  log file. Run `pip install seaborn` first to install the dependency.
 
-![loss curve image](../resources/loss_curve.png)
-
-```shell
+ ```shell
 python tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
 ```
+
+![loss curve image](../resources/loss_curve.png)
 
 Examples:
 
@@ -404,7 +404,13 @@ Examples:
 
 #### Visualizing datasets
 
+`tools/browse_dataset.py` helps the user to browse a detection dataset (both
+ images and bounding box annotations) visually, or save the image to a
+  designated directory.
 
+```shell
+python tools/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
+```
 
 #### Visualizing models
 
@@ -422,6 +428,14 @@ If you need a lightweight GUI for visualizing the detection results, you can ref
 
 #### Analyzing COCO errors
 
+`tools/coco_error_analysis.py` analyzes COCO results per category and by
+ different criterion. It can also make a plot to provide useful
+  information.
+
+```shell
+python tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--ann ${ANN}] [--types ${TYPES[TYPES...]}]
+```
+
 #### Get the FLOPs and number of params (experimental)
 
 `tools/get_flops.py` is a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
@@ -430,7 +444,7 @@ If you need a lightweight GUI for visualizing the detection results, you can ref
 python tools/get_flops.py ${CONFIG_FILE} [--shape ${INPUT_SHAPE}]
 ```
 
-You will get the result like this.
+You will get the results like this.
 
 ```
 ==============================
@@ -440,7 +454,9 @@ Params: 37.74 M
 ==============================
 ```
 
-**Note**: This tool is still experimental and we do not guarantee that the number is correct. You may well use the result for simple comparisons, but double check it before you adopt it in technical reports or papers.
+**Note**: This tool is still experimental and we do not guarantee that the
+ number is absolutely correct. You may well use the result for simple
+  comparisons, but double check it before you adopt it in technical reports or papers.
 
 1. FLOPs are related to the input shape while parameters are not. The default
  input shape is (1, 3, 1280, 800).
@@ -450,7 +466,23 @@ Params: 37.74 M
 
 #### Print the entire config
 
+`tools/print_config.py` prints the whole config verbatim, expanding all its
+ imports.
+
+```shell
+python tools/print_config.py ${CONFIG} [-h] [--options ${OPTIONS [OPTIONS...]}]
+```
+
 #### Evaluating a metric
+
+`tools/eval_metric.py` evaluates certain metrics of a pkl result file
+ according to a config file.
+
+```shell
+python tools/eval_metric.py ${CONFIG} ${PKL_RESULTS} [-h] [--format-only] [--eval ${EVAL[EVAL ...]}]
+                      [--cfg-options ${CFG_OPTIONS [CFG_OPTIONS ...]}]
+                      [--eval-options ${EVAL_OPTIONS [EVAL_OPTIONS ...]}]
+```
 
 ### Model conversion
 
@@ -488,11 +520,44 @@ python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output_file ${O
 
 **Note**: This tool is still experimental. Some customized operators are not supported for now. We only support exporting RetinaNet model at this moment.
 
-#### Detectron model to Pytorch
+#### MMDetection 1.x model to MMDetection 2.x
+
+`tools/upgrade_model_version.py` upgrades a previous MMDetection checkpoint
+ to the new version. Note that this script is not guaranteed to work as some
+  breaking changes are introduced in the new version. It is recommended to
+   directly use the new checkpoints.
+
+```shell
+python tools/upgrade_model_version.py ${IN_FILE} ${OUT_FILE} [-h] [--num-classes NUM_CLASSES]
+```
 
 #### Regnet model to MMDetection
 
-#### MMDetection 1.x model to MMDetection 2.x
+`tools/regnet2mmdet.py` convert keys in pycls pretrained RegNet models to
+ MMDetection style.
+
+```shell
+python tools/regnet2mmdet.py ${SRC} ${DST} [-h]
+```
+
+#### Detectron ResNet to Pytorch
+
+`tools/detectron2pytorch.py` converts keys in the original detectron pretrained
+ ResNet models to PyTorch style.
+
+```shell
+python tools/detectron2pytorch.py ${SRC} ${DST} ${DEPTH} [-h]
+```
+
+### Dataset Conversion
+
+`tools/convert_datasets/` contains tools to convert the Cityscapes dataset
+ and Pascal VOC dataset to the COCO format.
+
+```shell
+python tools/convert_datasets/cityscapes.py ${CITYSCAPES_PATH} [-h] [--img-dir ${IMG_DIR}] [--gt-dir ${GT_DIR}] [-o ${OUT_DIR}] [--nproc ${NPROC}]
+python tools/convert_datasets/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}]
+```
 
 ### Miscellaneous
 
