@@ -69,10 +69,12 @@ class SingleRoIExtractor(BaseRoIExtractor):
         target_lvls = self.map_roi_levels(rois, num_levels)
         if roi_scale_factor is not None:
             rois = self.roi_rescale(rois, roi_scale_factor)
+
         for i in range(num_levels):
-            inds = target_lvls == i
-            if inds.any():
-                rois_ = rois[inds, :]
+            mask = target_lvls == i
+            inds = mask.nonzero(as_tuple=False).squeeze(1)
+            if inds.numel() > 0:
+                rois_ = rois[inds]
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
                 roi_feats[inds] = roi_feats_t
             else:

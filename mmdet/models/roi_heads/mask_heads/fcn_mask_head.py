@@ -240,7 +240,8 @@ class FCNMaskHead(nn.Module):
             im_mask[(inds, ) + spatial_inds] = masks_chunk
 
         for i in range(N):
-            cls_segms[labels[i]].append(im_mask[i].cpu().numpy())
+            # cls_segms[labels[i]].append(im_mask[i].cpu().numpy())
+            cls_segms[labels[i]].append(im_mask[i])
         return cls_segms
 
 
@@ -306,6 +307,9 @@ def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
     gy = img_y[:, :, None].expand(N, img_y.size(1), img_x.size(1))
     grid = torch.stack([gx, gy], dim=3)
 
+    if torch.onnx.is_in_onnx_export():
+        raise RuntimeError(
+            'Exporting F.grid_sample from Pytorch to ONNX is not supported.')
     img_masks = F.grid_sample(
         masks.to(dtype=torch.float32), grid, align_corners=False)
 
