@@ -1,8 +1,6 @@
-# Tutorial 1: Inference, testing, and training with predefined models and standard datasets
+# Case 1: Inference, testing, and training with predefined models and standard datasets
 
-Welcome to MMDetection's tutorial.
-
-MMDetection provides hundreds of predefined and pretrained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This tutorial will show how to perform common tasks on these pretrained models and standard datasets, including:
+MMDetection provides hundreds of predefined and pretrained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This note will show how to perform common tasks on these pretrained models and standard datasets, including:
 
 - Use existing models to inference on given images.
 - Test pretrained models on standard datasets.
@@ -186,7 +184,6 @@ python tools/convert_datasets/cityscapes.py \
 ```
 
 TODO: CHANGE TO THE NEW PATH
-For using custom datasets, please refer to [Tutorials 2: Adding New Dataset](tutorials/new_dataset.md).
 
 ### Test pretrained models
 
@@ -318,7 +315,6 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 
 MMDetection also provides out-of-the-box tools for training detection models.
 This section will show how to train _predefined_ models (under [configs](https://github.com/open-mmlab/mmdetection/tree/master/configs)) on standard datasets i.e. COCO.
-For training self-defined models, or training with custom datasets. See [Tutorial 2]() and [Tutorial 3]() for details.
 
 **Important**: The default learning rate in config files is for 8 GPUs and 2 img/gpu (batch size = 8\*2 = 16).
 According to the [linear scaling rule](https://arxiv.org/abs/1706.02677), you need to set the learning rate proportional to the batch size if you use different GPUs or images per GPU, e.g., `lr=0.01` for 4 GPUs \* 2 imgs/gpu and `lr=0.08` for 16 GPUs \* 4 imgs/gpu.

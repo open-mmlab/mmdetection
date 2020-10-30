@@ -4,9 +4,21 @@ Welcome to MMDetection's documentation!
 .. toctree::
    :maxdepth: 2
 
-   install.md
    getting_started.md
-   model_zoo.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Quick Run
+
+   1_exist_data_model.md
+   2_new_data_model.md
+   3_exist_data_new_model.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Useful Tools
+
+   usefultools.md
 
 .. toctree::
    :maxdepth: 2

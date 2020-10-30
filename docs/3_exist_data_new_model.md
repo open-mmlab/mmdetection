@@ -1,6 +1,6 @@
-# Tutorial 3: Inference, testing, and training with predefined models and standard datasets
+# Case 3: Inference, testing, and training with predefined models and standard datasets
 
-In this tutorial, you will know how to inference, test, and train predefined models with your own settings for standard datasets. We use the cityscapes dataset to train a COCO pretrained Cascade Mask R-CNN model as an example to describe the whole process.
+In this note, you will know how to inference, test, and train predefined models with your own settings for standard datasets. We use the cityscapes dataset to train a COCO pretrained Cascade Mask R-CNN model as an example to describe the whole process.
 
 The basic steps are as below:
 
@@ -10,9 +10,45 @@ The basic steps are as below:
 
 ### Prepare the standard dataset
 
-In this tutorial, as we use the standard cityscapes dataset as an example, to prepare the dataset please follow the tutorial [getting_started](https://github.com/open-mmlab/mmdetection/blob/master/docs/getting_started.md).
+In this note, as we use the standard cityscapes dataset as an example.
 
+It is recommended to symlink the dataset root to `$MMDETECTION/data`.
+If your folder structure is different, you may need to change the corresponding paths in config files.
 
+```
+mmdetection
+├── mmdet
+├── tools
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
+│   ├── cityscapes
+│   │   ├── annotations
+│   │   ├── leftImg8bit
+│   │   │   ├── train
+│   │   │   ├── val
+│   │   ├── gtFine
+│   │   │   ├── train
+│   │   │   ├── val
+│   ├── VOCdevkit
+│   │   ├── VOC2007
+│   │   ├── VOC2012
+
+```
+
+The cityscapes annotations have to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
+
+```shell
+pip install cityscapesscripts
+python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out-dir ./data/cityscapes/annotations
+```
+
+Currently the config files in `cityscapes` use COCO pre-trained weights to initialize.
+You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
 
 ### Prepare a config
 
@@ -115,7 +151,7 @@ To train a model with the new config, you can simply run
 python tools/train.py configs/cityscapes/cascade_mask_rcnn_r50_fpn_1x_cityscapes.py
 ```
 
-For more detailed usages, please refer to the tutorial 1.
+For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
 
 ### Test and inference
 
@@ -125,4 +161,4 @@ To test the trained model, you can simply run
 python tools/test.py configs/cityscapes/cascade_mask_rcnn_r50_fpn_1x_cityscapes.py work_dirs/cascade_mask_rcnn_r50_fpn_1x_cityscapes/latest.pth --eval bbox segm
 ```
 
-For more detailed usages, please refer to the tutorial 1.
+For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).

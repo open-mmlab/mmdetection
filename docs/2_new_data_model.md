@@ -1,6 +1,6 @@
-# Tutorial 2: Inference, testing, and training with predefined models and customized datasets
+# Case 2: Inference, testing, and training with predefined models and customized datasets
 
-In this tutorial, you will know how to inference, test, and train predefined models with customized datasets. We use the [ballon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) as an example to describe the whole process.
+In this case, you will know how to inference, test, and train predefined models with customized datasets. We use the [ballon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) as an example to describe the whole process.
 
 The basic steps are as below:
 
@@ -18,7 +18,7 @@ There are three ways to support a new dataset in MMDetection:
 
 Usually we recommend to use the first two methods which are usually easier than the third.
 
-In this tutorial, we give an example for converting the data into COCO format.
+In this note, we give an example for converting the data into COCO format.
 
 **Note**: MMDetection only supports evaluating mask AP of dataset in COCO format for now.
 So for instance segmentation task users should convert the data into coco format.
@@ -207,7 +207,7 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
 Using the function above, users can successfully convert the annotation file into json format, then we can use `CocoDataset` to train and evaluate the model.
 
 
-### Prepare a config
+## Prepare a config
 
 The second step is to prepare a config thus the dataset could be successfully loaded. Assume that we want to use Mask R-CNN with FPN, the config to train the detector on ballon dataset is as below. Assume the config is under directory `configs/ballon/` and named as `mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py`, the config is as below.
 
@@ -242,7 +242,7 @@ data = dict(
 load_from = 'checkpoints/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'
 ```
 
-### Train a new model
+## Train a new model
 
 To train a model with the new config, you can simply run
 
@@ -250,9 +250,9 @@ To train a model with the new config, you can simply run
 python tools/train.py configs/ballon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py
 ```
 
-For more detailed usages, please refer to the tutorial 1.
+For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
 
-### Test and inference
+## Test and inference
 
 To test the trained model, you can simply run
 
@@ -260,4 +260,4 @@ To test the trained model, you can simply run
 python tools/test.py configs/ballon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py/latest.pth --eval bbox segm
 ```
 
-For more detailed usages, please refer to the tutorial 1.
+For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
