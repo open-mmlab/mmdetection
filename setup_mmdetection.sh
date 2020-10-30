@@ -11,9 +11,9 @@ pip install mmcv-full==1.0.5
 mkdir data
 
 /# /snap/bin/gsutil
-wget https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/libnccl-dev_2.4.7-1%2Bcuda10.0_amd64.deb
-wget https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/libnccl2_2.4.7-1%2Bcuda10.0_amd64.deb
-wget https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/crcnn_r50_bepro_stitch_2020.pth
+wget -nc https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/libnccl-dev_2.4.7-1%2Bcuda10.0_amd64.deb
+wget -nc https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/libnccl2_2.4.7-1%2Bcuda10.0_amd64.deb
+wget -nc https://storage.googleapis.com/bepro-dev/scouting_feed/mmdetection/crcnn_r50_bepro_stitch_2020.pth
 sudo dpkg -i libnccl2_2.4.7-1+cuda10.0_amd64.deb
 sudo dpkg -i libnccl-dev_2.4.7-1+cuda10.0_amd64.deb
 sudo apt update
