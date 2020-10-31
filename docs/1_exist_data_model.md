@@ -1,4 +1,4 @@
-# 1: Inference, and training with existing models and standard datasets
+# 1: Inference and train with existing models and standard datasets
 
 MMDetection provides hundreds of existing and existing detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This note will show how to perform common tasks on these existing models and standard datasets, including:
 

@@ -3,8 +3,10 @@ Welcome to MMDetection's documentation!
 
 .. toctree::
    :maxdepth: 2
+   :caption: Get Started
 
-   getting_started.md
+   get_started.md
+   model_zoo.md
 
 .. toctree::
    :maxdepth: 2
@@ -21,17 +23,17 @@ Welcome to MMDetection's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Useful Tools
+   :caption: Useful Tools and Scripts
 
-   usefultools.md
+   useful_tools.md
 
 .. toctree::
    :maxdepth: 2
    :caption: Notes
 
    compatibility.md
-   changelog.md
    projects.md
+   changelog.md
    trouble_shooting.md
 
 .. toctree::
