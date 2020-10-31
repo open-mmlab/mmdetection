@@ -1,4 +1,4 @@
-# Case 3: Inference, testing, and training with predefined models and standard datasets
+# 3: Inference and training with existing models and standard datasets
 
 In this note, you will know how to inference, test, and train predefined models with your own settings for standard datasets. We use the cityscapes dataset to train a COCO pretrained Cascade Mask R-CNN model as an example to describe the whole process.
 

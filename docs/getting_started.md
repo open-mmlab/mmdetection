@@ -214,7 +214,7 @@ To use the default MMDetection installed in the environment rather than that you
 PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
 ```
 
-## Verification
+### Verified Installation
 
 To verify whether MMDetection and the required environment are installed correctly, we can run sample python codes to initialize a detector and inference a demo image:
 

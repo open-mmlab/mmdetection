@@ -1,14 +1,14 @@
-# Case 1: Inference, testing, and training with predefined models and standard datasets
+# 1: Inference, and training with existing models and standard datasets
 
-MMDetection provides hundreds of predefined and pretrained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This note will show how to perform common tasks on these pretrained models and standard datasets, including:
+MMDetection provides hundreds of existing and existing detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This note will show how to perform common tasks on these existing models and standard datasets, including:
 
 - Use existing models to inference on given images.
-- Test pretrained models on standard datasets.
+- Test existing models on standard datasets.
 - Train predefined models on standard datasets.
 
-## Inference with pretrained models
+## Inference with existing models
 
-By inference, we mean using trained models to detect objects on images. In MMDetection, a model is defined by a configuration file and pretrained model parameters are save in a checkpoint file.
+By inference, we mean using trained models to detect objects on images. In MMDetection, a model is defined by a configuration file and existing model parameters are save in a checkpoint file.
 
 To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) and this [checkpoint file](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
 
@@ -135,11 +135,11 @@ python demo/webcam_demo.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
-## Test pretrained models on standard datasets
+## Test existing models on standard datasets
 
 To evaluate a model's accuracy, one usually tests the model on some standard datasets.
 MMDetection supports multiple public datasets including COCO, Pascal VOC, CityScapes, and [more](https://github.com/open-mmlab/mmdetection/tree/master/configs/_base_/datasets).
-This section will show how to test pretrained models on supported datasets.
+This section will show how to test existing models on supported datasets.
 
 ### Prepare datasets
 
@@ -185,7 +185,7 @@ python tools/convert_datasets/cityscapes.py \
 
 TODO: CHANGE TO THE NEW PATH
 
-### Test pretrained models
+### Test existing models
 
 We provide testing scripts for evaluating an existing model on the whole dataset (COCO, PASCAL VOC, Cityscapes, etc.).
 The following testing environments are supported:
@@ -325,7 +325,7 @@ Training requires preparing datasets too. See section [Prepare datasets](#prepar
 
 **Note**:
 Currently, the config files under `configs/cityscapes` use COCO pretrained weights to initialize.
-You could download the pretrained models in advance if the network connection is unavailable or slow. Otherwise, it would cause errors at the beginning of training.
+You could download the existing models in advance if the network connection is unavailable or slow. Otherwise, it would cause errors at the beginning of training.
 
 ### Training on a single GPU
 

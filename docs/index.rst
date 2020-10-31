@@ -12,7 +12,12 @@ Welcome to MMDetection's documentation!
 
    1_exist_data_model.md
    2_new_data_model.md
-   3_exist_data_new_model.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+
+   tutorials/index.rst
 
 .. toctree::
    :maxdepth: 2
@@ -24,23 +29,15 @@ Welcome to MMDetection's documentation!
    :maxdepth: 2
    :caption: Notes
 
-   config.md
    compatibility.md
    changelog.md
    projects.md
    trouble_shooting.md
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Tutorials
-
-   tutorials/index.rst
-
-.. toctree::
    :caption: API Reference
 
    api.rst
-
 
 Indices and tables
 ==================
