@@ -1,4 +1,4 @@
-# Projects
+# Projects based on MMDetection
 
 There are many projects built upon MMDetection.
 We list some of them as examples of how to extend MMDetection for your own projects.
