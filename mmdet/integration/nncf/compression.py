@@ -24,6 +24,7 @@ else:
     class DummyInitializingDataLoader:
         pass
 
+
     class_InitializingDataLoader = DummyInitializingDataLoader
 
 
@@ -55,17 +56,19 @@ def is_checkpoint_nncf(path):
     checkpoint was the result of trainning of NNCF-compressed model.
     See the function get_nncf_metadata above.
     """
-    checkpoint = torch.load(path)
-    meta = checkpoint.get('meta', {})
-    nncf_enable_compression = meta.get('nncf_enable_compression', False)
-    return bool(nncf_enable_compression)
+    try:
+        checkpoint = torch.load(path)
+        meta = checkpoint.get('meta', {})
+        nncf_enable_compression = meta.get('nncf_enable_compression', False)
+        return bool(nncf_enable_compression)
+    except FileNotFoundError:
+        return False
 
 
 def wrap_nncf_model(model,
                     cfg,
                     data_loader_for_init=None,
-                    get_fake_input_func=None,
-                    should_compress_postprocessing=True):
+                    get_fake_input_func=None):
     """
     The function wraps mmdet model by NNCF
     Note that the parameter `get_fake_input_func` should be the function `get_fake_input`
@@ -83,8 +86,8 @@ def wrap_nncf_model(model,
     if cfg.get('resume_from'):
         checkpoint_path = cfg.get('resume_from')
         assert is_checkpoint_nncf(checkpoint_path), (
-                'It is possible to resume training with NNCF compression from NNCF checkpoints only. '
-                'Use "load_from" with non-compressed model for further compression by NNCF.')
+            'It is possible to resume training with NNCF compression from NNCF checkpoints only. '
+            'Use "load_from" with non-compressed model for further compression by NNCF.')
     elif cfg.get('load_from'):
         checkpoint_path = cfg.get('load_from')
         if not is_checkpoint_nncf(checkpoint_path):
@@ -109,48 +112,7 @@ def wrap_nncf_model(model,
     else:
         resuming_state_dict = None
 
-    def _get_fake_data_for_forward(cfg, nncf_config, get_fake_input_func):
-        # based on the method `export` of BaseDetector from mmdet/models/detectors/base.py
-        # and on the script tools/export.py
-        assert get_fake_input_func is not None
-
-        input_size = nncf_config.get('input_info').get('sample_size')
-        assert len(input_size) == 4 and input_size[0] == 1
-
-        H, W = input_size[-2:]
-        C = input_size[1]
-        orig_img_shape = tuple([H, W, C])  # HWC order here for np.zeros to emulate cv2.imread
-
-        device = next(model.parameters()).device
-
-        # NB: the full cfg is required here!
-        fake_data = get_fake_input_func(cfg,
-                                        orig_img_shape=orig_img_shape,
-                                        device=device)
-        return fake_data
-
-    def dummy_forward_without_export_part(model):
-        # based on the method `export` of BaseDetector from mmdet/models/detectors/base.py
-        # and on the script tools/export.py
-        fake_data = _get_fake_data_for_forward(cfg,
-                                               nncf_config,
-                                               get_fake_input_func)
-        img, img_metas = fake_data['img'], fake_data['img_metas']
-        img = nncf_model_input(img)
-        with model.forward_dummy_context(img_metas):
-            model(img)
-
-    def dummy_forward_with_export_part(model):
-        # based on the method `export` of BaseDetector from mmdet/models/detectors/base.py
-        # and on the script tools/export.py
-        fake_data = _get_fake_data_for_forward(cfg, nncf_config,
-                                               get_fake_input_func)
-        img, img_metas = fake_data['img'], fake_data['img_metas']
-        img = nncf_model_input(img)
-        with model.forward_export_context(img_metas):
-            model(img)
-
-    if 'nncf_should_compress_postprocessing' in cfg:
+    if "nncf_compress_postprocessing" in cfg:
         # NB: This parameter is used to choose if we should try to make NNCF compression
         #     for a whole model graph including postprocessing (`dummy_forward_with_export_part`),
         #     or make NNCF compression of the part of the model without postprocessing
@@ -160,17 +122,31 @@ def wrap_nncf_model(model,
         #     `dummy_forward_without_export_part` is our fallback decision.
         #     When we manage to enable NNCF compression for sufficiently many models,
         #     we should keep one choice only.
-        should_compress_postprocessing = \
-                cfg.get('nncf_should_compress_postprocessing')
-        logger.debug('set should_compress_postprocessing='
-                     f'{should_compress_postprocessing}')
-
-    if should_compress_postprocessing:
-        logger.debug('dummy_forward = dummy_forward_with_export_part')
-        dummy_forward = dummy_forward_with_export_part
+        nncf_compress_postprocessing = cfg.get('nncf_compress_postprocessing')
+        logger.debug('set should_compress_postprocessing='f'{nncf_compress_postprocessing}')
     else:
-        logger.debug('dummy_forward = dummy_forward_without_export_part')
-        dummy_forward = dummy_forward_without_export_part
+        nncf_compress_postprocessing = True
+
+    def _get_fake_data_for_forward(cfg, nncf_config, get_fake_input_func):
+        input_size = nncf_config.get("input_info").get('sample_size')
+        assert get_fake_input_func is not None
+        assert len(input_size) == 4 and input_size[0] == 1
+        H, W, C = input_size[2], input_size[3], input_size[1]
+        device = next(model.parameters()).device
+        return get_fake_input_func(cfg, orig_img_shape=tuple([H, W, C]), device=device)
+
+    def dummy_forward(model):
+        fake_data = _get_fake_data_for_forward(cfg, nncf_config, get_fake_input_func)
+        img, img_metas = fake_data["img"], fake_data["img_metas"]
+        img = nncf_model_input(img)
+        if nncf_compress_postprocessing:
+            ctx = model.forward_export_context(img_metas)
+            logger.debug(f"NNCF will compress a postprocessing part of the model")
+        else:
+            ctx = model.forward_dummy_context(img_metas)
+            logger.debug(f"NNCF will NOT compress a postprocessing part of the model")
+        with ctx:
+            model(img)
 
     model.dummy_forward_fn = dummy_forward
 
