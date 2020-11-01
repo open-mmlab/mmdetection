@@ -116,16 +116,16 @@ changes the compressed model won't be loaded.
 
 ## Additional config parameters for NNCF
 
-At the moment also configuration parameter `nncf_should_compress_postprocessing` may be set.
+At the moment also configuration parameter `nncf_compress_postprocessing` may be set.
 
 This parameter is used to choose if we should try to make NNCF compression
-for a whole model graph including postprocessing (`nncf_should_compress_postprocessing=True`),
+for a whole model graph including postprocessing (`nncf_compress_postprocessing=True`),
 or make NNCF compression of the part of the model without postprocessing
-(`nncf_should_compress_postprocessing=False`).
+(`nncf_compress_postprocessing=False`).
 
 Our primary goal is to make NNCF compression of such big part of the model as
-possible, so `nncf_should_compress_postprocessing=True` is our primary choice, whereas
-`nncf_should_compress_postprocessing=False` is our fallback decision.
+possible, so `nncf_compress_postprocessing=True` is our primary choice, whereas
+`nncf_compress_postprocessing=False` is our fallback decision.
 
 When we manage to enable NNCF compression for sufficiently many models,
 we will keep one choice only.

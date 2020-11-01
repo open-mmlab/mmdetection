@@ -114,12 +114,12 @@ def wrap_nncf_model(model,
 
     if "nncf_compress_postprocessing" in cfg:
         # NB: This parameter is used to choose if we should try to make NNCF compression
-        #     for a whole model graph including postprocessing (`dummy_forward_with_export_part`),
+        #     for a whole model graph including postprocessing (`nncf_compress_postprocessing=True`),
         #     or make NNCF compression of the part of the model without postprocessing
-        #     (`dummy_forward_without_export_part`).
+        #     (`nncf_compress_postprocessing=False`).
         #     Our primary goal is to make NNCF compression of such big part of the model as
-        #     possible, so `dummy_forward_with_export_part` is our primary choice, whereas
-        #     `dummy_forward_without_export_part` is our fallback decision.
+        #     possible, so `nncf_compress_postprocessing=True` is our primary choice, whereas
+        #     `nncf_compress_postprocessing=False` is our fallback decision.
         #     When we manage to enable NNCF compression for sufficiently many models,
         #     we should keep one choice only.
         nncf_compress_postprocessing = cfg.get('nncf_compress_postprocessing')
