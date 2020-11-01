@@ -31,6 +31,53 @@ def test_ce_loss():
     assert torch.allclose(loss_cls(fake_pred, fake_label), torch.tensor(200.))
 
 
+def test_varifocal_loss():
+    # only sigmoid version of VarifocalLoss is implemented
+    with pytest.raises(AssertionError):
+        loss_cfg = dict(
+            type='VarifocalLoss', use_sigmoid=False, loss_weight=1.0)
+        build_loss(loss_cfg)
+
+    # test that alpha should be greater than 0
+    with pytest.raises(AssertionError):
+        loss_cfg = dict(
+            type='VarifocalLoss',
+            alpha=-0.75,
+            gamma=2.0,
+            use_sigmoid=True,
+            loss_weight=1.0)
+        build_loss(loss_cfg)
+
+    # test that pred and target should be of the same size
+    loss_cls_cfg = dict(
+        type='VarifocalLoss',
+        use_sigmoid=True,
+        alpha=0.75,
+        gamma=2.0,
+        iou_weighted=True,
+        reduction='mean',
+        loss_weight=1.0)
+    loss_cls = build_loss(loss_cls_cfg)
+    with pytest.raises(AssertionError):
+        fake_pred = torch.Tensor([[100.0, -100.0]])
+        fake_target = torch.Tensor([[1.0]])
+        loss_cls(fake_pred, fake_target)
+
+    # test the calculation
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[100.0, -100.0]])
+    fake_target = torch.Tensor([[1.0, 0.0]])
+    assert torch.allclose(loss_cls(fake_pred, fake_target), torch.tensor(0.0))
+
+    # test the loss with weights
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[0.0, 100.0]])
+    fake_target = torch.Tensor([[1.0, 1.0]])
+    fake_weight = torch.Tensor([0.0, 1.0])
+    assert torch.allclose(
+        loss_cls(fake_pred, fake_target, fake_weight), torch.tensor(0.0))
+
+
 def test_accuracy():
     # test for empty pred
     pred = torch.empty(0, 4)

@@ -47,7 +47,7 @@ test_cfg = dict(
     min_bbox_size=0,
     score_thr=0.05,
     conf_thr=0.005,
-    nms=dict(type='nms', iou_thr=0.45),
+    nms=dict(type='nms', iou_threshold=0.45),
     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
