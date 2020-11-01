@@ -108,11 +108,11 @@ Some other methods are also supported in [projects using MMDetection](./docs/pro
 
 ## Installation
 
-Please refer to [getting_started.md](docs/getting_started.md) for installation and dataset preparation.
+Please refer to [getting_started.md](docs/get_started.md) for installation and dataset preparation.
 
 ## Getting Started
 
-Please see [getting_started.md](docs/getting_started.md) for the basic usage and [useful_tools.md](docs/useful_tools.md) for useful tools of MMDetection.
+Please see [getting_started.md](docs/get_started.md) for the basic usage and [useful_tools.md](docs/useful_tools.md) for useful tools of MMDetection.
 We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/1_exist_data_model.md) and [with new dataset](docs/2_new_data_model.md) for beginners.
 There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), and [customizing runtime settings](docs/tutorials/customize_runtime.md).
 
