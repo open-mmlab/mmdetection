@@ -1,3 +1,5 @@
+import math
+
 import mmcv
 import numpy as np
 
@@ -27,6 +29,18 @@ class MyNewDataset(CustomDataset):
             labels = []
             for anns in ann_list[i + 4:i + 4 + bbox_number]:
                 anns = anns.split(' ')
+
+                anns[0] = float(anns[0])
+                anns[1] = float(anns[1])
+
+                #Coco -> YOLO
+                anns[2] = float(anns[0]) + float(anns[2])
+                anns[3] = float(anns[1]) + float(anns[3])
+
+                #PASCAL VOC -> YOLO
+                # anns[2] = float(anns[2]) - float(anns[0])
+                # anns[3] = float(anns[3]) - float(anns[1])
+
                 bboxes.append([float(ann) for ann in anns[:4]])
                 labels.append(int(anns[4]))
 
