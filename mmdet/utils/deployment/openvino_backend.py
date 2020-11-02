@@ -269,7 +269,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
 
 
     def configure_outputs(self, required):
-        extra_outputs = ['boxes', 'labels', 'masks', 'texts']
+        extra_outputs = ['boxes', 'labels', 'masks', 'text_features']
 
         for output in extra_outputs:
             if output not in self.orig_ir_mapping and output in self.net.outputs:
@@ -279,9 +279,9 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
         self.try_add_extra_outputs(extra_outputs)
         outputs = []
 
-        self.check_required(self.orig_ir_mapping.keys(), ['boxes', 'labels', 'texts'])
+        self.check_required(self.orig_ir_mapping.keys(), ['boxes', 'labels', 'text_features'])
         self.with_detection_output = False
-        outputs.extend(['boxes', 'labels', 'texts'])
+        outputs.extend(['boxes', 'labels', 'text_features'])
 
         try:
             self.check_required(self.orig_ir_mapping.keys(), ['masks'])
@@ -304,19 +304,19 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
         valid_detections_mask = output['boxes'][:,-1] >= 0.5
         output['labels'] = output['labels'][valid_detections_mask]
         output['boxes'] = output['boxes'][valid_detections_mask]
-        output['texts'] = output['texts'][valid_detections_mask]
+        output['text_features'] = output['text_features'][valid_detections_mask]
 
         if 'masks' in output:
             output['masks'] = output['masks'][valid_detections_mask]
 
         texts = []
-        for feature in output['texts']:
+        for feature in output['text_features']:
             feature = np.expand_dims(feature, 0)
             feature = self.text_encoder({'input': feature})['output']
             feature = np.reshape(feature, (feature.shape[0], feature.shape[1], -1))
             feature = np.transpose(feature, (0, 2, 1))
 
-            hidden = np.zeros([1, 1, 64])
+            hidden = np.zeros([1, 1, 256])
             prev_symbol = np.zeros((1,))
 
             eos = 1
