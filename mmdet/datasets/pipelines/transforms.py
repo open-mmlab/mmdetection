@@ -1678,6 +1678,9 @@ class CutOut(object):
 class RandomCropWarpper(object):
     """Randomly crop warpper based on the official detectron2's RandomCrop.
 
+    The `crop_size` is sampled based on `crop_type` and `image_size`,
+    then `RandomCrop` is constructed and called to generate crop results.
+
     Args:
         crop_type (str): one of "relative_range", "relative", "absolute",
             "absolute_range". "relative" randomly crops (h * crop_size[0],
@@ -1736,8 +1739,8 @@ class RandomCropWarpper(object):
         """Call function to randomly crop images, bounding boxes, masks,
         semantic segmentation maps.
 
-        The `crop_size` is sampled based on `crop_type`, then `RandomCrop`
-        is constructed and called to generate crop results.
+        The `crop_size` is sampled based on `crop_type` and `image_size`,
+        then `RandomCrop` is constructed and called to generate crop results.
 
         Args:
             results (dict): Result dict from loading pipeline.
