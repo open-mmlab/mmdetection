@@ -29,12 +29,17 @@ Welcome to MMDetection's documentation!
 
 .. toctree::
    :maxdepth: 2
+   :caption: Q & A
+
+   question_and_answer.md
+
+.. toctree::
+   :maxdepth: 2
    :caption: Notes
 
    compatibility.md
    projects.md
    changelog.md
-   trouble_shooting.md
 
 .. toctree::
    :caption: API Reference
