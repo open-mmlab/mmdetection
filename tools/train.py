@@ -149,18 +149,11 @@ def determine_max_batch_size(cfg, distributed, dataset_len_per_gpu):
     return resulting_batch_size
 
 
-def init_dist_without_cuda(launcher, backend='nccl', **kwargs):
-    def _init_dist_pytorch(backend, **kwargs):
-        # TODO: use local_rank instead of rank % num_gpus
-        # rank = int(os.environ['RANK'])
-        # num_gpus = torch.cuda.device_count()
-        # torch.cuda.set_device(rank % num_gpus)
-        dist.init_process_group(backend=backend, **kwargs)
-
+def init_dist_cpu(launcher, backend, **kwargs):
     if mp.get_start_method(allow_none=True) is None:
         mp.set_start_method('spawn')
     if launcher == 'pytorch':
-        _init_dist_pytorch(backend, **kwargs)
+        dist.init_process_group(backend=backend, **kwargs)
     else:
         raise ValueError(f'Invalid launcher type: {launcher}')
 
@@ -203,7 +196,8 @@ def main():
         if torch.cuda.is_available():
             init_dist(args.launcher, **cfg.dist_params)
         else:
-            init_dist_without_cuda(args.launcher, **cfg.dist_params)
+            cfg.dist_params['backend'] = 'gloo'
+            init_dist_cpu(args.launcher, **cfg.dist_params)
 
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
