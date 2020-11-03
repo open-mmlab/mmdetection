@@ -521,7 +521,7 @@ class ConcatenatedCocoDataset(CocoDataset):
                 self.img_ids.append(img_id + img_shift)
 
             for im_info in dataset.data_infos:
-                im_info = im_info
+                im_info = dict(im_info)
                 im_info['id'] += img_shift
                 im_info['filename'] = os.path.join(dataset.img_prefix, im_info['filename'])
                 self.data_infos.append(im_info)
