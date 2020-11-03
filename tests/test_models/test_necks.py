@@ -209,6 +209,11 @@ def test_channel_mapper():
     out_channels = 8
     kernel_size = 3
 
+    # in_channels must be a list
+    with pytest.raises(AssertionError):
+        channel_mapper = ChannelMapper(
+            in_channels=10, out_channels=out_channels, kernel_size=kernel_size)
+
     channel_mapper = ChannelMapper(
         in_channels=in_channels,
         out_channels=out_channels,

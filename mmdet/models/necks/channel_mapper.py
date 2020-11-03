@@ -6,19 +6,21 @@ from ..builder import NECKS
 
 @NECKS.register_module()
 class ChannelMapper(nn.Module):
-    r"""Channel Mapper
+    r"""Channel Mapper to reduce channels of backbone features.
 
     This is used to reduce channels of backbone features.
 
     Args:
         in_channels (List[int]): Number of input channels per scale.
         out_channels (int): Number of output channels (used at each scale).
-        kernel_size (int): kernel_size for reducing channels (used at each
-            scale).
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Config dict for normalization layer. Default: None.
-        act_cfg (dict): Config dict for activation layer in ConvModule.
-            Default: dict(type='ReLU').
+        kernel_size (int, optional): kernel_size for reducing channels (used
+            at each scale). Default: 3.
+        conv_cfg (dict, optional): Config dict for convolution layer.
+            Default: None.
+        norm_cfg (dict, optional): Config dict for normalization layer.
+            Default: None.
+        act_cfg (dict, optional): Config dict for activation layer in
+            ConvModule. Default: dict(type='ReLU').
 
     Example:
         >>> import torch
