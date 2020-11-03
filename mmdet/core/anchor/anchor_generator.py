@@ -411,7 +411,7 @@ class SSDAnchorGenerator(AnchorGenerator):
             else:
                 raise ValueError('basesize_ratio_range[0] should be either 0.1'
                                  'or 0.15 when input_size is 512, got'
-                                 ' {basesize_ratio_range[0]}.')
+                                 f' {basesize_ratio_range[0]}.')
         else:
             raise ValueError('Only support 300 or 512 in SSDAnchorGenerator'
                              f', got {self.input_size}.')
