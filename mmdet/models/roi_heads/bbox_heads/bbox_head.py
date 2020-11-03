@@ -27,6 +27,7 @@ class BBoxHead(nn.Module):
                      target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
                  reg_decoded_bbox=False,
+                 reg_clip_border=True,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
@@ -44,6 +45,7 @@ class BBoxHead(nn.Module):
         self.num_classes = num_classes
         self.reg_class_agnostic = reg_class_agnostic
         self.reg_decoded_bbox = reg_decoded_bbox
+        self.reg_clip_border = reg_clip_border
         self.fp16_enabled = False
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
@@ -199,7 +201,9 @@ class BBoxHead(nn.Module):
 
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=img_shape)
+                rois[:, 1:],
+                bbox_pred,
+                max_shape=img_shape if self.reg_clip_border else None)
         else:
             bboxes = rois[:, 1:].clone()
             if img_shape is not None:
@@ -325,10 +329,16 @@ class BBoxHead(nn.Module):
 
         if rois.size(1) == 4:
             new_rois = self.bbox_coder.decode(
-                rois, bbox_pred, max_shape=img_meta['img_shape'])
+                rois,
+                bbox_pred,
+                max_shape=img_meta['img_shape']
+                if self.reg_clip_border else None)
         else:
             bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=img_meta['img_shape'])
+                rois[:, 1:],
+                bbox_pred,
+                max_shape=img_meta['img_shape']
+                if self.reg_clip_border else None)
             new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
 
         return new_rois
