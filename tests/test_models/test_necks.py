@@ -208,21 +208,29 @@ def test_channel_mapper():
     feat_sizes = [s // 2**i for i in range(4)]  # [64, 32, 16, 8]
     out_channels = 8
     kernel_size = 3
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels))
+    ]
 
     # in_channels must be a list
     with pytest.raises(AssertionError):
         channel_mapper = ChannelMapper(
             in_channels=10, out_channels=out_channels, kernel_size=kernel_size)
+    # the length of channel_mapper's inputs must be equal to the length of
+    # in_channels
+    with pytest.raises(AssertionError):
+        channel_mapper = ChannelMapper(
+            in_channels=in_channels[:-1],
+            out_channels=out_channels,
+            kernel_size=kernel_size)
+        channel_mapper(feats)
 
     channel_mapper = ChannelMapper(
         in_channels=in_channels,
         out_channels=out_channels,
         kernel_size=kernel_size)
 
-    feats = [
-        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
-        for i in range(len(in_channels))
-    ]
     outs = channel_mapper(feats)
     assert len(outs) == len(feats)
     for i in range(len(feats)):
