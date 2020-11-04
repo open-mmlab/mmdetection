@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.ops import DeformConv2d
@@ -8,22 +7,12 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (bbox2distance, bbox_overlaps, build_anchor_generator,
                         build_assigner, build_sampler, distance2bbox,
-                        multi_apply, multiclass_nms)
+                        multi_apply, multiclass_nms, reduce_mean)
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
 
 INF = 1e8
-
-
-def reduce_mean(tensor):
-    if not (dist.is_available() and dist.is_initialized()):
-        return tensor
-    tensor = tensor.clone()
-    dist.all_reduce(
-        tensor.true_divide_(tensor.new_tensor(dist.get_world_size())),
-        op=dist.ReduceOp.SUM)
-    return tensor
 
 
 @HEADS.register_module()
