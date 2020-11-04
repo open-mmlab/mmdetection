@@ -6,9 +6,9 @@ from ..builder import NECKS
 
 @NECKS.register_module()
 class ChannelMapper(nn.Module):
-    r"""Channel Mapper to unify channels of backbone features.
+    r"""Channel Mapper to reduce/increase channels of backbone features.
 
-    This is used to unify channels of backbone features.
+    This is used to reduce/increase channels of backbone features.
 
     Args:
         in_channels (List[int]): Number of input channels per scale.
