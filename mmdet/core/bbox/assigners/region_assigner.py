@@ -1,5 +1,6 @@
 import torch
 
+from mmdet.core import anchor_inside_flags
 from ..builder import BBOX_ASSIGNERS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
@@ -32,24 +33,6 @@ def anchor_ctr_inside_region_flags(anchors, stride, region):
     return flags
 
 
-def anchor_outside_flags(flat_anchors,
-                         valid_flags,
-                         img_shape,
-                         allowed_border=0):
-    """Get the flag indicate whether anchors are outside img."""
-    img_h, img_w = img_shape[:2]
-    if allowed_border >= 0:
-        inside_flags = valid_flags & \
-            (flat_anchors[:, 0] >= -allowed_border) & \
-            (flat_anchors[:, 1] >= -allowed_border) & \
-            (flat_anchors[:, 2] < img_w + allowed_border) & \
-            (flat_anchors[:, 3] < img_h + allowed_border)
-    else:
-        inside_flags = valid_flags
-    outside_flags = ~inside_flags
-    return outside_flags
-
-
 @BBOX_ASSIGNERS.register_module()
 class RegionAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
@@ -64,10 +47,9 @@ class RegionAssigner(BaseAssigner):
     Args:
         center_ratio: ratio of the region in the center of the bbox to
             define positive sample.
-        ignore_ratio: ratui of the region to define ignore samples.
+        ignore_ratio: ratio of the region to define ignore samples.
     """
 
-    # TODO update docs
     def __init__(self, center_ratio=0.2, ignore_ratio=0.5):
         self.center_ratio = center_ratio
         self.ignore_ratio = ignore_ratio
@@ -164,12 +146,12 @@ class RegionAssigner(BaseAssigner):
             # 2. Assign -1 to ignore flags
             ignore_flags = anchor_ctr_inside_region_flags(
                 anchors, stride, ignore_region)
-            mlvl_assigned_gt_inds[lvl][ignore_flags > 0] = -1
+            mlvl_assigned_gt_inds[lvl][ignore_flags] = -1
 
             # 3. Assign gt_bboxes to pos flags
             pos_flags = anchor_ctr_inside_region_flags(anchors, stride,
                                                        ctr_region)
-            mlvl_assigned_gt_inds[lvl][pos_flags > 0] = gt_id + 1
+            mlvl_assigned_gt_inds[lvl][pos_flags] = gt_id + 1
 
             # 4. Assign -1 to ignore adjacent lvl
             if lvl > 0:
@@ -181,7 +163,7 @@ class RegionAssigner(BaseAssigner):
                                               d_featmap_size)
                 ignore_flags = anchor_ctr_inside_region_flags(
                     d_anchors, d_stride, d_ignore_region)
-                mlvl_ignore_flags[d_lvl][ignore_flags > 0] = 1
+                mlvl_ignore_flags[d_lvl][ignore_flags] = 1
             if lvl < num_lvls - 1:
                 u_lvl = lvl + 1
                 u_anchors = mlvl_anchors[u_lvl]
@@ -191,12 +173,12 @@ class RegionAssigner(BaseAssigner):
                                               u_featmap_size)
                 ignore_flags = anchor_ctr_inside_region_flags(
                     u_anchors, u_stride, u_ignore_region)
-                mlvl_ignore_flags[u_lvl][ignore_flags > 0] = 1
+                mlvl_ignore_flags[u_lvl][ignore_flags] = 1
 
         # 4. (cont.) Assign -1 to ignore adjacent lvl
         for lvl in range(num_lvls):
             ignore_flags = mlvl_ignore_flags[lvl]
-            mlvl_assigned_gt_inds[lvl][ignore_flags > 0] = -1
+            mlvl_assigned_gt_inds[lvl][ignore_flags] = -1
 
         # 5. Assign -1 to anchor outside of image
         flat_assigned_gt_inds = torch.cat(mlvl_assigned_gt_inds)
@@ -204,9 +186,10 @@ class RegionAssigner(BaseAssigner):
         flat_valid_flags = torch.cat(mlvl_valid_flags)
         assert (flat_assigned_gt_inds.shape[0] == flat_anchors.shape[0] ==
                 flat_valid_flags.shape[0])
-        outside_flags = anchor_outside_flags(flat_anchors, flat_valid_flags,
-                                             img_meta['img_shape'],
-                                             allowed_border)
+        inside_flags = anchor_inside_flags(flat_anchors, flat_valid_flags,
+                                           img_meta['img_shape'],
+                                           allowed_border)
+        outside_flags = ~inside_flags
         flat_assigned_gt_inds[outside_flags] = -1
 
         if gt_labels is not None:

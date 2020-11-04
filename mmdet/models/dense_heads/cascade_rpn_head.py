@@ -304,10 +304,9 @@ class StageCascadeRPNHead(RPNHead):
                 kernel.
         """
 
-        def _shape_offset(anchors, stride):
+        def _shape_offset(anchors, stride, ks=3, dilation=1):
             # currently support kernel_size=3 and dilation=1
-            ks = 3
-            dilation = 1
+            assert ks == 3 and dilation == 1
             pad = (ks - 1) // 2
             idx = torch.arange(-pad, pad + 1, dtype=dtype, device=device)
             yy, xx = torch.meshgrid(idx, idx)  # return order matters
