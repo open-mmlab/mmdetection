@@ -12,32 +12,34 @@ except ModuleNotFoundError:
 
 
 def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
-    """The ONNX export API only accept args, and all inputs should be
+    """Prepare sample input and wrap model for ONNX export.
+
+    The ONNX export API only accept args, and all inputs should be
     torch.Tensor or corresponding types (such as tuple of tensor).
-    So if we are not running `pytorch2onnx` directly, we should call this
-    function before exporting.
-    This function will:
-    (1) generate corresponding inputs which are used to execute the model.
-    (2) Wrap the model's forward function. For example, the MMDet models'
-    forward function has a parameter `return_loss:bool`. As we want to set
-    it as False while export API supports neither bool type or kwargs. So
-    we have to replace the forward like:
-    `model.forward = partial(model.forward, return_loss=False)`
+    So we should call this function before exporting. This function will:
+
+    1. generate corresponding inputs which are used to execute the model.
+    2. Wrap the model's forward function.
+
+    For example, the MMDet models' forward function has a parameter
+    ``return_loss:bool``. As we want to set it as False while export API
+    supports neither bool type or kwargs. So we have to replace the forward
+    like: ``model.forward = partial(model.forward, return_loss=False)``
 
     Args:
         config_path (str): the OpenMMLab config for the model we want to
-        export to ONNX
+            export to ONNX
         checkpoint_path (str): Path to the corresponding checkpoint
         input_config (dict): the exactly data in this dict depends on the
-        framework. For MMSeg, we can just declare the input shape,
-        and generate the dummy data accordingly. However, for MMDet,
-        we may pass the real img path, or the NMS will return None
-        as there is no legal bbox.
+            framework. For MMSeg, we can just declare the input shape,
+            and generate the dummy data accordingly. However, for MMDet,
+            we may pass the real img path, or the NMS will return None
+            as there is no legal bbox.
 
     Returns:
-        tuple: (model, tensor_data) wrapped model which can be called by
-        model(*tensor_data) and a list of inputs which are used to execute the
-        model while exporting.
+        tuple: (model, tensor_data) wrapped model which can be called by \
+        model(*tensor_data) and a list of inputs which are used to execute \
+            the model while exporting.
     """
 
     model = build_model_from_cfg(config_path, checkpoint_path)
@@ -59,7 +61,7 @@ def build_model_from_cfg(config_path, checkpoint_path):
 
     Args:
         config_path (str): the OpenMMLab config for the model we want to
-        export to ONNX
+            export to ONNX
         checkpoint_path (str): Path to the corresponding checkpoint
 
     Returns:
@@ -83,23 +85,35 @@ def build_model_from_cfg(config_path, checkpoint_path):
 
 
 def preprocess_example_input(input_config):
-    """Prepare an example input image for `generate_inputs_and_wrap_model`.
+    """Prepare an example input image for ``generate_inputs_and_wrap_model``.
 
     Args:
         input_config (dict): customized config describing the example input.
-        Example:
-        input_config: {
-            'input_shape':[1,3,224,224],
-            'input_path': 'demo/demo.jpg',
-            'normalize_cfg': {
-                'mean': [123.675, 116.28, 103.53],
-                'std': [58.395, 57.12, 57.375]
-            }
-        }
 
     Returns:
-        tuple: (one_img, one_meta), tensor of the example input image and meta
-        information for the example input image.
+        tuple: (one_img, one_meta), tensor of the example input image and \
+            meta information for the example input image.
+
+    Examples:
+        >>> from mmdet.core.export import preprocess_example_input
+        >>> input_config = {
+        >>>         'input_shape': (1,3,224,224),
+        >>>         'input_path': 'demo/demo.jpg',
+        >>>         'normalize_cfg': {
+        >>>             'mean': (123.675, 116.28, 103.53),
+        >>>             'std': (58.395, 57.12, 57.375)
+        >>>             }
+        >>>         }
+        >>> one_img, one_meta = preprocess_example_input(input_config)
+        >>> print(one_img.shape)
+        torch.Size([1, 3, 224, 224])
+        >>> print(one_meta)
+        {'img_shape': (224, 224, 3),
+        'ori_shape': (224, 224, 3),
+        'pad_shape': (224, 224, 3),
+        'filename': '<demo>.png',
+        'scale_factor': 1.0,
+        'flip': False}
     """
     input_path = input_config['input_path']
     input_shape = input_config['input_shape']
@@ -109,7 +123,7 @@ def preprocess_example_input(input_config):
         mean = np.array(normalize_cfg['mean'], dtype=np.float32)
         std = np.array(normalize_cfg['std'], dtype=np.float32)
         one_img = mmcv.imnormalize(one_img, mean, std)
-    one_img = mmcv.imresize(one_img, input_shape[2:]).transpose(2, 0, 1)
+    one_img = mmcv.imresize(one_img, input_shape[2:][::-1]).transpose(2, 0, 1)
     one_img = torch.from_numpy(one_img).unsqueeze(0).float().requires_grad_(
         True)
     (_, C, H, W) = input_shape
