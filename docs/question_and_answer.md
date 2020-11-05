@@ -15,7 +15,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - "invalid device function" or "no kernel image is available for execution".
 
-    1. Check if your cuda runtime version (under `/usr/local/`), `nvcc --version` and pip `cudatookit` version match.
+    1. Check if your cuda runtime version (under `/usr/local/`), `nvcc --version` and `conda list cudatoolkit` version match.
     2. Run `python mmdet/utils/collect_env.py` to check whether PyTorch, torchvision, and MMCV are built for the correct GPU architecture. You may need to set  `TORCH_CUDA_ARCH_LIST` to reinstall MMCV. The compatibility issue could happen when  using old GPUS, e.g., Tesla K80 (3.7) on colab.
     3. Check whether the running environment is the same as that when mmcv/mmdet is compiled. For example, you may compile mmcv using CUDA 10.0 bug run it on CUDA9.0   environments.
 
