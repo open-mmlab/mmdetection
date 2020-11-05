@@ -270,6 +270,7 @@ def eval_map(det_results,
              iou_thr=0.5,
              dataset=None,
              logger=None,
+             tpfp_func=None,
              nproc=4):
     """Evaluate mAP of a dataset.
 
@@ -295,6 +296,11 @@ def eval_map(det_results,
             "voc07", "imagenet_det", etc. Default: None.
         logger (logging.Logger | str | None): The way to print the mAP
             summary. See `mmdet.utils.print_log()` for details. Default: None.
+        tpfp_func (func | None): The function used to determine true/
+            false positives. If None, :func:`tpfp_default` is used as default
+            unless dataset is 'det' or 'vid' (:func:`tpfp_imagenet` in this
+            case). If it is given as a function, then this function is used
+            to evaluate tp & fp. Default None.
         nproc (int): Processes used for computing TP and FP.
             Default: 4.
 
@@ -316,10 +322,15 @@ def eval_map(det_results,
         cls_dets, cls_gts, cls_gts_ignore = get_cls_results(
             det_results, annotations, i)
         # choose proper function according to datasets to compute tp and fp
-        if dataset in ['det', 'vid']:
-            tpfp_func = tpfp_imagenet
-        else:
-            tpfp_func = tpfp_default
+        if tpfp_func is None:
+            if dataset in ['det', 'vid']:
+                tpfp_func = tpfp_imagenet
+            else:
+                tpfp_func = tpfp_default
+        if not callable(tpfp_func):
+            raise ValueError(
+                f'tpfp_func has to be a function or None, but got {tpfp_func}')
+
         # compute tp and fp for each image with multiple processes
         tpfp = pool.starmap(
             tpfp_func,
