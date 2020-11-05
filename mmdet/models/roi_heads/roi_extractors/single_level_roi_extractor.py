@@ -55,8 +55,15 @@ class SingleRoIExtractor(BaseRoIExtractor):
         """Forward function."""
         out_size = self.roi_layers[0].output_size
         num_levels = len(feats)
-        roi_feats = feats[0].new_zeros(
-            rois.size(0), self.out_channels, *out_size)
+        if torch.onnx.is_in_onnx_export():
+            roi_feats = rois[:, :1].clone().detach()
+            roi_feats = roi_feats.expand(
+                -1, self.out_channels * out_size[0] * out_size[1])
+            roi_feats = roi_feats.reshape(-1, self.out_channels, *out_size)
+            roi_feats = roi_feats * 0
+        else:
+            roi_feats = feats[0].new_zeros(
+                rois.size(0), self.out_channels, *out_size)
         # TODO: remove this when parrots supports
         if torch.__version__ == 'parrots':
             roi_feats.requires_grad = True
@@ -73,6 +80,12 @@ class SingleRoIExtractor(BaseRoIExtractor):
         for i in range(num_levels):
             mask = target_lvls == i
             inds = mask.nonzero(as_tuple=False).squeeze(1)
+            # TODO: make it nicer when exporting to onnx
+            if torch.onnx.is_in_onnx_export():
+                rois_ = rois[inds]
+                roi_feats_t = self.roi_layers[i](feats[i], rois_)
+                roi_feats[inds] = roi_feats_t
+                continue
             if inds.numel() > 0:
                 rois_ = rois[inds]
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)

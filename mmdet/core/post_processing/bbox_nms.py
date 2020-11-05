@@ -50,17 +50,14 @@ def multiclass_nms(multi_bboxes,
     # remove low scoring boxes
     valid_mask = scores > score_thr
     inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
-
+    bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
     if inds.numel() == 0:
-        bboxes = multi_bboxes.new_zeros((0, 5))
-        labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
-
         if torch.onnx.is_in_onnx_export():
             raise RuntimeError('[ONNX Error] Can not record NMS '
                                'as it has not been executed this time')
         return bboxes, labels
 
-    bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
+    # TODO: add size check before feed into batched_nms
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
 
     if max_num > 0:

@@ -1,36 +1,13 @@
 import argparse
-import os
 import os.path as osp
 
 import numpy as np
 import onnx
 import onnxruntime as rt
 import torch
-from onnx import optimizer
-from onnxsim import simplify
 
 from mmdet.core import (build_model_from_cfg, generate_inputs_and_wrap_model,
                         preprocess_example_input)
-
-
-def optimize_model(model_path, output_path=None, passes=None):
-    passes = [] if passes is None else passes
-    output_path = model_path if output_path is None else output_path
-    out_dir, _ = os.path.split(output_path)
-    os.makedirs(out_dir, exist_ok=True)
-    model = onnx.load(model_path)
-    opt_model = optimizer.optimize(model, passes)
-    onnx.save(opt_model, output_path)
-
-
-def slim_model(model_path, output_path=None):
-    output_path = model_path if output_path is None else output_path
-    out_dir, _ = os.path.split(output_path)
-    os.makedirs(out_dir, exist_ok=True)
-    model = onnx.load(model_path)
-    opt_model, check = simplify(model)
-    assert check, f'Simplified ONNX model could not be validated: {model_path}'
-    onnx.save(opt_model, output_path)
 
 
 def pytorch2onnx(config_path,
@@ -53,7 +30,6 @@ def pytorch2onnx(config_path,
     # prepare original model and meta for verifying the onnx model
     orig_model = build_model_from_cfg(config_path, checkpoint_path)
     one_img, one_meta = preprocess_example_input(input_config)
-
     model, tensor_data = generate_inputs_and_wrap_model(
         config_path, checkpoint_path, input_config)
 
@@ -67,8 +43,6 @@ def pytorch2onnx(config_path,
         opset_version=opset_version)
 
     model.forward = orig_model.forward
-    optimize_model(output_file)
-    slim_model(output_file)
     print(f'Successfully exported ONNX model: {output_file}')
     if verify:
         from mmdet.core import get_classes
@@ -83,9 +57,6 @@ def pytorch2onnx(config_path,
         # get pytorch output
         pytorch_results = model(tensor_data, [[one_meta]], return_loss=False)
         pytorch_results = pytorch_results[0]
-        assert np.asarray(
-            pytorch_results
-        ).size > 0, 'No pytorch results, consider change input image.'
 
         # get onnx output
         input_all = [node.name for node in onnx_model.graph.input]
@@ -98,15 +69,18 @@ def pytorch2onnx(config_path,
         from mmdet.core import bbox2result
         onnx_outputs = sess.run(None,
                                 {net_feed_input[0]: one_img.detach().numpy()})
+        output_names = [_.name for _ in sess.get_outputs()]
+        output_shapes = [_.shape for _ in onnx_outputs]
+        print(f'onnxruntime output names: {output_names}, \
+            output shapes: {output_shapes}')
         det_bboxes, det_labels = onnx_outputs[:2]
         onnx_results = bbox2result(det_bboxes, det_labels, num_classes)
         with_mask = len(onnx_outputs) == 3
         if with_mask:
             pass
             # TODO add mask pose processing
-
         # visualize predictions
-        if args.view:
+        if show:
             show_result_pyplot(
                 model,
                 one_meta['show_img'],

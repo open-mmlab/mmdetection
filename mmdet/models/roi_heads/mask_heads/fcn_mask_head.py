@@ -240,8 +240,7 @@ class FCNMaskHead(nn.Module):
             im_mask[(inds, ) + spatial_inds] = masks_chunk
 
         for i in range(N):
-            # cls_segms[labels[i]].append(im_mask[i].cpu().numpy())
-            cls_segms[labels[i]].append(im_mask[i])
+            cls_segms[labels[i]].append(im_mask[i].detach().cpu().numpy())
         return cls_segms
 
 
