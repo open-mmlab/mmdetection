@@ -34,7 +34,7 @@ Welcome to MMDetection's documentation!
    compatibility.md
    projects.md
    changelog.md
-   trouble_shooting.md
+   faq.md
 
 .. toctree::
    :caption: API Reference

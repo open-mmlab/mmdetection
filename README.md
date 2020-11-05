@@ -116,7 +116,7 @@ Please see [get_started.md](docs/get_started.md) for the basic usage of MMDetect
 We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/1_exist_data_model.md) and [with new dataset](docs/2_new_data_model.md) for beginners.
 There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), [customizing runtime settings](docs/tutorials/customize_runtime.md) and [useful tools](docs/useful_tools.md).
 
-For trouble shooting, please refer to [trouble_shooting.md](docs/trouble_shooting.md)
+Please refer to [FAQ](docs/faq.md) for frequently asked questions.
 
 ## Contributing
 
