@@ -269,8 +269,9 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
             # Filtering out all predictions with conf < conf_thr
             conf_thr = cfg.get('conf_thr', -1)
-            if conf_thr >= 0:
-                conf_inds = conf_pred > conf_thr
+            if conf_thr > 0:
+                mask = conf_pred >= conf_thr
+                conf_inds = mask.nonzero(as_tuple=False).squeeze(1)
                 bbox_pred = bbox_pred[conf_inds, :]
                 cls_pred = cls_pred[conf_inds, :]
                 conf_pred = conf_pred[conf_inds]
