@@ -296,7 +296,7 @@ def eval_map(det_results,
             "voc07", "imagenet_det", etc. Default: None.
         logger (logging.Logger | str | None): The way to print the mAP
             summary. See `mmdet.utils.print_log()` for details. Default: None.
-        tpfp_func (func | None): The function used to determine true/
+        tpfp_func (callable | None): The function used to determine true/
             false positives. If None, :func:`tpfp_default` is used as default
             unless dataset is 'det' or 'vid' (:func:`tpfp_imagenet` in this
             case). If it is given as a function, then this function is used
