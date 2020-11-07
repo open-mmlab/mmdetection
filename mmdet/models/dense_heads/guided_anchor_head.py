@@ -835,7 +835,9 @@ class GuidedAnchorHead(AnchorHead):
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
             bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shape)
+                anchors,
+                bbox_pred,
+                max_shape=img_shape if self.reg_clip_border else None)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)

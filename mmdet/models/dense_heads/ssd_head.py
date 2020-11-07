@@ -43,6 +43,7 @@ class SSDHead(AnchorHead):
                      target_stds=[1.0, 1.0, 1.0, 1.0],
                  ),
                  reg_decoded_bbox=False,
+                 reg_clip_border=True,
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
@@ -72,6 +73,7 @@ class SSDHead(AnchorHead):
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.reg_decoded_bbox = reg_decoded_bbox
+        self.reg_clip_border = reg_clip_border
         self.use_sigmoid_cls = False
         self.cls_focal_loss = False
         self.train_cfg = train_cfg

@@ -430,7 +430,9 @@ class YOLACTHead(AnchorHead):
                 scores = scores[topk_inds, :]
                 coeff_pred = coeff_pred[topk_inds, :]
             bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shape)
+                anchors,
+                bbox_pred,
+                max_shape=img_shape if self.reg_clip_border else None)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_coeffs.append(coeff_pred)

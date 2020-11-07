@@ -45,6 +45,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                  strides=(4, 8, 16, 32, 64),
                  dcn_on_last_conv=False,
                  conv_bias='auto',
+                 reg_clip_border=True,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -66,6 +67,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.dcn_on_last_conv = dcn_on_last_conv
         assert conv_bias == 'auto' or isinstance(conv_bias, bool)
         self.conv_bias = conv_bias
+        self.reg_clip_border = reg_clip_border
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.train_cfg = train_cfg

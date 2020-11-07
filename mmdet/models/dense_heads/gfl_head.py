@@ -430,7 +430,9 @@ class GFLHead(AnchorHead):
                 scores = scores[topk_inds, :]
 
             bboxes = distance2bbox(
-                self.anchor_center(anchors), bbox_pred, max_shape=img_shape)
+                self.anchor_center(anchors),
+                bbox_pred,
+                max_shape=img_shape if self.reg_clip_border else None)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 

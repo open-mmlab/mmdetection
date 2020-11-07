@@ -106,7 +106,9 @@ class GARPNHead(RPNTestMixin, GuidedAnchorHead):
                 scores = scores[topk_inds]
             # get proposals w.r.t. anchors and rpn_bbox_pred
             proposals = self.bbox_coder.decode(
-                anchors, rpn_bbox_pred, max_shape=img_shape)
+                anchors,
+                rpn_bbox_pred,
+                max_shape=img_shape if self.reg_clip_border else None)
             # filter out too small bboxes
             if cfg.min_bbox_size > 0:
                 w = proposals[:, 2] - proposals[:, 0]
