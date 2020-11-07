@@ -326,16 +326,10 @@ class BBoxHead(nn.Module):
 
         if rois.size(1) == 4:
             new_rois = self.bbox_coder.decode(
-                rois,
-                bbox_pred,
-                max_shape=img_meta['img_shape']
-                if self.reg_clip_border else None)
+                rois, bbox_pred, max_shape=img_meta['img_shape'])
         else:
             bboxes = self.bbox_coder.decode(
-                rois[:, 1:],
-                bbox_pred,
-                max_shape=img_meta['img_shape']
-                if self.reg_clip_border else None)
+                rois[:, 1:], bbox_pred, max_shape=img_meta['img_shape'])
             new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
 
         return new_rois
