@@ -554,9 +554,7 @@ class PAAHead(ATSSHead):
                 iou_preds = iou_preds[topk_inds]
 
             bboxes = self.bbox_coder.decode(
-                anchors,
-                bbox_pred,
-                max_shape=img_shape if self.reg_clip_border else None)
+                anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_iou_preds.append(iou_preds)

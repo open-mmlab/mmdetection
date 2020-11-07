@@ -41,10 +41,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                      strides=[4, 8, 16, 32, 64]),
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
+                     clip_border=True,
                      target_means=(.0, .0, .0, .0),
                      target_stds=(1.0, 1.0, 1.0, 1.0)),
                  reg_decoded_bbox=False,
-                 reg_clip_border=True,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
@@ -70,7 +70,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         if self.cls_out_channels <= 0:
             raise ValueError(f'num_classes={num_classes} is too small')
         self.reg_decoded_bbox = reg_decoded_bbox
-        self.reg_clip_border = reg_clip_border
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
@@ -642,9 +641,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
             bboxes = self.bbox_coder.decode(
-                anchors,
-                bbox_pred,
-                max_shape=img_shape if self.reg_clip_border else None)
+                anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)

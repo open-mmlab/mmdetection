@@ -147,9 +147,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
         anchors = torch.cat(mlvl_valid_anchors)
         rpn_bbox_pred = torch.cat(mlvl_bbox_preds)
         proposals = self.bbox_coder.decode(
-            anchors,
-            rpn_bbox_pred,
-            max_shape=img_shape if self.reg_clip_border else None)
+            anchors, rpn_bbox_pred, max_shape=img_shape)
         ids = torch.cat(level_ids)
 
         if cfg.min_bbox_size > 0:

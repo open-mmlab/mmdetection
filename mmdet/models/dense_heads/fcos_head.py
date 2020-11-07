@@ -372,10 +372,7 @@ class FCOSHead(AnchorFreeHead):
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 centerness = centerness[topk_inds]
-            bboxes = distance2bbox(
-                points,
-                bbox_pred,
-                max_shape=img_shape if self.reg_clip_border else None)
+            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
