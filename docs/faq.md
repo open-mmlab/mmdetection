@@ -40,27 +40,23 @@ We list some common troubles faced by many users and their corresponding solutio
 - "Segmentation fault".
     1. Check you GCC version and use GCC 5.4. This usually caused by the incompatibility between PyTorch and the environment (e.g., GCC < 4.9 for PyTorch). We also recommand the users to avoid using GCC 5.5 because many feedbacks report that GCC 5.5 will cause "segmentation fault" and simply changing it to GCC 5.4 could solve the problem.
 
-    2. Check whether PyTorch is correctly installed and could use CUDA op, e.g. run python and type the following
+    2. Check whether PyTorch is correctly installed and could use CUDA op, e.g. type the following command in your terminal.
 
-        ```python
-        import torch
-        a = torch.tensor(1)
-        b = a.cuda()
-        c = b * b
+        ```shell
+        python -c 'import torch; print(torch.cuda.is_available())'
         ```
 
         And see whether they could correctly output results.
 
     3. If Pytorch is correctly installed, check whether MMCV is correctly installed.
 
-        ```python
-        import mmcv
-        import mmcv.ops
+        ```shell
+        python -c 'import mmcv; import mmcv.ops'
         ```
 
         If MMCV is correctly installed, then there will be no issue of the above two commands.
 
-    4. If MMCV and Pytorch is correctly installed, you may add `print` in the mmdetection code, and see which part leads the segmentation fault.
+    4. If MMCV and Pytorch is correctly installed, you man use `ipdb`, `pdb` to set breakpoints or directly add 'print' in mmdetection code and see which part leads the segmentation fault.
 
 ## Training
 
@@ -73,3 +69,5 @@ We list some common troubles faced by many users and their corresponding solutio
 - ’GPU out of memory"
   1. There are some scenarios when there are large amount of ground truth boxes, which may cause OOM during target assignment.
   You can set `gpu_assign_thr=N` in the config of assigner thus the assigner will calculate box overlaps through CPU when there are more than N GT boxes.
+  2. Set `with_cp=True` in the backbone. This uses the sublinear strategy in PyTorch to reduce GPU memory cost in the backbone.
+  3. Try mixed precision training using following the examples in `config/fp16`. The `loss_scale` might need further tuning for different models.
