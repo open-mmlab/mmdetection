@@ -260,6 +260,10 @@ class FreeAnchorRetinaHead(RetinaHead):
             Tensor: Negative bag loss in shape (num_img, num_anchors, num_classes).
         """  # noqa: E501, W605
         prob = cls_prob * (1 - box_prob)
-        negative_bag_loss = prob**self.gamma * F.binary_cross_entropy(
-            prob, torch.zeros_like(prob), reduction='none')
-        return (1 - self.alpha) * negative_bag_loss
+        neg_prob = 1 - prob
+        # There are some cases when neg_prob = 0.
+        # This will cause the neg_prob.log() to be inf without clamp.
+        neg_prob = torch.clamp(neg_prob, min=1e-12)
+        negative_bag_loss = prob**self.gamma * neg_prob.log()
+        negative_bag_loss = -(1 - self.alpha) * negative_bag_loss
+        return negative_bag_loss
