@@ -3,12 +3,12 @@ import time
 
 import torch
 from mmcv import Config
+from mmcv.cnn import fuse_conv_bn
 from mmcv.parallel import MMDataParallel
-from mmcv.runner import load_checkpoint
-from tools.fuse_conv_bn import fuse_module
+from mmcv.runner import load_checkpoint, wrap_fp16_model
 
-from mmdet.core import wrap_fp16_model
-from mmdet.datasets import build_dataloader, build_dataset
+from mmdet.datasets import (build_dataloader, build_dataset,
+                            replace_ImageToTensor)
 from mmdet.models import build_detector
 
 
@@ -31,6 +31,10 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    # import modules from string list.
+    if cfg.get('custom_imports', None):
+        from mmcv.utils import import_modules_from_strings
+        import_modules_from_strings(**cfg['custom_imports'])
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -38,7 +42,10 @@ def main():
     cfg.data.test.test_mode = True
 
     # build the dataloader
-    # TODO: support multiple images per gpu (only minor changes are needed)
+    samples_per_gpu = cfg.data.test.pop('samples_per_gpu', 1)
+    if samples_per_gpu > 1:
+        # Replace 'ImageToTensor' to 'DefaultFormatBundle'
+        cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
         dataset,
@@ -54,7 +61,7 @@ def main():
         wrap_fp16_model(model)
     load_checkpoint(model, args.checkpoint, map_location='cpu')
     if args.fuse_conv_bn:
-        model = fuse_module(model)
+        model = fuse_conv_bn(model)
 
     model = MMDataParallel(model, device_ids=[0])
 

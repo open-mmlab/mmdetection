@@ -56,7 +56,7 @@ def main():
         mmcv.imshow_det_bboxes(
             item['img'],
             item['gt_bboxes'],
-            item['gt_labels'] - 1,
+            item['gt_labels'],
             class_names=dataset.CLASSES,
             show=not args.not_show,
             out_file=filename,

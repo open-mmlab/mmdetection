@@ -1,9 +1,10 @@
 import copy
 import os.path as osp
 
+import mmcv
 import numpy as np
 
-from mmdet.datasets.pipelines import (LoadImageFromFile,
+from mmdet.datasets.pipelines import (LoadImageFromFile, LoadImageFromWebcam,
                                       LoadMultiChannelImageFromFiles)
 
 
@@ -75,3 +76,15 @@ class TestLoading(object):
         assert repr(transform) == transform.__class__.__name__ + \
             "(to_float32=False, color_type='unchanged', " + \
             "file_client_args={'backend': 'disk'})"
+
+    def test_load_webcam_img(self):
+        img = mmcv.imread(osp.join(self.data_prefix, 'color.jpg'))
+        results = dict(img=img)
+        transform = LoadImageFromWebcam()
+        results = transform(copy.deepcopy(results))
+        assert results['filename'] is None
+        assert results['ori_filename'] is None
+        assert results['img'].shape == (288, 512, 3)
+        assert results['img'].dtype == np.uint8
+        assert results['img_shape'] == (288, 512, 3)
+        assert results['ori_shape'] == (288, 512, 3)

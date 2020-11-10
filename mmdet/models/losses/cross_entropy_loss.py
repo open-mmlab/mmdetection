@@ -39,19 +39,19 @@ def cross_entropy(pred,
     return loss
 
 
-def _expand_binary_labels(labels, label_weights, label_channels):
-    # Caution: this function should only be used in RPN
-    # in other files such as in ghm_loss, the _expand_binary_labels
-    # is used for multi-class classification.
+def _expand_onehot_labels(labels, label_weights, label_channels):
     bin_labels = labels.new_full((labels.size(0), label_channels), 0)
-    inds = torch.nonzero(labels >= 1, as_tuple=False).squeeze()
+    inds = torch.nonzero(
+        (labels >= 0) & (labels < label_channels), as_tuple=False).squeeze()
     if inds.numel() > 0:
-        bin_labels[inds, labels[inds] - 1] = 1
+        bin_labels[inds, labels[inds]] = 1
+
     if label_weights is None:
         bin_label_weights = None
     else:
         bin_label_weights = label_weights.view(-1, 1).expand(
             label_weights.size(0), label_channels)
+
     return bin_labels, bin_label_weights
 
 
@@ -77,13 +77,13 @@ def binary_cross_entropy(pred,
         torch.Tensor: The calculated loss
     """
     if pred.dim() != label.dim():
-        label, weight = _expand_binary_labels(label, weight, pred.size(-1))
+        label, weight = _expand_onehot_labels(label, weight, pred.size(-1))
 
     # weighted element-wise losses
     if weight is not None:
         weight = weight.float()
     loss = F.binary_cross_entropy_with_logits(
-        pred, label.float(), weight=class_weight, reduction='none')
+        pred, label.float(), pos_weight=class_weight, reduction='none')
     # do the reduction for the weighted loss
     loss = weight_reduce_loss(
         loss, weight, reduction=reduction, avg_factor=avg_factor)

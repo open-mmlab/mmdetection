@@ -8,22 +8,26 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
     Args:
         bboxes (Tensor): Shape (..., 4*k)
         img_shape (tuple): Image shape.
-        direction (str): Flip direction, options are "horizontal" and
-            "vertical". Default: "horizontal"
-
+        direction (str): Flip direction, options are "horizontal", "vertical",
+            "diagonal". Default: "horizontal"
 
     Returns:
         Tensor: Flipped bboxes.
     """
     assert bboxes.shape[-1] % 4 == 0
-    assert direction in ['horizontal', 'vertical']
+    assert direction in ['horizontal', 'vertical', 'diagonal']
     flipped = bboxes.clone()
-    if direction == 'vertical':
+    if direction == 'horizontal':
+        flipped[..., 0::4] = img_shape[1] - bboxes[..., 2::4]
+        flipped[..., 2::4] = img_shape[1] - bboxes[..., 0::4]
+    elif direction == 'vertical':
         flipped[..., 1::4] = img_shape[0] - bboxes[..., 3::4]
         flipped[..., 3::4] = img_shape[0] - bboxes[..., 1::4]
     else:
-        flipped[:, 0::4] = img_shape[1] - bboxes[:, 2::4]
-        flipped[:, 2::4] = img_shape[1] - bboxes[:, 0::4]
+        flipped[..., 0::4] = img_shape[1] - bboxes[..., 2::4]
+        flipped[..., 1::4] = img_shape[0] - bboxes[..., 3::4]
+        flipped[..., 2::4] = img_shape[1] - bboxes[..., 0::4]
+        flipped[..., 3::4] = img_shape[0] - bboxes[..., 1::4]
     return flipped
 
 
@@ -96,8 +100,8 @@ def bbox2result(bboxes, labels, num_classes):
     """Convert detection results to a list of numpy arrays.
 
     Args:
-        bboxes (Tensor): shape (n, 5)
-        labels (Tensor): shape (n, )
+        bboxes (torch.Tensor | np.ndarray): shape (n, 5)
+        labels (torch.Tensor | np.ndarray): shape (n, )
         num_classes (int): class number, including background class
 
     Returns:
@@ -106,8 +110,9 @@ def bbox2result(bboxes, labels, num_classes):
     if bboxes.shape[0] == 0:
         return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
     else:
-        bboxes = bboxes.cpu().numpy()
-        labels = labels.cpu().numpy()
+        if isinstance(bboxes, torch.Tensor):
+            bboxes = bboxes.cpu().numpy()
+            labels = labels.cpu().numpy()
         return [bboxes[labels == i, :] for i in range(num_classes)]
 
 
@@ -157,3 +162,35 @@ def bbox2distance(points, bbox, max_dis=None, eps=0.1):
         right = right.clamp(min=0, max=max_dis - eps)
         bottom = bottom.clamp(min=0, max=max_dis - eps)
     return torch.stack([left, top, right, bottom], -1)
+
+
+def bbox_rescale(bboxes, scale_factor=1.0):
+    """Rescale bounding box w.r.t. scale_factor.
+
+    Args:
+        bboxes (Tensor): Shape (n, 4) for bboxes or (n, 5) for rois
+        scale_factor (float): rescale factor
+
+    Returns:
+        Tensor: Rescaled bboxes.
+    """
+    if bboxes.size(1) == 5:
+        bboxes_ = bboxes[:, 1:]
+        inds_ = bboxes[:, 0]
+    else:
+        bboxes_ = bboxes
+    cx = (bboxes_[:, 0] + bboxes_[:, 2]) * 0.5
+    cy = (bboxes_[:, 1] + bboxes_[:, 3]) * 0.5
+    w = bboxes_[:, 2] - bboxes_[:, 0]
+    h = bboxes_[:, 3] - bboxes_[:, 1]
+    w = w * scale_factor
+    h = h * scale_factor
+    x1 = cx - 0.5 * w
+    x2 = cx + 0.5 * w
+    y1 = cy - 0.5 * h
+    y2 = cy + 0.5 * h
+    if bboxes.size(1) == 5:
+        rescaled_bboxes = torch.stack([inds_, x1, y1, x2, y2], dim=-1)
+    else:
+        rescaled_bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
+    return rescaled_bboxes

@@ -2,12 +2,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, build_upsample_layer
-from mmcv.ops import Conv2d
+from mmcv.cnn import Conv2d, ConvModule, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
+from mmcv.runner import auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import auto_fp16, force_fp32, mask_target
+from mmdet.core import mask_target
 from mmdet.models.builder import HEADS, build_loss
 
 BYTES_PER_FLOAT = 4
@@ -138,7 +138,7 @@ class FCNMaskHead(nn.Module):
     def loss(self, mask_pred, mask_targets, labels):
         loss = dict()
         if mask_pred.size(0) == 0:
-            loss_mask = mask_pred.sum() * 0
+            loss_mask = mask_pred.sum()
         else:
             if self.class_agnostic:
                 loss_mask = self.loss_mask(mask_pred, mask_targets,
@@ -180,8 +180,15 @@ class FCNMaskHead(nn.Module):
         if rescale:
             img_h, img_w = ori_shape[:2]
         else:
-            img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
-            img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
+            if isinstance(scale_factor, float):
+                img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
+                img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
+            else:
+                w_scale, h_scale = scale_factor[0], scale_factor[1]
+                img_h = np.round(ori_shape[0] * h_scale.item()).astype(
+                    np.int32)
+                img_w = np.round(ori_shape[1] * w_scale.item()).astype(
+                    np.int32)
             scale_factor = 1.0
 
         if not isinstance(scale_factor, (float, torch.Tensor)):

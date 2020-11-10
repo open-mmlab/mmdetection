@@ -84,14 +84,26 @@ def test_flip():
     with pytest.raises(AssertionError):
         transform = dict(type='RandomFlip', flip_ratio=1.5)
         build_from_cfg(transform, PIPELINES)
+    # test assertion for 0 <= sum(flip_ratio) <= 1
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomFlip',
+            flip_ratio=[0.7, 0.8],
+            direction=['horizontal', 'vertical'])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for mismatch between number of flip_ratio and direction
+    with pytest.raises(AssertionError):
+        transform = dict(type='RandomFlip', flip_ratio=[0.4, 0.5])
+        build_from_cfg(transform, PIPELINES)
 
     # test assertion for invalid direction
     with pytest.raises(AssertionError):
         transform = dict(
-            type='RandomFlip', flip_ratio=1, direction='horizonta')
+            type='RandomFlip', flip_ratio=1., direction='horizonta')
         build_from_cfg(transform, PIPELINES)
 
-    transform = dict(type='RandomFlip', flip_ratio=1)
+    transform = dict(type='RandomFlip', flip_ratio=1.)
     flip_module = build_from_cfg(transform, PIPELINES)
 
     results = dict()
@@ -114,6 +126,58 @@ def test_flip():
     results = flip_module(results)
     assert np.equal(results['img'], results['img2']).all()
     assert np.equal(original_img, results['img']).all()
+
+    # test flip_ratio is float, direction is list
+    transform = dict(
+        type='RandomFlip',
+        flip_ratio=0.9,
+        direction=['horizontal', 'vertical', 'diagonal'])
+    flip_module = build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    # Set initial values for default meta_keys
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['img_fields'] = ['img']
+    results = flip_module(results)
+    if results['flip']:
+        assert np.array_equal(
+            mmcv.imflip(original_img, results['flip_direction']),
+            results['img'])
+    else:
+        assert np.array_equal(original_img, results['img'])
+
+    # test flip_ratio is list, direction is list
+    transform = dict(
+        type='RandomFlip',
+        flip_ratio=[0.3, 0.3, 0.2],
+        direction=['horizontal', 'vertical', 'diagonal'])
+    flip_module = build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    # Set initial values for default meta_keys
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['img_fields'] = ['img']
+    results = flip_module(results)
+    if results['flip']:
+        assert np.array_equal(
+            mmcv.imflip(original_img, results['flip_direction']),
+            results['img'])
+    else:
+        assert np.array_equal(original_img, results['img'])
 
 
 def test_random_crop():
@@ -545,3 +609,69 @@ def test_multi_scale_flip_aug():
     assert results['img_metas'][0].data['scale_factor'].tolist() == [
         2.603515625, 2.6041667461395264, 2.603515625, 2.6041667461395264
     ]
+
+
+def test_cutout():
+    # test n_holes
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=(5, 3), cutout_shape=(8, 8))
+        build_from_cfg(transform, PIPELINES)
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=(3, 4, 5), cutout_shape=(8, 8))
+        build_from_cfg(transform, PIPELINES)
+    # test cutout_shape and cutout_ratio
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=1, cutout_shape=8)
+        build_from_cfg(transform, PIPELINES)
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=1, cutout_ratio=0.2)
+        build_from_cfg(transform, PIPELINES)
+    # either of cutout_shape and cutout_ratio should be given
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=1)
+        build_from_cfg(transform, PIPELINES)
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='CutOut',
+            n_holes=1,
+            cutout_shape=(2, 2),
+            cutout_ratio=(0.4, 0.4))
+        build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+
+    results['img'] = img
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['img_fields'] = ['img']
+
+    transform = dict(type='CutOut', n_holes=1, cutout_shape=(10, 10))
+    cutout_module = build_from_cfg(transform, PIPELINES)
+    cutout_result = cutout_module(copy.deepcopy(results))
+    assert cutout_result['img'].sum() < img.sum()
+
+    transform = dict(type='CutOut', n_holes=1, cutout_ratio=(0.8, 0.8))
+    cutout_module = build_from_cfg(transform, PIPELINES)
+    cutout_result = cutout_module(copy.deepcopy(results))
+    assert cutout_result['img'].sum() < img.sum()
+
+    transform = dict(
+        type='CutOut',
+        n_holes=(2, 4),
+        cutout_shape=[(10, 10), (15, 15)],
+        fill_in=(255, 255, 255))
+    cutout_module = build_from_cfg(transform, PIPELINES)
+    cutout_result = cutout_module(copy.deepcopy(results))
+    assert cutout_result['img'].sum() > img.sum()
+
+    transform = dict(
+        type='CutOut',
+        n_holes=1,
+        cutout_ratio=(0.8, 0.8),
+        fill_in=(255, 255, 255))
+    cutout_module = build_from_cfg(transform, PIPELINES)
+    cutout_result = cutout_module(copy.deepcopy(results))
+    assert cutout_result['img'].sum() > img.sum()

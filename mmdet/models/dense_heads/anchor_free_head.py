@@ -3,14 +3,16 @@ from abc import abstractmethod
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.runner import force_fp32
 
-from mmdet.core import force_fp32, multi_apply
+from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
+from .dense_test_mixins import BBoxTestMixin
 
 
 @HEADS.register_module()
-class AnchorFreeHead(BaseDenseHead):
+class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
     """Anchor-free head (FCOS, Fovea, RepPoints, etc.).
 
     Args:
@@ -25,9 +27,6 @@ class AnchorFreeHead(BaseDenseHead):
         conv_bias (bool | str): If specified as `auto`, it will be decided by
             the norm_cfg. Bias of conv will be set as True if `norm_cfg` is
             None, otherwise False. Default: "auto".
-        background_label (int | None): Label ID of background, set as 0 for
-            RPN and num_classes for other heads. It will automatically set as
-            num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
@@ -46,7 +45,6 @@ class AnchorFreeHead(BaseDenseHead):
                  strides=(4, 8, 16, 32, 64),
                  dcn_on_last_conv=False,
                  conv_bias='auto',
-                 background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -75,11 +73,6 @@ class AnchorFreeHead(BaseDenseHead):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
 
         self._init_layers()
 
@@ -327,3 +320,21 @@ class AnchorFreeHead(BaseDenseHead):
                 self._get_points_single(featmap_sizes[i], self.strides[i],
                                         dtype, device, flatten))
         return mlvl_points
+
+    def aug_test(self, feats, img_metas, rescale=False):
+        """Test function with test time augmentation.
+
+        Args:
+            feats (list[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains features for all images in the batch.
+            img_metas (list[list[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. each dict has image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[ndarray]: bbox results of each class
+        """
+        return self.aug_test_bboxes(feats, img_metas, rescale=rescale)

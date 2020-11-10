@@ -1,11 +1,132 @@
 import mmcv
+import numpy as np
 import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
+from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.models.dense_heads import (AnchorHead, CornerHead, FCOSHead,
-                                      FSAFHead, GuidedAnchorHead)
-from mmdet.models.roi_heads.bbox_heads import BBoxHead
+                                      FSAFHead, GuidedAnchorHead, PAAHead,
+                                      SABLRetinaHead, VFNetHead, YOLACTHead,
+                                      YOLACTProtonet, YOLACTSegmHead, paa_head)
+from mmdet.models.dense_heads.paa_head import levels_to_images
+from mmdet.models.roi_heads.bbox_heads import BBoxHead, SABLHead
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
+
+
+def test_paa_head_loss():
+    """Tests paa head loss when truth is empty and non-empty."""
+
+    class mock_skm(object):
+
+        def GaussianMixture(self, *args, **kwargs):
+            return self
+
+        def fit(self, loss):
+            pass
+
+        def predict(self, loss):
+            components = np.zeros_like(loss, dtype=np.long)
+            return components.reshape(-1)
+
+        def score_samples(self, loss):
+            scores = np.random.random(len(loss))
+            return scores
+
+    paa_head.skm = mock_skm()
+
+    s = 256
+    img_metas = [{
+        'img_shape': (s, s, 3),
+        'scale_factor': 1,
+        'pad_shape': (s, s, 3)
+    }]
+    train_cfg = mmcv.Config(
+        dict(
+            assigner=dict(
+                type='MaxIoUAssigner',
+                pos_iou_thr=0.1,
+                neg_iou_thr=0.1,
+                min_pos_iou=0,
+                ignore_iof_thr=-1),
+            allowed_border=-1,
+            pos_weight=-1,
+            debug=False))
+    # since Focal Loss is not supported on CPU
+    self = PAAHead(
+        num_classes=4,
+        in_channels=1,
+        train_cfg=train_cfg,
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.3),
+        loss_centerness=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.5))
+    feat = [
+        torch.rand(1, 1, s // feat_size, s // feat_size)
+        for feat_size in [4, 8, 16, 32, 64]
+    ]
+    self.init_weights()
+    cls_scores, bbox_preds, iou_preds = self(feat)
+    # Test that empty ground truth encourages the network to predict background
+    gt_bboxes = [torch.empty((0, 4))]
+    gt_labels = [torch.LongTensor([])]
+    gt_bboxes_ignore = None
+    empty_gt_losses = self.loss(cls_scores, bbox_preds, iou_preds, gt_bboxes,
+                                gt_labels, img_metas, gt_bboxes_ignore)
+    # When there is no truth, the cls loss should be nonzero but there should
+    # be no box loss.
+    empty_cls_loss = empty_gt_losses['loss_cls']
+    empty_box_loss = empty_gt_losses['loss_bbox']
+    empty_iou_loss = empty_gt_losses['loss_iou']
+    assert empty_cls_loss.item() > 0, 'cls loss should be non-zero'
+    assert empty_box_loss.item() == 0, (
+        'there should be no box loss when there are no true boxes')
+    assert empty_iou_loss.item() == 0, (
+        'there should be no box loss when there are no true boxes')
+
+    # When truth is non-empty then both cls and box loss should be nonzero for
+    # random inputs
+    gt_bboxes = [
+        torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
+    ]
+    gt_labels = [torch.LongTensor([2])]
+    one_gt_losses = self.loss(cls_scores, bbox_preds, iou_preds, gt_bboxes,
+                              gt_labels, img_metas, gt_bboxes_ignore)
+    onegt_cls_loss = one_gt_losses['loss_cls']
+    onegt_box_loss = one_gt_losses['loss_bbox']
+    onegt_iou_loss = one_gt_losses['loss_iou']
+    assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
+    assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
+    assert onegt_iou_loss.item() > 0, 'box loss should be non-zero'
+    n, c, h, w = 10, 4, 20, 20
+    mlvl_tensor = [torch.ones(n, c, h, w) for i in range(5)]
+    results = levels_to_images(mlvl_tensor)
+    assert len(results) == n
+    assert results[0].size() == (h * w * 5, c)
+    assert self.with_score_voting
+    cls_scores = [torch.ones(4, 5, 5)]
+    bbox_preds = [torch.ones(4, 5, 5)]
+    iou_preds = [torch.ones(1, 5, 5)]
+    mlvl_anchors = [torch.ones(5 * 5, 4)]
+    img_shape = None
+    scale_factor = [0.5, 0.5]
+    cfg = mmcv.Config(
+        dict(
+            nms_pre=1000,
+            min_bbox_size=0,
+            score_thr=0.05,
+            nms=dict(type='nms', iou_threshold=0.6),
+            max_per_img=100))
+    rescale = False
+    self._get_bboxes_single(
+        cls_scores,
+        bbox_preds,
+        iou_preds,
+        mlvl_anchors,
+        img_shape,
+        scale_factor,
+        cfg,
+        rescale=rescale)
 
 
 def test_fcos_head_loss():
@@ -65,6 +186,64 @@ def test_fcos_head_loss():
     onegt_box_loss = one_gt_losses['loss_bbox']
     assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
     assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
+
+
+def test_vfnet_head_loss():
+    """Tests vfnet head loss when truth is empty and non-empty."""
+    s = 256
+    img_metas = [{
+        'img_shape': (s, s, 3),
+        'scale_factor': 1,
+        'pad_shape': (s, s, 3)
+    }]
+    train_cfg = mmcv.Config(
+        dict(
+            assigner=dict(type='ATSSAssigner', topk=9),
+            allowed_border=-1,
+            pos_weight=-1,
+            debug=False))
+    # since Focal Loss is not supported on CPU
+    self = VFNetHead(
+        num_classes=4,
+        in_channels=1,
+        train_cfg=train_cfg,
+        loss_cls=dict(type='VarifocalLoss', use_sigmoid=True, loss_weight=1.0))
+    if torch.cuda.is_available():
+        self.cuda()
+        feat = [
+            torch.rand(1, 1, s // feat_size, s // feat_size).cuda()
+            for feat_size in [4, 8, 16, 32, 64]
+        ]
+        cls_scores, bbox_preds, bbox_preds_refine = self.forward(feat)
+        # Test that empty ground truth encourages the network to predict
+        # background
+        gt_bboxes = [torch.empty((0, 4)).cuda()]
+        gt_labels = [torch.LongTensor([]).cuda()]
+        gt_bboxes_ignore = None
+        empty_gt_losses = self.loss(cls_scores, bbox_preds, bbox_preds_refine,
+                                    gt_bboxes, gt_labels, img_metas,
+                                    gt_bboxes_ignore)
+        # When there is no truth, the cls loss should be nonzero but there
+        # should be no box loss.
+        empty_cls_loss = empty_gt_losses['loss_cls']
+        empty_box_loss = empty_gt_losses['loss_bbox']
+        assert empty_cls_loss.item() > 0, 'cls loss should be non-zero'
+        assert empty_box_loss.item() == 0, (
+            'there should be no box loss when there are no true boxes')
+
+        # When truth is non-empty then both cls and box loss should be nonzero
+        # for random inputs
+        gt_bboxes = [
+            torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]).cuda(),
+        ]
+        gt_labels = [torch.LongTensor([2]).cuda()]
+        one_gt_losses = self.loss(cls_scores, bbox_preds, bbox_preds_refine,
+                                  gt_bboxes, gt_labels, img_metas,
+                                  gt_bboxes_ignore)
+        onegt_cls_loss = one_gt_losses['loss_cls']
+        onegt_box_loss = one_gt_losses['loss_bbox']
+        assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
+        assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
 
 
 def test_anchor_head_loss():
@@ -351,6 +530,147 @@ def test_bbox_head_loss():
                        bbox_targets, bbox_weights)
     assert losses.get('loss_cls', 0) > 0, 'cls-loss should be non-zero'
     assert losses.get('loss_bbox', 0) > 0, 'box-loss should be non-zero'
+
+
+def test_sabl_bbox_head_loss():
+    """Tests bbox head loss when truth is empty and non-empty."""
+    self = SABLHead(
+        num_classes=4,
+        cls_in_channels=3,
+        reg_in_channels=3,
+        cls_out_channels=3,
+        reg_offset_out_channels=3,
+        reg_cls_out_channels=3,
+        roi_feat_size=7)
+
+    # Dummy proposals
+    proposal_list = [
+        torch.Tensor([[23.6667, 23.8757, 228.6326, 153.8874]]),
+    ]
+
+    target_cfg = mmcv.Config(dict(pos_weight=1))
+
+    # Test bbox loss when truth is empty
+    gt_bboxes = [torch.empty((0, 4))]
+    gt_labels = [torch.LongTensor([])]
+
+    sampling_results = _dummy_bbox_sampling(proposal_list, gt_bboxes,
+                                            gt_labels)
+
+    bbox_targets = self.get_targets(sampling_results, gt_bboxes, gt_labels,
+                                    target_cfg)
+    labels, label_weights, bbox_targets, bbox_weights = bbox_targets
+
+    # Create dummy features "extracted" for each sampled bbox
+    num_sampled = sum(len(res.bboxes) for res in sampling_results)
+    rois = bbox2roi([res.bboxes for res in sampling_results])
+    dummy_feats = torch.rand(num_sampled, 3, 7, 7)
+    cls_scores, bbox_preds = self.forward(dummy_feats)
+
+    losses = self.loss(cls_scores, bbox_preds, rois, labels, label_weights,
+                       bbox_targets, bbox_weights)
+    assert losses.get('loss_cls', 0) > 0, 'cls-loss should be non-zero'
+    assert losses.get('loss_bbox_cls',
+                      0) == 0, 'empty gt bbox-cls-loss should be zero'
+    assert losses.get('loss_bbox_reg',
+                      0) == 0, 'empty gt bbox-reg-loss should be zero'
+
+    # Test bbox loss when truth is non-empty
+    gt_bboxes = [
+        torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
+    ]
+    gt_labels = [torch.LongTensor([2])]
+
+    sampling_results = _dummy_bbox_sampling(proposal_list, gt_bboxes,
+                                            gt_labels)
+    rois = bbox2roi([res.bboxes for res in sampling_results])
+
+    bbox_targets = self.get_targets(sampling_results, gt_bboxes, gt_labels,
+                                    target_cfg)
+    labels, label_weights, bbox_targets, bbox_weights = bbox_targets
+
+    # Create dummy features "extracted" for each sampled bbox
+    num_sampled = sum(len(res.bboxes) for res in sampling_results)
+    dummy_feats = torch.rand(num_sampled, 3, 7, 7)
+    cls_scores, bbox_preds = self.forward(dummy_feats)
+
+    losses = self.loss(cls_scores, bbox_preds, rois, labels, label_weights,
+                       bbox_targets, bbox_weights)
+    assert losses.get('loss_bbox_cls',
+                      0) > 0, 'empty gt bbox-cls-loss should be zero'
+    assert losses.get('loss_bbox_reg',
+                      0) > 0, 'empty gt bbox-reg-loss should be zero'
+
+
+def test_sabl_retina_head_loss():
+    """Tests anchor head loss when truth is empty and non-empty."""
+    s = 256
+    img_metas = [{
+        'img_shape': (s, s, 3),
+        'scale_factor': 1,
+        'pad_shape': (s, s, 3)
+    }]
+
+    cfg = mmcv.Config(
+        dict(
+            assigner=dict(
+                type='ApproxMaxIoUAssigner',
+                pos_iou_thr=0.5,
+                neg_iou_thr=0.4,
+                min_pos_iou=0.0,
+                ignore_iof_thr=-1),
+            allowed_border=-1,
+            pos_weight=-1,
+            debug=False))
+    head = SABLRetinaHead(
+        num_classes=4,
+        in_channels=3,
+        feat_channels=10,
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        train_cfg=cfg)
+    if torch.cuda.is_available():
+        head.cuda()
+        # Anchor head expects a multiple levels of features per image
+        feat = [
+            torch.rand(1, 3, s // (2**(i + 2)), s // (2**(i + 2))).cuda()
+            for i in range(len(head.approx_anchor_generator.base_anchors))
+        ]
+        cls_scores, bbox_preds = head.forward(feat)
+
+        # Test that empty ground truth encourages the network
+        # to predict background
+        gt_bboxes = [torch.empty((0, 4)).cuda()]
+        gt_labels = [torch.LongTensor([]).cuda()]
+
+        gt_bboxes_ignore = None
+        empty_gt_losses = head.loss(cls_scores, bbox_preds, gt_bboxes,
+                                    gt_labels, img_metas, gt_bboxes_ignore)
+        # When there is no truth, the cls loss should be nonzero but there
+        # should be no box loss.
+        empty_cls_loss = sum(empty_gt_losses['loss_cls'])
+        empty_box_cls_loss = sum(empty_gt_losses['loss_bbox_cls'])
+        empty_box_reg_loss = sum(empty_gt_losses['loss_bbox_reg'])
+        assert empty_cls_loss.item() > 0, 'cls loss should be non-zero'
+        assert empty_box_cls_loss.item() == 0, (
+            'there should be no box cls loss when there are no true boxes')
+        assert empty_box_reg_loss.item() == 0, (
+            'there should be no box reg loss when there are no true boxes')
+
+        # When truth is non-empty then both cls and box loss should
+        # be nonzero for random inputs
+        gt_bboxes = [
+            torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]).cuda(),
+        ]
+        gt_labels = [torch.LongTensor([2]).cuda()]
+        one_gt_losses = head.loss(cls_scores, bbox_preds, gt_bboxes, gt_labels,
+                                  img_metas, gt_bboxes_ignore)
+        onegt_cls_loss = sum(one_gt_losses['loss_cls'])
+        onegt_box_cls_loss = sum(one_gt_losses['loss_bbox_cls'])
+        onegt_box_reg_loss = sum(one_gt_losses['loss_bbox_reg'])
+        assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
+        assert onegt_box_cls_loss.item() > 0, 'box loss cls should be non-zero'
+        assert onegt_box_reg_loss.item() > 0, 'box loss reg should be non-zero'
 
 
 def test_refine_boxes():
@@ -714,8 +1034,11 @@ def test_corner_head_encode_and_decode_heatmap():
         'border': (0, 0, 0, 0)
     }]
 
-    gt_bboxes = [torch.Tensor([[10, 20, 200, 240]])]
-    gt_labels = [torch.LongTensor([1])]
+    gt_bboxes = [
+        torch.Tensor([[10, 20, 200, 240], [40, 50, 100, 200],
+                      [10, 20, 200, 240]])
+    ]
+    gt_labels = [torch.LongTensor([1, 1, 2])]
 
     self = CornerHead(num_classes=4, in_channels=1, corner_emb_channels=1)
 
@@ -762,5 +1085,146 @@ def test_corner_head_encode_and_decode_heatmap():
     scores = scores[idx].view(-1)
     clses = clses[idx].view(-1)
 
-    assert bboxes[torch.where(scores > 0.05)].equal(gt_bboxes[0])
-    assert clses[torch.where(scores > 0.05)].equal(gt_labels[0].float())
+    valid_bboxes = bboxes[torch.where(scores > 0.05)]
+    valid_labels = clses[torch.where(scores > 0.05)]
+    max_coordinate = valid_bboxes.max()
+    offsets = valid_labels.to(valid_bboxes) * (max_coordinate + 1)
+    gt_offsets = gt_labels[0].to(gt_bboxes[0]) * (max_coordinate + 1)
+
+    offset_bboxes = valid_bboxes + offsets[:, None]
+    offset_gtbboxes = gt_bboxes[0] + gt_offsets[:, None]
+
+    iou_matrix = bbox_overlaps(offset_bboxes.numpy(), offset_gtbboxes.numpy())
+    assert (iou_matrix == 1).sum() == 3
+
+
+def test_yolact_head_loss():
+    """Tests yolact head losses when truth is empty and non-empty."""
+    s = 550
+    img_metas = [{
+        'img_shape': (s, s, 3),
+        'scale_factor': 1,
+        'pad_shape': (s, s, 3)
+    }]
+    train_cfg = mmcv.Config(
+        dict(
+            assigner=dict(
+                type='MaxIoUAssigner',
+                pos_iou_thr=0.5,
+                neg_iou_thr=0.4,
+                min_pos_iou=0.,
+                ignore_iof_thr=-1,
+                gt_max_assign_all=False),
+            smoothl1_beta=1.,
+            allowed_border=-1,
+            pos_weight=-1,
+            neg_pos_ratio=3,
+            debug=False,
+            min_gt_box_wh=[4.0, 4.0]))
+    bbox_head = YOLACTHead(
+        num_classes=80,
+        in_channels=256,
+        feat_channels=256,
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            octave_base_scale=3,
+            scales_per_octave=1,
+            base_sizes=[8, 16, 32, 64, 128],
+            ratios=[0.5, 1.0, 2.0],
+            strides=[550.0 / x for x in [69, 35, 18, 9, 5]],
+            centers=[(550 * 0.5 / x, 550 * 0.5 / x)
+                     for x in [69, 35, 18, 9, 5]]),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[0.1, 0.1, 0.2, 0.2]),
+        loss_cls=dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=False,
+            reduction='none',
+            loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.5),
+        num_head_convs=1,
+        num_protos=32,
+        use_ohem=True,
+        train_cfg=train_cfg)
+    segm_head = YOLACTSegmHead(
+        in_channels=256,
+        num_classes=80,
+        loss_segm=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0))
+    mask_head = YOLACTProtonet(
+        num_classes=80,
+        in_channels=256,
+        num_protos=32,
+        max_masks_to_train=100,
+        loss_mask_weight=6.125)
+    feat = [
+        torch.rand(1, 256, feat_size, feat_size)
+        for feat_size in [69, 35, 18, 9, 5]
+    ]
+    cls_score, bbox_pred, coeff_pred = bbox_head.forward(feat)
+    # Test that empty ground truth encourages the network to predict background
+    gt_bboxes = [torch.empty((0, 4))]
+    gt_labels = [torch.LongTensor([])]
+    gt_masks = [torch.empty((0, 550, 550))]
+    gt_bboxes_ignore = None
+    empty_gt_losses, sampling_results = bbox_head.loss(
+        cls_score,
+        bbox_pred,
+        gt_bboxes,
+        gt_labels,
+        img_metas,
+        gt_bboxes_ignore=gt_bboxes_ignore)
+    # When there is no truth, the cls loss should be nonzero but there should
+    # be no box loss.
+    empty_cls_loss = sum(empty_gt_losses['loss_cls'])
+    empty_box_loss = sum(empty_gt_losses['loss_bbox'])
+    assert empty_cls_loss.item() > 0, 'cls loss should be non-zero'
+    assert empty_box_loss.item() == 0, (
+        'there should be no box loss when there are no true boxes')
+
+    # Test segm head and mask head
+    segm_head_outs = segm_head(feat[0])
+    empty_segm_loss = segm_head.loss(segm_head_outs, gt_masks, gt_labels)
+    mask_pred = mask_head(feat[0], coeff_pred, gt_bboxes, img_metas,
+                          sampling_results)
+    empty_mask_loss = mask_head.loss(mask_pred, gt_masks, gt_bboxes, img_metas,
+                                     sampling_results)
+    # When there is no truth, the segm and mask loss should be zero.
+    empty_segm_loss = sum(empty_segm_loss['loss_segm'])
+    empty_mask_loss = sum(empty_mask_loss['loss_mask'])
+    assert empty_segm_loss.item() == 0, (
+        'there should be no segm loss when there are no true boxes')
+    assert empty_mask_loss == 0, (
+        'there should be no mask loss when there are no true boxes')
+
+    # When truth is non-empty then cls, box, mask, segm loss should be
+    # nonzero for random inputs.
+    gt_bboxes = [
+        torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
+    ]
+    gt_labels = [torch.LongTensor([2])]
+    gt_masks = [(torch.rand((1, 550, 550)) > 0.5).float()]
+
+    one_gt_losses, sampling_results = bbox_head.loss(
+        cls_score,
+        bbox_pred,
+        gt_bboxes,
+        gt_labels,
+        img_metas,
+        gt_bboxes_ignore=gt_bboxes_ignore)
+    one_gt_cls_loss = sum(one_gt_losses['loss_cls'])
+    one_gt_box_loss = sum(one_gt_losses['loss_bbox'])
+    assert one_gt_cls_loss.item() > 0, 'cls loss should be non-zero'
+    assert one_gt_box_loss.item() > 0, 'box loss should be non-zero'
+
+    one_gt_segm_loss = segm_head.loss(segm_head_outs, gt_masks, gt_labels)
+    mask_pred = mask_head(feat[0], coeff_pred, gt_bboxes, img_metas,
+                          sampling_results)
+    one_gt_mask_loss = mask_head.loss(mask_pred, gt_masks, gt_bboxes,
+                                      img_metas, sampling_results)
+    one_gt_segm_loss = sum(one_gt_segm_loss['loss_segm'])
+    one_gt_mask_loss = sum(one_gt_mask_loss['loss_mask'])
+    assert one_gt_segm_loss.item() > 0, 'segm loss should be non-zero'
+    assert one_gt_mask_loss.item() > 0, 'mask loss should be non-zero'

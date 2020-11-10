@@ -1,5 +1,194 @@
 ## Changelog
 
+### v2.6.0 (1/11/2020)
+
+- Support new method: [VarifocalNet](https://arxiv.org/abs/2008.13367).
+- Refactored documentation with more tutorials.
+
+#### New Features
+
+- Support GIoU calculation in `BboxOverlaps2D`, and re-implement `giou_loss` using `bbox_overlaps` (#3936)
+- Support random sampling in CPU mode (#3948)
+- Support VarifocalNet (#3666, #4024)
+
+#### Bug Fixes
+
+- Fix SABL validating bug in Cascade R-CNN (#3913)
+- Avoid division by zero in PAA head when num_pos=0 (#3938)
+- Fix temporary directory bug of multi-node testing error (#4034, #4017)
+- Fix `--show-dir` option in test script (#4025)
+- Fix GA-RetinaNet r50 model url (#3983)
+- Update code in docs and fix broken urls (#3947)
+
+#### Improvements
+
+- Refactor pytorch2onnx API into `mmdet.core.export` and use `generate_inputs_and_wrap_model` for pytorch2onnx (#3857, #3912)
+- Update RPN upgrade scripts for v2.5.0 compatibility (#3986)
+- Use mmcv `tensor2imgs` (#4010)
+- Update test robustness (#4000)
+- Update trouble shooting page (#3994)
+- Accelerate PAA training speed (#3985)
+- Support batch_size > 1 in validation (#3966)
+- Use RoIAlign implemented in MMCV for inference in CPU mode (#3930)
+- Documentation refactoring (#4031)
+
+### v2.5.0 (5/10/2020)
+
+#### Highlights
+
+- Support new methods: [YOLACT](https://arxiv.org/abs/1904.02689), [CentripetalNet](https://arxiv.org/abs/2003.09119).
+- Add more documentations for easier and more clear usage.
+
+#### Backwards Incompatible Changes
+
+**FP16 related methods are imported from mmcv instead of mmdet. (#3766, #3822)**
+Mixed precision training utils in `mmdet.core.fp16` are moved to `mmcv.runner`, including `force_fp32`, `auto_fp16`, `wrap_fp16_model`, and `Fp16OptimizerHook`. A deprecation warning will be raised if users attempt to import those methods from `mmdet.core.fp16`, and will be finally removed in V2.8.0.
+
+**[0, N-1] represents foreground classes and N indicates background classes for all models. (#3221)**
+Before v2.5.0, the background label for RPN is 0, and N for other heads. Now the behavior is consistent for all models. Thus `self.background_labels` in `dense_heads` is removed and all heads use `self.num_classes` to indicate the class index of background labels.
+This change has no effect on the pre-trained models in the v2.x model zoo, but will affect the training of all models with RPN heads. Two-stage detectors whose RPN head uses softmax will be affected because the order of categories is changed.
+
+**Only call `get_subset_by_classes` when `test_mode=True` and `self.filter_empty_gt=True` (#3695)**
+Function `get_subset_by_classes` in dataset is refactored and only filters out images when `test_mode=True` and `self.filter_empty_gt=True`.
+    In the original implementation, `get_subset_by_classes` is not related to the flag `self.filter_empty_gt` and will only be called when the classes is set during initialization no matter `test_mode` is `True` or `False`. This brings ambiguous behavior and potential bugs in many cases. After v2.5.0, if `filter_empty_gt=False`, no matter whether the classes are specified in a dataset, the dataset will use all the images in the annotations. If `filter_empty_gt=True` and `test_mode=True`, no matter whether the classes are specified, the dataset will call ``get_subset_by_classes` to check the images and filter out images containing no GT boxes. Therefore, the users should be responsible for the data filtering/cleaning process for the test dataset.
+
+#### New Features
+
+- Test time augmentation for single stage detectors (#3844, #3638)
+- Support to show the name of experiments during training (#3764)
+- Add `Shear`, `Rotate`, `Translate` Augmentation (#3656, #3619, #3687)
+- Add image-only transformations including `Constrast`, `Equalize`, `Color`, and `Brightness`. (#3643)
+- Support [YOLACT](https://arxiv.org/abs/1904.02689) (#3456)
+- Support [CentripetalNet](https://arxiv.org/abs/2003.09119) (#3390)
+- Support PyTorch 1.6 in docker (#3905)
+
+#### Bug Fixes
+
+- Fix the bug of training ATSS when there is no ground truth boxes (#3702)
+- Fix the bug of using Focal Loss when there is `num_pos` is 0 (#3702)
+- Fix the label index mapping in dataset browser (#3708)
+- Fix Mask R-CNN training stuck problem when ther is no positive rois (#3713)
+- Fix the bug of `self.rpn_head.test_cfg` in `RPNTestMixin` by using `self.rpn_head` in rpn head (#3808)
+- Fix deprecated `Conv2d` from mmcv.ops (#3791)
+- Fix device bug in RepPoints (#3836)
+- Fix SABL validating bug (#3849)
+- Use `https://download.openmmlab.com/mmcv/dist/index.html` for installing MMCV (#3840)
+- Fix nonzero in NMS for PyTorch 1.6.0 (#3867)
+- Fix the API change bug of PAA (#3883)
+- Fix typo in bbox_flip (#3886)
+- Fix cv2 import error of ligGL.so.1 in Dockerfile (#3891)
+
+#### Improvements
+
+- Change to use `mmcv.utils.collect_env` for collecting environment information to avoid duplicate codes (#3779)
+- Update checkpoint file names to v2.0 models in documentation (#3795)
+- Update tutorials for changing runtime settings (#3778), modifing loss (#3777)
+- Improve the function of `simple_test_bboxes` in SABL (#3853)
+- Convert mask to bool before using it as img's index for robustness and speedup (#3870)
+- Improve documentation of modules and dataset customization (#3821)
+
+### v2.4.0 (5/9/2020)
+
+**Highlights**
+- Fix lots of issues/bugs and reorganize the trouble shooting page
+- Support new methods [SABL](https://arxiv.org/abs/1912.04260), [YOLOv3](https://arxiv.org/abs/1804.02767), and [PAA Assign](https://arxiv.org/abs/2007.08103)
+- Support Batch Inference
+- Start to publish `mmdet` package to PyPI since v2.3.0
+- Switch model zoo to download.openmmlab.com
+
+**Backwards Incompatible Changes**
+- Support Batch Inference (#3564, #3686, #3705): Since v2.4.0, MMDetection could inference model with multiple images in a single GPU.
+This change influences all the test APIs in MMDetection and downstream codebases. To help the users migrate their code, we use `replace_ImageToTensor` (#3686) to convert legacy test data pipelines during dataset initialization.
+- Support RandomFlip with horizontal/vertical/diagonal direction (#3608): Since v2.4.0, MMDetection supports horizontal/vertical/diagonal flip in the data augmentation. This influences bounding box, mask, and image transformations in data augmentation process and the process that will map those data back to the original format.
+- Migrate to use `mmlvis` and `mmpycocotools` for COCO and LVIS dataset (#3727). The APIs are fully compatible with the original `lvis` and `pycocotools`. Users need to uninstall the existing pycocotools and lvis packages in their environment first and install `mmlvis` & `mmpycocotools`.
+
+**Bug Fixes**
+- Fix default mean/std for onnx (#3491)
+- Fix coco evaluation and add metric items (#3497)
+- Fix typo for install.md (#3516)
+- Fix atss when sampler per gpu is 1 (#3528)
+- Fix import of fuse_conv_bn (#3529)
+- Fix bug of gaussian_target, update unittest of heatmap (#3543)
+- Fixed VOC2012 evaluate (#3553)
+- Fix scale factor bug of rescale (#3566)
+- Fix with_xxx_attributes in base detector (#3567)
+- Fix boxes scaling when number is 0 (#3575)
+- Fix rfp check when neck config is a list (#3591)
+- Fix import of fuse conv bn in benchmark.py (#3606)
+- Fix webcam demo (#3634)
+- Fix typo and itemize issues in tutorial (#3658)
+- Fix error in distributed training when some levels of FPN are not assigned with bounding boxes (#3670)
+- Fix the width and height orders of stride in valid flag generation (#3685)
+- Fix weight initialization bug in Res2Net DCN (#3714)
+- Fix bug in OHEMSampler (#3677)
+
+**New Features**
+- Support Cutout augmentation (#3521)
+- Support evaluation on multiple datasets through ConcatDataset (#3522)
+- Support [PAA assign](https://arxiv.org/abs/2007.08103) #(3547)
+- Support eval metric with pickle results (#3607)
+- Support [YOLOv3](https://arxiv.org/abs/1804.02767) (#3083)
+- Support [SABL](https://arxiv.org/abs/1912.04260) (#3603)
+- Support to publish to Pypi in github-action (#3510)
+- Support custom imports (#3641)
+
+**Improvements**
+- Refactor common issues in documentation (#3530)
+- Add pytorch 1.6 to CI config (#3532)
+- Add config to runner meta (#3534)
+- Add eval-option flag for testing (#3537)
+- Add init_eval to evaluation hook (#3550)
+- Add include_bkg in ClassBalancedDataset (#3577)
+- Using config's loading in inference_detector (#3611)
+- Add ATSS ResNet-101 models in model zoo (#3639)
+- Update urls to download.openmmlab.com (#3665)
+- Support non-mask training for CocoDataset (#3711)
+
+### v2.3.0 (5/8/2020)
+
+**Highlights**
+- The CUDA/C++ operators have been moved to `mmcv.ops`. For backward compatibility `mmdet.ops` is kept as warppers of `mmcv.ops`.
+- Support new methods [CornerNet](https://arxiv.org/abs/1808.01244), [DIOU](https://arxiv.org/abs/1911.08287)/[CIOU](https://arxiv.org/abs/2005.03572) loss, and new dataset: [LVIS V1](https://arxiv.org/abs/1908.03195)
+- Provide more detailed colab training tutorials and more complete documentation.
+- Support to convert RetinaNet from Pytorch to ONNX.
+
+**Bug Fixes**
+- Fix the model initialization bug of DetectoRS (#3187)
+- Fix the bug of module names in NASFCOSHead (#3205)
+- Fix the filename bug in publish_model.py (#3237)
+- Fix the dimensionality bug when `inside_flags.any()` is `False` in dense heads (#3242)
+- Fix the bug of forgetting to pass flip directions in `MultiScaleFlipAug` (#3262)
+- Fixed the bug caused by default value of `stem_channels` (#3333)
+- Fix the bug of model checkpoint loading for CPU inference (#3318, #3316)
+- Fix topk bug when box number is smaller than the expected topk number in ATSSAssigner (#3361)
+- Fix the gt priority bug in center_region_assigner.py (#3208)
+- Fix NaN issue of iou calculation in iou_loss.py (#3394)
+- Fix the bug that `iou_thrs` is not actually used during evaluation in coco.py (#3407)
+- Fix test-time augmentation of RepPoints (#3435)
+- Fix runtimeError caused by incontiguous tensor in Res2Net+DCN (#3412)
+
+**New Features**
+- Support [CornerNet](https://arxiv.org/abs/1808.01244) (#3036)
+- Support [DIOU](https://arxiv.org/abs/1911.08287)/[CIOU](https://arxiv.org/abs/2005.03572) loss (#3151)
+- Support [LVIS V1](https://arxiv.org/abs/1908.03195) dataset (#)
+- Support customized hooks in training (#3395)
+- Support fp16 training of generalized focal loss (#3410)
+- Support to convert RetinaNet from Pytorch to ONNX (#3075)
+
+**Improvements**
+- Support to process ignore boxes in ATSS assigner (#3082)
+- Allow to crop images without ground truth in `RandomCrop` (#3153)
+- Enable the the `Accuracy` module to set threshold (#3155)
+- Refactoring unit tests (#3206)
+- Unify the training settings of `to_float32` and `norm_cfg` in RegNets configs (#3210)
+- Add colab training tutorials for beginners (#3213, #3273)
+- Move CUDA/C++ operators into `mmcv.ops` and keep `mmdet.ops` as warppers for backward compatibility (#3232)(#3457)
+- Update installation scripts in documentation (#3290) and dockerfile (#3320)
+- Support to set image resize backend (#3392)
+- Remove git hash in version file (#3466)
+- Check mmcv version to force version compatibility (#3460)
+
+
 ### v2.2.0 (1/7/2020)
 
 **Highlights**
