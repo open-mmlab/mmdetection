@@ -195,6 +195,16 @@ class FCNMaskHead(nn.Module):
             scale_factor = bboxes.new_tensor(scale_factor)
         bboxes = bboxes / scale_factor
 
+        if torch.onnx.is_in_onnx_export():
+            # TODO: Remove after F.grid_sample is supported.
+            from torchvision.models.detection.roi_heads \
+                import paste_masks_in_image
+            masks = paste_masks_in_image(mask_pred, bboxes, ori_shape[:2])
+            thr = rcnn_test_cfg.get('mask_thr_binary', 0)
+            if thr > 0:
+                masks = masks >= thr
+            return masks
+
         N = len(mask_pred)
         # The actual implementation split the input into chunks,
         # and paste them chunk by chunk.

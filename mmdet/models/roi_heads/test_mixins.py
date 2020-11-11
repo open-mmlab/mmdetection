@@ -203,7 +203,9 @@ class MaskTestMixin(object):
             mask_results = self._mask_forward(x, mask_rois)
             mask_pred = mask_results['mask_pred']
             # split batch mask prediction back to each image
-            num_mask_roi_per_img = [len(det_bbox) for det_bbox in det_bboxes]
+            num_mask_roi_per_img = [
+                det_bbox.shape[0] for det_bbox in det_bboxes
+            ]
             mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
 
             # apply mask post-processing to each image individually

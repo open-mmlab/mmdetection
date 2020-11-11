@@ -19,7 +19,8 @@ def pytorch2onnx(config_path,
                  output_file='tmp.onnx',
                  verify=False,
                  normalize_cfg=None,
-                 dataset='coco'):
+                 dataset='coco',
+                 test_img=None):
 
     input_config = {
         'input_shape': input_shape,
@@ -32,11 +33,18 @@ def pytorch2onnx(config_path,
     one_img, one_meta = preprocess_example_input(input_config)
     model, tensor_data = generate_inputs_and_wrap_model(
         config_path, checkpoint_path, input_config)
+    output_names = ['boxes']
+    if model.with_bbox:
+        output_names.append('labels')
+    if model.with_mask:
+        output_names.append('masks')
 
     torch.onnx.export(
         model,
         tensor_data,
         output_file,
+        input_names=['input'],
+        output_names=output_names,
         export_params=True,
         keep_initializers_as_inputs=True,
         verbose=show,
@@ -52,12 +60,14 @@ def pytorch2onnx(config_path,
         # check by onnx
         onnx_model = onnx.load(output_file)
         onnx.checker.check_model(onnx_model)
-
+        if test_img is not None:
+            input_config['input_path'] = test_img
+            one_img, one_meta = preprocess_example_input(input_config)
+            tensor_data = [one_img]
         # check the numerical value
         # get pytorch output
         pytorch_results = model(tensor_data, [[one_meta]], return_loss=False)
         pytorch_results = pytorch_results[0]
-
         # get onnx output
         input_all = [node.name for node in onnx_model.graph.input]
         input_initializer = [
@@ -73,13 +83,19 @@ def pytorch2onnx(config_path,
         output_shapes = [_.shape for _ in onnx_outputs]
         print(f'onnxruntime output names: {output_names}, \
             output shapes: {output_shapes}')
-        det_bboxes, det_labels = onnx_outputs[:2]
-        onnx_results = bbox2result(det_bboxes, det_labels, num_classes)
-        with_mask = len(onnx_outputs) == 3
-        if with_mask:
-            pass
-            # TODO add mask pose processing
+        nrof_out = len(onnx_outputs)
+        assert nrof_out > 0, 'Must have output'
+        with_mask = nrof_out == 3
+        if nrof_out == 1:
+            onnx_results = onnx_outputs[0]
+        else:
+            det_bboxes, det_labels = onnx_outputs[:2]
+            onnx_results = bbox2result(det_bboxes, det_labels, num_classes)
+            if with_mask:
+                segm_results = onnx_outputs[2]
+                onnx_results = (onnx_results, segm_results)
         # visualize predictions
+
         if show:
             show_result_pyplot(
                 model,
@@ -114,6 +130,8 @@ def parse_args():
     parser.add_argument('--show', action='store_true', help='show onnx graph')
     parser.add_argument('--output-file', type=str, default='tmp.onnx')
     parser.add_argument('--opset-version', type=int, default=11)
+    parser.add_argument(
+        '--test-img', type=str, default=None, help='Images for test')
     parser.add_argument(
         '--dataset', type=str, default='coco', help='Dataset name')
     parser.add_argument(
