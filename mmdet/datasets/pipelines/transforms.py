@@ -854,9 +854,13 @@ class Expand(object):
 
         h, w, c = img.shape
         ratio = random.uniform(self.min_ratio, self.max_ratio)
-        expand_img = np.full((int(h * ratio), int(w * ratio), c),
-                             self.mean,
-                             dtype=img.dtype)
+        if self.mean[0] == self.mean[1] and self.mean[1] == self.mean[2]:
+            expand_img = np.empty((int(h * ratio), int(w * ratio), c), img.dtype)
+            expand_img.fill(self.mean[0])
+        else:
+            expand_img = np.full((int(h * ratio), int(w * ratio), c),
+                                 self.mean,
+                                 dtype=img.dtype)
         left = int(random.uniform(0, w * ratio - w))
         top = int(random.uniform(0, h * ratio - h))
         expand_img[top:top + h, left:left + w] = img
