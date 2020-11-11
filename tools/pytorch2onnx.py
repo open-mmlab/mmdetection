@@ -107,16 +107,16 @@ def pytorch2onnx(config_path,
                 model, one_meta['show_img'], onnx_results, title='ONNX')
 
         # compare a part of result
-        if with_mask:
-            compare_pairs = list(zip(onnx_results[0], pytorch_results[0]))
-        else:
-            compare_pairs = [(onnx_results[0], pytorch_results[0])]
 
+        compare_pairs = list(zip(onnx_results[0], pytorch_results[0]))
+        if with_mask:
+            compare_pairs.append((onnx_results[1], pytorch_results[1]))
         for onnx_res, pytorch_res in compare_pairs:
             np.testing.assert_allclose(
                 onnx_res,
                 pytorch_res,
-                rtol=1e-05,
+                rtol=1e-03,
+                atol=1e-05,
                 err_msg='The outputs are different between Pytorch and ONNX')
         print('The numerical values are the same between Pytorch and ONNX')
 
