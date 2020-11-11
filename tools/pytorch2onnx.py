@@ -92,8 +92,11 @@ def pytorch2onnx(config_path,
             det_bboxes, det_labels = onnx_outputs[:2]
             onnx_results = bbox2result(det_bboxes, det_labels, num_classes)
             if with_mask:
-                segm_results = onnx_outputs[2]
-                onnx_results = (onnx_results, segm_results)
+                segm_results = onnx_outputs[2].squeeze(1)
+                cls_segms = [[] for _ in range(num_classes)]
+                for i in range(det_bboxes.shape[0]):
+                    cls_segms[det_labels[i]].append(segm_results[i])
+                onnx_results = (onnx_results, cls_segms)
         # visualize predictions
 
         if show:
@@ -108,16 +111,18 @@ def pytorch2onnx(config_path,
 
         # compare a part of result
 
-        compare_pairs = list(zip(onnx_results[0], pytorch_results[0]))
         if with_mask:
-            compare_pairs.append((onnx_results[1], pytorch_results[1]))
+            compare_pairs = list(zip(onnx_results, pytorch_results))
+        else:
+            compare_pairs = [(onnx_results, pytorch_results)]
         for onnx_res, pytorch_res in compare_pairs:
-            np.testing.assert_allclose(
-                onnx_res,
-                pytorch_res,
-                rtol=1e-03,
-                atol=1e-05,
-                err_msg='The outputs are different between Pytorch and ONNX')
+            for o_res, p_res in zip(onnx_res, pytorch_res):
+                np.testing.assert_allclose(
+                    o_res,
+                    p_res,
+                    rtol=1e-03,
+                    atol=1e-05,
+                )
         print('The numerical values are the same between Pytorch and ONNX')
 
 
