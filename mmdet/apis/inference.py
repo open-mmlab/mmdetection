@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import torch
-from mmcv.ops import RoIAlign, RoIPool
+from mmcv.ops import RoIPool
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
@@ -107,14 +107,10 @@ def inference_detector(model, img):
         # scatter to specified GPU
         data = scatter(data, [device])[0]
     else:
-        # Use torchvision ops for CPU mode instead
         for m in model.modules():
-            if isinstance(m, (RoIPool, RoIAlign)):
-                if not m.aligned:
-                    # aligned=False is not implemented on CPU
-                    # set use_torchvision on-the-fly
-                    m.use_torchvision = True
-        warnings.warn('We set use_torchvision=True in CPU mode.')
+            assert not isinstance(
+                m, RoIPool
+            ), 'CPU inference with RoIPool is not supported currently.'
         # just get the actual data from DataContainer
         data['img_metas'] = data['img_metas'][0].data
 
