@@ -233,6 +233,12 @@ def test_random_crop():
             type='RandomCrop', crop_type='unknow', crop_size=(1, 1))
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion for invalid crop_size
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCrop', crop_type='relative', crop_size=(0, 0))
+        build_from_cfg(transform, PIPELINES)
+
     def _construct_toy_data():
         img = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.uint8)
         img = np.stack([img, img, img], axis=-1)
@@ -252,12 +258,14 @@ def test_random_crop():
 
     # test crop_type "relative_range"
     results = _construct_toy_data()
-    transform = dict(type='RandomCrop', crop_type='relative_range', crop_size=(0.3, 0.7))
+    transform = dict(
+        type='RandomCrop', crop_type='relative_range', crop_size=(0.3, 0.7))
     transform_module = build_from_cfg(transform, PIPELINES)
     transform_module(copy.deepcopy(results))
 
     # test crop_type "relative"
-    transform = dict(type='RandomCrop', crop_type='relative', crop_size=(0.3, 0.7))
+    transform = dict(
+        type='RandomCrop', crop_type='relative', crop_size=(0.3, 0.7))
     transform_module = build_from_cfg(transform, PIPELINES)
     transform_module(copy.deepcopy(results))
 
@@ -267,7 +275,8 @@ def test_random_crop():
     transform_module(copy.deepcopy(results))
 
     # test crop_type "absolute_range"
-    transform = dict(type='RandomCrop', crop_type='absolute_range', crop_size=(1, 20))
+    transform = dict(
+        type='RandomCrop', crop_type='absolute_range', crop_size=(1, 20))
     transform_module = build_from_cfg(transform, PIPELINES)
     transform_module(copy.deepcopy(results))
 

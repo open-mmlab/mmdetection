@@ -574,18 +574,19 @@ class RandomCrop(object):
             height and width.
         allow_negative_crop (bool, optional): Whether to allow a crop that does
             not contain any bbox area. Default False.
-        crop_type (str, optional): one of "relative_range", "relative", "absolute",
-            "absolute_range". "relative" randomly crops (h * crop_size[0],
-            w * crop_size[1]) part from an input of size (h, w).
-            "relative_range" uniformly samples relative crop size from range
-            [crop_size[0], 1] and [crop_size[1], 1] for height and width
+        crop_type (str, optional): one of "relative_range", "relative",
+            "absolute", "absolute_range". "relative" randomly crops
+            (h * crop_size[0], w * crop_size[1]) part from an input of size
+            (h, w). "relative_range" uniformly samples relative crop size from
+            range [crop_size[0], 1] and [crop_size[1], 1] for height and width
             respectively. "absolute" crops from an input with absolute size
             (crop_size[0], crop_size[1]). "absolute_range" uniformly samples
             crop_h in range [crop_size[0], min(h, crop_size[1])] and crop_w
             in range [crop_size[0], min(w, crop_size[1])]. Default "absolute".
 
     Note:
-        - If the image is smaller than the absolute crop size, return the original image
+        - If the image is smaller than the absolute crop size, return the
+            original image.
         - The keys for bboxes, labels and masks must be aligned. That is,
           `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
           `gt_bboxes_ignore` corresponds to `gt_labels_ignore` and
@@ -594,12 +595,17 @@ class RandomCrop(object):
           `allow_negative_crop` is set to False, skip this image.
     """
 
-    def __init__(self, crop_size, allow_negative_crop=False, crop_type='absolute'):
+    def __init__(self,
+                 crop_size,
+                 allow_negative_crop=False,
+                 crop_type='absolute'):
         assert crop_type in [
             'relative_range', 'relative', 'absolute', 'absolute_range'
         ], f'Invalid crop_type {crop_type}.'
         if crop_type in ['absolute', 'absolute_range']:
             assert crop_size[0] > 0 and crop_size[1] > 0
+        else:
+            assert 0 < crop_size[0] <= 1 and 0 < crop_size[1] <= 1
         self.crop_size = crop_size
         self.allow_negative_crop = allow_negative_crop
         self.crop_type = crop_type
@@ -615,8 +621,8 @@ class RandomCrop(object):
         }
 
     def _crop_data(self, results, crop_size, allow_negative_crop):
-        """Function to randomly crop images, bounding boxes, masks,
-        semantic segmentation maps.
+        """Function to randomly crop images, bounding boxes, masks, semantic
+        segmentation maps.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -679,12 +685,12 @@ class RandomCrop(object):
         return results
 
     def _get_crop_size(self, image_size):
-        """Randomly generates the absolute crop size based on `crop_type`
-        and `image_size`.
+        """Randomly generates the absolute crop size based on `crop_type` and
+        `image_size`.
 
         Args:
             image_size (tuple): (h, w).
-        
+
         Returns:
             crop_size (tuple): (crop_h, crop_w) in absolute pixels.
         """
