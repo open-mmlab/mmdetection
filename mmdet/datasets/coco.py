@@ -78,23 +78,6 @@ class CocoDataset(CustomDataset):
         ann_info = self.coco.load_anns(ann_ids)
         return self._parse_ann_info(self.data_infos[idx], ann_info)
 
-        # import torch
-        # path = './train_debug/data.pth'
-        # res = torch.load(path)
-        # dataset = res['data']
-        # annos = dataset['annotations']
-        # img_info = dict()
-        # filename = dataset['file_name'].split('/')[-1]
-        # img_info['filename'] = img_info['file_name'] = filename
-        # img_info['height'] = dataset['height']
-        # img_info['width'] = dataset['width']
-        # img_info['id'] = dataset['image_id']
-        # ann_info = annos
-        # for ann in ann_info:
-        #     ann['image_id'] = dataset['image_id']
-        #     # TODO id area
-        # return self._parse_ann_info(img_info, ann_info), img_info
-
     def get_cat_ids(self, idx):
         """Get COCO category ids by index.
 

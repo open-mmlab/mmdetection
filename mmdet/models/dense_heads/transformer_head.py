@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Conv2d, Linear, build_activation_layer, xavier_init
-from mmcv.runner import force_fp32
+from mmcv.cnn import Conv2d, Linear, build_activation_layer
+from mmcv.runner import force_fp32, get_dist_info
 
 from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply)
@@ -165,15 +165,14 @@ class TransformerHead(AnchorFreeHead):
             self.embed_dims,
             self.num_fcs,
             self.act_cfg,
+            dropout=0.0,
             add_residual=False)
         self.fc_reg = Linear(self.embed_dims, 4)
         self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
 
     def init_weights(self, distribution='uniform'):
         """Initialize weights of the transformer head."""
-        for m in self.modules():
-            if hasattr(m, 'weight') and m.weight.dim() > 1:
-                xavier_init(m, distribution=distribution)
+        self.transformer.init_weights()
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
@@ -251,24 +250,6 @@ class TransformerHead(AnchorFreeHead):
         all_cls_scores = self.fc_cls(outs_dec)
         all_bbox_preds = self.fc_reg(self.activate(
             self.reg_ffn(outs_dec))).sigmoid()
-
-        # path = './train_debug/model_out4.pth'
-        # res = torch.load(path)
-        # # img = res['img']
-        # # img_size = res['img_size']
-        # output = res['out']
-        # # gt_instances = res['gt_instances']
-        # pred_logits = output['pred_logits']
-        # pred_boxes = output['pred_boxes']
-        # aux_outputs = output['aux_outputs']
-        # pred_logits_i = [
-        #     aux_output['pred_logits'] for aux_output in aux_outputs
-        # ]
-        # pred_boxes_i = [aux_output['pred_boxes'] for
-        # aux_output in aux_outputs]
-        # all_cls_scores = torch.stack(pred_logits_i + [pred_logits], axis=0)
-        # all_bbox_preds = torch.stack(pred_boxes_i + [pred_boxes], axis=0)
-
         return all_cls_scores, all_bbox_preds
 
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
@@ -279,23 +260,35 @@ class TransformerHead(AnchorFreeHead):
              gt_labels_list,
              img_metas,
              gt_bboxes_ignore=None):
+        """"Loss function.
+
+        Defaultly only outputs from the last feature level is used for
+        computing losses.
+
+        Args:
+            all_cls_scores_list (list[Tensor]): Classification outputs
+                for each feature level. Each is a 4D-tensor with shape
+                [nb_dec, bs, num_query, cls_out_channels].
+            all_bbox_preds_list (list[Tensor]): Sigmoid regression
+                outputs for each feature level. Each is a 4D-tensor with
+                normalized coordinate format (cx, cy, w, h) and shape
+                [nb_dec, bs, num_query, 4].
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes for each image
+                with shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels_list (list[Tensor]): Ground truth class indices for each
+                image with shape (num_gts, ).
+            img_metas (list[dict]): List of image meta information.
+            gt_bboxes_ignore (None | list[Tensor], optional): Bounding boxes
+                which can be ignored for each image.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         # NOTE defaultly only the outputs from the last feature scale is used.
-        # all_cls_scores: [num_dec_layer, bs, num_query, nb_class]
-        # all_bbox_preds: [num_dec_layer, bs, num_query, 4]
         all_cls_scores = all_cls_scores_list[-1]
         all_bbox_preds = all_bbox_preds_list[-1]
         assert gt_bboxes_ignore is None, \
             'Only supports for gt_bboxes_ignore setting to None.'
-
-        # path = './train_debug/model_out4.pth'
-        # res = torch.load(path)
-        # gt_bboxes_list = res['gt_boxes']
-        # gt_labels_list = res['gt_labels']
-        # assert len(res['img_size']) == 2 == len(img_metas), '{} {}'.format(
-        #     len(res['img_size']), len(img_metas))
-        # for i in range(len(res['img_size'])):
-        #     h, w = res['img_size'][i]
-        #     img_metas[i]['img_shape'] = tuple((h, w, 3))
 
         num_dec_layers = len(all_cls_scores)
         all_gt_bboxes_list = [gt_bboxes_list for _ in range(num_dec_layers)]
@@ -305,13 +298,26 @@ class TransformerHead(AnchorFreeHead):
         ]
         img_metas_list = [img_metas for _ in range(num_dec_layers)]
 
-        # TODO check detr use sum for loss_single here?
         losses_cls, losses_bbox, losses_iou = multi_apply(
             self.loss_single, all_cls_scores, all_bbox_preds,
             all_gt_bboxes_list, all_gt_labels_list, img_metas_list,
             all_gt_bboxes_ignore_list)
-        return dict(
-            loss_cls=losses_cls, loss_bbox=losses_bbox, loss_iou=losses_iou)
+
+        loss_dict = dict()
+        # loss from the last decoder layer
+        loss_dict['loss_cls'] = losses_cls[-1]
+        loss_dict['loss_bbox'] = losses_bbox[-1]
+        loss_dict['loss_iou'] = losses_iou[-1]
+        # loss from other decoder layers
+        num_dec_layer = 0
+        for loss_cls_i, loss_bbox_i, loss_iou_i in zip(losses_cls[:-1],
+                                                       losses_bbox[:-1],
+                                                       losses_iou[:-1]):
+            loss_dict['loss_cls_{}'.format(num_dec_layer)] = loss_cls_i
+            loss_dict['loss_bbox_{}'.format(num_dec_layer)] = loss_bbox_i
+            loss_dict['loss_iou_{}'.format(num_dec_layer)] = loss_iou_i
+            num_dec_layer += 1
+        return loss_dict
 
     def loss_single(self,
                     cls_scores,
@@ -320,15 +326,27 @@ class TransformerHead(AnchorFreeHead):
                     gt_labels_list,
                     img_metas,
                     gt_bboxes_ignore_list=None):
-        # labels: [bs, num_query], cls_scores: [bs, num_query, nb_class]
+        """"Loss function for outputs from a single decoder layer of a single
+        feature level.
 
-        # path = './train_debug/match.pth'
-        # res_ = torch.load(path)
-        # cls_scores = res_['pred_logits']
-        # bbox_preds = res_['pred_boxes']
-        # for img_meta in img_metas:
-        #     img_meta['img_shape'] = tuple((512, 700, 3))
+        Args:
+            cls_scores (Tensor): Box score logits from a single decoder layer
+                for all images. Shape [bs, num_query, cls_out_channels].
+            bbox_preds (Tensor): Sigmoid outputs from a single decoder layer
+                for all images, with normalized coordinate (cx, cy, w, h) and
+                shape [bs, num_query, 4].
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes for each image
+                with shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels_list (list[Tensor]): Ground truth class indices for each
+                image with shape (num_gts, ).
+            img_metas (list[dict]): List of image meta information.
+            gt_bboxes_ignore_list (None | list[Tensor], optional): Bounding
+                boxes which can be ignored for each image.
 
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components for outputs from
+                a single decoder layer.
+        """
         num_imgs = cls_scores.size(0)
         cls_scores_list = [cls_scores[i] for i in range(num_imgs)]
         bbox_preds_list = [bbox_preds[i] for i in range(num_imgs)]
@@ -355,19 +373,23 @@ class TransformerHead(AnchorFreeHead):
 
         # classification loss
         cls_scores = cls_scores.reshape(-1, self.cls_out_channels)
-        num_total_samples = num_total_neg + num_total_pos
-        num_total_samples = max(num_total_samples, 1)
 
-        # TODO check avg_factor in cls head. TODO avg factor
-        # construct weighted avg_factor to match with the official DETR repo.
+        # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
             num_total_neg * self.bg_cls_weight
         loss_cls = self.loss_cls(
             cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
 
+        # Compute the average number of gt boxes accross all gpus, for
+        # normalization purposes
+        num_total_pos = torch.as_tensor([num_total_pos],
+                                        dtype=torch.float,
+                                        device=loss_cls.device)
+        _, world_size = get_dist_info()
+        torch.distributed.all_reduce(num_total_pos)
+        num_total_pos = torch.clamp(num_total_pos / world_size, min=1).item()
+
         # regression L1 loss
-        # TODO num_total_pos all reduce like DETR official
-        num_total_pos = max(num_total_pos, 1)
         bbox_preds = bbox_preds.reshape(-1, 4)
         loss_bbox = self.loss_bbox(
             bbox_preds, bbox_targets, bbox_weights, avg_factor=num_total_pos)
@@ -377,19 +399,6 @@ class TransformerHead(AnchorFreeHead):
         bboxes_gt = bbox_cxcywh_to_xyxy(bbox_targets) * factors
         loss_iou = self.loss_iou(
             bboxes, bboxes_gt, bbox_weights, avg_factor=num_total_pos)
-
-        # import os
-        # path = './train_debug/ce_loss.pth'
-        # res = dict()
-        # res['cls_scores'] = cls_scores
-        # res['labels'] = labels
-        # res['label_weights'] = label_weights
-        # # res['num_total_pos'] = num_total_pos
-        # res['loss_cls'] = loss_cls
-        # if not os.path.exists(path):
-        #     torch.save(res, path)
-        #     print('finished saving ce_loss ----------------------- ')
-
         return loss_cls, loss_bbox, loss_iou
 
     def get_targets(self,
@@ -399,12 +408,46 @@ class TransformerHead(AnchorFreeHead):
                     gt_labels_list,
                     img_metas,
                     gt_bboxes_ignore_list=None):
-        # labels: [bs, num_query], label_weights, num_total_samples
-        # bbox_targets: [bs, num_query, 4], bbox_weights
+        """"Compute regression and classification targets for a batch image.
+
+        Outputs from a single decoder layer of a single feature level are used.
+
+        Args:
+            cls_scores_list (list[Tensor]): Box score logits from a single
+                decoder layer for each image with shape [num_query,
+                cls_out_channels].
+            bbox_preds_list (list[Tensor]): Sigmoid outputs from a single
+                decoder layer for each image, with normalized coordinate
+                (cx, cy, w, h) and shape [num_query, 4].
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes for each image
+                with shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels_list (list[Tensor]): Ground truth class indices for each
+                image with shape (num_gts, ).
+            img_metas (list[dict]): List of image meta information.
+            gt_bboxes_ignore_list (None | list[Tensor], optional): Bounding
+                boxes which can be ignored for each image.
+
+        Returns:
+            tuple: a tuple containing the following targets.
+
+                - labels_list (list[Tensor]): Labels for all images.
+                - label_weights_list (list[Tensor]): Label weights for all \
+                    images.
+                - bbox_targets_list (list[Tensor]): BBox targets for all \
+                    images.
+                - bbox_weights_list (list[Tensor]): BBox weights for all \
+                    images.
+                - num_total_pos (int): Number of positive samples in all \
+                    images.
+                - num_total_neg (int): Number of negative samples in all \
+                    images.
+        """
         assert gt_bboxes_ignore_list is None, \
             'Only supports for gt_bboxes_ignore setting to None.'
         num_imgs = len(cls_scores_list)
-        gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+        gt_bboxes_ignore_list = [
+            gt_bboxes_ignore_list for _ in range(num_imgs)
+        ]
 
         (labels_list, label_weights_list, bbox_targets_list,
          bbox_weights_list, pos_inds_list, neg_inds_list) = multi_apply(
@@ -416,19 +459,47 @@ class TransformerHead(AnchorFreeHead):
                 bbox_weights_list, num_total_pos, num_total_neg)
 
     def _get_target_single(self,
-                           cls_scores,
-                           bbox_preds,
+                           cls_score,
+                           bbox_pred,
                            gt_bboxes,
                            gt_labels,
                            img_meta,
                            gt_bboxes_ignore=None):
+        """"Compute regression and classification targets for one image.
 
-        num_bboxes = bbox_preds.size(0)
+        Outputs from a single decoder layer of a single feature level are used.
+
+        Args:
+            cls_score (Tensor): Box score logits from a single decoder layer
+                for one image. Shape [num_query, cls_out_channels].
+            bbox_pred (Tensor): Sigmoid outputs from a single decoder layer
+                for one image, with normalized coordinate (cx, cy, w, h) and
+                shape [num_query, 4].
+            gt_bboxes (Tensor): Ground truth bboxes for one image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (Tensor): Ground truth class indices for one image
+                with shape (num_gts, ).
+            img_meta (dict): Meta information for one image.
+            gt_bboxes_ignore (None | Tensor, optional): Bounding boxes
+                which can be ignored.
+
+        Returns:
+            tuple[Tensor]: a tuple containing the following for one image.
+
+                - labels (Tensor): Labels of each image.
+                - label_weights (Tensor]): Label weights of each image.
+                - bbox_targets (Tensor): BBox targets of each image.
+                - bbox_weights (Tensor): BBox weights of each image.
+                - pos_inds (Tensor): Sampled positive indices for each image.
+                - neg_inds (Tensor): Sampled negative indices for each image.
+        """
+
+        num_bboxes = bbox_pred.size(0)
         # assigner and sampler
-        assign_result = self.assigner.assign(bbox_preds, cls_scores, gt_bboxes,
+        assign_result = self.assigner.assign(bbox_pred, cls_score, gt_bboxes,
                                              gt_labels, img_meta,
                                              gt_bboxes_ignore)
-        sampling_result = self.sampler.sample(assign_result, bbox_preds,
+        sampling_result = self.sampler.sample(assign_result, bbox_pred,
                                               gt_bboxes)
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
@@ -438,22 +509,15 @@ class TransformerHead(AnchorFreeHead):
                                     self.background_label,
                                     dtype=torch.long)
         labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds]
-
-        # label_weights = gt_bboxes.new_ones(num_bboxes, dtype=torch.float)
-        # * self.bg_cls_weight
-        # # following the official DETR, set label weights for positives to 1.
-        # # if self.train_cfg.pos_weight > 0:
-        # #     label_weights[pos_inds] = self.train_cfg.pos_weight
-        # label_weights[pos_inds] = 1.
         label_weights = gt_bboxes.new_ones(num_bboxes)
 
         # bbox targets
-        bbox_targets = torch.zeros_like(bbox_preds)
-        bbox_weights = torch.zeros_like(bbox_preds)
+        bbox_targets = torch.zeros_like(bbox_pred)
+        bbox_weights = torch.zeros_like(bbox_pred)
         bbox_weights[pos_inds] = 1.0
         img_h, img_w, _ = img_meta['img_shape']
         factor = torch.Tensor([img_w, img_h, img_w,
-                               img_h]).unsqueeze(0).to(bbox_preds.device)
+                               img_h]).unsqueeze(0).to(bbox_pred.device)
         pos_gt_bboxes_normalized = sampling_result.pos_gt_bboxes / factor
         pos_gt_bboxes_targets = bbox_xyxy_to_cxcywh(pos_gt_bboxes_normalized)
         bbox_targets[pos_inds] = pos_gt_bboxes_targets
@@ -469,7 +533,8 @@ class TransformerHead(AnchorFreeHead):
                       gt_bboxes_ignore=None,
                       proposal_cfg=None,
                       **kwargs):
-        """
+        """Forward function for training mode.
+
         Args:
             x (list[Tensor]): Features from backbone.
             img_metas (list[dict]): Meta information of each image, e.g.,
@@ -481,11 +546,10 @@ class TransformerHead(AnchorFreeHead):
             gt_bboxes_ignore (Tensor): Ground truth bboxes to be
                 ignored, shape (num_ignored_gts, 4).
             proposal_cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
+                if None, test_cfg would be used.
+
         Returns:
-            tuple:
-                losses: (dict[str, Tensor]): A dictionary of loss components.
-                # proposal_list (list[Tensor]): Proposals of each image.
+            dict[str, Tensor]: A dictionary of loss components.
         """
         assert proposal_cfg is None, 'Only when case that proposal_cfg is ' \
             'None is supported.'
@@ -497,20 +561,22 @@ class TransformerHead(AnchorFreeHead):
         losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
-    @force_fp32(apply_to=('all_cls_scores', 'all_bbox_preds'))
+    @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
     def get_bboxes(self,
-                   all_cls_scores,
-                   all_bbox_preds,
+                   all_cls_scores_list,
+                   all_bbox_preds_list,
                    img_metas,
                    rescale=False):
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
-            all_cls_scores (Tensor): Box score logits for all the decoder
-                layers. Shape [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (list[Tensor]): Sigmoid outputs with normalized
-                coordinate format (cx, cy, w, h). Shape [nb_dec, bs,
-                num_query, 4].
+            all_cls_scores_list (list[Tensor]): Classification outputs
+                for each feature level. Each is a 4D-tensor with shape
+                [nb_dec, bs, num_query, cls_out_channels].
+            all_bbox_preds_list (list[Tensor]): Sigmoid regression
+                outputs for each feature level. Each is a 4D-tensor with
+                normalized coordinate format (cx, cy, w, h) and shape
+                [nb_dec, bs, num_query, 4].
             img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
                 image space. Defalut False.
@@ -525,8 +591,8 @@ class TransformerHead(AnchorFreeHead):
         """
         # NOTE defaultly only using outputs from the last feature level,
         # and only the ouputs from the last decoder layer is used.
-        cls_scores = all_cls_scores[-1][-1]
-        bbox_preds = all_bbox_preds[-1][-1]
+        cls_scores = all_cls_scores_list[-1][-1]
+        bbox_preds = all_bbox_preds_list[-1][-1]
 
         result_list = []
         for img_id in range(len(img_metas)):
