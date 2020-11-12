@@ -604,6 +604,8 @@ class RandomCrop(object):
         ], f'Invalid crop_type {crop_type}.'
         if crop_type in ['absolute', 'absolute_range']:
             assert crop_size[0] > 0 and crop_size[1] > 0
+            assert isinstance(crop_size[0], int) and isinstance(
+                crop_size[1], int)
         else:
             assert 0 < crop_size[0] <= 1 and 0 < crop_size[1] <= 1
         self.crop_size = crop_size
