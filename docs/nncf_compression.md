@@ -2,13 +2,13 @@
 
 ## General description
 
-OTEDetection allows to make compression of the models by
+OTEDetection allows making compression of the models by
 [NNCF (Neural Network Compression Framework)](https://github.com/openvinotoolkit/nncf_pytorch).
 
 The work of OTEDetection is checked with [**NNCF 1.4.1**](https://github.com/openvinotoolkit/nncf_pytorch/tree/v1.4.1).
 Please, use this version of NNCF in case of any issues.
 
-NNCF allows to make compression using the following methods
+NNCF allows making compression using the following methods
 (including combination of some of the methods):
 * int8 quantization
 * int4 quantization
@@ -44,24 +44,23 @@ Integration of OTEDetection with NNCF framework is made in a transparent way:
 
 Example of NNCF parameter `nncf_config` that may be used for int8 quantization of `ssd300_coco`:
 ```python
-nncf_config = {
-    "input_info": {
+nncf_config = dict(
+    input_info=dict(
         "sample_size": [1, 3, 1000, 600]
-    },
-    "compression": {
-        "algorithm": "quantization",
-        "initializer": {
-            "range": {
-                "num_init_steps": 10
-            },
-            "batchnorm_adaptation": {
-                "num_bn_adaptation_steps": 30,
-            }
-
-        }
-    },
-    "log_dir": work_dir
-}
+    ),
+    compression=dict(
+        algorithm='quantization',
+        initializer=dict(
+            range=dict(
+                num_init_steps=10
+            ),
+            batchnorm_adaptation=dict(
+                num_bn_adaptation_steps=30,
+            )
+        )
+    ),
+    log_dir=work_dir
+)
 ```
 
 See details on NNCF config parameters in
@@ -84,7 +83,7 @@ Typically, the pipeline of compression with NNCF looks as follows:
 2. The model is fine-tuned with compression (the parameter `nncf_config` is set).  
    The result of this step is a checkpoint with the compressed model
 
-3. (optional) The compression precess may be resumed: model may be fine-tuned with compression a bit more
+3. (optional) The compression process may be resumed: model may be fine-tuned with compression a bit more
    (with the same compression parameters `nncf_config` in the config file).  
    The result of this step is a checkpoint with fine-tuned compressed model
 

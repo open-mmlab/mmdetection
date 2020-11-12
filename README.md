@@ -21,7 +21,7 @@ Please see [getting_started.md](docs/getting_started.md) for the basic usage. Th
 
 ## Models compression
 
-This project allows to make compression of the models by [NNCF](https://github.com/openvinotoolkit/nncf_pytorch) framework.
+This project allows making compression of the models by [NNCF](https://github.com/openvinotoolkit/nncf_pytorch) framework.
 
 At the moment the following compression methods are supported:
 * int8 quantization

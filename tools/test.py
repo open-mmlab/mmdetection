@@ -120,7 +120,7 @@ def main():
     if cfg.get('nncf_config'):
         check_nncf_is_enabled()
         if not is_checkpoint_nncf(args.checkpoint):
-            raise RuntimeError('Trying to make testing with NNCF compression a model snapshot that was trained with NNCF')
+            raise RuntimeError('Trying to make testing with NNCF compression a model snapshot that was NOT trained with NNCF')
         cfg.load_from = args.checkpoint
         cfg.resume_from = None
         if torch.cuda.is_available():

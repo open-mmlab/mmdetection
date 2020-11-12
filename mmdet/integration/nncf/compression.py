@@ -14,13 +14,12 @@ if is_nncf_enabled():
         from nncf.nncf_network import NNCFNetwork
 
         class_InitializingDataLoader = InitializingDataLoader
-    except:  # noqa: E722
+    except ImportError:
         raise RuntimeError(
             'Cannot import the standard functions of NNCF library '
             '-- most probably, incompatible version of NNCF. '
             'Please, use NNCF version pointed in the documentation.')
 else:
-
     class DummyInitializingDataLoader:
         pass
 

@@ -30,7 +30,7 @@ if is_nncf_enabled():
         from nncf.dynamic_graph.context import get_current_context
         from nncf.dynamic_graph.context import \
             no_nncf_trace as original_no_nncf_trace
-    except:  # noqa: E722
+    except ImportError:
         raise RuntimeError(
             'Cannot import the standard functions of NNCF library '
             '-- most probably, incompatible version of NNCF. '

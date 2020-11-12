@@ -5,7 +5,7 @@ optimizer = dict(type='SGD', lr=1e-4, momentum=0.9, weight_decay=5e-4)
 total_epochs = 2
 
 work_dir = './output'
-load_from = '../original_mmdetection/mmdetection/ssd300_voc_vgg16_caffe_240e_20190501-7160d09a.pth'
+load_from = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd300_voc_vgg16_caffe_240e_20190501-7160d09a.pth'
 
 find_unused_parameters = True
 
