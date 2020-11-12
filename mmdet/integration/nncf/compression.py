@@ -81,7 +81,7 @@ def wrap_nncf_model(model,
 
     if data_loader_for_init:
         wrapped_loader = MMInitializeDataLoader(data_loader_for_init)
-        nncf_config = register_default_init_args(nncf_config, wrapped_loader)
+        nncf_config = register_default_init_args(nncf_config, None, wrapped_loader)
 
     if cfg.get('resume_from'):
         checkpoint_path = cfg.get('resume_from')
