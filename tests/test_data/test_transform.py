@@ -227,6 +227,50 @@ def test_random_crop():
     assert (area(results['gt_bboxes']) <= area(gt_bboxes)).all()
     assert (area(results['gt_bboxes_ignore']) <= area(gt_bboxes_ignore)).all()
 
+    # test assertion for invalid crop_type
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCrop', crop_type='unknow', crop_size=(1, 1))
+        build_from_cfg(transform, PIPELINES)
+
+    def _construct_toy_data():
+        img = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.uint8)
+        img = np.stack([img, img, img], axis=-1)
+        results = dict()
+        # image
+        results['img'] = img
+        results['img_shape'] = img.shape
+        results['img_fields'] = ['img']
+        # bboxes
+        results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
+        results['gt_bboxes'] = np.array([[0., 0., 2., 1.]], dtype=np.float32)
+        results['gt_bboxes_ignore'] = np.array([[2., 0., 3., 1.]],
+                                               dtype=np.float32)
+        # labels
+        results['gt_labels'] = np.array([1], dtype=np.int64)
+        return results
+
+    # test crop_type "relative_range"
+    results = _construct_toy_data()
+    transform = dict(type='RandomCrop', crop_type='relative_range', crop_size=(0.3, 0.7))
+    transform_module = build_from_cfg(transform, PIPELINES)
+    transform_module(copy.deepcopy(results))
+
+    # test crop_type "relative"
+    transform = dict(type='RandomCrop', crop_type='relative', crop_size=(0.3, 0.7))
+    transform_module = build_from_cfg(transform, PIPELINES)
+    transform_module(copy.deepcopy(results))
+
+    # test crop_type "absolute"
+    transform = dict(type='RandomCrop', crop_type='absolute', crop_size=(1, 2))
+    transform_module = build_from_cfg(transform, PIPELINES)
+    transform_module(copy.deepcopy(results))
+
+    # test crop_type "absolute_range"
+    transform = dict(type='RandomCrop', crop_type='absolute_range', crop_size=(1, 20))
+    transform_module = build_from_cfg(transform, PIPELINES)
+    transform_module(copy.deepcopy(results))
+
 
 def test_min_iou_random_crop():
 
