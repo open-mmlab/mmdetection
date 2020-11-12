@@ -264,6 +264,6 @@ class FreeAnchorRetinaHead(RetinaHead):
         # There are some cases when neg_prob = 0.
         # This will cause the neg_prob.log() to be inf without clamp.
         neg_prob = torch.clamp(neg_prob, min=1e-12)
-        negative_bag_loss = prob**self.gamma * neg_prob.log()
-        negative_bag_loss = -(1 - self.alpha) * negative_bag_loss
+        negative_bag_loss = -prob**self.gamma * neg_prob.log()
+        negative_bag_loss = (1 - self.alpha) * negative_bag_loss
         return negative_bag_loss
