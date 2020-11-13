@@ -10,7 +10,7 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from functools import partial
 from mmcv.utils import print_log
-from nncf.dynamic_graph.context import no_nncf_trace
+from mmdet.integration.nncf import no_nncf_trace
 
 from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
@@ -115,7 +115,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
 
-        Note that if `kwargs` contains either `forward_dummy=True` or
+        Note that if `kwargs` contains either `forward_export=True` or
         `dummy_forward=True` parameters, one of special branches of code is
         enabled for ONNX export
         (see the methods `forward_export` and `forward_dummy`).

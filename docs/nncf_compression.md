@@ -16,6 +16,11 @@ NNCF allows making compression using the following methods
 * sparsity
 * filter pruning
 
+At the moment the following compression methods may be used in OTEDetection:
+* int8 quantization
+* sparsity
+* filter pruning
+
 To make compression of a model, NNCF gets a pre-trained model and wraps the whole PyTorch model
 and PyTorch classes used by the model (e.g. Conv2d) by its own classes.
 After that to make compression a training (fine-tuning) of the model should be started --
@@ -27,10 +32,17 @@ each convolution, etc).
 
 The result of such fine-tuning is a compressed model that may be exported to OpenVINO™.
 
-## Integration of NNCF into OTEDetection
+## Installation of NNCF requirements
 
 Please, note that OTEDetection does not require NNCF framework to be installed for
 usual training (without compression).
+
+If you want to compress models using NNCF, you can install NNCF together with
+all the packages required for NNCF by the command
+`pip install -r requirements/nncf_compression.txt`.
+
+## Integration of NNCF into OTEDetection
+
 Integration of OTEDetection with NNCF framework is made in a transparent way:
 
 * If NNCF parameters are not set in the config file, the NNCF framework is not used and the

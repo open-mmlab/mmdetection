@@ -66,7 +66,7 @@ def load_checkpoint(model, filename, map_location=None, strict=False):
 @contextmanager
 def nullcontext():
     """
-    Context which does nothing; is needed to support python > python3.7
+    Context which does nothing
     """
     yield
 
