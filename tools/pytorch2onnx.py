@@ -47,6 +47,7 @@ def pytorch2onnx(config_path,
         output_names=output_names,
         export_params=True,
         keep_initializers_as_inputs=True,
+        do_constant_folding=True,
         verbose=show,
         opset_version=opset_version)
 
