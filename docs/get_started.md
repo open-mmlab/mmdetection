@@ -147,7 +147,7 @@ Assuming that you already have CUDA 10.1 installed, here is a full script for se
 conda create -n open-mmlab python=3.7 -y
 conda activate open-mmlab
 
-conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit==10.1 -c pytorch -y
+conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch -y
 
 # install the latest mmcv
 pip install mmcv-full==latest+torch1.6.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
