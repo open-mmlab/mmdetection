@@ -29,11 +29,11 @@ class CocoWithTextDataset(CocoDataset):
         super().pre_pipeline(results)
         results['text_fields'] = []
 
-    def __init__(self, alphabet='  ' + string.ascii_lowercase + string.digits, max_texts_num=150, *args, **kwargs):
+    def __init__(self, alphabet='  ' + string.ascii_lowercase + string.digits, max_texts_num=0, *args, **kwargs):
+        self.max_texts_num = max_texts_num
         super().__init__(*args, **kwargs)
         self.alphabet = alphabet
         self.max_text_len = 33
-        self.max_texts_num = max_texts_num
         self.EOS = 1
 
     def load_annotations(self, ann_file):
@@ -64,12 +64,8 @@ class CocoWithTextDataset(CocoDataset):
         """Filter images too small or without ground truths."""
         valid_inds = []
         ids_with_ann = collections.Counter(_['image_id'] for _ in self.coco.anns.values())
-        print(f'before {ids_with_ann]}')
         if self.max_texts_num > 0:
-            ids_with_ann = {k for k, v in ids_with_ann if v <= self.max_texts_num}
-        print(f'after {ids_with_ann]}')
-        exit()
-
+            ids_with_ann = {k for k, v in ids_with_ann.items() if v <= self.max_texts_num}
         for i, img_info in enumerate(self.data_infos):
             if self.filter_empty_gt and self.img_ids[i] not in ids_with_ann:
                 continue
