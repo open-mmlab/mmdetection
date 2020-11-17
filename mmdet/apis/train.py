@@ -1,11 +1,13 @@
 import numpy as np
 import random
 import torch
+from copy import copy
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, LoggerHook,
                          OptimizerHook, build_optimizer, load_checkpoint)
 
-from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook
+from mmdet.core import (DistEvalBeforeRunHook, DistEvalHook, EvalBeforeRunHook,
+                        EvalHook, Fp16OptimizerHook)
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.integration.nncf import CompressionHook, wrap_nncf_model
 from mmdet.parallel import MMDataCPU
@@ -155,10 +157,14 @@ def train_detector(model,
             dist=distributed,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
-        if 'should_evaluate_before_run' not in eval_cfg:
-            eval_cfg['should_evaluate_before_run'] = nncf_enable_compression
         eval_hook = DistEvalHook if distributed else EvalHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+
+        if nncf_enable_compression:
+            eval_before_run_hook = DistEvalBeforeRunHook if distributed else EvalBeforeRunHook
+            eval_before_run_cfg = copy(eval_cfg)
+            eval_before_run_cfg.pop("interval", None)
+            runner.register_hook(eval_before_run_hook(val_dataloader, **eval_before_run_cfg))
 
     if nncf_enable_compression:
         runner.register_hook(CompressionHook(compression_ctrl=compression_ctrl))

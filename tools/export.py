@@ -202,7 +202,8 @@ def main(args):
     if cfg.get('nncf_config'):
         check_nncf_is_enabled()
         if not is_checkpoint_nncf(args.checkpoint):
-            raise RuntimeError('Trying to make export with NNCF compression a model snapshot that was trained with NNCF')
+            raise RuntimeError('Trying to make export with NNCF compression '
+                               'a model snapshot that was NOT trained with NNCF')
         cfg.load_from = args.checkpoint
         cfg.resume_from = None
         compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
