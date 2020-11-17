@@ -120,7 +120,7 @@ class PriorBoxClustered(torch.autograd.Function):
     def forward(ctx, single_level_grid_anchors, base_anchors, anchors_heights, anchors_widths,
                 anchor_stride, feat, img_tensor, target_stds):
         assert anchor_stride[0] == anchor_stride[1]
-        mlvl_anchor = single_level_grid_anchors(base_anchors, feat.size()[-2:], anchor_stride)
+        mlvl_anchor = single_level_grid_anchors(base_anchors, feat.size()[-2:], anchor_stride, base_anchors.device)
         mlvl_anchor = mlvl_anchor.view(1, -1).unsqueeze(0)
         return mlvl_anchor
 
