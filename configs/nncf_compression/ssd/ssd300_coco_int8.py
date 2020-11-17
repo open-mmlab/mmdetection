@@ -1,6 +1,7 @@
 _base_ = ['../../ssd/ssd300_coco.py']
 
 optimizer = dict(type='SGD', lr=2e-5, momentum=0.9, weight_decay=5e-4)
+total_epochs = 2
 
 work_dir = './output'
 load_from = 'http://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'

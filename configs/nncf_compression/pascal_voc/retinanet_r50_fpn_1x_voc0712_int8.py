@@ -1,5 +1,6 @@
 _base_ = [ './retinanet_r50_fpn_1x_voc0712.py' ]
 
+total_epochs = 4
 work_dir = './output'
 
 find_unused_parameters = True
