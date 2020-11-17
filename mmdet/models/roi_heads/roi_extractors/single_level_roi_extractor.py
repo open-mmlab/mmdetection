@@ -56,6 +56,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
         out_size = self.roi_layers[0].output_size
         num_levels = len(feats)
         if torch.onnx.is_in_onnx_export():
+            # Work around to export mask-rcnn to onnx
             roi_feats = rois[:, :1].clone().detach()
             roi_feats = roi_feats.expand(
                 -1, self.out_channels * out_size[0] * out_size[1])
@@ -82,6 +83,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
             inds = mask.nonzero(as_tuple=False).squeeze(1)
             # TODO: make it nicer when exporting to onnx
             if torch.onnx.is_in_onnx_export():
+                # To keep all roi_align nodes exported to onnx
                 rois_ = rois[inds]
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
                 roi_feats[inds] = roi_feats_t
