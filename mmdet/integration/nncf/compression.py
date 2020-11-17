@@ -1,5 +1,6 @@
 import pathlib
 import torch
+from functools import partial
 
 from mmdet.utils import get_root_logger
 from .utils import (check_nncf_is_enabled, get_nncf_version, is_nncf_enabled,
@@ -153,7 +154,52 @@ def wrap_nncf_model(model,
                                                       nncf_config,
                                                       dummy_forward_fn=dummy_forward,
                                                       resuming_state_dict=resuming_state_dict)
+    model = change_export_func_first_conv(model)
+
     return compression_ctrl, model
+
+
+def change_export_func_first_conv(model):
+    ''' To avoid saturation issue
+    At the moment works only for mobilenet
+    '''
+
+    def run_hacked_export_quantization(self, x):
+        from nncf.quantization.layers import (
+            ExportQuantizeToFakeQuantize, ExportQuantizeToONNXQuantDequant,
+            QuantizerExportMode, get_scale_zp_from_input_low_input_high)
+        from nncf.utils import no_jit_trace
+        with no_jit_trace():
+            input_range = abs(self.scale) + self.eps
+            # todo: take bias into account during input_low/input_high calculation
+            input_low = input_range * self.level_low / self.level_high
+            input_high = input_range
+
+            if self._export_mode == QuantizerExportMode.ONNX_QUANTIZE_DEQUANTIZE_PAIRS:
+                y_scale, y_zero_point = get_scale_zp_from_input_low_input_high(self.level_low,
+                                                                               self.level_high,
+                                                                               input_low,
+                                                                               input_high)
+
+        if self._export_mode == QuantizerExportMode.ONNX_QUANTIZE_DEQUANTIZE_PAIRS:
+            return ExportQuantizeToONNXQuantDequant.apply(x, y_scale, y_zero_point)
+        if self._export_mode == QuantizerExportMode.FAKE_QUANTIZE:
+            x = x / 2.0
+            return ExportQuantizeToFakeQuantize.apply(x, self.levels, input_low, input_high, input_low * 2,
+                                                      input_high * 2)
+        raise RuntimeError
+
+    logger = get_root_logger()
+    orig_model = model.get_nncf_wrapped_model()
+    try:
+        # pylint: disable=protected-access
+        module_ = orig_model.backbone.features.init_block.conv.pre_ops._modules['0']
+    except AttributeError as e:
+        logger.info(f'Cannot change an export function for the first Conv due  {e}')
+        return model
+    module_.op.run_export_quantization = partial(run_hacked_export_quantization, module_.op)
+    logger.info('Change an export function for the first Conv to avoid saturation issue on AVX2, AVX512')
+    return model
 
 
 def get_uncompressed_model(module):
