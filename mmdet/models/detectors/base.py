@@ -6,9 +6,9 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn
+from mmcv.runner import auto_fp16
 from mmcv.utils import print_log
 
-from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
 
 
@@ -315,7 +315,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             for i in inds:
                 i = int(i)
                 color_mask = color_masks[labels[i]]
-                mask = segms[i]
+                mask = segms[i].astype(bool)
                 img[mask] = img[mask] * 0.5 + color_mask * 0.5
         # if out_file specified, do not show image in window
         if out_file is not None:

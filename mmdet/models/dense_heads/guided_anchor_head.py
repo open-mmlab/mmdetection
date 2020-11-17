@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.ops import DeformConv2d, MaskedConv2d
+from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
-                        calc_region, force_fp32, images_to_levels, multi_apply,
+                        calc_region, images_to_levels, multi_apply,
                         multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
@@ -77,9 +78,6 @@ class GuidedAnchorHead(AnchorHead):
         deform_groups: (int): Group number of DCN in
             FeatureAdaption module.
         loc_filter_thr (float): Threshold to filter out unconcerned regions.
-        background_label (int | None): Label ID of background, set as 0 for
-            RPN and num_classes for other heads. It will automatically set as
-            num_classes if None is given.
         loss_loc (dict): Config of location loss.
         loss_shape (dict): Config of anchor shape loss.
         loss_cls (dict): Config of classification loss.
@@ -115,7 +113,6 @@ class GuidedAnchorHead(AnchorHead):
         reg_decoded_bbox=False,
         deform_groups=4,
         loc_filter_thr=0.01,
-        background_label=None,
         train_cfg=None,
         test_cfg=None,
         loss_loc=dict(
@@ -149,12 +146,6 @@ class GuidedAnchorHead(AnchorHead):
             .num_base_anchors[0]
 
         self.reg_decoded_bbox = reg_decoded_bbox
-
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
 
         # one anchor per location
         self.num_anchors = 1
