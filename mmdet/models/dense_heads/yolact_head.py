@@ -928,12 +928,12 @@ class InterpolateModule(nn.Module):
     Any arguments you give it just get passed along for the ride.
     """
 
-    def __init__(self, *args, **kwdargs):
+    def __init__(self, *args, **kwargs):
         super().__init__()
 
         self.args = args
-        self.kwdargs = kwdargs
+        self.kwargs = kwargs
 
     def forward(self, x):
         """Forward features from the upstream network."""
-        return F.interpolate(x, *self.args, **self.kwdargs)
+        return F.interpolate(x, *self.args, **self.kwargs)
