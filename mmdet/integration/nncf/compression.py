@@ -35,10 +35,6 @@ class MMInitializeDataLoader(class_InitializingDataLoader):
         kwargs = {k: v.data[0] for k, v in dataloader_output.items()}
         return (), kwargs
 
-    # TODO: not tested; need to test
-    def get_target(self, dataloader_output):
-        return dataloader_output['gt_bboxes'], dataloader_output['gt_labels']
-
 
 def get_nncf_metadata():
     """
@@ -160,9 +156,9 @@ def wrap_nncf_model(model,
 
 
 def change_export_func_first_conv(model):
-    ''' To avoid saturation issue
+    """ To avoid saturation issue
     At the moment works only for mobilenet
-    '''
+    """
 
     def run_hacked_export_quantization(self, x):
         from nncf.quantization.layers import (
