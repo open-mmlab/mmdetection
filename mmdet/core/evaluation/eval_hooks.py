@@ -238,17 +238,18 @@ class DistEvalHook(EvalHook):
         if runner.rank == 0:
             print('\n')
             key_score = self.evaluate(runner, results)
-            best_score = runner.meta['hook_msgs'].get(
-                'best_score', self.init_value_map[self.rule])
-            if self.compare_func(key_score, best_score):
-                best_score = key_score
-                runner.meta['hook_msgs']['best_score'] = best_score
-                last_ckpt = runner.meta['hook_msgs']['last_ckpt']
-                runner.meta['hook_msgs']['best_ckpt'] = last_ckpt
-                mmcv.symlink(
-                    last_ckpt,
-                    osp.join(runner.work_dir,
-                             f'best_{self.key_indicator}.pth'))
-                self.logger.info(
-                    f'Now best checkpoint is {last_ckpt}.'
-                    f'Best {self.key_indicator} is {best_score:0.4f}')
+            if self.save_best:
+                best_score = runner.meta['hook_msgs'].get(
+                    'best_score', self.init_value_map[self.rule])
+                if self.compare_func(key_score, best_score):
+                    best_score = key_score
+                    runner.meta['hook_msgs']['best_score'] = best_score
+                    last_ckpt = runner.meta['hook_msgs']['last_ckpt']
+                    runner.meta['hook_msgs']['best_ckpt'] = last_ckpt
+                    mmcv.symlink(
+                        last_ckpt,
+                        osp.join(runner.work_dir,
+                                 f'best_{self.key_indicator}.pth'))
+                    self.logger.info(
+                        f'Now best checkpoint is {last_ckpt}.'
+                        f'Best {self.key_indicator} is {best_score:0.4f}')
