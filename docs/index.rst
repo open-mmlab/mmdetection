@@ -6,6 +6,7 @@ Welcome to MMDetection's documentation!
    :caption: Get Started
 
    get_started.md
+   modelzoo_statistics.md
    model_zoo.md
 
 .. toctree::
