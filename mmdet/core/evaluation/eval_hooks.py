@@ -72,51 +72,18 @@ class DistEvalHook(EvalHook):
             print('\n')
             self.evaluate(runner, results)
 
-class EvalBeforeRunHook(EvalHook):
-    """Evaluation hook to evaluate before training.
-
-    It is made as an analog of EvalHook to make evaluation before_run.
-
-    Attributes:
-        dataloader (DataLoader): A PyTorch dataloader.
+class EvalPlusBeforeRunHook(EvalHook):
+    """Evaluation hook, adds evaluation before training.
     """
-
-    def __init__(self, dataloader, **eval_kwargs):
-        if not isinstance(dataloader, DataLoader):
-            raise TypeError('dataloader must be a pytorch DataLoader, but got'
-                            f' {type(dataloader)}')
-        self.dataloader = dataloader
-        self.eval_kwargs = eval_kwargs
 
     def before_run(self, runner):
         from mmdet.apis import single_gpu_test
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         self.evaluate(runner, results)
 
-    def after_train_epoch(self, runner):
-        pass
-
-class DistEvalBeforeRunHook(EvalHook):
-    """Distributed evaluation hook to evaluate before training.
-
-    It is made as an analog of DistEvalHook to make evaluation before_run.
-
-    Attributes:
-        dataloader (DataLoader): A PyTorch dataloader.
-        gpu_collect (bool): Whether to use gpu or cpu to collect results.
-            Default: False.
+class DistEvalPlusBeforeRunHook(DistEvalHook):
+    """Distributed evaluation hook, adds evaluation before training.
     """
-
-    def __init__(self,
-                 dataloader,
-                 gpu_collect=False,
-                 **eval_kwargs):
-        if not isinstance(dataloader, DataLoader):
-            raise TypeError('dataloader must be a pytorch DataLoader, but got '
-                            f'{type(dataloader)}')
-        self.dataloader = dataloader
-        self.gpu_collect = gpu_collect
-        self.eval_kwargs = eval_kwargs
 
     def before_run(self, runner):
         from mmdet.apis import multi_gpu_test
@@ -128,6 +95,3 @@ class DistEvalBeforeRunHook(EvalHook):
         if runner.rank == 0:
             print('\n')
             self.evaluate(runner, results)
-
-    def after_train_epoch(self, runner):
-        pass
