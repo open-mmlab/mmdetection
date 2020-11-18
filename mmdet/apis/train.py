@@ -1,15 +1,18 @@
-import random
-
 import numpy as np
+import random
 import torch
+from copy import copy
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, OptimizerHook,
-                         build_optimizer, LoggerHook)
+from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, LoggerHook,
+                         OptimizerHook, build_optimizer, load_checkpoint)
 
-from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook
+from mmdet.core import (DistEvalHook, DistEvalPlusBeforeRunHook, EvalHook,
+                        EvalPlusBeforeRunHook, Fp16OptimizerHook)
 from mmdet.datasets import build_dataloader, build_dataset
-from mmdet.utils import get_root_logger
+from mmdet.integration.nncf import CompressionHook, wrap_nncf_model
 from mmdet.parallel import MMDataCPU
+from mmdet.utils import get_root_logger
+from .fake_input import get_fake_input
 
 
 def set_random_seed(seed, deterministic=False):
@@ -78,6 +81,20 @@ def train_detector(model,
             seed=cfg.seed) for ds in dataset
     ]
 
+    if cfg.load_from:
+        load_checkpoint(model=model, filename=cfg.load_from)
+
+    # put model on gpus
+    if torch.cuda.is_available():
+        model = model.cuda()
+
+    # nncf model wrapper
+    nncf_enable_compression = bool(cfg.get('nncf_config'))
+    if nncf_enable_compression:
+        compression_ctrl, model = wrap_nncf_model(model, cfg, data_loaders[0], get_fake_input)
+    else:
+        compression_ctrl = None
+
     map_location = 'default'
     if torch.cuda.is_available():
         if distributed:
@@ -86,7 +103,7 @@ def train_detector(model,
             # Sets the `find_unused_parameters` parameter in
             # torch.nn.parallel.DistributedDataParallel
             model = MMDistributedDataParallel(
-                model.cuda(),
+                model,
                 device_ids=[torch.cuda.current_device()],
                 broadcast_buffers=False,
                 find_unused_parameters=find_unused_parameters)
@@ -96,6 +113,9 @@ def train_detector(model,
     else:
         model = MMDataCPU(model)
         map_location = 'cpu'
+
+    if nncf_enable_compression and distributed:
+        compression_ctrl.distributed()
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
@@ -138,10 +158,14 @@ def train_detector(model,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
         eval_hook = DistEvalHook if distributed else EvalHook
+        if nncf_enable_compression:
+            eval_hook = DistEvalPlusBeforeRunHook if distributed else EvalPlusBeforeRunHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+
+    if nncf_enable_compression:
+        runner.register_hook(CompressionHook(compression_ctrl=compression_ctrl))
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from, map_location=map_location)
-    elif cfg.load_from:
-        runner.load_checkpoint(cfg.load_from)
-    runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+
+    runner.run(data_loaders, cfg.workflow, cfg.total_epochs, compression_ctrl=compression_ctrl)

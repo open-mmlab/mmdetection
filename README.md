@@ -19,6 +19,17 @@ Please refer to [install.md](docs/install.md) for installation and dataset prepa
 
 Please see [getting_started.md](docs/getting_started.md) for the basic usage. There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
 
+## Models compression
+
+This project allows making compression of the models by [NNCF](https://github.com/openvinotoolkit/nncf_pytorch) framework.
+
+At the moment the following compression methods are supported:
+* int8 quantization
+* sparsity
+* filter pruning
+
+See details in [nncf_compression.md](docs/nncf_compression.md).
+
 ## Model Zoo
 
 Please see [model_zoo.md](docs/model_zoo.md) for the list of pre-trained models.
