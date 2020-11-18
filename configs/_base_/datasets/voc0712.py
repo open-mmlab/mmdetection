@@ -33,7 +33,7 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
-        times=1,
+        times=3,
         dataset=dict(
             type=dataset_type,
             ann_file=[
@@ -52,4 +52,4 @@ data = dict(
         ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
         img_prefix=data_root + 'VOC2007/',
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='mAP', save_best='auto')
+evaluation = dict(interval=1, metric='mAP')
