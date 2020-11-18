@@ -3,7 +3,6 @@ import tempfile
 import unittest.mock as mock
 from collections import OrderedDict
 
-import mmcv
 import pytest
 import torch
 import torch.nn as nn
@@ -122,9 +121,10 @@ def test_eval_hook():
         runner.run([loader], [('train', 1)], 1)
         test_dataset.evaluate.assert_called_with(
             test_dataset, [torch.tensor([1])], logger=runner.logger)
-
-        best_json_path = osp.join(tmpdir, 'best.json')
-        assert not osp.exists(best_json_path)
+        assert runner.meta is None or 'best_score' not in runner.meta[
+            'hook_msgs']
+        assert runner.meta is None or 'best_ckpt' not in runner.meta[
+            'hook_msgs']
 
     # when `save_best` is set to 'auto', first metric will be used.
     loader = DataLoader(EvalDataset(), batch_size=1)
@@ -144,13 +144,12 @@ def test_eval_hook():
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 8)
 
-        best_json_path = osp.join(tmpdir, 'best.json')
-        best_json = mmcv.load(best_json_path)
         real_path = osp.join(tmpdir, 'epoch_4.pth')
+        link_path = osp.join(tmpdir, 'best_mAP.pth')
 
-        assert best_json['best_ckpt'] == osp.realpath(real_path)
-        assert best_json['best_score'] == 0.7
-        assert best_json['key_indicator'] == 'mAP'
+        assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
+        assert osp.exists(link_path)
+        assert runner.meta['hook_msgs']['best_score'] == 0.7
 
     loader = DataLoader(EvalDataset(), batch_size=1)
     model = ExampleModel()
@@ -169,13 +168,12 @@ def test_eval_hook():
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 8)
 
-        best_json_path = osp.join(tmpdir, 'best.json')
-        best_json = mmcv.load(best_json_path)
         real_path = osp.join(tmpdir, 'epoch_4.pth')
+        link_path = osp.join(tmpdir, 'best_mAP.pth')
 
-        assert best_json['best_ckpt'] == osp.realpath(real_path)
-        assert best_json['best_score'] == 0.7
-        assert best_json['key_indicator'] == 'mAP'
+        assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
+        assert osp.exists(link_path)
+        assert runner.meta['hook_msgs']['best_score'] == 0.7
 
     data_loader = DataLoader(EvalDataset(), batch_size=1)
     eval_hook = EvalHook(
@@ -192,13 +190,12 @@ def test_eval_hook():
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 8)
 
-        best_json_path = osp.join(tmpdir, 'best.json')
-        best_json = mmcv.load(best_json_path)
         real_path = osp.join(tmpdir, 'epoch_4.pth')
+        link_path = osp.join(tmpdir, 'best_score.pth')
 
-        assert best_json['best_ckpt'] == osp.realpath(real_path)
-        assert best_json['best_score'] == 0.7
-        assert best_json['key_indicator'] == 'score'
+        assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
+        assert osp.exists(link_path)
+        assert runner.meta['hook_msgs']['best_score'] == 0.7
 
     data_loader = DataLoader(EvalDataset(), batch_size=1)
     eval_hook = EvalHook(data_loader, save_best='mAP', rule='less')
@@ -214,13 +211,12 @@ def test_eval_hook():
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 8)
 
-        best_json_path = osp.join(tmpdir, 'best.json')
-        best_json = mmcv.load(best_json_path)
         real_path = osp.join(tmpdir, 'epoch_6.pth')
+        link_path = osp.join(tmpdir, 'best_mAP.pth')
 
-        assert best_json['best_ckpt'] == osp.realpath(real_path)
-        assert best_json['best_score'] == 0.05
-        assert best_json['key_indicator'] == 'mAP'
+        assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
+        assert osp.exists(link_path)
+        assert runner.meta['hook_msgs']['best_score'] == 0.05
 
     data_loader = DataLoader(EvalDataset(), batch_size=1)
     eval_hook = EvalHook(data_loader, save_best='mAP')
@@ -236,13 +232,12 @@ def test_eval_hook():
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 2)
 
-        best_json_path = osp.join(tmpdir, 'best.json')
-        best_json = mmcv.load(best_json_path)
         real_path = osp.join(tmpdir, 'epoch_2.pth')
+        link_path = osp.join(tmpdir, 'best_mAP.pth')
 
-        assert best_json['best_ckpt'] == osp.realpath(real_path)
-        assert best_json['best_score'] == 0.4
-        assert best_json['key_indicator'] == 'mAP'
+        assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
+        assert osp.exists(link_path)
+        assert runner.meta['hook_msgs']['best_score'] == 0.4
 
         resume_from = osp.join(tmpdir, 'latest.pth')
         loader = DataLoader(ExampleDataset(), batch_size=1)
@@ -258,10 +253,9 @@ def test_eval_hook():
         runner.resume(resume_from)
         runner.run([loader], [('train', 1)], 8)
 
-        best_json_path = osp.join(tmpdir, 'best.json')
-        best_json = mmcv.load(best_json_path)
         real_path = osp.join(tmpdir, 'epoch_4.pth')
+        link_path = osp.join(tmpdir, 'best_mAP.pth')
 
-        assert best_json['best_ckpt'] == osp.realpath(real_path)
-        assert best_json['best_score'] == 0.7
-        assert best_json['key_indicator'] == 'mAP'
+        assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
+        assert osp.exists(link_path)
+        assert runner.meta['hook_msgs']['best_score'] == 0.7

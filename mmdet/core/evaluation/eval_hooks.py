@@ -29,7 +29,8 @@ class EvalHook(Hook):
             Options are the evaluation metrics to the test dataset. e.g.,
             ``bbox_mAP``, ``segm_mAP`` for bbox detection and instance
             segmentation. ``AR@100`` for proposal recall. If ``save_best`` is
-            ``auto``, the first key will be used. Default: None.
+            ``auto``, the first key will be used. The interval of
+            ``CheckpointHook`` should device EvalHook. Default: None.
         rule (str, optional): Comparison rule for best score. If set to None,
             it will infer a reasonable rule. Keys such as 'mAP' or 'AR' will
             be inferred by 'greater' rule. Keys contain 'loss' will be inferred
@@ -63,6 +64,7 @@ class EvalHook(Hook):
         self.dataloader = dataloader
         self.interval = interval
         self.start = start
+        assert isinstance(save_best, str) or save_best is None
         self.save_best = save_best
         self.eval_kwargs = eval_kwargs
         self.initial_epoch_flag = True
@@ -71,7 +73,6 @@ class EvalHook(Hook):
 
         if self.save_best is not None:
             self._init_rule(rule, self.save_best)
-            self.best_json = dict()
 
     def _init_rule(self, rule, key_indicator):
         """Initialize rule, key_indicator, comparison_func, and best score.
@@ -92,15 +93,20 @@ class EvalHook(Hook):
                 elif any(key in key_indicator for key in self.less_keys):
                     rule = 'less'
                 else:
-                    raise ValueError(
-                        f'key_indicator must be in {self.greater_keys} '
-                        f'or in {self.less_keys} when rule is None, '
-                        f'but got {key_indicator}')
+                    raise ValueError(f'Cannot infer the rule for key '
+                                     f'{key_indicator}, thus a specific rule '
+                                     f'must be specified.')
         self.rule = rule
         self.key_indicator = key_indicator
         if self.rule is not None:
             self.compare_func = self.rule_map[self.rule]
-            self.best_score = self.init_value_map[self.rule]
+
+    def before_run(self, runner):
+        if self.save_best is not None:
+            if runner.meta is None:
+                warnings.warn('runner.meta is None. Creating a empty one.')
+                runner.meta = dict()
+            runner.meta.setdefault('hook_msgs', dict())
 
     def before_train_epoch(self, runner):
         """Evaluate the model only at the start of training."""
@@ -132,28 +138,24 @@ class EvalHook(Hook):
     def after_train_epoch(self, runner):
         if not self.evaluation_flag(runner):
             return
-        current_ckpt_path = osp.join(runner.work_dir,
-                                     f'epoch_{runner.epoch + 1}.pth')
-        json_path = osp.join(runner.work_dir, 'best.json')
-
-        if osp.exists(json_path) and len(self.best_json) == 0:
-            self.best_json = mmcv.load(json_path)
-            self.best_score = self.best_json['best_score']
-            self.best_ckpt = self.best_json['best_ckpt']
-            self.key_indicator = self.best_json['key_indicator']
-
         from mmdet.apis import single_gpu_test
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         key_score = self.evaluate(runner, results)
-        if self.save_best and self.compare_func(key_score, self.best_score):
-            self.best_score = key_score
-            self.logger.info(
-                f'Now best checkpoint is epoch_{runner.epoch + 1}.pth.'
-                f'Best {self.key_indicator} is {self.best_score}')
-            self.best_json['best_score'] = self.best_score
-            self.best_json['best_ckpt'] = current_ckpt_path
-            self.best_json['key_indicator'] = self.key_indicator
-            mmcv.dump(self.best_json, json_path)
+        if self.save_best:
+            best_score = runner.meta['hook_msgs'].get(
+                'best_score', self.init_value_map[self.rule])
+            if self.compare_func(key_score, best_score):
+                best_score = key_score
+                runner.meta['hook_msgs']['best_score'] = best_score
+                last_ckpt = runner.meta['hook_msgs']['last_ckpt']
+                runner.meta['hook_msgs']['best_ckpt'] = last_ckpt
+                mmcv.symlink(
+                    last_ckpt,
+                    osp.join(runner.work_dir,
+                             f'best_{self.key_indicator}.pth'))
+                self.logger.info(
+                    f'Now best checkpoint is epoch_{runner.epoch + 1}.pth.'
+                    f'Best {self.key_indicator} is {best_score:0.4f}')
 
     def evaluate(self, runner, results):
         eval_res = self.dataloader.dataset.evaluate(
@@ -193,7 +195,8 @@ class DistEvalHook(EvalHook):
             Options are the evaluation metrics to the test dataset. e.g.,
             ``bbox_mAP``, ``segm_mAP`` for bbox detection and instance
             segmentation. ``AR@100`` for proposal recall. If ``save_best`` is
-            ``auto``, the first key will be used. Default: None.
+            ``auto``, the first key will be used. The interval of
+            ``CheckpointHook`` should device EvalHook. Default: None.
         rule (str | None): Comparison rule for best score. If set to None,
             it will infer a reasonable rule. Default: 'None'.
         **eval_kwargs: Evaluation arguments fed into the evaluate function of
@@ -223,16 +226,6 @@ class DistEvalHook(EvalHook):
         if not self.evaluation_flag(runner):
             return
 
-        current_ckpt_path = osp.join(runner.work_dir,
-                                     f'epoch_{runner.epoch + 1}.pth')
-        json_path = osp.join(runner.work_dir, 'best.json')
-
-        if osp.exists(json_path) and len(self.best_json) == 0:
-            self.best_json = mmcv.load(json_path)
-            self.best_score = self.best_json['best_score']
-            self.best_ckpt = self.best_json['best_ckpt']
-            self.key_indicator = self.best_json['key_indicator']
-
         from mmdet.apis import multi_gpu_test
         tmpdir = self.tmpdir
         if tmpdir is None:
@@ -245,12 +238,17 @@ class DistEvalHook(EvalHook):
         if runner.rank == 0:
             print('\n')
             key_score = self.evaluate(runner, results)
-            if (self.save_best
-                    and self.compare_func(key_score, self.best_score)):
-                self.best_score = key_score
+            best_score = runner.meta['hook_msgs'].get(
+                'best_score', self.init_value_map[self.rule])
+            if self.compare_func(key_score, best_score):
+                best_score = key_score
+                runner.meta['hook_msgs']['best_score'] = best_score
+                last_ckpt = runner.meta['hook_msgs']['last_ckpt']
+                runner.meta['hook_msgs']['best_ckpt'] = last_ckpt
+                mmcv.symlink(
+                    last_ckpt,
+                    osp.join(runner.work_dir,
+                             f'best_{self.key_indicator}.pth'))
                 self.logger.info(
-                    f'Now best checkpoint is epoch_{runner.epoch + 1}.pth')
-                self.best_json['best_score'] = self.best_score
-                self.best_json['best_ckpt'] = current_ckpt_path
-                self.best_json['key_indicator'] = self.key_indicator
-                mmcv.dump(self.best_json, json_path)
+                    f'Now best checkpoint is {last_ckpt}.'
+                    f'Best {self.key_indicator} is {best_score:0.4f}')
