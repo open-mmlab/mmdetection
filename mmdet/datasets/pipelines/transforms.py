@@ -49,8 +49,8 @@ class Resize(object):
         ratio_range (tuple[float]): (min_ratio, max_ratio)
         keep_ratio (bool): Whether to keep the aspect ratio when resizing the
             image.
-        bbox_clip_border (bool): Whether clip the objects outside the border of
-            the image.
+        bbox_clip_border (bool, optional): Whether clip the objects outside
+            the border of the image. Defaults to True.
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
@@ -576,8 +576,8 @@ class RandomCrop(object):
         crop_size (tuple): Expected size after cropping, (h, w).
         allow_negative_crop (bool): Whether to allow a crop that does not
             contain any bbox area. Default to False.
-        bbox_clip_border (bool): Whether clip the objects outside the border of
-            the image.
+        bbox_clip_border (bool, optional): Whether clip the objects outside
+            the border of the image. Defaults to True.
 
     Note:
         - If the image is smaller than the crop size, return the original image
@@ -670,7 +670,7 @@ class RandomCrop(object):
         return results
 
     def __repr__(self):
-        repr_str = self.__class__.__name__ + f'(crop_size={self.crop_size})'
+        repr_str = self.__class__.__name__ + f'(crop_size={self.crop_size}), '
         repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
 
@@ -916,8 +916,8 @@ class MinIoURandomCrop(object):
         bounding boxes
         min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
         where a >= min_crop_size).
-        bbox_clip_border (bool): Whether clip the objects outside the border of
-            the image.
+        bbox_clip_border (bool, optional): Whether clip the objects outside
+            the border of the image. Defaults to True.
 
     Note:
         The keys for bboxes, labels and masks should be paired. That is, \
@@ -1040,7 +1040,7 @@ class MinIoURandomCrop(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(min_ious={self.min_ious}, '
-        repr_str += f'min_crop_size={self.min_crop_size})'
+        repr_str += f'min_crop_size={self.min_crop_size}), '
         repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
 
@@ -1364,12 +1364,12 @@ class RandomCenterCropPad(object):
         test_pad_mode (tuple): padding method and padding shape value, only
             available in test mode. Default is using 'logical_or' with
             127 as padding shape value.
-        bbox_clip_border (bool): Whether clip the objects outside the border of
-            the image.
 
             - 'logical_or': final_shape = input_shape | padding_shape_value
             - 'size_divisor': final_shape = int(
               ceil(input_shape / padding_shape_value) * padding_shape_value)
+        bbox_clip_border (bool, optional): Whether clip the objects outside
+            the border of the image. Defaults to True.
     """
 
     def __init__(self,
@@ -1624,7 +1624,7 @@ class RandomCenterCropPad(object):
         repr_str += f'std={self.input_std}, '
         repr_str += f'to_rgb={self.to_rgb}, '
         repr_str += f'test_mode={self.test_mode}, '
-        repr_str += f'test_pad_mode={self.test_pad_mode})'
+        repr_str += f'test_pad_mode={self.test_pad_mode}), '
         repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
 

@@ -43,6 +43,7 @@ class RandomSampler(BaseSampler):
             Tensor or ndarray: sampled indices.
         """
         assert len(gallery) >= num
+
         is_tensor = isinstance(gallery, torch.Tensor)
         if not is_tensor:
             if torch.cuda.is_available():

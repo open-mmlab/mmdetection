@@ -18,8 +18,8 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
             delta coordinates
         target_stds (Sequence[float]): Denormalizing standard deviation of
             target for delta coordinates
-        clip_border (bool): Whether clip the objects outside the border of
-            the image.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
     """
 
     def __init__(self,
@@ -143,8 +143,8 @@ def delta2bbox(rois,
             coordinates
         max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
-        clip_border (bool): Whether clip the objects outside the border of
-            the image.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
 
     Returns:
         Tensor: Boxes with shape (N, 4), where columns represent

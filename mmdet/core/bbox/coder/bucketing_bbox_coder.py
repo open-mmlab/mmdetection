@@ -26,8 +26,8 @@ class BucketingBBoxCoder(BaseBBoxCoder):
              To avoid too large offset displacements. Defaults to 1.0.
         cls_ignore_neighbor (bool): Ignore second nearest bucket or Not.
              Defaults to True.
-        clip_border (bool): Whether clip the objects outside the border of
-            the image.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
     """
 
     def __init__(self,
@@ -278,8 +278,8 @@ def bucket2bbox(proposals,
         num_buckets (int): Number of buckets.
         scale_factor (float): Scale factor to rescale proposals.
         max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
-        clip_border (bool): Whether clip the objects outside the border of
-            the image.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
 
     Returns:
         tuple[Tensor]: (bboxes, loc_confidence).
