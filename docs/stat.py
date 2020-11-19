@@ -6,20 +6,22 @@ import re
 url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/master/'
 
 files = sorted(glob.glob('../configs/*/README.md'))
+exculded_title = ('Results and Models', 'Common settings')
 
 stats = []
 titles = []
 num_ckpts = 0
 
 for f in files:
-    if 'albu_example' in files:
-        continue
     url = osp.dirname(f.replace('../', url_prefix))
 
     with open(f, 'r') as content_file:
         content = content_file.read()
 
-    title = content.split('\n')[0].replace('#', '')
+    title = content.split('\n')[0].replace('# ', '')
+    if any(s in title for s in exculded_title):
+        continue
+
     titles.append(title)
     ckpts = set(x.lower().strip()
                 for x in re.findall(r'https?://download.*\.pth', content)
