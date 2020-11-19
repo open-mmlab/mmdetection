@@ -126,7 +126,7 @@ So if you try to run inference with a model containing deformable convolution yo
 
 ### Another option: Docker Image
 
-We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image.
+We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image. Ensure that you are using [docker version](https://docs.docker.com/engine/install/) >=19.03.
 
 ```shell
 # build an image with PyTorch 1.6, CUDA 10.1
