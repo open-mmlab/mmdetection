@@ -1244,7 +1244,10 @@ class Albu(object):
                 raise NotImplementedError(
                     'Albu only supports BitMap masks now')
             ori_masks = results['masks']
-            results['masks'] = results['masks'].masks
+            if albumentations.__version__ < '0.5':
+                results['masks'] = results['masks'].masks
+            else:
+                results['masks'] = [mask for mask in results['masks'].masks]
 
         results = self.aug(**results)
 
