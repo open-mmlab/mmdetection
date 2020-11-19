@@ -5,11 +5,6 @@ import numpy as np
 import torch
 from mmcv.runner import load_checkpoint
 
-try:
-    from mmcv.onnx.symbolic import register_extra_symbolics
-except ModuleNotFoundError:
-    raise NotImplementedError('please update mmcv to version>=v1.0.4')
-
 
 def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
     """Prepare sample input and wrap model for ONNX export.
@@ -51,6 +46,12 @@ def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
     # pytorch has some bug in pytorch1.3, we have to fix it
     # by replacing these existing op
     opset_version = 11
+    # put the import within the function thus it will not cause import error
+    # when not using this function
+    try:
+        from mmcv.onnx.symbolic import register_extra_symbolics
+    except ModuleNotFoundError:
+        raise NotImplementedError('please update mmcv to version>=v1.0.4')
     register_extra_symbolics(opset_version)
 
     return model, tensor_data
