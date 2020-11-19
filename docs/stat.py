@@ -6,7 +6,6 @@ import re
 url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/master/'
 
 files = sorted(glob.glob('../configs/*/README.md'))
-exculded_title = ('Results and Models', 'Common settings')
 
 stats = []
 titles = []
@@ -19,8 +18,6 @@ for f in files:
         content = content_file.read()
 
     title = content.split('\n')[0].replace('# ', '')
-    if any(s in title for s in exculded_title):
-        continue
 
     titles.append(title)
     ckpts = set(x.lower().strip()
