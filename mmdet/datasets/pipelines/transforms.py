@@ -1218,8 +1218,7 @@ class Albu(object):
             if albumentations.__version__ < '0.5':
                 results['masks'] = results['masks'].masks
             else:
-                masks_list = [mask for mask in results['masks'].masks]
-                results['masks'] = masks_list
+                results['masks'] = [mask for mask in results['masks'].masks]
 
         results = self.aug(**results)
 
