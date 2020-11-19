@@ -1011,8 +1011,8 @@ class MinIoURandomCrop(object):
 
                 # seg fields
                 for key in results.get('seg_fields', []):
-                    results[key] = results[key][patch[1]:patch[3],
-                                                patch[0]:patch[2]]
+                    results[key] = results[key][patch[1]:patch[3], patch[0]:
+                                                patch[2]]
                 return results
 
     def __repr__(self):
@@ -1215,11 +1215,11 @@ class Albu(object):
                 raise NotImplementedError(
                     'Albu only supports BitMap masks now')
             ori_masks = results['masks']
-            masks_list = []
-            bitmapmasks = results['masks'].masks
-            for i in range(bitmapmasks.shape[0]):
-                masks_list += [bitmapmasks[i,:,:]]
-            results['masks'] = masks_list 
+            if albumentations.__version__ < '0.5':
+                results['masks'] = results['masks'].masks
+            else:
+                masks_list = [mask for mask in results['masks'].masks]
+                results['masks'] = masks_list
 
         results = self.aug(**results)
 
