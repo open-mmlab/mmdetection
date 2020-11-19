@@ -40,6 +40,7 @@ class SSDHead(AnchorHead):
                      basesize_ratio_range=(0.1, 0.9)),
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
+                     clip_border=True,
                      target_means=[.0, .0, .0, .0],
                      target_stds=[1.0, 1.0, 1.0, 1.0],
                  ),
