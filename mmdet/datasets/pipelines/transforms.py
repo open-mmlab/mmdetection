@@ -1011,8 +1011,8 @@ class MinIoURandomCrop(object):
 
                 # seg fields
                 for key in results.get('seg_fields', []):
-                    results[key] = results[key][patch[1]:patch[3], patch[0]:
-                                                patch[2]]
+                    results[key] = results[key][patch[1]:patch[3],
+                                                patch[0]:patch[2]]
                 return results
 
     def __repr__(self):
