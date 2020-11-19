@@ -155,13 +155,14 @@ def wrap_nncf_model(model,
             return args, kwargs
 
         # during model's forward
-        assert 'img' in kwargs
+        assert 'img' in kwargs, 'During model forward img must be in kwargs'
         img = kwargs['img']
         if isinstance(img, list):
-            assert torch.is_tensor(img[0])
+            assert len(img) == 1, 'Input list must have a length 1'
+            assert torch.is_tensor(img[0]), 'Input for a model must be a tensor'
             img[0] = nncf_model_input(img[0])
         else:
-            assert torch.is_tensor(img)
+            assert torch.is_tensor(img), 'Input for a model must be a tensor'
             img = nncf_model_input(img)
         kwargs['img'] = img
         return args, kwargs
