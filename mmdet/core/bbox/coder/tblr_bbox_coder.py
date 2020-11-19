@@ -17,8 +17,8 @@ class TBLRBBoxCoder(BaseBBoxCoder):
           divided with when coding the coordinates. If it is a list, it should
           have length of 4 indicating normalization factor in tblr dims.
           Otherwise it is a unified float factor for all dims. Default: 4.0
-        clip_border (bool): Whether clip the objects outside the border of
-            the image.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
     """
 
     def __init__(self, normalizer=4.0, clip_border=True):
@@ -141,8 +141,8 @@ def tblr2bboxes(priors,
           normalized by the side length (wh) of prior bboxes.
         max_shape (tuple, optional): Shape of the image. Decoded bboxes
           exceeding which will be clamped.
-        clip_border (bool): Whether clip the objects outside the border of
-            the image.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
 
     Return:
         encoded boxes (Tensor), Shape: (n, 4)
