@@ -1,4 +1,4 @@
-# Tutorial 1: Finetuning Models
+# Tutorial 7: Finetuning Models
 
 Detectors pre-trained on the COCO dataset can serve as a good pre-trained model for other datasets, e.g., CityScapes and KITTI Dataset.
 This tutorial provides instruction for users to use the models provided in the [Model Zoo](../model_zoo.md) for other datasets to obtain better performance.
