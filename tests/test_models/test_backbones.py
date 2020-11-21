@@ -870,7 +870,7 @@ def test_resnest_bottleneck():
     assert block.conv2.channels == 256
 
     # Test ResNeSt Bottleneck forward
-    block = BottleneckS(64, 64, radix=2, reduction_factor=4)
+    block = BottleneckS(64, 16, radix=2, reduction_factor=4)
     x = torch.randn(2, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([2, 64, 56, 56])
