@@ -1,4 +1,5 @@
-# Config System
+# Tutorial 1: Learn about Configs
+
 We incorporate modular and inheritance design into our config system, which is convenient to conduct various experiments.
 If you wish to inspect the config file, you may run `python tools/print_config.py /PATH/TO/CONFIG` to see the complete config.
 You may also pass `--cfg-options xxx.yyy=zzz` to see updated config.
@@ -429,7 +430,7 @@ model = dict(
     neck=dict(...))
 ```
 
-The `_delete_=True` would replace all old keys in `backbone` field with new keys new keys.
+The `_delete_=True` would replace all old keys in `backbone` field with new keys.
 
 ### Use intermediate variables in configs
 

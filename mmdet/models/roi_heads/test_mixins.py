@@ -67,10 +67,17 @@ class BBoxTestMixin(object):
         num_proposals_per_img = tuple(len(p) for p in proposals)
         rois = rois.split(num_proposals_per_img, 0)
         cls_score = cls_score.split(num_proposals_per_img, 0)
+
         # some detector with_reg is False, bbox_pred will be None
-        bbox_pred = bbox_pred.split(
-            num_proposals_per_img,
-            0) if bbox_pred is not None else [None, None]
+        if bbox_pred is not None:
+            # the bbox prediction of some detectors like SABL is not Tensor
+            if isinstance(bbox_pred, torch.Tensor):
+                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+            else:
+                bbox_pred = self.bbox_head.bbox_pred_split(
+                    bbox_pred, num_proposals_per_img)
+        else:
+            bbox_pred = (None, ) * len(proposals)
 
         # apply bbox post-processing to each image individually
         det_bboxes = []

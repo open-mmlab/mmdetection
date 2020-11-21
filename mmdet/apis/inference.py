@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import torch
-from mmcv.ops import RoIAlign, RoIPool
+from mmcv.ops import RoIPool
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
@@ -107,14 +107,10 @@ def inference_detector(model, img):
         # scatter to specified GPU
         data = scatter(data, [device])[0]
     else:
-        # Use torchvision ops for CPU mode instead
         for m in model.modules():
-            if isinstance(m, (RoIPool, RoIAlign)):
-                if not m.aligned:
-                    # aligned=False is not implemented on CPU
-                    # set use_torchvision on-the-fly
-                    m.use_torchvision = True
-        warnings.warn('We set use_torchvision=True in CPU mode.')
+            assert not isinstance(
+                m, RoIPool
+            ), 'CPU inference with RoIPool is not supported currently.'
         # just get the actual data from DataContainer
         data['img_metas'] = data['img_metas'][0].data
 
@@ -129,18 +125,25 @@ async def async_inference_detector(model, img):
 
     Args:
         model (nn.Module): The loaded detector.
-        imgs (str/ndarray or list[str/ndarray]): Either image files or loaded
-            images.
+        img (str | ndarray): Either image files or loaded images.
 
     Returns:
         Awaitable detection results.
     """
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
+    # prepare data
+    if isinstance(img, np.ndarray):
+        # directly add img
+        data = dict(img=img)
+        cfg = cfg.copy()
+        # set loading pipeline type
+        cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
+    else:
+        # add information into dict
+        data = dict(img_info=dict(filename=img), img_prefix=None)
     # build the data pipeline
     test_pipeline = Compose(cfg.data.test.pipeline)
-    # prepare data
-    data = dict(img_info=dict(filename=img), img_prefix=None)
     data = test_pipeline(data)
     data = scatter(collate([data], samples_per_gpu=1), [device])[0]
 
