@@ -152,11 +152,10 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install mmdet dependencies
         run: |
-          git clone https://github.com/open-mmlab/mmcv.git
-          cd mmcv
-          MMCV_WITH_OPS=1 pip install mmcv-full
+          git clone https://github.com/open-mmlab/mmcv.git && cd mmcv
+          MMCV_WITH_OPS=1 python setup.py install
+          cd .. && rm -rf mmcv
           python -c 'import mmcv; print(mmcv.__version__)'
-          cd ..
           pip install -r requirements/test.txt
       - name: Build and install
         run: rm -rf .eggs && pip install -e .
