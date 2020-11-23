@@ -572,8 +572,6 @@ class RandomCrop(object):
     Args:
         crop_size (tuple): The relative ratio or absolute pixels of
             height and width.
-        allow_negative_crop (bool, optional): Whether to allow a crop that does
-            not contain any bbox area. Default False.
         crop_type (str, optional): one of "relative_range", "relative",
             "absolute", "absolute_range". "relative" randomly crops
             (h * crop_size[0], w * crop_size[1]) part from an input of size
@@ -583,6 +581,8 @@ class RandomCrop(object):
             (crop_size[0], crop_size[1]). "absolute_range" uniformly samples
             crop_h in range [crop_size[0], min(h, crop_size[1])] and crop_w
             in range [crop_size[0], min(w, crop_size[1])]. Default "absolute".
+        allow_negative_crop (bool, optional): Whether to allow a crop that does
+            not contain any bbox area. Default False.
 
     Note:
         - If the image is smaller than the absolute crop size, return the
@@ -597,11 +597,12 @@ class RandomCrop(object):
 
     def __init__(self,
                  crop_size,
-                 allow_negative_crop=False,
-                 crop_type='absolute'):
-        assert crop_type in [
-            'relative_range', 'relative', 'absolute', 'absolute_range'
-        ], f'Invalid crop_type {crop_type}.'
+                 crop_type='absolute',
+                 allow_negative_crop=False):
+        if crop_type not in [
+                'relative_range', 'relative', 'absolute', 'absolute_range'
+        ]:
+            raise ValueError(f'Invalid crop_type {crop_type}.')
         if crop_type in ['absolute', 'absolute_range']:
             assert crop_size[0] > 0 and crop_size[1] > 0
             assert isinstance(crop_size[0], int) and isinstance(
@@ -609,8 +610,8 @@ class RandomCrop(object):
         else:
             assert 0 < crop_size[0] <= 1 and 0 < crop_size[1] <= 1
         self.crop_size = crop_size
-        self.allow_negative_crop = allow_negative_crop
         self.crop_type = crop_type
+        self.allow_negative_crop = allow_negative_crop
 
         # The key correspondence from bboxes to labels and masks.
         self.bbox2label = {
@@ -697,14 +698,7 @@ class RandomCrop(object):
             crop_size (tuple): (crop_h, crop_w) in absolute pixels.
         """
         h, w = image_size
-        if self.crop_type == 'relative':
-            crop_h, crop_w = self.crop_size
-            return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
-        elif self.crop_type == 'relative_range':
-            crop_size = np.asarray(self.crop_size, dtype=np.float32)
-            crop_h, crop_w = crop_size + np.random.rand(2) * (1 - crop_size)
-            return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
-        elif self.crop_type == 'absolute':
+        if self.crop_type == 'absolute':
             return (min(self.crop_size[0], h), min(self.crop_size[1], w))
         elif self.crop_type == 'absolute_range':
             assert self.crop_size[0] <= self.crop_size[1]
@@ -715,6 +709,13 @@ class RandomCrop(object):
                 min(w, self.crop_size[0]),
                 min(w, self.crop_size[1]) + 1)
             return crop_h, crop_w
+        elif self.crop_type == 'relative':
+            crop_h, crop_w = self.crop_size
+            return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
+        elif self.crop_type == 'relative_range':
+            crop_size = np.asarray(self.crop_size, dtype=np.float32)
+            crop_h, crop_w = crop_size + np.random.rand(2) * (1 - crop_size)
+            return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
 
     def __call__(self, results):
         """Call function to randomly crop images, bounding boxes, masks,
@@ -735,8 +736,8 @@ class RandomCrop(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(crop_size={self.crop_size}, '
-        repr_str += f'allow_negative_crop={self.allow_negative_crop}, '
-        repr_str += f'crop_type={self.crop_type})'
+        repr_str += f'crop_type={self.crop_type}, '
+        repr_str += f'allow_negative_crop={self.allow_negative_crop})'
         return repr_str
 
 

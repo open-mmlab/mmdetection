@@ -228,9 +228,9 @@ def test_random_crop():
     assert (area(results['gt_bboxes_ignore']) <= area(gt_bboxes_ignore)).all()
 
     # test assertion for invalid crop_type
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         transform = dict(
-            type='RandomCrop', crop_type='unknown', crop_size=(1, 1))
+            type='RandomCrop', crop_size=(1, 1), crop_type='unknown')
         build_from_cfg(transform, PIPELINES)
 
     # test assertion for invalid crop_size
