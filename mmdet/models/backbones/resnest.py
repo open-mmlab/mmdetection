@@ -93,6 +93,7 @@ class SplitAttentionConv2d(nn.Module):
             dilation=dilation,
             groups=groups * radix,
             bias=False)
+        # To be consistent with original implementation, starting from 0
         self.norm0_name, norm0 = build_norm_layer(
             norm_cfg, channels * radix, postfix=0)
         self.add_module(self.norm0_name, norm0)
