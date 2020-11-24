@@ -40,12 +40,14 @@ class SplitAttentionConv2d(nn.Module):
     """Split-Attention Conv2d in ResNeSt.
 
     Args:
-        in_channels (int): Same as nn.Conv2d.
-        out_channels (int): Same as nn.Conv2d.
-        kernel_size (int | tuple[int]): Same as nn.Conv2d.
-        stride (int | tuple[int]): Same as nn.Conv2d.
-        padding (int | tuple[int]): Same as nn.Conv2d.
-        dilation (int | tuple[int]): Same as nn.Conv2d.
+        in_channels (int): Number of channels in the input feature map.
+        channels (int): Number of intermediate channels.
+        kernel_size (int | tuple[int]): Size of the convolution kernel.
+        stride (int | tuple[int]): Stride of the convolution.
+        padding (int | tuple[int]): Zero-padding added to both sides of
+        dilation (int | tuple[int]): Spacing between kernel elements.
+        groups (int): Number of blocked connections from input channels to
+            output channels.
         groups (int): Same as nn.Conv2d.
         radix (int): Radix of SpltAtConv2d. Default: 2
         reduction_factor (int): Reduction factor of inter_channels. Default: 4.
@@ -150,9 +152,9 @@ class Bottleneck(_Bottleneck):
         inplane (int): Input planes of this block.
         planes (int): Middle planes of this block.
         groups (int): Groups of conv2.
-        width_per_group (int): Width per group of conv2. 64x4d indicates
-            ``groups=64, width_per_group=4`` and 32x8d indicates
-            ``groups=32, width_per_group=8``.
+        base_width (int): Base of width in terms of base channels. Default: 4.
+        base_channels (int): Base of channels for calculating width.
+            Default: 64.
         radix (int): Radix of SpltAtConv2d. Default: 2
         reduction_factor (int): Reduction factor of inter_channels in
             SplitAttentionConv2d. Default: 4.
