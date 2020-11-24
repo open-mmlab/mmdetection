@@ -35,33 +35,29 @@ def multiclass_nms(multi_bboxes,
     else:
         bboxes = multi_bboxes[:, None].expand(
             multi_scores.size(0), num_classes, 4)
+
     scores = multi_scores[:, :-1]
-
-    # filter out boxes with low scores
-    valid_mask = scores > score_thr
-
-    # We use masked_select for ONNX exporting purpose,
-    # which is equivalent to bboxes = bboxes[valid_mask]
-    # (TODO): as ONNX does not support repeat now,
-    # we have to use this ugly code
-    bboxes = torch.masked_select(
-        bboxes,
-        torch.stack((valid_mask, valid_mask, valid_mask, valid_mask),
-                    -1)).view(-1, 4)
     if score_factors is not None:
         scores = scores * score_factors[:, None]
-    scores = torch.masked_select(scores, valid_mask)
-    labels = valid_mask.nonzero(as_tuple=False)[:, 1]
 
-    if bboxes.numel() == 0:
-        bboxes = multi_bboxes.new_zeros((0, 5))
-        labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
+    labels = torch.arange(num_classes, dtype=torch.long)
+    labels = labels.view(1, -1).expand_as(scores)
 
+    bboxes = bboxes.reshape(-1, 4)
+    scores = scores.reshape(-1)
+    labels = labels.reshape(-1)
+
+    # remove low scoring boxes
+    valid_mask = scores > score_thr
+    inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
+    bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
+    if inds.numel() == 0:
         if torch.onnx.is_in_onnx_export():
             raise RuntimeError('[ONNX Error] Can not record NMS '
                                'as it has not been executed this time')
         return bboxes, labels
 
+    # TODO: add size check before feed into batched_nms
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
 
     if max_num > 0:

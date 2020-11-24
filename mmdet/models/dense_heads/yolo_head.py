@@ -277,7 +277,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
             # Get top-k prediction
             nms_pre = cfg.get('nms_pre', -1)
-            if 0 < nms_pre < conf_pred.size(0):
+            if 0 < nms_pre < conf_pred.size(0) and (
+                    not torch.onnx.is_in_onnx_export()):
                 _, topk_inds = conf_pred.topk(nms_pre)
                 bbox_pred = bbox_pred[topk_inds, :]
                 cls_pred = cls_pred[topk_inds, :]
