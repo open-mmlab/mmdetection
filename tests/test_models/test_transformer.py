@@ -163,6 +163,12 @@ def test_ffn(embed_dims=8, feedforward_channels=8, num_fcs=2, batch_size=1):
     out = module(x, residual)
     assert out.shape == (batch_size, embed_dims)
 
+    # test case with no residual
+    module = FFN(embed_dims, feedforward_channels, num_fcs, add_residual=False)
+    x = torch.rand(batch_size, embed_dims)
+    out = module(x)
+    assert out.shape == (batch_size, embed_dims)
+
 
 def test_transformer_encoder_layer(embed_dims=8,
                                    num_heads=2,
@@ -512,3 +518,6 @@ def test_transformer(num_enc_layers=2,
     hs, mem = module(x, mask, query_embed, pos_embed)
     assert hs.shape == (num_dec_layers, batch_size, num_query, embed_dims)
     assert mem.shape == (batch_size, embed_dims, height, width)
+
+    # test init_weights
+    module.init_weights()
