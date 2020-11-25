@@ -13,7 +13,7 @@ from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
 
 
-def init_detector(config, checkpoint=None, device='cuda:0'):
+def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     """Initialize a detector from config file.
 
     Args:
@@ -21,6 +21,8 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
             object.
         checkpoint (str, optional): Checkpoint path. If left as None, the model
             will not load any weights.
+        cfg_options (dict): Options to override some settings in the used
+            config.
 
     Returns:
         nn.Module: The constructed detector.
@@ -30,6 +32,8 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
     elif not isinstance(config, mmcv.Config):
         raise TypeError('config must be a filename or Config object, '
                         f'but got {type(config)}')
+    if cfg_options is not None:
+        config.merge_from_dict(cfg_options)
     config.model.pretrained = None
     model = build_detector(config.model, test_cfg=config.test_cfg)
     if checkpoint is not None:
