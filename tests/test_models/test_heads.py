@@ -1207,14 +1207,15 @@ def test_transformer_head_loss():
                                 img_metas, gt_bboxes_ignore)
     # When there is no truth, the cls loss should be nonzero but there should
     # be no box loss.
-    empty_cls_loss = empty_gt_losses['loss_cls']
-    empty_box_loss = empty_gt_losses['loss_bbox']
-    empty_iou_loss = empty_gt_losses['loss_iou']
-    assert empty_cls_loss.item() > 0, 'cls loss should be non-zero'
-    assert empty_box_loss.item() == 0, (
-        'there should be no box loss when there are no true boxes')
-    assert empty_iou_loss.item() == 0, (
-        'there should be no iou loss when there are no true boxes')
+    for key, loss in empty_gt_losses.items():
+        if 'cls' in key:
+            assert loss.item() > 0, 'cls loss should be non-zero'
+        elif 'bbox' in key:
+            assert loss.item(
+            ) == 0, 'there should be no box loss when there are no true boxes'
+        elif 'iou' in key:
+            assert loss.item(
+            ) == 0, 'there should be no iou loss when there are no true boxes'
 
     # When truth is non-empty then both cls and box loss should be nonzero for
     # random inputs
@@ -1224,12 +1225,9 @@ def test_transformer_head_loss():
     gt_labels = [torch.LongTensor([2])]
     one_gt_losses = self.loss(cls_scores, bbox_preds, gt_bboxes, gt_labels,
                               img_metas, gt_bboxes_ignore)
-    onegt_cls_loss = one_gt_losses['loss_cls']
-    onegt_box_loss = one_gt_losses['loss_bbox']
-    onegt_iou_loss = one_gt_losses['loss_iou']
-    assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
-    assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
-    assert onegt_iou_loss.item() > 0, 'iou loss should be non-zero'
+    for loss in one_gt_losses.values():
+        assert loss.item(
+        ) > 0, 'cls loss, or box loss, or iou loss should be non-zero'
 
     # test forward_train
     self.forward_train(feat, img_metas, gt_bboxes, gt_labels)

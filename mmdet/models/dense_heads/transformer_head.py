@@ -1,12 +1,13 @@
 import torch
-import torch.distributed as dist
+# import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, Linear, build_activation_layer
-from mmcv.runner import force_fp32, get_dist_info
+from mmcv.runner import force_fp32
 
 from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
-                        build_assigner, build_sampler, multi_apply)
+                        build_assigner, build_sampler, multi_apply,
+                        reduce_mean)
 from mmdet.models.utils import FFN, build_position_encoding, build_transformer
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
@@ -314,9 +315,9 @@ class TransformerHead(AnchorFreeHead):
         for loss_cls_i, loss_bbox_i, loss_iou_i in zip(losses_cls[:-1],
                                                        losses_bbox[:-1],
                                                        losses_iou[:-1]):
-            loss_dict['loss_cls_{}'.format(num_dec_layer)] = loss_cls_i
-            loss_dict['loss_bbox_{}'.format(num_dec_layer)] = loss_bbox_i
-            loss_dict['loss_iou_{}'.format(num_dec_layer)] = loss_iou_i
+            loss_dict[f'loss_cls_{num_dec_layer}'] = loss_cls_i
+            loss_dict[f'loss_bbox_{num_dec_layer}'] = loss_bbox_i
+            loss_dict[f'loss_iou_{num_dec_layer}'] = loss_iou_i
             num_dec_layer += 1
         return loss_dict
 
@@ -365,10 +366,9 @@ class TransformerHead(AnchorFreeHead):
         factors = []
         for img_meta, bbox_pred in zip(img_metas, bbox_preds):
             img_h, img_w, _ = img_meta['img_shape']
-            factor = torch.Tensor([img_w, img_h, img_w,
-                                   img_h]).unsqueeze(0).repeat(
-                                       bbox_pred.size(0),
-                                       1).to(bbox_pred.device)
+            factor = bbox_pred.new_tensor([img_w, img_h, img_w,
+                                           img_h]).unsqueeze(0).repeat(
+                                               bbox_pred.size(0), 1)
             factors.append(factor)
         factors = torch.cat(factors, 0)
 
@@ -383,13 +383,8 @@ class TransformerHead(AnchorFreeHead):
 
         # Compute the average number of gt boxes accross all gpus, for
         # normalization purposes
-        num_total_pos = torch.as_tensor([num_total_pos],
-                                        dtype=torch.float,
-                                        device=loss_cls.device)
-        _, world_size = get_dist_info()
-        if dist.is_available() and dist.is_initialized():
-            dist.all_reduce(num_total_pos)
-        num_total_pos = torch.clamp(num_total_pos / world_size, min=1).item()
+        num_total_pos = loss_cls.new_tensor([num_total_pos])
+        num_total_pos = torch.clamp(reduce_mean(num_total_pos), min=1).item()
 
         # regression L1 loss
         bbox_preds = bbox_preds.reshape(-1, 4)
@@ -518,8 +513,8 @@ class TransformerHead(AnchorFreeHead):
         bbox_weights = torch.zeros_like(bbox_pred)
         bbox_weights[pos_inds] = 1.0
         img_h, img_w, _ = img_meta['img_shape']
-        factor = torch.Tensor([img_w, img_h, img_w,
-                               img_h]).unsqueeze(0).to(bbox_pred.device)
+        factor = bbox_pred.new_tensor([img_w, img_h, img_w,
+                                       img_h]).unsqueeze(0)
         pos_gt_bboxes_normalized = sampling_result.pos_gt_bboxes / factor
         pos_gt_bboxes_targets = bbox_xyxy_to_cxcywh(pos_gt_bboxes_normalized)
         bbox_targets[pos_inds] = pos_gt_bboxes_targets
