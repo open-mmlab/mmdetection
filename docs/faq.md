@@ -16,8 +16,8 @@ We list some common troubles faced by many users and their corresponding solutio
 - "RTX 30 series card fails when building MMCV or MMDet"
     
     1. Temporary work-around: do `MMCV_WITH_OPS=1 MMCV_CUDA_ARGS='-gencode=arch=compute_80,code=sm_80' pip install -e .`.
-    The commonly reported problem is `nvcc fatal : Unsupported gpu architecture 'compute_86'`. This nvcc argument means that the compiler should optimize for sm_86 i.e. nvidia 30 series card. And such optimizations have not been supported by cuda toolkit 11.0.
-    One hack around it is to do this command instead in installation, adding `MMCV_CUDA_ARGS='-gencode=arch=compute_80,code=sm_80'`, which tells nvcc to optimize for sm_80 i.e. Nvidia A100. Although different from 30 series card, it is still under the ampere architecture. This may hurt the performance but it runs according to my tests.
+    The common issue is `nvcc fatal : Unsupported gpu architecture 'compute_86'`. This means that the compiler should optimize for sm_86, i.e., nvidia 30 series card, but such optimizations have not been supported by CUDA toolkit 11.0.
+    This work-around modifies the compile flag by adding `MMCV_CUDA_ARGS='-gencode=arch=compute_80,code=sm_80'`, which tells `nvcc` to optimize for **sm_80**, i.e., Nvidia A100. Although A100 is different from the 30 series card, they use similar ampere architecture. This may hurt the performance but it works.
     2. PyTorch developers have updated that the default compiler flags should be fixed by [pytorch/pytorch#47585](https://github.com/pytorch/pytorch/pull/47585). So using PyTorch-nightly may also be able to solve the problem, though we have not tested it yet.
 
 - "invalid device function" or "no kernel image is available for execution".
