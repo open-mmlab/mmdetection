@@ -280,8 +280,8 @@ class TransformerHead(AnchorFreeHead):
             gt_labels_list (list[Tensor]): Ground truth class indices for each
                 image with shape (num_gts, ).
             img_metas (list[dict]): List of image meta information.
-            gt_bboxes_ignore (None | list[Tensor], optional): Bounding boxes
-                which can be ignored for each image.
+            gt_bboxes_ignore (list[Tensor], optional): Bounding boxes
+                which can be ignored for each image. Default None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -342,8 +342,8 @@ class TransformerHead(AnchorFreeHead):
             gt_labels_list (list[Tensor]): Ground truth class indices for each
                 image with shape (num_gts, ).
             img_metas (list[dict]): List of image meta information.
-            gt_bboxes_ignore_list (None | list[Tensor], optional): Bounding
-                boxes which can be ignored for each image.
+            gt_bboxes_ignore_list (list[Tensor], optional): Bounding
+                boxes which can be ignored for each image. Default None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components for outputs from
@@ -421,8 +421,8 @@ class TransformerHead(AnchorFreeHead):
             gt_labels_list (list[Tensor]): Ground truth class indices for each
                 image with shape (num_gts, ).
             img_metas (list[dict]): List of image meta information.
-            gt_bboxes_ignore_list (None | list[Tensor], optional): Bounding
-                boxes which can be ignored for each image.
+            gt_bboxes_ignore_list (list[Tensor], optional): Bounding
+                boxes which can be ignored for each image. Default None.
 
         Returns:
             tuple: a tuple containing the following targets.
@@ -477,8 +477,8 @@ class TransformerHead(AnchorFreeHead):
             gt_labels (Tensor): Ground truth class indices for one image
                 with shape (num_gts, ).
             img_meta (dict): Meta information for one image.
-            gt_bboxes_ignore (None | Tensor, optional): Bounding boxes
-                which can be ignored.
+            gt_bboxes_ignore (Tensor, optional): Bounding boxes
+                which can be ignored. Default None.
 
         Returns:
             tuple[Tensor]: a tuple containing the following for one image.
