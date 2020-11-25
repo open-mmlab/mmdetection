@@ -1,4 +1,5 @@
 import torch
+import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, Linear, build_activation_layer
@@ -386,7 +387,8 @@ class TransformerHead(AnchorFreeHead):
                                         dtype=torch.float,
                                         device=loss_cls.device)
         _, world_size = get_dist_info()
-        torch.distributed.all_reduce(num_total_pos)
+        if dist.is_available() and dist.is_initialized():
+            dist.all_reduce(num_total_pos)
         num_total_pos = torch.clamp(num_total_pos / world_size, min=1).item()
 
         # regression L1 loss
