@@ -1240,17 +1240,36 @@ def test_transformer_head_loss():
         'pad_shape': (s, s, 3),
         'input_img_shape': (s, s)
     }]
-    train_cfg = mmcv.Config(
-        dict(
-            assigner=dict(
-                type='HungarianAssigner',
-                cls_weight=1.,
-                bbox_weight=5.,
-                iou_weight=2.,
-                iou_calculator=dict(type='BboxOverlaps2D'),
-                iou_mode='giou')))
-    # since Focal Loss is not supported on CPU
-    self = TransformerHead(num_classes=4, in_channels=1, train_cfg=train_cfg)
+    train_cfg = dict(
+        assigner=dict(
+            type='HungarianAssigner',
+            cls_weight=1.,
+            bbox_weight=5.,
+            iou_weight=2.,
+            iou_calculator=dict(type='BboxOverlaps2D'),
+            iou_mode='giou'))
+    transformer_cfg = dict(
+        type='Transformer',
+        embed_dims=4,
+        num_heads=1,
+        num_encoder_layers=1,
+        num_decoder_layers=1,
+        feedforward_channels=1,
+        dropout=0.1,
+        act_cfg=dict(type='ReLU', inplace=True),
+        norm_cfg=dict(type='LN'),
+        num_fcs=2,
+        pre_norm=False,
+        return_intermediate_dec=True)
+    position_encoding_cfg = dict(
+        type='SinePositionEmbedding', num_feats=2, normalize=True)
+    self = TransformerHead(
+        num_classes=4,
+        in_channels=1,
+        num_fcs=2,
+        train_cfg=train_cfg,
+        transformer=transformer_cfg,
+        position_encoding=position_encoding_cfg)
     self.init_weights()
     feat = [
         torch.rand(1, 1, s // feat_size, s // feat_size)
