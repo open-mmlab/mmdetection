@@ -7,7 +7,7 @@ from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead
 
-eps = 1e-12
+EPS = 1e-12
 try:
     import sklearn.mixture as skm
 except ImportError:
@@ -57,12 +57,29 @@ class PAAHead(ATSSHead):
         topk (int): Select topk samples with smallest loss in
             each level.
         score_voting (bool): Whether to use score voting in post-process.
+        covariance_type : String describing the type of covariance parameters
+            to be used in :class:`sklearn.mixture.GaussianMixture`.
+            It must be one of:
+
+            - 'full': each component has its own general covariance matrix
+            - 'tied': all components share the same general covariance matrix
+            - 'diag': each component has its own diagonal covariance matrix
+            - 'spherical': each component has its own single variance
+            Default: 'diag'. From 'full' to 'spherical', the gmm fitting
+            process is faster yet the performance could be influenced. For most
+            cases, 'diag' should be a good choice.
     """
 
-    def __init__(self, *args, topk=9, score_voting=True, **kwargs):
+    def __init__(self,
+                 *args,
+                 topk=9,
+                 score_voting=True,
+                 covariance_type='diag',
+                 **kwargs):
         # topk used in paa reassign process
         self.topk = topk
         self.with_score_voting = score_voting
+        self.covariance_type = covariance_type
         super(PAAHead, self).__init__(*args, **kwargs)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
@@ -138,7 +155,6 @@ class PAAHead(ATSSHead):
                 anchor_list,
             )
             num_pos = sum(num_pos)
-
         # convert all tensor list to a flatten tensor
         cls_scores = torch.cat(cls_scores, 0).view(-1, cls_scores[0].size(-1))
         bbox_preds = torch.cat(bbox_preds, 0).view(-1, bbox_preds[0].size(-1))
@@ -158,7 +174,7 @@ class PAAHead(ATSSHead):
             cls_scores,
             labels,
             labels_weight,
-            avg_factor=max(num_pos, len(img_metas)))
+            avg_factor=max(num_pos, len(img_metas)))  # avoid num_pos=0
         if num_pos:
             pos_bbox_pred = self.bbox_coder.decode(
                 flatten_anchors[pos_inds_flatten],
@@ -173,7 +189,7 @@ class PAAHead(ATSSHead):
             losses_bbox = self.loss_bbox(
                 pos_bbox_pred,
                 pos_bbox_target,
-                iou_target.clamp(min=eps),
+                iou_target.clamp(min=EPS),
                 avg_factor=iou_target.sum())
         else:
             losses_iou = iou_preds.sum() * 0
@@ -283,8 +299,8 @@ class PAAHead(ATSSHead):
             mask = (pos_inds >= inds_level_interval[i]) & (
                 pos_inds < inds_level_interval[i + 1])
             pos_level_mask.append(mask)
-        pos_inds_after_paa = []
-        ignore_inds_after_paa = []
+        pos_inds_after_paa = [label.new_tensor([])]
+        ignore_inds_after_paa = [label.new_tensor([])]
         for gt_ind in range(num_gt):
             pos_inds_gmm = []
             pos_loss_gmm = []
@@ -306,9 +322,15 @@ class PAAHead(ATSSHead):
             pos_inds_gmm = pos_inds_gmm[sort_inds]
             pos_loss_gmm = pos_loss_gmm.view(-1, 1).cpu().numpy()
             min_loss, max_loss = pos_loss_gmm.min(), pos_loss_gmm.max()
-            means_init = [[min_loss], [max_loss]]
-            weights_init = [0.5, 0.5]
-            precisions_init = [[[1.0]], [[1.0]]]
+            means_init = np.array([min_loss, max_loss]).reshape(2, 1)
+            weights_init = np.array([0.5, 0.5])
+            precisions_init = np.array([1.0, 1.0]).reshape(2, 1, 1)  # full
+            if self.covariance_type == 'spherical':
+                precisions_init = precisions_init.reshape(2)
+            elif self.covariance_type == 'diag':
+                precisions_init = precisions_init.reshape(2, 1)
+            elif self.covariance_type == 'tied':
+                precisions_init = np.array([[1.0]])
             if skm is None:
                 raise ImportError('Please run "pip install sklearn" '
                                   'to install sklearn first.')
@@ -316,7 +338,8 @@ class PAAHead(ATSSHead):
                 2,
                 weights_init=weights_init,
                 means_init=means_init,
-                precisions_init=precisions_init)
+                precisions_init=precisions_init,
+                covariance_type=self.covariance_type)
             gmm.fit(pos_loss_gmm)
             gmm_assignment = gmm.predict(pos_loss_gmm)
             scores = gmm.score_samples(pos_loss_gmm)

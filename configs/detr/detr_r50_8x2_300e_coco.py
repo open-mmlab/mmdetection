@@ -73,7 +73,7 @@ train_pipeline = [
                           multiscale_mode='value',
                           keep_ratio=True),
                       dict(
-                          type='RandomCropWarpper',
+                          type='RandomCrop',
                           crop_type='absolute_range',
                           crop_size=(384, 600),
                           allow_negative_crop=True),
