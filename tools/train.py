@@ -143,11 +143,6 @@ def main():
     if args.seed is not None:
         logger.info(f'Set random seed to {args.seed}, '
                     f'deterministic: {args.deterministic}')
-
-        # import torch.distributed as dist
-        # rank = dist.get_rank()
-        # args.seed = args.seed + rank
-
         set_random_seed(args.seed, deterministic=args.deterministic)
     cfg.seed = args.seed
     meta['seed'] = args.seed
