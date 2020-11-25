@@ -21,7 +21,8 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
             object.
         checkpoint (str, optional): Checkpoint path. If left as None, the model
             will not load any weights.
-        cfg_options (dict): Options to override some settings in the used config.
+        cfg_options (dict): Options to override some settings in the used
+            config.
 
     Returns:
         nn.Module: The constructed detector.
