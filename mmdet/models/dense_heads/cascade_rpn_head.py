@@ -16,31 +16,55 @@ class AdaptiveConv(nn.Module):
     """AdaptiveConv used to adapt the sampling location with the anchors.
 
     Args:
-        in_channels (int): number of input channels.
-        out_channels (int): number of output channels.
-        adapt_cfg (dict): adaptation type and arguments.
-            dilation (uniform anchor) or offset (arbitrary anchors).
+        in_channels (int): Number of channels in the input image
+        out_channels (int): Number of channels produced by the convolution
+        kernel_size (int or tuple): Size of the conv kernel. Default: 3
+        stride (int or tuple, optional): Stride of the convolution. Default: 1
+        padding (int or tuple, optional): Zero-padding added to both sides of
+            the input. Default: 1
+        dilation (int or tuple, optional): Spacing between kernel elements.
+            Default: 3
+        groups (int, optional): Number of blocked connections from input
+            channels to output channels. Default: 1
+        bias (bool, optional): If set True, adds a learnable bias to the
+            output. Default: False.
+        type (str): Type of adaptive conv, can be either 'offset'
+            (arbitrary anchors) or 'dilation' (uniform anchor).
+            Default: 'dilation'.
     """
 
     def __init__(self,
                  in_channels,
                  out_channels,
-                 adapt_cfg=dict(type='dilation', dilation=3)):
+                 kernel_size=3,
+                 stride=1,
+                 padding=1,
+                 dilation=3,
+                 groups=1,
+                 bias=False,
+                 type='dilation'):
         super(AdaptiveConv, self).__init__()
-        self.adapt_cfg = adapt_cfg
-        assert isinstance(adapt_cfg, dict) and 'type' in adapt_cfg
+        assert type in ['offset', 'dilation']
+        self.adapt_type = type
 
-        self.adapt_type = adapt_cfg['type']
-        assert self.adapt_type in ['offset', 'dilation']
-
+        assert kernel_size == 3, 'Adaptive conv only supports kernels 3'
         if self.adapt_type == 'offset':
-            self.conv = DeformConv2d(in_channels, out_channels, 3, padding=1)
+            assert stride == 1 and padding == 1 and groups == 1, \
+                'Addptive conv offset mode only supports padding: {1}, ' \
+                f'stride: {1}, groups: {1}'
+            self.conv = DeformConv2d(
+                in_channels,
+                out_channels,
+                kernel_size,
+                padding=padding,
+                stride=stride,
+                groups=groups,
+                bias=bias)
         else:
-            dilation = adapt_cfg.get('dilation', 3)
             self.conv = nn.Conv2d(
                 in_channels,
                 out_channels,
-                3,
+                kernel_size,
                 padding=dilation,
                 dilation=dilation)
 
@@ -111,7 +135,7 @@ class StageCascadeRPNHead(RPNHead):
     def _init_layers(self):
         """Init layers of a CascadeRPN stage."""
         self.rpn_conv = AdaptiveConv(self.in_channels, self.feat_channels,
-                                     self.adapt_cfg)
+                                     **self.adapt_cfg)
         if self.with_cls:
             self.rpn_cls = nn.Conv2d(self.feat_channels,
                                      self.num_anchors * self.cls_out_channels,
