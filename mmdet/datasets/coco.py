@@ -472,9 +472,9 @@ class CocoDataset(CustomDataset):
                         use_transcriptions=metric in ['word_spotting'])
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
                           format(recall, precision, hmean))
-                    eval_results['hmean'] = float(f'{hmean:.3f}')
-                    eval_results['precision'] = float(f'{precision:.3f}')
-                    eval_results['recall'] = float(f'{recall:.3f}')
+                    eval_results[metric + '/hmean'] = float(f'{hmean:.3f}')
+                    eval_results[metric + '/precision'] = float(f'{precision:.3f}')
+                    eval_results[metric + '/recall'] = float(f'{recall:.3f}')
                     continue
 
                 cocoEval.evaluate()
