@@ -49,7 +49,9 @@ jobs:
       - name: Install PyTorch
         run: pip install torch==${{matrix.torch}}+cpu torchvision==${{matrix.torchvision}}+cpu -f https://download.pytorch.org/whl/torch_stable.html
       - name: Install MMCV
-        run: pip install mmcv-full==latest+torch${{matrix.torch}}+cpu -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
+        run: |
+          pip install mmcv-full==latest+torch${{matrix.torch}}+cpu -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
+          python -c 'import mmcv; print(mmcv.__version__)'
       - name: Install unittest dependencies
         run: pip install -r requirements/tests.txt -r requirements/optional.txt
       - name: Build and install
@@ -118,6 +120,7 @@ jobs:
         run: |
           pip install mmcv-full==${{matrix.mmcv}} -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
           pip install -r requirements.txt
+          python -c 'import mmcv; print(mmcv.__version__)'
       - name: Build and install
         run: |
           rm -rf .eggs
@@ -136,3 +139,23 @@ jobs:
           env_vars: OS,PYTHON
           name: codecov-umbrella
           fail_ci_if_error: false
+
+  build_parrots:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sunnyxiaohu/parrots-mmcv:1.2.1
+      credentials:
+        username: sunnyxiaohu
+        password: ${{secrets.CR_PAT}}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install mmdet dependencies
+        run: |
+          git clone https://github.com/open-mmlab/mmcv.git && cd mmcv
+          MMCV_WITH_OPS=1 python setup.py install
+          cd .. && rm -rf mmcv
+          python -c 'import mmcv; print(mmcv.__version__)'
+          pip install -r requirements.txt
+      - name: Build and install
+        run: rm -rf .eggs && pip install -e .

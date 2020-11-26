@@ -11,7 +11,6 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
         direction (str): Flip direction, options are "horizontal", "vertical",
             "diagonal". Default: "horizontal"
 
-
     Returns:
         Tensor: Flipped bboxes.
     """
@@ -27,7 +26,7 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
     else:
         flipped[..., 0::4] = img_shape[1] - bboxes[..., 2::4]
         flipped[..., 1::4] = img_shape[0] - bboxes[..., 3::4]
-        flipped[..., 2::4] = img_shape[1] - bboxes[...:, 0::4]
+        flipped[..., 2::4] = img_shape[1] - bboxes[..., 0::4]
         flipped[..., 3::4] = img_shape[0] - bboxes[..., 1::4]
     return flipped
 
@@ -112,8 +111,8 @@ def bbox2result(bboxes, labels, num_classes):
         return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
     else:
         if isinstance(bboxes, torch.Tensor):
-            bboxes = bboxes.cpu().numpy()
-            labels = labels.cpu().numpy()
+            bboxes = bboxes.detach().cpu().numpy()
+            labels = labels.detach().cpu().numpy()
         return [bboxes[labels == i, :] for i in range(num_classes)]
 
 

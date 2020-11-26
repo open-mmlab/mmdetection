@@ -23,6 +23,7 @@ class BBoxHead(nn.Module):
                  num_classes=80,
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
+                     clip_border=True,
                      target_means=[0., 0., 0., 0.],
                      target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
@@ -181,7 +182,7 @@ class BBoxHead(nn.Module):
                     avg_factor=bbox_targets.size(0),
                     reduction_override=reduction_override)
             else:
-                losses['loss_bbox'] = bbox_pred.sum() * 0
+                losses['loss_bbox'] = bbox_pred[pos_inds].sum()
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
