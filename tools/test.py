@@ -160,8 +160,6 @@ def main():
         outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
                                   args.show_score_thr)
 
-
-
     rank, _ = get_dist_info()
     if rank == 0:
         if args.out:
