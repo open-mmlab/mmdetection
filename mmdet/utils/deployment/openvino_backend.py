@@ -14,11 +14,10 @@
 
 
 import logging
-import os.path as osp
-from collections import OrderedDict
-
 import numpy as np
+import os.path as osp
 import torch
+from collections import OrderedDict
 from lxml import etree
 from openvino.inference_engine import IECore
 

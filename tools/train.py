@@ -1,26 +1,27 @@
 import argparse
 import copy
-import os
-import os.path as osp
-import time
-import sys
-
 import mmcv
 import numpy as np
+import os
+import os.path as osp
 import pycocotools.mask as maskUtils
+import time
 import torch
 import torch.distributed as dist
+import torch.multiprocessing as mp
 from mmcv import Config
 from mmcv.parallel import collate, scatter
-from mmcv.runner import init_dist, get_dist_info
+from mmcv.runner import get_dist_info, init_dist
+
 from mmdet import __version__
 from mmdet.apis import set_random_seed, train_detector
 from mmdet.apis.inference import LoadImage
 from mmdet.core import BitmapMasks
 from mmdet.datasets import build_dataset
 from mmdet.datasets.pipelines import Compose
-from mmdet.models import build_detector, TwoStageDetector
-from mmdet.utils import collect_env, get_root_logger, ExtendedDictAction
+from mmdet.integration.nncf import check_nncf_is_enabled, get_nncf_metadata
+from mmdet.models import TwoStageDetector, build_detector
+from mmdet.utils import ExtendedDictAction, collect_env, get_root_logger
 
 
 def parse_args():
@@ -148,6 +149,15 @@ def determine_max_batch_size(cfg, distributed, dataset_len_per_gpu):
     return resulting_batch_size
 
 
+def init_dist_cpu(launcher, backend, **kwargs):
+    if mp.get_start_method(allow_none=True) is None:
+        mp.set_start_method('spawn')
+    if launcher == 'pytorch':
+        dist.init_process_group(backend=backend, **kwargs)
+    else:
+        raise ValueError(f'Invalid launcher type: {launcher}')
+
+
 def main():
     args = parse_args()
 
@@ -183,7 +193,11 @@ def main():
         distributed = False
     else:
         distributed = True
-        init_dist(args.launcher, **cfg.dist_params)
+        if torch.cuda.is_available():
+            init_dist(args.launcher, **cfg.dist_params)
+        else:
+            cfg.dist_params['backend'] = 'gloo'
+            init_dist_cpu(args.launcher, **cfg.dist_params)
 
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
@@ -216,6 +230,11 @@ def main():
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
 
+    if cfg.get('nncf_config'):
+        check_nncf_is_enabled()
+        logger.info('NNCF config: {}'.format(cfg.nncf_config))
+        meta.update(get_nncf_metadata())
+
     # set random seeds
     if args.seed is not None:
         logger.info(f'Set random seed to {args.seed}, '
@@ -235,7 +254,7 @@ def main():
     assert dataset_len_per_gpu > 0
     if cfg.data.samples_per_gpu == 'auto':
         if torch.cuda.is_available():
-            logger.info(f'Auto-selection of samples per gpu (batch size).')
+            logger.info('Auto-selection of samples per gpu (batch size).')
             cfg.data.samples_per_gpu = determine_max_batch_size(cfg, distributed, dataset_len_per_gpu)
             logger.info(f'Auto selected batch size: {cfg.data.samples_per_gpu} {dataset_len_per_gpu}')
             cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
@@ -260,6 +279,17 @@ def main():
             mmdet_version=__version__,
             config=cfg.pretty_text,
             CLASSES=datasets[0].CLASSES)
+        # also save nncf status in the checkpoint -- it is important,
+        # since it is used in wrap_nncf_model for loading NNCF-compressed models
+        if cfg.get('nncf_config'):
+            nncf_metadata = get_nncf_metadata()
+            cfg.checkpoint_config.meta.update(nncf_metadata)
+    else:
+        # cfg.checkpoint_config is None
+        assert not cfg.get('nncf_config'), (
+                "NNCF is enabled, but checkpoint_config is not set -- "
+                "cannot store NNCF metainfo into checkpoints")
+
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
 

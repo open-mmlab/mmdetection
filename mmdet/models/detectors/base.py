@@ -1,16 +1,16 @@
-import warnings
-from abc import ABCMeta, abstractmethod
-from collections import OrderedDict
-
 import mmcv
 import numpy as np
-
 import pycocotools.mask as maskUtils
 import torch
 import torch.distributed as dist
-
 import torch.nn as nn
+import warnings
+from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
+from contextlib import contextmanager
+from functools import partial
 from mmcv.utils import print_log
+from mmdet.integration.nncf import no_nncf_trace
 
 from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
@@ -22,6 +22,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
     def __init__(self):
         super(BaseDetector, self).__init__()
         self.fp16_enabled = False
+        self.img_metas = None
+        self.forward_backup = None
 
     @property
     def with_neck(self):
@@ -112,7 +114,20 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             img_metas (List[List[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
+
+        Note that if `kwargs` contains either `forward_export=True` or
+        `dummy_forward=True` parameters, one of special branches of code is
+        enabled for ONNX export
+        (see the methods `forward_export` and `forward_dummy`).
         """
+        if kwargs.get('forward_export'):
+            logger = get_root_logger()
+            logger.info('Calling forward_export inside forward_test')
+            return self.forward_export(imgs)
+
+        if kwargs.get('dummy_forward'):
+            return self.forward_dummy(imgs[0])
+
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError(f'{name} must be a list, but got {type(var)}')
@@ -134,14 +149,19 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             """
             if 'proposals' in kwargs:
                 kwargs['proposals'] = kwargs['proposals'][0]
-            return self.simple_test(imgs[0], img_metas[0], **kwargs)
+            with no_nncf_trace():
+                return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
             # TODO: support test augmentation for predefined proposals
             assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
 
-    @auto_fp16(apply_to=('img', ))
-    def forward(self, img, img_metas, return_loss=True, **kwargs):
+    @abstractmethod
+    def forward_dummy(self, img, **kwargs):
+        pass
+
+    @auto_fp16(apply_to=('img',))
+    def forward(self, img, img_metas=None, return_loss=True, **kwargs):
         """
         Calls either forward_train or forward_test depending on whether
         return_loss=True. Note this setting will change the expected inputs.
@@ -149,27 +169,53 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         Tensor and List[dict]), and when `resturn_loss=False`, img and img_meta
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
+
+        The parameter `img_metas` has the default value `None` for ONNX export only,
+        in this case `return_loss` should be `False`, and `kwargs` should contain
+        either `forward_dummy=True` or `dummy_forward=True` parameters to enable
+        a special branch of code for ONNX tracer
+        (see the method `forward_test`).
         """
         if return_loss:
             return self.forward_train(img, img_metas, **kwargs)
         else:
             return self.forward_test(img, img_metas, **kwargs)
 
-
     def forward_export(self, imgs):
         from torch.onnx.operators import shape_as_tensor
+        assert self.img_metas, 'Error: forward_export should be called inside forward_export_context'
+
         img_shape = shape_as_tensor(imgs[0])
         imgs_per_gpu = int(imgs[0].size(0))
         assert imgs_per_gpu == 1
+        assert len(self.img_metas[0]) == imgs_per_gpu, f'self.img_metas={self.img_metas}'
         self.img_metas[0][0]['img_shape'] = img_shape[2:4]
+
         return self.simple_test(imgs[0], self.img_metas[0], postprocess=False)
 
-    def export(self, img, img_metas, export_name='', **kwargs):
+    @contextmanager
+    def forward_export_context(self, img_metas):
+        assert self.img_metas is None and self.forward_backup is None, 'Error: one forward context inside another forward context'
+
         self.img_metas = img_metas
         self.forward_backup = self.forward
-        self.forward = self.forward_export
-        torch.onnx.export(self, img, export_name, **kwargs)
+        self.forward = partial(self.forward, return_loss=False, forward_export=True, img_metas=None)
+        yield
         self.forward = self.forward_backup
+        self.forward_backup = None
+        self.img_metas = None
+
+    @contextmanager
+    def forward_dummy_context(self, img_metas):
+        assert self.img_metas is None and self.forward_backup is None, 'Error: one forward context inside another forward context'
+
+        self.img_metas = img_metas
+        self.forward_backup = self.forward
+        self.forward = partial(self.forward, return_loss=False, dummy_forward=True, img_metas=None)
+        yield
+        self.forward = self.forward_backup
+        self.forward_backup = None
+        self.img_metas = None
 
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.
@@ -206,7 +252,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
         return loss, log_vars
 
-    def train_step(self, data, optimizer):
+    def train_step(self, data, optimizer, compression_ctrl=None):
         """The iteration step during training.
 
         This method defines an iteration step during training, except for the
@@ -235,6 +281,10 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         losses = self(**data)
         loss, log_vars = self._parse_losses(losses)
 
+        if compression_ctrl is not None:
+            compression_loss = compression_ctrl.loss()
+            loss += compression_loss
+
         outputs = dict(
             loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
 
@@ -254,7 +304,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
 
         return outputs
-
 
     def show_result(self,
                     img,

@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import sys
-
 import argparse
 import cv2
-import numpy as np
 import mmcv
+import numpy as np
+import sys
 from mmcv.parallel import collate
 
 from mmdet.apis.inference import LoadImage
@@ -187,7 +186,7 @@ def main(args):
 
             h, w, _ = img_meta['img_shape']
             display_image = display_image[:h, :w, :]
-            
+
             model.show(display_image, result, score_thr=args.score_thr, wait_time=wait_key)
 
         batch_size = data['img'][0].size(0)
