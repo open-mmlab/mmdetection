@@ -5,6 +5,7 @@ import glob
 import os
 import os.path as osp
 import tempfile
+from collections import OrderedDict
 
 import mmcv
 import numpy as np
@@ -301,7 +302,7 @@ class CityscapesDataset(CocoDataset):
         else:
             result_dir = osp.join(tmp_dir.name, 'results')
 
-        eval_results = {}
+        eval_results = OrderedDict()
         print_log(f'Evaluating results under {result_dir} ...', logger=logger)
 
         # set global states in cityscapes evaluation API
