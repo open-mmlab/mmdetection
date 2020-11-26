@@ -61,7 +61,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         assert isinstance(imgs, list)
         return [self.extract_feat(img) for img in imgs]
 
-    @abstractmethod
     def forward_train(self, imgs, img_metas, **kwargs):
         """
         Args:
@@ -74,7 +73,12 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 :class:`mmdet.datasets.pipelines.Collect`.
             kwargs (keyword arguments): Specific to concrete implementation.
         """
-        pass
+        # NOTE the batched image size information may be useful, e.g.
+        # in DETR, this is needed for the construction of masks, which is
+        # then used for the transformer_head.
+        input_img_shape = tuple(imgs[0].size()[-2:])
+        for img_meta in img_metas:
+            img_meta['input_img_shape'] = input_img_shape
 
     async def async_simple_test(self, img, img_metas, **kwargs):
         raise NotImplementedError

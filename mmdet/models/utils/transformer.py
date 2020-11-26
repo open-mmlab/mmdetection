@@ -89,6 +89,7 @@ class MultiheadAttention(nn.Module):
             value=value,
             attn_mask=attn_mask,
             key_padding_mask=key_padding_mask)[0]
+
         return residual + self.dropout(out)
 
     def __repr__(self):
@@ -672,10 +673,10 @@ class Transformer(nn.Module):
                                           dropout, decoder_order, act_cfg,
                                           norm_cfg, num_fcs,
                                           return_intermediate_dec)
-        # follow the official DETR to init parameters
-        self.init_weights()
 
     def init_weights(self, distribution='uniform'):
+        """Initialize the transformer weights."""
+        # follow the official DETR to init parameters
         for m in self.modules():
             if hasattr(m, 'weight') and m.weight.dim() > 1:
                 xavier_init(m, distribution=distribution)
