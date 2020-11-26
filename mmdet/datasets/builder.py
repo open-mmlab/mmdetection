@@ -25,6 +25,7 @@ PIPELINES = Registry('pipeline')
 
 from .dataset_wrappers import ConcatDataset, RepeatDataset
 from .coco import CocoDataset, ConcatenatedCocoDataset
+from .coco_with_text import CocoWithTextDataset, ConcatenatedCocoWithTextDataset
 
 
 def get_image_prefixes_auto(cfg, ann_files):
@@ -73,7 +74,9 @@ def _concat_dataset(cfg, default_args=None):
         datasets.append(build_dataset(data_cfg, default_args))
 
     concatenated_dataset = ConcatDataset(datasets)
-    if all(isinstance(dataset, CocoDataset) for dataset in concatenated_dataset.datasets):
+    if all(isinstance(dataset, CocoWithTextDataset) for dataset in concatenated_dataset.datasets):
+        concatenated_dataset = ConcatenatedCocoWithTextDataset(concatenated_dataset)
+    elif all(isinstance(dataset, CocoDataset) for dataset in concatenated_dataset.datasets):
         concatenated_dataset = ConcatenatedCocoDataset(concatenated_dataset)
     return concatenated_dataset
 

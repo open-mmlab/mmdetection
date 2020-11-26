@@ -17,7 +17,7 @@ from terminaltables import AsciiTable
 from mmdet.core import eval_recalls
 from mmdet.core import text_eval
 from .builder import DATASETS
-from .coco import CocoDataset
+from .coco import CocoDataset, ConcatenatedCocoDataset
 
 
 @DATASETS.register_module()
@@ -347,3 +347,17 @@ class CocoWithTextDataset(CocoDataset):
             tmp_dir = None
         result_files = self.results2json(results, jsonfile_prefix)
         return result_files, tmp_dir
+
+@DATASETS.register_module()
+class ConcatenatedCocoWithTextDataset(CocoWithTextDataset, ConcatenatedCocoDataset):
+    def __init__(self, concatenated_dataset):
+        ConcatenatedCocoDataset.__init__(self, concatenated_dataset)
+        self.max_texts_num = concatenated_dataset.datasets[0].max_texts_num
+        self.alphabet = concatenated_dataset.datasets[0].alphabet
+        self.max_text_len = concatenated_dataset.datasets[0].max_text_len
+        self.EOS = concatenated_dataset.datasets[0].EOS
+
+        assert all(self.max_texts_num == x.max_texts_num for x in concatenated_dataset.datasets)
+        assert all(self.alphabet == x.alphabet for x in concatenated_dataset.datasets)
+        assert all(self.max_text_len == x.max_text_len for x in concatenated_dataset.datasets)
+        assert all(self.EOS == x.EOS for x in concatenated_dataset.datasets)
