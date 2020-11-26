@@ -84,7 +84,7 @@ train_pipeline = [
                                      (672, 1333), (704, 1333), (736, 1333),
                                      (768, 1333), (800, 1333)],
                           multiscale_mode='value',
-                          call_repeat=True,
+                          override=True,
                           keep_ratio=True)
                   ]]),
     dict(type='Normalize', **img_norm_cfg),

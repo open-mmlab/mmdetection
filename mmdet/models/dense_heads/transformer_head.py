@@ -362,19 +362,8 @@ class TransformerHead(AnchorFreeHead):
         bbox_targets = torch.cat(bbox_targets_list, 0)
         bbox_weights = torch.cat(bbox_weights_list, 0)
 
-        # construct factors used for rescale bboxes
-        factors = []
-        for img_meta, bbox_pred in zip(img_metas, bbox_preds):
-            img_h, img_w, _ = img_meta['img_shape']
-            factor = bbox_pred.new_tensor([img_w, img_h, img_w,
-                                           img_h]).unsqueeze(0).repeat(
-                                               bbox_pred.size(0), 1)
-            factors.append(factor)
-        factors = torch.cat(factors, 0)
-
         # classification loss
         cls_scores = cls_scores.reshape(-1, self.cls_out_channels)
-
         # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
             num_total_neg * self.bg_cls_weight
@@ -386,16 +375,30 @@ class TransformerHead(AnchorFreeHead):
         num_total_pos = loss_cls.new_tensor([num_total_pos])
         num_total_pos = torch.clamp(reduce_mean(num_total_pos), min=1).item()
 
-        # regression L1 loss
-        bbox_preds = bbox_preds.reshape(-1, 4)
-        loss_bbox = self.loss_bbox(
-            bbox_preds, bbox_targets, bbox_weights, avg_factor=num_total_pos)
+        # construct factors used for rescale bboxes
+        factors = []
+        for img_meta, bbox_pred in zip(img_metas, bbox_preds):
+            img_h, img_w, _ = img_meta['img_shape']
+            factor = bbox_pred.new_tensor([img_w, img_h, img_w,
+                                           img_h]).unsqueeze(0).repeat(
+                                               bbox_pred.size(0), 1)
+            factors.append(factor)
+        factors = torch.cat(factors, 0)
 
-        # regression iou loss, defaultly giou loss
+        # DETR regress the relative position of boxes (cxcywh) in the image,
+        # thus the learning target is normalized by the image size. So here
+        # we need to re-scale them for calculating IoU loss
+        bbox_preds = bbox_preds.reshape(-1, 4)
         bboxes = bbox_cxcywh_to_xyxy(bbox_preds) * factors
         bboxes_gt = bbox_cxcywh_to_xyxy(bbox_targets) * factors
+
+        # regression IoU loss, defaultly GIoU loss
         loss_iou = self.loss_iou(
             bboxes, bboxes_gt, bbox_weights, avg_factor=num_total_pos)
+
+        # regression L1 loss
+        loss_bbox = self.loss_bbox(
+            bbox_preds, bbox_targets, bbox_weights, avg_factor=num_total_pos)
         return loss_cls, loss_bbox, loss_iou
 
     def get_targets(self,
@@ -513,6 +516,10 @@ class TransformerHead(AnchorFreeHead):
         bbox_weights = torch.zeros_like(bbox_pred)
         bbox_weights[pos_inds] = 1.0
         img_h, img_w, _ = img_meta['img_shape']
+
+        # DETR regress the relative position of boxes (cxcywh) in the image.
+        # Thus the learning target should be normalized by the image size, also
+        # the box format should be converted from defaultly x1y1x2y2 to cxcywh.
         factor = bbox_pred.new_tensor([img_w, img_h, img_w,
                                        img_h]).unsqueeze(0)
         pos_gt_bboxes_normalized = sampling_result.pos_gt_bboxes / factor

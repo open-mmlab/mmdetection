@@ -52,6 +52,10 @@ class Resize(object):
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
+        override (bool): Whether to override `scale` and `scale_factor` so as
+            to call resize twice. Default False. If True, after the first
+            resizing, the existed `scale` and `scale_factor` will be ignored
+            so the second resizing can be allowed.
     """
 
     def __init__(self,
@@ -60,7 +64,7 @@ class Resize(object):
                  ratio_range=None,
                  keep_ratio=True,
                  backend='cv2',
-                 call_repeat=False):
+                 override=False):
         if img_scale is None:
             self.img_scale = None
         else:
@@ -81,7 +85,7 @@ class Resize(object):
         self.multiscale_mode = multiscale_mode
         self.ratio_range = ratio_range
         self.keep_ratio = keep_ratio
-        self.call_repeat = call_repeat
+        self.override = override
 
     @staticmethod
     def random_select(img_scales):
@@ -277,7 +281,7 @@ class Resize(object):
             else:
                 self._random_scale(results)
         else:
-            if not self.call_repeat:
+            if not self.override:
                 assert 'scale_factor' not in results, (
                     'scale and scale_factor cannot be both set.')
             else:
