@@ -41,6 +41,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                      strides=[4, 8, 16, 32, 64]),
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
+                     clip_border=True,
                      target_means=(.0, .0, .0, .0),
                      target_stds=(1.0, 1.0, 1.0, 1.0)),
                  reg_decoded_bbox=False,

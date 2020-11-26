@@ -23,6 +23,7 @@ class BBoxHead(nn.Module):
                  num_classes=80,
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
+                     clip_border=True,
                      target_means=[0., 0., 0., 0.],
                      target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
