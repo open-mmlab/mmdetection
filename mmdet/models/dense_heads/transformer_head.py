@@ -174,6 +174,7 @@ class TransformerHead(AnchorFreeHead):
 
     def init_weights(self, distribution='uniform'):
         """Initialize weights of the transformer head."""
+        # The initialization for transformer is important
         self.transformer.init_weights()
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
@@ -264,8 +265,8 @@ class TransformerHead(AnchorFreeHead):
              gt_bboxes_ignore=None):
         """"Loss function.
 
-        Defaultly only outputs from the last feature level is used for
-        computing losses.
+        Only outputs from the last feature level are used for computing
+        losses by default.
 
         Args:
             all_cls_scores_list (list[Tensor]): Classification outputs
@@ -315,9 +316,9 @@ class TransformerHead(AnchorFreeHead):
         for loss_cls_i, loss_bbox_i, loss_iou_i in zip(losses_cls[:-1],
                                                        losses_bbox[:-1],
                                                        losses_iou[:-1]):
-            loss_dict[f'loss_cls_{num_dec_layer}'] = loss_cls_i
-            loss_dict[f'loss_bbox_{num_dec_layer}'] = loss_bbox_i
-            loss_dict[f'loss_iou_{num_dec_layer}'] = loss_iou_i
+            loss_dict[f'd{num_dec_layer}.loss_cls'] = loss_cls_i
+            loss_dict[f'd{num_dec_layer}.loss_bbox'] = loss_bbox_i
+            loss_dict[f'd{num_dec_layer}.loss_iou'] = loss_iou_i
             num_dec_layer += 1
         return loss_dict
 
@@ -555,8 +556,7 @@ class TransformerHead(AnchorFreeHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        assert proposal_cfg is None, 'Only when case that proposal_cfg is ' \
-            'None is supported.'
+        assert proposal_cfg is None, '"proposal_cfg" must be None'
         outs = self(x, img_metas)
         if gt_labels is None:
             loss_inputs = outs + (gt_bboxes, img_metas)
