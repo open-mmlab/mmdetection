@@ -32,6 +32,7 @@ Welcome to MMDetection's documentation!
    :maxdepth: 2
    :caption: Notes
 
+   conventions.md
    compatibility.md
    projects.md
    changelog.md
