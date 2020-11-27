@@ -20,6 +20,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
 
     def __init__(self, text_roi_extractor, text_head, text_thr, alphabet='  ' + string.ascii_lowercase + string.digits, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.with_text = True
         self.init_text_head(text_roi_extractor, text_head)
         self.alphabet = alphabet
         self.text_thr = text_thr

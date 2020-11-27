@@ -1,3 +1,4 @@
+import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -342,8 +343,12 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         """
         img = mmcv.imread(img)
         img = img.copy()
+        text_results = None
         if isinstance(result, tuple):
-            bbox_result, segm_result, text_results = result
+            if len(result) == 2:
+                bbox_result, segm_result = result
+            else:
+                bbox_result, segm_result, text_results = result
             if isinstance(segm_result, tuple):
                 segm_result = segm_result[0]  # ms rcnn
         else:
@@ -363,14 +368,14 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 np.random.randint(0, 256, (1, 3), dtype=np.uint8)
                 for _ in range(max(labels) + 1)
             ]
-            import cv2
             for i in inds:
                 i = int(i)
                 color_mask = color_masks[labels[i]]
                 mask = segms[i].astype(np.bool)
                 img[mask] = img[mask] * 0.5 + color_mask * 0.5
-                p0 = int(bboxes[i][0]), int(bboxes[i][3])
-                cv2.putText(img, text_results[i], p0, cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255))
+                if text_results is not None:
+                    p0 = int(bboxes[i][0]), int(bboxes[i][3])
+                    cv2.putText(img, text_results[i], p0, cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255))
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
@@ -379,7 +384,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             img,
             bboxes,
             labels,
-            class_names=[''],
+            class_names=['' for _ in self.CLASSES] if text_results is not None else self.CLASSES,
             score_thr=score_thr,
             bbox_color=bbox_color,
             text_color=text_color,

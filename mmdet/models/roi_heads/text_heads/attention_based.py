@@ -155,9 +155,6 @@ class DecoderAttention2d(nn.Module):
         if isinstance(self.decoder, nn.GRU):
             return output, hidden, attn_weights
 
-    def export(self, path):
-        print('I am here', path)
-
 
 @HEADS.register_module()
 class TextRecognitionHeadAttention(nn.Module):
@@ -227,8 +224,6 @@ class TextRecognitionHeadAttention(nn.Module):
         decoder_input = torch.ones([batch_size], device=features.device, dtype=torch.long) * self.decoder_sos_int
         targets = torch.tensor(targets, device=features.device, dtype=torch.long)
 
-        #predictions = []
-
         for di in range(decoder_max_seq_len):
             if isinstance(self.decoder.decoder, nn.GRU):
                 decoder_output, decoder_hidden, decoder_attention = self.decoder(
@@ -240,9 +235,6 @@ class TextRecognitionHeadAttention(nn.Module):
             if do_single_iteration_to_avoid_hanging:
                 return torch.sum(decoder_output) * 0.0
                 
-            #predictions.append(decoder_output.topk(1)[1].cpu().numpy().reshape(-1))
-            # print(targets[:, di].reshape(-1))
-            # print('---')
             mask = (targets[:, di] != 0).float()
             loss += self.criterion(decoder_output, targets[:, di]) * mask
             mask_sum = torch.sum(mask)
@@ -251,10 +243,6 @@ class TextRecognitionHeadAttention(nn.Module):
             positive_counter += mask_sum
             decoder_input = targets[:, di]
 
-        # predictions = np.transpose(predictions)
-        # print(targets.cpu().numpy()[:, :predictions.shape[1]])
-        # print(predictions)
-        # print('----------------')
         assert positive_counter > 0
         loss = torch.sum(loss) / positive_counter
         return loss.to(features.device)

@@ -156,25 +156,9 @@ def main():
     if args.shuffle:
         random.shuffle(content['images'])
 
-    counter = 0
-
     for image_info in tqdm(content['images']):
         path = os.path.join(args.root, image_info['file_name'])
-        print(image_info)
         image = cv2.imread(path)
-        image2 = cv2.imread(path, cv2.IMREAD_UNCHANGED)
-        if image.shape[:2] != image2.shape[:2]:
-            print(image.shape, 'vs', image2.shape)
-            counter += 1
-            print('bad orientation: ', path, counter)
-            args.delay = 0
-            height_ratio = image2.shape[0] / args.limit_imshow_size[0]
-            width_ratio = image2.shape[1] / args.limit_imshow_size[1]
-            if height_ratio > 1 or width_ratio > 1:
-                ratio = height_ratio if height_ratio > width_ratio else width_ratio
-                new_size = int(floor(image2.shape[1] / ratio)), int(floor(image2.shape[0] / ratio))
-                image2 = cv2.resize(image2, new_size)
-            cv2.imshow('image2', image2)
         if image is None:
             print(path)
 
@@ -211,7 +195,6 @@ def main():
         cv2.imshow('image', image)
         if cv2.waitKey(args.delay) == 27:
             break
-        args.delay = 1
 
 
 if __name__ == '__main__':

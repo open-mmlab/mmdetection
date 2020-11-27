@@ -32,7 +32,7 @@ def postprocess(result, img_meta, num_classes=80, rescale=True):
     det_bboxes = result['boxes']
     det_labels = result['labels']
     det_masks = result.get('masks', None)
-    det_texts = result['texts']
+    det_texts = result.get('texts', None)
 
     if rescale:
         img_h, img_w = img_meta[0]['ori_shape'][:2]
@@ -54,7 +54,10 @@ def postprocess(result, img_meta, num_classes=80, rescale=True):
             mask_thr_binary=0.5,
             img_size=(img_h, img_w))
         segm_results = encode_mask_results(segm_results)
-        return bbox_results, segm_results, det_texts
+        if det_texts is not None:
+            return bbox_results, segm_results, det_texts
+        else:
+            return bbox_results, segm_results
     return bbox_results
 
 
@@ -137,19 +140,16 @@ def main(args):
     classes_num = len(dataset.CLASSES) + 1
 
     if backend == 'openvino':
-        from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO, MaskTextSpotterOpenVINO
         if cfg.model.type == 'MaskTextSpotter':
-            model = MaskTextSpotterOpenVINO(args.model,
-                                            args.model[:-3] + 'bin',
-                                            mapping_file_path=args.model[:-3] + 'mapping',
-                                            cfg=cfg,
-                                            classes=dataset.CLASSES)
+            from mmdet.utils.deployment.openvino_backend import MaskTextSpotterOpenVINO as Model
         else:
-            model = DetectorOpenVINO(args.model,
-                                     args.model[:-3] + 'bin',
-                                     mapping_file_path=args.model[:-3] + 'mapping',
-                                     cfg=cfg,
-                                     classes=dataset.CLASSES)
+            from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO as Model
+        
+        model = Model(args.model,
+                      args.model[:-3] + 'bin',
+                      mapping_file_path=args.model[:-3] + 'mapping',
+                      cfg=cfg,
+                      classes=dataset.CLASSES)
     else:
         from mmdet.utils.deployment.onnxruntime_backend import ModelONNXRuntime
         model = ModelONNXRuntime(args.model, cfg=cfg, classes=dataset.CLASSES)
@@ -158,20 +158,20 @@ def main(args):
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         im_data = data['img'][0].cpu().numpy()
-        #try:
-        result = model(im_data)
-        result = postprocess(
+        try:
+            result = model(im_data)
+            result = postprocess(
                 result,
                 data['img_metas'][0].data[0],
                 num_classes=classes_num,
                 rescale=not args.show)
-        # except Exception as ex:
-        #     print(f'\nException raised while processing item {i}:')
-        #     print(ex)
-        #     with_mask = hasattr(model.pt_model, 'with_mask') and model.pt_model.with_mask
-        #     result = empty_result(
-        #         num_classes=classes_num,
-        #         with_mask=with_mask)
+        except Exception as ex:
+            print(f'\nException raised while processing item {i}:')
+            print(ex)
+            with_mask = hasattr(model.pt_model, 'with_mask') and model.pt_model.with_mask
+            result = empty_result(
+                num_classes=classes_num,
+                with_mask=with_mask)
         results.append(result)
 
         if args.show:

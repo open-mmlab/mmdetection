@@ -337,7 +337,7 @@ class CocoDataset(CustomDataset):
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05),
-                 score_thr=None):
+                 score_thr=-1):
         """Evaluation in COCO protocol.
 
         Args:
@@ -362,30 +362,16 @@ class CocoDataset(CustomDataset):
             dict[str: float]
         """
 
-        def get_metrics_name(metric):
-            return metric.split('@')[0]
-
-        def get_metrics_params(metric):
-            metrics_name_params = metric.split('@')
-            if len(metrics_name_params) == 2:
-                return {k:v for k,v in (x.split('=') for x in metrics_name_params[1].split(','))}
-            elif len(metrics_name_params) == 1:
-                return {}
-            else:
-                raise RuntimeError(f'Failed to parse metrics: {metric}')
-
         metrics = metric if isinstance(metric, list) else [metric]
         allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast', 'f1', 'word_spotting']
         for metric in metrics:
-            if get_metrics_name(metric) not in allowed_metrics:
+            if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
         eval_results = {}
         for metric in metrics:
-            metric_params = get_metrics_params(metric)
-            metric = get_metrics_name(metric)
             cocoGt = copy.deepcopy(self.coco)
             msg = f'Evaluating {metric}...'
             if logger is None:
@@ -467,7 +453,7 @@ class CocoDataset(CustomDataset):
 
                     gt_annotations = cocoEval.cocoGt.imgToAnns
                     recall, precision, hmean, _ = text_eval(
-                        predictions, gt_annotations, float(metric_params.get('thr', 0)),
+                        predictions, gt_annotations, score_thr,
                         show_recall_graph=False,
                         use_transcriptions=metric in ['word_spotting'])
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
