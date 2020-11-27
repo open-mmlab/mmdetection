@@ -1,3 +1,4 @@
+import mmcv
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -6,6 +7,7 @@ from .utils import weighted_loss
 
 
 @weighted_loss
+@mmcv.jit(derivate=True, optimize=True, coderize=True)
 def quality_focal_loss(pred, target, beta=2.0):
     r"""Quality Focal Loss (QFL) is from `Generalized Focal Loss: Learning
     Qualified and Distributed Bounding Boxes for Dense Object Detection
@@ -50,6 +52,7 @@ def quality_focal_loss(pred, target, beta=2.0):
 
 
 @weighted_loss
+@mmcv.jit(derivate=True, optimize=True, coderize=True)
 def distribution_focal_loss(pred, label):
     r"""Distribution Focal Loss (DFL) is from `Generalized Focal Loss: Learning
     Qualified and Distributed Bounding Boxes for Dense Object Detection
