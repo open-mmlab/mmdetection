@@ -57,6 +57,13 @@ def polygon_from_points(points):
     return plg.Polygon(point_mat)
 
 
+def xywh_to_4_points(points):
+    """ Return coordinates of 4 points of the each corner instead of
+        x, y, width, height representation. """
+    x, y, w, h = points
+    return x, y, x, y + h, x + w, y + h, x + w, y
+
+
 def draw_gt_polygons(image, gt_polygons, gt_dont_care_nums):
     """ Draws groundtruth polygons on image. """
 
@@ -191,20 +198,21 @@ def parse_gt_objects(gt_annotation, use_transcription):
     gt_dont_care_polygon_nums = []
 
     for gt_object in gt_annotation:
-        polygon = polygon_from_points(gt_object['segmentation'])
+        if not gt_object['segmentation']:
+            polygon_coords = xywh_to_4_points(gt_object['bbox'])
+        else:
+            polygon_coords = gt_object['segmentation']
+        polygon = polygon_from_points(polygon_coords)
         gt_polygons_list.append(polygon)
 
-        transcription = gt_object['text']['transcription']
-
-        if transcription == '###' or transcription is None:
-            gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
-        elif use_transcription:
-            if is_word(transcription):
+        transcription = gt_object.get('text', {}).get('transcription')
+        if use_transcription:
+            if transcription == '###' or transcription is None:
+                gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
+            elif is_word(transcription):
                 transcription = strip(gt_object['transcription'])
             else:
                 gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
-
-        if use_transcription:
             gt_transcriptions.append(transcription)
 
     return gt_polygons_list, gt_dont_care_polygon_nums, gt_transcriptions
@@ -318,7 +326,7 @@ def text_eval(pr_annotations, gt_annotations, conf_thr,
     all_areas, detected_areas = [], []
     all_width, detected_width = [], []
 
-    for frame_id, _ in enumerate(gt_annotations):
+    for frame_id in gt_annotations:
 
         gt_polygons_list, gt_dont_care_polygon_nums, gt_transcriptions = parse_gt_objects(
             gt_annotations[frame_id], use_transcriptions)
