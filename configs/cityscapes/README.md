@@ -12,12 +12,12 @@
 
 ### Faster R-CNN
 
-|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | Download   |
-| :-------------: | :-----: | :-----: | :---:    | :------: | :------------: | :----: | :--------: |
-|    R-50-FPN     | pytorch |   1x    | 800-1024 |   5.2    |       -        |  40.3  | [model](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes_20200502-829424c0.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes_20200502_114915.log.json) |
+|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | Config | Download   |
+| :-------------: | :-----: | :-----: | :---:    | :------: | :------------: | :----: | :------: | :--------: |
+|    R-50-FPN     | pytorch |   1x    | 800-1024 |   5.2    |       -        |  40.3  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes_20200502-829424c0.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes_20200502_114915.log.json) |
 
 ### Mask R-CNN
 
-|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------: | :------------: | :----: | :-----: | :------: |
-|    R-50-FPN     | pytorch |   1x    | 800-1024 |   5.3    |       -        |  41.0  |  35.8   | [model](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes_20200502-6ea77f0e.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes_20200502_114915.log.json) |
+|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------: | :------------: | :----: | :-----: | :------: | :------: |
+|    R-50-FPN     | pytorch |   1x    | 800-1024 |   5.3    |       -        |  41.0  |  35.8   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes_20200502-6ea77f0e.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes_20200502_114915.log.json) |
