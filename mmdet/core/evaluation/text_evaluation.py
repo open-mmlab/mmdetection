@@ -57,12 +57,11 @@ def polygon_from_points(points):
     return plg.Polygon(point_mat)
 
 
-def refactor_to_4_points(points):
-    """Return coordinates of 4 points of the each corner instead of 2 corner points"""
-    return [points[:2] +
-            [points[0]] + [points[1] + points[3]] +
-            [points[0] + points[2]] + [points[1] + points[3]] +
-            [points[0] + points[2]] + [points[1]]]
+def xywh_to_4_points(points):
+    """ Return coordinates of 4 points of the each corner instead of
+        x, y, width, height representation. """
+    x, y, w, h = points
+    return x, y, x, y + h, x + w, y + h, x + w, y
 
 
 def draw_gt_polygons(image, gt_polygons, gt_dont_care_nums):
@@ -199,8 +198,8 @@ def parse_gt_objects(gt_annotation, use_transcription):
     gt_dont_care_polygon_nums = []
 
     for gt_object in gt_annotation:
-        if len(gt_object['segmentation']) == 0:
-            polygon_coords = refactor_to_4_points(gt_object['bbox'])
+        if not gt_object['segmentation']:
+            polygon_coords = xywh_to_4_points(gt_object['bbox'])
         else:
             polygon_coords = gt_object['segmentation']
         polygon = polygon_from_points(polygon_coords)
