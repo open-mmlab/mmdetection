@@ -54,10 +54,12 @@ class Resize(object):
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
-        override (bool): Whether to override `scale` and `scale_factor` so as
-            to call resize twice. Default False. If True, after the first
-            resizing, the existed `scale` and `scale_factor` will be ignored
-            so the second resizing can be allowed.
+        override (bool, optional): Whether to override `scale` and
+            `scale_factor` so as to call resize twice. Default False. If True,
+            after the first resizing, the existed `scale` and `scale_factor`
+            will be ignored so the second resizing can be allowed.
+            This option is a work-around for multiple times of resize in DETR.
+            Defaults to False.
     """
 
     def __init__(self,
@@ -88,6 +90,7 @@ class Resize(object):
         self.multiscale_mode = multiscale_mode
         self.ratio_range = ratio_range
         self.keep_ratio = keep_ratio
+        # TODO: refactor the override option in Resize
         self.override = override
         self.bbox_clip_border = bbox_clip_border
 
