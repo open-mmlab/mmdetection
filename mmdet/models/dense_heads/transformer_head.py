@@ -145,7 +145,6 @@ class TransformerHead(AnchorFreeHead):
         self.use_sigmoid_cls = use_sigmoid_cls
         self.embed_dims = embed_dims
         self.num_query = test_cfg['max_per_img']
-        self.background_label = num_classes
         self.fp16_enabled = False
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
@@ -234,11 +233,10 @@ class TransformerHead(AnchorFreeHead):
         # ignored positions, while zero values means valid positions.
         batch_size = x.size(0)
         input_img_h, input_img_w = img_metas[0]['input_img_shape']
-        masks = torch.ones((batch_size, input_img_h, input_img_w)).to(x.device)
+        masks = x.new_ones((batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
             img_h, img_w, _ = img_metas[img_id]['img_shape']
             masks[img_id, :img_h, :img_w] = 0
-        masks = masks.to(x.dtype)
 
         x = self.input_proj(x)
         # interpolate masks to have the same spatial shape with x
@@ -507,7 +505,7 @@ class TransformerHead(AnchorFreeHead):
 
         # label targets
         labels = gt_bboxes.new_full((num_bboxes, ),
-                                    self.background_label,
+                                    self.num_classes,
                                     dtype=torch.long)
         labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds]
         label_weights = gt_bboxes.new_ones(num_bboxes)
