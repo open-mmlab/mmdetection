@@ -1,5 +1,4 @@
 import torch
-# import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, Linear, build_activation_layer
@@ -232,7 +231,7 @@ class TransformerHead(AnchorFreeHead):
         # NOTE following the official DETR repo, non-zero values representing
         # ignored positions, while zero values means valid positions.
         batch_size = x.size(0)
-        input_img_h, input_img_w = img_metas[0]['input_img_shape']
+        input_img_h, input_img_w = img_metas[0]['batch_intput_shape']
         masks = x.new_ones((batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
             img_h, img_w, _ = img_metas[img_id]['img_shape']
