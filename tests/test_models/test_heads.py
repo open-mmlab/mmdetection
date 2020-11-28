@@ -1261,15 +1261,15 @@ def test_transformer_head_loss():
         num_fcs=2,
         pre_norm=False,
         return_intermediate_dec=True)
-    position_encoding_cfg = dict(
-        type='SinePositionEmbedding', num_feats=2, normalize=True)
+    positional_encoding_cfg = dict(
+        type='SinePositionalEncoding', num_feats=2, normalize=True)
     self = TransformerHead(
         num_classes=4,
         in_channels=1,
         num_fcs=2,
         train_cfg=train_cfg,
         transformer=transformer_cfg,
-        position_encoding=position_encoding_cfg)
+        positional_encoding=positional_encoding_cfg)
     self.init_weights()
     feat = [
         torch.rand(1, 1, s // feat_size, s // feat_size)

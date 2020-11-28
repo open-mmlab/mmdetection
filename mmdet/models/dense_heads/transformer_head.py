@@ -7,7 +7,8 @@ from mmcv.runner import force_fp32
 from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply,
                         reduce_mean)
-from mmdet.models.utils import FFN, build_position_encoding, build_transformer
+from mmdet.models.utils import (FFN, build_positional_encoding,
+                                build_transformer)
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -25,7 +26,7 @@ class TransformerHead(AnchorFreeHead):
         num_fcs (int, optional): Number of fully-connected layers used in
             `FFN`, which is then used for the regression head. Default 2.
         transformer (dict, optional): Config for transformer.
-        position_encoding (dict, optional): Config for position encoding.
+        positional_encoding (dict, optional): Config for position encoding.
         loss_cls (dict, optional): Config of the classification loss.
             Default `CrossEntropyLoss`.
         loss_bbox (dict, optional): Config of the regression loss.
@@ -61,8 +62,8 @@ class TransformerHead(AnchorFreeHead):
                      num_fcs=2,
                      pre_norm=False,
                      return_intermediate_dec=True),
-                 position_encoding=dict(
-                     type='SinePositionEmbedding',
+                 positional_encoding=dict(
+                     type='SinePositionalEncoding',
                      num_feats=128,
                      normalize=True),
                  loss_cls=dict(
@@ -91,8 +92,9 @@ class TransformerHead(AnchorFreeHead):
         assert not use_sigmoid_cls, 'setting use_sigmoid_cls as True is ' \
             'not supported in DETR, since background is needed for the ' \
             'matching process.'
-        assert 'embed_dims' in transformer and 'num_feats' in position_encoding
-        num_feats = position_encoding['num_feats']
+        assert 'embed_dims' in transformer \
+            and 'num_feats' in positional_encoding
+        num_feats = positional_encoding['num_feats']
         embed_dims = transformer['embed_dims']
         assert num_feats * 2 == embed_dims, 'embed_dims should' \
             f' be exactly 2 times of num_feats. Found {embed_dims}' \
@@ -151,7 +153,8 @@ class TransformerHead(AnchorFreeHead):
         self.act_cfg = transformer.get('act_cfg',
                                        dict(type='ReLU', inplace=True))
         self.activate = build_activation_layer(self.act_cfg)
-        self.position_encoding = build_position_encoding(position_encoding)
+        self.positional_encoding = build_positional_encoding(
+            positional_encoding)
         self.transformer = build_transformer(transformer)
         self._init_layers()
 
@@ -242,7 +245,7 @@ class TransformerHead(AnchorFreeHead):
         masks = F.interpolate(
             masks.unsqueeze(1), size=x.shape[-2:]).to(torch.bool).squeeze(1)
         # position encoding
-        pos_embed = self.position_encoding(masks)  # [bs, embed_dim, h, w]
+        pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
         # outs_dec: [nb_dec, bs, num_query, embed_dim]
         outs_dec, _ = self.transformer(x, masks, self.query_embedding.weight,
                                        pos_embed)

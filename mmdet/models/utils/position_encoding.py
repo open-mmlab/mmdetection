@@ -4,11 +4,11 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import uniform_init
 
-from .builder import POSITION_ENCODING
+from .builder import positional_encoding
 
 
-@POSITION_ENCODING.register_module()
-class SinePositionEmbedding(nn.Module):
+@positional_encoding.register_module()
+class SinePositionalEncoding(nn.Module):
     """Position encoding with sine and cosine functions.
 
     See `End-to-End Object Detection with Transformers
@@ -35,7 +35,7 @@ class SinePositionEmbedding(nn.Module):
                  normalize=False,
                  scale=2 * math.pi,
                  eps=1e-6):
-        super(SinePositionEmbedding, self).__init__()
+        super(SinePositionalEncoding, self).__init__()
         if normalize:
             assert isinstance(scale, (float, int)), 'when normalize is set,' \
                 'scale should be provided and in float or int type, ' \
@@ -47,7 +47,7 @@ class SinePositionEmbedding(nn.Module):
         self.eps = eps
 
     def forward(self, mask):
-        """Forward function for `SinePositionEmbedding`.
+        """Forward function for `SinePositionalEncoding`.
 
         Args:
             mask (Tensor): ByteTensor mask. Non-zero values representing
@@ -89,8 +89,8 @@ class SinePositionEmbedding(nn.Module):
         return repr_str
 
 
-@POSITION_ENCODING.register_module()
-class LearnedPositionEmbedding(nn.Module):
+@positional_encoding.register_module()
+class LearnedPositionalEncoding(nn.Module):
     """Position embedding with learnable embedding weights.
 
     Args:
@@ -104,7 +104,7 @@ class LearnedPositionEmbedding(nn.Module):
     """
 
     def __init__(self, num_feats, row_num_embed=50, col_num_embed=50):
-        super(LearnedPositionEmbedding, self).__init__()
+        super(LearnedPositionalEncoding, self).__init__()
         self.row_embed = nn.Embedding(row_num_embed, num_feats)
         self.col_embed = nn.Embedding(col_num_embed, num_feats)
         self.num_feats = num_feats
@@ -118,7 +118,7 @@ class LearnedPositionEmbedding(nn.Module):
         uniform_init(self.col_embed)
 
     def forward(self, mask):
-        """Forward function for `LearnedPositionEmbedding`.
+        """Forward function for `LearnedPositionalEncoding`.
 
         Args:
             mask (Tensor): ByteTensor mask. Non-zero values representing

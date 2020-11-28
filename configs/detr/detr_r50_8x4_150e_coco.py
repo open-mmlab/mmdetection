@@ -31,8 +31,8 @@ model = dict(
             num_fcs=2,
             pre_norm=False,
             return_intermediate_dec=True),
-        position_encoding=dict(
-            type='SinePositionEmbedding', num_feats=128, normalize=True),
+        positional_encoding=dict(
+            type='SinePositionalEncoding', num_feats=128, normalize=True),
         loss_cls=dict(
             type='CrossEntropyLoss',
             bg_cls_weight=0.1,
