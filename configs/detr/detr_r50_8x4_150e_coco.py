@@ -111,8 +111,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    samples_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
@@ -125,6 +125,6 @@ optimizer = dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 # learning policy
-lr_config = dict(policy='step', step=[200])
-total_epochs = 300
+lr_config = dict(policy='step', step=[100])
+total_epochs = 150
 dist_params = dict(_delete_=True, backend='nccl', port=29504)
