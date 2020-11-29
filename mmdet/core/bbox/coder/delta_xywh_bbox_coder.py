@@ -18,14 +18,18 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
             delta coordinates
         target_stds (Sequence[float]): Denormalizing standard deviation of
             target for delta coordinates
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
     """
 
     def __init__(self,
                  target_means=(0., 0., 0., 0.),
-                 target_stds=(1., 1., 1., 1.)):
+                 target_stds=(1., 1., 1., 1.),
+                 clip_border=True):
         super(BaseBBoxCoder, self).__init__()
         self.means = target_means
         self.stds = target_stds
+        self.clip_border = clip_border
 
     def encode(self, bboxes, gt_bboxes):
         """Get box regression transformation deltas that can be used to
@@ -66,7 +70,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
         assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means, self.stds,
-                                    max_shape, wh_ratio_clip)
+                                    max_shape, wh_ratio_clip, self.clip_border)
 
         return decoded_bboxes
 
@@ -121,7 +125,8 @@ def delta2bbox(rois,
                means=(0., 0., 0., 0.),
                stds=(1., 1., 1., 1.),
                max_shape=None,
-               wh_ratio_clip=16 / 1000):
+               wh_ratio_clip=16 / 1000,
+               clip_border=True):
     """Apply deltas to shift/scale base boxes.
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are
@@ -138,6 +143,8 @@ def delta2bbox(rois,
             coordinates
         max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
 
     Returns:
         Tensor: Boxes with shape (N, 4), where columns represent
@@ -161,8 +168,8 @@ def delta2bbox(rois,
                 [0.0000, 0.3161, 4.1945, 0.6839],
                 [5.0000, 5.0000, 5.0000, 5.0000]])
     """
-    means = deltas.new_tensor(means).repeat(1, deltas.size(1) // 4)
-    stds = deltas.new_tensor(stds).repeat(1, deltas.size(1) // 4)
+    means = deltas.new_tensor(means).view(1, -1).repeat(1, deltas.size(1) // 4)
+    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(1) // 4)
     denorm_deltas = deltas * stds + means
     dx = denorm_deltas[:, 0::4]
     dy = denorm_deltas[:, 1::4]
@@ -188,10 +195,10 @@ def delta2bbox(rois,
     y1 = gy - gh * 0.5
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
-    if max_shape is not None:
+    if clip_border and max_shape is not None:
         x1 = x1.clamp(min=0, max=max_shape[1])
         y1 = y1.clamp(min=0, max=max_shape[0])
         x2 = x2.clamp(min=0, max=max_shape[1])
         y2 = y2.clamp(min=0, max=max_shape[0])
-    bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view_as(deltas)
+    bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
     return bboxes

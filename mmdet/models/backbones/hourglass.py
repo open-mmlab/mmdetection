@@ -171,7 +171,10 @@ class HourglassNet(nn.Module):
         Detector's __init__() will call backbone's init_weights() with
         pretrained as input, so we keep this function.
         """
-        pass
+        # Training Centripetal Model needs to reset parameters for Conv2d
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                m.reset_parameters()
 
     def forward(self, x):
         """Forward function."""

@@ -5,6 +5,8 @@ from mmdet.core import bbox_overlaps
 from ..builder import HEADS
 from .retina_head import RetinaHead
 
+EPS = 1e-12
+
 
 @HEADS.register_module()
 class FreeAnchorRetinaHead(RetinaHead):
@@ -260,6 +262,9 @@ class FreeAnchorRetinaHead(RetinaHead):
             Tensor: Negative bag loss in shape (num_img, num_anchors, num_classes).
         """  # noqa: E501, W605
         prob = cls_prob * (1 - box_prob)
+        # There are some cases when neg_prob = 0.
+        # This will cause the neg_prob.log() to be inf without clamp.
+        prob = prob.clamp(min=EPS, max=1 - EPS)
         negative_bag_loss = prob**self.gamma * F.binary_cross_entropy(
             prob, torch.zeros_like(prob), reduction='none')
         return (1 - self.alpha) * negative_bag_loss

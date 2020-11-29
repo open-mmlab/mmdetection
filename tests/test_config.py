@@ -1,5 +1,6 @@
 from os.path import dirname, exists, join, relpath
 
+import pytest
 import torch
 from mmcv.runner import build_optimizer
 
@@ -73,142 +74,6 @@ def test_config_build_detector():
         #     # assert detector.with_bbox
         #     head_config = config_mod.model['bbox_head']
         #     _check_bbox_head(head_config, detector.bbox_head)
-
-
-def test_config_data_pipeline():
-    """Test whether the data pipeline is valid and can process corner cases.
-
-    CommandLine:
-        xdoctest -m tests/test_config.py test_config_build_data_pipeline
-    """
-    from mmcv import Config
-    from mmdet.datasets.pipelines import Compose
-    import numpy as np
-
-    config_dpath = _get_config_directory()
-    print(f'Found config_dpath = {config_dpath}')
-
-    # Only tests a representative subset of configurations
-    # TODO: test pipelines using Albu, current Albu throw None given empty GT
-    config_names = [
-        'wider_face/ssd300_wider_face.py',
-        'pascal_voc/ssd300_voc0712.py',
-        'pascal_voc/ssd512_voc0712.py',
-        # 'albu_example/mask_rcnn_r50_fpn_1x.py',
-        'foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py',
-        'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
-        'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain_1x_coco.py',
-        'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py'
-    ]
-
-    def dummy_masks(h, w, num_obj=3, mode='bitmap'):
-        assert mode in ('polygon', 'bitmap')
-        if mode == 'bitmap':
-            masks = np.random.randint(0, 2, (num_obj, h, w), dtype=np.uint8)
-            masks = BitmapMasks(masks, h, w)
-        else:
-            masks = []
-            for i in range(num_obj):
-                masks.append([])
-                masks[-1].append(
-                    np.random.uniform(0, min(h - 1, w - 1), (8 + 4 * i, )))
-                masks[-1].append(
-                    np.random.uniform(0, min(h - 1, w - 1), (10 + 4 * i, )))
-            masks = PolygonMasks(masks, h, w)
-        return masks
-
-    print(f'Using {len(config_names)} config files')
-
-    for config_fname in config_names:
-        config_fpath = join(config_dpath, config_fname)
-        config_mod = Config.fromfile(config_fpath)
-
-        # remove loading pipeline
-        loading_pipeline = config_mod.train_pipeline.pop(0)
-        loading_ann_pipeline = config_mod.train_pipeline.pop(0)
-        config_mod.test_pipeline.pop(0)
-
-        train_pipeline = Compose(config_mod.train_pipeline)
-        test_pipeline = Compose(config_mod.test_pipeline)
-
-        print(f'Building data pipeline, config_fpath = {config_fpath}')
-
-        print(f'Test training data pipeline: \n{train_pipeline!r}')
-        img = np.random.randint(0, 255, size=(888, 666, 3), dtype=np.uint8)
-        if loading_pipeline.get('to_float32', False):
-            img = img.astype(np.float32)
-        mode = 'bitmap' if loading_ann_pipeline.get('poly2mask',
-                                                    True) else 'polygon'
-        results = dict(
-            filename='test_img.png',
-            ori_filename='test_img.png',
-            img=img,
-            img_shape=img.shape,
-            ori_shape=img.shape,
-            gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
-            gt_labels=np.array([1], dtype=np.int64),
-            gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
-        )
-        results['img_fields'] = ['img']
-        results['bbox_fields'] = ['gt_bboxes']
-        results['mask_fields'] = ['gt_masks']
-        output_results = train_pipeline(results)
-        assert output_results is not None
-
-        print(f'Test testing data pipeline: \n{test_pipeline!r}')
-        results = dict(
-            filename='test_img.png',
-            ori_filename='test_img.png',
-            img=img,
-            img_shape=img.shape,
-            ori_shape=img.shape,
-            gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
-            gt_labels=np.array([1], dtype=np.int64),
-            gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
-        )
-        results['img_fields'] = ['img']
-        results['bbox_fields'] = ['gt_bboxes']
-        results['mask_fields'] = ['gt_masks']
-        output_results = test_pipeline(results)
-        assert output_results is not None
-
-        # test empty GT
-        print('Test empty GT with training data pipeline: '
-              f'\n{train_pipeline!r}')
-        results = dict(
-            filename='test_img.png',
-            ori_filename='test_img.png',
-            img=img,
-            img_shape=img.shape,
-            ori_shape=img.shape,
-            gt_bboxes=np.zeros((0, 4), dtype=np.float32),
-            gt_labels=np.array([], dtype=np.int64),
-            gt_masks=dummy_masks(
-                img.shape[0], img.shape[1], num_obj=0, mode=mode),
-        )
-        results['img_fields'] = ['img']
-        results['bbox_fields'] = ['gt_bboxes']
-        results['mask_fields'] = ['gt_masks']
-        output_results = train_pipeline(results)
-        assert output_results is not None
-
-        print(f'Test empty GT with testing data pipeline: \n{test_pipeline!r}')
-        results = dict(
-            filename='test_img.png',
-            ori_filename='test_img.png',
-            img=img,
-            img_shape=img.shape,
-            ori_shape=img.shape,
-            gt_bboxes=np.zeros((0, 4), dtype=np.float32),
-            gt_labels=np.array([], dtype=np.int64),
-            gt_masks=dummy_masks(
-                img.shape[0], img.shape[1], num_obj=0, mode=mode),
-        )
-        results['img_fields'] = ['img']
-        results['bbox_fields'] = ['gt_bboxes']
-        results['mask_fields'] = ['gt_masks']
-        output_results = test_pipeline(results)
-        assert output_results is not None
 
 
 def _check_roi_head(config, head):
@@ -324,18 +189,27 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             _check_bbox_head(bbox_cfg, single_bbox_head)
     else:
         assert bbox_cfg['type'] == bbox_head.__class__.__name__
-        assert bbox_cfg.in_channels == bbox_head.in_channels
-        with_cls = bbox_cfg.get('with_cls', True)
-        if with_cls:
-            fc_out_channels = bbox_cfg.get('fc_out_channels', 2048)
-            assert (fc_out_channels == bbox_head.fc_cls.in_features)
-            assert bbox_cfg.num_classes + 1 == bbox_head.fc_cls.out_features
+        if bbox_cfg['type'] == 'SABLHead':
+            assert bbox_cfg.cls_in_channels == bbox_head.cls_in_channels
+            assert bbox_cfg.reg_in_channels == bbox_head.reg_in_channels
 
-        with_reg = bbox_cfg.get('with_reg', True)
-        if with_reg:
-            out_dim = (4 if bbox_cfg.reg_class_agnostic else 4 *
-                       bbox_cfg.num_classes)
-            assert bbox_head.fc_reg.out_features == out_dim
+            cls_out_channels = bbox_cfg.get('cls_out_channels', 1024)
+            assert (cls_out_channels == bbox_head.fc_cls.in_features)
+            assert (bbox_cfg.num_classes + 1 == bbox_head.fc_cls.out_features)
+        else:
+            assert bbox_cfg.in_channels == bbox_head.in_channels
+            with_cls = bbox_cfg.get('with_cls', True)
+            if with_cls:
+                fc_out_channels = bbox_cfg.get('fc_out_channels', 2048)
+                assert (fc_out_channels == bbox_head.fc_cls.in_features)
+                assert (bbox_cfg.num_classes +
+                        1 == bbox_head.fc_cls.out_features)
+
+            with_reg = bbox_cfg.get('with_reg', True)
+            if with_reg:
+                out_dim = (4 if bbox_cfg.reg_class_agnostic else 4 *
+                           bbox_cfg.num_classes)
+                assert bbox_head.fc_reg.out_features == out_dim
 
 
 def _check_anchorhead(config, head):
@@ -350,8 +224,144 @@ def _check_anchorhead(config, head):
         assert (config.feat_channels == head.atss_cls.in_channels)
         assert (config.feat_channels == head.atss_reg.in_channels)
         assert (config.feat_channels == head.atss_centerness.in_channels)
+    elif config['type'] == 'SABLRetinaHead':
+        assert (config.feat_channels == head.retina_cls.in_channels)
+        assert (config.feat_channels == head.retina_bbox_reg.in_channels)
+        assert (config.feat_channels == head.retina_bbox_cls.in_channels)
     else:
         assert (config.in_channels == head.conv_cls.in_channels)
         assert (config.in_channels == head.conv_reg.in_channels)
         assert (head.conv_cls.out_channels == num_classes * head.num_anchors)
         assert head.fc_reg.out_channels == 4 * head.num_anchors
+
+
+# Only tests a representative subset of configurations
+# TODO: test pipelines using Albu, current Albu throw None given empty GT
+@pytest.mark.parametrize(
+    'config_rpath',
+    [
+        'wider_face/ssd300_wider_face.py',
+        'pascal_voc/ssd300_voc0712.py',
+        'pascal_voc/ssd512_voc0712.py',
+        # 'albu_example/mask_rcnn_r50_fpn_1x.py',
+        'foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py',
+        'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
+        'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain_1x_coco.py',
+        'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py'
+    ])
+def test_config_data_pipeline(config_rpath):
+    """Test whether the data pipeline is valid and can process corner cases.
+
+    CommandLine:
+        xdoctest -m tests/test_config.py test_config_build_data_pipeline
+    """
+    from mmcv import Config
+    from mmdet.datasets.pipelines import Compose
+    import numpy as np
+
+    config_dpath = _get_config_directory()
+    print(f'Found config_dpath = {config_dpath}')
+
+    def dummy_masks(h, w, num_obj=3, mode='bitmap'):
+        assert mode in ('polygon', 'bitmap')
+        if mode == 'bitmap':
+            masks = np.random.randint(0, 2, (num_obj, h, w), dtype=np.uint8)
+            masks = BitmapMasks(masks, h, w)
+        else:
+            masks = []
+            for i in range(num_obj):
+                masks.append([])
+                masks[-1].append(
+                    np.random.uniform(0, min(h - 1, w - 1), (8 + 4 * i, )))
+                masks[-1].append(
+                    np.random.uniform(0, min(h - 1, w - 1), (10 + 4 * i, )))
+            masks = PolygonMasks(masks, h, w)
+        return masks
+
+    config_fpath = join(config_dpath, config_rpath)
+    cfg = Config.fromfile(config_fpath)
+
+    # remove loading pipeline
+    loading_pipeline = cfg.train_pipeline.pop(0)
+    loading_ann_pipeline = cfg.train_pipeline.pop(0)
+    cfg.test_pipeline.pop(0)
+
+    train_pipeline = Compose(cfg.train_pipeline)
+    test_pipeline = Compose(cfg.test_pipeline)
+
+    print(f'Building data pipeline, config_fpath = {config_fpath}')
+
+    print(f'Test training data pipeline: \n{train_pipeline!r}')
+    img = np.random.randint(0, 255, size=(888, 666, 3), dtype=np.uint8)
+    if loading_pipeline.get('to_float32', False):
+        img = img.astype(np.float32)
+    mode = 'bitmap' if loading_ann_pipeline.get('poly2mask',
+                                                True) else 'polygon'
+    results = dict(
+        filename='test_img.png',
+        ori_filename='test_img.png',
+        img=img,
+        img_shape=img.shape,
+        ori_shape=img.shape,
+        gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
+        gt_labels=np.array([1], dtype=np.int64),
+        gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
+    )
+    results['img_fields'] = ['img']
+    results['bbox_fields'] = ['gt_bboxes']
+    results['mask_fields'] = ['gt_masks']
+    output_results = train_pipeline(results)
+    assert output_results is not None
+
+    print(f'Test testing data pipeline: \n{test_pipeline!r}')
+    results = dict(
+        filename='test_img.png',
+        ori_filename='test_img.png',
+        img=img,
+        img_shape=img.shape,
+        ori_shape=img.shape,
+        gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
+        gt_labels=np.array([1], dtype=np.int64),
+        gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
+    )
+    results['img_fields'] = ['img']
+    results['bbox_fields'] = ['gt_bboxes']
+    results['mask_fields'] = ['gt_masks']
+    output_results = test_pipeline(results)
+    assert output_results is not None
+
+    # test empty GT
+    print('Test empty GT with training data pipeline: '
+          f'\n{train_pipeline!r}')
+    results = dict(
+        filename='test_img.png',
+        ori_filename='test_img.png',
+        img=img,
+        img_shape=img.shape,
+        ori_shape=img.shape,
+        gt_bboxes=np.zeros((0, 4), dtype=np.float32),
+        gt_labels=np.array([], dtype=np.int64),
+        gt_masks=dummy_masks(img.shape[0], img.shape[1], num_obj=0, mode=mode),
+    )
+    results['img_fields'] = ['img']
+    results['bbox_fields'] = ['gt_bboxes']
+    results['mask_fields'] = ['gt_masks']
+    output_results = train_pipeline(results)
+    assert output_results is not None
+
+    print(f'Test empty GT with testing data pipeline: \n{test_pipeline!r}')
+    results = dict(
+        filename='test_img.png',
+        ori_filename='test_img.png',
+        img=img,
+        img_shape=img.shape,
+        ori_shape=img.shape,
+        gt_bboxes=np.zeros((0, 4), dtype=np.float32),
+        gt_labels=np.array([], dtype=np.int64),
+        gt_masks=dummy_masks(img.shape[0], img.shape[1], num_obj=0, mode=mode),
+    )
+    results['img_fields'] = ['img']
+    results['bbox_fields'] = ['gt_bboxes']
+    results['mask_fields'] = ['gt_masks']
+    output_results = test_pipeline(results)
+    assert output_results is not None
