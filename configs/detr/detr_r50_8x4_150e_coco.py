@@ -127,4 +127,3 @@ optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 # learning policy
 lr_config = dict(policy='step', step=[100])
 total_epochs = 150
-dist_params = dict(_delete_=True, backend='nccl', port=29504)
