@@ -2,6 +2,7 @@ import itertools
 import logging
 import os.path as osp
 import tempfile
+from collections import OrderedDict
 
 import mmcv
 import numpy as np
@@ -413,7 +414,7 @@ class CocoDataset(CustomDataset):
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
-        eval_results = {}
+        eval_results = OrderedDict()
         cocoGt = self.coco
         for metric in metrics:
             msg = f'Evaluating {metric}...'

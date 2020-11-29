@@ -159,6 +159,9 @@ Please refer to [SABL](https://github.com/open-mmlab/mmdetection/blob/master/con
 ### CentripetalNet
 Please refer to [CentripetalNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/centripetalnet) for details.
 
+### ResNeSt
+Please refer to [ResNeSt](https://github.com/open-mmlab/mmdetection/blob/master/configs/resnest) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).

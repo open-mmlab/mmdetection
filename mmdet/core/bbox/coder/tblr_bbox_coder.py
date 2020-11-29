@@ -158,7 +158,7 @@ def tblr2bboxes(priors,
         w, h = torch.split(wh, 1, dim=1)
         loc_decode[:, :2] *= h  # tb
         loc_decode[:, 2:] *= w  # lr
-    top, bottom, left, right = loc_decode.split(1, dim=1)
+    top, bottom, left, right = loc_decode.split((1, 1, 1, 1), dim=1)
     xmin = prior_centers[:, 0].unsqueeze(1) - left
     xmax = prior_centers[:, 0].unsqueeze(1) + right
     ymin = prior_centers[:, 1].unsqueeze(1) - top

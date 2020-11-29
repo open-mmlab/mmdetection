@@ -57,6 +57,7 @@ Supported backbones:
 - [x] HRNet
 - [x] RegNet
 - [x] Res2Net
+- [x] ResNeSt
 
 Supported methods:
 - [x] [RPN](configs/rpn)
