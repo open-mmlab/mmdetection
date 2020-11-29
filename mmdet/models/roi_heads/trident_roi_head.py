@@ -29,14 +29,12 @@ class TridentRoIHead(StandardRoIHead):
                     proposals=None,
                     rescale=False):
         """Test without augmentation as follows:
-
         1. Compute prediction bbox and label per branch.
         2. Merge predictions of each branch according to scores of
            bboxes, i.e., bboxes with higher score are kept to give
            top-k prediction.
         """
         assert self.with_bbox, 'Bbox head must be implemented.'
-
         assert len(img_metas) == 1
         num_branch = (self.num_branch if self.test_branch_idx == -1 else 1)
 
@@ -48,8 +46,8 @@ class TridentRoIHead(StandardRoIHead):
                 proposal_list[_:_ + 1],
                 self.test_cfg,
                 rescale=rescale)
-            det_bboxes_list.append(det_bboxes)
-            det_labels_list.append(det_labels)
+            det_bboxes_list.extend(det_bboxes)
+            det_labels_list.extend(det_labels)
 
         trident_det_bboxes = torch.cat(det_bboxes_list, 0)
         trident_det_labels = torch.cat(det_labels_list, 0)
@@ -69,7 +67,12 @@ class TridentRoIHead(StandardRoIHead):
                 det_labels = det_labels[:self.test_cfg['max_per_img']]
                 det_bboxes = det_bboxes[:self.test_cfg['max_per_img']]
 
-        bbox_results = bbox2result(det_bboxes, det_labels,
-                                   self.bbox_head.num_classes)
+        det_bboxes, det_labels = [det_bboxes], [det_labels]
+
+        bbox_results = [
+            bbox2result(det_bboxes[i], det_labels[i],
+                        self.bbox_head.num_classes)
+            for i in range(len(det_bboxes))
+        ]
 
         return bbox_results
