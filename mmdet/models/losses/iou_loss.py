@@ -10,7 +10,7 @@ from .utils import weighted_loss
 
 
 @weighted_loss
-@mmcv.jit(derivate=True, optimize=True, coderize=True)
+@mmcv.jit(derivate=True, coderize=True)
 def iou_loss(pred, target, eps=1e-6):
     """IoU loss.
 
@@ -32,7 +32,7 @@ def iou_loss(pred, target, eps=1e-6):
 
 
 @weighted_loss
-@mmcv.jit(derivate=True, optimize=True, coderize=True)
+@mmcv.jit(derivate=True, coderize=True)
 def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
     """BIoULoss.
 
@@ -78,7 +78,7 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
 
 
 @weighted_loss
-@mmcv.jit(derivate=True, optimize=True, coderize=True)
+@mmcv.jit(derivate=True, coderize=True)
 def giou_loss(pred, target, eps=1e-7):
     r"""`Generalized Intersection over Union: A Metric and A Loss for Bounding
     Box Regression <https://arxiv.org/abs/1902.09630>`_.
@@ -98,7 +98,7 @@ def giou_loss(pred, target, eps=1e-7):
 
 
 @weighted_loss
-@mmcv.jit(derivate=True, optimize=True, coderize=True)
+@mmcv.jit(derivate=True, coderize=True)
 def diou_loss(pred, target, eps=1e-7):
     r"""`Implementation of Distance-IoU Loss: Faster and Better
     Learning for Bounding Box Regression, https://arxiv.org/abs/1911.08287`_.
@@ -153,7 +153,7 @@ def diou_loss(pred, target, eps=1e-7):
 
 
 @weighted_loss
-@mmcv.jit(derivate=True, optimize=True, coderize=True)
+@mmcv.jit(derivate=True, coderize=True)
 def ciou_loss(pred, target, eps=1e-7):
     r"""`Implementation of paper `Enhancing Geometric Factors into
     Model Learning and Inference for Object Detection and Instance

@@ -8,7 +8,7 @@ from .utils import weighted_loss
 
 
 @weighted_loss
-@mmcv.jit(derivate=True, optimize=True, coderize=True)
+@mmcv.jit(derivate=True, coderize=True)
 def balanced_l1_loss(pred,
                      target,
                      beta=1.0,

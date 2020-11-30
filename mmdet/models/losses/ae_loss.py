@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from ..builder import LOSSES
 
 
-@mmcv.jit(derivate=True, optimize=True, coderize=True)
+@mmcv.jit(derivate=True, coderize=True)
 def ae_loss_per_image(tl_preds, br_preds, match):
     """Associative Embedding Loss in one image.
 

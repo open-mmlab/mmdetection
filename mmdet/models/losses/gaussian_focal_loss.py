@@ -6,7 +6,7 @@ from .utils import weighted_loss
 
 
 @weighted_loss
-@mmcv.jit(derivate=True, optimize=True, coderize=True)
+@mmcv.jit(derivate=True, coderize=True)
 def gaussian_focal_loss(pred, gaussian_target, alpha=2.0, gamma=4.0):
     """`Focal Loss <https://arxiv.org/abs/1708.02002>`_ for targets in gaussian
     distribution.
