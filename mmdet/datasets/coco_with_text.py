@@ -17,7 +17,7 @@ from terminaltables import AsciiTable
 from mmdet.core import eval_recalls
 from mmdet.core import text_eval
 from .builder import DATASETS
-from .coco import CocoDataset, ConcatenatedCocoDataset
+from .coco import CocoDataset, ConcatenatedCocoDataset, get_polygon
 
 
 @DATASETS.register_module()
@@ -100,8 +100,6 @@ class CocoWithTextDataset(CocoDataset):
                         text = []
                     else:
                         text.append(self.EOS)
-                # while len(text) < self.max_text_len:
-                #     text.append(-1)
                 text = np.array(text)
                 gt_texts.append(text)
 
@@ -131,6 +129,90 @@ class CocoWithTextDataset(CocoDataset):
             texts=gt_texts)
 
         return ann
+
+    def evaluate(self,
+                 results,
+                 metric='bbox',
+                 logger=None,
+                 jsonfile_prefix=None,
+                 classwise=False,
+                 proposal_nums=(100, 300, 1000),
+                 iou_thrs=np.arange(0.5, 0.96, 0.05),
+                 score_thr=-1):
+
+        metrics = metric if isinstance(metric, list) else [metric]
+
+        computed_metrics = ['word_spotting']
+        removed_metrics = []
+
+        for computed_metric in computed_metrics:
+            if computed_metric in metrics:
+                metrics.remove(computed_metric)
+                removed_metrics.append(computed_metric)
+        eval_results = super().evaluate(results, metrics, logger, jsonfile_prefix, classwise, proposal_nums, iou_thrs, score_thr)
+
+        result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
+
+        for metric in removed_metrics:
+            cocoGt = copy.deepcopy(self.coco)
+            msg = f'Evaluating {metric}...'
+            if logger is None:
+                msg = '\n' + msg
+            print_log(msg, logger=logger)
+
+            metric_type = 'bbox' if metric in ['word_spotting'] else metric
+            if metric_type not in result_files:
+                raise KeyError(f'{metric_type} is not in results')
+            try:
+                cocoDt = cocoGt.loadRes(result_files[metric_type])
+            except IndexError:
+                print_log(
+                    'The testing results of the whole dataset is empty.',
+                    logger=logger,
+                    level=logging.ERROR)
+                break
+
+            iou_type = 'bbox' if metric in {'word_spotting'} else metric
+            cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
+            cocoEval.params.catIds = self.cat_ids
+            cocoEval.params.imgIds = self.img_ids
+            if metric in ['word_spotting']:
+                predictions = []
+                for res in results:
+                    boxes = res[0][0]
+                    segms = res[1][0]
+                    texts = res[2] if len(res) == 3 else ['' for _,_ in enumerate(boxes)]
+
+                    per_image_predictions = []
+
+                    for bbox, segm, text in zip(boxes, segms, texts):
+                        if text or metric == 'f1':
+                            text = text.upper()
+                            contour = get_polygon(segm, bbox)
+                            per_image_predictions.append({
+                                'segmentation': contour,
+                                'score': 1.0,
+                                'text': {
+                                    'transcription': text
+                                }
+                            })
+
+                    predictions.append(per_image_predictions)
+
+                gt_annotations = cocoEval.cocoGt.imgToAnns
+                recall, precision, hmean, _ = text_eval(
+                    predictions, gt_annotations, score_thr,
+                    show_recall_graph=False,
+                    use_transcriptions=metric in ['word_spotting'])
+                print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
+                      format(recall, precision, hmean))
+                eval_results[metric + '/hmean'] = float(f'{hmean:.3f}')
+                eval_results[metric + '/precision'] = float(f'{precision:.3f}')
+                eval_results[metric + '/recall'] = float(f'{recall:.3f}')
+
+        if tmp_dir is not None:
+            tmp_dir.cleanup()
+        return eval_results
 
 
 @DATASETS.register_module()

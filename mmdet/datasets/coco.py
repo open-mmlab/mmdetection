@@ -4,12 +4,14 @@ import logging
 import os.path as osp
 import tempfile
 
+import cv2
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
 import os
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+from pycocotools.mask import decode
 from terminaltables import AsciiTable
 
 from mmdet.core import eval_recalls
@@ -17,6 +19,19 @@ from mmdet.core import text_eval
 from .builder import DATASETS
 from .custom import CustomDataset
 
+
+def get_polygon(segm, bbox):
+    mask = decode(segm)
+    contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]
+    if contours:
+        contour = sorted(contours, key=lambda x: -cv2.contourArea(x))[0]
+        contour = cv2.boxPoints(cv2.minAreaRect(contour)).reshape(-1)
+    else:
+        xmin, ymin, xmax, ymax, _ = bbox
+        contour = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
+    contour = [int(round(x)) for x in contour]
+
+    return contour
 
 @DATASETS.register_module()
 class CocoDataset(CustomDataset):
@@ -363,7 +378,7 @@ class CocoDataset(CustomDataset):
         """
 
         metrics = metric if isinstance(metric, list) else [metric]
-        allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast', 'f1', 'word_spotting']
+        allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast', 'f1']
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
@@ -389,7 +404,7 @@ class CocoDataset(CustomDataset):
                 print_log(log_msg, logger=logger)
                 continue
 
-            metric_type = 'bbox' if metric in ['f1', 'word_spotting'] else metric
+            metric_type = 'bbox' if metric in ['f1'] else metric
             if metric_type not in result_files:
                 raise KeyError(f'{metric_type} is not in results')
             try:
@@ -401,7 +416,7 @@ class CocoDataset(CustomDataset):
                     level=logging.ERROR)
                 break
 
-            iou_type = 'bbox' if metric in {'proposal', 'f1', 'word_spotting'} else metric
+            iou_type = 'bbox' if metric in {'proposal', 'f1'} else metric
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
@@ -419,35 +434,20 @@ class CocoDataset(CustomDataset):
                     val = float(f'{cocoEval.stats[i + 6]:.3f}')
                     eval_results[item] = val
             else:
-                if metric in ['f1', 'word_spotting']:
-                    from pycocotools.mask import decode
-                    import cv2
+                if metric in ['f1']:
                     predictions = []
                     for res in results:
                         boxes = res[0][0]
                         segms = res[1][0]
-                        texts = res[2]
 
                         per_image_predictions = []
 
-                        for bbox, segm, text in zip(boxes, segms, texts):
-                            if text or metric == 'f1':
-                                text = text.upper()
-                                mask = decode(segm)
-                                contours = cv2.findContours(
-                                    mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]
-                                if contours:
-                                    contour = sorted(
-                                        contours, key=lambda x: -cv2.contourArea(x))[0]
-                                    contour = cv2.boxPoints(cv2.minAreaRect(contour)).reshape(-1)
-                                else:
-                                    # print('Used bbox')
-                                    xmin, ymin, xmax, ymax, conf = bbox
-                                    contour = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
-                                contour = [int(round(x)) for x in contour]
-                                per_image_predictions.append({'segmentation': contour, 'score': 1.0, 'text': {
-                                    'transcription': text
-                                }})
+                        for bbox, segm in zip(boxes, segms):
+                            contour = get_polygon(segm, bbox)
+                            per_image_predictions.append({
+                                'segmentation': contour,
+                                'score': 1.0,
+                            })
 
                         predictions.append(per_image_predictions)
 

@@ -33,7 +33,7 @@ class Encoder(nn.Module):
         self.dim_input = dim_input
 
         module_list = []
-        for i in range(num_layers):
+        for _ in range(num_layers):
             module_list.extend([
                 nn.Conv2d(dim_input, dim_internal,
                           kernel_size=3, stride=1, padding=1),
@@ -93,13 +93,13 @@ class DecoderAttention2d(nn.Module):
 
     def forward(self, input, hidden, encoder_outputs, cell=None):
         '''
-
         :param input: Shape is [1, BATCH_SIZE]
         :param hidden: Shape is [1, BATCH_SIZE, HIDDEN_DIM]
         :param cell: Shape is [1, BATCH_SIZE, HIDDEN_DIM], it is used in case of LSTM
         :param encoder_outputs: [BATCH_SIZE, T, HIDDEN_DIM]
         :return:
         '''
+
         BATCH_SIZE = hidden.shape[1]
         assert tuple(hidden.shape) == (1, BATCH_SIZE, self.hidden_size), f'{hidden.shape}'
         assert tuple(input.shape) == (BATCH_SIZE,), f'{input.shape} {input}'
@@ -126,10 +126,8 @@ class DecoderAttention2d(nn.Module):
         s = s.reshape(-1, self.flatten_feature_size)
 
         attn_weights = F.softmax(s, dim=1)
-        # print('attn_weights.shape', attn_weights.shape)
 
         attn_applied = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)
-        # print('attn_applied.shape', attn_applied.shape)
 
         attn_applied = attn_applied.permute(1, 0, 2)
         attn_applied = attn_applied.squeeze(0)
@@ -143,7 +141,6 @@ class DecoderAttention2d(nn.Module):
         elif isinstance(self.decoder, nn.LSTM):
             output, (hidden, cell) = self.decoder(output, (hidden, cell))
 
-        # to avoid removing/renaming output by mo.py
         hidden = torch.reshape(hidden, hidden.shape)
 
         output = self.out(output[0])
@@ -170,7 +167,6 @@ class TextRecognitionHeadAttention(nn.Module):
                  decoder_dim_hidden,
                  decoder_sos_index,
                  decoder_rnn_type,
-                 visualize,
                  dropout_ratio=0.0):
         super().__init__()
 
@@ -189,8 +185,6 @@ class TextRecognitionHeadAttention(nn.Module):
         self.decoder_max_seq_len = decoder_max_seq_len
         self.decoder_sos_int = decoder_sos_index
         self.decoder_dim_hidden = decoder_dim_hidden
-
-        self.visualize = visualize
 
         self.criterion = nn.NLLLoss(reduction='none')
 
@@ -226,10 +220,10 @@ class TextRecognitionHeadAttention(nn.Module):
 
         for di in range(decoder_max_seq_len):
             if isinstance(self.decoder.decoder, nn.GRU):
-                decoder_output, decoder_hidden, decoder_attention = self.decoder(
+                decoder_output, decoder_hidden, _ = self.decoder(
                     decoder_input, decoder_hidden, features)
             elif isinstance(self.decoder.decoder, nn.LSTM):
-                decoder_output, decoder_hidden, decoder_cell, decoder_attention = self.decoder(
+                decoder_output, decoder_hidden, decoder_cell, _ = self.decoder(
                     decoder_input, decoder_hidden, features, decoder_cell)
 
             if do_single_iteration_to_avoid_hanging:
@@ -258,29 +252,17 @@ class TextRecognitionHeadAttention(nn.Module):
         decoder_input = torch.ones([batch_size], device=features.device,
                                    dtype=torch.long) * self.decoder_sos_int
         decoder_outputs = []
-        if self.visualize:
-            full_attention_mask = np.zeros([112, 112], dtype=np.uint8)
-        for di in range(self.decoder_max_seq_len):
+        for _ in range(self.decoder_max_seq_len):
             if isinstance(self.decoder.decoder, nn.GRU):
-                decoder_output, decoder_hidden, decoder_attention = self.decoder(
+                decoder_output, decoder_hidden, _ = self.decoder(
                     decoder_input, decoder_hidden, features)
             elif isinstance(self.decoder.decoder, nn.LSTM):
-                decoder_output, decoder_hidden, decoder_cell, decoder_attention = self.decoder(
+                decoder_output, decoder_hidden, decoder_cell, _ = self.decoder(
                     decoder_input, decoder_hidden, features, decoder_cell)
-            if self.visualize:
-                attention = decoder_attention.cpu().detach().numpy()
-                attention = (np.reshape(attention, (-1, 28))
-                             * 500).astype(np.uint8)
-                attention = cv2.resize(attention, (112, 112))
-                full_attention_mask += attention
-                cv2.imshow('attention', attention)
-                cv2.waitKey(30)
-            topv, topi = decoder_output.topk(1)
+            _, topi = decoder_output.topk(1)
             decoder_outputs.append(decoder_output)
             decoder_input = topi.detach().view(batch_size)
         decoder_outputs = torch.stack(decoder_outputs)
-        if self.visualize:
-            cv2.imshow('full', full_attention_mask)
         return decoder_outputs
 
     def forward(self, features, target=None, masks=None):
