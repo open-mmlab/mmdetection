@@ -1,6 +1,6 @@
 ## Changelog
 
-### v2.7.0 (1/11/2020)
+### v2.7.0 (30/11/2020)
 
 - Support new method: [DETR](https://arxiv.org/abs/2005.12872), [ResNest](https://arxiv.org/abs/2004.08955), Faster R-CNN DC5.
 - Support YOLO, Mask R-CNN, and Cascade R-CNN models exportable to onnx.
