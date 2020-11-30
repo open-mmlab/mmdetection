@@ -1,3 +1,4 @@
+import os
 import pathlib
 import torch
 from functools import partial
@@ -146,6 +147,8 @@ def wrap_nncf_model(model,
 
     model.dummy_forward_fn = dummy_forward
 
+    if 'log_dir' in nncf_config:
+        os.makedirs(nncf_config['log_dir'], exist_ok=True)
     compression_ctrl, model = create_compressed_model(model,
                                                       nncf_config,
                                                       dummy_forward_fn=dummy_forward,
