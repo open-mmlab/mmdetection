@@ -35,26 +35,19 @@ class TridentRoIHead(StandardRoIHead):
            top-k prediction.
         """
         assert self.with_bbox, 'Bbox head must be implemented.'
-        assert len(img_metas) == 1
-        num_branch = (self.num_branch if self.test_branch_idx == -1 else 1)
-
-        det_bboxes_list, det_labels_list = [], []
-        for _ in range(num_branch):
-            det_bboxes, det_labels = self.simple_test_bboxes(
-                x,
-                img_metas,
-                proposal_list[_:_ + 1],
-                self.test_cfg,
-                rescale=rescale)
-            det_bboxes_list.extend(det_bboxes)
-            det_labels_list.extend(det_labels)
+        det_bboxes_list, det_labels_list = self.simple_test_bboxes(
+            x,
+            img_metas,
+            proposal_list,
+            self.test_cfg,
+            rescale=rescale)
 
         trident_det_bboxes = torch.cat(det_bboxes_list, 0)
         trident_det_labels = torch.cat(det_labels_list, 0)
 
         if trident_det_bboxes.numel() == 0:
             det_bboxes = trident_det_bboxes.new_zeros((0, 5))
-            det_labels = trident_det_bboxes.new_zeros((0, ), dtype=torch.long)
+            det_labels = trident_det_bboxes.new_zeros((0,), dtype=torch.long)
         else:
             nms_bboxes = trident_det_bboxes[:, :4]
             nms_scores = trident_det_bboxes[:, 4].contiguous()
