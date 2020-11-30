@@ -104,6 +104,7 @@ Supported methods:
 - [x] [YOLACT](configs/yolact/README.md)
 - [x] [CentripetalNet](configs/centripetalnet/README.md)
 - [x] [VFNet](configs/vfnet/README.md)
+- [x] [DETR](configs/detr/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
