@@ -7,7 +7,7 @@
 
 #### New Features
 
-- Support [DETR](https://arxiv.org/abs/2005.12872) (#4201)
+- Support [DETR](https://arxiv.org/abs/2005.12872) (#4201, #4206)
 - Support to link the best checkpoint in training (#3773)
 - Support to override config through options in inference.py (#4175)
 - Support YOLO, Mask R-CNN, and Cascade R-CNN models exportable to onnx (#4087, #4083)
@@ -15,7 +15,7 @@
 - Support unclip border bbox regression (#4076)
 - Add tpfp func in evaluating AP (#4069)
 - Support mixed precision training of SSD detector with other backbones (#4081)
-- Add Faster rcnn c5 (#4043)
+- Add Faster R-CNN DC5 models (#4043)
 
 #### Bug Fixes
 
