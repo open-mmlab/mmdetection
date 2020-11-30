@@ -44,7 +44,7 @@ class TridentRoIHead(StandardRoIHead):
 
         for _ in range(len(det_bboxes_list)):
             if det_bboxes_list[_].shape[0] == 0:
-                det_bboxes_list[_] = det_bboxes_list[_].new_empty(shape=(0, 5))
+                det_bboxes_list[_] = det_bboxes_list[_].new_empty((0, 5))
         trident_det_bboxes = torch.cat(det_bboxes_list, 0)
         trident_det_labels = torch.cat(det_labels_list, 0)
 
