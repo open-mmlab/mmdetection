@@ -2,7 +2,7 @@
 
 ## Introduction
 
-We provide the config files for DETR:[End-to-End Object Detection with Transformers](https://arxiv.org/abs/2005.12872)).
+We provide the config files for DETR: [End-to-End Object Detection with Transformers](https://arxiv.org/abs/2005.12872).
 
 ```BibTeX
 @inproceedings{detr,
