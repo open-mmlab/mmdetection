@@ -155,6 +155,8 @@ def wrap_nncf_model(model,
                                                       resuming_state_dict=resuming_state_dict)
     model = change_export_func_first_conv(model)
 
+    model.export = getattr(model, 'export')
+
     return compression_ctrl, model
 
 
