@@ -399,3 +399,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             warnings.warn('show==False and out_file is not specified, only '
                           'result image will be returned')
             return img
+
+
+    def export(self, img, img_metas, **kwargs):
+        with self.forward_export_context(img_metas):
+            torch.onnx.export(self, img, **kwargs)

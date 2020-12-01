@@ -81,20 +81,19 @@ def export_to_onnx(model,
                     output_names.append('text_features')
                     dynamic_axes['text_features'] = {0: 'objects_num'}
         with torch.no_grad():
-            with model.forward_export_context(data['img_metas']):
-                torch.onnx.export(model,
-                                  data['img'],
-                                  export_name,
-                                  verbose=verbose,
-                                  opset_version=opset,
-                                  strip_doc_string=strip_doc_string,
-                                  operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
-                                  input_names=['image'],
-                                  output_names=output_names,
-                                  dynamic_axes=dynamic_axes,
-                                  keep_initializers_as_inputs=True,
-                                  **kwargs
-                )
+            model.export(
+                **data,
+                export_name=export_name,
+                verbose=verbose,
+                opset_version=opset,
+                strip_doc_string=strip_doc_string,
+                operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
+                input_names=['image'],
+                output_names=output_names,
+                dynamic_axes=dynamic_axes,
+                keep_initializers_as_inputs=True,
+                **kwargs
+            )
 
 
 def check_onnx_model(export_name):
@@ -160,13 +159,13 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, 
     if with_text:
         onnx_model_path_tr_encoder = onnx_model_path.replace('.onnx', '_text_recognition_head_encoder.onnx')
         command_line = f'mo.py --input_model="{onnx_model_path_tr_encoder}" ' \
-                    f'--output_dir="{output_dir_path}"'
+                       f'--output_dir="{output_dir_path}"'
         print(command_line)
         run(command_line, shell=True, check=True)
 
         onnx_model_path_tr_decoder = onnx_model_path.replace('.onnx', '_text_recognition_head_decoder.onnx')
         command_line = f'mo.py --input_model="{onnx_model_path_tr_decoder}" ' \
-                    f'--output_dir="{output_dir_path}"'
+                       f'--output_dir="{output_dir_path}"'
         print(command_line)
         run(command_line, shell=True, check=True)
 
