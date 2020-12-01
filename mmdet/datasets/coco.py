@@ -404,7 +404,7 @@ class CocoDataset(CustomDataset):
                 print_log(log_msg, logger=logger)
                 continue
 
-            metric_type = 'bbox' if metric in ['f1'] else metric
+            metric_type = 'bbox' if metric == 'f1' else metric
             if metric_type not in result_files:
                 raise KeyError(f'{metric_type} is not in results')
             try:
@@ -434,7 +434,7 @@ class CocoDataset(CustomDataset):
                     val = float(f'{cocoEval.stats[i + 6]:.3f}')
                     eval_results[item] = val
             else:
-                if metric in ['f1']:
+                if metric == 'f1':
                     predictions = []
                     for res in results:
                         boxes = res[0][0]
@@ -455,7 +455,7 @@ class CocoDataset(CustomDataset):
                     recall, precision, hmean, _ = text_eval(
                         predictions, gt_annotations, score_thr,
                         show_recall_graph=False,
-                        use_transcriptions=metric in ['word_spotting'])
+                        use_transcriptions=False)
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
                           format(recall, precision, hmean))
                     eval_results[metric + '/hmean'] = float(f'{hmean:.3f}')
