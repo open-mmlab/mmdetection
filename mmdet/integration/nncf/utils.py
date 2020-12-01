@@ -7,6 +7,13 @@ try:
     _is_nncf_enabled = True
 except ImportError:
     _is_nncf_enabled = False
+except RuntimeError as _e:
+    _is_nncf_enabled = False
+    print('Attention: RuntimeError happened when tried to import nncf')
+    print('           The reason may be in absent CUDA devices')
+    print('           RuntimeError:')
+    print('           ' + str(_e), flush=True)
+
 
 
 def is_nncf_enabled():
