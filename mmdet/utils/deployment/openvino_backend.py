@@ -263,7 +263,8 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
 
         xml_path = args[0].replace('.xml', '_text_recognition_head_decoder.xml')
         self.text_decoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
-
+        self.hidden_shape = [v.shape for k, v in self.text_decoder.net.inputs.items() if k == 'prev_hidden'][0]
+        self.vocab_size = [v.shape[-1] for k, v in self.text_decoder.net.outputs.items() if k == 'output'][0]
         self.alphabet='  ' + string.ascii_lowercase + string.digits
 
 
@@ -315,28 +316,30 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
             feature = np.reshape(feature, (feature.shape[0], feature.shape[1], -1))
             feature = np.transpose(feature, (0, 2, 1))
 
-            hidden = np.zeros([1, 1, 256])
+            hidden = np.zeros(self.hidden_shape)
             prev_symbol = np.zeros((1,))
 
             eos = 1
             max_seq_len = 28
-            vocab_size = 38
-            per_feature_outputs = np.zeros([max_seq_len, vocab_size])
+            per_feature_outputs = np.zeros([max_seq_len, self.vocab_size])
 
             decoded = ''
             confidence = 1
 
             for i in range(max_seq_len):
-                o = self.text_decoder(
-                    {'prev_symbol': prev_symbol, 'prev_hidden': hidden, 'encoder_outputs': feature})
-                per_feature_outputs[i] = o['output']
-                softmaxed = softmax(o['output'], axis=1)
+                out = self.text_decoder({
+                    'prev_symbol': prev_symbol,
+                    'prev_hidden': hidden,
+                    'encoder_outputs': feature
+                })
+                per_feature_outputs[i] = out['output']
+                softmaxed = softmax(out['output'], axis=1)
                 softmaxed_max = np.max(softmaxed, axis=1)
                 confidence = confidence * softmaxed_max[0]
                 prev_symbol = np.argmax(softmaxed, axis=1)[0]
                 if prev_symbol == eos:
                     break
-                hidden = o['hidden']
+                hidden = out['hidden']
                 decoded = decoded + self.alphabet[prev_symbol]
 
             texts.append(decoded if confidence >= 0.5 else '')
