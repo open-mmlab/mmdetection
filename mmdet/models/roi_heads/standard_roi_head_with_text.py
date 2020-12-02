@@ -161,9 +161,9 @@ class StandardRoIHeadWithText(StandardRoIHead):
             areas = (pos_rois[:, 3] - pos_rois[:, 1]) * (pos_rois[:, 4] - pos_rois[:, 2])
             areas = areas.detach().cpu().numpy().reshape(-1)
             # since EOS symbol added to text, subtract it
-            text_lenths = np.array([max(len(text) - 1, 1) for text in matched_gt_texts])
+            text_lengths = np.array([max(len(text) - 1, 1) for text in matched_gt_texts])
 
-            area_per_symbol = areas / text_lenths
+            area_per_symbol = areas / text_lengths
 
             matched_gt_texts = [text if aps >= self.area_per_symbol_thr else [] for text, aps in zip(matched_gt_texts, area_per_symbol)]
 
