@@ -1,20 +1,12 @@
 import collections
 import copy
-import itertools
 import logging
-import os.path as osp
 import string
-import tempfile
 
-import mmcv
 import numpy as np
 from mmcv.utils import print_log
-import os
-from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from terminaltables import AsciiTable
 
-from mmdet.core import eval_recalls
 from mmdet.core import text_eval
 from .builder import DATASETS
 from .coco import CocoDataset, ConcatenatedCocoDataset, get_polygon
@@ -29,7 +21,8 @@ class CocoWithTextDataset(CocoDataset):
         super().pre_pipeline(results)
         results['text_fields'] = []
 
-    def __init__(self, alphabet='  ' + string.ascii_lowercase + string.digits, max_texts_num=0, *args, **kwargs):
+    def __init__(self, alphabet='  ' + string.ascii_lowercase + string.digits,
+                 max_texts_num=0, *args, **kwargs):
         self.max_texts_num = max_texts_num
         super().__init__(*args, **kwargs)
         self.alphabet = alphabet
@@ -66,7 +59,7 @@ class CocoWithTextDataset(CocoDataset):
         gt_bboxes_ignore = []
         gt_masks_ann = []
         gt_texts = []
-        for i, ann in enumerate(ann_info):
+        for ann in ann_info:
             if ann.get('ignore', False):
                 continue
             x1, y1, w, h = ann['bbox']
