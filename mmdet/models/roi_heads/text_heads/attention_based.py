@@ -188,7 +188,7 @@ class TextRecognitionHeadAttention(nn.Module):
 
         self.criterion = nn.NLLLoss(reduction='none')
 
-    def __forward_train(self, features, targets, masks):
+    def __forward_train(self, features, targets):
         decoder_max_seq_len = max(len(target) for target in targets)
         decoder_max_seq_len = max(decoder_max_seq_len, 1)
 
@@ -196,7 +196,7 @@ class TextRecognitionHeadAttention(nn.Module):
 
         do_single_iteration_to_avoid_hanging = False
         if len(valid_targets_indexes) == 0:
-            logging.warn(f'if len(valid_targets_indexes) == 0')
+            logging.warning('if len(valid_targets_indexes) == 0')
             valid_targets_indexes = torch.tensor([0])
             do_single_iteration_to_avoid_hanging = True
 
@@ -241,7 +241,7 @@ class TextRecognitionHeadAttention(nn.Module):
         loss = torch.sum(loss) / positive_counter
         return loss.to(features.device)
 
-    def __forward_test(self, features, masks):
+    def __forward_test(self, features):
         batch_size = features.shape[0]
         features = features.view(features.shape[0], features.shape[1], -1)
         features = features.permute(0, 2, 1)
@@ -276,9 +276,9 @@ class TextRecognitionHeadAttention(nn.Module):
             features = features * masks
 
         if self.training:
-            return self.__forward_train(features, target, masks)
+            return self.__forward_train(features, target)
         else:
-            return self.__forward_test(features, masks)
+            return self.__forward_test(features)
 
     def dummy_forward(self):
         return torch.zeros((1, self.decoder_max_seq_len, self.decoder.vocab_size),

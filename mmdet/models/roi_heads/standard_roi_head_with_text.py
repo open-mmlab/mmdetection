@@ -65,7 +65,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
             gt_masks (None | Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
             
-            gt_texts (None | Tensor) : true texts for each box
+            gt_texts (None | list[numpy.ndarray]) : true encoded texts for each box
                 used if the architecture supports a text task.
 
         Returns:
