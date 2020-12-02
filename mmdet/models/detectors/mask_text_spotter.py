@@ -61,6 +61,9 @@ class MaskTextSpotter(MaskRCNN):
             gt_masks (None | Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
 
+            gt_texts (None | Tensor) : true texts for each box
+                used if the architecture supports a text task.
+
             proposals : override rpn proposals with custom proposals. Use when
                 `with_rpn` is False.
 
@@ -117,10 +120,10 @@ class MaskTextSpotter(MaskRCNN):
                 pev_hidden = pev_hidden.cuda()
                 prev_cell = prev_cell.cuda()
                 encoder_outputs = encoder_outputs.cuda()
-            prev_input.requires_grad = False
-            pev_hidden.requires_grad = True
-            prev_cell.requires_grad = True
-            encoder_outputs.requires_grad = True
+            # prev_input.requires_grad = False
+            # pev_hidden.requires_grad = True
+            # prev_cell.requires_grad = True
+            # encoder_outputs.requires_grad = True
             if isinstance(net.decoder, nn.GRU):
                 torch.onnx.export(net, (prev_input, pev_hidden, encoder_outputs),
                                   path_to_onnx, verbose=True,

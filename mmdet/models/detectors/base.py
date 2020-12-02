@@ -343,12 +343,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         """
         img = mmcv.imread(img)
         img = img.copy()
-        text_results = None
         if isinstance(result, tuple):
-            if len(result) == 2:
-                bbox_result, segm_result = result
-            else:
-                bbox_result, segm_result, text_results = result
+            bbox_result, segm_result = result[:2]
+            text_results = result[2] if len(result) > 2 else None
             if isinstance(segm_result, tuple):
                 segm_result = segm_result[0]  # ms rcnn
         else:

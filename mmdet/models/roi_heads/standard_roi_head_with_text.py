@@ -15,7 +15,7 @@ import numpy as np
 
 @HEADS.register_module()
 class StandardRoIHeadWithText(StandardRoIHead):
-    """Simplest base roi head including one bbox head and one mask head.
+    """Simplest base roi head including one bbox head, one mask head and one text head.
     """
 
     def __init__(self, text_roi_extractor, text_head, text_thr, alphabet='  ' + string.ascii_lowercase + string.digits, *args, **kwargs):
@@ -64,6 +64,9 @@ class StandardRoIHeadWithText(StandardRoIHead):
 
             gt_masks (None | Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
+            
+            gt_texts (None | Tensor) : true texts for each box
+                used if the architecture supports a text task.
 
         Returns:
             dict[str, Tensor]: a dictionary of loss components

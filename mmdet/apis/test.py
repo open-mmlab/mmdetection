@@ -52,15 +52,10 @@ def single_gpu_test(model,
 
         # encode mask results
         if isinstance(result, tuple):
-            if len(result) == 2:
-                bbox_results, mask_results = result
-            else:
-                bbox_results, mask_results, text_results = result
-            encoded_mask_results = encode_mask_results(mask_results)
-            if len(result) == 2:
-                result = bbox_results, encoded_mask_results
-            else:
-                result = bbox_results, encoded_mask_results, text_results
+            result = list(result)
+            result[1] = encode_mask_results(result[1])
+            # Not sure if this is needed.
+            result = tuple(result)
         results.append(result)
 
         batch_size = len(data['img_metas'][0].data)
