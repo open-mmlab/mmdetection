@@ -116,7 +116,7 @@ class CocoWithTextDataset(CocoDataset):
         if gt_bboxes_ignore:
             gt_bboxes_ignore = np.array(gt_bboxes_ignore, dtype=np.float32)
         else:
-            gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
+            gt_bboxes_ignore = np.empty((0, 4), dtype=np.float32)
 
         seg_map = img_info['filename'].replace('jpg', 'png')
 
