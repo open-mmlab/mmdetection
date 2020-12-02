@@ -74,24 +74,11 @@ class StandardRoIHeadWithText(StandardRoIHead):
 
         assert len(gt_texts) == len(gt_bboxes), f'{gt_texts} {gt_bboxes}'
 
-        # assign gts and sample proposals
-        if self.with_bbox or self.with_mask:
-            num_imgs = len(img_metas)
-            if gt_bboxes_ignore is None:
-                gt_bboxes_ignore = [None for _ in range(num_imgs)]
-            sampling_results = []
-            for i in range(num_imgs):
-                assign_result = self.bbox_assigner.assign(
-                    proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
-                    gt_labels[i])
-                sampling_result = self.bbox_sampler.sample(
-                    assign_result,
-                    proposal_list[i],
-                    gt_bboxes[i],
-                    gt_labels[i],
-                    feats=[lvl_feat[i][None] for lvl_feat in x])
-                sampling_results.append(sampling_result)
+        losses = super().forward_train(
+            x, img_metas, proposal_list, gt_bboxes, gt_labels, gt_bboxes_ignore, gt_masks)
 
+        if self.with_text:
+            num_imgs = len(img_metas)
             text_sampling_results = []
             for i in range(num_imgs):
                 assign_result = self.text_bbox_assigner.assign(
@@ -105,27 +92,9 @@ class StandardRoIHeadWithText(StandardRoIHead):
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 text_sampling_results.append(sampling_result)
 
-        losses = dict()
-        # bbox head forward and loss
-        if self.with_bbox:
-            bbox_results = self._bbox_forward_train(x, sampling_results,
-                                                    gt_bboxes, gt_labels,
-                                                    img_metas)
-            losses.update(bbox_results['loss_bbox'])
-
-        # mask head forward and loss
-        if self.with_mask:
-            mask_results = self._mask_forward_train(x, sampling_results,
-                                                    bbox_results['bbox_feats'],
-                                                    gt_masks, img_metas)
-            # TODO: Support empty tensor input. #2280
-            if mask_results['loss_mask'] is not None:
-                losses.update(mask_results['loss_mask'])
-
-
-        text_results = self._text_forward_train(x, text_sampling_results, gt_masks, gt_texts, img_metas)
-        if text_results['loss_text'] is not None:
-            losses.update(text_results)
+            text_results = self._text_forward_train(x, text_sampling_results, gt_masks, gt_texts, img_metas)
+            if text_results['loss_text'] is not None:
+                losses.update(text_results)
 
         return losses
 
