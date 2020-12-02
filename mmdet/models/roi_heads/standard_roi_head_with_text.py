@@ -120,24 +120,26 @@ class StandardRoIHeadWithText(StandardRoIHead):
                             img_metas):
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-            matched_gt_texts = []
-            for text, res in zip(gt_texts, sampling_results):
-                assigned_gt_indices = res.pos_assigned_gt_inds.cpu().numpy()
-                matched_texts = text[assigned_gt_indices]
-                assert len(matched_texts) == len(assigned_gt_indices)
+            with torch.no_grad():
+                matched_gt_texts = []
+                for text, res in zip(gt_texts, sampling_results):
+                    assigned_gt_indices = res.pos_assigned_gt_inds.cpu().numpy()
+                    matched_texts = text[assigned_gt_indices]
+                    assert len(matched_texts) == len(assigned_gt_indices)
 
-                matched_gt_texts.extend(matched_texts)
-            if pos_rois.shape[0] == 0:
-                return dict(loss_mask=None)
+                    matched_gt_texts.extend(matched_texts)
+                if pos_rois.shape[0] == 0:
+                    return dict(loss_mask=None)
 
-            areas = (pos_rois[:, 3] - pos_rois[:, 1]) * (pos_rois[:, 4] - pos_rois[:, 2])
-            areas = areas.detach().cpu().numpy().reshape(-1)
-            # since EOS symbol added to text, subtract it
-            text_lengths = np.array([max(len(text) - 1, 1) for text in matched_gt_texts])
+                areas = (pos_rois[:, 3] - pos_rois[:, 1]) * (pos_rois[:, 4] - pos_rois[:, 2])
+                areas = areas.detach().cpu().numpy().reshape(-1)
+                # since EOS symbol added to text, subtract it
+                text_lengths = np.array([max(len(text) - 1, 1) for text in matched_gt_texts])
 
-            area_per_symbol = areas / text_lengths
+                area_per_symbol = areas / text_lengths
 
-            matched_gt_texts = [text if aps >= self.area_per_symbol_thr else [] for text, aps in zip(matched_gt_texts, area_per_symbol)]
+                matched_gt_texts = [text if aps >= self.area_per_symbol_thr else
+                                        [] for text, aps in zip(matched_gt_texts, area_per_symbol)]
 
             text_results = self._text_forward(x, pos_rois, matched_gt_texts=matched_gt_texts)
         else:
