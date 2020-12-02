@@ -216,7 +216,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
                 decoded = ''
                 confidence = 1
                 for l, c in zip(encoded, predicted_confidences):
-                    confidence = confidence * c
+                    confidence *= c
                     if l == 1:
                         break
                     decoded = decoded + self.alphabet[l]
