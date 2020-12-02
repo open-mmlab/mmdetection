@@ -20,6 +20,49 @@ from torch.onnx.symbolic_helper import parse_args
 from torch.onnx.symbolic_registry import register_op, get_registered_op, is_registered_op
 
 
+def convert_args_and_output(op_name=None):
+    def flatten(args):
+        flat_args = []
+        for a in args:
+            if isinstance(a, (list, tuple)):
+                flat_args.extend(flatten(a))
+            else:
+                flat_args.append(a)
+        return flat_args
+
+    def convert_to_cpu(args):
+        cpu_args = []
+        for a in args:
+            if isinstance(a, (list, tuple)):
+                cpu_args.extend(convert_to_cpu(a))
+            elif isinstance(a, torch.Tensor):
+                cpu_args.append(a.cpu())
+            else:
+                cpu_args.append(a)
+        return cpu_args
+
+    def as_list(x):
+        if not isinstance(x, (tuple, list)):
+            return [x, ]
+        return x
+    
+    def decorator(func):
+        @wraps(func)
+        def wrapped_function(*args):
+            if op_name == 'roi_feature_extractor':
+                # inner, rois, feats
+                ordered_args = args[0], args[2], args[1] 
+                flat_args = flatten(ordered_args)
+                outputs = as_list(func(*flat_args))
+                if len(outputs) == 1:
+                    outputs = outputs[0]
+                return outputs
+            else:
+                return func(*args)
+        return wrapped_function
+    return decorator
+
+
 def py_symbolic(op_name=None, namespace='mmdet_custom'):
     def decorator(func):
         @wraps(func)
@@ -39,8 +82,12 @@ def py_symbolic(op_name=None, namespace='mmdet_custom'):
                     def symbolic(g, *xargs):
                         symb = get_registered_op(name, namespace, opset)
                         return symb(g, *xargs)
+                
+                @convert_args_and_output(op_name=name)
+                def run_autograd_function(*autograd_args):
+                    return XFunction.apply(*autograd_args)
 
-                return XFunction.apply(*args)
+                return run_autograd_function(*args)
             else:
                 return func(*args)
         return wrapped_function
@@ -257,6 +304,27 @@ def multiclass_nms_core_symbolic(g, multi_bboxes, multi_scores, score_thr, nms_c
     return out_combined_bboxes
 
 
+def roi_feature_extractor_symbolics(g, inner, rois, *feats):
+    """
+    ExperimentalDetectronROIFeatureExtractor
+    """
+    from torch.onnx.symbolic_helper import _slice_helper
+    rois = _slice_helper(g, rois, axes=[1], starts=[1], ends=[5])
+    roi_feats = g.op('ExperimentalDetectronROIFeatureExtractor',
+        rois,
+        *feats,
+        output_size_i=inner.roi_layers[0].out_size[0],
+        pyramid_scales_i=inner.featmap_strides,
+        sampling_ratio_i=inner.roi_layers[0].sample_num,
+        image_id_i=0,
+        distribute_rois_between_levels_i=1,
+        preserve_rois_order_i=0,
+        aligned_i=1,
+        outputs=1 
+        )
+    return roi_feats
+
+
 def register_extra_symbolics(opset=10):
     assert opset >= 10
     register_op('addcmul', addcmul_symbolic, '', opset)
@@ -265,3 +333,8 @@ def register_extra_symbolics(opset=10):
     register_op('group_norm', group_norm_symbolic, '', opset)
     register_op('nms_core', nms_core_symbolic, 'mmdet_custom', opset)
     # register_op('multiclass_nms_core', multiclass_nms_core_symbolic, 'mmdet_custom', opset)
+
+
+def register_extra_symbolics_for_openvino(opset=10):
+    assert opset >= 10
+    register_op('roi_feature_extractor', roi_feature_extractor_symbolics, 'mmdet_custom', opset)
