@@ -13,6 +13,7 @@ from .pisa_roi_head import PISARoIHead
 from .point_rend_roi_head import PointRendRoIHead
 from .roi_extractors import SingleRoIExtractor
 from .shared_heads import ResLayer
+from .sparse_roi_head import SparseRoIHead
 from .standard_roi_head import StandardRoIHead
 
 __all__ = [
@@ -22,5 +23,5 @@ __all__ = [
     'Shared4Conv1FCBBoxHead', 'DoubleConvFCBBoxHead', 'FCNMaskHead',
     'HTCMaskHead', 'FusedSemanticHead', 'GridHead', 'MaskIoUHead',
     'SingleRoIExtractor', 'PISARoIHead', 'PointRendRoIHead', 'MaskPointHead',
-    'CoarseMaskHead', 'DynamicRoIHead'
+    'CoarseMaskHead', 'DynamicRoIHead', 'SparseRoIHead'
 ]
