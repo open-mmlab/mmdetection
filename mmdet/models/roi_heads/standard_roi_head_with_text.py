@@ -1,16 +1,12 @@
 import string
 
+import numpy as np
 import torch
-import torch.nn as nn
 
-from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
+from mmdet.core import bbox2roi, build_assigner, build_sampler
 from ..builder import HEADS, build_head, build_roi_extractor
 from .standard_roi_head import StandardRoIHead
-from .test_mixins import BBoxTestMixin, MaskTestMixin, dummy_pad
-
-from mmdet.core.bbox.transforms import bbox2result
-from mmdet.core.mask.transforms import mask2result
-import numpy as np
+from .test_mixins import dummy_pad
 
 
 @HEADS.register_module()
@@ -94,7 +90,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 text_sampling_results.append(sampling_result)
 
-            text_results = self._text_forward_train(x, text_sampling_results, gt_masks, gt_texts, img_metas)
+            text_results = self._text_forward_train(x, text_sampling_results, gt_texts)
             if text_results['loss_text'] is not None:
                 losses.update(text_results)
 
@@ -118,8 +114,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
         else:
             return dict(text_results=text_results)
 
-    def _text_forward_train(self, x, sampling_results, gt_masks, gt_texts,
-                            img_metas):
+    def _text_forward_train(self, x, sampling_results, gt_texts):
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
             with torch.no_grad():
@@ -153,7 +148,6 @@ class StandardRoIHeadWithText(StandardRoIHead):
                          x,
                          img_metas,
                          det_bboxes,
-                         det_masks,
                          rescale=False):
         # image shape of the first image in the batch (only one)
         ori_shape = img_metas[0]['ori_shape']
@@ -219,7 +213,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
             det_masks = self.simple_test_mask(
                 x, img_metas, det_bboxes, det_labels, rescale=False)
 
-        det_texts = self.simple_test_text(x, img_metas, det_bboxes, det_masks)
+        det_texts = self.simple_test_text(x, img_metas, det_bboxes)
 
         if postprocess:
             bbox_results, segm_results = self.postprocess(
