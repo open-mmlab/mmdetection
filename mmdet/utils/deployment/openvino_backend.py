@@ -335,7 +335,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
                 per_feature_outputs[i] = out['output']
                 softmaxed = softmax(out['output'], axis=1)
                 softmaxed_max = np.max(softmaxed, axis=1)
-                confidence = confidence * softmaxed_max[0]
+                confidence *= softmaxed_max[0]
                 prev_symbol = np.argmax(softmaxed, axis=1)[0]
                 if prev_symbol == eos:
                     break
