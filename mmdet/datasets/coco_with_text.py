@@ -107,7 +107,7 @@ class CocoWithTextDataset(CocoDataset):
             gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
             gt_labels = np.array(gt_labels, dtype=np.int64)
         else:
-            gt_bboxes = np.zeros((0, 4), dtype=np.float32)
+            gt_bboxes = np.empty((0, 4), dtype=np.float32)
             gt_labels = np.array([], dtype=np.int64)
 
         if gt_texts:
