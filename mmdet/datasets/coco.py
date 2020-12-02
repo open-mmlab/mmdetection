@@ -29,7 +29,6 @@ def get_polygon(segm, bbox):
     else:
         xmin, ymin, xmax, ymax, _ = bbox
         contour = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
-    contour = [int(round(x)) for x in contour]
 
     return contour
 

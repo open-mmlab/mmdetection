@@ -181,7 +181,7 @@ class CocoWithTextDataset(CocoDataset):
                 for res in results:
                     boxes = res[0][0]
                     segms = res[1][0]
-                    texts = res[2] if len(res) == 3 else ['' for _,_ in enumerate(boxes)]
+                    texts = res[2]
 
                     per_image_predictions = []
 
@@ -203,7 +203,7 @@ class CocoWithTextDataset(CocoDataset):
                 recall, precision, hmean, _ = text_eval(
                     predictions, gt_annotations, score_thr,
                     show_recall_graph=False,
-                    use_transcriptions=metric in ['word_spotting'])
+                    use_transcriptions=True)
                 print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
                       format(recall, precision, hmean))
                 eval_results[metric + '/hmean'] = float(f'{hmean:.3f}')

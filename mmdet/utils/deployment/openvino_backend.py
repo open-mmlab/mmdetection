@@ -264,7 +264,6 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
         xml_path = args[0].replace('.xml', '_text_recognition_head_decoder.xml')
         self.text_decoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
         self.hidden_shape = [v.shape for k, v in self.text_decoder.net.inputs.items() if k == 'prev_hidden'][0]
-        self.vocab_size = [v.shape[-1] for k, v in self.text_decoder.net.outputs.items() if k == 'output'][0]
         self.alphabet = '  ' + string.ascii_lowercase + string.digits
 
     def configure_outputs(self, required):
@@ -320,7 +319,6 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
 
             eos = 1
             max_seq_len = 28
-            per_feature_outputs = np.zeros([max_seq_len, self.vocab_size])
 
             decoded = ''
             confidence = 1
@@ -331,7 +329,6 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
                     'prev_hidden': hidden,
                     'encoder_outputs': feature
                 })
-                per_feature_outputs[i] = out['output']
                 softmaxed = softmax(out['output'], axis=1)
                 softmaxed_max = np.max(softmaxed, axis=1)
                 confidence *= softmaxed_max[0]
