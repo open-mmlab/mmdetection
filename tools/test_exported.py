@@ -140,8 +140,10 @@ def main(args):
     classes_num = len(dataset.CLASSES) + 1
 
     if backend == 'openvino':
+        extra_args = {}
         if cfg.model.type == 'MaskTextSpotter':
             from mmdet.utils.deployment.openvino_backend import MaskTextSpotterOpenVINO as Model
+            extra_args['text_recognition_thr'] = cfg['model'].get('roi_head', {}).get('text_thr', 0.0)
         else:
             from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO as Model
         
@@ -149,7 +151,8 @@ def main(args):
                       args.model[:-3] + 'bin',
                       mapping_file_path=args.model[:-3] + 'mapping',
                       cfg=cfg,
-                      classes=dataset.CLASSES)
+                      classes=dataset.CLASSES,
+                      **extra_args)
     else:
         from mmdet.utils.deployment.onnxruntime_backend import ModelONNXRuntime
         model = ModelONNXRuntime(args.model, cfg=cfg, classes=dataset.CLASSES)

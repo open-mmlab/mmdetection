@@ -249,7 +249,7 @@ class DetectorOpenVINO(ModelOpenVINO):
 
 
 class MaskTextSpotterOpenVINO(ModelOpenVINO):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, text_recognition_thr=0.5, **kwargs):
         self.with_mask = False
         super().__init__(*args,
                          required_inputs=('image', ),
@@ -265,6 +265,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
         self.text_decoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
         self.hidden_shape = [v.shape for k, v in self.text_decoder.net.inputs.items() if k == 'prev_hidden'][0]
         self.alphabet = '  ' + string.ascii_lowercase + string.digits
+        self.text_recognition_thr = text_recognition_thr
 
     def configure_outputs(self, required):
         extra_outputs = ['boxes', 'labels', 'masks', 'text_features']
@@ -299,7 +300,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
 
         output = super().__call__(inputs)
 
-        valid_detections_mask = output['boxes'][:,-1] >= 0.5
+        valid_detections_mask = output['boxes'][:,-1] > 0
         output['labels'] = output['labels'][valid_detections_mask]
         output['boxes'] = output['boxes'][valid_detections_mask]
         output['text_features'] = output['text_features'][valid_detections_mask]
@@ -323,7 +324,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
             decoded = ''
             confidence = 1
 
-            for i in range(max_seq_len):
+            for _ in range(max_seq_len):
                 out = self.text_decoder({
                     'prev_symbol': prev_symbol,
                     'prev_hidden': hidden,
@@ -338,7 +339,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
                 hidden = out['hidden']
                 decoded = decoded + self.alphabet[prev_symbol]
 
-            texts.append(decoded if confidence >= 0.5 else '')
+            texts.append(decoded if confidence >= self.text_recognition_thr else '')
 
         texts = np.array(texts)
         output['texts'] = texts
