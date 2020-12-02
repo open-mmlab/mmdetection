@@ -267,7 +267,6 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
         self.vocab_size = [v.shape[-1] for k, v in self.text_decoder.net.outputs.items() if k == 'output'][0]
         self.alphabet='  ' + string.ascii_lowercase + string.digits
 
-
     def configure_outputs(self, required):
         extra_outputs = ['boxes', 'labels', 'masks', 'text_features']
 
