@@ -249,19 +249,20 @@ class DetectorOpenVINO(ModelOpenVINO):
 
 
 class MaskTextSpotterOpenVINO(ModelOpenVINO):
-    def __init__(self, *args, text_recognition_thr=0.5, **kwargs):
+    def __init__(self, xml_file_path, *args, text_recognition_thr=0.5, **kwargs):
         self.with_mask = False
-        super().__init__(*args,
+        super().__init__(xml_file_path,
+                         *args,
                          required_inputs=('image', ),
                          required_outputs=None,
                          **kwargs)
         self.n, self.c, self.h, self.w = self.net.input_info['image'].input_data.shape
         assert self.n == 1, 'Only batch 1 is supported.'
 
-        xml_path = args[0].replace('.xml', '_text_recognition_head_encoder.xml')
+        xml_path = xml_file_path.replace('.xml', '_text_recognition_head_encoder.xml')
         self.text_encoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
 
-        xml_path = args[0].replace('.xml', '_text_recognition_head_decoder.xml')
+        xml_path = xml_file_path.replace('.xml', '_text_recognition_head_decoder.xml')
         self.text_decoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
         self.hidden_shape = [v.shape for k, v in self.text_decoder.net.inputs.items() if k == 'prev_hidden'][0]
         self.alphabet = '  ' + string.ascii_lowercase + string.digits

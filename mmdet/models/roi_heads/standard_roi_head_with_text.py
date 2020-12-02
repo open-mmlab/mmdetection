@@ -79,6 +79,8 @@ class StandardRoIHeadWithText(StandardRoIHead):
 
         if self.with_text:
             num_imgs = len(img_metas)
+            if gt_bboxes_ignore is None:
+                gt_bboxes_ignore = [None for _ in range(num_imgs)]
             text_sampling_results = []
             for i in range(num_imgs):
                 assign_result = self.text_bbox_assigner.assign(
