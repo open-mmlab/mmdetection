@@ -209,7 +209,7 @@ def parse_gt_objects(gt_annotation, use_transcription):
         if 'text' in gt_object:
             transcription = gt_object['text']['transcription']
 
-            if transcription == '###' or transcription is None or not transcription:
+            if transcription == '###' or not transcription:
                 gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
             elif use_transcription:
                 if is_word(transcription):
