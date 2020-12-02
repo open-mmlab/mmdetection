@@ -153,7 +153,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
             matched_gt_texts = []
             for text, res in zip(gt_texts, sampling_results):
-                assigned_gt_indices = list(res.pos_assigned_gt_inds.cpu().numpy())
+                assigned_gt_indices = res.pos_assigned_gt_inds.cpu().numpy()
                 matched_texts = text[assigned_gt_indices]
                 assert len(matched_texts) == len(assigned_gt_indices)
 

@@ -120,10 +120,6 @@ class MaskTextSpotter(MaskRCNN):
                 pev_hidden = pev_hidden.cuda()
                 prev_cell = prev_cell.cuda()
                 encoder_outputs = encoder_outputs.cuda()
-            # prev_input.requires_grad = False
-            # pev_hidden.requires_grad = True
-            # prev_cell.requires_grad = True
-            # encoder_outputs.requires_grad = True
             if isinstance(net.decoder, nn.GRU):
                 torch.onnx.export(net, (prev_input, pev_hidden, encoder_outputs),
                                   path_to_onnx, verbose=True,
