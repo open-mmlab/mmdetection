@@ -219,7 +219,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
                     confidence *= c
                     if l == 1:
                         break
-                    decoded = decoded + self.alphabet[l]
+                    decoded += self.alphabet[l]
 
                 decoded_texts.append(decoded if confidence >= self.text_thr else '')
 
