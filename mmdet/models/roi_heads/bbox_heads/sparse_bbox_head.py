@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import bias_init_with_prob
 from mmcv.runner import force_fp32
 
-from mmdet.core import multi_apply, multiclass_nms
+from mmdet.core import multi_apply
 from mmdet.models.builder import HEADS, build_loss
 from ... import accuracy
 from .bbox_head import BBoxHead
@@ -228,44 +228,6 @@ class SparseBBoxHead(BBoxHead):
                 losses['loss_bbox'] = bbox_pred.sum() * 0
                 losses['loss_iou'] = bbox_pred.sum() * 0
         return losses
-
-    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
-    def get_bboxes(self,
-                   rois,
-                   cls_score,
-                   bbox_pred,
-                   img_shape,
-                   scale_factor,
-                   rescale=False,
-                   cfg=None):
-        if isinstance(cls_score, list):
-            cls_score = sum(cls_score) / float(len(cls_score))
-        scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
-
-        if bbox_pred is not None:
-            bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=img_shape)
-        else:
-            bboxes = rois[:, 1:].clone()
-            if img_shape is not None:
-                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
-                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
-
-        if rescale and bboxes.size(0) > 0:
-            if isinstance(scale_factor, float):
-                bboxes /= scale_factor
-            else:
-                scale_factor = bboxes.new_tensor(scale_factor)
-                bboxes = (bboxes.reshape(bboxes.size(0), -1, 4) /
-                          scale_factor).reshape(bboxes.size()[0], -1)
-
-        if cfg is None:
-            return bboxes, scores
-        else:
-            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-            return det_bboxes, det_labels
 
 
 class DynamicConv(nn.Module):
