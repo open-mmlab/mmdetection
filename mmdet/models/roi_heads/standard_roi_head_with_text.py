@@ -179,7 +179,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
                          det_bboxes,
                          det_masks,
                          rescale=False):
-        # # image shape of the first image in the batch (only one)
+        # image shape of the first image in the batch (only one)
         ori_shape = img_metas[0]['ori_shape']
         scale_factor = img_metas[0]['scale_factor']
         if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
