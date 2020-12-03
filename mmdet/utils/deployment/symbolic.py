@@ -30,35 +30,16 @@ def convert_args_and_output(op_name=None):
                 flat_args.append(a)
         return flat_args
 
-    def convert_to_cpu(args):
-        cpu_args = []
-        for a in args:
-            if isinstance(a, (list, tuple)):
-                cpu_args.extend(convert_to_cpu(a))
-            elif isinstance(a, torch.Tensor):
-                cpu_args.append(a.cpu())
-            else:
-                cpu_args.append(a)
-        return cpu_args
+    def reorder_args_for_roi_feature_extractor(args):
+        # inner, feats, rois -> inner, rois, *feats
+        return flatten((args[0], args[2], args[1]))
 
-    def as_list(x):
-        if not isinstance(x, (tuple, list)):
-            return [x, ]
-        return x
-    
     def decorator(func):
         @wraps(func)
         def wrapped_function(*args):
             if op_name == 'roi_feature_extractor':
-                # inner, rois, feats
-                ordered_args = args[0], args[2], args[1] 
-                flat_args = flatten(ordered_args)
-                outputs = as_list(func(*flat_args))
-                if len(outputs) == 1:
-                    outputs = outputs[0]
-                return outputs
-            else:
-                return func(*args)
+                args = reorder_args_for_roi_feature_extractor(args)
+            return func(*args)
         return wrapped_function
     return decorator
 

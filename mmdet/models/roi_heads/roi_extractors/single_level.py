@@ -10,7 +10,7 @@ from mmdet.utils.deployment.symbolic import py_symbolic
 from functools import wraps
 
 
-def convert_args_to_extractor(op_name=None):
+def convert_args_to_extractor():
     def is_args_correct(args):
         return isinstance(args[1], (tuple, list)) and isinstance(args[2], torch.Tensor)
     

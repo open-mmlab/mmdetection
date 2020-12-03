@@ -27,7 +27,6 @@ from mmdet.integration.nncf import (check_nncf_is_enabled,
                                     get_uncompressed_model, is_checkpoint_nncf,
                                     wrap_nncf_model)
 from mmdet.models import detectors
-from mmdet.models.roi_heads import SingleRoIExtractor
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
 from mmdet.utils.deployment.symbolic import register_extra_symbolics, register_extra_symbolics_for_openvino
 
@@ -157,18 +156,6 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, 
     run(command_line, shell=True, check=True)
 
 
-def stub_roi_feature_extractor(model, extractor_name):
-    model = get_uncompressed_model(model)
-    if hasattr(model, extractor_name):
-        extractor = getattr(model, extractor_name)
-        if isinstance(extractor, SingleRoIExtractor):
-            setattr(model, extractor_name, ROIFeatureExtractorStub(extractor))
-        elif isinstance(extractor, torch.nn.ModuleList):
-            for i in range(len(extractor)):
-                if isinstance(extractor[i], SingleRoIExtractor):
-                    extractor[i] = ROIFeatureExtractorStub(extractor[i])
-
-
 def optimize_onnx_graph(onnx_model_path):
     onnx_model = onnx.load(onnx_model_path)
 
@@ -212,13 +199,6 @@ def main(args):
         # TODO: apply the following string for NNCF 1.5.*
         #compression_ctrl.prepare_for_export()
     # END nncf part
-
-    '''
-    if args.target == 'openvino' and not args.alt_ssd_export:
-        if hasattr(model, 'roi_head'):
-            stub_roi_feature_extractor(model.roi_head, 'bbox_roi_extractor')
-            stub_roi_feature_extractor(model.roi_head, 'mask_roi_extractor')
-    #'''
 
     mmcv.mkdir_or_exist(osp.abspath(args.output_dir))
     onnx_model_path = osp.join(args.output_dir,
