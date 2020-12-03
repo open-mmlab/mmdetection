@@ -21,14 +21,14 @@ from .custom import CustomDataset
 
 
 def get_polygon(segm, bbox):
-    mask = decode(segm)
-    contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]
-    if contours:
-        contour = sorted(contours, key=lambda x: -cv2.contourArea(x))[0]
-        contour = cv2.boxPoints(cv2.minAreaRect(contour)).reshape(-1)
-    else:
-        xmin, ymin, xmax, ymax, _ = bbox
-        contour = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
+    if segm is not None:
+        mask = decode(segm)
+        contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]
+        if contours:
+            contour = sorted(contours, key=lambda x: -cv2.contourArea(x))[0]
+            return  cv2.boxPoints(cv2.minAreaRect(contour)).reshape(-1)
+    xmin, ymin, xmax, ymax, _ = bbox
+    contour = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
 
     return contour
 
@@ -436,8 +436,12 @@ class CocoDataset(CustomDataset):
                 if metric == 'f1':
                     predictions = []
                     for res in results:
-                        boxes = res[0][0]
-                        segms = res[1][0]
+                        if isinstance(res[0], list):
+                            boxes = res[0][0]
+                            segms = res[1][0]
+                        else:
+                            boxes = res[0]
+                            segms = [None for _ in boxes]
 
                         per_image_predictions = []
 
