@@ -62,6 +62,10 @@ def is_checkpoint_nncf(path):
         return False
 
 
+def is_nncf_network(model):
+    return is_nncf_enabled() and isinstance(model, NNCFNetwork)
+
+
 def wrap_nncf_model(model,
                     cfg,
                     data_loader_for_init=None,
@@ -154,8 +158,6 @@ def wrap_nncf_model(model,
                                                       dummy_forward_fn=dummy_forward,
                                                       resuming_state_dict=resuming_state_dict)
     model = change_export_func_first_conv(model)
-
-    model.export = getattr(model, 'export')
 
     return compression_ctrl, model
 

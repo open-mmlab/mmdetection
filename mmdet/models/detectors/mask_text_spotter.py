@@ -29,7 +29,7 @@ class MaskTextSpotter(MaskRCNN):
             test_cfg=test_cfg,
             pretrained=pretrained)
 
-    def export(self, img, img_metas, export_name='', **kwargs):
+    def export(self, img, img_metas, f='', **kwargs):
 
         def export_to_onnx_text_recognition_decoder(net, input_size, path_to_onnx):
             net.eval()
@@ -87,19 +87,19 @@ class MaskTextSpotter(MaskRCNN):
         self.img_metas = img_metas
         self.forward_backup = self.forward
         self.forward = self.forward_export
-        torch.onnx.export(self, img, export_name, **kwargs)
+        torch.onnx.export(self, img, f, **kwargs)
         self.forward = self.forward_backup
 
         # Export of text recognition encoder
         export_to_onnx_text_recognition_encoder(
             self.roi_head.text_head.encoder,
             self.roi_head.text_head.input_feature_size,
-            export_name.replace('.onnx', '_text_recognition_head_encoder.onnx')
+            f.replace('.onnx', '_text_recognition_head_encoder.onnx')
         )
 
         # Export of text recognition decoder
         export_to_onnx_text_recognition_decoder(
             self.roi_head.text_head.decoder,
             self.roi_head.text_head.input_feature_size,
-            export_name.replace('.onnx', '_text_recognition_head_decoder.onnx')
+            f.replace('.onnx', '_text_recognition_head_decoder.onnx')
         )

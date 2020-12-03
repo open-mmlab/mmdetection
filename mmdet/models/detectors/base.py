@@ -397,6 +397,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                           'result image will be returned')
             return img
 
-    def export(self, img, img_metas, export_name, **kwargs):
+    def export(self, img, img_metas, **kwargs):
         with self.forward_export_context(img_metas):
-            torch.onnx.export(self, img, export_name, **kwargs)
+            torch.onnx.export(self, img, **kwargs)
