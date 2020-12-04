@@ -331,8 +331,9 @@ def text_eval(pr_annotations, gt_annotations, conf_thr,
     all_areas, detected_areas = [], []
     all_width, detected_width = [], []
 
-    for frame_id in gt_annotations:
+    gt_annotations = [v for k, v in sorted(gt_annotations.items(), key=lambda x:x[0])]
 
+    for frame_id, _ in enumerate(gt_annotations):
         gt_polygons_list, gt_dont_care_polygon_nums, gt_transcriptions = parse_gt_objects(
             gt_annotations[frame_id], use_transcriptions)
         pr_polygons_list, pr_confidences_list, pr_transcriptions = parse_pr_objects(
