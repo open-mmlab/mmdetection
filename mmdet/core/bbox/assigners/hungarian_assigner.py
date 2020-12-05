@@ -42,13 +42,16 @@ class HungarianAssigner(BaseAssigner):
                  bbox_weight=1.,
                  iou_weight=1.,
                  iou_calculator=dict(type='BboxOverlaps2D'),
-                 iou_mode='giou'):
+                 iou_mode='giou',
+                 focal_loss=dict(alpha=0.25, gamma=2.0),
+                 ):
         # defaultly giou cost is used in the official DETR repo.
         self.iou_mode = iou_mode
         self.cls_weight = cls_weight
         self.bbox_weight = bbox_weight
         self.iou_weight = iou_weight
         self.iou_calculator = build_iou_calculator(iou_calculator)
+        self.focal_loss = focal_loss
 
     def assign(self,
                bbox_pred,
@@ -116,14 +119,26 @@ class HungarianAssigner(BaseAssigner):
         # NLL is used, we approximate it in 1 - cls_score[gt_label].
         # The 1 is a constant that doesn't change the matching,
         # so it can be ommitted.
-        cls_score = cls_pred.softmax(-1)
-        cls_cost = -cls_score[:, gt_labels]  # [num_bboxes, num_gt]
+        # MODYFY add focal loss
+        if self.focal_loss:
+            alpha = self.focal_loss['alpha']
+            gamma = self.focal_loss['gamma']
+            eps = 1e-12
+            neg_loss = -(1 - cls_pred + eps).log() * (
+                        1 - alpha) * cls_pred.pow(gamma)
+            pos_loss = -(cls_pred + eps).log() * alpha * (1 - cls_pred).pow(
+                gamma)
+            cls_cost = pos_loss[:, gt_labels] - neg_loss[:, gt_labels]
+        else:
+            cls_score = cls_pred.softmax(-1)
+            cls_cost = -cls_score[:, gt_labels]  # [num_bboxes, num_gt]
 
         # regression L1 cost
         img_h, img_w, _ = img_meta['img_shape']
         factor = torch.Tensor([img_w, img_h, img_w,
                                img_h]).unsqueeze(0).to(gt_bboxes.device)
         gt_bboxes_normalized = gt_bboxes / factor
+        # MODYFY: xyxy p1-norm in sparse-RCNN CODE which need to review
         bbox_cost = torch.cdist(
             bbox_pred, bbox_xyxy_to_cxcywh(gt_bboxes_normalized),
             p=1)  # [num_bboxes, num_gt]

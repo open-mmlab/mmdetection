@@ -403,10 +403,20 @@ def test_hungarian_match_assigner():
     assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)
 
     # test iou mode
-    self = HungarianAssigner(iou_mode='iou')
+    self = HungarianAssigner(iou_mode='iou', focal_loss=None)
     assert self.iou_mode == 'iou'
     assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
                                 img_meta)
     assert torch.all(assign_result.gt_inds > -1)
     assert (assign_result.gt_inds > 0).sum() == gt_bboxes.size(0)
     assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)
+
+    # test focal loss mode
+    self = HungarianAssigner(iou_mode='giou', focal_loss=dict(alpha=0.25, gamma=2.0))
+    assert self.iou_mode == 'giou'
+    assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds > -1)
+    assert (assign_result.gt_inds > 0).sum() == gt_bboxes.size(0)
+    assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)
+

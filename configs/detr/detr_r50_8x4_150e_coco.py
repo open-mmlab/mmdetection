@@ -45,7 +45,7 @@ model = dict(
 train_cfg = dict(
     assigner=dict(
         type='HungarianAssigner', cls_weight=1., bbox_weight=5.,
-        iou_weight=2.))
+        iou_weight=2., focal_loss=None))
 test_cfg = dict(max_per_img=100)
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
