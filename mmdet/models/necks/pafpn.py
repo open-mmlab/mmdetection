@@ -128,7 +128,8 @@ class PAFPN(FPN):
                     orig = inputs[self.backbone_end_level - 1]
                     outs.append(self.fpn_convs[used_backbone_levels](orig))
                 elif self.add_extra_convs == 'on_lateral':
-                    outs.append(self.fpn_convs[used_backbone_levels](laterals[-1]))
+                    outs.append(
+                        self.fpn_convs[used_backbone_levels](laterals[-1]))
                 elif self.add_extra_convs == 'on_output':
                     outs.append(self.fpn_convs[used_backbone_levels](outs[-1]))
                 else:
