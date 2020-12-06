@@ -1,61 +1,37 @@
-import random
+import copy
+import warnings
 
-import numpy as np
 import torch
+from mmcv.engine import set_random_seed as mmcv_set_random_seed
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import (HOOKS, DistSamplerSeedHook, EpochBasedRunner,
-                         Fp16OptimizerHook, OptimizerHook, build_optimizer)
+from mmcv.runner import (HOOKS, DistSamplerSeedHook, Fp16OptimizerHook,
+                         OptimizerHook, build_optimizer, build_runner)
 from mmcv.utils import build_from_cfg
 
 from mmdet.core import DistEvalHook, EvalHook
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
+from mmdet.models import build_detector as build_model
 from mmdet.utils import get_root_logger
 
 
-def set_random_seed(seed, deterministic=False):
-    """Set random seed.
-
-    Args:
-        seed (int): Seed to be used.
-        deterministic (bool): Whether to set the deterministic option for
-            CUDNN backend, i.e., set `torch.backends.cudnn.deterministic`
-            to True and `torch.backends.cudnn.benchmark` to False.
-            Default: False.
-    """
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    if deterministic:
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+def set_random_seed(*args, **kwargs):
+    warnings.info('Import "set_random_seed" from mmdet.api is deprecated! '
+                  'Please import it from mmcv.engine')
+    return mmcv_set_random_seed(*args, **kwargs)
 
 
-def train_detector(model,
-                   dataset,
-                   cfg,
-                   distributed=False,
-                   validate=False,
-                   timestamp=None,
-                   meta=None):
-    logger = get_root_logger(cfg.log_level)
-
-    # prepare data loaders
-    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
-    if 'imgs_per_gpu' in cfg.data:
-        logger.warning('"imgs_per_gpu" is deprecated in MMDet V2.0. '
-                       'Please use "samples_per_gpu" instead')
-        if 'samples_per_gpu' in cfg.data:
-            logger.warning(
-                f'Got "imgs_per_gpu"={cfg.data.imgs_per_gpu} and '
-                f'"samples_per_gpu"={cfg.data.samples_per_gpu}, "imgs_per_gpu"'
-                f'={cfg.data.imgs_per_gpu} is used in this experiments')
-        else:
-            logger.warning(
-                'Automatically set "samples_per_gpu"="imgs_per_gpu"='
-                f'{cfg.data.imgs_per_gpu} in this experiments')
-        cfg.data.samples_per_gpu = cfg.data.imgs_per_gpu
+def train_launch(cfg,
+                 distributed=False,
+                 validate=False,
+                 timestamp=None,
+                 meta=None):
+    # build dataset
+    datasets = [build_dataset(cfg.data.train)]
+    if len(cfg.workflow) == 2:
+        val_dataset = copy.deepcopy(cfg.data.val)
+        val_dataset.pipeline = cfg.data.train.pipeline
+        datasets.append(build_dataset(val_dataset))
 
     data_loaders = [
         build_dataloader(
@@ -65,8 +41,14 @@ def train_detector(model,
             # cfg.gpus will be ignored if distributed
             len(cfg.gpu_ids),
             dist=distributed,
-            seed=cfg.seed) for ds in dataset
+            seed=cfg.seed) for ds in datasets
     ]
+
+    model = build_model(
+        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+    # add an attribute for visualization convenience
+    model.CLASSES = datasets[0].CLASSES
+    cfg.checkpoint_config.meta.update(CLASSES=datasets[0].CLASSES)
 
     # put model on gpus
     if distributed:
@@ -81,17 +63,22 @@ def train_detector(model,
     else:
         model = MMDataParallel(
             model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
-
-    # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
-    runner = EpochBasedRunner(
-        model,
-        optimizer=optimizer,
-        work_dir=cfg.work_dir,
-        logger=logger,
-        meta=meta)
-    # an ugly workaround to make .log and .log.json filenames the same
-    runner.timestamp = timestamp
+
+    logger = get_root_logger(cfg.log_level)
+    # build runner
+    if cfg.get('runner', None) is None:
+        cfg.runner = dict(type='EpochBasedRunner', max_epochs=cfg.total_epochs)
+    runner = build_runner(
+        cfg.runner,
+        default_args=dict(
+            model=model,
+            batch_processor=None,
+            optimizer=optimizer,
+            work_dir=cfg.work_dir,
+            timestamp=timestamp,
+            logger=logger,
+            meta=meta))
 
     # fp16 setting
     fp16_cfg = cfg.get('fp16', None)
@@ -147,4 +134,4 @@ def train_detector(model,
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
-    runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+    runner.run(data_loaders, cfg.workflow)
