@@ -62,10 +62,6 @@ def is_checkpoint_nncf(path):
         return False
 
 
-def is_nncf_network(model):
-    return is_nncf_enabled() and isinstance(model, NNCFNetwork)
-
-
 def wrap_nncf_model(model,
                     cfg,
                     data_loader_for_init=None,
@@ -172,6 +168,7 @@ def wrap_nncf_model(model,
         return args, kwargs
 
     model.dummy_forward_fn = dummy_forward
+    export_method = type(model).export
 
     if 'log_dir' in nncf_config:
         os.makedirs(nncf_config['log_dir'], exist_ok=True)
@@ -181,6 +178,7 @@ def wrap_nncf_model(model,
                                                       wrap_inputs_fn=wrap_inputs,
                                                       resuming_state_dict=resuming_state_dict)
     model = change_export_func_first_conv(model)
+    model.export = export_method.__get__(model)
 
     return compression_ctrl, model
 

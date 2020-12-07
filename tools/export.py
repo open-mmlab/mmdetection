@@ -25,7 +25,7 @@ from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 from mmdet.apis import get_fake_input, init_detector
 from mmdet.integration.nncf import (check_nncf_is_enabled,
                                     get_uncompressed_model, is_checkpoint_nncf,
-                                    wrap_nncf_model, is_nncf_network)
+                                    wrap_nncf_model)
 from mmdet.models import detectors
 from mmdet.models.roi_heads import SingleRoIExtractor
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
@@ -82,7 +82,8 @@ def export_to_onnx(model,
                     dynamic_axes['text_features'] = {0: 'objects_num'}
         
         with torch.no_grad():
-            export_params = dict(
+            model.export(
+                **data,
                 f=export_name,
                 verbose=verbose,
                 opset_version=opset,
@@ -91,21 +92,9 @@ def export_to_onnx(model,
                 input_names=['image'],
                 output_names=output_names,
                 dynamic_axes=dynamic_axes,
-                keep_initializers_as_inputs=True)
-
-            if is_nncf_network(model):
-                with model.forward_export_context(data['img_metas']):
-                    torch.onnx.export(model,
-                                      data['img'],
-                                      **export_params,
-                                      **kwargs
-                    )
-            else:
-                model.export(
-                    **data,
-                    **export_params,
-                    **kwargs
-                )
+                keep_initializers_as_inputs=True,
+                **kwargs
+            )
 
 
 def check_onnx_model(export_name):
