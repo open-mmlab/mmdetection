@@ -16,7 +16,7 @@ except ImportError:
 try:
     import albumentations
     from albumentations import Compose
-    from .albumentations_extra import *
+    from .albumentations_extra import ALBUMENTATIONS_EXTRA
 except ImportError:
     albumentations = None
     Compose = None
@@ -847,7 +847,7 @@ class Albu(object):
             try:
                 obj_cls = getattr(albumentations, obj_type)
             except AttributeError:
-                obj_cls =globals()[obj_type]
+                obj_cls = ALBUMENTATIONS_EXTRA[obj_type]
         elif inspect.isclass(obj_type):
             obj_cls = obj_type
         else:
