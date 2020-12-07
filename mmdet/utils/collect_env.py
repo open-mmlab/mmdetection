@@ -55,6 +55,8 @@ def collect_env():
     from mmdet.ops import get_compiler_version, get_compiling_cuda_version
     env_info['MMDetection Compiler'] = get_compiler_version()
     env_info['MMDetection CUDA Compiler'] = get_compiling_cuda_version()
+    from ..integration.nncf.utils import get_nncf_version
+    env_info['NNCF'] = get_nncf_version()
     return env_info
 
 
