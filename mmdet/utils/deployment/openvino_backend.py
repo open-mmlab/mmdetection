@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-
-import logging
-import numpy as np
-import os.path as osp
-import torch
 from collections import OrderedDict
+import logging
+import string
+
 from lxml import etree
+import numpy as np
 from openvino.inference_engine import IECore
+import os.path as osp
+from scipy.special import softmax
+import torch
 
 from ...models import build_detector
-
-from scipy.special import softmax
-
-import string
 
 
 class PerformanceCounters:
