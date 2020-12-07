@@ -14,5 +14,4 @@ __all__ = [
     'is_in_nncf_tracing'
     'no_nncf_trace',
     'wrap_nncf_model',
-    'is_nncf_network'
 ]
