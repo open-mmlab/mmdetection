@@ -6,7 +6,6 @@ from numpy import random
 
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-import mmdet.datasets.pipelines.albumentations_extra as albumentations_extra
 from ..builder import PIPELINES
 
 try:
@@ -17,6 +16,7 @@ except ImportError:
 try:
     import albumentations
     from albumentations import Compose
+    from .albumentations_extra import *
 except ImportError:
     albumentations = None
     Compose = None
@@ -847,8 +847,7 @@ class Albu(object):
             try:
                 obj_cls = getattr(albumentations, obj_type)
             except AttributeError:
-                obj_cls = getattr(albumentations_extra, obj_type)
-
+                obj_cls =globals()[obj_type]
         elif inspect.isclass(obj_type):
             obj_cls = obj_type
         else:
