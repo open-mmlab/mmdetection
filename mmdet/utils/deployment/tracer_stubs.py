@@ -131,8 +131,8 @@ class TracerStub(nn.Module):
             for actual_output, output in zip(actual_outputs, outputs):
                 output[...] = actual_output.cpu()
 
-        # Restore storage device for outputs.
-        outputs = list(output.to(device) for output, device in zip(outputs, devices))
+            # Restore storage device for outputs.
+            outputs = list(output.to(device) for output, device in zip(outputs, devices))
 
         if self.num_outputs == 1:
             outputs = outputs[0]

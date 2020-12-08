@@ -1,14 +1,17 @@
+import copy
 import itertools
 import logging
 import os.path as osp
 import tempfile
 
+import cv2
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
 import os
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+from pycocotools.mask import decode
 from terminaltables import AsciiTable
 
 from mmdet.core import eval_recalls
@@ -16,6 +19,18 @@ from mmdet.core import text_eval
 from .builder import DATASETS
 from .custom import CustomDataset
 
+
+def get_polygon(segm, bbox):
+    if segm is not None:
+        mask = decode(segm)
+        contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]
+        if contours:
+            contour = sorted(contours, key=lambda x: -cv2.contourArea(x))[0]
+            return  cv2.boxPoints(cv2.minAreaRect(contour)).reshape(-1)
+    xmin, ymin, xmax, ymax, _ = bbox
+    contour = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
+
+    return contour
 
 @DATASETS.register_module()
 class CocoDataset(CustomDataset):
@@ -205,7 +220,7 @@ class CocoDataset(CustomDataset):
         segm_json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
-            det, seg = results[idx]
+            det, seg = results[idx][:2]
             for label in range(len(det)):
                 # bbox results
                 bboxes = det[label]
@@ -336,7 +351,7 @@ class CocoDataset(CustomDataset):
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05),
-                 score_thr=None):
+                 score_thr=-1):
         """Evaluation in COCO protocol.
 
         Args:
@@ -370,8 +385,8 @@ class CocoDataset(CustomDataset):
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
         eval_results = {}
-        cocoGt = self.coco
         for metric in metrics:
+            cocoGt = copy.deepcopy(self.coco)
             msg = f'Evaluating {metric}...'
             if logger is None:
                 msg = '\n' + msg
@@ -418,9 +433,27 @@ class CocoDataset(CustomDataset):
                     val = float(f'{cocoEval.stats[i + 6]:.3f}')
                     eval_results[item] = val
             else:
-
                 if metric == 'f1':
-                    predictions = cocoEval.cocoDt.imgToAnns
+                    predictions = []
+                    for res in results:
+                        if isinstance(res[0], list):
+                            boxes = res[0][0]
+                            segms = res[1][0]
+                        else:
+                            boxes = res[0]
+                            segms = [None for _ in boxes]
+
+                        per_image_predictions = []
+
+                        for bbox, segm in zip(boxes, segms):
+                            contour = get_polygon(segm, bbox)
+                            per_image_predictions.append({
+                                'segmentation': contour,
+                                'score': 1.0,
+                            })
+
+                        predictions.append(per_image_predictions)
+
                     gt_annotations = cocoEval.cocoGt.imgToAnns
                     recall, precision, hmean, _ = text_eval(
                         predictions, gt_annotations, score_thr,
@@ -428,9 +461,9 @@ class CocoDataset(CustomDataset):
                         use_transcriptions=False)
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
                           format(recall, precision, hmean))
-                    eval_results['hmean'] = float(f'{hmean:.3f}')
-                    eval_results['precision'] = float(f'{precision:.3f}')
-                    eval_results['recall'] = float(f'{recall:.3f}')
+                    eval_results[metric + '/hmean'] = float(f'{hmean:.3f}')
+                    eval_results[metric + '/precision'] = float(f'{precision:.3f}')
+                    eval_results[metric + '/recall'] = float(f'{recall:.3f}')
                     continue
 
                 cocoEval.evaluate()

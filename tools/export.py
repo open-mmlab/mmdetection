@@ -77,21 +77,24 @@ def export_to_onnx(model,
             if model.roi_head.with_mask:
                 output_names.append('masks')
                 dynamic_axes['masks'] = {0: 'objects_num'}
+                if getattr(model.roi_head, 'with_text', False):
+                    output_names.append('text_features')
+                    dynamic_axes['text_features'] = {0: 'objects_num'}
+        
         with torch.no_grad():
-            with model.forward_export_context(data['img_metas']):
-                torch.onnx.export(model,
-                                  data['img'],
-                                  export_name,
-                                  verbose=verbose,
-                                  opset_version=opset,
-                                  strip_doc_string=strip_doc_string,
-                                  operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
-                                  input_names=['image'],
-                                  output_names=output_names,
-                                  dynamic_axes=dynamic_axes,
-                                  keep_initializers_as_inputs=True,
-                                  **kwargs
-                )
+            model.export(
+                **data,
+                f=export_name,
+                verbose=verbose,
+                opset_version=opset,
+                strip_doc_string=strip_doc_string,
+                operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
+                input_names=['image'],
+                output_names=output_names,
+                dynamic_axes=dynamic_axes,
+                keep_initializers_as_inputs=True,
+                **kwargs
+            )
 
 
 def check_onnx_model(export_name):
@@ -111,7 +114,7 @@ def add_node_names(export_name):
     onnx.save(model, export_name)
 
 
-def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, input_format='bgr'):
+def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, input_format='bgr', with_text=False):
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
@@ -153,6 +156,19 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, 
 
     print(command_line)
     run(command_line, shell=True, check=True)
+
+    if with_text:
+        onnx_model_path_tr_encoder = onnx_model_path.replace('.onnx', '_text_recognition_head_encoder.onnx')
+        command_line = f'mo.py --input_model="{onnx_model_path_tr_encoder}" ' \
+                       f'--output_dir="{output_dir_path}"'
+        print(command_line)
+        run(command_line, shell=True, check=True)
+
+        onnx_model_path_tr_decoder = onnx_model_path.replace('.onnx', '_text_recognition_head_decoder.onnx')
+        command_line = f'mo.py --input_model="{onnx_model_path_tr_decoder}" ' \
+                       f'--output_dir="{output_dir_path}"'
+        print(command_line)
+        run(command_line, shell=True, check=True)
 
 
 def stub_roi_feature_extractor(model, extractor_name):
@@ -210,10 +226,14 @@ def main(args):
         compression_ctrl.prepare_for_export()
     # END nncf part
 
+    with_text = False
     if args.target == 'openvino' and not args.alt_ssd_export:
         if hasattr(model, 'roi_head'):
             stub_roi_feature_extractor(model.roi_head, 'bbox_roi_extractor')
             stub_roi_feature_extractor(model.roi_head, 'mask_roi_extractor')
+            if getattr(model.roi_head, 'with_text', False):
+                with_text = True
+                stub_roi_feature_extractor(model.roi_head, 'text_roi_extractor')
 
     mmcv.mkdir_or_exist(osp.abspath(args.output_dir))
     onnx_model_path = osp.join(args.output_dir,
@@ -232,7 +252,8 @@ def main(args):
         input_shape = list(fake_data['img'][0].shape)
         if args.input_shape:
             input_shape = [1, 3, *args.input_shape]
-        export_to_openvino(cfg, onnx_model_path, args.output_dir, input_shape, args.input_format)
+        export_to_openvino(cfg, onnx_model_path, args.output_dir, input_shape, args.input_format,
+                           with_text=with_text)
     else:
         pass
         # Model check raises a Segmentation Fault in the latest (1.6.0, 1.7.0) versions of onnx package.

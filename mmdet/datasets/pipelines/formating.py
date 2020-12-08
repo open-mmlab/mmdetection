@@ -126,8 +126,9 @@ class DefaultFormatBundle(object):
             if key not in results:
                 continue
             results[key] = DC(to_tensor(results[key]))
-        if 'gt_masks' in results:
-            results['gt_masks'] = DC(results['gt_masks'], cpu_only=True)
+        for key in ['gt_masks', 'gt_texts']:
+            if key in results:
+                results[key] = DC(results[key], cpu_only=True)
         if 'gt_semantic_seg' in results:
             results['gt_semantic_seg'] = DC(
                 to_tensor(results['gt_semantic_seg'][None, ...]), stack=True)

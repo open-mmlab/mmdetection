@@ -1,3 +1,4 @@
+import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -343,7 +344,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         img = mmcv.imread(img)
         img = img.copy()
         if isinstance(result, tuple):
-            bbox_result, segm_result = result
+            bbox_result, segm_result = result[:2]
+            text_results = result[2] if len(result) > 2 else None
             if isinstance(segm_result, tuple):
                 segm_result = segm_result[0]  # ms rcnn
         else:
@@ -368,6 +370,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 color_mask = color_masks[labels[i]]
                 mask = segms[i].astype(np.bool)
                 img[mask] = img[mask] * 0.5 + color_mask * 0.5
+                if text_results is not None:
+                    p0 = int(bboxes[i][0]), int(bboxes[i][3])
+                    cv2.putText(img, text_results[i], p0, cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255))
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
@@ -376,7 +381,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             img,
             bboxes,
             labels,
-            class_names=self.CLASSES,
+            class_names=['' for _ in self.CLASSES] if text_results is not None else self.CLASSES,
             score_thr=score_thr,
             bbox_color=bbox_color,
             text_color=text_color,
@@ -391,3 +396,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             warnings.warn('show==False and out_file is not specified, only '
                           'result image will be returned')
             return img
+
+    def export(self, img, img_metas, **kwargs):
+        with self.forward_export_context(img_metas):
+            torch.onnx.export(self, img, **kwargs)
