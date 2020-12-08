@@ -84,11 +84,8 @@ class MaskTextSpotter(MaskRCNN):
 
             return printable_graph
 
-        self.img_metas = img_metas
-        self.forward_backup = self.forward
-        self.forward = self.forward_export
-        torch.onnx.export(self, img, f, **kwargs)
-        self.forward = self.forward_backup
+        with self.forward_export_context(img_metas):
+            torch.onnx.export(self, img, f, **kwargs)
 
         # Export of text recognition encoder
         export_to_onnx_text_recognition_encoder(
