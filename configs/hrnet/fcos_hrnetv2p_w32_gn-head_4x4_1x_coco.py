@@ -1,4 +1,6 @@
 _base_ = '../fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
+img_norm_cfg = dict(
+    mean=[103.53, 116.28, 123.675], std=[57.375, 57.12, 58.395], to_rgb=False)
 model = dict(
     pretrained='open-mmlab://msra/hrnetv2_w32',
     backbone=dict(
