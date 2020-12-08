@@ -20,10 +20,10 @@ def multiclass_nms(multi_bboxes,
         score_thr (float): bbox threshold, bboxes with scores lower than it
             will not be considered.
         nms_thr (float): NMS IoU threshold
-        max_num (int): if there are more than max_num bboxes after NMS,
-            only top max_num will be kept.
-        score_factors (Tensor): The factors multiplied to scores before
-            applying NMS.
+        max_num (int, optional): if there are more than max_num bboxes after
+            NMS, only top max_num will be kept. Default to -1.
+        score_factors (Tensor, optional): The factors multiplied to scores
+            before applying NMS. Default to None.
         return_inds (bool, optional): Whether return the indices of kept
             bboxes. Default to False.
 
