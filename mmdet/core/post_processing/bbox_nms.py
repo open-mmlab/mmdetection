@@ -25,6 +25,7 @@ def multiclass_nms(multi_bboxes,
         score_factors (Tensor): The factors multiplied to scores before
             applying NMS.
         return_inds (bool): Whether return the indices of kept bboxes.
+            Default False.
 
     Returns:
         tuple: (bboxes, labels, indices (optional)), tensors of shape (k, 5), \
