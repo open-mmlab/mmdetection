@@ -145,7 +145,7 @@ def train_detector(model,
 
     # runner.load_checkpoint('/home/ryan/work/sensetime/checkpoints/yolov4/transform_yolov4_backbone.pth')
 
-    # runner.load_checkpoint('checkpoints/0init.pth')
+    runner.load_checkpoint('checkpoints/0init.pth')
     # runner.load_checkpoint('/home/ryan/work/mmdetection/work_dirs/yolov4_spp_new_param_val1_new_giou/epoch_3000.pth') # testing
     # runner.load_checkpoint('checkpoints/transform_yolov4.pth')
     # print('loading with a hack.')

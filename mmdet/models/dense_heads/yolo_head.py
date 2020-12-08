@@ -401,7 +401,7 @@ class YOLOV3Head(BaseDenseHead):
         pos_mask = target_map[..., 4]
         pos_and_neg_mask = neg_mask + pos_mask
         pos_mask = pos_mask.unsqueeze(dim=-1)
-        pos_and_neg_mask = pos_and_neg_mask.unsqueeze(dim=-1)
+        pos_and_neg_mask = pos_and_neg_mask
         if torch.max(pos_and_neg_mask) > 1.:
             warnings.warn('There is overlap between pos and neg sample.')
             pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
@@ -432,6 +432,8 @@ class YOLOV3Head(BaseDenseHead):
                 device=pred_map.device).repeat(len(anchors))
             assert len(anchor_strides) == len(anchors)
             pred_xywh = pred_map[..., :4].reshape(-1, 4).contiguous()
+            anchors = anchors.repeat(num_imgs, 1)
+            anchor_strides = anchor_strides.repeat(num_imgs)
             # decode box for IoU loss
             pred_box = self.bbox_coder.decode(anchors, pred_xywh, anchor_strides)
 
