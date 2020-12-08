@@ -44,8 +44,24 @@ model = dict(
             use_sigmoid=True,
             loss_weight=64.3,
             reduction='mean'),
-        loss_bbox=dict(type='GIoULoss', loss_weight=3.54, reduction='mean'),
+        loss_bbox=dict(type='CIoULoss', loss_weight=3.54, reduction='mean'),
     ))
+    #     loss_cls=dict(
+    #         type='CrossEntropyLoss',
+    #         use_sigmoid=True,
+    #         loss_weight=1.0,
+    #         reduction='sum'),
+    #     loss_conf=dict(
+    #         type='CrossEntropyLoss',
+    #         use_sigmoid=True,
+    #         loss_weight=1.0,
+    #         reduction='sum'),
+    #     loss_xy=dict(
+    #         type='CrossEntropyLoss',
+    #         use_sigmoid=True,
+    #         loss_weight=2.0,
+    #         reduction='sum'),
+    #     loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
@@ -121,16 +137,17 @@ data = dict(
 # optimizer
 optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
 optimizer_config = dict()
+# optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=1000,  # same as burn-in in darknet
-    warmup_ratio=0.0000001,
+    warmup_ratio=0.00001,
     step=[21800, 24600])
 # runtime settings
 total_epochs = 27300
-evaluation = dict(interval=10, metric=['bbox'])
+evaluation = dict(interval=100, metric=['bbox'])
 checkpoint_config = dict(interval=1000)
 log_config = dict(  # config to register logger hook
     interval=1,  # Interval to print the log

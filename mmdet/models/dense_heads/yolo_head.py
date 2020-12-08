@@ -401,92 +401,166 @@ class YOLOV3Head(BaseDenseHead):
         pos_mask = target_map[..., 4]
         pos_and_neg_mask = neg_mask + pos_mask
         pos_mask = pos_mask.unsqueeze(dim=-1)
-        # pos_and_neg_mask = pos_and_neg_mask.unsqueeze(dim=-1)
+        pos_and_neg_mask = pos_and_neg_mask.unsqueeze(dim=-1)
         if torch.max(pos_and_neg_mask) > 1.:
             warnings.warn('There is overlap between pos and neg sample.')
             pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
 
-        loss_cls = torch.tensor(.0, device=device, requires_grad=True)
-        loss_conf = torch.tensor(.0, device=device, requires_grad=True)
-        loss_xy = torch.tensor(.0, device=device, requires_grad=True)
-        loss_wh = torch.tensor(.0, device=device, requires_grad=True)
+        pred_conf = pred_map[..., 4]
+        pred_label = pred_map[..., 5:]
+        target_conf = target_map[..., 4]
+        target_label = target_map[..., 5:]
 
-        for i in range(num_imgs):
+        # pred_label = pred_label.reshape(-1, num_cls)
+        # target_label = target_label.reshape(-1, num_cls)
 
-            img_pos_mask = pos_mask[i, :, :]
-            if img_pos_mask.sum() <= 0:
-                continue
+        # cls_mask = pos_mask.expand(-1, -1, num_cls).bool()
+        # pred_label = pred_label.masked_select(
+        #     cls_mask).reshape(-1, num_cls)
+        # target_label = target_label.masked_select(
+        #     cls_mask).reshape(-1, num_cls)
 
-            img_pred_conf = pred_map[i, :, 4]
-            img_pred_label = pred_map[i, :, 5:]
-            img_target_conf = target_map[i, :, 4]
-            img_target_label = target_map[i, :, 5:]
+        loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask) * num_cls
+        loss_conf = self.loss_conf(
+            pred_conf, target_conf, weight=pos_and_neg_mask)
 
-            img_cls_mask = img_pos_mask.expand(-1, num_cls).bool()
-            img_pred_label = img_pred_label.masked_select(
-                img_cls_mask).reshape(-1, num_cls)
-            img_target_label = img_target_label.masked_select(
-                img_cls_mask).reshape(-1, num_cls)
+        if self.using_iou_loss:
 
-            loss_cls = loss_cls + self.loss_cls(img_pred_label,
-                                                img_target_label)
-            loss_conf = loss_conf + self.loss_conf(img_pred_conf,
-                                                   img_target_conf)
-            #
-            # print(img_target_conf.shape)
-            # print(img_target_label.shape)
-            # print(loss_cls)
+            # preparation for box decoding
+            anchor_strides = torch.tensor(
+                self.featmap_strides[level_idx],
+                device=pred_map.device).repeat(len(anchors))
+            assert len(anchor_strides) == len(anchors)
+            pred_xywh = pred_map[..., :4].reshape(-1, 4).contiguous()
+            # decode box for IoU loss
+            pred_box = self.bbox_coder.decode(anchors, pred_xywh, anchor_strides)
 
-            if self.using_iou_loss:
-                # preparation for box decoding
-                anchor_strides = torch.tensor(
-                    self.featmap_strides[level_idx],
-                    device=pred_map.device).repeat(len(anchors))
-                assert len(anchor_strides) == len(anchors)
-                img_pred_xywh = pred_map[i, :, :4].reshape(-1, 4).contiguous()
-                # decode box for IoU loss
-                img_pred_box = self.bbox_coder.decode(anchors, img_pred_xywh,
-                                                      anchor_strides)
+            target_box = \
+                target_map[..., :4].reshape(-1, 4).contiguous()
+            # img_target_box = self.bbox_coder.decode(
+            #     anchors, img_target_box, anchor_strides)
 
-                img_target_box = \
-                    target_map[i, :, :4].reshape(-1, 4).contiguous()
-                # img_target_box = self.bbox_coder.decode(
-                #     anchors, img_target_box, anchor_strides)
+            box_mask = \
+                pos_mask.reshape(-1, 1).contiguous().expand(-1, 4)
 
-                img_box_mask = \
-                    img_pos_mask.reshape(-1, 1).contiguous().expand(-1,
-                                                                    4).bool()
-                img_pred_box = \
-                    img_pred_box.masked_select(img_box_mask).reshape(-1, 4)
-                img_target_box = \
-                    img_target_box.masked_select(img_box_mask).reshape(-1, 4)
+            # img_pred_box = \
+            #     img_pred_box.masked_select(img_box_mask).reshape(-1, 4)
+            # img_target_box = \
+            #     img_target_box.masked_select(img_box_mask).reshape(-1, 4)
 
-                # img_meta = data_batch['img_metas'].data[0]
-                # img = data_batch['img'].data[0].squeeze().detach().cpu(
-                # ).numpy()
-                # img = img.transpose(1, 2, 0)[:,:,::-1]
-                # # img = img.clip(0.01, 0.99)
-                # # import numpy as np
-                # # img = np.float64(img)
-                # # img = img.copy()
+            # img_meta = data_batch['img_metas'].data[0]
+            # img = data_batch['img'].data[0].squeeze().detach().cpu(
+            # ).numpy()
+            # img = img.transpose(1, 2, 0)[:,:,::-1]
+            # # img = img.clip(0.01, 0.99)
+            # # import numpy as np
+            # # img = np.float64(img)
+            # # img = img.copy()
 
-                # if level_idx == 0:
-                #     self.show_img(img_pred_box, img_target_box)
+            # for drawing bbox
+            # img_pred_box = \
+            #     pred_box.masked_select(box_mask.bool()).reshape(-1, 4)
+            # img_target_box = \
+            #     target_box.masked_select(box_mask.bool()).reshape(-1, 4)
+            # self.show_img(img_pred_box, img_target_box)
 
-                loss_xy = loss_xy + self.loss_bbox(img_pred_box,
-                                                   img_target_box)
-                loss_wh = loss_wh + torch.zeros_like(loss_xy)
-            else:
-                img_pred_xy = pred_map[i, :, :2]
-                img_pred_wh = pred_map[i, :, 2:4]
-                img_target_xy = target_map[i, :, :2]
-                img_target_wh = target_map[i, :, 2:4]
-                loss_xy = loss_xy + self.loss_xy(
-                    img_pred_xy, img_target_xy, weight=img_pos_mask)
-                loss_wh = loss_wh + self.loss_wh(
-                    img_pred_wh, img_target_wh, weight=img_pos_mask)
+            loss_xy = self.loss_bbox(pred_box, target_box, weight=box_mask,
+                avg_factor=pos_mask.sum())
+            loss_wh = torch.zeros_like(loss_xy)
+
+        else:
+            pred_xy = pred_map[..., :2]
+            pred_wh = pred_map[..., 2:4]
+
+            target_xy = target_map[..., :2]
+            target_wh = target_map[..., 2:4]
+
+            loss_xy = self.loss_xy(pred_xy, target_xy, weight=pos_mask)
+            loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
 
         return loss_cls, loss_conf, loss_xy, loss_wh
+
+        # loss_cls = torch.tensor(.0, device=device, requires_grad=True)
+        # loss_conf = torch.tensor(.0, device=device, requires_grad=True)
+        # loss_xy = torch.tensor(.0, device=device, requires_grad=True)
+        # loss_wh = torch.tensor(.0, device=device, requires_grad=True)
+        #
+        # for i in range(num_imgs):
+        #
+        #     img_pos_mask = pos_mask[i, :, :]
+        #     if img_pos_mask.sum() <= 0:
+        #         continue
+        #
+        #     img_pred_conf = pred_map[i, :, 4]
+        #     img_pred_label = pred_map[i, :, 5:]
+        #     img_target_conf = target_map[i, :, 4]
+        #     img_target_label = target_map[i, :, 5:]
+        #
+        #     img_cls_mask = img_pos_mask.expand(-1, num_cls).bool()
+        #     img_pred_label = img_pred_label.masked_select(
+        #         img_cls_mask).reshape(-1, num_cls)
+        #     img_target_label = img_target_label.masked_select(
+        #         img_cls_mask).reshape(-1, num_cls)
+        #
+        #     loss_cls = loss_cls + self.loss_cls(img_pred_label,
+        #                                         img_target_label)
+        #     loss_conf = loss_conf + self.loss_conf(img_pred_conf,
+        #                                            img_target_conf)
+        #     #
+        #     # print(img_target_conf.shape)
+        #     # print(img_target_label.shape)
+        #     # print(loss_cls)
+        #
+        #     if self.using_iou_loss:
+        #         # preparation for box decoding
+        #         anchor_strides = torch.tensor(
+        #             self.featmap_strides[level_idx],
+        #             device=pred_map.device).repeat(len(anchors))
+        #         assert len(anchor_strides) == len(anchors)
+        #         img_pred_xywh = pred_map[i, :, :4].reshape(-1, 4).contiguous()
+        #         # decode box for IoU loss
+        #         img_pred_box = self.bbox_coder.decode(anchors, img_pred_xywh,
+        #                                               anchor_strides)
+        #
+        #         img_target_box = \
+        #             target_map[i, :, :4].reshape(-1, 4).contiguous()
+        #         # img_target_box = self.bbox_coder.decode(
+        #         #     anchors, img_target_box, anchor_strides)
+        #
+        #         img_box_mask = \
+        #             img_pos_mask.reshape(-1, 1).contiguous().expand(-1,
+        #                                                             4).bool()
+        #         img_pred_box = \
+        #             img_pred_box.masked_select(img_box_mask).reshape(-1, 4)
+        #         img_target_box = \
+        #             img_target_box.masked_select(img_box_mask).reshape(-1, 4)
+        #
+        #         # img_meta = data_batch['img_metas'].data[0]
+        #         # img = data_batch['img'].data[0].squeeze().detach().cpu(
+        #         # ).numpy()
+        #         # img = img.transpose(1, 2, 0)[:,:,::-1]
+        #         # # img = img.clip(0.01, 0.99)
+        #         # # import numpy as np
+        #         # # img = np.float64(img)
+        #         # # img = img.copy()
+        #
+        #         # if level_idx == 0:
+        #         #     self.show_img(img_pred_box, img_target_box)
+        #
+        #         loss_xy = loss_xy + self.loss_bbox(img_pred_box,
+        #                                            img_target_box)
+        #         loss_wh = loss_wh + torch.zeros_like(loss_xy)
+        #     else:
+        #         img_pred_xy = pred_map[i, :, :2]
+        #         img_pred_wh = pred_map[i, :, 2:4]
+        #         img_target_xy = target_map[i, :, :2]
+        #         img_target_wh = target_map[i, :, 2:4]
+        #         loss_xy = loss_xy + self.loss_xy(
+        #             img_pred_xy, img_target_xy, weight=img_pos_mask)
+        #         loss_wh = loss_wh + self.loss_wh(
+        #             img_pred_wh, img_target_wh, weight=img_pos_mask)
+        #
+        # return loss_cls, loss_conf, loss_xy, loss_wh
 
         # anchors = # need batch_size set of anchors
         # img_index_list = list(range(num_imgs))
