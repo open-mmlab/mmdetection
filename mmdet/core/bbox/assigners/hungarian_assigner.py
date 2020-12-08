@@ -2,8 +2,8 @@ import torch
 from scipy.optimize import linear_sum_assignment
 
 from ..builder import BBOX_ASSIGNERS
-from ..iou_calculators import build_iou_calculator
-from ..transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
+from ..match_costers import build_match_cost
+from ..transforms import bbox_cxcywh_to_xyxy
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
@@ -38,20 +38,16 @@ class HungarianAssigner(BaseAssigner):
     """
 
     def __init__(self,
-                 cls_weight=1.,
-                 bbox_weight=1.,
-                 iou_weight=1.,
-                 iou_calculator=dict(type='BboxOverlaps2D'),
-                 iou_mode='giou',
-                 focal_loss=dict(alpha=0.25, gamma=2.0),
-                 ):
-        # defaultly giou cost is used in the official DETR repo.
-        self.iou_mode = iou_mode
-        self.cls_weight = cls_weight
-        self.bbox_weight = bbox_weight
-        self.iou_weight = iou_weight
-        self.iou_calculator = build_iou_calculator(iou_calculator)
-        self.focal_loss = focal_loss
+                 cls_cost=dict(type='ClsSoftmaxCost', weight=1.),
+                 reg_cost=dict(type='BBoxL1Cost', weight=1.0),
+                 iou_cost=dict(
+                     type='IoUBasedCost',
+                     iou_mode='giou',
+                     iou_calculator=dict(type='BboxOverlaps2D'),
+                     weight=1.0)):
+        self.cls_cost_func = build_match_cost(cls_cost)
+        self.reg_cost_func = build_match_cost(reg_cost)
+        self.iou_cost_func = build_match_cost(iou_cost)
 
     def assign(self,
                bbox_pred,
@@ -112,48 +108,20 @@ class HungarianAssigner(BaseAssigner):
                 assigned_gt_inds[:] = 0
             return AssignResult(
                 num_gts, assigned_gt_inds, None, labels=assigned_labels)
-
-        # 2. compute the weighted costs
-        # classification cost.
-        # Following the official DETR repo, contrary to the loss that
-        # NLL is used, we approximate it in 1 - cls_score[gt_label].
-        # The 1 is a constant that doesn't change the matching,
-        # so it can be ommitted.
-        # MODYFY add focal loss
-        if self.focal_loss:
-            alpha = self.focal_loss['alpha']
-            gamma = self.focal_loss['gamma']
-            eps = 1e-12
-            neg_loss = -(1 - cls_pred + eps).log() * (
-                        1 - alpha) * cls_pred.pow(gamma)
-            pos_loss = -(cls_pred + eps).log() * alpha * (1 - cls_pred).pow(
-                gamma)
-            cls_cost = pos_loss[:, gt_labels] - neg_loss[:, gt_labels]
-        else:
-            cls_score = cls_pred.softmax(-1)
-            cls_cost = -cls_score[:, gt_labels]  # [num_bboxes, num_gt]
-
-        # regression L1 cost
         img_h, img_w, _ = img_meta['img_shape']
         factor = torch.Tensor([img_w, img_h, img_w,
                                img_h]).unsqueeze(0).to(gt_bboxes.device)
-        gt_bboxes_normalized = gt_bboxes / factor
-        # MODYFY: xyxy p1-norm in sparse-RCNN CODE which need to review
-        bbox_cost = torch.cdist(
-            bbox_pred, bbox_xyxy_to_cxcywh(gt_bboxes_normalized),
-            p=1)  # [num_bboxes, num_gt]
 
+        # 2. compute the weighted costs
+        # classification and bboxcost.
+        cls_cost = self.cls_cost_func(cls_pred, gt_labels)
+        # regression L1 cost
+        bbox_cost = self.reg_cost_func(bbox_pred, gt_bboxes, factor)
         # regression iou cost, defaultly giou is used in official DETR.
         bboxes = bbox_cxcywh_to_xyxy(bbox_pred) * factor
-        # overlaps: [num_bboxes, num_gt]
-        overlaps = self.iou_calculator(
-            bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
-        # The 1 is a constant that doesn't change the matching, so ommitted.
-        iou_cost = -overlaps
-
+        iou_cost = self.iou_cost_func(bboxes, gt_bboxes)
         # weighted sum of above three costs
-        cost = self.cls_weight * cls_cost + self.bbox_weight * bbox_cost
-        cost = cost + self.iou_weight * iou_cost
+        cost = cls_cost + bbox_cost + iou_cost
 
         # 3. do Hungarian matching on CPU using linear_sum_assignment
         cost = cost.detach().cpu()
