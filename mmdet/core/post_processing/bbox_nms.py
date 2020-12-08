@@ -24,11 +24,11 @@ def multiclass_nms(multi_bboxes,
             only top max_num will be kept.
         score_factors (Tensor): The factors multiplied to scores before
             applying NMS.
-        return_inds (bool): Whether return the indices of kept bboxes.
-            Default False.
+        return_inds (bool, optional): Whether return the indices of kept
+            bboxes. Default to False.
 
     Returns:
-        tuple: (bboxes, labels, indices (optional)), tensors of shape (k, 5), \
+        tuple: (bboxes, labels, indices (optional)), tensors of shape (k, 5),
             (k), and (k). Labels are 0-based.
     """
     num_classes = multi_scores.size(1) - 1
