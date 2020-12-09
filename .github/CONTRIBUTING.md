@@ -48,6 +48,19 @@ From the repository folder
 pre-commit install
 ```
 
+If you are facing issue when installing markdown lint, you may install ruby for markdown lint by following
+
+```shell
+# install rvm
+curl -L https://get.rvm.io | bash -s -- --autolibs=read-fail
+# set up environment
+echo 'source $HOME/.bash_profile' >> ~/.bashrc
+source ~/.profile
+rvm autolibs disable
+# install ruby
+rvm install 2.7.1
+```
+
 After this on every commit check code linters and formatter will be enforced.
 
 >Before you create a PR, make sure that your code lints and is formatted by yapf.
