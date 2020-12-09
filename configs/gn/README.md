@@ -2,7 +2,7 @@
 
 ## Introduction
 
-```
+```latex
 @inproceedings{wu2018group,
   title={Group Normalization},
   author={Wu, Yuxin and He, Kaiming},
@@ -23,6 +23,7 @@
 | R-50-FPN (c)  | Mask R-CNN | 3x      | 7.1      | -              | 40.1   | 36.2    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/gn/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco_20200225-542aefbc.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco_20200225_235135.log.json) |
 
 **Notes:**
+
 - (d) means pretrained model converted from Detectron, and (c) means the contributed model pretrained by [@thangvubk](https://github.com/thangvubk).
 - The `3x` schedule is epoch [28, 34, 36].
 - **Memory, Train/Inf time is outdated.**

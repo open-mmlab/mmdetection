@@ -1,7 +1,8 @@
 # SSD: Single Shot MultiBox Detector
 
 ## Introduction
-```
+
+```latex
 @article{Liu_2016,
    title={SSD: Single Shot MultiBox Detector},
    journal={ECCV},
