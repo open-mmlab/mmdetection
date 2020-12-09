@@ -4,7 +4,7 @@
 
 We provide config files to reproduce the object detection results in the ECCV 2020 Spotlight paper for [Side-Aware Boundary Localization for More Precise Object Detection](https://arxiv.org/abs/1912.04260).
 
-```
+```latex
 @inproceedings{Wang_2020_ECCV,
     title = {Side-Aware Boundary Localization for More Precise Object Detection},
     author = {Jiaqi Wang and Wenwei Zhang and Yuhang Cao and Kai Chen and Jiangmiao Pang and Tao Gong and Jianping Shi and Chen Change Loy and Dahua Lin},
@@ -17,7 +17,6 @@ We provide config files to reproduce the object detection results in the ECCV 20
 
 The results on COCO 2017 val is shown in the below table. (results on test-dev are usually slightly higher than val).
 Single-scale testing (1333x800) is adopted in all results.
-
 
 |       Method       | Backbone  | Lr schd | ms-train | box AP |                                                       Config                                                       |                                                                                                                                   Download                                                                                                                                    |
 | :----------------: | :-------: | :-----: | :------: | :----: | :----------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |

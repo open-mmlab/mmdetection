@@ -4,6 +4,7 @@ FoveaBox is an accurate, flexible and completely anchor-free object detection sy
 Different from previous anchor-based methods, FoveaBox directly learns the object existing possibility and the bounding box coordinates without anchor reference. This is achieved by: (a) predicting category-sensitive semantic maps for the object existing possibility, and (b) producing category-agnostic bounding box for each position that potentially contains an object.
 
 ## Main Results
+
 ### Results on R50/101-FPN
 
 | Backbone  | Style   |  align  | ms-train| Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
@@ -25,8 +26,10 @@ Different from previous anchor-based methods, FoveaBox directly learns the objec
 Any pull requests or issues are welcome.
 
 ## Citations
+
 Please consider citing our paper in your publications if the project helps your research. BibTeX reference is as follows.
-```
+
+```latex
 @article{kong2019foveabox,
   title={FoveaBox: Beyond Anchor-based Object Detector},
   author={Kong, Tao and Sun, Fuchun and Liu, Huaping and Jiang, Yuning and Shi, Jianbo},
