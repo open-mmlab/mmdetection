@@ -13,3 +13,4 @@ Main features of EfficientDet models are EfficientNet backbone and BiFPN neck.
 **Note:**
 
 - retinahead_effd0_bifpn_1x_coco is not an official model in the EfficientDet paper. Everything but the head is similar to the model in the paper.
+- retinahead_effd0_bifpn_1x_coco was trained on 4 RTX 6000 cards
