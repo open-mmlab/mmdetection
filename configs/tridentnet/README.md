@@ -12,6 +12,7 @@
 ```
 
 ## Results and models
+
 We reports the test results using only one branch for inference.
 
 |    Backbone     |  Style  | mstrain | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
