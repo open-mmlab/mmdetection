@@ -18,7 +18,8 @@ class DistributedSampler(_DistributedSampler):
             indices = torch.arange(len(self.dataset)).tolist()
 
         # add extra samples to make it evenly divisible
-        indices += indices[:(self.total_size - len(indices))]
+        indices = (indices *
+                   int(self.total_size / len(indices) + 1))[:self.total_size]
         assert len(indices) == self.total_size
 
         # subsample
