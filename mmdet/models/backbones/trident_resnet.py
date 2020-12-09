@@ -1,3 +1,4 @@
+import mmcv
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -54,8 +55,10 @@ class TridentConv(nn.Module):
             self.bias = nn.Parameter(torch.Tensor(out_channels))
         else:
             self.bias = None
+        self.init_weights()
 
-        nn.init.kaiming_uniform_(self.weight, nonlinearity='relu')
+    def init_weights(self):
+        mmcv.kaiming_uniform_(self.weight, nonlinearity='relu')
         if self.bias is not None:
             nn.init.constant_(self.bias, 0)
 
@@ -208,7 +211,7 @@ def make_trident_res_layer(block,
         downsample = nn.Sequential(*downsample)
 
     layers = []
-    for i in range(0, num_blocks):
+    for i in range(num_blocks):
         layers.append(
             block(
                 inplanes=inplanes,
