@@ -1,16 +1,14 @@
 # Based off of github.com/rwightman/efficientdet-pytorch
 
 import numpy
-import itertools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
 from mmdet.core import auto_fp16
 
 from ..builder import NECKS
 
-from mmcv.cnn import normal_init, ConvModule
+from mmcv.cnn import normal_init, xavier_init, ConvModule
 # from mmcv.cnn.bricks import DepthwiseSeparableConvModule
 
 act_fn_list = ["silu", "swish", "hswish", "relu", "relu6", "mish", "srelu"]
@@ -51,6 +49,7 @@ class ActLayer(nn.Module):
             nodes = torch.where((nodes > 0.), nodes - (1. / beta) * safe_log, torch.zeros_like(nodes))
 
         return nodes
+
 
 # temp until DepthwsieSeparableConvModule can be imported
 class SeparableConv2d(nn.Module):
