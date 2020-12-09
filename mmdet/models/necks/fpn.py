@@ -108,7 +108,7 @@ class FPN(nn.Module):
                 # TODO: deprecate `extra_convs_on_inputs`
                 warnings.simplefilter('once')
                 warnings.warn(
-                    '"extra_convs_on_inputs" will be deprecated in the future,'
+                    '"extra_convs_on_inputs" will be deprecated in v2.9.0,'
                     'Please use "add_extra_convs"', DeprecationWarning)
                 self.add_extra_convs = 'on_input'
             else:
