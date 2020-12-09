@@ -133,7 +133,7 @@ Please refer to [Res2Net](https://github.com/open-mmlab/mmdetection/blob/master/
 Please refer to [GRoIE](https://github.com/open-mmlab/mmdetection/blob/master/configs/groie) for details.
 
 ### EfficientDet
-Please refer to [EfficientDet](https://github.com/openvinotoolkit/mmdetection/blob/master/configs/efficientdet) for details.
+Please refer to [EfficientDet](../configs/efficientdet) for details.
 
 ### Other datasets
 
