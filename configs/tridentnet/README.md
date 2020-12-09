@@ -11,8 +11,8 @@
 ```
 
 ## Results and models
-|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
-|    R-50         |  caffe  |   1x    |          |                | 37.8   |  |
-
-**Note**: We find that it is unstable to train TridentNet and there is a chance that results can be 0.2% mAP lower.
+|    Backbone     |  Style  | mstrain | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+| :-------------: | :-----: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
+|    R-50         |  caffe  |    N    |   1x    |          |                | 37.7   |  |
+|    R-50         |  caffe  |    Y    |   1x    |          |                | 37.6   |  |
+|    R-50         |  caffe  |    Y    |   3x    |          |                | 40.3   |  |

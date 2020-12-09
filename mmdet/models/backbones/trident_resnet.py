@@ -89,7 +89,7 @@ class TridentConv(nn.Module):
         return outputs
 
 
-# Since TridentNet if defined over ResNet50 and ResNet101, here we
+# Since TridentNet is defined over ResNet50 and ResNet101, here we
 # only support TridentBottleneckBlock.
 class TridentBottleneck(Bottleneck):
     """BottleBlock for TridentResNet.
