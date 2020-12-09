@@ -6,31 +6,18 @@ _base_ = [
 
 model = dict(
     type='TridentFasterRCNN',
-    num_branch=3,
-    test_branch_idx=1,
     pretrained='open-mmlab://detectron2/resnet50_caffe',
     backbone=dict(
         type='TridentResNet',
-        trident_dilations=(1, 2, 3)
-    ),
-    roi_head=dict(
-        type='TridentRoIHead'
-    )
-)
+        trident_dilations=(1, 2, 3),
+        num_branch=3,
+        test_branch_idx=1),
+    roi_head=dict(type='TridentRoIHead', num_branch=3, test_branch_idx=1))
 
 train_cfg = dict(
-    rpn_proposal=dict(
-        nms_post=500,
-        max_num=500
-    ),
+    rpn_proposal=dict(nms_post=500, max_num=500),
     rcnn=dict(
-        sampler=dict(
-            num=128,
-            pos_fraction=0.5,
-            add_gt_as_proposals=False
-        )
-    )
-)
+        sampler=dict(num=128, pos_fraction=0.5, add_gt_as_proposals=False)))
 
 # use caffe img_norm
 img_norm_cfg = dict(
@@ -64,5 +51,3 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-# optimizer
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)

@@ -1,9 +1,8 @@
-import mmcv
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as cp
-from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.cnn import build_conv_layer, build_norm_layer, kaiming_init
 from torch.nn.modules.utils import _pair
 
 from mmdet.models.backbones.resnet import Bottleneck, ResNet
@@ -58,9 +57,7 @@ class TridentConv(nn.Module):
         self.init_weights()
 
     def init_weights(self):
-        mmcv.kaiming_uniform_(self.weight, nonlinearity='relu')
-        if self.bias is not None:
-            nn.init.constant_(self.bias, 0)
+        kaiming_init(self, distribution='uniform', mode='fan_in')
 
     def extra_repr(self):
         tmpstr = 'in_channels=' + str(self.in_channels)
