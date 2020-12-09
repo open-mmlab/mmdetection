@@ -91,8 +91,7 @@ def export_to_onnx(model,
                                   output_names=output_names,
                                   dynamic_axes=dynamic_axes,
                                   keep_initializers_as_inputs=True,
-                                  **kwargs
-                )
+                                  **kwargs)
 
 
 def check_onnx_model(export_name):
@@ -197,7 +196,7 @@ def main(args):
         cfg.resume_from = None
         compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
         # TODO: apply the following string for NNCF 1.5.*
-        #compression_ctrl.prepare_for_export()
+        # compression_ctrl.prepare_for_export()
     # END nncf part
 
     mmcv.mkdir_or_exist(osp.abspath(args.output_dir))

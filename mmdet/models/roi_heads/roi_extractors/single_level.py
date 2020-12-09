@@ -10,25 +10,18 @@ from mmdet.utils.deployment.symbolic import py_symbolic
 from functools import wraps
 
 
-def convert_args_to_extractor():
-    def is_args_correct(args):
-        return isinstance(args[1], (tuple, list)) and isinstance(args[2], torch.Tensor)
-    
-    def repack_args(args):
-        inner = args[0]
-        feats = tuple(args[2:])
-        rois = args[1]
-        ordered_args = inner, feats, rois
-        return ordered_args
-        
-    def decorator(func):
-        @wraps(func)
-        def wrapped_function(*args):
-            if not is_args_correct(args): 
-                args = repack_args(args)
-            return func(*args)
-        return wrapped_function
-    return decorator
+def flatten(args):
+    flat_args = []
+    for a in args:
+        if isinstance(a, (list, tuple)):
+            flat_args.extend(flatten(a))
+        else:
+            flat_args.append(a)
+    return flat_args
+
+def convert_args_to_extractor(inner, feats, rois):
+    # inner, feats, rois -> inner, rois, *feats
+    return flatten((inner, rois, feats))
 
 
 @ROI_EXTRACTORS.register_module()
@@ -109,8 +102,7 @@ class SingleRoIExtractor(nn.Module):
         new_rois = torch.stack((rois[:, 0], x1, y1, x2, y2), dim=-1)
         return new_rois
 
-    @py_symbolic(op_name='roi_feature_extractor')
-    @convert_args_to_extractor()
+    @py_symbolic(op_name='roi_feature_extractor', outside_adapter=convert_args_to_extractor)
     @force_fp32(apply_to=('feats', ), out_fp16=True)
     def forward(self, feats, rois, roi_scale_factor=None):
         from torch.onnx import operators

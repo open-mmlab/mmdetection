@@ -20,31 +20,10 @@ from torch.onnx.symbolic_helper import parse_args
 from torch.onnx.symbolic_registry import register_op, get_registered_op, is_registered_op
 
 
-def convert_args_and_output(op_name=None):
-    def flatten(args):
-        flat_args = []
-        for a in args:
-            if isinstance(a, (list, tuple)):
-                flat_args.extend(flatten(a))
-            else:
-                flat_args.append(a)
-        return flat_args
-
-    def reorder_args_for_roi_feature_extractor(args):
-        # inner, feats, rois -> inner, rois, *feats
-        return flatten((args[0], args[2], args[1]))
-
-    def decorator(func):
-        @wraps(func)
-        def wrapped_function(*args):
-            if op_name == 'roi_feature_extractor':
-                args = reorder_args_for_roi_feature_extractor(args)
-            return func(*args)
-        return wrapped_function
-    return decorator
-
-
-def py_symbolic(op_name=None, namespace='mmdet_custom'):
+def py_symbolic(op_name=None, namespace='mmdet_custom', outside_adapter=None):
+    """
+    Need to add some documentation
+    """
     def decorator(func):
         @wraps(func)
         def wrapped_function(*args):
@@ -57,18 +36,16 @@ def py_symbolic(op_name=None, namespace='mmdet_custom'):
                 class XFunction(torch.autograd.Function):
                     @staticmethod
                     def forward(ctx, *xargs):
-                        return func(*xargs)
+                        return func(*args)
 
                     @staticmethod
                     def symbolic(g, *xargs):
                         symb = get_registered_op(name, namespace, opset)
                         return symb(g, *xargs)
                 
-                @convert_args_and_output(op_name=name)
-                def run_autograd_function(*autograd_args):
-                    return XFunction.apply(*autograd_args)
-
-                return run_autograd_function(*args)
+                if outside_adapter is not None:
+                    return XFunction.apply(*outside_adapter(*args))
+                return XFunction.apply(*args)
             else:
                 return func(*args)
         return wrapped_function
@@ -308,10 +285,10 @@ def roi_feature_extractor_symbolics(g, inner, rois, *feats):
 
 def register_extra_symbolics(opset=10):
     assert opset >= 10
-    register_op('addcmul', addcmul_symbolic, '', opset)
+    #register_op('addcmul', addcmul_symbolic, '', opset)
     register_op('view_as', view_as_symbolic, '', opset)
     register_op('topk', topk_symbolic, '', opset)
-    register_op('group_norm', group_norm_symbolic, '', opset)
+    #register_op('group_norm', group_norm_symbolic, '', opset)
     register_op('nms_core', nms_core_symbolic, 'mmdet_custom', opset)
     # register_op('multiclass_nms_core', multiclass_nms_core_symbolic, 'mmdet_custom', opset)
 
