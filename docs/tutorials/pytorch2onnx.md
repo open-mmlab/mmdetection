@@ -1,8 +1,8 @@
-# Model conversion from Pytroch to ONNX
+# Model conversion from Pytroch to ONNX(Experimental)
 
 <!-- TOC -->
 
-- [Model conversion from Pytroch to ONNX](#model-conversion-from-pytroch-to-onnx)
+- [Model conversion from Pytroch to ONNX(Experimental)](#model-conversion-from-pytroch-to-onnxexperimental)
   - [How to convert models from Pytorch to ONNX](#how-to-convert-models-from-pytorch-to-onnx)
     - [Prerequisite](#prerequisite)
     - [Usage](#usage)
@@ -51,18 +51,18 @@ Key arguments:
 - `--show`: Determines whether to print the architecture of the exported model. If not specified, it will be set to `False`.
 - `--output-file`: The output onnx model name. If not specified, it will be set to `tmp.onnx`.
 
-For a more detailed description of other arguments, pls. use `python tools/pytorch2onnx.py --help` for help.
+For a more detailed description of other arguments, please use `python tools/pytorch2onnx.py --help` for help.
 
 ## List of supported models exportable to ONNX
 
 The table below lists the models that are guaranteed to be exportable to ONNX and runnable in ONNX Runtime.
-|    Model    |                                           Config                                           | Note  |
-| :---------: | :----------------------------------------------------------------------------------------: | :---: |
-|     SSD     |                      [ssd300_coco](../../configs/ssd/ssd300_coco.py)                       |
-|   YOLOv3    | [yolov3_d53_mstrain-608_273e_coco](../../configs/yolo/yolov3_d53_mstrain-608_273e_coco.py) |       |
-|    FSAF     |             [fsaf_r50_fpn_1x_coco](../../configs/fsaf/fsaf_r50_fpn_1x_coco.py)             |       |
-|  RetinaNet  |     [retinanet_r50_fpn_1x_coco](../../configs/retinanet/retinanet_r50_fpn_1x_coco.py)      |       |
-| Faster-RCNN |  [faster_rcnn_r50_fpn_1x_coco](../../configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py)   |       |
+|    Model    |                        Config                        | Note  |
+| :---------: | :--------------------------------------------------: | :---: |
+|     SSD     |             `configs/ssd/ssd300_coco.py`             |       |
+|   YOLOv3    |  `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`  |       |
+|    FSAF     |        `configs/fsaf/fsaf_r50_fpn_1x_coco.py`        |       |
+|  RetinaNet  |   `configs/retinanet/retinanet_r50_fpn_1x_coco.py`   |       |
+| Faster-RCNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |       |
 
 Notes:
 
@@ -70,8 +70,8 @@ Notes:
 
 ## Reminders
 
-- If you meet any problem with listed [models](#list) above, pls. create an issue and it would be taken care of soon. For models not included in the list, pls. try to dig a little deeper and debug a little bit more and hopefully solve them by yourself.
-- Because this feature is experimental and may change fast, pls. always try with latest `mmcv` and `mmdetecion`.
+- If you meet any problem with the listed models above, please create an issue and it would be taken care of soon. For models not included in the list, please try to dig a little deeper and debug a little bit more and hopefully solve them by yourself.
+- Because this feature is experimental and may change fast, please always try with the latest `mmcv` and `mmdetecion`.
 
 ## FAQs
 
