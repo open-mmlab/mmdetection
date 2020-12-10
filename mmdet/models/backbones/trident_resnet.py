@@ -225,7 +225,7 @@ def make_trident_res_layer(block,
     return nn.Sequential(*layers)
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class TridentResNet(ResNet):
     """The stem layer, stage 1 and stage 2 in Trident ResNet are identical to
     ResNet, while in stage 3, Trident BottleBlock is utilized to replace the
