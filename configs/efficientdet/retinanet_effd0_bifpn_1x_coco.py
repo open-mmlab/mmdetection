@@ -6,6 +6,7 @@ num_levels = 5
 act_fn = 'silu'
 separable_conv = True
 num_epochs = 300
+delta = 0.1
 
 model = dict(
     type='RetinaNet',
@@ -51,7 +52,8 @@ model = dict(
             gamma=1.5,
             alpha=0.25,
             loss_weight=1.0),
-        loss_bbox=dict(type='HuberLoss', delta=0.1)
+        # Replicates huber loss
+        loss_bbox=dict(type='SmoothL1Loss', beta=delta, loss_weight=delta)
     ))
 # training and testing settings
 cudnn_benchmark = True
@@ -106,8 +108,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    # samples_per_gpu=32,
-    samples_per_gpu=12,
+    samples_per_gpu=32,
     workers_per_gpu=6,
     train=dict(
         type='RepeatDataset',
