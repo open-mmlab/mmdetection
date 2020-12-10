@@ -1,3 +1,5 @@
+import math
+
 import torch
 from torch.utils.data import DistributedSampler as _DistributedSampler
 
@@ -20,7 +22,7 @@ class DistributedSampler(_DistributedSampler):
         # add extra samples to make it evenly divisible
         # in case that indices is shorter than half of total_size
         indices = (indices *
-                   int(self.total_size / len(indices) + 1))[:self.total_size]
+                   math.ceil(self.total_size / len(indices)))[:self.total_size]
         assert len(indices) == self.total_size
 
         # subsample
