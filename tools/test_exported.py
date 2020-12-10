@@ -32,6 +32,7 @@ def postprocess(result, img_meta, num_classes=80, rescale=True):
     det_bboxes = result['boxes']
     det_labels = result['labels']
     det_masks = result.get('masks', None)
+    det_texts = result.get('texts', None)
 
     if rescale:
         img_h, img_w = img_meta[0]['ori_shape'][:2]
@@ -53,7 +54,10 @@ def postprocess(result, img_meta, num_classes=80, rescale=True):
             mask_thr_binary=0.5,
             img_size=(img_h, img_w))
         segm_results = encode_mask_results(segm_results)
-        return bbox_results, segm_results
+        if det_texts is not None:
+            return bbox_results, segm_results, det_texts
+        else:
+            return bbox_results, segm_results
     return bbox_results
 
 
@@ -136,12 +140,19 @@ def main(args):
     classes_num = len(dataset.CLASSES) + 1
 
     if backend == 'openvino':
-        from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO
-        model = DetectorOpenVINO(args.model,
-                                 args.model[:-3] + 'bin',
-                                 mapping_file_path=args.model[:-3] + 'mapping',
-                                 cfg=cfg,
-                                 classes=dataset.CLASSES)
+        extra_args = {}
+        if cfg.model.type == 'MaskTextSpotter':
+            from mmdet.utils.deployment.openvino_backend import MaskTextSpotterOpenVINO as Model
+            extra_args['text_recognition_thr'] = cfg['model'].get('roi_head', {}).get('text_thr', 0.0)
+        else:
+            from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO as Model
+        
+        model = Model(args.model,
+                      args.model[:-3] + 'bin',
+                      mapping_file_path=args.model[:-3] + 'mapping',
+                      cfg=cfg,
+                      classes=dataset.CLASSES,
+                      **extra_args)
     else:
         from mmdet.utils.deployment.onnxruntime_backend import ModelONNXRuntime
         model = ModelONNXRuntime(args.model, cfg=cfg, classes=dataset.CLASSES)
@@ -203,7 +214,7 @@ def parse_args():
     parser.add_argument('--out', type=str, help='path to file with inference results')
     parser.add_argument('--json_out', type=str, help='output result file name without extension')
     parser.add_argument('--eval', type=str, nargs='+',
-                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints', 'f1'],
+                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints', 'f1', 'word_spotting'],
                         help='eval types')
     parser.add_argument('--video', default=None, help='run model on the video rather than the dataset')
     parser.add_argument('--show', action='store_true', help='visualize results')

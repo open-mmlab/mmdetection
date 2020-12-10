@@ -50,10 +50,10 @@ def masks_to_rects(masks, is_rle):
 
 
 def polygon_from_points(points):
-    """ Returns a Polygon object to use with the Polygon2 class from a list of 8 points:
-        x1,y1,x2,y2,x3,y3,x4,y4 """
+    """ Returns a Polygon object to use with the Polygon2 class from a list of points:
+        x1,y1,x2,y2,x3,y3,x4,y4,... """
 
-    point_mat = np.array(points[:8]).astype(np.int32).reshape(4, 2)
+    point_mat = np.array(points).reshape(-1, 2)
     return plg.Polygon(point_mat)
 
 
@@ -205,14 +205,19 @@ def parse_gt_objects(gt_annotation, use_transcription):
         polygon = polygon_from_points(polygon_coords)
         gt_polygons_list.append(polygon)
 
-        transcription = gt_object.get('text', {}).get('transcription')
+        transcription = None
+        if 'text' in gt_object:
+            transcription = gt_object['text']['transcription']
+
+            if transcription == '###' or not transcription:
+                gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
+            elif use_transcription:
+                if is_word(transcription):
+                    transcription = strip(transcription)
+                else:
+                    gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
+
         if use_transcription:
-            if transcription == '###' or transcription is None:
-                gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
-            elif is_word(transcription):
-                transcription = strip(gt_object['transcription'])
-            else:
-                gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
             gt_transcriptions.append(transcription)
 
     return gt_polygons_list, gt_dont_care_polygon_nums, gt_transcriptions
@@ -326,8 +331,9 @@ def text_eval(pr_annotations, gt_annotations, conf_thr,
     all_areas, detected_areas = [], []
     all_width, detected_width = [], []
 
-    for frame_id in gt_annotations:
+    gt_annotations = [v for k, v in sorted(gt_annotations.items(), key=lambda x:x[0])]
 
+    for frame_id, _ in enumerate(gt_annotations):
         gt_polygons_list, gt_dont_care_polygon_nums, gt_transcriptions = parse_gt_objects(
             gt_annotations[frame_id], use_transcriptions)
         pr_polygons_list, pr_confidences_list, pr_transcriptions = parse_pr_objects(

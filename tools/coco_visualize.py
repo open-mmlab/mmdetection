@@ -81,7 +81,7 @@ def print_stat(content, palette, cat_id_to_color_id):
     
     for i, ann in enumerate(content['annotations']):
         per_cat_counts[ann['category_id']] += 1
-        if ann['is_occluded']:
+        if ann.get('is_occluded', False):
             per_cat_occluded_counts[ann['category_id']] += 1
         if ann['iscrowd']:
             per_cat_is_crowd_counts[ann['category_id']] += 1

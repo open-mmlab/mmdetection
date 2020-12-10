@@ -16,6 +16,7 @@ except ImportError:
 try:
     import albumentations
     from albumentations import Compose
+    from .albumentations_extra import ALBUMENTATIONS_EXTRA
 except ImportError:
     albumentations = None
     Compose = None
@@ -843,7 +844,10 @@ class Albu(object):
         if mmcv.is_str(obj_type):
             if albumentations is None:
                 raise RuntimeError('albumentations is not installed')
-            obj_cls = getattr(albumentations, obj_type)
+            try:
+                obj_cls = getattr(albumentations, obj_type)
+            except AttributeError:
+                obj_cls = ALBUMENTATIONS_EXTRA[obj_type]
         elif inspect.isclass(obj_type):
             obj_cls = obj_type
         else:
@@ -916,6 +920,13 @@ class Albu(object):
                     results['masks'] = ori_masks.__class__(
                         results['masks'], results['image'].shape[0],
                         results['image'].shape[1])
+
+                if 'texts' in results:
+                    results['texts'] = np.array(
+                        [results['texts'][i] for i in results['idx_mapper']])
+
+                assert len(results['bboxes']) == len(results['texts'])
+                assert len(results['masks']) == len(results['texts'])
 
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):

@@ -11,7 +11,7 @@ if is_nncf_enabled():
     try:
         from nncf import (NNCFConfig, create_compressed_model,
                           register_default_init_args)
-        from nncf.dynamic_graph.patch_pytorch import nncf_model_input
+        from nncf.dynamic_graph.input_wrapping import nncf_model_input
         from nncf.initialization import InitializingDataLoader
         from nncf.nncf_network import NNCFNetwork
 
@@ -78,7 +78,7 @@ def wrap_nncf_model(model,
 
     if data_loader_for_init:
         wrapped_loader = MMInitializeDataLoader(data_loader_for_init)
-        nncf_config = register_default_init_args(nncf_config, None, wrapped_loader)
+        nncf_config = register_default_init_args(nncf_config, wrapped_loader)
 
     if cfg.get('resume_from'):
         checkpoint_path = cfg.get('resume_from')
@@ -135,7 +135,7 @@ def wrap_nncf_model(model,
     def dummy_forward(model):
         fake_data = _get_fake_data_for_forward(cfg, nncf_config, get_fake_input_func)
         img, img_metas = fake_data["img"], fake_data["img_metas"]
-        img = nncf_model_input(img)
+        img[0] = nncf_model_input(img[0])
         if nncf_compress_postprocessing:
             ctx = model.forward_export_context(img_metas)
             logger.debug(f"NNCF will compress a postprocessing part of the model")
@@ -145,15 +145,40 @@ def wrap_nncf_model(model,
         with ctx:
             model(img)
 
+    def wrap_inputs(args, kwargs):
+        # during dummy_forward
+        if not len(kwargs):
+            return args, kwargs
+
+        # during building original graph
+        if not kwargs.get('return_loss') and kwargs.get('forward_export'):
+            return args, kwargs
+
+        # during model's forward
+        assert 'img' in kwargs, 'During model forward img must be in kwargs'
+        img = kwargs['img']
+        if isinstance(img, list):
+            assert len(img) == 1, 'Input list must have a length 1'
+            assert torch.is_tensor(img[0]), 'Input for a model must be a tensor'
+            img[0] = nncf_model_input(img[0])
+        else:
+            assert torch.is_tensor(img), 'Input for a model must be a tensor'
+            img = nncf_model_input(img)
+        kwargs['img'] = img
+        return args, kwargs
+
     model.dummy_forward_fn = dummy_forward
+    export_method = type(model).export
 
     if 'log_dir' in nncf_config:
         os.makedirs(nncf_config['log_dir'], exist_ok=True)
     compression_ctrl, model = create_compressed_model(model,
                                                       nncf_config,
                                                       dummy_forward_fn=dummy_forward,
+                                                      wrap_inputs_fn=wrap_inputs,
                                                       resuming_state_dict=resuming_state_dict)
     model = change_export_func_first_conv(model)
+    model.export = export_method.__get__(model)
 
     return compression_ctrl, model
 

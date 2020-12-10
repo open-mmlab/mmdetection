@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-
-import logging
-import numpy as np
-import os.path as osp
-import torch
 from collections import OrderedDict
+import logging
+import string
+
 from lxml import etree
+import numpy as np
 from openvino.inference_engine import IECore
+import os.path as osp
+from scipy.special import softmax
+import torch
 
 from ...models import build_detector
 
@@ -240,5 +242,105 @@ class DetectorOpenVINO(ModelOpenVINO):
         output['boxes'] = output['boxes'][valid_detections_mask]
         if 'masks' in output:
             output['masks'] = output['masks'][valid_detections_mask]
+
+        return output
+
+
+class MaskTextSpotterOpenVINO(ModelOpenVINO):
+    def __init__(self, xml_file_path, *args, text_recognition_thr=0.5, **kwargs):
+        self.with_mask = False
+        super().__init__(xml_file_path,
+                         *args,
+                         required_inputs=('image', ),
+                         required_outputs=None,
+                         **kwargs)
+        self.n, self.c, self.h, self.w = self.net.input_info['image'].input_data.shape
+        assert self.n == 1, 'Only batch 1 is supported.'
+
+        xml_path = xml_file_path.replace('.xml', '_text_recognition_head_encoder.xml')
+        self.text_encoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
+
+        xml_path = xml_file_path.replace('.xml', '_text_recognition_head_decoder.xml')
+        self.text_decoder = ModelOpenVINO(xml_path, xml_path.replace('.xml', '.bin'))
+        self.hidden_shape = [v.shape for k, v in self.text_decoder.net.inputs.items() if k == 'prev_hidden'][0]
+        self.alphabet = '  ' + string.ascii_lowercase + string.digits
+        self.text_recognition_thr = text_recognition_thr
+
+    def configure_outputs(self, required):
+        extra_outputs = ['boxes', 'labels', 'masks', 'text_features']
+
+        for output in extra_outputs:
+            if output not in self.orig_ir_mapping and output in self.net.outputs:
+                self.orig_ir_mapping[output] = output
+            print(self.orig_ir_mapping[output], output)
+
+        self.try_add_extra_outputs(extra_outputs)
+        outputs = []
+
+        self.check_required(self.orig_ir_mapping.keys(), ['boxes', 'labels', 'text_features'])
+        self.with_detection_output = False
+        outputs.extend(['boxes', 'labels', 'text_features'])
+
+        try:
+            self.check_required(self.orig_ir_mapping.keys(), ['masks'])
+            self.with_mask = True
+            outputs.append('masks')
+        except ValueError:
+            self.with_mask = False
+
+        self.set_outputs(outputs)
+
+    def __call__(self, inputs, **kwargs):
+        inputs = self.unify_inputs(inputs)
+        data_h, data_w = inputs['image'].shape[-2:]
+        inputs['image'] = np.pad(inputs['image'],
+                                 ((0, 0), (0, 0), (0, self.h - data_h), (0, self.w - data_w)),
+                                 mode='constant')
+
+        output = super().__call__(inputs)
+
+        valid_detections_mask = output['boxes'][:,-1] > 0
+        output['labels'] = output['labels'][valid_detections_mask]
+        output['boxes'] = output['boxes'][valid_detections_mask]
+        output['text_features'] = output['text_features'][valid_detections_mask]
+
+        if 'masks' in output:
+            output['masks'] = output['masks'][valid_detections_mask]
+
+        texts = []
+        for feature in output['text_features']:
+            feature = np.expand_dims(feature, 0)
+            feature = self.text_encoder({'input': feature})['output']
+            feature = np.reshape(feature, (feature.shape[0], feature.shape[1], -1))
+            feature = np.transpose(feature, (0, 2, 1))
+
+            hidden = np.zeros(self.hidden_shape)
+            prev_symbol = np.zeros((1,))
+
+            eos = 1
+            max_seq_len = 28
+
+            decoded = ''
+            confidence = 1
+
+            for _ in range(max_seq_len):
+                out = self.text_decoder({
+                    'prev_symbol': prev_symbol,
+                    'prev_hidden': hidden,
+                    'encoder_outputs': feature
+                })
+                softmaxed = softmax(out['output'], axis=1)
+                softmaxed_max = np.max(softmaxed, axis=1)
+                confidence *= softmaxed_max[0]
+                prev_symbol = np.argmax(softmaxed, axis=1)[0]
+                if prev_symbol == eos:
+                    break
+                hidden = out['hidden']
+                decoded = decoded + self.alphabet[prev_symbol]
+
+            texts.append(decoded if confidence >= self.text_recognition_thr else '')
+
+        texts = np.array(texts)
+        output['texts'] = texts
 
         return output

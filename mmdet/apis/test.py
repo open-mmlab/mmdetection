@@ -52,9 +52,9 @@ def single_gpu_test(model,
 
         # encode mask results
         if isinstance(result, tuple):
-            bbox_results, mask_results = result
-            encoded_mask_results = encode_mask_results(mask_results)
-            result = bbox_results, encoded_mask_results
+            result = list(result)
+            result[1] = encode_mask_results(result[1])
+            result = tuple(result)
         results.append(result)
 
         batch_size = len(data['img_metas'][0].data)
@@ -94,9 +94,9 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             result = model(return_loss=False, rescale=True, **data)
             # encode mask results
             if isinstance(result, tuple):
-                bbox_results, mask_results = result
-                encoded_mask_results = encode_mask_results(mask_results)
-                result = bbox_results, encoded_mask_results
+                result = list(result)
+                result[1] = encode_mask_results(result[1])
+                result = tuple(result)
         results.append(result)
 
         if rank == 0:
