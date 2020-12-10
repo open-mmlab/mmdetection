@@ -1,11 +1,10 @@
 # Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection
 
-
 ## Introduction
 
 We provide config files to reproduce the object detection results in the paper [Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection](https://arxiv.org/abs/2006.04388)
 
-```
+```latex
 @article{li2020generalized,
   title={Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection},
   author={Li, Xiang and Wang, Wenhai and Wu, Lijun and Chen, Shuo and Hu, Xiaolin and Li, Jun and Tang, Jinhui and Yang, Jian},
@@ -13,7 +12,6 @@ We provide config files to reproduce the object detection results in the paper [
   year={2020}
 }
 ```
-
 
 ## Results and Models
 

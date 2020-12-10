@@ -9,7 +9,6 @@
 - A conversion [script](../../tools/convert_datasets/cityscapes.py) is provided to convert Cityscapes into COCO format. Please refer to [install.md](../../docs/install.md#prepare-datasets) for details.
 - `CityscapesDataset` implemented three evaluation methods. `bbox` and `segm` are standard COCO bbox/mask AP. `cityscapes` is the cityscapes dataset official evaluation, which may be slightly higher than COCO.
 
-
 ### Faster R-CNN
 
 |    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | Config | Download   |

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-```
+```latex
 @article{wang2019fcos,
   title={Nas-fcos: Fast neural architecture search for object detection},
   author={Wang, Ning and Gao, Yang and Chen, Hao and Wang, Peng and Tian, Zhi and Shen, Chunhua},
@@ -19,4 +19,5 @@
 | FCOSHead  | R-50      | caffe   | Y       | 1x      |          |                | 38.5   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/nas_fcos/nas_fcos_fcoshead_r50_caffe_fpn_gn-head_4x4_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/nas_fcos/nas_fcos_fcoshead_r50_caffe_fpn_gn-head_4x4_1x_coco/nas_fcos_fcoshead_r50_caffe_fpn_gn-head_4x4_1x_coco_20200521-7fdcbce0.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/nas_fcos/nas_fcos_fcoshead_r50_caffe_fpn_gn-head_4x4_1x_coco/nas_fcos_fcoshead_r50_caffe_fpn_gn-head_4x4_1x_coco_20200521.log.json) |
 
 **Notes:**
+
 - To be consistent with the author's implementation, we use 4 GPUs with 4 images/GPU.
