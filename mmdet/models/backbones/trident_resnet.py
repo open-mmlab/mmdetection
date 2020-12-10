@@ -16,26 +16,24 @@ class TridentConv(nn.Module):
         in_channels (int): Number of channels in input.
         out_channels (int): Number of channels in output.
         kernel_size (int): Size of convolution kernel.
-        stride (int): Convolution stride. Default: 1.
-        trident_dilations (tuple[int, int, int]): Dilations of different
-            trident branch. Default: (1, 2, 3).
-        test_branch_idx (int): In inference, all 3 branches will be used
-            if `test_branch_idx==-1`, otherwise only branch with index
-            `test_branch_idx` will be used. Default: 1.
-        bias (bool): Whether to use bias in convolution or not.
+        stride (int, optional): Convolution stride. Default: 1.
+        trident_dilations (tuple[int, int, int], optional): Dilations of
+            different trident branch. Default: (1, 2, 3).
+        test_branch_idx (int, optional): In inference, all 3 branches will
+            be used if `test_branch_idx==-1`, otherwise only branch with
+            index `test_branch_idx` will be used. Default: 1.
+        bias (bool, optional): Whether to use bias in convolution or not.
             Default: False.
     """
 
-    def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=1,
-            trident_dilations=(1, 2, 3),
-            test_branch_idx=1,
-            bias=False,
-    ):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 trident_dilations=(1, 2, 3),
+                 test_branch_idx=1,
+                 bias=False):
         super(TridentConv, self).__init__()
         self.num_branch = len(trident_dilations)
         self.with_bias = bias
@@ -60,15 +58,15 @@ class TridentConv(nn.Module):
         kaiming_init(self, distribution='uniform', mode='fan_in')
 
     def extra_repr(self):
-        tmpstr = 'in_channels=' + str(self.in_channels)
-        tmpstr += ', out_channels=' + str(self.out_channels)
-        tmpstr += ', kernel_size=' + str(self.kernel_size)
-        tmpstr += ', num_branch=' + str(self.num_branch)
-        tmpstr += ', test_branch_idx=' + str(self.test_branch_idx)
-        tmpstr += ', stride=' + str(self.stride)
-        tmpstr += ', paddings=' + str(self.paddings)
-        tmpstr += ', dilations=' + str(self.dilations)
-        tmpstr += ', bias=' + str(self.bias)
+        tmpstr = f'in_channels={self.in_channels}'
+        tmpstr += f', out_channels={self.out_channels}'
+        tmpstr += f', kernel_size={self.kernel_size}'
+        tmpstr += f', num_branch={self.num_branch}'
+        tmpstr += f', test_branch_idx={self.test_branch_idx}'
+        tmpstr += f', stride={self.stride}'
+        tmpstr += f', paddings={self.paddings}'
+        tmpstr += f', dilations={self.dilations}'
+        tmpstr += f', bias={self.bias}'
         return tmpstr
 
     def forward(self, inputs):
@@ -96,12 +94,12 @@ class TridentBottleneck(Bottleneck):
 
     Args:
         trident_dilations (tuple[int, int, int]): Dilations of different
-            trident branch. Default: (1, 2, 3).
+            trident branch.
         test_branch_idx (int): In inference, all 3 branches will be used
             if `test_branch_idx==-1`, otherwise only branch with index
-            `test_branch_idx` will be used. Default: 1.
+            `test_branch_idx` will be used.
         concat_output (bool): Whether to concat the output list to a Tensor.
-            `True` only in the last Block. Default: False.
+            `True` only in the last Block.
     """
 
     def __init__(self, trident_dilations, test_branch_idx, concat_output,
@@ -201,8 +199,7 @@ def make_trident_res_layer(block,
                 planes * block.expansion,
                 kernel_size=1,
                 stride=conv_stride,
-                bias=False,
-            ),
+                bias=False),
             build_norm_layer(norm_cfg, planes * block.expansion)[1]
         ])
         downsample = nn.Sequential(*downsample)
@@ -248,7 +245,7 @@ class TridentResNet(ResNet):
             `test_branch_idx` will be used.
         trident_dilations (tuple[int]): Dilations of different trident branch.
             len(trident_dilations) should be equal to num_branch.
-    """ # noqa
+    """  # noqa
 
     def __init__(self, depth, num_branch, test_branch_idx, trident_dilations,
                  **kwargs):
