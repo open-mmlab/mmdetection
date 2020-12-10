@@ -120,8 +120,6 @@ We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) for
 python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output_file ${ONNX_FILE} [--shape ${INPUT_SHAPE} --verify]
 ```
 
-
-
 **Note**: This tool is still experimental. Some customized operators are not supported for now. For a detailed description of the usage and the list of supported models, pls. refer to [pytorch2onnx](./tutorials/pytorch2onnx.md).
 
 ### MMDetection 1.x model to MMDetection 2.x
