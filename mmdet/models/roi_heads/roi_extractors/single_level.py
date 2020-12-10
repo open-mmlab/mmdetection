@@ -7,8 +7,6 @@ from mmdet.core.utils.misc import topk
 from mmdet.models.builder import ROI_EXTRACTORS
 from mmdet.utils.deployment.symbolic import py_symbolic
 
-from functools import wraps
-
 
 def flatten(args):
     flat_args = []

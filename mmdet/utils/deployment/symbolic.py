@@ -20,13 +20,45 @@ from torch.onnx.symbolic_helper import parse_args
 from torch.onnx.symbolic_registry import register_op, get_registered_op, is_registered_op
 
 
+def are_kwargs_contain_tensors(**kwargs):
+        for elem in kwargs.values():
+            if isinstance(elem, (list, tuple, torch.Tensor)):
+                return True
+        return False
+
+
 def py_symbolic(op_name=None, namespace='mmdet_custom', outside_adapter=None):
     """
-    Need to add some documentation
+    The py_symbolic decorator allows you to wrap your custom function in 
+    torch.autograd.Function and associate it with a custom symbolic function
+    to represent the custom operation in a computation graph.
+
+    A symbolic function cannot receive a collection of tensors as arguments.
+    If your custom function takes a collection of tensors as arguments,
+    then you need to implement an argument converter from the collection 
+    and pass it to the decorator.
+
+    Args:
+        op_name (str): Operation name, must match the registered operation name.
+        namespace (str): Namespace for this operation.
+        outside_adapter (function): Function for converting arguments.
+
+    Usage example:
+        1. Implement a custom operation. For example 'custom_op'.
+        2. Implement a symbolic function to represent the custom_op in 
+            a computation graph. For example 'custom_op_symbolic'.
+        3. Register the operation before export: 
+            register_op('custom_op_name', custom_op_symbolic, namespace, opset)
+        4. Decorate the custom operation:
+            @py_symbolic(op_name='custom_op_name')
+            def custom_op(...):
+        5. If you need to convert custom function arguments to symbolic function arguments,
+            you can implement a converter and pass it to the decorator:
+            @py_symbolic(op_name='custom_op_name', outside_adapter=converter)
     """
     def decorator(func):
         @wraps(func)
-        def wrapped_function(*args):
+        def wrapped_function(*args, **kwargs):
 
             name = op_name if op_name is not None else func.__name__
             opset = sym_help._export_onnx_opset_version
@@ -36,18 +68,22 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', outside_adapter=None):
                 class XFunction(torch.autograd.Function):
                     @staticmethod
                     def forward(ctx, *xargs):
-                        return func(*args)
+                        return func(*args, **kwargs)
 
                     @staticmethod
                     def symbolic(g, *xargs):
                         symb = get_registered_op(name, namespace, opset)
                         return symb(g, *xargs)
-                
+
+                if are_kwargs_contain_tensors(**kwargs):
+                    raise TypeError('Arguments in kwargs must be non-tensor type. '
+                                    'Pass tensors and tensor collections using args.')
+
                 if outside_adapter is not None:
                     return XFunction.apply(*outside_adapter(*args))
                 return XFunction.apply(*args)
             else:
-                return func(*args)
+                return func(*args, **kwargs)
         return wrapped_function
     return decorator
 
