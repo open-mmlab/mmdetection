@@ -1,7 +1,8 @@
 # Rethinking Classification and Localization for Object Detection
 
 ## Introduction
-```
+
+```latex
 @article{wu2019rethinking,
     title={Rethinking Classification and Localization for Object Detection},
     author={Yue Wu and Yinpeng Chen and Lu Yuan and Zicheng Liu and Lijuan Wang and Hongzhi Li and Yun Fu},

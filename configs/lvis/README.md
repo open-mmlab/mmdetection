@@ -1,7 +1,8 @@
 # LVIS dataset
 
 ## Introduction
-```
+
+```latex
 @inproceedings{gupta2019lvis,
   title={{LVIS}: A Dataset for Large Vocabulary Instance Segmentation},
   author={Gupta, Agrim and Dollar, Piotr and Girshick, Ross},
@@ -11,16 +12,21 @@
 ```
 
 ## Common Setting
+
 * Please follow [install guide](../../docs/install.md#install-mmdetection) to install open-mmlab forked cocoapi first.
 * Run following scripts to install our forked lvis-api.
-    ```
+
+    ```shell
     # mmlvis is fully compatible with official lvis
     pip install mmlvis
     ```
+
     or
-    ```
+
+    ```shell
     pip install -r requirements/optional.txt
     ```
+
 * All experiments use oversample strategy [here](../../docs/tutorials/new_dataset.md#class-balanced-dataset) with oversample threshold `1e-3`.
 * The size of LVIS v0.5 is half of COCO, so schedule `2x` in LVIS is roughly the same iterations as `1x` in COCO.
 

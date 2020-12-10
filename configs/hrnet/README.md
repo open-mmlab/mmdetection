@@ -2,7 +2,7 @@
 
 ## Introduction
 
-```
+```latex
 @inproceedings{SunXLW19,
   title={Deep High-Resolution Representation Learning for Human Pose Estimation},
   author={Ke Sun and Bin Xiao and Dong Liu and Jingdong Wang},
@@ -21,7 +21,6 @@
 ```
 
 ## Results and Models
-
 
 ### Faster R-CNN
 
@@ -45,7 +44,6 @@
 |   HRNetV2p-W40  | pytorch |   1x    |  10.9    |                | 42.1   |  37.5   |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/mask_rcnn_hrnetv2p_w40_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_1x_coco/mask_rcnn_hrnetv2p_w40_1x_coco_20200511_015646-66738b35.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_1x_coco/mask_rcnn_hrnetv2p_w40_1x_coco_20200511_015646.log.json)  |
 |   HRNetV2p-W40  | pytorch |   2x    |   10.9   |                | 42.8   |  38.2   |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/mask_rcnn_hrnetv2p_w40_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_2x_coco/mask_rcnn_hrnetv2p_w40_2x_coco_20200512_163732-aed5e4ab.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_2x_coco/mask_rcnn_hrnetv2p_w40_2x_coco_20200512_163732.log.json)  |
 
-
 ### Cascade R-CNN
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
@@ -53,7 +51,6 @@
 |   HRNetV2p-W18  | pytorch |   20e   |  7.0     | 11.0           | 41.2   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/cascade_rcnn_hrnetv2p_w18_20e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w18_20e_coco/cascade_rcnn_hrnetv2p_w18_20e_coco_20200210-434be9d7.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w18_20e_coco/cascade_rcnn_hrnetv2p_w18_20e_coco_20200210_105632.log.json)  |
 |   HRNetV2p-W32  | pytorch |   20e   |  9.4     | 11.0           | 43.3   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/cascade_rcnn_hrnetv2p_w32_20e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w32_20e_coco/cascade_rcnn_hrnetv2p_w32_20e_coco_20200208-928455a4.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w32_20e_coco/cascade_rcnn_hrnetv2p_w32_20e_coco_20200208_160511.log.json)  |
 |   HRNetV2p-W40  | pytorch |   20e   |  10.8    |                | 43.8   |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/cascade_rcnn_hrnetv2p_w40_20e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w40_20e_coco/cascade_rcnn_hrnetv2p_w40_20e_coco_20200512_161112-75e47b04.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w40_20e_coco/cascade_rcnn_hrnetv2p_w40_20e_coco_20200512_161112.log.json)  |
-
 
 ### Cascade Mask R-CNN
 
@@ -71,7 +68,6 @@
 |   HRNetV2p-W32  | pytorch |   20e   | 13.1     | 4.9            | 45.4   | 39.9    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/htc_hrnetv2p_w32_20e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w32_20e_coco/htc_hrnetv2p_w32_20e_coco_20200207-7639fa12.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w32_20e_coco/htc_hrnetv2p_w32_20e_coco_20200207_193153.log.json) |
 |   HRNetV2p-W40  | pytorch |   20e   | 14.6     |                | 46.4   | 40.8    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/htc_hrnetv2p_w40_20e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w40_20e_coco/htc_hrnetv2p_w40_20e_coco_20200529_183411-417c4d5b.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w40_20e_coco/htc_hrnetv2p_w40_20e_coco_20200529_183411.log.json) |
 
-
 ### FCOS
 
 | Backbone  | Style   |  GN     | MS train | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
@@ -83,8 +79,6 @@
 |HRNetV2p-W18| pytorch | Y       | Y       | 2x       | 13.0 | 12.9 | 38.1   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco_20200316-a668468b.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco_20200316_104027.log.json) |
 |HRNetV2p-W32| pytorch | Y       | Y       | 2x       | 17.5 | 12.4 | 41.8   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco_20200314-065d37a6.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco_20200314_145356.log.json) |
 |HRNetV2p-W48| pytorch | Y       | Y       | 2x       | 20.3 | 10.8 | 42.8   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco_20200314-e201886d.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco_20200314_150607.log.json) |
-
-
 
 **Note:**
 

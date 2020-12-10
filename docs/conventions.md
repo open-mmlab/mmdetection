@@ -3,9 +3,11 @@
 Please check the following conventions if you would like to modify MMDetection as your own project.
 
 ## Loss
+
 In MMDetection, a `dict` containing losses and metrics will be returned by `model(**data)`.
 
 For example, in bbox head,
+
 ```python
 class BBoxHead(nn.Module):
     ...
@@ -19,6 +21,7 @@ class BBoxHead(nn.Module):
         losses['loss_bbox'] = self.loss_bbox(...)
         return losses
 ```
+
 `bbox_head.loss()` will be called during model forward.
 The returned dict contains `'loss_bbox'`, `'loss_cls'`, `'acc'` .
 Only `'loss_bbox'`, `'loss_cls'` will be used during back propagation,

@@ -106,8 +106,7 @@ Params: 37.74 M
 
 1. FLOPs are related to the input shape while parameters are not. The default
  input shape is (1, 3, 1280, 800).
-2. Some operators are not counted into FLOPs like GN and custom operators
-. Refer to [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/flops_counter.py) for details.
+2. Some operators are not counted into FLOPs like GN and custom operators. Refer to [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/flops_counter.py) for details.
 3. The FLOPs of two-stage detectors is dependent on the number of proposals.
 
 ## Model conversion

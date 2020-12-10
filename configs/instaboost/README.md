@@ -2,7 +2,7 @@
 
 Configs in this directory is the implementation for ICCV2019 paper "InstaBoost: Boosting Instance Segmentation Via Probability Map Guided Copy-Pasting" and provided by the authors of the paper. InstaBoost is a data augmentation method for object detection and instance segmentation. The paper has been released on [`arXiv`](https://arxiv.org/abs/1908.07801).
 
-```
+```latex
 @inproceedings{fang2019instaboost,
   title={Instaboost: Boosting instance segmentation via probability map guided copy-pasting},
   author={Fang, Hao-Shu and Sun, Jianhua and Wang, Runzhong and Gou, Minghao and Li, Yong-Lu and Lu, Cewu},
@@ -18,7 +18,7 @@ Configs in this directory is the implementation for ICCV2019 paper "InstaBoost: 
 
 You need to install `instaboostfast` before using it.
 
-```
+```shell
 pip install instaboostfast
 ```
 
@@ -30,10 +30,9 @@ InstaBoost have been already integrated in the data pipeline, thus all you need 
 
 ## Results and Models
 
- - All models were trained on `coco_2017_train` and tested on `coco_2017_val` for conveinience of evaluation and comparison. In the paper, the results are obtained from `test-dev`.
- - To balance accuracy and training time when using InstaBoost, models released in this page are all trained for 48 Epochs. Other training and testing configs strictly follow the original framework.
- - For results and models in MMDetection V1.x, please refer to [Instaboost](https://github.com/GothicAi/Instaboost).
-
+- All models were trained on `coco_2017_train` and tested on `coco_2017_val` for conveinience of evaluation and comparison. In the paper, the results are obtained from `test-dev`.
+- To balance accuracy and training time when using InstaBoost, models released in this page are all trained for 48 Epochs. Other training and testing configs strictly follow the original framework.
+- For results and models in MMDetection V1.x, please refer to [Instaboost](https://github.com/GothicAi/Instaboost).
 
 |     Network     |       Backbone       | Lr schd | Mem (GB) | Inf time (fps) | box AP  | mask AP | Config |     Download       |
 | :-------------: |      :--------:      | :-----: | :------: | :------------: | :------:| :-----: | :------: | :-----------------: |

@@ -34,14 +34,14 @@ We follow the below style to name config files. Contributors are advised to foll
 - `{backbone}`: backbone type like `r50` (ResNet-50), `x101` (ResNeXt-101).
 - `{neck}`: neck type like `fpn`, `pafpn`, `nasfpn`, `c4`.
 - `[norm_setting]`: `bn` (Batch Normalization) is used unless specified, other norm layer type could be `gn` (Group Normalization), `syncbn` (Synchronized Batch Normalization).
-`gn-head`/`gn-neck` indicates GN is applied in head/neck only, while `gn-all` means GN is applied in the entire model, e.g. backbone, neck, head.
+    `gn-head`/`gn-neck` indicates GN is applied in head/neck only, while `gn-all` means GN is applied in the entire model, e.g. backbone, neck, head.
 - `[misc]`: miscellaneous setting/plugins of model, e.g. `dconv`, `gcb`, `attention`, `albu`, `mstrain`.
 - `[gpu x batch_per_gpu]`: GPUs and samples per GPU, `8x2` is used by default.
 - `{schedule}`: training schedule, options are `1x`, `2x`, `20e`, etc.
-`1x` and `2x` means 12 epochs and 24 epochs respectively.
-`20e` is adopted in cascade models, which denotes 20 epochs.
-For `1x`/`2x`, initial learning rate decays by a factor of 10 at the 8/16th and 11/22th epochs.
-For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
+    `1x` and `2x` means 12 epochs and 24 epochs respectively.
+    `20e` is adopted in cascade models, which denotes 20 epochs.
+    For `1x`/`2x`, initial learning rate decays by a factor of 10 at the 8/16th and 11/22th epochs.
+    For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
 - `{dataset}`: dataset like `coco`, `cityscapes`, `voc_0712`, `wider_face`.
 
 ## An Example of Mask R-CNN
@@ -437,6 +437,7 @@ The `_delete_=True` would replace all old keys in `backbone` field with new keys
 Some intermediate variables are used in the configs files, like `train_pipeline`/`test_pipeline` in datasets.
 It's worth noting that when modifying intermediate variables in the children configs, user need to pass the intermediate variables into corresponding fields again.
 For example, we would like to use multi scale strategy to train a Mask R-CNN. `train_pipeline`/`test_pipeline` are intermediate variable we would like modify.
+
 ```python
 _base_ = './mask_rcnn_r50_fpn_1x_coco.py'
 img_norm_cfg = dict(
@@ -476,4 +477,5 @@ data = dict(
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 ```
+
 We first define the new `train_pipeline`/`test_pipeline` and pass them into `data`.
