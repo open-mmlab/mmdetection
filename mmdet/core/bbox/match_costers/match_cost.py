@@ -7,6 +7,20 @@ from .builder import MATCH_COST
 
 @MATCH_COST.register_module()
 class BBoxL1Cost(object):
+    """BBoxL1Cost.
+
+     Args:
+         weight (int | float): loss_weight
+     Examples:
+         >>> from mmdet.core.bbox.match_costers.match_cost import BBoxL1Cost
+         >>> import torch
+         >>> self = BBoxL1Cost()
+         >>> bbox_pred = torch.rand(1, 4)
+         >>> gt_bboxes= torch.FloatTensor([[0, 0, 2, 4], [1, 2, 3, 4]])
+         >>> factor = torch.tensor([10, 8, 10, 8])
+         >>> self(bbox_pred, gt_bboxes, factor)
+         tensor([[1.6172, 1.6422]])
+     """
 
     def __init__(self, weight=1.):
         self.weight = weight
@@ -20,6 +34,9 @@ class BBoxL1Cost(object):
             gt_bboxes (Tensor): Ground truth boxes with unnormalized
                 coordinates (x1, y1, x2, y2). Shape [num_gt, 4].
             factor (Tensor): Image size(whwh) tensor. Shape [4].
+
+        Returns:
+            torch.Tensor: bbox_cost value with weight
         """
         gt_bboxes_normalized = gt_bboxes / factor
         # MODYFY: xyxy p1-norm in sparse-RCNN CODE which need to review
@@ -30,7 +47,26 @@ class BBoxL1Cost(object):
 
 @MATCH_COST.register_module()
 class ClsFocalCost(object):
+    """ClsFocalCost.
 
+     Args:
+         weight (int | float): loss_weight
+         alpha (int | float): focal_loss alpha
+         gamma (int | float): focal_loss gamma
+         eps (float): default 1e-12
+     Examples:
+         >>> from mmdet.core.bbox.match_costers.match_cost import ClsFocalCost
+         >>> import torch
+         >>> self = ClsFocalCost()
+         >>> cls_pred = torch.rand(4, 3)
+         >>> gt_labels = torch.tensor([0, 1, 2])
+         >>> factor = torch.tensor([10, 8, 10, 8])
+         >>> self(cls_pred, gt_labels)
+         tensor([[-0.3236, -0.3364, -0.2699],
+                [-0.3439, -0.3209, -0.4807],
+                [-0.4099, -0.3795, -0.2929],
+                [-0.1950, -0.1207, -0.2626]])
+     """
     def __init__(self, weight=1., alpha=0.25, gamma=2, eps=1e-12):
         self.weight = weight
         self.alpha = alpha
@@ -43,6 +79,9 @@ class ClsFocalCost(object):
             cls_pred (Tensor): Predicted classification logits, shape
                 [num_query, num_class].
             gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
+
+        Returns:
+            torch.Tensor: cls_cost value with weight
         """
         cls_pred = cls_pred.sigmoid()
         neg_cost = -(1 - cls_pred + self.eps).log() * (
@@ -55,7 +94,23 @@ class ClsFocalCost(object):
 
 @MATCH_COST.register_module()
 class ClsSoftmaxCost(object):
+    """ClsSoftmaxCost.
 
+     Args:
+         weight (int | float): loss_weight
+     Examples:
+         >>> from mmdet.core.bbox.match_costers.match_cost import ClsSoftmaxCost
+         >>> import torch
+         >>> self = ClsSoftmaxCost()
+         >>> cls_pred = torch.rand(4, 3)
+         >>> gt_labels = torch.tensor([0, 1, 2])
+         >>> factor = torch.tensor([10, 8, 10, 8])
+         >>> self(cls_pred, gt_labels)
+         tensor([[-0.3430, -0.3525, -0.3045],
+                [-0.3077, -0.2931, -0.3992],
+                [-0.3664, -0.3455, -0.2881],
+                [-0.3343, -0.2701, -0.3956]])
+     """
     def __init__(self, weight=1.):
         self.weight = weight
 
@@ -65,6 +120,9 @@ class ClsSoftmaxCost(object):
             cls_pred (Tensor): Predicted classification logits, shape
                 [num_query, num_class].
             gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
+
+        Returns:
+            torch.Tensor: cls_cost value with weight
         """
         # Following the official DETR repo, contrary to the loss that
         # NLL is used, we approximate it in 1 - cls_score[gt_label].
@@ -76,8 +134,23 @@ class ClsSoftmaxCost(object):
 
 
 @MATCH_COST.register_module()
-class IoUBasedCost(object):
+class IoUCost(object):
+    """IoUCost.
 
+     Args:
+         iou_calculator (dict): cfg such as dict(type='BboxOverlaps2D')
+         iou_mode (str): iou mode
+         weight (int | float): loss weight
+     Examples:
+         >>> from mmdet.core.bbox.match_costers.match_cost import IoUCost
+         >>> import torch
+         >>> self = IoUCost()
+         >>> bboxes = torch.FloatTensor([[1,1, 2, 2], [2, 2, 3, 4]])
+         >>> gt_bboxes = torch.FloatTensor([[0, 0, 2, 4], [1, 2, 3, 4]])
+         >>> self(bboxes, gt_bboxes)
+         tensor([[-0.1250,  0.1667],
+                [ 0.1667, -0.5000]])
+     """
     def __init__(self,
                  iou_calculator=dict(type='BboxOverlaps2D'),
                  iou_mode='giou',
@@ -93,6 +166,9 @@ class IoUBasedCost(object):
                 (x1, y1, x2, y2). Shape [num_query, 4].
             gt_bboxes (Tensor): Ground truth boxes with unnormalized
                 coordinates (x1, y1, x2, y2). Shape [num_gt, 4].
+
+        Returns:
+            torch.Tensor: iou_cost value with weight
         """
         # overlaps: [num_bboxes, num_gt]
         overlaps = self.iou_calculator(

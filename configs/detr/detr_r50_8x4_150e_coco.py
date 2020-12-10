@@ -47,7 +47,7 @@ train_cfg = dict(
         type='HungarianAssigner',
         reg_cost=dict(type='BBoxL1Cost', weight=5.0),
         iou_cost=dict(
-            type='IoUBasedCost',
+            type='IoUCost',
             iou_mode='giou',
             iou_calculator=dict(type='BboxOverlaps2D'),
             weight=5.0)))
