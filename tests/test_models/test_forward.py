@@ -383,7 +383,7 @@ def test_yolact_forward():
 
 def test_detr_forward():
     model, train_cfg, test_cfg = _get_detector_cfg(
-        'detr/detr_r50_8x4_150e_coco.py')
+        'detr/detr_r50_8x2_150e_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
