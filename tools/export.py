@@ -228,7 +228,6 @@ def main(args):
 
     optimize_onnx_graph(onnx_model_path)
 
-    # ?
     with_text = False
     if args.target == 'openvino' and not args.alt_ssd_export:
         if hasattr(model, 'roi_head'):
