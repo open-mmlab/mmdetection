@@ -2,7 +2,7 @@
 
 ## Introduction
 
-```
+```latex
 @inproceedings{cao2019prime,
   title={Prime sample attention in object detection},
   author={Cao, Yuhang and Chen, Kai and Loy, Chen Change and Lin, Dahua},
@@ -12,7 +12,6 @@
 ```
 
 ## Results and models
-
 
 | PISA | Network | Backbone            | Lr schd | box AP | mask AP | Config | Download |
 |:----:|:-------:|:-------------------:|:-------:|:------:|:-------:|:------:|:--------:|
@@ -34,5 +33,6 @@
 | √    | SSD300       | VGG16          | 1x      | 31.8   |         | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/pisa/pisa_ssd512_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_ssd512_coco/pisa_ssd512_coco-247addee.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_ssd512_coco/pisa_ssd512_coco_20200508_131030.log.json)  |
 
 **Notes:**
+
 - In the original paper, all models are trained and tested on mmdet v1.x, thus results may not be exactly the same with this release on v2.0.
 - It is noted PISA only modifies the training pipeline so the inference time remains the same with the baseline.

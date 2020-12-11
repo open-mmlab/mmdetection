@@ -1,7 +1,8 @@
 # Mask R-CNN
 
 ## Introduction
-```
+
+```latex
 @article{He_2017,
    title={Mask R-CNN},
    journal={2017 IEEE International Conference on Computer Vision (ICCV)},
@@ -28,8 +29,8 @@
 | X-101-64x4d-FPN | pytorch |   2x    |  -       |   -            |  42.7  |  38.1   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn/mask_rcnn_x101_64x4d_fpn_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_64x4d_fpn_2x_coco/mask_rcnn_x101_64x4d_fpn_2x_coco_20200509_224208-39d6f70c.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_64x4d_fpn_2x_coco/mask_rcnn_x101_64x4d_fpn_2x_coco_20200509_224208.log.json)|
 | X-101-32x8d-FPN | pytorch |   1x    |  -       |   -            |  42.8  |  38.3   | |
 
-
 ## Pre-trained Models
+
 We also train some models with longer schedules and multi-scale training. The users could finetune them for downstream tasks.
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |

@@ -234,7 +234,7 @@ class TransformerHead(AnchorFreeHead):
         # NOTE following the official DETR repo, non-zero values representing
         # ignored positions, while zero values means valid positions.
         batch_size = x.size(0)
-        input_img_h, input_img_w = img_metas[0]['batch_intput_shape']
+        input_img_h, input_img_w = img_metas[0]['batch_input_shape']
         masks = x.new_ones((batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
             img_h, img_w, _ = img_metas[img_id]['img_shape']
