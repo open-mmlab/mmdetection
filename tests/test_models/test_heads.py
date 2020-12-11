@@ -1238,7 +1238,7 @@ def test_transformer_head_loss():
         'img_shape': (s, s, 3),
         'scale_factor': 1,
         'pad_shape': (s, s, 3),
-        'batch_intput_shape': (s, s)
+        'batch_input_shape': (s, s)
     }]
     train_cfg = dict(
         assigner=dict(
