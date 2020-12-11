@@ -35,7 +35,7 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
         namespace (str): Namespace for this operation.
         adapter (function): Function for converting arguments.
 
-    Adapter requirements:
+    Adapter conventions:
         1. The adapter must have the same signature as the wrapped function.
         2. The values, returned by the adapter, must match the called symbolic function.
         3. Return value order: 
