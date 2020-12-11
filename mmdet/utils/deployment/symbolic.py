@@ -27,13 +27,20 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
 
     A symbolic function cannot receive a collection of tensors as arguments.
     If your custom function takes a collection of tensors as arguments,
-    then you need to implement an argument converter from the collection 
+    then you need to implement an argument converter (adapter) from the collection 
     and pass it to the decorator.
 
     Args:
         op_name (str): Operation name, must match the registered operation name.
         namespace (str): Namespace for this operation.
         adapter (function): Function for converting arguments.
+
+    Adapter requirements:
+        1. The adapter must have the same signature as the wrapped function.
+        2. The values, returned by the adapter, must match the called symbolic function.
+        3. Return value order: 
+            vector values (collections are not supported)
+            constant parameters (can be passed using a dictionary)
 
     Usage example:
         1. Implement a custom operation. For example 'custom_op'.
@@ -70,7 +77,7 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
                         return symb(g, *xargs)
 
                 if adapter is not None:
-                    adapter_args, adapter_kwargs = adapter(*args)
+                    adapter_args, adapter_kwargs = adapter(*args, **kwargs)
                     return XFunction.apply(*adapter_args)
                 return XFunction.apply(*args)
             else:

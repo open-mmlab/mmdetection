@@ -10,9 +10,9 @@ from mmdet.utils.deployment.symbolic import py_symbolic
 
 def adapter(self, feats, rois):
     return ((rois,) + tuple(feats), 
-        {"output_size": self.roi_layers[0].out_size[0],
-         "featmap_strides": self.featmap_strides,
-         "sample_num": self.roi_layers[0].sample_num})
+        {'output_size': self.roi_layers[0].out_size[0],
+         'featmap_strides': self.featmap_strides,
+         'sample_num': self.roi_layers[0].sample_num})
 
 
 @ROI_EXTRACTORS.register_module()
@@ -93,7 +93,6 @@ class SingleRoIExtractor(nn.Module):
         new_rois = torch.stack((rois[:, 0], x1, y1, x2, y2), dim=-1)
         return new_rois
     
-    # adapter=lambda self, feats, rois: ((rois,) + tuple(feats), {"output_size": self.roi_layers[0].out_size[0], "featmap_strides": self.featmap_strides, "sample_num": self.roi_layers[0].sample_num})
     @py_symbolic(op_name='roi_feature_extractor', adapter=adapter)
     @force_fp32(apply_to=('feats', ), out_fp16=True)
     def forward(self, feats, rois, roi_scale_factor=None):
