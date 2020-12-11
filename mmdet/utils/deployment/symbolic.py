@@ -20,10 +20,44 @@ from torch.onnx.symbolic_helper import parse_args
 from torch.onnx.symbolic_registry import register_op, get_registered_op, is_registered_op
 
 
-def py_symbolic(op_name=None, namespace='mmdet_custom'):
+def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
+    """
+    The py_symbolic decorator allows associating a function with a custom symbolic function
+    that defines its representation in a computational graph.
+
+    A symbolic function cannot receive a collection of tensors as arguments.
+    If your custom function takes a collection of tensors as arguments,
+    then you need to implement an argument converter (adapter) from the collection 
+    and pass it to the decorator.
+
+    Args:
+        op_name (str): Operation name, must match the registered operation name.
+        namespace (str): Namespace for this operation.
+        adapter (function): Function for converting arguments.
+
+    Adapter conventions:
+        1. The adapter must have the same signature as the wrapped function.
+        2. The values, returned by the adapter, must match the called symbolic function.
+        3. Return value order: 
+            tensor values (collections are not supported)
+            constant parameters (can be passed using a dictionary)
+
+    Usage example:
+        1. Implement a custom operation. For example 'custom_op'.
+        2. Implement a symbolic function to represent the custom_op in 
+            a computation graph. For example 'custom_op_symbolic'.
+        3. Register the operation before export: 
+            register_op('custom_op_name', custom_op_symbolic, namespace, opset)
+        4. Decorate the custom operation:
+            @py_symbolic(op_name='custom_op_name')
+            def custom_op(...):
+        5. If you need to convert custom function arguments to symbolic function arguments,
+            you can implement a converter and pass it to the decorator:
+            @py_symbolic(op_name='custom_op_name', adapter=converter)
+    """
     def decorator(func):
         @wraps(func)
-        def wrapped_function(*args):
+        def wrapped_function(*args, **kwargs):
 
             name = op_name if op_name is not None else func.__name__
             opset = sym_help._export_onnx_opset_version
@@ -33,36 +67,23 @@ def py_symbolic(op_name=None, namespace='mmdet_custom'):
                 class XFunction(torch.autograd.Function):
                     @staticmethod
                     def forward(ctx, *xargs):
-                        return func(*xargs)
+                        return func(*args, **kwargs)
 
                     @staticmethod
                     def symbolic(g, *xargs):
                         symb = get_registered_op(name, namespace, opset)
+                        if adapter is not None:
+                            return symb(g, *xargs, **adapter_kwargs)
                         return symb(g, *xargs)
 
+                if adapter is not None:
+                    adapter_args, adapter_kwargs = adapter(*args, **kwargs)
+                    return XFunction.apply(*adapter_args)
                 return XFunction.apply(*args)
             else:
-                return func(*args)
+                return func(*args, **kwargs)
         return wrapped_function
     return decorator
-
-
-@parse_args('v', 'v', 'v', 'v', 'none')
-def addcmul_symbolic(g, self, tensor1, tensor2, value=1, out=None):
-    from torch.onnx.symbolic_opset9 import add, mul
-
-    if out is not None:
-        sym_help._unimplemented("addcmul", "Out parameter is not supported for addcmul")
-
-    x = mul(g, tensor1, tensor2)
-    value = sym_help._maybe_get_scalar(value)
-    if sym_help._scalar(value) != 1:
-        value = sym_help._if_scalar_type_as(g, value, x)
-        if not sym_help._is_value(value):
-            value = g.op(
-                "Constant", value_t=torch.tensor(value, dtype=torch.float32))
-        x = mul(g, x, value)
-    return add(g, self, x)
 
 
 def view_as_symbolic(g, self, other):
@@ -103,29 +124,6 @@ def topk_symbolic(g, self, k, dim, largest, sorted, out=None):
         top_values = reverse(top_values)
         top_indices = reverse(top_indices)
     return top_values, top_indices
-
-
-@parse_args('v', 'i', 'v', 'v', 'f', 'i')
-def group_norm_symbolic(g, input, num_groups, weight, bias, eps, cudnn_enabled):
-    from torch.onnx.symbolic_opset9 import reshape, mul, add, reshape_as
-
-    channels_num = input.type().sizes()[1]
-
-    if num_groups == channels_num:
-        output = g.op('InstanceNormalization', input, weight, bias, epsilon_f=eps)
-    else:
-        # Reshape from [n, g * cg, h, w] to [1, n * g, cg * h, w].
-        x = reshape(g, input, [0, num_groups, -1, 0])
-        x = reshape(g, x, [1, -1, 0, 0])
-        # Normalize channel-wise.
-        x = g.op('MeanVarianceNormalization', x, axes_i=[2, 3])
-        # Reshape back.
-        x = reshape_as(g, x, input)
-        # Apply affine transform.
-        x = mul(g, x, reshape(g, weight, [1, channels_num, 1, 1]))
-        output = add(g, x, reshape(g, bias, [1, channels_num, 1, 1]))
-
-    return output
 
 
 def nms_core_symbolic(g, dets, iou_thr, score_thr, max_num):
@@ -257,11 +255,33 @@ def multiclass_nms_core_symbolic(g, multi_bboxes, multi_scores, score_thr, nms_c
     return out_combined_bboxes
 
 
+def roi_feature_extractor_symbolics(g, rois, *feats, output_size=1, featmap_strides=1, sample_num=1):
+    from torch.onnx.symbolic_helper import _slice_helper
+    rois = _slice_helper(g, rois, axes=[1], starts=[1], ends=[5])
+    roi_feats = g.op('ExperimentalDetectronROIFeatureExtractor',
+        rois,
+        *feats,
+        output_size_i=output_size,
+        pyramid_scales_i=featmap_strides,
+        sampling_ratio_i=sample_num,
+        image_id_i=0,
+        distribute_rois_between_levels_i=1,
+        preserve_rois_order_i=0,
+        aligned_i=1,
+        outputs=1,
+        )
+    return roi_feats
+
+
+
 def register_extra_symbolics(opset=10):
     assert opset >= 10
-    register_op('addcmul', addcmul_symbolic, '', opset)
     register_op('view_as', view_as_symbolic, '', opset)
     register_op('topk', topk_symbolic, '', opset)
-    register_op('group_norm', group_norm_symbolic, '', opset)
     register_op('nms_core', nms_core_symbolic, 'mmdet_custom', opset)
     # register_op('multiclass_nms_core', multiclass_nms_core_symbolic, 'mmdet_custom', opset)
+
+
+def register_extra_symbolics_for_openvino(opset=10):
+    assert opset >= 10
+    register_op('roi_feature_extractor', roi_feature_extractor_symbolics, 'mmdet_custom', opset)

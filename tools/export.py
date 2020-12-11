@@ -27,10 +27,8 @@ from mmdet.integration.nncf import (check_nncf_is_enabled,
                                     get_uncompressed_model, is_checkpoint_nncf,
                                     wrap_nncf_model)
 from mmdet.models import detectors
-from mmdet.models.roi_heads import SingleRoIExtractor
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
-from mmdet.utils.deployment.symbolic import register_extra_symbolics
-from mmdet.utils.deployment.tracer_stubs import ROIFeatureExtractorStub
+from mmdet.utils.deployment.symbolic import register_extra_symbolics, register_extra_symbolics_for_openvino
 
 
 def export_to_onnx(model,
@@ -39,8 +37,11 @@ def export_to_onnx(model,
                    verbose=False,
                    strip_doc_string=False,
                    opset=10,
-                   alt_ssd_export=False):
+                   alt_ssd_export=False,
+                   target='onnx'):
     register_extra_symbolics(opset)
+    if target == 'openvino' and not alt_ssd_export:
+        register_extra_symbolics_for_openvino(opset)
 
     kwargs = {}
     if torch.__version__ >= '1.5':
@@ -171,18 +172,6 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, 
         run(command_line, shell=True, check=True)
 
 
-def stub_roi_feature_extractor(model, extractor_name):
-    model = get_uncompressed_model(model)
-    if hasattr(model, extractor_name):
-        extractor = getattr(model, extractor_name)
-        if isinstance(extractor, SingleRoIExtractor):
-            setattr(model, extractor_name, ROIFeatureExtractorStub(extractor))
-        elif isinstance(extractor, torch.nn.ModuleList):
-            for i in range(len(extractor)):
-                if isinstance(extractor[i], SingleRoIExtractor):
-                    extractor[i] = ROIFeatureExtractorStub(extractor[i])
-
-
 def optimize_onnx_graph(onnx_model_path):
     onnx_model = onnx.load(onnx_model_path)
 
@@ -226,15 +215,6 @@ def main(args):
         compression_ctrl.prepare_for_export()
     # END nncf part
 
-    with_text = False
-    if args.target == 'openvino' and not args.alt_ssd_export:
-        if hasattr(model, 'roi_head'):
-            stub_roi_feature_extractor(model.roi_head, 'bbox_roi_extractor')
-            stub_roi_feature_extractor(model.roi_head, 'mask_roi_extractor')
-            if getattr(model.roi_head, 'with_text', False):
-                with_text = True
-                stub_roi_feature_extractor(model.roi_head, 'text_roi_extractor')
-
     mmcv.mkdir_or_exist(osp.abspath(args.output_dir))
     onnx_model_path = osp.join(args.output_dir,
                                osp.splitext(osp.basename(args.config))[0] + '.onnx')
@@ -242,12 +222,18 @@ def main(args):
     with torch.no_grad():
         export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=args.opset,
                        alt_ssd_export=getattr(args, 'alt_ssd_export', False),
-                       verbose=True)
+                       target=args.target, verbose=True)
         add_node_names(onnx_model_path)
         print(f'ONNX model has been saved to "{onnx_model_path}"')
 
     optimize_onnx_graph(onnx_model_path)
 
+    with_text = False
+    if args.target == 'openvino' and not args.alt_ssd_export:
+        if hasattr(model, 'roi_head'):
+            if getattr(model.roi_head, 'with_text', False):
+                with_text = True
+    
     if args.target == 'openvino':
         input_shape = list(fake_data['img'][0].shape)
         if args.input_shape:
