@@ -39,7 +39,7 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
         1. The adapter must have the same signature as the wrapped function.
         2. The values, returned by the adapter, must match the called symbolic function.
         3. Return value order: 
-            vector values (collections are not supported)
+            tensor values (collections are not supported)
             constant parameters (can be passed using a dictionary)
 
     Usage example:
