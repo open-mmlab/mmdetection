@@ -83,21 +83,6 @@ def export_to_onnx(model,
                     dynamic_axes['text_features'] = {0: 'objects_num'}
         
         with torch.no_grad():
-<<<<<<< HEAD
-            with model.forward_export_context(data['img_metas']):
-                torch.onnx.export(model,
-                                  data['img'],
-                                  export_name,
-                                  verbose=verbose,
-                                  opset_version=opset,
-                                  strip_doc_string=strip_doc_string,
-                                  operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
-                                  input_names=['image'],
-                                  output_names=output_names,
-                                  dynamic_axes=dynamic_axes,
-                                  keep_initializers_as_inputs=True,
-                                  **kwargs)
-=======
             model.export(
                 **data,
                 f=export_name,
@@ -111,7 +96,6 @@ def export_to_onnx(model,
                 keep_initializers_as_inputs=True,
                 **kwargs
             )
->>>>>>> ote
 
 
 def check_onnx_model(export_name):
@@ -228,25 +212,10 @@ def main(args):
         cfg.load_from = args.checkpoint
         cfg.resume_from = None
         compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
-<<<<<<< HEAD
         # TODO: apply the following string for NNCF 1.5.*
         # compression_ctrl.prepare_for_export()
     # END nncf part
 
-=======
-        compression_ctrl.prepare_for_export()
-    # END nncf part
-
-    with_text = False
-    if args.target == 'openvino' and not args.alt_ssd_export:
-        if hasattr(model, 'roi_head'):
-            stub_roi_feature_extractor(model.roi_head, 'bbox_roi_extractor')
-            stub_roi_feature_extractor(model.roi_head, 'mask_roi_extractor')
-            if getattr(model.roi_head, 'with_text', False):
-                with_text = True
-                stub_roi_feature_extractor(model.roi_head, 'text_roi_extractor')
-
->>>>>>> ote
     mmcv.mkdir_or_exist(osp.abspath(args.output_dir))
     onnx_model_path = osp.join(args.output_dir,
                                osp.splitext(osp.basename(args.config))[0] + '.onnx')
@@ -260,6 +229,13 @@ def main(args):
 
     optimize_onnx_graph(onnx_model_path)
 
+    # ?
+    with_text = False
+    if args.target == 'openvino' and not args.alt_ssd_export:
+        if hasattr(model, 'roi_head'):
+            if getattr(model.roi_head, 'with_text', False):
+                with_text = True
+    
     if args.target == 'openvino':
         input_shape = list(fake_data['img'][0].shape)
         if args.input_shape:

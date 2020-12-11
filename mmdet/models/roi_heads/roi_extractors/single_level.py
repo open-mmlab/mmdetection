@@ -8,18 +8,11 @@ from mmdet.models.builder import ROI_EXTRACTORS
 from mmdet.utils.deployment.symbolic import py_symbolic
 
 
-def flatten(args):
-    flat_args = []
-    for a in args:
-        if isinstance(a, (list, tuple)):
-            flat_args.extend(flatten(a))
-        else:
-            flat_args.append(a)
-    return flat_args
-
-def convert_args_to_extractor(inner, feats, rois):
-    # inner, feats, rois -> inner, rois, *feats
-    return flatten((inner, rois, feats))
+def adapter(self, feats, rois):
+    return ((rois,) + tuple(feats), 
+        {"output_size": self.roi_layers[0].out_size[0],
+         "featmap_strides": self.featmap_strides,
+         "sample_num": self.roi_layers[0].sample_num})
 
 
 @ROI_EXTRACTORS.register_module()
@@ -99,8 +92,9 @@ class SingleRoIExtractor(nn.Module):
         y2 = cy + new_h * 0.5
         new_rois = torch.stack((rois[:, 0], x1, y1, x2, y2), dim=-1)
         return new_rois
-
-    @py_symbolic(op_name='roi_feature_extractor', outside_adapter=convert_args_to_extractor)
+    
+    # adapter=lambda self, feats, rois: ((rois,) + tuple(feats), {"output_size": self.roi_layers[0].out_size[0], "featmap_strides": self.featmap_strides, "sample_num": self.roi_layers[0].sample_num})
+    @py_symbolic(op_name='roi_feature_extractor', adapter=adapter)
     @force_fp32(apply_to=('feats', ), out_fp16=True)
     def forward(self, feats, rois, roi_scale_factor=None):
         from torch.onnx import operators

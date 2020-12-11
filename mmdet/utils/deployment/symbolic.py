@@ -20,18 +20,10 @@ from torch.onnx.symbolic_helper import parse_args
 from torch.onnx.symbolic_registry import register_op, get_registered_op, is_registered_op
 
 
-def are_kwargs_contain_tensors(**kwargs):
-        for elem in kwargs.values():
-            if isinstance(elem, (list, tuple, torch.Tensor)):
-                return True
-        return False
-
-
-def py_symbolic(op_name=None, namespace='mmdet_custom', outside_adapter=None):
+def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
     """
-    The py_symbolic decorator allows you to wrap your custom function in 
-    torch.autograd.Function and associate it with a custom symbolic function
-    to represent the custom operation in a computation graph.
+    The py_symbolic decorator allows associating a function with a custom symbolic function
+    that defines its representation in a computational graph.
 
     A symbolic function cannot receive a collection of tensors as arguments.
     If your custom function takes a collection of tensors as arguments,
@@ -41,7 +33,7 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', outside_adapter=None):
     Args:
         op_name (str): Operation name, must match the registered operation name.
         namespace (str): Namespace for this operation.
-        outside_adapter (function): Function for converting arguments.
+        adapter (function): Function for converting arguments.
 
     Usage example:
         1. Implement a custom operation. For example 'custom_op'.
@@ -54,7 +46,7 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', outside_adapter=None):
             def custom_op(...):
         5. If you need to convert custom function arguments to symbolic function arguments,
             you can implement a converter and pass it to the decorator:
-            @py_symbolic(op_name='custom_op_name', outside_adapter=converter)
+            @py_symbolic(op_name='custom_op_name', adapter=converter)
     """
     def decorator(func):
         @wraps(func)
@@ -73,14 +65,13 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', outside_adapter=None):
                     @staticmethod
                     def symbolic(g, *xargs):
                         symb = get_registered_op(name, namespace, opset)
+                        if adapter is not None:
+                            return symb(g, *xargs, **adapter_kwargs)
                         return symb(g, *xargs)
 
-                if are_kwargs_contain_tensors(**kwargs):
-                    raise TypeError('Arguments in kwargs must be non-tensor type. '
-                                    'Pass tensors and tensor collections using args.')
-
-                if outside_adapter is not None:
-                    return XFunction.apply(*outside_adapter(*args))
+                if adapter is not None:
+                    adapter_args, adapter_kwargs = adapter(*args)
+                    return XFunction.apply(*adapter_args)
                 return XFunction.apply(*args)
             else:
                 return func(*args, **kwargs)
@@ -257,25 +248,23 @@ def multiclass_nms_core_symbolic(g, multi_bboxes, multi_scores, score_thr, nms_c
     return out_combined_bboxes
 
 
-def roi_feature_extractor_symbolics(g, inner, rois, *feats):
-    """
-    ExperimentalDetectronROIFeatureExtractor
-    """
+def roi_feature_extractor_symbolics(g, rois, *feats, output_size=1, featmap_strides=1, sample_num=1):
     from torch.onnx.symbolic_helper import _slice_helper
     rois = _slice_helper(g, rois, axes=[1], starts=[1], ends=[5])
     roi_feats = g.op('ExperimentalDetectronROIFeatureExtractor',
         rois,
         *feats,
-        output_size_i=inner.roi_layers[0].out_size[0],
-        pyramid_scales_i=inner.featmap_strides,
-        sampling_ratio_i=inner.roi_layers[0].sample_num,
+        output_size_i=output_size,
+        pyramid_scales_i=featmap_strides,
+        sampling_ratio_i=sample_num,
         image_id_i=0,
         distribute_rois_between_levels_i=1,
         preserve_rois_order_i=0,
         aligned_i=1,
-        outputs=1 
+        outputs=1,
         )
     return roi_feats
+
 
 
 def register_extra_symbolics(opset=10):
