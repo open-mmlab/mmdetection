@@ -28,7 +28,7 @@ class AdaptiveConv(nn.Module):
             channels to output channels. Default: 1
         bias (bool, optional): If set True, adds a learnable bias to the
             output. Default: False.
-        type (str): Type of adaptive conv, can be either 'offset'
+        type (str, optional): Type of adaptive conv, can be either 'offset'
             (arbitrary anchors) or 'dilation' (uniform anchor).
             Default: 'dilation'.
     """
@@ -96,9 +96,11 @@ class StageCascadeRPNHead(RPNHead):
         in_channels (int): Number of channels in the input feature map.
         anchor_generator (dict): anchor generator config.
         adapt_cfg (dict): adaptation config.
-        bridged_feature (bool): wheater update rpn feature.
-        with_cls (bool): wheather use classification branch.
-        sampling (bool): wheather use sampling.
+        bridged_feature (bool, optional): wheater update rpn feature.
+            Default: False.
+        with_cls (bool, optional): wheather use classification branch.
+            Default: True.
+        sampling (bool, optional): wheather use sampling. Default: True.
     """
 
     def __init__(self,
