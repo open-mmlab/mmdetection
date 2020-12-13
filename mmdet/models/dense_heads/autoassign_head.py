@@ -1,15 +1,17 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import normal_init, bias_init_with_prob
+from mmcv.cnn import bias_init_with_prob, normal_init
+
 from mmdet.core import distance2bbox, force_fp32, multi_apply
 from mmdet.core.bbox import bbox_overlaps
 from mmdet.models import HEADS
-from mmdet.models.dense_heads.fcos_head import FCOSHead
 from mmdet.models.dense_heads.atss_head import reduce_mean
+from mmdet.models.dense_heads.fcos_head import FCOSHead
 from mmdet.models.dense_heads.paa_head import levels_to_images
 
 EPS = 1e-12
+
 
 class CenterPrior(nn.Module):
 
@@ -22,7 +24,7 @@ class CenterPrior(nn.Module):
         # TODO: support fixed and shared
         super(CenterPrior, self).__init__()
         self.mean = nn.Parameter(torch.zeros(class_num, 2).float())
-        self.sigma = nn.Parameter(torch.ones(class_num,2).float() )
+        self.sigma = nn.Parameter(torch.ones(class_num, 2).float())
         self.stride = stride
         self.force_inside = force_inside
 
@@ -42,8 +44,9 @@ class CenterPrior(nn.Module):
             cat_prior_sigma = self.sigma[labels][None, :]
             distance = (((single_level_points - gt_center) / float(stride) -
                          cat_prior_center)**2)
-            center_prior = torch.exp(-distance /
-                                     (2 * cat_prior_sigma**2).clamp(min=EPS)).prod(dim=-1)
+            center_prior = torch.exp(
+                -distance /
+                (2 * cat_prior_sigma**2).clamp(min=EPS)).prod(dim=-1)
             center_prior_list.append(center_prior)
         center_prior_weights = torch.cat(center_prior_list, dim=0)
         if self.force_inside:
@@ -63,8 +66,16 @@ class CenterPrior(nn.Module):
 @HEADS.register_module()
 class AutoAssignHead(FCOSHead):
 
-    def __init__(self, *args, force_inside=True,centerness_on_reg=True, **kwargs):
-        super().__init__(*args,conv_bias=True,centerness_on_reg=centerness_on_reg ,**kwargs)
+    def __init__(self,
+                 *args,
+                 force_inside=True,
+                 centerness_on_reg=True,
+                 **kwargs):
+        super().__init__(
+            *args,
+            conv_bias=True,
+            centerness_on_reg=centerness_on_reg,
+            **kwargs)
         self.center_prior = CenterPrior(force_inside=force_inside)
         self.force_inside = force_inside
 
@@ -75,12 +86,22 @@ class AutoAssignHead(FCOSHead):
         normal_init(self.conv_cls, std=0.01, bias=bias_cls)
         normal_init(self.conv_reg, std=0.01, bias=4.0)
 
+    def _get_points_single(self,
+                           featmap_size,
+                           stride,
+                           dtype,
+                           device,
+                           flatten=False):
+        y, x = super(FCOSHead,
+                     self)._get_points_single(featmap_size, stride, dtype,
+                                              device)
+        points = torch.stack((x.reshape(-1) * stride, y.reshape(-1) * stride),
+                             dim=-1)
+        return points
 
     def get_pos_loss_single(self, cls_score, objectness, reg_loss, label,
-                     center_prior_weights):
-        # TODO: only sigmoid once with neg loss
-        cls_score = cls_score.sigmoid()
-        objectness = objectness.sigmoid()
+                            center_prior_weights):
+
         p_pos = torch.exp(-5 * reg_loss) * (cls_score * objectness)[:, label]
         p_pos_weight = torch.exp(p_pos * 3)
         p_pos_weight = (p_pos_weight * center_prior_weights) / (
@@ -91,27 +112,8 @@ class AutoAssignHead(FCOSHead):
             reweight_pos, torch.ones_like(reweight_pos), reduction='none')
         return pos_loss.sum(),
 
-    def get_neg_weight(self, gt_labels, neg_weight):
-        # TODO to speed up with tensor operation as FreeAnchor
-
-        temp_label = gt_labels.clone()
-        label_list = []
-        neg_weight_list = []
-        while not (temp_label == self.num_classes).all():
-            inds = (~(temp_label == self.num_classes)).nonzero().reshape(-1)
-            label_mask = temp_label == temp_label[inds[0]]
-            temp_label[label_mask] = self.num_classes
-            temp_weight = neg_weight[:, label_mask].min(-1)[0]
-            label_list.append(gt_labels[inds[0]])
-            neg_weight_list.append(temp_weight)
-        group_neg_weight = torch.stack(neg_weight_list, dim=1)
-        group_label = torch.stack(label_list)
-        return group_neg_weight, group_label
-
-    def get_neg_loss_single(self, cls_score, objectness, gt_labels, ious,):
-
-        cls_score = cls_score.sigmoid()
-        objectness = objectness.sigmoid()
+    def get_neg_loss_single(self, cls_score, objectness, gt_labels, ious,
+                            inside_gt_bbox_mask):
         pred_cls = (cls_score * objectness)
         pred_weight = torch.ones_like(cls_score)
         temp_weight = (1 / (1 - ious))
@@ -120,17 +122,16 @@ class AutoAssignHead(FCOSHead):
         iou_fuc_max = temp_weight.max(0)[0][None, :]
         neg_weight = 1 - (temp_weight - iou_fuc_min) / (
             iou_fuc_max - iou_fuc_min).clamp(min=EPS)
-        neg_weight, gt_labels = self.get_neg_weight(gt_labels, neg_weight)
-        scatter_inds = gt_labels[None, :].expand_as(neg_weight)
-        pred_weight.scatter_(dim=1, index=scatter_inds, src=neg_weight)
-        pred_cls = (pred_cls * pred_weight).clamp(min=EPS)
-        pred_cls = -(((1 / (pred_cls)) - 1).log())
-        neg_loss = self.loss_cls(
-            pred_cls,
-            neg_weight.new_zeros((len(pred_cls)),
-                                 dtype=torch.long).fill_(self.num_classes),
-            None,
-            avg_factor=1)
+
+        # same as cvpods, may has bug when match several gt with same class
+        foreground_idxs = torch.nonzero(inside_gt_bbox_mask, as_tuple=True)
+        neg_weight = neg_weight[inside_gt_bbox_mask]
+        pred_weight[foreground_idxs[0],
+                    gt_labels[foreground_idxs[1]]] = neg_weight
+
+        logits = (pred_cls * pred_weight)
+        neg_loss = (logits**2 * F.binary_cross_entropy(
+            logits, torch.zeros_like(logits), reduction='none')).sum()
         return neg_loss,
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'objectnesses'))
@@ -168,7 +169,8 @@ class AutoAssignHead(FCOSHead):
         ious_list = []
         num_points = len(mlvl_points)
 
-        for bbox_pred, gt_bboxe in zip(bbox_preds, bbox_targets_list):
+        for bbox_pred, gt_bboxe, inside_gt_bbox_mask in zip(
+                bbox_preds, bbox_targets_list, inside_gt_bbox_mask_list):
             temp_num_gt = gt_bboxe.size(1)
             expand_mlvl_points = mlvl_points[:, None, :].expand(
                 num_points, temp_num_gt, 2).reshape(-1, 2)
@@ -182,33 +184,26 @@ class AutoAssignHead(FCOSHead):
                 ious = bbox_overlaps(
                     decoded_bbox_preds, decoded_target_preds, is_aligned=True)
                 assert torch.isnan(ious).sum() == 0
-                ious_list.append(ious.reshape(num_points, temp_num_gt))
+                ious = ious.reshape(num_points, temp_num_gt)
+                ious[~inside_gt_bbox_mask] = 0
+                ious_list.append(ious)
             loss_bbox = self.loss_bbox(
                 decoded_bbox_preds,
                 decoded_target_preds,
                 weight=None,
                 reduction_override='none')
-            nan_mask = torch.isnan(loss_bbox)
-            loss_bbox[nan_mask] = 2
             reg_loss_list.append(loss_bbox.reshape(num_points, temp_num_gt))
 
-        pos_loss_list, = multi_apply(
-            self.get_pos_loss_single,
-            cls_scores,
-            objectnesses,
-            reg_loss_list,
-            gt_labels,
-            center_prior_weight_list
-        )
+        cls_scores = [item.sigmoid() for item in cls_scores]
+        objectnesses = [item.sigmoid() for item in objectnesses]
+        pos_loss_list, = multi_apply(self.get_pos_loss_single, cls_scores,
+                                     objectnesses, reg_loss_list, gt_labels,
+                                     center_prior_weight_list)
         pos_norm = reduce_mean(bbox_pred.new_tensor(all_num_gt))
         pos_loss = sum(pos_loss_list) / pos_norm
-        neg_loss_list, = multi_apply(
-            self.get_neg_loss_single,
-            cls_scores,
-            objectnesses,
-            gt_labels,
-            ious_list,
-        )
+        neg_loss_list, = multi_apply(self.get_neg_loss_single, cls_scores,
+                                     objectnesses, gt_labels, ious_list,
+                                     inside_gt_bbox_mask_list)
 
         neg_norm = sum(item.data.sum() for item in center_prior_weight_list)
         neg_norm = reduce_mean(neg_norm)
@@ -223,11 +218,11 @@ class AutoAssignHead(FCOSHead):
 
         if all_num_gt == 0:
             pos_loss = bbox_preds[0].sum() * 0
-            center_loss = objectnesses[0].sum()* 0
+            center_loss = objectnesses[0].sum() * 0
 
         return dict(
             loss_pos=pos_loss * 0.25,
-            loss_neg=neg_loss,
+            loss_neg=neg_loss * 0.75,
             loss_center=center_loss * 0.75)
 
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
@@ -242,10 +237,8 @@ class AutoAssignHead(FCOSHead):
         # concat all levels points and regress ranges
         concat_regress_ranges = torch.cat(expanded_regress_ranges, dim=0)
         concat_points = torch.cat(points, dim=0)
-
         # the number of points per img, per lvl
         num_points = [center.size(0) for center in points]
-
         # get labels and bbox_targets of each image
         inside_gt_bbox_mask_list, bbox_targets_list = multi_apply(
             self._get_target_single,

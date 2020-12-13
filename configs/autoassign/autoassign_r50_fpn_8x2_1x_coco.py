@@ -13,8 +13,7 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
-        style='caffe'
-    ),
+        style='caffe'),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -22,12 +21,13 @@ model = dict(
         start_level=1,
         add_extra_convs=True,
         extra_convs_on_inputs=True,
-        num_outs=5
+        num_outs=5,
+        relu_before_extra_convs=True,
     ),
     bbox_head=dict(
         type='AutoAssignHead',
         norm_on_bbox=True,
-        force_inside=True,
+        force_inside=False,
         num_classes=80,
         in_channels=256,
         stacked_convs=4,
@@ -39,7 +39,8 @@ model = dict(
             gamma=2.0,
             alpha=0.25,
             loss_weight=1.0),
-        loss_bbox=dict(type='GIoULoss', loss_weight=1.0),))
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0),
+    ))
 train_cfg = None
 test_cfg = dict(
     nms_pre=1000,
