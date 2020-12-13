@@ -74,7 +74,7 @@ class TridentConv(nn.Module):
             outputs = [
                 F.conv2d(input, self.weight, self.bias, self.stride, padding,
                          dilation) for input, dilation, padding in zip(
-                    inputs, self.dilations, self.paddings)
+                             inputs, self.dilations, self.paddings)
             ]
         else:
             assert len(inputs) == 1
@@ -127,7 +127,7 @@ class TridentBottleneck(Bottleneck):
                 if self.training or self.test_branch_idx == -1 else 1)
             identity = x
             if not isinstance(x, list):
-                x = (x,) * num_branch
+                x = (x, ) * num_branch
                 identity = x
                 if self.downsample is not None:
                     identity = [self.downsample(b) for b in x]
@@ -138,24 +138,24 @@ class TridentBottleneck(Bottleneck):
 
             if self.with_plugins:
                 for k in range(len(out)):
-                    out[k] = self.forward_plugin(
-                        out[k], self.after_conv1_plugin_names)
+                    out[k] = self.forward_plugin(out[k],
+                                                 self.after_conv1_plugin_names)
 
             out = self.conv2(out)
             out = [self.norm2(b) for b in out]
             out = [self.relu(b) for b in out]
             if self.with_plugins:
                 for k in range(len(out)):
-                    out[k] = self.forward_plugin(
-                        out[k], self.after_conv2_plugin_names)
+                    out[k] = self.forward_plugin(out[k],
+                                                 self.after_conv2_plugin_names)
 
             out = [self.conv3(b) for b in out]
             out = [self.norm3(b) for b in out]
 
             if self.with_plugins:
                 for k in range(len(out)):
-                    out[k] = self.forward_plugin(
-                        out[k], self.after_conv3_plugin_names)
+                    out[k] = self.forward_plugin(out[k],
+                                                 self.after_conv3_plugin_names)
 
             out = [
                 out_b + identity_b for out_b, identity_b in zip(out, identity)
@@ -266,11 +266,11 @@ class TridentResNet(ResNet):
                                                     last_stage_idx)
         else:
             stage_plugins = None
-        planes = self.base_channels * 2 ** last_stage_idx
+        planes = self.base_channels * 2**last_stage_idx
         res_layer = make_trident_res_layer(
             TridentBottleneck,
             inplanes=(self.block.expansion * self.base_channels *
-                      2 ** (last_stage_idx - 1)),
+                      2**(last_stage_idx - 1)),
             planes=planes,
             num_blocks=self.stage_blocks[last_stage_idx],
             stride=stride,
