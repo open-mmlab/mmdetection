@@ -420,11 +420,12 @@ class YOLOV3Head(BaseDenseHead):
         # target_label = target_label.masked_select(
         #     cls_mask).reshape(-1, num_cls)
 
-        loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask) * num_cls
         loss_conf = self.loss_conf(
             pred_conf, target_conf, weight=pos_and_neg_mask)
 
         if self.using_iou_loss:
+
+            loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)  * num_cls
 
             # preparation for box decoding
             anchor_strides = torch.tensor(
@@ -471,6 +472,8 @@ class YOLOV3Head(BaseDenseHead):
             loss_wh = torch.zeros_like(loss_xy)
 
         else:
+            loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
+
             pred_xy = pred_map[..., :2]
             pred_wh = pred_map[..., 2:4]
 
