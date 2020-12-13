@@ -61,7 +61,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         assert isinstance(imgs, list)
         return [self.extract_feat(img) for img in imgs]
 
-    @abstractmethod
     def forward_train(self, imgs, img_metas, **kwargs):
         """
         Args:
@@ -74,7 +73,12 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 :class:`mmdet.datasets.pipelines.Collect`.
             kwargs (keyword arguments): Specific to concrete implementation.
         """
-        pass
+        # NOTE the batched image size information may be useful, e.g.
+        # in DETR, this is needed for the construction of masks, which is
+        # then used for the transformer_head.
+        batch_input_shape = tuple(imgs[0].size()[-2:])
+        for img_meta in img_metas:
+            img_meta['batch_input_shape'] = batch_input_shape
 
     async def async_simple_test(self, img, img_metas, **kwargs):
         raise NotImplementedError
@@ -135,6 +139,14 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if num_augs != len(img_metas):
             raise ValueError(f'num of augmentations ({len(imgs)}) '
                              f'!= num of image meta ({len(img_metas)})')
+
+        # NOTE the batched image size information may be useful, e.g.
+        # in DETR, this is needed for the construction of masks, which is
+        # then used for the transformer_head.
+        for img, img_meta in zip(imgs, img_metas):
+            batch_size = len(img_meta)
+            for img_id in range(batch_size):
+                img_meta[img_id]['batch_input_shape'] = tuple(img.size()[-2:])
 
         if num_augs == 1:
             # proposals (List[List[Tensor]]): the outer list indicates
@@ -315,7 +327,10 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             for i in inds:
                 i = int(i)
                 color_mask = color_masks[labels[i]]
-                mask = segms[i].astype(bool)
+                sg = segms[i]
+                if isinstance(sg, torch.Tensor):
+                    sg = sg.detach().cpu().numpy()
+                mask = sg.astype(bool)
                 img[mask] = img[mask] * 0.5 + color_mask * 0.5
         # if out_file specified, do not show image in window
         if out_file is not None:

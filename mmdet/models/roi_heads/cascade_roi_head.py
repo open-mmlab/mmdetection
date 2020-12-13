@@ -348,6 +348,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 cfg=rcnn_test_cfg)
             det_bboxes.append(det_bbox)
             det_labels.append(det_label)
+
+        if torch.onnx.is_in_onnx_export():
+            return det_bboxes, det_labels
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
                         self.bbox_head[-1].num_classes)

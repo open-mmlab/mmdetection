@@ -2,7 +2,7 @@ blank_issues_enabled: false
 
 contact_links:
   - name: Common Issues
-    url: https://mmdetection.readthedocs.io/en/latest/trouble_shooting.html
+    url: https://mmdetection.readthedocs.io/en/latest/faq.html
     about: Check if your issue already has solutions
   - name: MMDetection Documentation
     url: https://mmdetection.readthedocs.io/en/latest/

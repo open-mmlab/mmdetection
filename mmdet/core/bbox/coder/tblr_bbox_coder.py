@@ -17,11 +17,14 @@ class TBLRBBoxCoder(BaseBBoxCoder):
           divided with when coding the coordinates. If it is a list, it should
           have length of 4 indicating normalization factor in tblr dims.
           Otherwise it is a unified float factor for all dims. Default: 4.0
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
     """
 
-    def __init__(self, normalizer=4.0):
+    def __init__(self, normalizer=4.0, clip_border=True):
         super(BaseBBoxCoder, self).__init__()
         self.normalizer = normalizer
+        self.clip_border = clip_border
 
     def encode(self, bboxes, gt_bboxes):
         """Get box regression transformation deltas that can be used to
@@ -59,7 +62,8 @@ class TBLRBBoxCoder(BaseBBoxCoder):
             bboxes,
             pred_bboxes,
             normalizer=self.normalizer,
-            max_shape=max_shape)
+            max_shape=max_shape,
+            clip_border=self.clip_border)
 
         return decoded_bboxes
 
@@ -114,7 +118,8 @@ def tblr2bboxes(priors,
                 tblr,
                 normalizer=4.0,
                 normalize_by_wh=True,
-                max_shape=None):
+                max_shape=None,
+                clip_border=True):
     """Decode tblr outputs to prediction boxes.
 
     The process includes 3 steps: 1) De-normalize tblr coordinates by
@@ -136,6 +141,8 @@ def tblr2bboxes(priors,
           normalized by the side length (wh) of prior bboxes.
         max_shape (tuple, optional): Shape of the image. Decoded bboxes
           exceeding which will be clamped.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
 
     Return:
         encoded boxes (Tensor), Shape: (n, 4)
@@ -151,13 +158,13 @@ def tblr2bboxes(priors,
         w, h = torch.split(wh, 1, dim=1)
         loc_decode[:, :2] *= h  # tb
         loc_decode[:, 2:] *= w  # lr
-    top, bottom, left, right = loc_decode.split(1, dim=1)
+    top, bottom, left, right = loc_decode.split((1, 1, 1, 1), dim=1)
     xmin = prior_centers[:, 0].unsqueeze(1) - left
     xmax = prior_centers[:, 0].unsqueeze(1) + right
     ymin = prior_centers[:, 1].unsqueeze(1) - top
     ymax = prior_centers[:, 1].unsqueeze(1) + bottom
     boxes = torch.cat((xmin, ymin, xmax, ymax), dim=1)
-    if max_shape is not None:
+    if clip_border and max_shape is not None:
         boxes[:, 0].clamp_(min=0, max=max_shape[1])
         boxes[:, 1].clamp_(min=0, max=max_shape[0])
         boxes[:, 2].clamp_(min=0, max=max_shape[1])
