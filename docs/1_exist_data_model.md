@@ -44,7 +44,7 @@ for frame in video:
 
 A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb).
 
-Note: `inference_detector`only supports single-image inference for now.
+Note:  `inference_detector` only supports single-image inference for now.
 
 ### Asynchronous interface - supported for Python 3.7+
 
