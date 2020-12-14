@@ -225,6 +225,8 @@ Optional arguments:
 - `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment. Otherwise, you may encounter an error like `cannot connect to X server`.
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
 - `--show-score-thr`: If specified, detections with scores below this threshold will be removed.
+- `--cfg-options`:  if specified, the key-value pair optional cfg will be merged into config file
+- `--eval-options`: if specified, the key-value pair optional eval cfg will be kwargs for dataset.evaluate() function, it's only for evaluation
 
 Test mode supports single and batch image, you can achieve by modifying `samples_per_gpu` in the config file. For example,  ``samples_per_gpu``in`configs/_base_/datasets/coco_detection.py`  is set to 1 to indicate a single image test,  and if set to greater than 1, it is the batch-test mode.
 
