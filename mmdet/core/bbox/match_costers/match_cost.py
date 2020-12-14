@@ -1,7 +1,7 @@
 import torch
 
-from mmdet.core.bbox.iou_calculators import build_iou_calculator
-from mmdet.core.bbox.transforms import bbox_xyxy_to_cxcywh
+from mmdet.core.bbox.iou_calculators import bbox_overlaps
+from mmdet.core.bbox.transforms import bbox_xyxy_to_cxcywh, bbox_cxcywh_to_xyxy
 from .builder import MATCH_COST
 
 
@@ -22,32 +22,35 @@ class BBoxL1Cost(object):
          tensor([[1.6172, 1.6422]])
      """
 
-    def __init__(self, weight=1.):
+    def __init__(self, weight=1., box_format='xyxy'):
         self.weight = weight
+        assert box_format in ['xyxy', 'xywh']
+        self.box_format = box_format
 
-    def __call__(self, bbox_pred, gt_bboxes, factor):
+    def __call__(self, bbox_pred, gt_bboxes):
         """
         Args:
             bbox_pred (Tensor): Predicted boxes with normalized coordinates
                 (cx, cy, w, h), which are all in range [0, 1]. Shape
                 [num_query, 4].
-            gt_bboxes (Tensor): Ground truth boxes with unnormalized
+            gt_bboxes (Tensor): Ground truth boxes with normalized
                 coordinates (x1, y1, x2, y2). Shape [num_gt, 4].
-            factor (Tensor): Image size(whwh) tensor. Shape [4].
 
         Returns:
             torch.Tensor: bbox_cost value with weight
         """
-        gt_bboxes_normalized = gt_bboxes / factor
         # MODYFY: xyxy p1-norm in sparse-RCNN CODE which need to review
-        bbox_cost = torch.cdist(
-            bbox_pred, bbox_xyxy_to_cxcywh(gt_bboxes_normalized), p=1)
+        if self.box_format == 'xywh':
+            gt_bboxes = bbox_xyxy_to_cxcywh(gt_bboxes)
+        elif self.box_format == 'xyxy':
+            bbox_pred = bbox_cxcywh_to_xyxy(bbox_pred)
+        bbox_cost = torch.cdist(bbox_pred, gt_bboxes, p=1)
         return bbox_cost * self.weight
 
 
 @MATCH_COST.register_module()
-class ClsFocalCost(object):
-    """ClsFocalCost.
+class FocalLossCost(object):
+    """FocalLossCost.
 
      Args:
          weight (int | float): loss_weight
@@ -55,9 +58,9 @@ class ClsFocalCost(object):
          gamma (int | float): focal_loss gamma
          eps (float): default 1e-12
      Examples:
-         >>> from mmdet.core.bbox.match_costers.match_cost import ClsFocalCost
+         >>> from mmdet.core.bbox.match_costers.match_cost import FocalLossCost
          >>> import torch
-         >>> self = ClsFocalCost()
+         >>> self = FocalLossCost()
          >>> cls_pred = torch.rand(4, 3)
          >>> gt_labels = torch.tensor([0, 1, 2])
          >>> factor = torch.tensor([10, 8, 10, 8])
@@ -67,6 +70,7 @@ class ClsFocalCost(object):
                 [-0.4099, -0.3795, -0.2929],
                 [-0.1950, -0.1207, -0.2626]])
      """
+
     def __init__(self, weight=1., alpha=0.25, gamma=2, eps=1e-12):
         self.weight = weight
         self.alpha = alpha
@@ -93,15 +97,15 @@ class ClsFocalCost(object):
 
 
 @MATCH_COST.register_module()
-class ClsSoftmaxCost(object):
+class ClassificationCost(object):
     """ClsSoftmaxCost.
 
      Args:
          weight (int | float): loss_weight
      Examples:
-         >>> from mmdet.core.bbox.match_costers.match_cost import ClsSoftmaxCost
+         >>> from mmdet.core.bbox.match_costers.match_cost import ClassificationCost
          >>> import torch
-         >>> self = ClsSoftmaxCost()
+         >>> self = ClassificationCost()
          >>> cls_pred = torch.rand(4, 3)
          >>> gt_labels = torch.tensor([0, 1, 2])
          >>> factor = torch.tensor([10, 8, 10, 8])
@@ -111,6 +115,7 @@ class ClsSoftmaxCost(object):
                 [-0.3664, -0.3455, -0.2881],
                 [-0.3343, -0.2701, -0.3956]])
      """
+
     def __init__(self, weight=1.):
         self.weight = weight
 
@@ -151,13 +156,12 @@ class IoUCost(object):
          tensor([[-0.1250,  0.1667],
                 [ 0.1667, -0.5000]])
      """
+
     def __init__(self,
-                 iou_calculator=dict(type='BboxOverlaps2D'),
                  iou_mode='giou',
                  weight=1.):
         self.weight = weight
         self.iou_mode = iou_mode
-        self.iou_calculator = build_iou_calculator(iou_calculator)
 
     def __call__(self, bboxes, gt_bboxes):
         """
@@ -171,7 +175,7 @@ class IoUCost(object):
             torch.Tensor: iou_cost value with weight
         """
         # overlaps: [num_bboxes, num_gt]
-        overlaps = self.iou_calculator(
+        overlaps = bbox_overlaps(
             bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
         # The 1 is a constant that doesn't change the matching, so ommitted.
         iou_cost = -overlaps

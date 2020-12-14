@@ -38,12 +38,11 @@ class HungarianAssigner(BaseAssigner):
     """
 
     def __init__(self,
-                 cls_cost=dict(type='ClsSoftmaxCost', weight=1.),
+                 cls_cost=dict(type='ClassificationCost', weight=1.),
                  reg_cost=dict(type='BBoxL1Cost', weight=1.0),
                  iou_cost=dict(
-                     type='IoUBasedCost',
+                     type='IoUCost',
                      iou_mode='giou',
-                     iou_calculator=dict(type='BboxOverlaps2D'),
                      weight=1.0)):
         self.cls_cost = build_match_cost(cls_cost)
         self.reg_cost = build_match_cost(reg_cost)
@@ -116,7 +115,8 @@ class HungarianAssigner(BaseAssigner):
         # classification and bboxcost.
         cls_cost = self.cls_cost(cls_pred, gt_labels)
         # regression L1 cost
-        reg_cost = self.reg_cost(bbox_pred, gt_bboxes, factor)
+        normalize_gt_bboxes = gt_bboxes / factor
+        reg_cost = self.reg_cost(bbox_pred, normalize_gt_bboxes)
         # regression iou cost, defaultly giou is used in official DETR.
         bboxes = bbox_cxcywh_to_xyxy(bbox_pred) * factor
         iou_cost = self.iou_cost(bboxes, gt_bboxes)

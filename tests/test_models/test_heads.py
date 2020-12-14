@@ -1243,12 +1243,11 @@ def test_transformer_head_loss():
     train_cfg = dict(
         assigner=dict(
             type='HungarianAssigner',
-            cls_cost=dict(type='ClsSoftmaxCost', weight=1.0),
+            cls_cost=dict(type='ClassificationCost', weight=1.0),
             reg_cost=dict(type='BBoxL1Cost', weight=5.0),
             iou_cost=dict(
                 type='IoUCost',
                 iou_mode='giou',
-                iou_calculator=dict(type='BboxOverlaps2D'),
                 weight=2.0)))
     transformer_cfg = dict(
         type='Transformer',
