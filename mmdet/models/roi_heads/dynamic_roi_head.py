@@ -128,7 +128,7 @@ class DynamicRoIHead(StandardRoIHead):
         bbox_results.update(loss_bbox=loss_bbox)
         return bbox_results
 
-    def update_hyperparameters(self):
+    def update_hyperparameters(self, eps=1e-15):
         """Update hyperparameters like IoU thresholds for assigner and beta for
         SmoothL1 loss based on the training statistics.
 
@@ -141,8 +141,12 @@ class DynamicRoIHead(StandardRoIHead):
         self.bbox_assigner.pos_iou_thr = new_iou_thr
         self.bbox_assigner.neg_iou_thr = new_iou_thr
         self.bbox_assigner.min_pos_iou = new_iou_thr
-        new_beta = min(self.train_cfg.dynamic_rcnn.initial_beta,
-                       np.median(self.beta_history))
+        if (np.median(self.beta_history) < eps):
+            # avoid 0 or too small value for new_beta
+            new_beta = self.bbox_head.loss_bbox.beta
+        else:
+            new_beta = min(self.train_cfg.dynamic_rcnn.initial_beta,
+                           np.median(self.beta_history))
         self.beta_history = []
         self.bbox_head.loss_bbox.beta = new_beta
         return new_iou_thr, new_beta
