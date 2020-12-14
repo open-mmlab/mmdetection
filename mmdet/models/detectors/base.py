@@ -76,9 +76,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         # NOTE the batched image size information may be useful, e.g.
         # in DETR, this is needed for the construction of masks, which is
         # then used for the transformer_head.
-        batch_intput_shape = tuple(imgs[0].size()[-2:])
+        batch_input_shape = tuple(imgs[0].size()[-2:])
         for img_meta in img_metas:
-            img_meta['batch_intput_shape'] = batch_intput_shape
+            img_meta['batch_input_shape'] = batch_input_shape
 
     async def async_simple_test(self, img, img_metas, **kwargs):
         raise NotImplementedError
@@ -146,7 +146,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         for img, img_meta in zip(imgs, img_metas):
             batch_size = len(img_meta)
             for img_id in range(batch_size):
-                img_meta[img_id]['batch_intput_shape'] = tuple(img.size()[-2:])
+                img_meta[img_id]['batch_input_shape'] = tuple(img.size()[-2:])
 
         if num_augs == 1:
             # proposals (List[List[Tensor]]): the outer list indicates
