@@ -1,6 +1,6 @@
 import math
 
-from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.cnn import build_conv_layer, build_norm_layer,build_plugin_layer
 
 from ..builder import BACKBONES
 from ..utils import ResLayer
@@ -82,6 +82,39 @@ class Bottleneck(_Bottleneck):
             kernel_size=1,
             bias=False)
         self.add_module(self.norm3_name, norm3)
+
+        if self.with_plugins:
+            self.after_conv1_plugin_names = self.make_block_plugins(
+                width, self.after_conv1_plugins)
+            self.after_conv2_plugin_names = self.make_block_plugins(
+                width, self.after_conv2_plugins)
+            self.after_conv3_plugin_names = self.make_block_plugins(
+                width * self.expansion, self.after_conv3_plugins)
+
+    def make_block_plugins(self, in_channels, plugins):
+        """make plugins for block.
+
+        Args:
+            in_channels (int): Input channels of plugin.
+            plugins (list[dict]): List of plugins cfg to build.
+
+        Returns:
+            list[str]: List of the names of plugin.
+        """
+        assert isinstance(plugins, list)
+        plugin_names = []
+        for plugin in plugins:
+            plugin = plugin.copy()
+            name, layer = build_plugin_layer(
+                plugin,
+                in_channels=in_channels,
+                postfix=plugin.pop('postfix', ''))
+            # fix duplicate plugin. When multiple same name plugins are added, only the last one is kept
+            if hasattr(self, name):
+                del self._modules[name]
+            self.add_module(name, layer)
+            plugin_names.append(name)
+        return plugin_names
 
 
 @BACKBONES.register_module()
