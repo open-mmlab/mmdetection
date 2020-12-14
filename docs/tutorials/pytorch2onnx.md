@@ -1,8 +1,8 @@
-# Model conversion from Pytroch to ONNX(Experimental)
+# Model conversion from Pytroch to ONNX (Experimental)
 
 <!-- TOC -->
 
-- [Model conversion from Pytroch to ONNX(Experimental)](#model-conversion-from-pytroch-to-onnxexperimental)
+- [Model conversion from Pytroch to ONNX (Experimental)](#model-conversion-from-pytroch-to-onnx-experimental)
   - [How to convert models from Pytorch to ONNX](#how-to-convert-models-from-pytorch-to-onnx)
     - [Prerequisite](#prerequisite)
     - [Usage](#usage)
