@@ -1,6 +1,6 @@
 import torch
 
-from mmdet.core import bbox2result, bbox2roi
+from mmdet.core import bbox2result, bbox2roi, bbox_xyxy_to_cxcywh
 from ..builder import HEADS
 from .cascade_roi_head import CascadeRoIHead
 
@@ -110,6 +110,7 @@ class SparseRoIHead(CascadeRoIHead):
         """
         # Decode initial proposals
         num_imgs = len(img_metas)
+
         num_poposals = proposal_boxes.size(1)
         imgs_whwh = imgs_whwh[:, None, :].expand(num_imgs, num_poposals, 4)
         all_stage_bbox_results = []
@@ -117,8 +118,6 @@ class SparseRoIHead(CascadeRoIHead):
             proposal_boxes[i] for i in range(len(proposal_boxes))
         ]
         object_feats = proposal_features
-        # This is diffrent with naive two-stage detector, we
-        # have to get forward results first then do the assigning
         all_stage_loss = {}
         for stage in range(self.num_stages):
             rois = bbox2roi(detach_proposal_list)
@@ -133,9 +132,12 @@ class SparseRoIHead(CascadeRoIHead):
 
             sampling_results = []
             cls_pred_list = bbox_results['detach_cls_score_list']
+            detach_proposal_list = bbox_results['detach_proposal_list']
             for i in range(num_imgs):
+                normolize_bbox_ccwh = bbox_xyxy_to_cxcywh(
+                    detach_proposal_list[i] / imgs_whwh[i])
                 assign_result = self.bbox_assigner[stage].assign(
-                    detach_proposal_list[i], cls_pred_list[i], gt_bboxes[i],
+                    normolize_bbox_ccwh, cls_pred_list[i], gt_bboxes[i],
                     gt_labels[i], img_metas[i])
                 sampling_result = self.bbox_sampler[stage].sample(
                     assign_result,
@@ -161,7 +163,6 @@ class SparseRoIHead(CascadeRoIHead):
             for key, value in single_stage_loss.items():
                 all_stage_loss[f'stage{stage}_{key}'] = value * \
                                     self.stage_loss_weights[stage]
-            detach_proposal_list = bbox_results['detach_proposal_list']
             object_feats = bbox_results['object_feats']
 
         return all_stage_loss

@@ -1,7 +1,7 @@
 import torch
 
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
-from mmdet.core.bbox.transforms import bbox_xyxy_to_cxcywh, bbox_cxcywh_to_xyxy
+from mmdet.core.bbox.transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from .builder import MATCH_COST
 
 
@@ -20,7 +20,7 @@ class BBoxL1Cost(object):
          >>> factor = torch.tensor([10, 8, 10, 8])
          >>> self(bbox_pred, gt_bboxes, factor)
          tensor([[1.6172, 1.6422]])
-     """
+    """
 
     def __init__(self, weight=1., box_format='xyxy'):
         self.weight = weight
@@ -69,7 +69,7 @@ class FocalLossCost(object):
                 [-0.3439, -0.3209, -0.4807],
                 [-0.4099, -0.3795, -0.2929],
                 [-0.1950, -0.1207, -0.2626]])
-     """
+    """
 
     def __init__(self, weight=1., alpha=0.25, gamma=2, eps=1e-12):
         self.weight = weight
@@ -103,7 +103,7 @@ class ClassificationCost(object):
      Args:
          weight (int | float): loss_weight
      Examples:
-         >>> from mmdet.core.bbox.match_costers.match_cost import ClassificationCost
+         >>> from mmdet.core.bbox.match_costers.match_cost import ClassificationCost  # noqa:E501
          >>> import torch
          >>> self = ClassificationCost()
          >>> cls_pred = torch.rand(4, 3)
@@ -114,7 +114,7 @@ class ClassificationCost(object):
                 [-0.3077, -0.2931, -0.3992],
                 [-0.3664, -0.3455, -0.2881],
                 [-0.3343, -0.2701, -0.3956]])
-     """
+    """
 
     def __init__(self, weight=1.):
         self.weight = weight
@@ -155,11 +155,9 @@ class IoUCost(object):
          >>> self(bboxes, gt_bboxes)
          tensor([[-0.1250,  0.1667],
                 [ 0.1667, -0.5000]])
-     """
+    """
 
-    def __init__(self,
-                 iou_mode='giou',
-                 weight=1.):
+    def __init__(self, iou_mode='giou', weight=1.):
         self.weight = weight
         self.iou_mode = iou_mode
 

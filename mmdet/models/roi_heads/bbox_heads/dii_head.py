@@ -6,6 +6,7 @@ from mmcv.runner import auto_fp16, force_fp32
 
 from mmdet.core import multi_apply
 from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.losses import accuracy
 from mmdet.models.utils import FFN, MultiheadAttention, build_transformer
 from .bbox_head import BBoxHead
@@ -150,11 +151,17 @@ class DIIHead(BBoxHead):
              label_weights,
              bbox_targets,
              bbox_weights,
+             avg_factor=None,
              imgs_whwh=None,
              reduction_override=None):
         losses = dict()
+        bg_class_ind = self.num_classes
+        # note in spare rcnn num_gt == num_pos
+        pos_inds = (labels >= 0) & (labels < bg_class_ind)
+        num_pos = pos_inds.sum()
+        avg_factor = reduce_mean(num_pos)
+
         if cls_score is not None:
-            avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if cls_score.numel() > 0:
                 losses['loss_cls'] = self.loss_cls(
                     cls_score,
@@ -164,13 +171,9 @@ class DIIHead(BBoxHead):
                     reduction_override=reduction_override)
                 losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
-            bg_class_ind = self.num_classes
             # 0~self.num_classes-1 are FG, self.num_classes is BG
-            pos_inds = (labels >= 0) & (labels < bg_class_ind)
             # do not perform bounding box regression for BG anymore.
             if pos_inds.any():
-                num_pos = pos_inds.sum()
-
                 pos_bbox_pred = bbox_pred.reshape(bbox_pred.size(0),
                                                   4)[pos_inds.type(torch.bool)]
                 imgs_whwh = imgs_whwh.reshape(bbox_pred.size(0),
@@ -179,13 +182,13 @@ class DIIHead(BBoxHead):
                     pos_bbox_pred / imgs_whwh,
                     bbox_targets[pos_inds.type(torch.bool)] / imgs_whwh,
                     bbox_weights[pos_inds.type(torch.bool)],
-                    avg_factor=num_pos,
+                    avg_factor=avg_factor,
                 )
                 losses['loss_iou'] = self.loss_iou(
                     pos_bbox_pred,
                     bbox_targets[pos_inds.type(torch.bool)],
                     bbox_weights[pos_inds.type(torch.bool)],
-                    avg_factor=num_pos,
+                    avg_factor=avg_factor,
                 )
             else:
                 losses['loss_bbox'] = bbox_pred.sum() * 0

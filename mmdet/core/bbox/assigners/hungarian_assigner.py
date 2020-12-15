@@ -40,10 +40,7 @@ class HungarianAssigner(BaseAssigner):
     def __init__(self,
                  cls_cost=dict(type='ClassificationCost', weight=1.),
                  reg_cost=dict(type='BBoxL1Cost', weight=1.0),
-                 iou_cost=dict(
-                     type='IoUCost',
-                     iou_mode='giou',
-                     weight=1.0)):
+                 iou_cost=dict(type='IoUCost', iou_mode='giou', weight=1.0)):
         self.cls_cost = build_match_cost(cls_cost)
         self.reg_cost = build_match_cost(reg_cost)
         self.iou_cost = build_match_cost(iou_cost)

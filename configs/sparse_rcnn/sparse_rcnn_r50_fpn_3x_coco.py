@@ -66,7 +66,7 @@ model = dict(
                     use_sigmoid=True,
                     gamma=2.0,
                     alpha=0.25,
-                    loss_weight=1.0),
+                    loss_weight=2.0),
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     clip_border=False,
@@ -83,9 +83,9 @@ train_cfg = dict(
         dict(
             assigner=dict(
                 type='HungarianAssigner',
-                cls_weight=1.,
-                bbox_weight=5.,
-                iou_weight=2.),
+                cls_cost=dict(type='FocalLossCost', weight=2.0),
+                reg_cost=dict(type='BBoxL1Cost', weight=5.0),
+                iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0)),
             sampler=dict(type='PseudoSampler'),
             pos_weight=1,
         ),
@@ -111,27 +111,12 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
-]
+
 data = dict(
     samples_per_gpu=2,
     workers_per_gpu=2,
     train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+)
 # optimizer
 optimizer = dict(
     type='AdamW',
@@ -139,7 +124,7 @@ optimizer = dict(
     weight_decay=0.0001,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
-optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=1, norm_type=2))
 # learning policy
 lr_config = dict(policy='step', step=[27, 33])
 total_epochs = 36
