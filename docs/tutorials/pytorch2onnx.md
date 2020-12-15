@@ -1,8 +1,8 @@
-# Model conversion from Pytroch to ONNX (Experimental)
+# Tutorial 8: Pytorch to ONNX (Experimental)
 
 <!-- TOC -->
 
-- [Model conversion from Pytroch to ONNX (Experimental)](#model-conversion-from-pytroch-to-onnx-experimental)
+- [Tutorial 8: Pytorch to ONNX (Experimental)](#tutorial-8-pytorch-to-onnx-experimental)
   - [How to convert models from Pytorch to ONNX](#how-to-convert-models-from-pytorch-to-onnx)
     - [Prerequisite](#prerequisite)
     - [Usage](#usage)
@@ -16,7 +16,7 @@
 
 ### Prerequisite
 
-1. Please refer to [get_started.md](../../docs/get_started.md) for installation of MMCV and MMDetection.
+1. Please refer to [get_started.md](../get_started.md) for installation of MMCV and MMDetection.
 2. Install onnx and onnxruntime
 
   ```shell
@@ -75,6 +75,7 @@ python tools/pytorch2onnx.py \
 ## List of supported models exportable to ONNX
 
 The table below lists the models that are guaranteed to be exportable to ONNX and runnable in ONNX Runtime.
+
 |    Model    |                        Config                        | Note  |
 | :---------: | :--------------------------------------------------: | :---: |
 |     SSD     |             `configs/ssd/ssd300_coco.py`             |       |
