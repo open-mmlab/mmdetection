@@ -228,7 +228,13 @@ Optional arguments:
 - `--cfg-options`:  if specified, the key-value pair optional cfg will be merged into config file
 - `--eval-options`: if specified, the key-value pair optional eval cfg will be kwargs for dataset.evaluate() function, it's only for evaluation
 
-Test mode supports single and batch image, you can achieve by modifying `samples_per_gpu` in the config file. For example,  ``samples_per_gpu``in`configs/_base_/datasets/coco_detection.py`  is set to 1 to indicate a single image test,  and if set to greater than 1, it is the batch-test mode.
+MMDetection supports inference with a single image or batched images in test mode. By default, we use single-image inference and you can use batch inference by modifying `samples_per_gpu` in the config of test data. You can do that either by modifying the config as below.
+
+```shell
+data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
+```
+
+Or you can set it through `--cfg-options` as `--cfg-options data.test.samples_per_gpu=2`
 
 #### Examples
 
