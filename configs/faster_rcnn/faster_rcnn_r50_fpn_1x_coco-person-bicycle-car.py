@@ -5,5 +5,5 @@ data = dict(
     train=dict(classes=classes),
     val=dict(classes=classes),
     test=dict(classes=classes))
-# TODO: Update model url after bumping to V2.0
-load_from = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'  # noqa
+
+load_from = 'http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_3x_coco/faster_rcnn_r50_caffe_fpn_mstrain_3x_coco_bbox_mAP-0.398_20200504_163323-30042637.pth'  # noqa
