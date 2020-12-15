@@ -6,6 +6,8 @@ from mmdet.models.losses import SmoothL1Loss
 from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
 
+EPS = 1e-15
+
 
 @HEADS.register_module()
 class DynamicRoIHead(StandardRoIHead):
@@ -128,7 +130,7 @@ class DynamicRoIHead(StandardRoIHead):
         bbox_results.update(loss_bbox=loss_bbox)
         return bbox_results
 
-    def update_hyperparameters(self, eps=1e-15):
+    def update_hyperparameters(self):
         """Update hyperparameters like IoU thresholds for assigner and beta for
         SmoothL1 loss based on the training statistics.
 
@@ -141,7 +143,7 @@ class DynamicRoIHead(StandardRoIHead):
         self.bbox_assigner.pos_iou_thr = new_iou_thr
         self.bbox_assigner.neg_iou_thr = new_iou_thr
         self.bbox_assigner.min_pos_iou = new_iou_thr
-        if (np.median(self.beta_history) < eps):
+        if (np.median(self.beta_history) < EPS):
             # avoid 0 or too small value for new_beta
             new_beta = self.bbox_head.loss_bbox.beta
         else:
