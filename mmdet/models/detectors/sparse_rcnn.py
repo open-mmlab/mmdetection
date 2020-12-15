@@ -64,7 +64,6 @@ class SparseRCNN(TwoStageDetector):
             img_metas,
             imgs_whwh=imgs_whwh,
             rescale=rescale)
-
         return bbox_results
 
     def forward_dummy(self, img):
@@ -77,7 +76,7 @@ class SparseRCNN(TwoStageDetector):
         # rpn
         num_imgs = len(img[0])
         dummy_img_metas = [
-            dict(img_shape=(800, 1333, 3)) for i in range(num_imgs)
+            dict(img_shape=(800, 1333, 3)) for _ in range(num_imgs)
         ]
         proposal_boxes, proposal_features, imgs_whwh = \
             self.rpn_head.simple_test_rpn(x, dummy_img_metas)

@@ -97,7 +97,6 @@ class DIIHead(BBoxHead):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-            # initialize the bias for focal loss.
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)

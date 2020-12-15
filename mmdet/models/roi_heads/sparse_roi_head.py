@@ -10,35 +10,32 @@ class SparseRoIHead(CascadeRoIHead):
     r"""The overall head for `Sparse R-CNN: End-to-End Object Detection with
     Learnable Proposals <https://arxiv.org/abs/2011.12450>`_"""
 
-    def __init__(
-            self,
-            num_stages,
-            stage_loss_weights,
-            num_proposals=100,
-            proposal_feature_channel=256,
-            bbox_roi_extractor=dict(
-                type='SingleRoIExtractor',
-                roi_layer=dict(
-                    type='RoIAlign', output_size=7, sampling_ratio=2),
-                out_channels=256,
-                featmap_strides=[4, 8, 16, 32]),
-            bbox_head=dict(
-                type='DIIHead',
-                num_classes=80,
-                num_fcs=2,
-                num_heads=8,
-                num_cls_fcs=1,
-                num_reg_fcs=3,
-                feedforward_channels=2048,
-                hidden_channels=256,
-                dropout=0.0,
-                roi_feat_size=7,
-                ffn_act_cfg=dict(type='ReLU', inplace=True),
-                loss_cls=dict(),  # TODO
-                loss_bbox=dict(),  # TODO
-                loss_iou=dict()),  # TODO
-            train_cfg=None,
-            test_cfg=None):
+    def __init__(self,
+                 num_stages,
+                 stage_loss_weights,
+                 num_proposals=100,
+                 proposal_feature_channel=256,
+                 bbox_roi_extractor=dict(
+                     type='SingleRoIExtractor',
+                     roi_layer=dict(
+                         type='RoIAlign', output_size=7, sampling_ratio=2),
+                     out_channels=256,
+                     featmap_strides=[4, 8, 16, 32]),
+                 bbox_head=dict(
+                     type='DIIHead',
+                     num_classes=80,
+                     num_fcs=2,
+                     num_heads=8,
+                     num_cls_fcs=1,
+                     num_reg_fcs=3,
+                     feedforward_channels=2048,
+                     hidden_channels=256,
+                     dropout=0.0,
+                     roi_feat_size=7,
+                     ffn_act_cfg=dict(type='ReLU', inplace=True),
+                 ),
+                 train_cfg=None,
+                 test_cfg=None):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
         self.num_stages = num_stages
@@ -180,16 +177,16 @@ class SparseRoIHead(CascadeRoIHead):
         assert self.with_bbox, 'Bbox head must be implemented.'
         # Decode initial proposals
         num_imgs = len(img_metas)
-        proposals = [proposal_boxes[i] for i in range(num_imgs)]
+        detach_proposal_list = [proposal_boxes[i] for i in range(num_imgs)]
         object_feats = proposal_feats
         for stage in range(self.num_stages):
-            rois = bbox2roi(proposals)
+            rois = bbox2roi(detach_proposal_list)
             bbox_results = self._bbox_forward(stage, x, rois, object_feats,
                                               img_metas)
             object_feats = bbox_results['object_feats']
             cls_score = bbox_results['cls_score']
+            detach_proposal_list = bbox_results['detach_proposal_list']
 
-        detach_proposal_list = bbox_results['detach_proposal_list']
         num_classes = self.bbox_head[-1].num_classes
         det_bboxes = []
         det_labels = []
