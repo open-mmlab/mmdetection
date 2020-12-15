@@ -147,6 +147,7 @@ If you take a look at the dataset, you will find the dataset format is as below:
     'name': 'polygon'}}},
  'size': 1115004}
 ```
+
 The annotation is a JSON file where each key indicates an image's all annotations.
 The code to convert the ballon dataset into coco format is as below.
 
@@ -205,7 +206,6 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
 ```
 
 Using the function above, users can successfully convert the annotation file into json format, then we can use `CocoDataset` to train and evaluate the model.
-
 
 ## Prepare a config
 

@@ -1,7 +1,8 @@
 # Cascade R-CNN: High Quality Object Detection and Instance Segmentation
 
 ## Introduction
-```
+
+```latex
 @article{Cai_2019,
    title={Cascade R-CNN: High Quality Object Detection and Instance Segmentation},
    ISSN={1939-3539},

@@ -35,8 +35,7 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
     conda activate open-mmlab
     ```
 
-2. Install PyTorch and torchvision following the [official instructions
-](https://pytorch.org/), e.g.,
+2. Install PyTorch and torchvision following the [official instructions](https://pytorch.org/), e.g.,
 
     ```shell
     conda install pytorch torchvision -c pytorch

@@ -8,14 +8,14 @@ The basic steps are as below:
 2. Prepare a config
 3. Train, test, inference models on the standard dataset.
 
-### Prepare the standard dataset
+## Prepare the standard dataset
 
 In this note, as we use the standard cityscapes dataset as an example.
 
 It is recommended to symlink the dataset root to `$MMDETECTION/data`.
 If your folder structure is different, you may need to change the corresponding paths in config files.
 
-```
+```none
 mmdetection
 ├── mmdet
 ├── tools
@@ -50,7 +50,7 @@ python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out-di
 Currently the config files in `cityscapes` use COCO pre-trained weights to initialize.
 You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
 
-### Prepare a config
+## Prepare a config
 
 The second step is to prepare a config for your own training setting. Assume that we want to use Cascade Mask R-CNN with FPN to train the cityscapes dataset, and assume the config is under directory `configs/cityscapes/` and named as `cascade_mask_rcnn_r50_fpn_1x_cityscapes.py`, the config is as below.
 
@@ -143,7 +143,7 @@ total_epochs = 8
 load_from = 'http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco/cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth'
 ```
 
-### Train a new model
+## Train a new model
 
 To train a model with the new config, you can simply run
 
@@ -153,7 +153,7 @@ python tools/train.py configs/cityscapes/cascade_mask_rcnn_r50_fpn_1x_cityscapes
 
 For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
 
-### Test and inference
+## Test and inference
 
 To test the trained model, you can simply run
 
