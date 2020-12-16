@@ -14,22 +14,48 @@ EPS = 1e-12
 
 
 class CenterPrior(nn.Module):
+    """Center Weighting module to adjust the category-specific prior
+    distributions.
+
+    Args:
+        force_inside (bool): Select the nearest 9 points, when
+            no point of the feature map falls into the gt box
+        class_num (int): The class number of dataset.
+        stride (list[int]): The stride each input feature map.
+    """
 
     def __init__(self,
-                 type='category',
-                 force_inside=True,
+                 force_inside=False,
                  class_num=80,
                  stride=(8, 16, 32, 64, 128)):
-        assert type in ('fixed', 'shared', 'category')
-        # TODO: support fixed and shared
         super(CenterPrior, self).__init__()
-        self.mean = nn.Parameter(torch.zeros(class_num, 2).float())
-        self.sigma = nn.Parameter(torch.ones(class_num, 2).float())
+        self.mean = nn.Parameter(torch.zeros(class_num, 2))
+        self.sigma = nn.Parameter(torch.ones(class_num, 2))
         self.stride = stride
         self.force_inside = force_inside
 
     def forward(self, anchor_points_list, gt_bboxes, labels,
                 inside_gt_bbox_mask):
+        """Get the center prior of each point on the feature map for each
+        instance.
+
+        Args:
+            anchor_points_list (list[Tensor]): list of coordinate
+                of points in feature map. Each with shape
+                (num_points, 2).
+            gt_bboxes (Tensor): The gt_bboxes with shape of
+                (num_gt, 4).
+            labels (Tensor): The gt_labels with shape of (num_gt).
+            inside_gt_bbox_mask (Tensor): Tensor of bool type,
+                with shape of (num_points, num_gt), each
+                value is used to mark whether this point falls
+                within a certain gt.
+
+        Returns:
+            Tensor: Float tensor with shape
+                of (num_points, num_gt). Each value represents
+                the center weighting coefficient.
+        """
         center_prior_list = []
         for slvl_points, stride in zip(anchor_points_list, self.stride):
             single_level_points = slvl_points[:, None, :].expand(
@@ -38,9 +64,7 @@ class CenterPrior(nn.Module):
             gt_center_y = ((gt_bboxes[:, 1] + gt_bboxes[:, 3]) / 2)
             gt_center = torch.stack((gt_center_x, gt_center_y), dim=1)
             gt_center = gt_center[None, :, :]
-            # shape (1, num_gt, 2)
             cat_prior_center = self.mean[labels][None, :]
-            # shape (1, num_gt,2)
             cat_prior_sigma = self.sigma[labels][None, :]
             distance = (((single_level_points - gt_center) / float(stride) -
                          cat_prior_center)**2)
@@ -50,7 +74,8 @@ class CenterPrior(nn.Module):
             center_prior_list.append(center_prior)
         center_prior_weights = torch.cat(center_prior_list, dim=0)
         if self.force_inside:
-            # if no any points in gt, we select top 9 as center_prior
+            # Select the nearest 9 points, when
+            # no any point falls into the gt bbox
             no_inside_gt_index = torch.nonzero(
                 inside_gt_bbox_mask.sum(0) == 0).reshape(-1)
             topk_center_index = center_prior[:, no_inside_gt_index].topk(
@@ -65,22 +90,42 @@ class CenterPrior(nn.Module):
 
 @HEADS.register_module()
 class AutoAssignHead(FCOSHead):
+    """AutoAssignHead head used in `AutoAssign.
+
+    <https://arxiv.org/abs/2007.03496>`_.
+
+    Args:
+        force_inside (bool): Used in center prior initialization to
+            handle extremely small gt. Default is False.
+        pos_loss_weight (float): The loss weight of positive loss
+            and with default value 0.25.
+        neg_loss_weight (float): The loss weight of negative loss
+            and with default value 0.75.
+        center_loss_weight (float): The loss weight of center prior
+            loss and with default value 0.75.
+    """
 
     def __init__(self,
                  *args,
-                 force_inside=True,
-                 centerness_on_reg=True,
+                 force_inside=False,
+                 pos_loss_weight=0.25,
+                 neg_loss_weight=0.75,
+                 center_loss_weight=0.75,
                  **kwargs):
         super().__init__(
-            *args,
-            conv_bias=True,
-            centerness_on_reg=centerness_on_reg,
-            **kwargs)
+            *args, conv_bias=True, centerness_on_reg=True, **kwargs)
         self.center_prior = CenterPrior(force_inside=force_inside)
-        self.force_inside = force_inside
+        self.pos_loss_weight = pos_loss_weight
+        self.neg_loss_weight = neg_loss_weight
+        self.center_loss_weight = center_loss_weight
 
     def init_weights(self):
-        """Initialize weights of the head."""
+        """Initialize weights of the head.
+
+        In particular, we have special initialization for classified conv's and
+        regression conv's bias
+        """
+
         super(AutoAssignHead, self).init_weights()
         bias_cls = bias_init_with_prob(0.02)
         normal_init(self.conv_cls, std=0.01, bias=bias_cls)
@@ -92,6 +137,8 @@ class AutoAssignHead(FCOSHead):
                            dtype,
                            device,
                            flatten=False):
+        """Almost the same as the implementation in fcos, we remove half of the
+        stride offset to align with the original implementation."""
         y, x = super(FCOSHead,
                      self)._get_points_single(featmap_size, stride, dtype,
                                               device)
@@ -99,39 +146,83 @@ class AutoAssignHead(FCOSHead):
                              dim=-1)
         return points
 
-    def get_pos_loss_single(self, cls_score, objectness, reg_loss, label,
+    def get_pos_loss_single(self, cls_score, objectness, reg_loss, gt_labels,
                             center_prior_weights):
+        """Calculate the positive loss of all points in gt_bboxes.
 
-        p_pos = torch.exp(-5 * reg_loss) * (cls_score * objectness)[:, label]
-        p_pos_weight = torch.exp(p_pos * 3)
-        p_pos_weight = (p_pos_weight * center_prior_weights) / (
-            (p_pos_weight * center_prior_weights).sum(
+        Args:
+            cls_score (Tensor): All category scores for each point on
+                the feature map. The shape is (num_points, num_class).
+            objectness (Tensor): Foreground probability of all points,
+                has shape (num_points, 1).
+            reg_loss (Tensor): The regression loss of each gt_bbox and each
+                prediction box, has shape of (num_points, num_gt).
+            gt_labels (Tensor): The zeros based gt_labels of all gt
+                with shape of (num_gt,).
+            center_prior_weights (Tensor): Float tensor with shape
+                of (num_points, num_gt). Each value represents
+                the center weighting coefficient.
+
+        Returns:
+            tuple:
+            pos_loss (Tensor): The positive loss of all points
+                in the gt_bboxes.
+        """
+        p_loc = torch.exp(-5 * reg_loss)
+        p_cls = (cls_score * objectness)[:, gt_labels]
+        p_pos = p_cls * p_loc
+        confidence_weight = torch.exp(p_pos * 3)
+        p_pos_weight = (confidence_weight * center_prior_weights) / (
+            (confidence_weight * center_prior_weights).sum(
                 0, keepdim=True)).clamp(min=EPS)
-        reweight_pos = (p_pos * p_pos_weight).sum(0)
+        reweight_p_pos = (p_pos * p_pos_weight).sum(0)
         pos_loss = F.binary_cross_entropy(
-            reweight_pos, torch.ones_like(reweight_pos), reduction='none')
-        return pos_loss.sum(),
+            reweight_p_pos, torch.ones_like(reweight_p_pos), reduction='none')
+        pos_loss = pos_loss.sum() * self.pos_loss_weight
+        return pos_loss,
 
     def get_neg_loss_single(self, cls_score, objectness, gt_labels, ious,
                             inside_gt_bbox_mask):
-        pred_cls = (cls_score * objectness)
-        pred_weight = torch.ones_like(cls_score)
-        temp_weight = (1 / (1 - ious))
-        # TODO change to gt dim first
-        iou_fuc_min = temp_weight.min(0)[0][None, :]
-        iou_fuc_max = temp_weight.max(0)[0][None, :]
-        neg_weight = 1 - (temp_weight - iou_fuc_min) / (
-            iou_fuc_max - iou_fuc_min).clamp(min=EPS)
+        """Calculate the negative loss of all points in feature map.
 
-        # same as cvpods, may has bug when match several gt with same class
+        Args:
+            cls_score (Tensor): All category scores for each point on
+                the feature map. The shape is (num_points, num_class).
+            objectness (Tensor): Foreground probability of all points
+                and is shape of (num_points, 1).
+            gt_labels (Tensor): The zeros based label of all gt with shape of
+                (num_gt).
+            ious (Tensor): Float tensor with shape of (num_points, num_gt).
+              Each value represent the iou of pred_bbox and gt_bboxes.
+            inside_gt_bbox_mask (Tensor): Tensor of bool type,
+              with shape of (num_points, num_gt), each
+              value is used to mark whether this point falls
+              within a certain gt.
+
+        Returns:
+            tuple:
+            neg_loss (Tensor): The negative loss of all points
+                in the feature map.
+        """
+
+        joint_conf = (cls_score * objectness)
+        p_neg_weight = torch.ones_like(joint_conf)
+        temp_weight = (1 / (1 - ious))
+        iou_function_min = temp_weight.min(0)[0][None, :]
+        iou_function_max = temp_weight.max(0)[0][None, :]
+        neg_weight = 1 - (temp_weight - iou_function_min) / (
+            iou_function_max - iou_function_min).clamp(min=EPS)
+
         foreground_idxs = torch.nonzero(inside_gt_bbox_mask, as_tuple=True)
         neg_weight = neg_weight[inside_gt_bbox_mask]
-        pred_weight[foreground_idxs[0],
-                    gt_labels[foreground_idxs[1]]] = neg_weight
+        p_neg_weight[foreground_idxs[0],
+                     gt_labels[foreground_idxs[1]]] = neg_weight
 
-        logits = (pred_cls * pred_weight)
-        neg_loss = (logits**2 * F.binary_cross_entropy(
-            logits, torch.zeros_like(logits), reduction='none')).sum()
+        logits = (joint_conf * p_neg_weight)
+        neg_loss = (
+            logits**2 * F.binary_cross_entropy(
+                logits, torch.zeros_like(logits), reduction='none'))
+        neg_loss = neg_loss.sum() * self.neg_loss_weight
         return neg_loss,
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'objectnesses'))
@@ -143,6 +234,28 @@ class AutoAssignHead(FCOSHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute loss of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level,
+                each is a 4D-tensor, the channel number is
+                num_points * num_classes.
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level, each is a 4D-tensor, the channel number is
+                num_points * 4.
+            objectnesses (list[Tensor]): objectness for each scale level, each
+                is a 4D-tensor, the channel number is num_points * 1.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
 
         assert len(cls_scores) == len(bbox_preds) == len(objectnesses)
         all_num_gt = max(sum([len(item) for item in gt_bboxes]), 1)
@@ -150,7 +263,7 @@ class AutoAssignHead(FCOSHead):
         all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                            bbox_preds[0].device)
         inside_gt_bbox_mask_list, bbox_targets_list = self.get_targets(
-            all_level_points, gt_bboxes, gt_labels)
+            all_level_points, gt_bboxes)
 
         center_prior_weight_list = []
         for gt_bboxe, gt_label, inside_gt_bbox_mask in zip(
@@ -183,7 +296,6 @@ class AutoAssignHead(FCOSHead):
             with torch.no_grad():
                 ious = bbox_overlaps(
                     decoded_bbox_preds, decoded_target_preds, is_aligned=True)
-                assert torch.isnan(ious).sum() == 0
                 ious = ious.reshape(num_points, temp_num_gt)
                 ious[~inside_gt_bbox_mask] = 0
                 ious_list.append(ious)
@@ -199,55 +311,59 @@ class AutoAssignHead(FCOSHead):
         pos_loss_list, = multi_apply(self.get_pos_loss_single, cls_scores,
                                      objectnesses, reg_loss_list, gt_labels,
                                      center_prior_weight_list)
-        pos_norm = reduce_mean(bbox_pred.new_tensor(all_num_gt))
-        pos_loss = sum(pos_loss_list) / pos_norm
+        pos_avg_factor = reduce_mean(bbox_pred.new_tensor(all_num_gt))
+        pos_loss = sum(pos_loss_list) / pos_avg_factor
         neg_loss_list, = multi_apply(self.get_neg_loss_single, cls_scores,
                                      objectnesses, gt_labels, ious_list,
                                      inside_gt_bbox_mask_list)
 
-        neg_norm = sum(item.data.sum() for item in center_prior_weight_list)
-        neg_norm = reduce_mean(neg_norm)
-        neg_loss = sum(neg_loss_list) / max(neg_norm, 1)
+        neg_avg_factor = sum(item.data.sum()
+                             for item in center_prior_weight_list)
+        neg_avg_factor = reduce_mean(neg_avg_factor)
+        neg_loss = sum(neg_loss_list) / max(neg_avg_factor, 1)
 
         center_loss = []
         for i in range(len(img_metas)):
             center_loss.append(
                 len(gt_bboxes[i]) /
                 center_prior_weight_list[i].sum().clamp_(min=EPS))
-        center_loss = torch.stack(center_loss).mean()
+        center_loss = torch.stack(center_loss).mean() * self.center_loss_weight
 
         if all_num_gt == 0:
             pos_loss = bbox_preds[0].sum() * 0
             center_loss = objectnesses[0].sum() * 0
 
         return dict(
-            loss_pos=pos_loss * 0.25,
-            loss_neg=neg_loss * 0.75,
-            loss_center=center_loss * 0.75)
+            loss_pos=pos_loss, loss_neg=neg_loss, loss_center=center_loss)
 
-    def get_targets(self, points, gt_bboxes_list, gt_labels_list):
+    def get_targets(self, points, gt_bboxes_list):
+        """Compute regression targets and each point inside or outside gt_bbox
+        in multiple images.
 
-        assert len(points) == len(self.regress_ranges)
+        Args:
+            points (list[Tensor]): Points of each fpn level, each has shape
+                (num_points, 2).
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image,
+                each has shape (num_gt, 4).
+
+        Returns:
+            tuple:
+                inside_gt_bbox_mask_list (list[Tensor]): Each Tensor is with
+                bool type and shape of (num_points, num_gt), each value is used
+                to mark whether this point falls within a certain gt.
+                concat_lvl_bbox_targets (list[Tensor]): BBox targets of each \
+                    level. Each tensor has shape (num_points, num_gt, 4)
+        """
+
         num_levels = len(points)
-        # expand regress ranges to align with points
-        expanded_regress_ranges = [
-            points[i].new_tensor(self.regress_ranges[i])[None].expand_as(
-                points[i]) for i in range(num_levels)
-        ]
-        # concat all levels points and regress ranges
-        concat_regress_ranges = torch.cat(expanded_regress_ranges, dim=0)
         concat_points = torch.cat(points, dim=0)
         # the number of points per img, per lvl
         num_points = [center.size(0) for center in points]
-        # get labels and bbox_targets of each image
         inside_gt_bbox_mask_list, bbox_targets_list = multi_apply(
             self._get_target_single,
             gt_bboxes_list,
-            gt_labels_list,
             points=concat_points,
-            regress_ranges=concat_regress_ranges,
-            num_points_per_lvl=num_points)
-
+        )
         bbox_targets_list = [
             list(bbox_targets.split(num_points, 0))
             for bbox_targets in bbox_targets_list
@@ -262,12 +378,25 @@ class AutoAssignHead(FCOSHead):
         ]
         return inside_gt_bbox_mask_list, concat_lvl_bbox_targets
 
-    def _get_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
-                           num_points_per_lvl):
+    def _get_target_single(self, gt_bboxes, points):
+        """Compute regression and classification targets for a single image.
 
+        Args:
+            gt_bboxes (Tensor): gt_bbox of single image, has shape
+                (num_gt,)
+            points (Tensor): Points of all fpn level, has shape
+                (num_points, 2).
+
+        Returns:
+            tuple:
+                inside_gt_bbox_mask (Tensor): Bool tensor with shape
+                    (num_points, num_gt), each value is used to mark
+                    whether this point falls within a certain gt.
+                bbox_targets (Tensor): BBox targets of each points with
+                    each gt_bboxes, has shape (num_points, num_gt, 4)
+        """
         num_points = points.size(0)
-        num_gts = gt_labels.size(0)
-        # TODO: check when no any gt in imgs
+        num_gts = gt_bboxes.size(0)
         gt_bboxes = gt_bboxes[None].expand(num_points, num_gts, 4)
         xs, ys = points[:, 0], points[:, 1]
         xs = xs[:, None].expand(num_points, num_gts)
