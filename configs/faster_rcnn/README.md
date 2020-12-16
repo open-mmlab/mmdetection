@@ -1,7 +1,8 @@
 # Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
 
 ## Introduction
-```
+
+```latex
 @article{Ren_2017,
    title={Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks},
    journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
@@ -29,6 +30,7 @@
 | X-101-64x4d-FPN | pytorch |   2x    | -        | -              | 41.6   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn/faster_rcnn_x101_64x4d_fpn_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_x101_64x4d_fpn_2x_coco/faster_rcnn_x101_64x4d_fpn_2x_coco_20200512_161033-5961fa95.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_x101_64x4d_fpn_2x_coco/faster_rcnn_x101_64x4d_fpn_2x_coco_20200512_161033.log.json)  |
 
 ## Different regression loss
+
 We trained with R-50-FPN pytorch style backbone for 1x schedule.
 
 |    Backbone     | Loss type | Mem (GB) | Inf time (fps) | box AP | Config | Download |
@@ -39,6 +41,7 @@ We trained with R-50-FPN pytorch style backbone for 1x schedule.
 |    R-50-FPN     |  BoundedIoULoss |          |                | 37.4   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_bounded_iou_1x_coco-98ad993b.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_bounded_iou_1x_coco_20200505_160738.log.json)  |
 
 ## Pre-trained Models
+
 We also train some models with longer schedules and multi-scale training. The users could finetune them for downstream tasks.
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |

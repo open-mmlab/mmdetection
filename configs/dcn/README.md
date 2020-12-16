@@ -1,8 +1,8 @@
 # Deformable Convolutional Networks
 
-# Introduction
+## Introduction
 
-```
+```none
 @inproceedings{dai2017deformable,
   title={Deformable Convolutional Networks},
   author={Dai, Jifeng and Qi, Haozhi and Xiong, Yuwen and Li, Yi and Zhang, Guodong and Hu, Han and Wei, Yichen},

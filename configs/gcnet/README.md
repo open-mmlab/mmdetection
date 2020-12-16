@@ -11,7 +11,7 @@ We provide config files to reproduce the results in the paper for
 
 ## Citing GCNet
 
-```
+```latex
 @article{cao2019GCNet,
   title={GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond},
   author={Cao, Yue and Xu, Jiarui and Lin, Stephen and Wei, Fangyun and Hu, Han},
@@ -21,6 +21,7 @@ We provide config files to reproduce the results in the paper for
 ```
 
 ## Results and models
+
 The results on COCO 2017val are shown in the below table.
 
 | Backbone  | Model            | Context        | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download  |
