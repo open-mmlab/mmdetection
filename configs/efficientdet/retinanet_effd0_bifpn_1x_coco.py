@@ -3,7 +3,7 @@ input_size = 512
 indices = (3, 4, 5)
 channels = 64
 num_levels = 5
-act_fn = 'silu'
+act_cfg = 'silu'
 separable_conv = True
 num_epochs = 300
 delta = 0.1
@@ -24,15 +24,16 @@ model = dict(
         out_channels=channels,
         input_indices=indices,
         num_outs=num_levels,
+        strides=[8, 16, 32],
         num_layers=3,
         weight_method='fast_attn',
-        act_fn=act_fn,
+        act_cfg=act_cfg,
         separable_conv=separable_conv,
         epsilon=0.0001
     ),
     bbox_head=dict(
         type='RetinaHead',
-        num_classes=90,
+        num_classes=80,
         in_channels=channels,
         stacked_convs=3,
         feat_channels=channels,
@@ -108,7 +109,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=12,
     workers_per_gpu=6,
     train=dict(
         type='RepeatDataset',
