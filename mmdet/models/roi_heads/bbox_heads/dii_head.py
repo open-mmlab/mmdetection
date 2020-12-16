@@ -169,7 +169,8 @@ class DIIHead(BBoxHead):
                     label_weights,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
-                losses['acc'] = accuracy(cls_score, labels)
+                losses['pos_acc'] = accuracy(cls_score[pos_inds],
+                                             labels[pos_inds])
         if bbox_pred is not None:
             # 0~self.num_classes-1 are FG, self.num_classes is BG
             # do not perform bounding box regression for BG anymore.
