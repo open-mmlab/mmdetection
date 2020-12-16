@@ -1,5 +1,6 @@
 # Based off of github.com/rwightman/efficientdet-pytorch
 
+import itertools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -50,11 +51,12 @@ class ActLayer(nn.Module):
         return nodes
 
 
-class ConvBn(nn.Module):
+class ConvBn1x1(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.point_wise = nn.Conv2d(in_channels, out_channels, kernel_size=(1, 1), stride=(1, 1),
-                                    padding=(0, 0), dilation=(1, 1), groups=1)
+
+        self.point_wise = nn.Conv2d(in_channels, out_channels, kernel_size=(1, 1),
+                                    stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1)
         self.bn = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
@@ -90,8 +92,8 @@ class SeparableConv2d(nn.Module):
 
 
 class BiFPNNode(nn.Module):
-    def __init__(self, input_channels, output_channel, weight_method, act_fn,
-                 separable_conv, epsilon, input_offsets,
+    def __init__(self, input_channels, output_channel, num_backbone_features, weight_method,
+                 act_fn, separable_conv, epsilon, input_offsets,
                  target_reduction, feature_reduction, reduction):
         super().__init__()
 
@@ -107,7 +109,7 @@ class BiFPNNode(nn.Module):
             offset_nodes = nn.Sequential()
             used_input = output_channel
             if offset < len(feature_reduction):
-                if offset < 3:
+                if offset < num_backbone_features:
                     used_input = input_channels
                 input_reduction = feature_reduction[offset]
             else:
@@ -117,7 +119,7 @@ class BiFPNNode(nn.Module):
             reduction_ratio = target_reduction / input_reduction
 
             if used_input != output_channel:
-                conv = ConvBn(used_input, output_channel)
+                conv = ConvBn1x1(used_input, output_channel)
                 offset_nodes.add_module("conv", conv)
 
             if reduction_ratio > 1:
@@ -139,7 +141,7 @@ class BiFPNNode(nn.Module):
         if separable_conv:
             self.fusion_convs = SeparableConv2d(output_channel, output_channel)
         else:
-            self.fusion_convs = ConvBn(output_channel, output_channel)
+            self.fusion_convs = ConvBn1x1(output_channel, output_channel)
 
     def forward(self, inputs):
         # Create node inputs
@@ -196,6 +198,7 @@ class BiFPNBlock(nn.Module):
         for i in range(num_outs - 1):
             self.nodes.append(BiFPNNode(input_channels[num_outs - i - 2],
                                         channels,
+                                        num_backbone_features,
                                         weight_method,
                                         act_fn,
                                         separable_conv,
@@ -208,6 +211,7 @@ class BiFPNBlock(nn.Module):
         for i in range(1, num_outs):
             self.nodes.append(BiFPNNode(input_channels[i],
                                         channels,
+                                        num_backbone_features,
                                         weight_method,
                                         act_fn,
                                         separable_conv,
@@ -253,26 +257,36 @@ class BiFPN(nn.Module):
 
         self.extra_convs = nn.ModuleList()
 
-        max_level = num_outs + self.num_backbone_features - 1
-        half_level = max_level // 2
+        min_level = input_indices[0]
+        max_level = num_outs + min_level - 1
 
+        # input_offsets are the nodes that the current node is getting its inputs from (either 2 or 3).
         input_offsets = []
+        # feature_reduction is the reduction values from the inputted nodes coming from the backbone
         feature_reduction = []
+        # reduction is the reduction values for the neck nodes
         reduction = []
 
         for i in input_indices:
             feature_reduction.append(1 << i)
 
-        for i in range(num_outs - 1):
-            input_offsets.append([half_level - i, half_level + i + 1])
-            reduction.append(base_reduction << (half_level - i))
+        node_ids = {min_level + i: [i] for i in range(num_outs)}
 
-        for i in range(num_outs - 2):
-            input_offsets.append([i + 1, max_level - i, max_level + i + 1])
-            reduction.append(base_reduction << (i + 1))
+        level_last_id = lambda level: node_ids[level][-1]
+        level_all_ids = lambda level: node_ids[level]
+        id_cnt = itertools.count(num_outs)
 
-        input_offsets.append([half_level + 1, max_level + num_outs - 1])
-        reduction.append(base_reduction << (half_level + 1))
+        for i in range(max_level - 1, min_level - 1, -1):
+            # top-down path
+            reduction.append(1 << i)
+            input_offsets.append([level_last_id(i), level_last_id(i + 1)])
+            node_ids[i].append(next(id_cnt))
+
+        for i in range(min_level + 1, max_level + 1):
+            # bottom-up path
+            reduction.append(1 << i)
+            input_offsets.append(level_all_ids(i) + [level_last_id(i - 1)])
+            node_ids[i].append(next(id_cnt))
 
         for i in range(self.num_outs - self.num_backbone_features):
             if i == 0:
@@ -282,13 +296,14 @@ class BiFPN(nn.Module):
             if input_channels != out_channels:
                 self.extra_convs.append(
                     nn.Sequential(
-                        ConvBn(input_channels, out_channels),
+                        ConvBn1x1(input_channels, out_channels),
                         nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
                     )
                 )
             else:
                 self.extra_convs.append(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
             feature_reduction.append(int(feature_reduction[-1] * reduction_ratio))
+
         self.layers = nn.ModuleList()
         for i in range(num_layers):
             if i == 0:
