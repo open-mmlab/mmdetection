@@ -160,7 +160,6 @@ class DIIHead(BBoxHead):
         pos_inds = (labels >= 0) & (labels < bg_class_ind)
         num_pos = pos_inds.sum().float()
         avg_factor = reduce_mean(num_pos)
-
         if cls_score is not None:
             if cls_score.numel() > 0:
                 losses['loss_cls'] = self.loss_cls(
