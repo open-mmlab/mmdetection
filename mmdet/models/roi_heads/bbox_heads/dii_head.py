@@ -158,7 +158,7 @@ class DIIHead(BBoxHead):
         bg_class_ind = self.num_classes
         # note in spare rcnn num_gt == num_pos
         pos_inds = (labels >= 0) & (labels < bg_class_ind)
-        num_pos = pos_inds.sum()
+        num_pos = pos_inds.sum().float()
         avg_factor = reduce_mean(num_pos)
 
         if cls_score is not None:
