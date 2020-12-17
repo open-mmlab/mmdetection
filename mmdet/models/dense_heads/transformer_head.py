@@ -73,14 +73,14 @@ class TransformerHead(AnchorFreeHead):
                      loss_weight=1.0,
                      class_weight=1.0),
                  loss_bbox=dict(type='L1Loss', loss_weight=5.0),
-                 loss_iou=dict(type='GIoULoss', loss_weight=5.0),
+                 loss_iou=dict(type='GIoULoss', loss_weight=2.0),
                  train_cfg=dict(
                      assigner=dict(
                          type='HungarianAssigner',
                          cls_cost=dict(type='ClassificationCost', weight=1.),
                          reg_cost=dict(type='BBoxL1Cost', weight=5.0),
                          iou_cost=dict(
-                             type='IoUCost', iou_mode='giou', weight=5.0))),
+                             type='IoUCost', iou_mode='giou', weight=2.0))),
                  test_cfg=dict(max_per_img=100),
                  **kwargs):
         # NOTE here use `AnchorFreeHead` instead of `TransformerHead`,
