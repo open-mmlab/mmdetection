@@ -9,7 +9,8 @@ class SparseRCNN(TwoStageDetector):
 
     def __init__(self, *args, **kwargs):
         super(SparseRCNN, self).__init__(*args, **kwargs)
-        assert self.with_rpn
+        assert self.with_rpn, ("Sparse R-CNN don't support"
+                               'external proposals')
 
     def forward_train(self,
                       img,
@@ -20,8 +21,33 @@ class SparseRCNN(TwoStageDetector):
                       gt_masks=None,
                       proposals=None,
                       **kwargs):
-        assert proposals is None
-        assert gt_masks is None
+        """Forward function of SparseR-CNN in train stage.
+
+        Args:
+            img (Tensor): of shape (N, C, H, W) encoding input images.
+                Typically these should be mean centered and std scaled.
+            img_metas (list[dict]): list of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+            gt_masks (None) : Segmentation masks for each box. But we don't
+                support it in this architecture.
+            proposals : override rpn proposals with custom proposals. Use when
+                `with_rpn` is False.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
+
+        assert proposals is None, "We don't support external proposals"
+        assert gt_masks is None, "We don't support instance" \
+            'segmenntaion in sparse_rcnn'
 
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \

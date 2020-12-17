@@ -11,17 +11,17 @@ from ...core import bbox_cxcywh_to_xyxy
 class EmbeddingRPNHead(nn.Module):
     """RPNHead in the `Sparse R-CNN <https://arxiv.org/abs/2011.12450>`_ .
     Unlike traditional RPNHead, this module does not need FPN input, but just
-    decode init_proposal_bboxes and expand dimension of init_proposal_features
-    according to the size of the images in this batch.
+    decode init_proposal_bboxes and expand first dimension of
+    init_proposal_bboxes and init_proposal_features to the batch_size.
 
     Args:
         num_proposals (int): Number of init_proposals. Default 100.
         proposal_feature_channel (int): Channel number of
             init_proposal_feature
-        train_cfg (dict): Necessary parameters of two-stage detector, but
-            always None in this module
-        test_cfg (dict): Necessary parameters of two-stage detector, but
-            always None in this module
+        train_cfg (dict, optional): Necessary parameters of two-stage
+            detector, but always None in this module
+        test_cfg (dict, optional): Necessary parameters of two-stage
+            detector, but always None in this module
     """
 
     def __init__(
@@ -49,7 +49,7 @@ class EmbeddingRPNHead(nn.Module):
     def init_weights(self):
         """Initialize the init_proposal_bboxes as normalized.
 
-        [c_x,c_y, w, h], and we initialize it to the size of the entire image
+        [c_x,c_y, w, h], and we initialize it to the size of  the entire image
         """
         nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
         nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
@@ -98,17 +98,14 @@ class EmbeddingRPNHead(nn.Module):
         return self._decode_init_proposals(img, img_metas)
 
     def forward_train(self, img, img_metas):
-        """Forward function in train stage."""
+        """Forward function in training stage."""
         return self._decode_init_proposals(img, img_metas)
 
     def simple_test_rpn(self, img, img_metas):
-        """Forward function in test stage."""
+        """Forward function in testing stage."""
         return self._decode_init_proposals(img, img_metas)
 
-    def show_result(
-        self,
-        data,
-    ):
+    def show_result(self, data):
         """Show the init proposals in EmbeddingRPN.
 
         Args:
