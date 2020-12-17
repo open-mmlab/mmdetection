@@ -10,7 +10,9 @@ class BBoxL1Cost(object):
     """BBoxL1Cost.
 
      Args:
-         weight (int | float): loss_weight
+         weight (int | float, optional): loss_weight
+         box_format (str, optional): 'xyxy' for DETR, 'xywh' for Sparse_RCNN
+
      Examples:
          >>> from mmdet.core.bbox.match_costers.match_cost import BBoxL1Cost
          >>> import torch
@@ -39,7 +41,6 @@ class BBoxL1Cost(object):
         Returns:
             torch.Tensor: bbox_cost value with weight
         """
-        # MODYFY: xyxy p1-norm in sparse-RCNN CODE which need to review
         if self.box_format == 'xywh':
             gt_bboxes = bbox_xyxy_to_cxcywh(gt_bboxes)
         elif self.box_format == 'xyxy':
@@ -53,10 +54,11 @@ class FocalLossCost(object):
     """FocalLossCost.
 
      Args:
-         weight (int | float): loss_weight
-         alpha (int | float): focal_loss alpha
-         gamma (int | float): focal_loss gamma
-         eps (float): default 1e-12
+         weight (int | float, optional): loss_weight
+         alpha (int | float, optional): focal_loss alpha
+         gamma (int | float, optional): focal_loss gamma
+         eps (float, optional): default 1e-12
+
      Examples:
          >>> from mmdet.core.bbox.match_costers.match_cost import FocalLossCost
          >>> import torch
@@ -101,7 +103,8 @@ class ClassificationCost(object):
     """ClsSoftmaxCost.
 
      Args:
-         weight (int | float): loss_weight
+         weight (int | float, optional): loss_weight
+
      Examples:
          >>> from mmdet.core.bbox.match_costers.match_cost import ClassificationCost
          >>> import torch
@@ -143,9 +146,9 @@ class IoUCost(object):
     """IoUCost.
 
      Args:
-         iou_calculator (dict): cfg such as dict(type='BboxOverlaps2D')
-         iou_mode (str): iou mode
-         weight (int | float): loss weight
+         iou_mode (str, optional): iou mode such as 'iou' | 'giou'
+         weight (int | float, optional): loss weight
+
      Examples:
          >>> from mmdet.core.bbox.match_costers.match_cost import IoUCost
          >>> import torch
