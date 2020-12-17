@@ -54,11 +54,11 @@ class ActLayer(nn.Module):
 
 # temp until DepthwsieSeparableConvModule can be imported
 class SeparableConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, kwargs):
+    def __init__(self, in_channels, out_channels, kernel_size, **kwargs):
         super().__init__()
         self.depth_wise = nn.Conv2d(in_channels, in_channels, kernel_size=(kernel_size, kernel_size),
                                     stride=(1, 1), padding=(1, 1), dilation=(1, 1), groups=in_channels)
-        self.point_wise = ConvModule(in_channels, out_channels, kernel_size, **kwargs)
+        self.point_wise = ConvModule(in_channels, out_channels, kernel_size=1, **kwargs)
 
     def forward(self, x):
         out = self.depth_wise(x)
@@ -119,12 +119,12 @@ class BiFPNNode(nn.Module):
             self.edge_weights = nn.Parameter(torch.ones(len(input_offsets)), requires_grad=True)
 
         conv_kwargs = dict(in_channels=output_channel, out_channels=output_channel, kernel_size=3,
-                           act_cfg=None, padding=1, norm_cfg=dict(type='BN'))
+                           act_cfg=None, norm_cfg=dict(type='BN'))
 
         if separable_conv:
             self.fusion_convs = SeparableConv2d(**conv_kwargs)
         else:
-            self.fusion_convs = ConvModule(**conv_kwargs)
+            self.fusion_convs = ConvModule(padding=1, **conv_kwargs)
 
     def forward(self, inputs):
         # Create node inputs
