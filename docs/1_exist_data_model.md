@@ -44,6 +44,8 @@ for frame in video:
 
 A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb).
 
+Note:  `inference_detector` only supports single-image inference for now.
+
 ### Asynchronous interface - supported for Python 3.7+
 
 For Python 3.7+, MMDetection also supports async interfaces.
@@ -223,6 +225,16 @@ Optional arguments:
 - `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment. Otherwise, you may encounter an error like `cannot connect to X server`.
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
 - `--show-score-thr`: If specified, detections with scores below this threshold will be removed.
+- `--cfg-options`:  if specified, the key-value pair optional cfg will be merged into config file
+- `--eval-options`: if specified, the key-value pair optional eval cfg will be kwargs for dataset.evaluate() function, it's only for evaluation
+
+MMDetection supports inference with a single image or batched images in test mode. By default, we use single-image inference and you can use batch inference by modifying `samples_per_gpu` in the config of test data. You can do that either by modifying the config as below.
+
+```shell
+data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
+```
+
+Or you can set it through `--cfg-options` as `--cfg-options data.test.samples_per_gpu=2`
 
 #### Examples
 
