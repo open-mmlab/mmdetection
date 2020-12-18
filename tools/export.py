@@ -13,22 +13,25 @@
 # and limitations under the License.
 
 import argparse
-import mmcv
-import onnx
 import os.path as osp
 import sys
+from subprocess import DEVNULL, CalledProcessError, run
+
+import mmcv
+import onnx
 import torch
 from onnx.optimizer import optimize
-from subprocess import DEVNULL, CalledProcessError, run
 from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 
 from mmdet.apis import get_fake_input, init_detector
 from mmdet.integration.nncf import (check_nncf_is_enabled,
+                                    get_nncf_config_from_meta,
                                     get_uncompressed_model, is_checkpoint_nncf,
                                     wrap_nncf_model)
 from mmdet.models import detectors
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
-from mmdet.utils.deployment.symbolic import register_extra_symbolics, register_extra_symbolics_for_openvino
+from mmdet.utils.deployment.symbolic import (
+    register_extra_symbolics, register_extra_symbolics_for_openvino)
 
 
 def export_to_onnx(model,
@@ -204,11 +207,24 @@ def main(args):
     fake_data = get_fake_input(cfg, device=device)
 
     # BEGIN nncf part
+    was_model_compressed = is_checkpoint_nncf(args.checkpoint)
+    cfg_contains_nncf = cfg.get('nncf_config')
+
+    if cfg_contains_nncf and not was_model_compressed:
+        raise RuntimeError('Trying to make export with NNCF compression '
+                           'a model snapshot that was NOT trained with NNCF')
+
+    if was_model_compressed and not cfg_contains_nncf:
+        # reading NNCF config from checkpoint
+        nncf_part = get_nncf_config_from_meta(args.checkpoint)
+        for k, v in nncf_part.items():
+            cfg[k] = v
+
     if cfg.get('nncf_config'):
+        alt_ssd_export = getattr(args, 'alt_ssd_export', False)
+        assert not alt_ssd_export, \
+                'Export of NNCF-compressed model is incompatible with --alt_ssd_export'
         check_nncf_is_enabled()
-        if not is_checkpoint_nncf(args.checkpoint):
-            raise RuntimeError('Trying to make export with NNCF compression '
-                               'a model snapshot that was NOT trained with NNCF')
         cfg.load_from = args.checkpoint
         cfg.resume_from = None
         compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
