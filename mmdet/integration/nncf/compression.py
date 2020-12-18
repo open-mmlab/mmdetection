@@ -64,7 +64,7 @@ def is_checkpoint_nncf(path):
     except FileNotFoundError:
         return False
 
-def get_nncf_config_from_meta(path, log_dir=None):
+def get_nncf_config_from_meta(path):
     logger = get_root_logger()
     checkpoint = torch.load(path)
     meta = checkpoint.get('meta', {})
@@ -81,9 +81,9 @@ def get_nncf_config_from_meta(path, log_dir=None):
             'nncf_config': cfg.get('nncf_config'),
             'find_unused_parameters': cfg.get('find_unused_parameters')
             }
-    if nncf_config_part.get('nncf_config', {}).get('log_dir'):
-        if not log_dir:
-            log_dir = tempfile.mkdtemp(prefix='nncf_output_')
+    if nncf_config_part['nncf_config'].get('log_dir'):
+        # TODO(LeonidBeynenson): improve work with log dir
+        log_dir = tempfile.mkdtemp(prefix='nncf_output_')
         nncf_config_part['nncf_config']['log_dir'] = log_dir
 
     logger.info(f'Read nncf config from meta nncf_config_part={nncf_config_part}')
