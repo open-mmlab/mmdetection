@@ -32,7 +32,6 @@ model = dict(
         type='SparseRoIHead',
         num_stages=num_stages,
         stage_loss_weights=[1] * num_stages,
-        num_proposals=100,
         proposal_feature_channel=256,
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
@@ -43,7 +42,7 @@ model = dict(
             dict(
                 type='DIIHead',
                 num_classes=80,
-                num_fcs=2,
+                num_ffn_fcs=2,
                 num_heads=8,
                 num_cls_fcs=1,
                 num_reg_fcs=3,
@@ -122,8 +121,7 @@ optimizer = dict(
     type='AdamW',
     lr=0.000025,
     weight_decay=0.0001,
-    paramwise_cfg=dict(
-        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+)
 optimizer_config = dict(grad_clip=dict(max_norm=1, norm_type=2))
 # learning policy
 lr_config = dict(policy='step', step=[27, 33])
