@@ -207,19 +207,24 @@ def main(args):
     fake_data = get_fake_input(cfg, device=device)
 
     # BEGIN nncf part
-    alt_ssd_export = getattr(args, 'alt_ssd_export', False)
-    if (is_checkpoint_nncf(args.checkpoint) and not cfg.get('nncf_config')
-        and not alt_ssd_export):
+    was_model_compressed = is_checkpoint_nncf(args.checkpoint)
+    cfg_contains_nncf = cfg.get('nncf_config')
+
+    if cfg_contains_nncf and not was_model_compressed:
+        raise RuntimeError('Trying to make export with NNCF compression '
+                           'a model snapshot that was NOT trained with NNCF')
+
+    if was_model_compressed and not cfg_contains_nncf:
         # reading NNCF config from checkpoint
         nncf_part = get_nncf_config_from_meta(args.checkpoint)
         for k, v in nncf_part.items():
             cfg[k] = v
 
     if cfg.get('nncf_config'):
+        alt_ssd_export = getattr(args, 'alt_ssd_export', False)
+        assert not alt_ssd_export, \
+                'Export of NNCF-compressed model is incompatible with --alt_ssd_export'
         check_nncf_is_enabled()
-        if not is_checkpoint_nncf(args.checkpoint):
-            raise RuntimeError('Trying to make export with NNCF compression '
-                               'a model snapshot that was NOT trained with NNCF')
         cfg.load_from = args.checkpoint
         cfg.resume_from = None
         compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
