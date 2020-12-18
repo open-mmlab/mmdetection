@@ -205,7 +205,9 @@ def main(args):
     fake_data = get_fake_input(cfg, device=device)
 
     # BEGIN nncf part
-    if is_checkpoint_nncf(args.checkpoint) and not cfg.get('nncf_config'):
+    alt_ssd_export=getattr(args, 'alt_ssd_export', False)
+    if (is_checkpoint_nncf(args.checkpoint) and not cfg.get('nncf_config')
+        and not alt_ssd_export):
         # reading NNCF config from checkpoint
         nncf_part = get_nncf_config_from_meta(args.checkpoint)
         for k, v in nncf_part.items():
