@@ -1,7 +1,10 @@
 import os
 import pathlib
+import tempfile
 import torch
 from functools import partial
+
+import mmcv
 
 from mmdet.utils import get_root_logger
 from .utils import (check_nncf_is_enabled, get_nncf_version, is_nncf_enabled,
@@ -61,6 +64,30 @@ def is_checkpoint_nncf(path):
     except FileNotFoundError:
         return False
 
+def get_nncf_config_from_meta(path, log_dir=None):
+    logger = get_root_logger()
+    checkpoint = torch.load(path)
+    meta = checkpoint.get('meta', {})
+
+    nncf_enable_compression = meta.get('nncf_enable_compression', False)
+    assert nncf_enable_compression, \
+            'get_nncf_config_from_meta should be run for NNCF-compressed checkpoints only'
+
+    config_text = meta['config']
+    with tempfile.NamedTemporaryFile(prefix='config_', suffix='.py', mode='w') as f_tmp:
+        f_tmp.write(config_text)
+        cfg = mmcv.Config.fromfile(f_tmp.name)
+    nncf_config_part = {
+            'nncf_config': cfg.get('nncf_config'),
+            'find_unused_parameters': cfg.get('find_unused_parameters')
+            }
+    if nncf_config_part.get('nncf_config', {}).get('log_dir'):
+        if not log_dir:
+            log_dir = tempfile.mkdtemp(prefix='nncf_output_')
+        nncf_config_part['nncf_config']['log_dir'] = log_dir
+
+    logger.info(f'Read nncf config from meta nncf_config_part={nncf_config_part}')
+    return nncf_config_part
 
 def wrap_nncf_model(model,
                     cfg,

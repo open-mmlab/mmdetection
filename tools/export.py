@@ -24,6 +24,7 @@ from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 
 from mmdet.apis import get_fake_input, init_detector
 from mmdet.integration.nncf import (check_nncf_is_enabled,
+                                    get_nncf_config_from_meta,
                                     get_uncompressed_model, is_checkpoint_nncf,
                                     wrap_nncf_model)
 from mmdet.models import detectors
@@ -204,6 +205,12 @@ def main(args):
     fake_data = get_fake_input(cfg, device=device)
 
     # BEGIN nncf part
+    if is_checkpoint_nncf(args.checkpoint) and not cfg.get('nncf_config'):
+        # reading NNCF config from checkpoint
+        nncf_part = get_nncf_config_from_meta(args.checkpoint)
+        for k, v in nncf_part.items():
+            cfg[k] = v
+
     if cfg.get('nncf_config'):
         check_nncf_is_enabled()
         if not is_checkpoint_nncf(args.checkpoint):
