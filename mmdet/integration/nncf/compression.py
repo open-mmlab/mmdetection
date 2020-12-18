@@ -57,7 +57,7 @@ def is_checkpoint_nncf(path):
     See the function get_nncf_metadata above.
     """
     try:
-        checkpoint = torch.load(path)
+        checkpoint = torch.load(path, map_location='cpu')
         meta = checkpoint.get('meta', {})
         nncf_enable_compression = meta.get('nncf_enable_compression', False)
         return bool(nncf_enable_compression)
@@ -65,8 +65,12 @@ def is_checkpoint_nncf(path):
         return False
 
 def get_nncf_config_from_meta(path):
+    """
+    The function uses metadata stored in a checkpoint to restore the nncf
+    part of the model config.
+    """
     logger = get_root_logger()
-    checkpoint = torch.load(path)
+    checkpoint = torch.load(path, map_location='cpu')
     meta = checkpoint.get('meta', {})
 
     nncf_enable_compression = meta.get('nncf_enable_compression', False)
