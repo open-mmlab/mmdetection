@@ -13,13 +13,14 @@
 # and limitations under the License.
 
 import argparse
-import mmcv
-import onnx
 import os.path as osp
 import sys
+from subprocess import DEVNULL, CalledProcessError, run
+
+import mmcv
+import onnx
 import torch
 from onnx.optimizer import optimize
-from subprocess import DEVNULL, CalledProcessError, run
 from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 
 from mmdet.apis import get_fake_input, init_detector
@@ -29,7 +30,8 @@ from mmdet.integration.nncf import (check_nncf_is_enabled,
                                     wrap_nncf_model)
 from mmdet.models import detectors
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
-from mmdet.utils.deployment.symbolic import register_extra_symbolics, register_extra_symbolics_for_openvino
+from mmdet.utils.deployment.symbolic import (
+    register_extra_symbolics, register_extra_symbolics_for_openvino)
 
 
 def export_to_onnx(model,

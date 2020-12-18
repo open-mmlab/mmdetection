@@ -1,6 +1,7 @@
 import argparse
-import mmcv
 import os
+
+import mmcv
 import torch
 from mmcv import Config, DictAction
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
@@ -11,8 +12,7 @@ from mmdet.core import wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.integration.nncf import (check_nncf_is_enabled,
                                     get_nncf_config_from_meta,
-                                    is_checkpoint_nncf,
-                                    wrap_nncf_model)
+                                    is_checkpoint_nncf, wrap_nncf_model)
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
 from mmdet.utils import ExtendedDictAction

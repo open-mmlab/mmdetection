@@ -1,10 +1,10 @@
 import os
 import pathlib
 import tempfile
-import torch
 from functools import partial
 
 import mmcv
+import torch
 
 from mmdet.utils import get_root_logger
 from .utils import (check_nncf_is_enabled, get_nncf_version, is_nncf_enabled,
