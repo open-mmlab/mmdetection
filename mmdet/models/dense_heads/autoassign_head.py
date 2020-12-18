@@ -297,6 +297,8 @@ class AutoAssignHead(FCOSHead):
                 ious = bbox_overlaps(
                     decoded_bbox_preds, decoded_target_preds, is_aligned=True)
                 ious = ious.reshape(num_points, temp_num_gt)
+                ious = ious.max(
+                    dim=-1, keepdim=True).values.repeat(1, temp_num_gt)
                 ious[~inside_gt_bbox_mask] = 0
                 ious_list.append(ious)
             loss_bbox = self.loss_bbox(
