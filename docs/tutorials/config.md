@@ -21,8 +21,8 @@ When submitting jobs using "tools/train.py" or "tools/test.py", you may specify 
 - Update values of list/tuples.
 
   If the value to be updated is a list or a tuple. For example, the config file normally sets `workflow=[('train', 1)]`. If you want to
-  change this key, you may specify `--cfg-options workflow="[(train, 1), (val, 1)]"`. Note that the quotation mark \" is necessary to
-  support list/tuple data types and white spaces in the specified values.
+  change this key, you may specify `--cfg-options workflow="[(train,1),(val,1)]"`. Note that the quotation mark \" is necessary to
+  support list/tuple data types, and that **NO** white space is allowed inside the quotation marks in the specified value.
 
 ## Config File Structure
 
