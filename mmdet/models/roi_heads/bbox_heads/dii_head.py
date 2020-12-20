@@ -312,7 +312,6 @@ class DIIHead(BBoxHead):
         if num_neg > 0:
             label_weights[neg_inds] = 1.0
 
-        assert label_weights.sum() == 100
         return labels, label_weights, bbox_targets, bbox_weights
 
     # TODO: redisign bbox_head to support pos_inds and neg_inds
