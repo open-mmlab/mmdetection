@@ -462,8 +462,8 @@ def print_map_summary(mean_ap,
             print_log(f'Scale range {scale_ranges[i]}', logger=logger)
         table_data = [header]
         for j in range(num_classes):
-            f1_score = 2 * recalls[i, j] * precisions[i, j] \
-                        / (recalls[i, j] + precisions[i, j])
+            f1_score = 2 * recalls[i, j] * precisions[i, j] / (
+                recalls[i, j] + precisions[i, j] + np.finfo(np.float32).eps)
             row_data = [
                 label_names[j], num_gts[i, j], results[j]['num_dets'],
                 f'{recalls[i, j]:.3f}', f'{f1_score:.3f}', f'{aps[i, j]:.3f}'
