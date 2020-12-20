@@ -7,7 +7,7 @@ from .cascade_roi_head import CascadeRoIHead
 
 @HEADS.register_module()
 class SparseRoIHead(CascadeRoIHead):
-    r"""The RoIHeadHead for `Sparse R-CNN: End-to-End Object Detection with
+    r"""The RoIHead for `Sparse R-CNN: End-to-End Object Detection with
     Learnable Proposals <https://arxiv.org/abs/2011.12450>`_
 
 
@@ -115,7 +115,7 @@ class SparseRoIHead(CascadeRoIHead):
             cls_score=cls_score,
             decode_bbox_pred=torch.cat(proposal_list),
             object_feats=object_feats,
-            # detach then used in label assign
+            # detach then use it in label assign
             detach_cls_score_list=[
                 cls_score[i].detach() for i in range(num_imgs)
             ],
@@ -168,13 +168,11 @@ class SparseRoIHead(CascadeRoIHead):
         num_poposals = proposal_boxes.size(1)
         imgs_whwh = imgs_whwh[:, None, :].expand(num_imgs, num_poposals, 4)
         all_stage_bbox_results = []
-        detach_proposal_list = [
-            proposal_boxes[i] for i in range(len(proposal_boxes))
-        ]
+        proposal_list = [proposal_boxes[i] for i in range(len(proposal_boxes))]
         object_feats = proposal_features
         all_stage_loss = {}
         for stage in range(self.num_stages):
-            rois = bbox2roi(detach_proposal_list)
+            rois = bbox2roi(proposal_list)
             bbox_results = self._bbox_forward(stage, x, rois, object_feats,
                                               img_metas)
             all_stage_bbox_results.append(bbox_results)
@@ -183,16 +181,16 @@ class SparseRoIHead(CascadeRoIHead):
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
             sampling_results = []
             cls_pred_list = bbox_results['detach_cls_score_list']
-            detach_proposal_list = bbox_results['detach_proposal_list']
+            proposal_list = bbox_results['detach_proposal_list']
             for i in range(num_imgs):
-                normolize_bbox_ccwh = bbox_xyxy_to_cxcywh(
-                    detach_proposal_list[i] / imgs_whwh[i])
+                normolize_bbox_ccwh = bbox_xyxy_to_cxcywh(proposal_list[i] /
+                                                          imgs_whwh[i])
                 assign_result = self.bbox_assigner[stage].assign(
                     normolize_bbox_ccwh, cls_pred_list[i], gt_bboxes[i],
                     gt_labels[i], img_metas[i])
                 sampling_result = self.bbox_sampler[stage].sample(
                     assign_result,
-                    detach_proposal_list[i],
+                    proposal_list[i],
                     gt_bboxes[i],
                 )
                 sampling_results.append(sampling_result)
@@ -253,15 +251,15 @@ class SparseRoIHead(CascadeRoIHead):
         # Decode initial proposals
         num_imgs = len(img_metas)
         num_proposals = proposal_boxes.size(1)
-        detach_proposal_list = [proposal_boxes[i] for i in range(num_imgs)]
+        proposal_list = [proposal_boxes[i] for i in range(num_imgs)]
         object_feats = proposal_feats
         for stage in range(self.num_stages):
-            rois = bbox2roi(detach_proposal_list)
+            rois = bbox2roi(proposal_list)
             bbox_results = self._bbox_forward(stage, x, rois, object_feats,
                                               img_metas)
             object_feats = bbox_results['object_feats']
             cls_score = bbox_results['cls_score']
-            detach_proposal_list = bbox_results['detach_proposal_list']
+            proposal_list = bbox_results['detach_proposal_list']
 
         num_classes = self.bbox_head[-1].num_classes
         det_bboxes = []
@@ -277,7 +275,7 @@ class SparseRoIHead(CascadeRoIHead):
                     0, 1).topk(
                         self.test_cfg.max_per_img, sorted=False)
                 labels_per_img = labels[topk_indices]
-                bbox_pred_per_img = detach_proposal_list[img_id].view(
+                bbox_pred_per_img = proposal_list[img_id].view(
                     -1, 1, 4).repeat(1, num_classes, 1).view(-1,
                                                              4)[topk_indices]
                 if rescale:
@@ -290,7 +288,7 @@ class SparseRoIHead(CascadeRoIHead):
                 det_labels.append(labels_per_img)
         else:
             for img_id in range(num_imgs):
-                bboxes = detach_proposal_list[img_id]
+                bboxes = proposal_list[img_id]
                 scores = cls_score[img_id].softmax(-1)
                 max_score, det_label = scores.max(-1)
                 det_score, topk_indices = max_score.topk(
@@ -323,17 +321,15 @@ class SparseRoIHead(CascadeRoIHead):
     ):
         """Dummy forward function when do the flops computing."""
         all_stage_bbox_results = []
-        detach_proposal_list = [
-            proposal_boxes[i] for i in range(len(proposal_boxes))
-        ]
+        proposal_list = [proposal_boxes[i] for i in range(len(proposal_boxes))]
         object_feats = proposal_features
         if self.with_bbox:
             for stage in range(self.num_stages):
-                rois = bbox2roi(detach_proposal_list)
+                rois = bbox2roi(proposal_list)
                 bbox_results = self._bbox_forward(stage, x, rois, object_feats,
                                                   img_metas)
 
                 all_stage_bbox_results.append(bbox_results)
-                detach_proposal_list = bbox_results['detach_proposal_list']
+                proposal_list = bbox_results['detach_proposal_list']
                 object_feats = bbox_results['object_feats']
         return all_stage_bbox_results
