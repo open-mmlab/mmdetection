@@ -119,7 +119,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     return results
 
 
-def test_launch(args, cfg, distributed, timestamp=None, meta=None):
+def test_launch(args, cfg, timestamp=None, meta=None):
     assert args.out or args.eval or args.format_only or args.show \
         or args.show_dir, \
         ('Please specify at least one operation (save/eval/format/show the '
@@ -160,7 +160,7 @@ def test_launch(args, cfg, distributed, timestamp=None, meta=None):
         dataset,
         samples_per_gpu=samples_per_gpu,
         workers_per_gpu=cfg.data.workers_per_gpu,
-        dist=distributed,
+        dist=cfg.distributed,
         shuffle=False)
 
     # build the model and load checkpoint
@@ -178,7 +178,7 @@ def test_launch(args, cfg, distributed, timestamp=None, meta=None):
     else:
         model.CLASSES = dataset.CLASSES
 
-    if not distributed:
+    if not cfg.distributed:
         model = MMDataParallel(model, device_ids=[0])
         outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
                                   args.show_score_thr)

@@ -21,11 +21,7 @@ def set_random_seed(*args, **kwargs):
     return mmcv_set_random_seed(*args, **kwargs)
 
 
-def train_launch(cfg,
-                 distributed=False,
-                 validate=False,
-                 timestamp=None,
-                 meta=None):
+def train_launch(cfg, validate=False, timestamp=None, meta=None):
     # build dataset
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
@@ -40,7 +36,7 @@ def train_launch(cfg,
             cfg.data.workers_per_gpu,
             # cfg.gpus will be ignored if distributed
             len(cfg.gpu_ids),
-            dist=distributed,
+            dist=cfg.distributed,
             seed=cfg.seed) for ds in datasets
     ]
 
@@ -51,7 +47,7 @@ def train_launch(cfg,
     cfg.checkpoint_config.meta.update(CLASSES=datasets[0].CLASSES)
 
     # put model on gpus
-    if distributed:
+    if cfg.distributed:
         find_unused_parameters = cfg.get('find_unused_parameters', False)
         # Sets the `find_unused_parameters` parameter in
         # torch.nn.parallel.DistributedDataParallel
@@ -84,8 +80,8 @@ def train_launch(cfg,
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
         optimizer_config = Fp16OptimizerHook(
-            **cfg.optimizer_config, **fp16_cfg, distributed=distributed)
-    elif distributed and 'type' not in cfg.optimizer_config:
+            **cfg.optimizer_config, **fp16_cfg, distributed=cfg.distributed)
+    elif cfg.distributed and 'type' not in cfg.optimizer_config:
         optimizer_config = OptimizerHook(**cfg.optimizer_config)
     else:
         optimizer_config = cfg.optimizer_config
@@ -94,7 +90,7 @@ def train_launch(cfg,
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config,
                                    cfg.get('momentum_config', None))
-    if distributed:
+    if cfg.distributed:
         runner.register_hook(DistSamplerSeedHook())
 
     # register eval hooks
@@ -110,10 +106,10 @@ def train_launch(cfg,
             val_dataset,
             samples_per_gpu=val_samples_per_gpu,
             workers_per_gpu=cfg.data.workers_per_gpu,
-            dist=distributed,
+            dist=cfg.distributed,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
-        eval_hook = DistEvalHook if distributed else EvalHook
+        eval_hook = DistEvalHook if cfg.distributed else EvalHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
     # user-defined hooks
