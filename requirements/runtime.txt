@@ -3,3 +3,4 @@ mmpycocotools
 numpy
 six
 terminaltables
+sklearn
