@@ -8,18 +8,6 @@ import subprocess
 import mmcv
 import torch
 
-# build schedule look-up table to automatically find the final model
-SCHEDULES_LUT = {
-    '_1x_': 12,
-    '_2x_': 24,
-    '_20e_': 20,
-    '_3x_': 36,
-    '_4x_': 48,
-    '_24e_': 24,
-    '_6x_': 73
-}
-RESULTS_LUT = ['bbox_mAP', 'segm_mAP']
-
 
 def process_checkpoint(in_file, out_file):
     checkpoint = torch.load(in_file, map_location='cpu')
@@ -40,7 +28,7 @@ def get_final_epoch(config):
     return cfg.total_epochs
 
 
-def get_final_results(log_json_path, epoch):
+def get_final_results(log_json_path, epoch, RESULTS_LUT):
     result_dict = dict()
     with open(log_json_path, 'r') as f:
         for line in f.readlines():
@@ -105,7 +93,12 @@ def main():
         # get logs
         log_json_path = glob.glob(osp.join(exp_dir, '*.log.json'))[0]
         log_txt_path = glob.glob(osp.join(exp_dir, '*.log'))[0]
-        model_performance = get_final_results(log_json_path, final_epoch)
+        cfg = mmcv.Config.fromfile('./configs/' + used_config)
+        RESULTS_LUT = cfg.evaluation.metric
+        if not isinstance(RESULTS_LUT, list):
+            RESULTS_LUT = [RESULTS_LUT]
+        RESULTS_LUT = [key+'_mAP' for key in RESULTS_LUT]
+        model_performance = get_final_results(log_json_path, final_epoch, RESULTS_LUT)
 
         if model_performance is None:
             continue
