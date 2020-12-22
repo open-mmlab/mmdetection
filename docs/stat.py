@@ -20,10 +20,12 @@ for f in files:
     title = content.split('\n')[0].replace('# ', '')
 
     titles.append(title)
+
     ckpts = set(x.lower().strip()
-                for x in re.findall(r'https?://download.*\.pth', content)
-                if 'mmdetection' in x)
+                for x in re.findall(r'\[model\]\((https?.*)\)', content))
+
     num_ckpts += len(ckpts)
+
     statsmsg = f"""
 \t* [{title}]({url}) ({len(ckpts)} ckpts)
 """
