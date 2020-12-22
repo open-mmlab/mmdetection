@@ -262,7 +262,6 @@ class Bottleneck(nn.Module):
 
         def _inner_forward(x):
             identity = x
-
             out = self.conv1(x)
             out = self.norm1(out)
             out = self.relu(out)
