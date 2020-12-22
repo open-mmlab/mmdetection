@@ -1,6 +1,7 @@
 _base_ = [
     '../_base_/models/cascade_rcnn_r50_fpn.py',
-    '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 num_stages = 6
 model = dict(
@@ -91,38 +92,14 @@ train_cfg = dict(
     ] * num_stages)
 
 test_cfg = dict(_delete_=True, rpn=None, rcnn=dict(max_per_img=100))
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-# train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
-# from the default setting in mmdet.
-min_values = (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)
-train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(
-        type='Resize',
-        img_scale=[(1333, value) for value in min_values],
-        multiscale_mode='value',
-        keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
-]
-
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(pipeline=train_pipeline),
-)
 # optimizer
 optimizer = dict(
+    _delete_=True,
     type='AdamW',
     lr=0.000025,
     weight_decay=0.0001,
 )
-optimizer_config = dict(grad_clip=dict(max_norm=1, norm_type=2))
+optimizer_config = dict(_delete_=True, grad_clip=dict(max_norm=1, norm_type=2))
 # learning policy
-lr_config = dict(policy='step', step=[27, 33])
-total_epochs = 36
+lr_config = dict(policy='step', step=[8, 11])
+total_epochs = 12
