@@ -28,7 +28,7 @@ def get_final_epoch(config):
     return cfg.total_epochs
 
 
-def get_final_results(log_json_path, epoch, RESULTS_LUT):
+def get_final_results(log_json_path, epoch, results_lut):
     result_dict = dict()
     with open(log_json_path, 'r') as f:
         for line in f.readlines():
@@ -42,7 +42,7 @@ def get_final_results(log_json_path, epoch, RESULTS_LUT):
             if log_line['mode'] == 'val' and log_line['epoch'] == epoch:
                 result_dict.update({
                     key: log_line[key]
-                    for key in RESULTS_LUT if key in log_line
+                    for key in results_lut if key in log_line
                 })
                 return result_dict
 
@@ -94,11 +94,11 @@ def main():
         log_json_path = list(sorted(glob.glob(osp.join(exp_dir, '*.log.json'))))[-1]
         log_txt_path = list(sorted(glob.glob(osp.join(exp_dir, '*.log'))))[-1]
         cfg = mmcv.Config.fromfile('./configs/' + used_config)
-        RESULTS_LUT = cfg.evaluation.metric
-        if not isinstance(RESULTS_LUT, list):
-            RESULTS_LUT = [RESULTS_LUT]
-        RESULTS_LUT = [key+'_mAP' for key in RESULTS_LUT]
-        model_performance = get_final_results(log_json_path, final_epoch, RESULTS_LUT)
+        results_lut = cfg.evaluation.metric
+        if not isinstance(results_lut, list):
+            results_lut = [results_lut]
+        results_lut = [key+'_mAP' for key in results_lut]
+        model_performance = get_final_results(log_json_path, final_epoch, results_lut)
 
         if model_performance is None:
             continue
