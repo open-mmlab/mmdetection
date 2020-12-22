@@ -2,7 +2,7 @@
 
 ## Introduction
 
-```
+```latex
 @article{zhu2019empirical,
   title={An Empirical Study of Spatial Attention Mechanisms in Deep Networks},
   author={Zhu, Xizhou and Cheng, Dazhi and Zhang, Zheng and Lin, Stephen and Dai, Jifeng},
@@ -10,7 +10,6 @@
   year={2019}
 }
 ```
-
 
 ## Results and Models
 

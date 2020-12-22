@@ -4,7 +4,7 @@
 
 We provide config files to reproduce the results in the CVPR 2019 paper for [Hybrid Task Cascade](https://arxiv.org/abs/1901.07518).
 
-```
+```latex
 @inproceedings{chen2019hybrid,
   title={Hybrid task cascade for instance segmentation},
   author={Chen, Kai and Pang, Jiangmiao and Wang, Jiaqi and Xiong, Yu and Li, Xiaoxiao and Sun, Shuyang and Feng, Wansen and Liu, Ziwei and Shi, Jianping and Ouyang, Wanli and Chen Change Loy and Dahua Lin},
@@ -18,7 +18,7 @@ We provide config files to reproduce the results in the CVPR 2019 paper for [Hyb
 HTC requires COCO and COCO-stuff dataset for training. You need to download and extract it in the COCO dataset path.
 The directory should be like this.
 
-```
+```none
 mmdetection
 ├── mmdet
 ├── tools
@@ -46,7 +46,7 @@ The results on COCO 2017val are shown in the below table. (results on test-dev a
 
 - In the HTC paper and COCO 2018 Challenge, `score_thr` is set to 0.001 for both baselines and HTC.
 - We use 8 GPUs with 2 images/GPU for R-50 and R-101 models, and 16 GPUs with 1 image/GPU for X-101 models.
-If you would like to train X-101 HTC with 8 GPUs, you need to change the lr from 0.02 to 0.01.
+  If you would like to train X-101 HTC with 8 GPUs, you need to change the lr from 0.02 to 0.01.
 
 We also provide a powerful HTC with DCN and multi-scale training model. No testing augmentation is used.
 

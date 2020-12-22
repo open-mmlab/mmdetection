@@ -1,6 +1,7 @@
 # VarifocalNet: An IoU-aware Dense Object Detector
 
 ## Introduction
+
 **VarifocalNet (VFNet)** learns to predict the IoU-aware classification score which mixes the object presence confidence and localization accuracy together as the detection score for a bounding box. The learning is supervised by the proposed Varifocal Loss (VFL), based on a new star-shaped bounding box feature representation (the features at nine yellow sampling points). Given the new representation, the object localization accuracy is further improved by refining the initially regressed bounding box. The full paper is available at: [https://arxiv.org/abs/2008.13367](https://arxiv.org/abs/2008.13367).
 
 <div align="center">
@@ -10,7 +11,7 @@
 
 ## Citing VarifocalNet
 
-```
+```latex
 @article{zhang2020varifocalnet,
   title={VarifocalNet: An IoU-aware Dense Object Detector},
   author={Zhang, Haoyang and Wang, Ying and Dayoub, Feras and S{\"u}nderhauf, Niko},
@@ -32,8 +33,8 @@
 | X-101-32x4d  | pytorch   | Y       | Y        | 2x      | -          | 49.7         | 50.0              | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco.py) | [model](https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-d300a6fc.pth) &#124; [log](https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco.json)|
 | X-101-64x4d  | pytorch   | Y       | Y        | 2x      |  -         | 50.4         | 50.8              | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco.py) | [model](https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-b5f6da5e.pth) &#124; [log](https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco.json)|
 
-
 **Notes:**
+
 - The MS-train scale range is 1333x[480:960] (`range` mode) and the inference scale keeps 1333x800.
 - DCN means using `DCNv2` in both backbone and head.
 - Inference time will be updated soon.

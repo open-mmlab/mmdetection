@@ -2,7 +2,7 @@
 
 ## Introduction
 
-```
+```latex
 @article{tian2019fcos,
   title={FCOS: Fully Convolutional One-Stage Object Detection},
   author={Tian, Zhi and Shen, Chunhua and Chen, Hao and He, Tong},
@@ -23,7 +23,6 @@
 | R-101     | caffe   | Y       | N        | N       | N       | 1x      | 10.2     | 17.3           | 39.2   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fcos/fcos_r101_caffe_fpn_gn-head_4x4_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_4x4_1x_coco/fcos_r101_caffe_fpn_gn_1x_4gpu_20200218-13e2cc55.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_4x4_1x_coco/20200130_004231.log.json) |
 | R-101     | caffe   | Y       | N        | N       | N       | 2x      | -        | -              | 39.1   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fcos/fcos_r101_caffe_fpn_gn-head_4x4_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_4x4_2x_coco/fcos_r101_caffe_fpn_gn_2x_4gpu_20200218-d2261033.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_4x4_2x_coco/20200130_004231.log.json) |
 
-
 | Backbone  | Style   | GN      | MS train | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 |:---------:|:-------:|:-------:|:--------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
 | R-50      | caffe   | Y       | Y        | 2x      | 6.5      | 22.9           | 38.7   |  |  |
@@ -31,6 +30,7 @@
 | X-101     | pytorch | Y       | Y        | 2x      | 10.0     | 9.3            | 42.5   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco_20200229-11f8c079.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco_20200229_222104.log.json) |
 
 **Notes:**
+
 - To be consistent with the author's implementation, we use 4 GPUs with 4 images/GPU for R-50 and R-101 models, and 8 GPUs with 2 image/GPU for X-101 models.
 - The X-101 backbone is X-101-64x4d.
 - Tricks means setting `norm_on_bbox`, `centerness_on_reg`, `center_sampling` as `True`.

@@ -10,6 +10,7 @@ Due to the BC-breaking changes in MMDetection V2.0 from MMDetection V1.x, runnin
 To upgrade the model version, the users need to do the following steps.
 
 ### 1. Convert model weights
+
 There are three main difference in the model weights between V1.x and V2.0 codebases.
 
 1. Since the class order in all the detector's classification branch is reordered, all the legacy model weights need to go through the conversion process.
@@ -23,10 +24,11 @@ detectors. We provide a scripts `tools/upgrade_model_version.py` to convert the 
 python tools/upgrade_model_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH} --num-classes ${NUM_CLASSES}
 
 ```
+
 - OLD_MODEL_PATH: the path to load the model weights in 1.x version.
 - NEW_MODEL_PATH: the path to save the converted model weights in 2.0 version.
 - NUM_CLASSES: number of classes of the original model weights. Usually it is 81 for COCO dataset, 21 for VOC dataset.
-The number of classes in V2.0 models should be equal to that in V1.x models - 1.
+  The number of classes in V2.0 models should be equal to that in V1.x models - 1.
 
 ### 2. Use configs with legacy settings
 

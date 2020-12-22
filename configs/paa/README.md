@@ -1,8 +1,7 @@
 # Probabilistic Anchor Assignment with IoU Prediction for Object Detection
 
-
-
 ## Results and Models
+
 We provide config files to reproduce the object detection results in the
 ECCV 2020 paper for Probabilistic Anchor Assignment with IoU
 Prediction for Object Detection.
@@ -19,4 +18,5 @@ Prediction for Object Detection.
 | R-101-FPN   | 24e     | 6.2     | True          | 43.5   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/paa/paa_r101_fpn_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_2x_coco/paa_r101_fpn_2x_coco_20200821-6829f96b.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_2x_coco/paa_r101_fpn_2x_coco_20200821-6829f96b.log.json) |
 
 **Note**:
+
 1. We find that the performance is unstable with 1x setting and may fluctuate by about 0.2 mAP. We report the best results.
