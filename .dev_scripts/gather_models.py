@@ -90,9 +90,9 @@ def main():
         if not osp.exists(model_path):
             continue
 
-        # get logs
-        log_json_path = glob.glob(osp.join(exp_dir, '*.log.json'))[0]
-        log_txt_path = glob.glob(osp.join(exp_dir, '*.log'))[0]
+        # get the latest logs
+        log_json_path = list(sorted(glob.glob(osp.join(exp_dir, '*.log.json'))))[-1]
+        log_txt_path = list(sorted(glob.glob(osp.join(exp_dir, '*.log'))))[-1]
         cfg = mmcv.Config.fromfile('./configs/' + used_config)
         RESULTS_LUT = cfg.evaluation.metric
         if not isinstance(RESULTS_LUT, list):
