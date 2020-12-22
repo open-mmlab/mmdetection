@@ -20,6 +20,8 @@ from ...core import multiclass_nms
 from ...core.bbox.coder.delta_xywh_bbox_coder import delta2bbox
 from ...core.anchor.anchor_generator import SSDAnchorGeneratorClustered
 
+from mmdet.utils import add_domain
+
 
 def get_proposals(img_metas, cls_scores, bbox_preds, priors,
                   cfg, rescale, cls_out_channels, use_sigmoid_cls,
@@ -87,7 +89,7 @@ class PriorBox(torch.autograd.Function):
         for ar in ratios:
             if ar > 1:
                 ars.append(ar)
-        return g.op("PriorBox", feat, img_tensor, min_size_f=[min_size],
+        return g.op(add_domain("PriorBox"), feat, img_tensor, min_size_f=[min_size],
                     max_size_f=max_sizes, aspect_ratio_f=ars, flip_i=1,
                     clip_i=0, variance_f=list(target_stds),
                     step_f=anchor_stride[0], offset_f=0.5, step_h_f=0,
@@ -110,7 +112,7 @@ class PriorBoxClustered(torch.autograd.Function):
     @staticmethod
     def symbolic(g, single_level_grid_anchors, base_anchors, anchors_heights, anchors_widths,
                  anchor_stride, feat, img_tensor, target_stds):
-        return g.op("PriorBoxClustered", feat, img_tensor,
+        return g.op(add_domain("PriorBoxClustered"), feat, img_tensor,
                     height_f=anchors_heights, width_f=anchors_widths,
                     flip_i=0, clip_i=0, variance_f=list(target_stds),
                     step_f=anchor_stride[0], offset_f=0.5, step_h_f=0,
@@ -136,7 +138,7 @@ class DetectionOutput(torch.autograd.Function):
     def symbolic(g, cls_scores, bbox_preds, img_metas, cfg,
                  rescale, priors, cls_out_channels, use_sigmoid_cls,
                  target_means, target_stds):
-        return g.op("DetectionOutput", bbox_preds, cls_scores, priors,
+        return g.op(add_domain("DetectionOutput"), bbox_preds, cls_scores, priors,
                     num_classes_i=cls_out_channels, background_label_id_i=cls_out_channels - 1,
                     top_k_i=cfg['max_per_img'],
                     keep_top_k_i=cfg['max_per_img'],

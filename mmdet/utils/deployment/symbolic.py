@@ -19,6 +19,8 @@ import torch.onnx.symbolic_helper as sym_help
 from torch.onnx.symbolic_helper import parse_args
 from torch.onnx.symbolic_registry import register_op, get_registered_op, is_registered_op
 
+from mmdet.utils import add_domain
+
 
 def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
     """
@@ -258,7 +260,7 @@ def multiclass_nms_core_symbolic(g, multi_bboxes, multi_scores, score_thr, nms_c
 def roi_feature_extractor_symbolics(g, rois, *feats, output_size=1, featmap_strides=1, sample_num=1):
     from torch.onnx.symbolic_helper import _slice_helper
     rois = _slice_helper(g, rois, axes=[1], starts=[1], ends=[5])
-    roi_feats = g.op('ExperimentalDetectronROIFeatureExtractor',
+    roi_feats = g.op(add_domain('ExperimentalDetectronROIFeatureExtractor'),
         rois,
         *feats,
         output_size_i=output_size,
