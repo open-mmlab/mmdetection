@@ -14,7 +14,7 @@ class BBoxL1Cost(object):
          box_format (str, optional): 'xyxy' for DETR, 'xywh' for Sparse_RCNN
 
      Examples:
-         >>> from mmdet.core.bbox.match_costers.match_cost import BBoxL1Cost
+         >>> from mmdet.core.bbox.match_costs.match_cost import BBoxL1Cost
          >>> import torch
          >>> self = BBoxL1Cost()
          >>> bbox_pred = torch.rand(1, 4)
@@ -60,7 +60,7 @@ class FocalLossCost(object):
          eps (float, optional): default 1e-12
 
      Examples:
-         >>> from mmdet.core.bbox.match_costers.match_cost import FocalLossCost
+         >>> from mmdet.core.bbox.match_costs.match_cost import FocalLossCost
          >>> import torch
          >>> self = FocalLossCost()
          >>> cls_pred = torch.rand(4, 3)
@@ -106,7 +106,7 @@ class ClassificationCost(object):
          weight (int | float, optional): loss_weight
 
      Examples:
-         >>> from mmdet.core.bbox.match_costers.match_cost import ClassificationCost
+         >>> from mmdet.core.bbox.match_costs.match_cost import ClassificationCost
          >>> import torch
          >>> self = ClassificationCost()
          >>> cls_pred = torch.rand(4, 3)
@@ -150,7 +150,7 @@ class IoUCost(object):
          weight (int | float, optional): loss weight
 
      Examples:
-         >>> from mmdet.core.bbox.match_costers.match_cost import IoUCost
+         >>> from mmdet.core.bbox.match_costs.match_cost import IoUCost
          >>> import torch
          >>> self = IoUCost()
          >>> bboxes = torch.FloatTensor([[1,1, 2, 2], [2, 2, 3, 4]])
