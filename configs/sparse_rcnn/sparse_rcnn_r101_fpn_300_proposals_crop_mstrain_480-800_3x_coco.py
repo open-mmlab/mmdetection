@@ -1,45 +1,16 @@
 _base_ = [
-    './sparse_rcnn_r101_fpn_mstrain_480-800_3x_coco.py',
+    './sparse_rcnn_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco.py'
 ]
 
 model = dict(
-    rpn_head=dict(
-        _delete_=True,
-        type='EmbeddingRPNHead',
-        num_proposals=300,
-        proposal_feature_channel=256,
-    ), )
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-short_edge = (400, 500, 600)
-min_values = (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)
-train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(
-        type='Resize',
-        img_scale=[(1333, value) for value in short_edge],
-        multiscale_mode='value',
-        keep_ratio=True),
-    dict(
-        type='RandomCrop',
-        crop_type='absolute_range',
-        crop_size=(384, 600),
-        allow_negative_crop=False),
-    dict(
-        type='Resize',
-        img_scale=[(1333, value) for value in min_values],
-        multiscale_mode='value',
-        override=True,
-        keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
-]
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(pipeline=train_pipeline),
+    pretrained='torchvision://resnet101',
+    backbone=dict(
+        type='ResNet',
+        depth=101,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
+        frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_eval=True,
+        style='pytorch'),
 )

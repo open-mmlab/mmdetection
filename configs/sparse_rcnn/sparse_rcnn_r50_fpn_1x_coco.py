@@ -4,6 +4,7 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 num_stages = 6
+num_proposals = 100
 model = dict(
     type='SparseRCNN',
     pretrained='torchvision://resnet50',
@@ -26,7 +27,7 @@ model = dict(
     rpn_head=dict(
         _delete_=True,
         type='EmbeddingRPNHead',
-        num_proposals=100,
+        num_proposals=num_proposals,
         proposal_feature_channel=256,
     ),
     roi_head=dict(
@@ -91,7 +92,7 @@ train_cfg = dict(
         ),
     ] * num_stages)
 
-test_cfg = dict(_delete_=True, rpn=None, rcnn=dict(max_per_img=100))
+test_cfg = dict(_delete_=True, rpn=None, rcnn=dict(max_per_img=num_proposals))
 # optimizer
 optimizer = dict(
     _delete_=True,
