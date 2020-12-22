@@ -2,7 +2,7 @@ import torch
 from scipy.optimize import linear_sum_assignment
 
 from ..builder import BBOX_ASSIGNERS
-from ..match_costers import build_match_cost
+from ..match_costs import build_match_cost
 from ..transforms import bbox_cxcywh_to_xyxy
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
