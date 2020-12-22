@@ -36,13 +36,8 @@ def process_checkpoint(in_file, out_file):
 
 
 def get_final_epoch(config):
-    if config.find('grid_rcnn') != -1 and config.find('2x') != -1:
-        # grid_rcnn 2x trains 25 epochs
-        return 25
-
-    for schedule_name, epoch_num in SCHEDULES_LUT.items():
-        if config.find(schedule_name) != -1:
-            return epoch_num
+    cfg = mmcv.Config.fromfile('./configs/' + config)
+    return cfg.total_epochs
 
 
 def get_final_results(log_json_path, epoch):
