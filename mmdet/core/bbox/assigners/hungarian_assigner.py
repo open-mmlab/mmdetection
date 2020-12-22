@@ -1,15 +1,15 @@
 import torch
 
-try:
-    from scipy.optimize import linear_sum_assignment
-except ImportError:
-    linear_sum_assignment = None
-
 from ..builder import BBOX_ASSIGNERS
 from ..iou_calculators import build_iou_calculator
 from ..transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
+
+try:
+    from scipy.optimize import linear_sum_assignment
+except ImportError:
+    linear_sum_assignment = None
 
 
 @BBOX_ASSIGNERS.register_module()
