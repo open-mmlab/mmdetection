@@ -1,6 +1,7 @@
 import argparse
-import mmcv
 import os
+
+import mmcv
 import torch
 from mmcv import Config, DictAction
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
@@ -9,8 +10,9 @@ from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from mmdet.apis import get_fake_input, multi_gpu_test, single_gpu_test
 from mmdet.core import wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
-from mmdet.integration.nncf import (check_nncf_is_enabled, is_checkpoint_nncf,
-                                    wrap_nncf_model)
+from mmdet.integration.nncf import (check_nncf_is_enabled,
+                                    get_nncf_config_from_meta,
+                                    is_checkpoint_nncf, wrap_nncf_model)
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
 from mmdet.utils import ExtendedDictAction
@@ -117,6 +119,12 @@ def main():
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
 
     # nncf model wrapper
+    if is_checkpoint_nncf(args.checkpoint) and not cfg.get('nncf_config'):
+        # reading NNCF config from checkpoint
+        nncf_part = get_nncf_config_from_meta(args.checkpoint)
+        for k, v in nncf_part.items():
+            cfg[k] = v
+
     if cfg.get('nncf_config'):
         check_nncf_is_enabled()
         if not is_checkpoint_nncf(args.checkpoint):
