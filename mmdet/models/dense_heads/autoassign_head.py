@@ -182,9 +182,15 @@ class AutoAssignHead(FCOSHead):
                 - pos_loss (Tensor): The positive loss of all points \
                     in the gt_bboxes.
         """
+
+        # 5 is a hyper-parameter to balance between classification
+        # and localization.
         p_loc = torch.exp(-5 * reg_loss)
         p_cls = (cls_score * objectness)[:, gt_labels]
         p_pos = p_cls * p_loc
+
+        # 3 is a hyper-parameter to control the contributions of high and
+        # low confidence locations towards positive losses.
         confidence_weight = torch.exp(p_pos * 3)
         p_pos_weight = (confidence_weight * center_prior_weights) / (
             (confidence_weight * center_prior_weights).sum(
