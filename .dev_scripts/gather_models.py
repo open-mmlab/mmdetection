@@ -97,7 +97,7 @@ def main():
         results_lut = cfg.evaluation.metric
         if not isinstance(results_lut, list):
             results_lut = [results_lut]
-        # Case when using VOC, the evaluation key is only 'mAP'
+        # case when using VOC, the evaluation key is only 'mAP'
         results_lut = [key+'_mAP' for key in results_lut if 'mAP' not in key]
         model_performance = get_final_results(log_json_path, final_epoch, results_lut)
 
