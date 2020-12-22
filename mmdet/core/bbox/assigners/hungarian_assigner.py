@@ -1,5 +1,9 @@
 import torch
-from scipy.optimize import linear_sum_assignment
+
+try:
+    from scipy.optimize import linear_sum_assignment
+except ImportError:
+    linear_sum_assignment = None
 
 from ..builder import BBOX_ASSIGNERS
 from ..iou_calculators import build_iou_calculator
@@ -142,6 +146,9 @@ class HungarianAssigner(BaseAssigner):
 
         # 3. do Hungarian matching on CPU using linear_sum_assignment
         cost = cost.detach().cpu()
+        if linear_sum_assignment is None:
+            raise ImportError('Please run "pip install scipy" '
+                              'to install scipy first.')
         matched_row_inds, matched_col_inds = linear_sum_assignment(cost)
         matched_row_inds = torch.from_numpy(matched_row_inds).to(
             bbox_pred.device)
