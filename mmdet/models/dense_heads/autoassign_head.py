@@ -63,6 +63,10 @@ class CenterPrior(nn.Module):
                 of (num_points, num_gt). Each value represents \
                 the center weighting coefficient.
         """
+        num_gts = len(labels)
+        num_points = sum([len(item) for item in anchor_points_list])
+        if num_gts == 0:
+            return gt_bboxes.new_zeros(num_points, num_gts)
         center_prior_list = []
         for slvl_points, stride in zip(anchor_points_list, self.stride):
             single_level_points = slvl_points[:, None, :].expand(
@@ -225,19 +229,20 @@ class AutoAssignHead(FCOSHead):
                 - neg_loss (Tensor): The negative loss of all points \
                     in the feature map.
         """
-
+        num_gts = len(gt_labels)
         joint_conf = (cls_score * objectness)
         p_neg_weight = torch.ones_like(joint_conf)
-        temp_weight = (1 / (1 - ious))
-        iou_function_min = temp_weight.min(0)[0][None, :]
-        iou_function_max = temp_weight.max(0)[0][None, :]
-        neg_weight = 1 - (temp_weight - iou_function_min) / (
-            iou_function_max - iou_function_min).clamp(min=EPS)
+        if num_gts:
+            temp_weight = (1 / (1 - ious))
+            iou_function_min = temp_weight.min(0)[0][None, :]
+            iou_function_max = temp_weight.max(0)[0][None, :]
+            neg_weight = 1 - (temp_weight - iou_function_min) / (
+                iou_function_max - iou_function_min).clamp(min=EPS)
 
-        foreground_idxs = torch.nonzero(inside_gt_bbox_mask, as_tuple=True)
-        neg_weight = neg_weight[inside_gt_bbox_mask]
-        p_neg_weight[foreground_idxs[0],
-                     gt_labels[foreground_idxs[1]]] = neg_weight
+            foreground_idxs = torch.nonzero(inside_gt_bbox_mask, as_tuple=True)
+            neg_weight = neg_weight[inside_gt_bbox_mask]
+            p_neg_weight[foreground_idxs[0],
+                         gt_labels[foreground_idxs[1]]] = neg_weight
 
         logits = (joint_conf * p_neg_weight)
         neg_loss = (
@@ -279,7 +284,7 @@ class AutoAssignHead(FCOSHead):
         """
 
         assert len(cls_scores) == len(bbox_preds) == len(objectnesses)
-        all_num_gt = max(sum([len(item) for item in gt_bboxes]), 1)
+        all_num_gt = sum([len(item) for item in gt_bboxes])
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                            bbox_preds[0].device)
@@ -318,8 +323,11 @@ class AutoAssignHead(FCOSHead):
                 ious = bbox_overlaps(
                     decoded_bbox_preds, decoded_target_preds, is_aligned=True)
                 ious = ious.reshape(num_points, temp_num_gt)
-                ious = ious.max(
-                    dim=-1, keepdim=True).values.repeat(1, temp_num_gt)
+                if temp_num_gt:
+                    ious = ious.max(
+                        dim=-1, keepdim=True).values.repeat(1, temp_num_gt)
+                else:
+                    ious = ious.new_zeros(num_points, temp_num_gt)
                 ious[~inside_gt_bbox_mask] = 0
                 ious_list.append(ious)
             loss_bbox = self.loss_bbox(
@@ -354,7 +362,9 @@ class AutoAssignHead(FCOSHead):
 
         if all_num_gt == 0:
             pos_loss = bbox_preds[0].sum() * 0
-            center_loss = objectnesses[0].sum() * 0
+            dummy_center_prior_loss = self.center_prior.mean.sum(
+            ) * 0 + self.center_prior.sigma.sum() * 0
+            center_loss = objectnesses[0].sum() * 0 + dummy_center_prior_loss
 
         return dict(
             loss_pos=pos_loss, loss_neg=neg_loss, loss_center=center_loss)
@@ -432,6 +442,10 @@ class AutoAssignHead(FCOSHead):
         top = ys - gt_bboxes[..., 1]
         bottom = gt_bboxes[..., 3] - ys
         bbox_targets = torch.stack((left, top, right, bottom), -1)
-        inside_gt_bbox_mask = bbox_targets.min(-1)[0] > 0
+        if num_gts:
+            inside_gt_bbox_mask = bbox_targets.min(-1)[0] > 0
+        else:
+            inside_gt_bbox_mask = bbox_targets.new_zeros((num_points, num_gts),
+                                                         dtype=torch.bool)
 
         return inside_gt_bbox_mask, bbox_targets
