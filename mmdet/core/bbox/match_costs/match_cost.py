@@ -106,7 +106,8 @@ class ClassificationCost(object):
          weight (int | float, optional): loss_weight
 
      Examples:
-         >>> from mmdet.core.bbox.match_costs.match_cost import ClassificationCost
+         >>> from mmdet.core.bbox.match_costs.match_cost import \
+         ... ClassificationCost
          >>> import torch
          >>> self = ClassificationCost()
          >>> cls_pred = torch.rand(4, 3)
@@ -160,9 +161,7 @@ class IoUCost(object):
                 [ 0.1667, -0.5000]])
      """
 
-    def __init__(self,
-                 iou_mode='giou',
-                 weight=1.):
+    def __init__(self, iou_mode='giou', weight=1.):
         self.weight = weight
         self.iou_mode = iou_mode
 
