@@ -30,6 +30,10 @@ class PublicModelsTestCase(unittest.TestCase):
     coco_dir = osp.join(root_dir, 'data/coco')
     snapshots_dir = osp.join(root_dir, 'snapshots')
 
+    custom_operations = ['ExperimentalDetectronROIFeatureExtractor',
+                         'PriorBox', 'PriorBoxClustered', 'DetectionOutput', 
+                         'DeformableConv2D', 'MaskedConv2d']
+
     @staticmethod
     def shorten_annotation(src_path, dst_path, num_images):
         with open(src_path) as read_file:
@@ -99,6 +103,18 @@ class PublicModelsTestCase(unittest.TestCase):
             if expected - thr > actual:
                 raise AssertionError(f'{m}: {expected} (expected) - {thr} (threshold) > {actual}')
 
+    def domain_check_for_custom_operations(self, config_dir):
+        config_onnx = osp.join(config_dir, 'config.onnx')
+        from onnx import load
+        onnx_model = load(config_onnx)
+
+        from mmdet.utils import DOMAIN_CUSTOM_OPS_NAME
+        for op_node in onnx_model.graph.node:
+            if op_node.op_type in self.custom_operations:
+                if op_node.domain != DOMAIN_CUSTOM_OPS_NAME:
+                    error = f'In model {config_dir}, custom operation "{op_node.op_type}" does not have domain {DOMAIN_CUSTOM_OPS_NAME}.'
+                    raise ValueError(error)
+
     def run_pytorch_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.0):
         print('\n\ntesting ' + config_path, file=sys.stderr)
         name = config_path.replace('configs/', '')[:-3]
@@ -145,6 +161,8 @@ class PublicModelsTestCase(unittest.TestCase):
                 error = 'Export script failure.\n' + ex.stderr.decode(sys.getfilesystemencoding())
             if error is not None:
                 raise RuntimeError(error)
+
+            self.domain_check_for_custom_operations(test_dir)
 
             try:
                 run(f'/opt/intel/openvino/bin/setupvars.sh && '
@@ -463,6 +481,6 @@ class PublicModelsTestCase(unittest.TestCase):
               'ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'
         self.run_onnx_export_test(origin_config, self.download_if_not_yet(url))
 
-
+ 
 if __name__ == '__main__':
     unittest.main()
