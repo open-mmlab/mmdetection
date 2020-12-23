@@ -1245,10 +1245,7 @@ def test_transformer_head_loss():
             type='HungarianAssigner',
             cls_cost=dict(type='ClassificationCost', weight=1.0),
             reg_cost=dict(type='BBoxL1Cost', weight=5.0),
-            iou_cost=dict(
-                type='IoUCost',
-                iou_mode='giou',
-                weight=2.0)))
+            iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0)))
     transformer_cfg = dict(
         type='Transformer',
         embed_dims=4,

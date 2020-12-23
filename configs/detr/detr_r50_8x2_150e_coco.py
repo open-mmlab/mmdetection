@@ -47,10 +47,7 @@ train_cfg = dict(
         type='HungarianAssigner',
         cls_cost=dict(type='ClassificationCost', weight=1.),
         reg_cost=dict(type='BBoxL1Cost', weight=5.0),
-        iou_cost=dict(
-            type='IoUCost',
-            iou_mode='giou',
-            weight=2.0)))
+        iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0)))
 test_cfg = dict(max_per_img=100)
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)

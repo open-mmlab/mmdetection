@@ -1,15 +1,15 @@
 import torch
 
-try:
-    from scipy.optimize import linear_sum_assignment
-except ImportError:
-    linear_sum_assignment = None
-
 from ..builder import BBOX_ASSIGNERS
 from ..match_costs import build_match_cost
 from ..transforms import bbox_cxcywh_to_xyxy
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
+
+try:
+    from scipy.optimize import linear_sum_assignment
+except ImportError:
+    linear_sum_assignment = None
 
 
 @BBOX_ASSIGNERS.register_module()
@@ -44,10 +44,7 @@ class HungarianAssigner(BaseAssigner):
     def __init__(self,
                  cls_cost=dict(type='ClassificationCost', weight=1.),
                  reg_cost=dict(type='BBoxL1Cost', weight=1.0),
-                 iou_cost=dict(
-                     type='IoUCost',
-                     iou_mode='giou',
-                     weight=1.0)):
+                 iou_cost=dict(type='IoUCost', iou_mode='giou', weight=1.0)):
         self.cls_cost = build_match_cost(cls_cost)
         self.reg_cost = build_match_cost(reg_cost)
         self.iou_cost = build_match_cost(iou_cost)
