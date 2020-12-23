@@ -1,5 +1,5 @@
 from .assigners import (AssignResult, BaseAssigner, CenterRegionAssigner,
-                        MaxIoUAssigner)
+                        MaxIoUAssigner, RegionAssigner)
 from .builder import build_assigner, build_bbox_coder, build_sampler
 from .coder import (BaseBBoxCoder, DeltaXYWHBBoxCoder, PseudoBBoxCoder,
                     TBLRBBoxCoder)
@@ -22,5 +22,6 @@ __all__ = [
     'bbox2roi', 'roi2bbox', 'bbox2result', 'distance2bbox', 'bbox2distance',
     'build_bbox_coder', 'BaseBBoxCoder', 'PseudoBBoxCoder',
     'DeltaXYWHBBoxCoder', 'TBLRBBoxCoder', 'CenterRegionAssigner',
-    'bbox_rescale', 'bbox_cxcywh_to_xyxy', 'bbox_xyxy_to_cxcywh'
+    'bbox_rescale', 'bbox_cxcywh_to_xyxy', 'bbox_xyxy_to_cxcywh',
+    'RegionAssigner'
 ]

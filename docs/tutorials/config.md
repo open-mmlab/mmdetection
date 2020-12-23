@@ -2,7 +2,27 @@
 
 We incorporate modular and inheritance design into our config system, which is convenient to conduct various experiments.
 If you wish to inspect the config file, you may run `python tools/print_config.py /PATH/TO/CONFIG` to see the complete config.
-You may also pass `--cfg-options xxx.yyy=zzz` to see updated config.
+
+## Modify config through script arguments
+
+When submitting jobs using "tools/train.py" or "tools/test.py", you may specify `--cfg-options` to in-place modify the config.
+
+- Update config keys of dict chains.
+
+  The config options can be specified following the order of the dict keys in the original config.
+  For example, `--cfg-options model.backbone.norm_eval=False` changes the all BN modules in model backbones to `train` mode.
+
+- Update keys inside a list of configs.
+
+  Some config dicts are composed as a list in your config. For example, the training pipeline `data.train.pipeline` is normally a list
+  e.g. `[dict(type='LoadImageFromFile'), ...]`. If you want to change `'LoadImageFromFile'` to `'LoadImageFromWebcam'` in the pipeline,
+  you may specify `--cfg-options data.train.pipeline.0.type=LoadImageFromWebcam`.
+
+- Update values of list/tuples.
+
+  If the value to be updated is a list or a tuple. For example, the config file normally sets `workflow=[('train', 1)]`. If you want to
+  change this key, you may specify `--cfg-options workflow="[(train,1),(val,1)]"`. Note that the quotation mark \" is necessary to
+  support list/tuple data types, and that **NO** white space is allowed inside the quotation marks in the specified value.
 
 ## Config File Structure
 
