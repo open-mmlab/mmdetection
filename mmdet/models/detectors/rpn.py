@@ -84,7 +84,8 @@ class RPN(BaseDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        if self.train_cfg.rpn.get('debug', False):
+        if (isinstance(self.train_cfg.rpn, dict)
+                and self.train_cfg.rpn.get('debug', False)):
             self.rpn_head.debug_imgs = tensor2imgs(img)
 
         x = self.extract_feat(img)

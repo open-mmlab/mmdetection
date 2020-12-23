@@ -2,3 +2,5 @@ albumentations>=0.3.2
 cityscapesscripts
 imagecorruptions
 mmlvis
+scipy
+sklearn
