@@ -12,7 +12,8 @@ Thanks for your error report and we appreciate it a lot.
 **Checklist**
 
 1. I have searched related issues but cannot get the expected help.
-2. The bug has not been fixed in the latest version.
+2. I have read the [FAQ documentation](https://mmdetection.readthedocs.io/en/latest/faq.html) but cannot get the expected help.
+3. The bug has not been fixed in the latest version.
 
 **Describe the bug**
 A clear and concise description of what the bug is.

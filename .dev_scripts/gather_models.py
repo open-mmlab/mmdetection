@@ -91,15 +91,17 @@ def main():
             continue
 
         # get the latest logs
-        log_json_path = list(sorted(glob.glob(osp.join(exp_dir, '*.log.json'))))[-1]
+        log_json_path = list(
+            sorted(glob.glob(osp.join(exp_dir, '*.log.json'))))[-1]
         log_txt_path = list(sorted(glob.glob(osp.join(exp_dir, '*.log'))))[-1]
         cfg = mmcv.Config.fromfile('./configs/' + used_config)
         results_lut = cfg.evaluation.metric
         if not isinstance(results_lut, list):
             results_lut = [results_lut]
         # case when using VOC, the evaluation key is only 'mAP'
-        results_lut = [key+'_mAP' for key in results_lut if 'mAP' not in key]
-        model_performance = get_final_results(log_json_path, final_epoch, results_lut)
+        results_lut = [key + '_mAP' for key in results_lut if 'mAP' not in key]
+        model_performance = get_final_results(log_json_path, final_epoch,
+                                              results_lut)
 
         if model_performance is None:
             continue
