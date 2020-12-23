@@ -858,6 +858,23 @@ def test_renext_bottleneck():
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
+    # Test ResNeXt Bottleneck forward with plugins
+    plugins = [
+        dict(
+            cfg=dict(
+                type='GeneralizedAttention',
+                spatial_range=-1,
+                num_heads=8,
+                attention_type='0010',
+                kv_stride=2),
+            stages=(False, False, True, True),
+            position='after_conv2')
+    ]
+    block = BottleneckX(64, 16, groups=32, base_width=4, plugins=plugins)
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
 
 def test_resnext_backbone():
     with pytest.raises(KeyError):
