@@ -150,7 +150,7 @@ class MaskTestMixin(object):
             else:
                 if rescale and not isinstance(scale_factor,
                                               (float, torch.Tensor)):
-                    scale_factor = det_bboxes[:, :4].new_tensor(scale_factor)
+                    scale_factor = det_bboxes.new_tensor(scale_factor)
                 _bboxes = (
                     det_bboxes[:, :4] *
                     scale_factor if rescale else det_bboxes)
