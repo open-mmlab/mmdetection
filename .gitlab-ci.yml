@@ -18,7 +18,7 @@ linting:
   image: $PYTORCH_IMAGE
   stage: linting
   script:
-    - pip install flake8==3.8.3 yapf==3.1.0 isort=0.30.0
+    - pip install flake8==3.8.3 yapf==3.1.0 isort==0.30.0
     - flake8 .
     - isort --check-only --diff mmdet3d/ tools/ tests/
     - yapf -r -d mmdet3d/ tools/ tests/ configs/
