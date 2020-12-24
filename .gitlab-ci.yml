@@ -20,7 +20,7 @@ linting:
   script:
     - pip install flake8==3.8.3 yapf==0.30.0 isort==4.3.21
     - flake8 .
-    - isort --check-only --diff mmdet/ tools/ tests/
+    - isort --check-only --diff -rc mmdet/ tools/ tests/
     - yapf -r -d mmdet/ tools/ tests/ configs/
 
 .test_template: &test_template_def
