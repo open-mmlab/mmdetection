@@ -1,0 +1,40 @@
+variables:
+  PYTORCH_IMAGE: registry.sensetime.com/eig-research/pytorch:1.3.1-cuda10.1-cudnn7-devel
+
+stages:
+  - linting
+  - test
+  - deploy
+
+before_script:
+  - echo $PATH
+  - gcc --version
+  - nvcc --version
+  - python --version
+  - pip --version
+  - python -c "import torch; print(torch.__version__)"
+
+linting:
+  image: $PYTORCH_IMAGE
+  stage: linting
+  script:
+    - pip install pre-commit
+    - pre-commit install
+    - pre-commit run --all-files
+
+.test_template: &test_template_def
+  stage: test
+  script:
+    - echo "Start building..."
+    - pip install mmpycocotools
+    - pip install mmcv-full==latest+torch1.3.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+    - pip install -e .[all]
+    - python -c "import mmdet; print(mmdet.__version__)"
+    - echo "Start testing..."
+    - coverage run --branch --source mmdet -m pytest tests/
+    - coverage report -m
+    - interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 60
+
+test:pytorch1.3-cuda10:
+  image: $PYTORCH_IMAGE
+  <<: *test_template_def
