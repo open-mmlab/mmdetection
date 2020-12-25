@@ -19,7 +19,7 @@ import torch.onnx.symbolic_helper as sym_help
 from torch.onnx.symbolic_helper import parse_args
 from torch.onnx.symbolic_registry import register_op, get_registered_op, is_registered_op
 
-from mmdet.utils import add_domain
+from mmdet.utils.deployment.operations_domain import add_domain
 
 
 def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):

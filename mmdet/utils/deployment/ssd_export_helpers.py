@@ -20,7 +20,7 @@ from ...core import multiclass_nms
 from ...core.bbox.coder.delta_xywh_bbox_coder import delta2bbox
 from ...core.anchor.anchor_generator import SSDAnchorGeneratorClustered
 
-from mmdet.utils import add_domain
+from mmdet.utils.deployment.operations_domain import add_domain
 
 
 def get_proposals(img_metas, cls_scores, bbox_preds, priors,

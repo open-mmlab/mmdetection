@@ -6,15 +6,13 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
-from mmdet.utils import add_domain
-
 from . import masked_conv2d_ext
 
 
 class MaskedConv2dFunction(Function):
     @staticmethod
     def symbolic(g, features, mask, weight, bias, padding=0, stride=1):
-        return g.op(add_domain('MaskedConv2d'), features, mask, weight, bias, pad_i=padding, stride_i=stride)
+        return g.op('MaskedConv2d', features, mask, weight, bias, pad_i=padding, stride_i=stride)
 
     @staticmethod
     def forward(ctx, features, mask, weight, bias, padding=0, stride=1):

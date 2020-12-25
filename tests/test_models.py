@@ -32,7 +32,7 @@ class PublicModelsTestCase(unittest.TestCase):
 
     custom_operations = ['ExperimentalDetectronROIFeatureExtractor',
                          'PriorBox', 'PriorBoxClustered', 'DetectionOutput', 
-                         'DeformableConv2D', 'MaskedConv2d']
+                         'DeformableConv2D']
 
     @staticmethod
     def shorten_annotation(src_path, dst_path, num_images):
@@ -108,7 +108,7 @@ class PublicModelsTestCase(unittest.TestCase):
         from onnx import load
         onnx_model = load(config_onnx)
 
-        from mmdet.utils import DOMAIN_CUSTOM_OPS_NAME
+        from mmdet.utils.deployment.operations_domain import DOMAIN_CUSTOM_OPS_NAME
         for op_node in onnx_model.graph.node:
             if op_node.op_type in self.custom_operations:
                 if op_node.domain != DOMAIN_CUSTOM_OPS_NAME:
@@ -481,6 +481,6 @@ class PublicModelsTestCase(unittest.TestCase):
               'ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'
         self.run_onnx_export_test(origin_config, self.download_if_not_yet(url))
 
- 
+
 if __name__ == '__main__':
     unittest.main()

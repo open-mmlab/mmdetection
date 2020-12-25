@@ -9,7 +9,7 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair, _single
 
-from mmdet.utils import add_domain
+from mmdet.utils.deployment.operations_domain import add_domain
 
 from . import deform_conv_ext
 
