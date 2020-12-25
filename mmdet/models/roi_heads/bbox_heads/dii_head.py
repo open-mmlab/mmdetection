@@ -132,17 +132,18 @@ class DIIHead(BBoxHead):
                 (batch_size, num_proposals, feature_dimensions)
 
           Returns:
-                tuple: Usually a tuple of classification scores
+                tuple: Usually a tuple of classification scores \
                     and bbox prediction and a intermediate feature.
-                    cls_scores (Tensor): Classification scores for
-                        all proposals, has shape
+
+                    - cls_scores (Tensor): Classification scores for \
+                        all proposals, has shape \
                         (batch_size, num_proposals, num_classes)
-                    bbox_preds (Tensor): Box energies / deltas for
-                        all proposals, has shape
+                    - bbox_preds (Tensor): Box energies / deltas for \
+                        all proposals, has shape \
                         (batch_size, num_proposals, 4)
-                    obj_feat (Tensor): Object feature before classification
-                        and regression subnet, has shape
-                        (batch_size, num_proposal, feature_dimensions)
+                    - obj_feat (Tensor): Object feature before classification \
+                        and regression subnet, has shape \
+                        (batch_size, num_proposal, feature_dimensions) \
         """
         N, num_proposals = proposal_feat.shape[:2]
         # Self attention
@@ -223,7 +224,7 @@ class DIIHead(BBoxHead):
             reduction_override (str, optional): The reduction
                 method used to override the original reduction
                 method of the loss. Options are "none",
-                "mean" and "sum".
+                "mean" and "sum". Defaults to None,
 
             Returns:
                 dict[str, Tensor]: Dictionary of loss components
@@ -273,7 +274,7 @@ class DIIHead(BBoxHead):
                            pos_gt_bboxes, pos_gt_labels, cfg):
         """Almost the same as the implementation in bbox_head, we add pos_inds
         and neg_inds to select positive and negative samples instead of
-        selecting first num_pos are positive samples.
+        selecting first num_pos as positive samples.
 
         Args:
             pos_inds (Tensor): The length is equal to the
@@ -297,8 +298,6 @@ class DIIHead(BBoxHead):
         bbox_targets = pos_bboxes.new_zeros(num_samples, 4)
         bbox_weights = pos_bboxes.new_zeros(num_samples, 4)
         if num_pos > 0:
-            # TODO re_design _get_target_single
-            #  and _get_targets in bbox_head
             labels[pos_inds] = pos_gt_labels
             pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
             label_weights[pos_inds] = pos_weight
@@ -314,7 +313,6 @@ class DIIHead(BBoxHead):
 
         return labels, label_weights, bbox_targets, bbox_weights
 
-    # TODO: redisign bbox_head to support pos_inds and neg_inds
     def get_targets(self,
                     sampling_results,
                     gt_bboxes,

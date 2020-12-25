@@ -78,24 +78,26 @@ class SparseRoIHead(CascadeRoIHead):
             img_metas (dict): meta information of images.
 
         Returns:
-            dict[str, Tensor]: a dictionary of bbox head outputs,Containing the
-                following results:
+            dict[str, Tensor]: a dictionary of bbox head outputs, \
+                Containing the following results:
 
-                    - cls_score (Tensor): The score of each class, has shape
-                        (batch_size, num_proposals, num_classes) when use
-                        focal loss or
-                        (batch_size, num_proposals, num_classes+1) otherwise.
-                    - decode_bbox_pred (Tensor): The regression results with
-                        shape (batch_size, num_proposal, 4). The last
-                        dimension 4 represents [tl_x, tl_y, br_x, br_y].
-                    - object_feats (Tensor): The object feature extracted from
-                        current stage
-                    - detach_cls_score_list (list[Tensor]): The detached
-                        classification results, length is batch_size, and each
-                        tensor has shape (num_proposal, num_classes).
-                    - detach_proposal_list (list[tensor]): The detached
-                        regression results, length is batch_size, and each
-                        tensor has shape (num_proposal, 4). The last
+                    - cls_score (Tensor): The score of each class, has \
+                        shape (batch_size, num_proposals, num_classes) \
+                         when use focal loss or \
+                        (batch_size, num_proposals, num_classes+1) \
+                        otherwise.
+                    - decode_bbox_pred (Tensor): The regression results
+                        with shape (batch_size, num_proposal, 4). \
+                        The last dimension 4 represents \
+                        [tl_x, tl_y, br_x, br_y].
+                    - object_feats (Tensor): The object feature extracted \
+                        from current stage
+                    - detach_cls_score_list (list[Tensor]): The detached \
+                        classification results, length is batch_size, and \
+                        each tensor has shape (num_proposal, num_classes).
+                    - detach_proposal_list (list[tensor]): The detached \
+                        regression results, length is batch_size, and each \
+                        tensor has shape (num_proposal, 4). The last \
                         dimension 4 represents [tl_x, tl_y, br_x, br_y].
         """
         num_imgs = len(img_metas)
@@ -240,11 +242,11 @@ class SparseRoIHead(CascadeRoIHead):
                 space. Defaults to False.
 
         Returns:
-            bbox_results (list[tuple[np.ndarray]]):
-                [[cls1_det, cls2_det, ...], ...].
-                The outer list indicates images, and the inner
-                list indicates per-class detected bboxes. The
-                np.ndarray has shape (num_det, 5) and the last
+            bbox_results (list[tuple[np.ndarray]]): \
+                [[cls1_det, cls2_det, ...], ...]. \
+                The outer list indicates images, and the inner \
+                list indicates per-class detected bboxes. The \
+                np.ndarray has shape (num_det, 5) and the last \
                 dimension 5 represents (x1, y1, x2, y2, score).
         """
         assert self.with_bbox, 'Bbox head must be implemented.'
@@ -310,7 +312,8 @@ class SparseRoIHead(CascadeRoIHead):
         return bbox_results
 
     def aug_test(self, features, proposal_list, img_metas, rescale=False):
-        raise NotImplementedError
+        raise NotImplementedError(
+            'We have not implemented `aug_test` for Sparse R-CNN ')
 
     def forward_dummy(
         self,

@@ -13,6 +13,10 @@
 
 ## Results and Models
 
-| Model        | Backbone  | Style   | Lr schd |   Multi-Scale       | box AP  | Config | Download |
-|:------------:|:---------:|:-------:|:-------:|:-------: |:------:|:------:|:--------:|
-| Sparse R-CNN | R-50-FPN  | pytorch | 3x      |   True    |  42.8  |         |       |
+| Model        | Backbone  | Style   | Lr schd | Number of Proposals |Multi-Scale| RandomCrop  | box AP  | Config | Download |
+|:------------:|:---------:|:-------:|:-------:|:-------:|:-------: |:---------:|:------:|:------:|:--------:|
+| Sparse R-CNN | R-50-FPN  | pytorch | 3x      | 3x      |   100   | False     |  42.8  |         |       |
+| Sparse R-CNN | R-50-FPN  | pytorch | 3x      | 3x      |   300   | True      |  45.0  |         |       |
+
+### Notes:
+We observe about 0.3 AP noise.
