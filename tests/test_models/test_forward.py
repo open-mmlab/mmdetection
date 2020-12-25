@@ -45,6 +45,69 @@ def _get_detector_cfg(fname):
     return model, train_cfg, test_cfg
 
 
+def test_sparse_rcnn_forward():
+    model, train_cfg, test_cfg = _get_detector_cfg(
+        'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py')
+    model['pretrained'] = None
+
+    from mmdet.models import build_detector
+    detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+
+    input_shape = (1, 3, 550, 550)
+    mm_inputs = _demo_mm_inputs(input_shape)
+
+    imgs = mm_inputs.pop('imgs')
+    img_metas = mm_inputs.pop('img_metas')
+    if torch.cuda.is_available():
+        # Test forward train with non-empty truth batch
+        detector = detector.cuda()
+        imgs = imgs.cuda()
+        detector.train()
+        gt_bboxes = mm_inputs['gt_bboxes']
+        gt_bboxes = [item.cuda() for item in gt_bboxes]
+        gt_labels = mm_inputs['gt_labels']
+        gt_labels = [item.cuda() for item in gt_labels]
+        losses = detector.forward(
+            imgs,
+            img_metas,
+            gt_bboxes=gt_bboxes,
+            gt_labels=gt_labels,
+            return_loss=True)
+        assert isinstance(losses, dict)
+        loss, _ = detector._parse_losses(losses)
+        assert float(loss.item()) > 0
+
+        # Test forward train with an empty truth batch
+        mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
+        imgs = mm_inputs.pop('imgs')
+        imgs = imgs.cuda()
+        img_metas = mm_inputs.pop('img_metas')
+        gt_bboxes = mm_inputs['gt_bboxes']
+        gt_bboxes = [item.cuda() for item in gt_bboxes]
+        gt_labels = mm_inputs['gt_labels']
+        gt_labels = [item.cuda() for item in gt_labels]
+        losses = detector.forward(
+            imgs,
+            img_metas,
+            gt_bboxes=gt_bboxes,
+            gt_labels=gt_labels,
+            return_loss=True)
+        assert isinstance(losses, dict)
+        loss, _ = detector._parse_losses(losses)
+        assert float(loss.item()) > 0
+
+    # Test forward test
+    detector.eval()
+    with torch.no_grad():
+        img_list = [g[None, :] for g in imgs]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      rescale=True,
+                                      return_loss=False)
+            batch_results.append(result)
+
+
 def test_rpn_forward():
     model, train_cfg, test_cfg = _get_detector_cfg(
         'rpn/rpn_r50_fpn_1x_coco.py')

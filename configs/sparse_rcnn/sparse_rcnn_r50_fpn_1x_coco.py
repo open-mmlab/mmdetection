@@ -49,7 +49,7 @@ model = dict(
                 num_cls_fcs=1,
                 num_reg_fcs=3,
                 feedforward_channels=2048,
-                hidden_channels=256,
+                in_channels=256,
                 dropout=0.0,
                 ffn_act_cfg=dict(type='ReLU', inplace=True),
                 dynamic_conv_cfg=dict(

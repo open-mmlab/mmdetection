@@ -45,6 +45,7 @@ def test_config_build_detector():
         config_mod.model
         config_mod.train_cfg
         config_mod.test_cfg
+
         print(f'Building detector, config_fpath = {config_fpath}')
 
         # Remove pretrained keys to allow for testing in an offline environment
@@ -68,12 +69,6 @@ def test_config_build_detector():
 
             head_config = config_mod.model['roi_head']
             _check_roi_head(head_config, detector.roi_head)
-        # else:
-        #     # for single stage detector
-        #     # detectors must have bbox head
-        #     # assert detector.with_bbox
-        #     head_config = config_mod.model['bbox_head']
-        #     _check_bbox_head(head_config, detector.bbox_head)
 
 
 def _check_roi_head(config, head):
@@ -196,6 +191,18 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             cls_out_channels = bbox_cfg.get('cls_out_channels', 1024)
             assert (cls_out_channels == bbox_head.fc_cls.in_features)
             assert (bbox_cfg.num_classes + 1 == bbox_head.fc_cls.out_features)
+        elif bbox_cfg['type'] == 'DIIHead':
+            assert bbox_cfg['num_ffn_fcs'] == bbox_head.ffn.num_fcs
+            # 3 means FC and LN and Relu
+            assert bbox_cfg['num_cls_fcs'] == len(bbox_head.cls_fcs) // 3
+            assert bbox_cfg['num_reg_fcs'] == len(bbox_head.reg_fcs) // 3
+            assert bbox_cfg['in_channels'] == bbox_head.in_channels
+            assert bbox_cfg['in_channels'] == bbox_head.fc_cls.in_features
+            assert bbox_cfg['in_channels'] == bbox_head.fc_reg.in_features
+            assert bbox_cfg[
+                'in_channels'] == bbox_head.self_attention.embed_dims
+            assert bbox_cfg[
+                'feedforward_channels'] == bbox_head.ffn.feedforward_channels
         else:
             assert bbox_cfg.in_channels == bbox_head.in_channels
             with_cls = bbox_cfg.get('with_cls', True)

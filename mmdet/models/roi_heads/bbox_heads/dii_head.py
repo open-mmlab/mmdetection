@@ -28,7 +28,7 @@ class DIIHead(BBoxHead):
             regression subnet. Defaults to 3.
         feedforward_channels (int): The hidden dimension of FFNs.
             Defaults to 2048
-        hidden_channels (int): Hidden_channels of MultiheadAttention.
+        in_channels (int): Hidden_channels of MultiheadAttention.
             Defaults to 256.
         dropout (float): Probability of drop the channel. Defaults to 0.0
         ffn_act_cfg (dict): The activation config for FFNs.
@@ -44,7 +44,7 @@ class DIIHead(BBoxHead):
                  num_cls_fcs=1,
                  num_reg_fcs=3,
                  feedforward_channels=2048,
-                 hidden_channels=256,
+                 in_channels=256,
                  dropout=0.0,
                  ffn_act_cfg=dict(type='ReLU', inplace=True),
                  dynamic_conv_cfg=dict(
@@ -64,51 +64,51 @@ class DIIHead(BBoxHead):
             **kwargs)
         assert self.reg_class_agnostic is True
         self.loss_iou = build_loss(loss_iou)
-        self.hidden_channels = hidden_channels
+        self.in_channels = in_channels
         self.fp16_enabled = False
-        self.self_attention = MultiheadAttention(hidden_channels, num_heads,
+        self.self_attention = MultiheadAttention(in_channels, num_heads,
                                                  dropout)
         self.self_attention_norm = build_norm_layer(
-            dict(type='LN'), hidden_channels)[1]
+            dict(type='LN'), in_channels)[1]
 
         self.instance_interactive_conv = build_transformer(dynamic_conv_cfg)
         self.instance_interactive_conv_dropout = nn.Dropout(dropout)
         self.instance_interactive_conv_norm = build_norm_layer(
-            dict(type='LN'), hidden_channels)[1]
+            dict(type='LN'), in_channels)[1]
 
         self.ffn = FFN(
-            hidden_channels,
+            in_channels,
             feedforward_channels,
             num_ffn_fcs,
             act_cfg=ffn_act_cfg,
             dropout=dropout)
-        self.ffn_norm = build_norm_layer(dict(type='LN'), hidden_channels)[1]
+        self.ffn_norm = build_norm_layer(dict(type='LN'), in_channels)[1]
 
         self.cls_fcs = nn.ModuleList()
         for _ in range(num_cls_fcs):
             self.cls_fcs.append(
-                nn.Linear(hidden_channels, hidden_channels, bias=False))
+                nn.Linear(in_channels, in_channels, bias=False))
             self.cls_fcs.append(
-                build_norm_layer(dict(type='LN'), hidden_channels)[1])
+                build_norm_layer(dict(type='LN'), in_channels)[1])
             self.cls_fcs.append(
                 build_activation_layer(dict(type='ReLU', inplace=True)))
 
         # over load the self.fc_cls in BBoxHead
         if self.loss_cls.use_sigmoid:
-            self.fc_cls = nn.Linear(hidden_channels, self.num_classes)
+            self.fc_cls = nn.Linear(in_channels, self.num_classes)
         else:
-            self.fc_cls = nn.Linear(hidden_channels, self.num_classes + 1)
+            self.fc_cls = nn.Linear(in_channels, self.num_classes + 1)
 
         self.reg_fcs = nn.ModuleList()
         for _ in range(num_reg_fcs):
             self.reg_fcs.append(
-                nn.Linear(hidden_channels, hidden_channels, bias=False))
+                nn.Linear(in_channels, in_channels, bias=False))
             self.reg_fcs.append(
-                build_norm_layer(dict(type='LN'), hidden_channels)[1])
+                build_norm_layer(dict(type='LN'), in_channels)[1])
             self.reg_fcs.append(
                 build_activation_layer(dict(type='ReLU', inplace=True)))
         # over load the self.fc_cls in BBoxHead
-        self.fc_reg = nn.Linear(hidden_channels, 4)
+        self.fc_reg = nn.Linear(in_channels, 4)
 
     def init_weights(self):
         """Use xavier initialization for all weight parameter and set
@@ -148,17 +148,15 @@ class DIIHead(BBoxHead):
         N, num_proposals = proposal_feat.shape[:2]
         # Self attention
         proposal_feat = proposal_feat.view(N, num_proposals,
-                                           self.hidden_channels).permute(
-                                               1, 0, 2)
+                                           self.in_channels).permute(1, 0, 2)
         proposal_feat = self.self_attention_norm(
             self.self_attention(proposal_feat))
         # instance interactive
         proposal_feat = proposal_feat.view(
             num_proposals, N,
-            self.hidden_channels).permute(1, 0,
-                                          2).reshape(1, N * num_proposals,
-                                                     self.hidden_channels)
-        roi_feat = roi_feat.view(N * num_proposals, self.hidden_channels,
+            self.in_channels).permute(1, 0, 2).reshape(1, N * num_proposals,
+                                                       self.in_channels)
+        roi_feat = roi_feat.view(N * num_proposals, self.in_channels,
                                  -1).permute(2, 0, 1)
         proposal_feat_iic = self.instance_interactive_conv(
             proposal_feat, roi_feat)
