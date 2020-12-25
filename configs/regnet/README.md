@@ -6,7 +6,7 @@ We implement RegNetX and RegNetY models in detection systems and provide their f
 
 The pre-trained modles are converted from [model zoo of pycls](https://github.com/facebookresearch/pycls/blob/master/MODEL_ZOO.md).
 
-```
+```latex
 @article{radosavovic2020designing,
     title={Designing Network Design Spaces},
     author={Ilija Radosavovic and Raj Prateek Kosaraju and Ross Girshick and Kaiming He and Piotr Dollár},
@@ -20,6 +20,7 @@ The pre-trained modles are converted from [model zoo of pycls](https://github.co
 ## Usage
 
 To use a regnet model, there are two steps to do:
+
 1. Convert the model to ResNet-style supported by MMDetection
 2. Modify backbone and neck in config accordingly
 
@@ -33,8 +34,8 @@ ResNet-style checkpoints used in MMDetection.
 ```bash
 python -u tools/regnet2mmdet.py ${PRETRAIN_PATH} ${STORE_PATH}
 ```
-This script convert model from `PRETRAIN_PATH` and store the converted model in `STORE_PATH`.
 
+This script convert model from `PRETRAIN_PATH` and store the converted model in `STORE_PATH`.
 
 ### Modify config
 
@@ -48,6 +49,7 @@ For other pre-trained models or self-implemented regnet models, the users are re
 ## Results
 
 ### Mask R-CNN
+
 |   Backbone   |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
 | :---------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: | :--------: |
 |    [R-50-FPN](../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py)| pytorch |   1x    | 4.4      | 12.0           | 38.2   | 34.7    |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205_050542.log.json) |
@@ -61,6 +63,7 @@ For other pre-trained models or self-implemented regnet models, the users are re
 |[RegNetX-3.2GF-FPN-DCN-C3-C5](./mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco.py)| pytorch |   1x    |5.0 ||40.3|36.6|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco/mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco_20200520_172726-75f40794.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco/mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco_20200520_172726.log.json)   |
 
 ### Faster R-CNN
+
 |   Backbone  |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
 |    [R-50-FPN](../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py)| pytorch |   1x    | 4.0      | 18.2           | 37.4   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130_204655.log.json) |
@@ -68,6 +71,7 @@ For other pre-trained models or self-implemented regnet models, the users are re
 |[RegNetX-3.2GF-FPN](./faster_rcnn_regnetx-3.2GF_fpn_2x_coco.py)| pytorch |   2x    | 4.5||41.1|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/regnet/faster_rcnn_regnetx-3.2GF_fpn_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3.2GF_fpn_2x_coco/faster_rcnn_regnetx-3.2GF_fpn_2x_coco_20200520_223955-e2081918.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3.2GF_fpn_2x_coco/faster_rcnn_regnetx-3.2GF_fpn_2x_coco_20200520_223955.log.json)   |
 
 ### RetinaNet
+
 |  Backbone   |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |  :--------: |
 |    [R-50-FPN](../retinanet/retinanet_r50_fpn_1x_coco.py)     | pytorch |   1x    |   3.8    |      16.6      |  36.5  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_fpn_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130_002941.log.json) |
@@ -85,6 +89,6 @@ We also train some models with longer schedules and multi-scale training. The us
 |Mask RCNN |[RegNetX-3.2GF-FPN](./mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py)| pytorch |   3x    |5.0 ||43.1|38.7|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco_20200521_202221-99879813.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco_20200521_202221.log.json)   |
 
 ### Notice
+
 1. The models are trained using a different weight decay, i.e., `weight_decay=5e-5` according to the setting in ImageNet training. This brings improvement of at least 0.7 AP absolute but does not improve the model using ResNet-50.
-2. RetinaNets using RegNets are trained with learning rate 0.02 with gradient clip. We find that using learning rate 0.02 could improve the results by at least 0.7 AP absolute and gradient clip is necessary to stabilize the training.
-However, this does not improve the performance of ResNet-50-FPN RetinaNet.
+2. RetinaNets using RegNets are trained with learning rate 0.02 with gradient clip. We find that using learning rate 0.02 could improve the results by at least 0.7 AP absolute and gradient clip is necessary to stabilize the training. However, this does not improve the performance of ResNet-50-FPN RetinaNet.

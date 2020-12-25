@@ -83,6 +83,27 @@ class Bottleneck(_Bottleneck):
             bias=False)
         self.add_module(self.norm3_name, norm3)
 
+        if self.with_plugins:
+            self._del_block_plugins(self.after_conv1_plugin_names +
+                                    self.after_conv2_plugin_names +
+                                    self.after_conv3_plugin_names)
+            self.after_conv1_plugin_names = self.make_block_plugins(
+                width, self.after_conv1_plugins)
+            self.after_conv2_plugin_names = self.make_block_plugins(
+                width, self.after_conv2_plugins)
+            self.after_conv3_plugin_names = self.make_block_plugins(
+                self.planes * self.expansion, self.after_conv3_plugins)
+
+    def _del_block_plugins(self, plugin_names):
+        """delete plugins for block if exist.
+
+        Args:
+            plugin_names (list[str]): List of plugins name to delete.
+        """
+        assert isinstance(plugin_names, list)
+        for plugin_name in plugin_names:
+            del self._modules[plugin_name]
+
 
 @BACKBONES.register_module()
 class ResNeXt(ResNet):

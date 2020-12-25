@@ -2,7 +2,7 @@
 
 ## Introduction
 
-```
+```latex
 @inproceedings{lu2019grid,
   title={Grid r-cnn},
   author={Lu, Xin and Li, Buyu and Yue, Yuxin and Li, Quanquan and Yan, Junjie},
@@ -28,5 +28,6 @@
 | X-101-64x4d | 2x      | 11.3     | 7.7            | 43.0   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco_20200204-ec76a754.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco_20200204_080641.log.json) |
 
 **Notes:**
+
 - All models are trained with 8 GPUs instead of 32 GPUs in the original paper.
 - The warming up lasts for 1 epoch and `2x` here indicates 25 epochs.

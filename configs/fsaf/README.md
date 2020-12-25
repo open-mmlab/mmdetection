@@ -9,6 +9,7 @@ In the original paper, feature maps within the central 0.2-0.5 area of a gt box 
 it is empirically found that a hard threshold (0.2-0.2) gives a further gain on the performance. (see the table below)
 
 ## Main Results
+
 ### Results on R50/R101/X101-FPN
 
 | Backbone   |  ignore range | ms-train| Lr schd |Train Mem (GB)| Train time (s/iter) | Inf time (fps) | box AP | Config | Download |
@@ -19,16 +20,19 @@ it is empirically found that a hard threshold (0.2-0.2) gives a further gain on 
 | X-101      |   0.2-0.2     | N       | 1x      |    9.38      | 1.23            |    5.6         | 42.4 (41.0)   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fsaf/fsaf_x101_64x4d_fpn_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_x101_64x4d_fpn_1x_coco/fsaf_x101_64x4d_fpn_1x_coco-e3f6e6fd.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_x101_64x4d_fpn_1x_coco/fsaf_x101_64x4d_fpn_1x_coco_20200428_160424.log.json)|
 
 **Notes:**
- - *1x means the model is trained for 12 epochs.*
- - *AP values in the brackets represent those reported in the original paper.*
- - *All results are obtained with a single model and single-scale test.*
- - *X-101 backbone represents ResNext-101-64x4d.*
- - *All pretrained backbones use pytorch style.*
- - *All models are trained on 8 Titan-XP gpus and tested on a single gpu.*
+
+- *1x means the model is trained for 12 epochs.*
+- *AP values in the brackets represent those reported in the original paper.*
+- *All results are obtained with a single model and single-scale test.*
+- *X-101 backbone represents ResNext-101-64x4d.*
+- *All pretrained backbones use pytorch style.*
+- *All models are trained on 8 Titan-XP gpus and tested on a single gpu.*
 
 ## Citations
+
 BibTeX reference is as follows.
-```
+
+```latex
 @inproceedings{zhu2019feature,
   title={Feature Selective Anchor-Free Module for Single-Shot Object Detection},
   author={Zhu, Chenchen and He, Yihui and Savvides, Marios},

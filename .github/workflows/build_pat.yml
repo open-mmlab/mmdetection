@@ -1,0 +1,24 @@
+name: build_pat
+
+on: push
+
+jobs:
+  build_parrots:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sunnyxiaohu/parrots-mmcv:1.2.1
+      credentials:
+        username: sunnyxiaohu
+        password: ${{secrets.CR_PAT}}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install mmdet dependencies
+        run: |
+          git clone https://github.com/open-mmlab/mmcv.git && cd mmcv
+          MMCV_WITH_OPS=1 python setup.py install
+          cd .. && rm -rf mmcv
+          python -c 'import mmcv; print(mmcv.__version__)'
+          pip install -r requirements.txt
+      - name: Build and install
+        run: rm -rf .eggs && pip install -e .

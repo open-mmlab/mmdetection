@@ -51,6 +51,7 @@ A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](
 Results and models are available in the [model zoo](docs/model_zoo.md).
 
 Supported backbones:
+
 - [x] ResNet
 - [x] ResNeXt
 - [x] VGG
@@ -60,6 +61,7 @@ Supported backbones:
 - [x] ResNeSt
 
 Supported methods:
+
 - [x] [RPN](configs/rpn)
 - [x] [Fast R-CNN](configs/fast_rcnn)
 - [x] [Faster R-CNN](configs/faster_rcnn)
@@ -105,6 +107,7 @@ Supported methods:
 - [x] [CentripetalNet](configs/centripetalnet/README.md)
 - [x] [VFNet](configs/vfnet/README.md)
 - [x] [DETR](configs/detr/README.md)
+- [x] [CascadeRPN](configs/cascade_rpn/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 

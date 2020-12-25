@@ -269,8 +269,11 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             conf_thr = cfg.get('conf_thr', -1)
             if conf_thr > 0:
                 # add as_tuple=False for compatibility in Pytorch 1.6
+                # flatten would create a Reshape op with constant values,
+                # and raise RuntimeError when doing inference in ONNX Runtime
+                # with a different input image (#4221).
                 conf_inds = conf_pred.ge(conf_thr).nonzero(
-                    as_tuple=False).flatten()
+                    as_tuple=False).squeeze(1)
                 bbox_pred = bbox_pred[conf_inds, :]
                 cls_pred = cls_pred[conf_inds, :]
                 conf_pred = conf_pred[conf_inds]

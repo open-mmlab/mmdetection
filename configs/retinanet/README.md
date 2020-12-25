@@ -1,7 +1,8 @@
 # Focal Loss for Dense Object Detection
 
 ## Introduction
-```
+
+```latex
 @inproceedings{lin2017focal,
   title={Focal loss for dense object detection},
   author={Lin, Tsung-Yi and Goyal, Priya and Girshick, Ross and He, Kaiming and Doll{\'a}r, Piotr},
