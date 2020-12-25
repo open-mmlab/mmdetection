@@ -19,5 +19,6 @@
 | Sparse R-CNN | R-50-FPN  | pytorch | 3x      |   100               | True     |   False     |  42.8  |         |       |
 | Sparse R-CNN | R-50-FPN  | pytorch | 3x      |   300               | True      |  True      |  45.0  |         |       |
 
-### Notes:
+### Notes
+
 We observe about 0.3 AP noise.
