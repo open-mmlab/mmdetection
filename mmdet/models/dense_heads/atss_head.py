@@ -269,7 +269,8 @@ class ATSSHead(AnchorHead):
          bbox_weights_list, num_total_pos, num_total_neg) = cls_reg_targets
 
         num_total_samples = reduce_mean(
-            torch.tensor(num_total_pos).cuda()).item()
+            torch.tensor(num_total_pos, dtype=torch.float,
+                         device=device)).item()
         num_total_samples = max(num_total_samples, 1.0)
 
         losses_cls, losses_bbox, loss_centerness,\
