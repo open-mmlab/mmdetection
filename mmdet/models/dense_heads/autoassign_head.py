@@ -59,9 +59,16 @@ class CenterPrior(nn.Module):
                 within a certain gt.
 
         Returns:
-            Tensor: Float tensor with shape \
-                of (num_points, num_gt). Each value represents \
-                the center weighting coefficient.
+            tuple(Tensor):
+
+                - center_prior_weights(Tensor): Float tensor with shape \
+                    of (num_points, num_gt). Each value represents \
+                    the center weighting coefficient.
+                - inside_gt_bbox_mask (Tensor): Tensor of bool type, \
+                    with shape of (num_points, num_gt), each \
+                    value is used to mark whether this point falls \
+                    within a certain gt or is the topk nearest points for \
+                    a specific gt_bbox.
         """
         num_gts = len(labels)
         num_points = sum([len(item) for item in anchor_points_list])
@@ -87,17 +94,25 @@ class CenterPrior(nn.Module):
                 (2 * instance_sigma**2).clamp(min=EPS)).prod(dim=-1)
             center_prior_list.append(center_prior)
         center_prior_weights = torch.cat(center_prior_list, dim=0)
+
         if self.force_topk:
-            indices_outside_gt = torch.nonzero(
+            gt_inds_no_points_inside = torch.nonzero(
                 inside_gt_bbox_mask.sum(0) == 0).reshape(-1)
-            topk_center_index = center_prior[:, indices_outside_gt].topk(
-                self.topk, dim=0)[1]
-            inside_gt_bbox_mask.scatter_(
-                dim=0,
-                index=topk_center_index,
-                src=torch.ones_like(topk_center_index, dtype=torch.bool))
+            if gt_inds_no_points_inside.numel():
+                topk_center_index = \
+                    center_prior_weights[:, gt_inds_no_points_inside].topk(
+                                                             self.topk,
+                                                             dim=0)[1]
+                inside_gt_bbox_mask[:, gt_inds_no_points_inside] = \
+                    inside_gt_bbox_mask[:, gt_inds_no_points_inside].scatter_(
+                        dim=0,
+                        index=topk_center_index,
+                        src=torch.ones_like(
+                            topk_center_index,
+                            dtype=torch.bool))
+
         center_prior_weights[~inside_gt_bbox_mask] = 0
-        return center_prior_weights
+        return center_prior_weights, inside_gt_bbox_mask
 
 
 @HEADS.register_module()
@@ -292,14 +307,17 @@ class AutoAssignHead(FCOSHead):
             all_level_points, gt_bboxes)
 
         center_prior_weight_list = []
+        temp_inside_gt_bbox_mask_list = []
         for gt_bboxe, gt_label, inside_gt_bbox_mask in zip(
                 gt_bboxes, gt_labels, inside_gt_bbox_mask_list):
-            center_prior_weight_list.append(
+            center_prior_weight, inside_gt_bbox_mask = \
                 self.center_prior(all_level_points, gt_bboxe, gt_label,
-                                  inside_gt_bbox_mask))
+                                  inside_gt_bbox_mask)
+            center_prior_weight_list.append(center_prior_weight)
+            temp_inside_gt_bbox_mask_list.append(inside_gt_bbox_mask)
+        inside_gt_bbox_mask_list = temp_inside_gt_bbox_mask_list
 
         mlvl_points = torch.cat(all_level_points, dim=0)
-
         bbox_preds = levels_to_images(bbox_preds)
         cls_scores = levels_to_images(cls_scores)
         objectnesses = levels_to_images(objectnesses)
@@ -380,13 +398,16 @@ class AutoAssignHead(FCOSHead):
                 each has shape (num_gt, 4).
 
         Returns:
-            tuple:
-                inside_gt_bbox_mask_list (list[Tensor]): Each Tensor is with \
-                    bool type and shape of (num_points, num_gt), each value \
-                    is used to mark whether this point falls within a certain \
-                    gt.
-                concat_lvl_bbox_targets (list[Tensor]): BBox targets of each \
-                    level. Each tensor has shape (num_points, num_gt, 4)
+            tuple(list[Tensor]):
+
+                - inside_gt_bbox_mask_list (list[Tensor]): Each \
+                    Tensor is with bool type and shape of \
+                    (num_points, num_gt), each value \
+                    is used to mark whether this point falls \
+                    within a certain gt.
+                - concat_lvl_bbox_targets (list[Tensor]): BBox \
+                    targets of each level. Each tensor has shape \
+                    (num_points, num_gt, 4)
         """
 
         num_levels = len(points)
