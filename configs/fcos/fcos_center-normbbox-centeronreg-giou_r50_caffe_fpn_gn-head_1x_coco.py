@@ -2,13 +2,10 @@ _base_ = 'fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
 
 model = dict(
     pretrained='open-mmlab://detectron2/resnet50_caffe',
-    backbone=dict(
-        dcn=dict(type='DCNv2', deform_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True)),
     bbox_head=dict(
         norm_on_bbox=True,
         centerness_on_reg=True,
-        dcn_on_last_conv=True,
+        dcn_on_last_conv=False,
         center_sampling=True,
         conv_bias=True,
         loss_bbox=dict(type='GIoULoss', loss_weight=1.0)))
@@ -44,8 +41,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=4,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
