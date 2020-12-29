@@ -5,7 +5,7 @@ We provide the code for reproducing experiment results of [SCNet](https://arxiv.
 ```
 @inproceedings{vu2019cascade,
   title={SCNet: Training Inference Sample Consistency for Instance Segmentation},
-  author={Vu, Thang and Haeyong Kang and Yoo, Chang D},
+  author={Vu, Thang and Haeyong, Kang and Yoo, Chang D},
   booktitle={AAAI},
   year={2021}
 }
