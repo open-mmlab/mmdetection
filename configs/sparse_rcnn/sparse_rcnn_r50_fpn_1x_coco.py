@@ -28,8 +28,7 @@ model = dict(
         _delete_=True,
         type='EmbeddingRPNHead',
         num_proposals=num_proposals,
-        proposal_feature_channel=256,
-    ),
+        proposal_feature_channel=256),
     roi_head=dict(
         type='SparseRoIHead',
         num_stages=num_stages,
@@ -73,8 +72,7 @@ model = dict(
                     clip_border=False,
                     target_means=[0., 0., 0., 0.],
                     target_stds=[0.5, 0.5, 1., 1.]))
-        ] * num_stages,
-    ))
+        ] * num_stages))
 
 # training and testing settings
 train_cfg = dict(
@@ -88,8 +86,7 @@ train_cfg = dict(
                 reg_cost=dict(type='BBoxL1Cost', weight=5.0),
                 iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0)),
             sampler=dict(type='PseudoSampler'),
-            pos_weight=1,
-        ),
+            pos_weight=1)
     ] * num_stages)
 
 test_cfg = dict(_delete_=True, rpn=None, rcnn=dict(max_per_img=num_proposals))

@@ -9,8 +9,7 @@ class SparseRCNN(TwoStageDetector):
 
     def __init__(self, *args, **kwargs):
         super(SparseRCNN, self).__init__(*args, **kwargs)
-        assert self.with_rpn, ("Sparse R-CNN don't support"
-                               'external proposals')
+        assert self.with_rpn, 'Sparse R-CNN do not support external proposals'
 
     def forward_train(self,
                       img,
@@ -45,14 +44,13 @@ class SparseRCNN(TwoStageDetector):
             dict[str, Tensor]: a dictionary of loss components
         """
 
-        assert proposals is None, "We don't support external proposals"
-        assert gt_masks is None, "We don't support instance" \
-            'segmenntaion in sparse_rcnn'
+        assert proposals is None, 'We do not support external proposals'
+        assert gt_masks is None, 'We do not support instance segmenntaion' \
+                                 ' in sparse_rcnn'
 
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \
             self.rpn_head.forward_train(x, img_metas)
-        losses = dict()
         roi_losses = self.roi_head.forward_train(
             x,
             proposal_boxes,
@@ -63,8 +61,7 @@ class SparseRCNN(TwoStageDetector):
             gt_bboxes_ignore=gt_bboxes_ignore,
             gt_masks=gt_masks,
             imgs_whwh=imgs_whwh)
-        losses.update(roi_losses)
-        return losses
+        return roi_losses
 
     def simple_test(self, img, img_metas, rescale=False):
         """Test function without test time augmentation.

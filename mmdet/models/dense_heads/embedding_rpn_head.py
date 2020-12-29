@@ -10,6 +10,7 @@ from ...core import bbox_cxcywh_to_xyxy
 @HEADS.register_module()
 class EmbeddingRPNHead(nn.Module):
     """RPNHead in the `Sparse R-CNN <https://arxiv.org/abs/2011.12450>`_ .
+
     Unlike traditional RPNHead, this module does not need FPN input, but just
     decode init_proposal_bboxes and expand first dimension of
     init_proposal_bboxes and init_proposal_features to the batch_size.
@@ -24,13 +25,11 @@ class EmbeddingRPNHead(nn.Module):
             detector, but always None in this module
     """
 
-    def __init__(
-        self,
-        num_proposals=100,
-        proposal_feature_channel=256,
-        train_cfg=None,
-        test_cfg=None,
-    ):
+    def __init__(self,
+                 num_proposals=100,
+                 proposal_feature_channel=256,
+                 train_cfg=None,
+                 test_cfg=None):
         assert train_cfg is None
         assert test_cfg is None
         self.num_proposals = num_proposals
