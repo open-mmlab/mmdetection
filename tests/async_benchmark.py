@@ -7,7 +7,7 @@ import mmcv
 import torch
 
 from mmdet.apis import (async_inference_detector, inference_detector,
-                        init_detector, show_result)
+                        init_detector)
 from mmdet.utils.contextmanagers import concurrent
 from mmdet.utils.profiling import profile_time
 
@@ -80,17 +80,15 @@ async def main():
             ]
 
     result_dir = os.path.join(project_dir, 'demo')
-    show_result(
+    model.show_result(
         img,
         async_results[0],
-        model.CLASSES,
         score_thr=0.5,
         show=False,
         out_file=os.path.join(result_dir, 'result_async.jpg'))
-    show_result(
+    model.show_result(
         img,
         sync_results[0],
-        model.CLASSES,
         score_thr=0.5,
         show=False,
         out_file=os.path.join(result_dir, 'result_sync.jpg'))
