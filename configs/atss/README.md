@@ -1,9 +1,8 @@
 # Bridging the Gap Between Anchor-based and Anchor-free Detection via Adaptive Training Sample Selection
 
-
 ## Introduction
 
-```
+```latex
 @article{zhang2019bridging,
   title   =  {Bridging the Gap Between Anchor-based and Anchor-free Detection via Adaptive Training Sample Selection},
   author  =  {Zhang, Shifeng and Chi, Cheng and Yao, Yongqiang and Lei, Zhen and Li, Stan Z.},
@@ -11,7 +10,6 @@
   year    =  {2019}
 }
 ```
-
 
 ## Results and Models
 
