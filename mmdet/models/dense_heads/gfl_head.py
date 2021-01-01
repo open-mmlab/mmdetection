@@ -1,5 +1,4 @@
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
@@ -7,17 +6,10 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
                         build_assigner, build_sampler, distance2bbox,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+                        images_to_levels, multi_apply, multiclass_nms,
+                        reduce_mean, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
-
-
-def reduce_mean(tensor):
-    if not (dist.is_available() and dist.is_initialized()):
-        return tensor
-    tensor = tensor.clone()
-    dist.all_reduce(tensor.div_(dist.get_world_size()), op=dist.ReduceOp.SUM)
-    return tensor
 
 
 class Integral(nn.Module):
@@ -353,7 +345,8 @@ class GFLHead(AnchorHead):
          bbox_weights_list, num_total_pos, num_total_neg) = cls_reg_targets
 
         num_total_samples = reduce_mean(
-            torch.tensor(num_total_pos).cuda()).item()
+            torch.tensor(num_total_pos, dtype=torch.float,
+                         device=device)).item()
         num_total_samples = max(num_total_samples, 1.0)
 
         losses_cls, losses_bbox, losses_dfl,\

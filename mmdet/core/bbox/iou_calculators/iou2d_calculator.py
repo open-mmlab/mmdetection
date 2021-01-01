@@ -52,8 +52,9 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         bboxes2 (Tensor): shape (B, n, 4) in <x1, y1, x2, y2> format or empty.
             B indicates the batch dim, in shape (B1, B2, ..., Bn).
             If ``is_aligned `` is ``True``, then m and n must be equal.
-        mode (str): "iou" (intersection over union) or "iof" (intersection over
-            foreground).
+        mode (str): "iou" (intersection over union), "iof" (intersection over
+            foreground) or "giou" (generalized intersection over union).
+            Default "iou".
         is_aligned (bool, optional): If True, then m and n must be equal.
             Default False.
         eps (float, optional): A value added to the denominator for numerical
@@ -73,20 +74,14 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         >>>     [0, 10, 10, 19],
         >>>     [10, 10, 20, 20],
         >>> ])
-        >>> bbox_overlaps(bboxes1, bboxes2)
-        tensor([[0.5000, 0.0000, 0.0000],
-                [0.0000, 0.0000, 1.0000],
-                [0.0000, 0.0000, 0.0000]])
-        >>> bbox_overlaps(bboxes1, bboxes2, mode='giou', eps=1e-7)
-        tensor([[0.5000, 0.0000, -0.5000],
-                [-0.2500, -0.0500, 1.0000],
-                [-0.8371, -0.8766, -0.8214]])
+        >>> overlaps = bbox_overlaps(bboxes1, bboxes2)
+        >>> assert overlaps.shape == (3, 3)
+        >>> overlaps = bbox_overlaps(bboxes1, bboxes2, is_aligned=True)
+        >>> assert overlaps.shape == (3, )
 
     Example:
-        >>> empty = torch.FloatTensor([])
-        >>> nonempty = torch.FloatTensor([
-        >>>     [0, 0, 10, 9],
-        >>> ])
+        >>> empty = torch.empty(0, 4)
+        >>> nonempty = torch.FloatTensor([[0, 0, 10, 9]])
         >>> assert tuple(bbox_overlaps(empty, nonempty).shape) == (0, 1)
         >>> assert tuple(bbox_overlaps(nonempty, empty).shape) == (1, 0)
         >>> assert tuple(bbox_overlaps(empty, empty).shape) == (0, 0)

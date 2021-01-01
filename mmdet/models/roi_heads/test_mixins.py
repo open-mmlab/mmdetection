@@ -148,6 +148,9 @@ class MaskTestMixin(object):
             if det_bboxes.shape[0] == 0:
                 segm_result = [[] for _ in range(self.mask_head.num_classes)]
             else:
+                if rescale and not isinstance(scale_factor,
+                                              (float, torch.Tensor)):
+                    scale_factor = det_bboxes.new_tensor(scale_factor)
                 _bboxes = (
                     det_bboxes[:, :4] *
                     scale_factor if rescale else det_bboxes)
@@ -194,17 +197,33 @@ class MaskTestMixin(object):
                     torch.from_numpy(scale_factor).to(det_bboxes[0].device)
                     for scale_factor in scale_factors
                 ]
-            _bboxes = [
-                det_bboxes[i][:, :4] *
-                scale_factors[i] if rescale else det_bboxes[i][:, :4]
-                for i in range(len(det_bboxes))
-            ]
-            mask_rois = bbox2roi(_bboxes)
-            mask_results = self._mask_forward(x, mask_rois)
-            mask_pred = mask_results['mask_pred']
-            # split batch mask prediction back to each image
-            num_mask_roi_per_img = [len(det_bbox) for det_bbox in det_bboxes]
-            mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
+            if torch.onnx.is_in_onnx_export():
+                # avoid mask_pred.split with static number of prediction
+                mask_preds = []
+                _bboxes = []
+                for i, boxes in enumerate(det_bboxes):
+                    boxes = boxes[:, :4]
+                    if rescale:
+                        boxes *= scale_factors[i]
+                    _bboxes.append(boxes)
+                    img_inds = boxes[:, :1].clone() * 0 + i
+                    mask_rois = torch.cat([img_inds, boxes], dim=-1)
+                    mask_result = self._mask_forward(x, mask_rois)
+                    mask_preds.append(mask_result['mask_pred'])
+            else:
+                _bboxes = [
+                    det_bboxes[i][:, :4] *
+                    scale_factors[i] if rescale else det_bboxes[i][:, :4]
+                    for i in range(len(det_bboxes))
+                ]
+                mask_rois = bbox2roi(_bboxes)
+                mask_results = self._mask_forward(x, mask_rois)
+                mask_pred = mask_results['mask_pred']
+                # split batch mask prediction back to each image
+                num_mask_roi_per_img = [
+                    det_bbox.shape[0] for det_bbox in det_bboxes
+                ]
+                mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
 
             # apply mask post-processing to each image individually
             segm_results = []

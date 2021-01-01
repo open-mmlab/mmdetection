@@ -195,6 +195,16 @@ class FCNMaskHead(nn.Module):
             scale_factor = bboxes.new_tensor(scale_factor)
         bboxes = bboxes / scale_factor
 
+        if torch.onnx.is_in_onnx_export():
+            # TODO: Remove after F.grid_sample is supported.
+            from torchvision.models.detection.roi_heads \
+                import paste_masks_in_image
+            masks = paste_masks_in_image(mask_pred, bboxes, ori_shape[:2])
+            thr = rcnn_test_cfg.get('mask_thr_binary', 0)
+            if thr > 0:
+                masks = masks >= thr
+            return masks
+
         N = len(mask_pred)
         # The actual implementation split the input into chunks,
         # and paste them chunk by chunk.
@@ -240,7 +250,7 @@ class FCNMaskHead(nn.Module):
             im_mask[(inds, ) + spatial_inds] = masks_chunk
 
         for i in range(N):
-            cls_segms[labels[i]].append(im_mask[i].cpu().numpy())
+            cls_segms[labels[i]].append(im_mask[i].detach().cpu().numpy())
         return cls_segms
 
 
@@ -306,6 +316,9 @@ def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
     gy = img_y[:, :, None].expand(N, img_y.size(1), img_x.size(1))
     grid = torch.stack([gx, gy], dim=3)
 
+    if torch.onnx.is_in_onnx_export():
+        raise RuntimeError(
+            'Exporting F.grid_sample from Pytorch to ONNX is not supported.')
     img_masks = F.grid_sample(
         masks.to(dtype=torch.float32), grid, align_corners=False)
 

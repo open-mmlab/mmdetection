@@ -122,10 +122,11 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 scores = rpn_cls_score.sigmoid()
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
-                # we set FG labels to [0, num_class-1] and BG label to
-                # num_class in other heads since mmdet v2.0, However we
-                # keep BG label as 0 and FG label as 1 in rpn head
-                scores = rpn_cls_score.softmax(dim=1)[:, 1]
+                # We set FG labels to [0, num_class-1] and BG label to
+                # num_class in RPN head since mmdet v2.5, which is unified to
+                # be consistent with other head since mmdet v2.0. In mmdet v2.0
+                # to v2.4 we keep BG label as 0 and FG label as 1 in rpn head.
+                scores = rpn_cls_score.softmax(dim=1)[:, 0]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:

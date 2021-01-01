@@ -2,6 +2,7 @@ import itertools
 import logging
 import os.path as osp
 import tempfile
+from collections import OrderedDict
 
 import numpy as np
 from mmcv.utils import print_log
@@ -366,7 +367,7 @@ class LVISV05Dataset(CocoDataset):
             tmp_dir = None
         result_files = self.results2json(results, jsonfile_prefix)
 
-        eval_results = {}
+        eval_results = OrderedDict()
         # get original api
         lvis_gt = self.coco
         for metric in metrics:

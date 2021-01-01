@@ -19,6 +19,6 @@
 
 ## Results and Models
 
-| Backbone      | style      | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
-|:-------------:|:----------:|:-------:|:--------:|:--------------:|:------:|:-------:|:--------:|
-| R-50-FPN      | pytorch    | 1x      | 4.0      | 17.2           | 37.5   |         | [model](http://download.openmmlab.com/mmdetection/v2.0/pafpn/faster_rcnn_r50_pafpn_1x_coco/faster_rcnn_r50_pafpn_1x_coco_bbox_mAP-0.375_20200503_105836-b7b4b9bd.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/pafpn/faster_rcnn_r50_pafpn_1x_coco/faster_rcnn_r50_pafpn_1x_coco_20200503_105836.log.json) |
+| Backbone      | style      | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
+|:-------------:|:----------:|:-------:|:--------:|:--------------:|:------:|:-------:|:------:|:--------:|
+| R-50-FPN      | pytorch    | 1x      | 4.0      | 17.2           | 37.5   |         | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/pafpn/faster_rcnn_r50_pafpn_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/pafpn/faster_rcnn_r50_pafpn_1x_coco/faster_rcnn_r50_pafpn_1x_coco_bbox_mAP-0.375_20200503_105836-b7b4b9bd.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/pafpn/faster_rcnn_r50_pafpn_1x_coco/faster_rcnn_r50_pafpn_1x_coco_20200503_105836.log.json) |

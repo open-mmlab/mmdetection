@@ -13,7 +13,6 @@ You can replace `https://s3.ap-northeast-2.amazonaws.com/open-mmlab` with `https
 - For fair comparison with other codebases, we report the GPU memory as the maximum value of `torch.cuda.max_memory_allocated()` for all 8 GPUs. Note that this value is usually less than what `nvidia-smi` shows.
 - We report the inference time as the total time of network forwarding and post-processing, excluding the data loading time. Results are obtained with the script [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/benchmark.py) which computes the average time on 2000 images.
 
-
 ## Baselines
 
 ### RPN
@@ -61,6 +60,7 @@ Please refer to [Weight Standardization](https://github.com/open-mmlab/mmdetecti
 Please refer to [Deformable Convolutional Networks](https://github.com/open-mmlab/mmdetection/blob/master/configs/dcn) for details.
 
 ### CARAFE: Content-Aware ReAssembly of FEatures
+
 Please refer to [CARAFE](https://github.com/open-mmlab/mmdetection/blob/master/configs/carafe) for details.
 
 ### Instaboost
@@ -104,6 +104,7 @@ Please refer to [GHM](https://github.com/open-mmlab/mmdetection/blob/master/conf
 Please refer to [GCNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/gcnet) for details.
 
 ### HRNet
+
 Please refer to [HRNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/hrnet) for details.
 
 ### Mask Scoring R-CNN
@@ -115,49 +116,72 @@ Please refer to [Mask Scoring R-CNN](https://github.com/open-mmlab/mmdetection/b
 Please refer to [Rethinking ImageNet Pre-training](https://github.com/open-mmlab/mmdetection/blob/master/configs/scratch) for details.
 
 ### NAS-FPN
+
 Please refer to [NAS-FPN](https://github.com/open-mmlab/mmdetection/blob/master/configs/nas_fpn) for details.
 
 ### ATSS
+
 Please refer to [ATSS](https://github.com/open-mmlab/mmdetection/blob/master/configs/atss) for details.
 
 ### FSAF
+
 Please refer to [FSAF](https://github.com/open-mmlab/mmdetection/blob/master/configs/fsaf) for details.
 
 ### RegNetX
+
 Please refer to [RegNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet) for details.
 
 ### Res2Net
+
 Please refer to [Res2Net](https://github.com/open-mmlab/mmdetection/blob/master/configs/res2net) for details.
 
 ### GRoIE
+
 Please refer to [GRoIE](https://github.com/open-mmlab/mmdetection/blob/master/configs/groie) for details.
 
 ### Dynamic R-CNN
+
 Please refer to [Dynamic R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/dynamic_rcnn) for details.
 
 ### PointRend
+
 Please refer to [PointRend](https://github.com/open-mmlab/mmdetection/blob/master/configs/point_rend) for details.
 
 ### DetectoRS
+
 Please refer to [DetectoRS](https://github.com/open-mmlab/mmdetection/blob/master/configs/detectors) for details.
 
 ### Generalized Focal Loss
+
 Please refer to [Generalized Focal Loss](https://github.com/open-mmlab/mmdetection/blob/master/configs/gfl) for details.
 
 ### CornerNet
+
 Please refer to [CornerNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/cornernet) for details.
 
 ### YOLOv3
+
 Please refer to [YOLOv3](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo) for details.
 
 ### PAA
+
 Please refer to [PAA](https://github.com/open-mmlab/mmdetection/blob/master/configs/paa) for details.
 
 ### SABL
+
 Please refer to [SABL](https://github.com/open-mmlab/mmdetection/blob/master/configs/sabl) for details.
 
 ### CentripetalNet
+
 Please refer to [CentripetalNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/centripetalnet) for details.
+
+### ResNeSt
+
+Please refer to [ResNeSt](https://github.com/open-mmlab/mmdetection/blob/master/configs/resnest) for details.
+
+### DETR
+
+Please refer to [DETR](https://github.com/open-mmlab/mmdetection/blob/master/configs/detr) for details.
 
 ### Other datasets
 
@@ -168,6 +192,7 @@ We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmd
 We also train [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn) and [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn) using ResNet-50 and [RegNetX-3.2G](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet) with multi-scale training and longer schedules. These models serve as strong pre-trained models for downstream tasks for convenience.
 
 ## Speed benchmark
+
 We compare the training speed of Mask R-CNN with some other popular frameworks (The data is copied from [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md)).
 For mmdetection, we benchmark with [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py), which should have the same setting with [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) of detectron2.
 We also provide the [checkpoint](http://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_compare_20200518-10127928.pth) and [training log](http://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_20200518_105755.log.json) for reference. The throughput is computed as the average throughput in iterations 100-500 to skip GPU warmup time.
@@ -209,7 +234,6 @@ For fair comparison, we install and run both frameworks on the same machine.
 | [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py)   | 1x      | [38.6 & 35.2](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml) | 38.8 & 35.4 | [model](http://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json) |
 | [Retinanet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py)    | 1x      | [36.5](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml)        | 37.0        | [model](http://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json) |
 
-
 ### Training Speed
 
 The training speed is measure with s/iter. The lower, the better.
@@ -219,7 +243,6 @@ The training speed is measure with s/iter. The lower, the better.
 | Faster R-CNN | 0.210      | 0.216       |
 | Mask R-CNN   | 0.261      | 0.265       |
 | Retinanet    | 0.200      | 0.205       |
-
 
 ### Inference Speed
 

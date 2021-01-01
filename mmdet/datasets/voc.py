@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from mmdet.core import eval_map, eval_recalls
 from .builder import DATASETS
 from .xml_style import XMLDataset
@@ -56,7 +58,7 @@ class VOCDataset(XMLDataset):
         if metric not in allowed_metrics:
             raise KeyError(f'metric {metric} is not supported')
         annotations = [self.get_ann_info(i) for i in range(len(self))]
-        eval_results = {}
+        eval_results = OrderedDict()
         if metric == 'mAP':
             assert isinstance(iou_thr, float)
             if self.year == 2007:

@@ -2,6 +2,7 @@ import itertools
 import logging
 import os.path as osp
 import tempfile
+from collections import OrderedDict
 
 import mmcv
 import numpy as np
@@ -16,7 +17,8 @@ from .custom import CustomDataset
 
 try:
     import pycocotools
-    assert pycocotools.__version__ >= '12.0.2'
+    if not hasattr(pycocotools, '__sphinx_mock__'):  # for doc generation
+        assert pycocotools.__version__ >= '12.0.2'
 except AssertionError:
     raise AssertionError('Incompatible version of pycocotools is installed. '
                          'Run pip uninstall pycocotools first. Then run pip '
@@ -412,7 +414,7 @@ class CocoDataset(CustomDataset):
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
-        eval_results = {}
+        eval_results = OrderedDict()
         cocoGt = self.coco
         for metric in metrics:
             msg = f'Evaluating {metric}...'

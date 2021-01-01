@@ -1,3 +1,5 @@
+# Cityscapes Dataset
+
 ## Common settings
 
 - All baselines were trained using 8 GPU with a batch size of 8 (1 images per GPU) using the [linear scaling rule](https://arxiv.org/abs/1706.02677) to scale the learning rate.
@@ -7,15 +9,14 @@
 - A conversion [script](../../tools/convert_datasets/cityscapes.py) is provided to convert Cityscapes into COCO format. Please refer to [install.md](../../docs/install.md#prepare-datasets) for details.
 - `CityscapesDataset` implemented three evaluation methods. `bbox` and `segm` are standard COCO bbox/mask AP. `cityscapes` is the cityscapes dataset official evaluation, which may be slightly higher than COCO.
 
-
 ### Faster R-CNN
 
-|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | Download   |
-| :-------------: | :-----: | :-----: | :---:    | :------: | :------------: | :----: | :--------: |
-|    R-50-FPN     | pytorch |   1x    | 800-1024 |   5.2    |       -        |  40.3  | [model](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes_20200502-829424c0.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes_20200502_114915.log.json) |
+|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | Config | Download   |
+| :-------------: | :-----: | :-----: | :---:    | :------: | :------------: | :----: | :------: | :--------: |
+|    R-50-FPN     | pytorch |   1x    | 800-1024 |   5.2    |       -        |  40.3  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes_20200502-829424c0.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes_20200502_114915.log.json) |
 
 ### Mask R-CNN
 
-|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------: | :------------: | :----: | :-----: | :------: |
-|    R-50-FPN     | pytorch |   1x    | 800-1024 |   5.3    |       -        |  41.0  |  35.8   | [model](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes_20200502-6ea77f0e.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes_20200502_114915.log.json) |
+|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------: | :------------: | :----: | :-----: | :------: | :------: |
+|    R-50-FPN     | pytorch |   1x    | 800-1024 |   5.3    |       -        |  40.9  |  36.4   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes/mask_rcnn_r50_fpn_1x_cityscapes_20201211_133733-d2858245.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes/mask_rcnn_r50_fpn_1x_cityscapes_20201211_133733.log.json) |

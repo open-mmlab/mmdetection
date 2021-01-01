@@ -14,9 +14,10 @@ We propose a novel building block for CNNs, namely Res2Net, by constructing hier
 Compared with other backbone networks, Res2Net requires fewer parameters and FLOPs.
 
 **Note:**
+
 - GFLOPs for classification are calculated with image size (224x224).
 
-```
+```latex
 @article{gao2019res2net,
   title={Res2Net: A New Multi-scale Backbone Architecture},
   author={Gao, Shang-Hua and Cheng, Ming-Ming and Zhao, Kai and Zhang, Xin-Yu and Yang, Ming-Hsuan and Torr, Philip},
@@ -25,28 +26,38 @@ Compared with other backbone networks, Res2Net requires fewer parameters and FLO
   doi={10.1109/TPAMI.2019.2938758},
 }
 ```
-## Results and Models
-### Faster R-CNN
-|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
-|R2-101-FPN	      | pytorch	|   2x	  |   7.4	   |   -	          |  43.0	 |[model](http://download.openmmlab.com/mmdetection/v2.0/res2net/faster_rcnn_r2_101_fpn_2x_coco/faster_rcnn_r2_101_fpn_2x_coco-175f1da6.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/faster_rcnn_r2_101_fpn_2x_coco/faster_rcnn_r2_101_fpn_2x_coco_20200514_231734.log.json) |
-### Mask R-CNN
-|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |
-|R2-101-FPN	      | pytorch	|    2x	  |   7.9	   |      -	        |   43.6 |	38.7	 |[model](http://download.openmmlab.com/mmdetection/v2.0/res2net/mask_rcnn_r2_101_fpn_2x_coco/mask_rcnn_r2_101_fpn_2x_coco-17f061e8.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/mask_rcnn_r2_101_fpn_2x_coco/mask_rcnn_r2_101_fpn_2x_coco_20200515_002413.log.json) |
-### Cascade R-CNN
-|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
-|R2-101-FPN	      | pytorch	|   20e	  |   7.8	   |      -	        |  45.7  |[model](http://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_rcnn_r2_101_fpn_20e_coco/cascade_rcnn_r2_101_fpn_20e_coco-f4b7b7db.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_rcnn_r2_101_fpn_20e_coco/cascade_rcnn_r2_101_fpn_20e_coco_20200515_091644.log.json) |
-### Cascade Mask R-CNN
-|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |
-R2-101-FPN	      | pytorch	|  20e	  |    9.5	 |      -	        |  46.4	 |  40.0	 |[model](http://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco/cascade_mask_rcnn_r2_101_fpn_20e_coco-8a7b41e1.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco/cascade_mask_rcnn_r2_101_fpn_20e_coco_20200515_091645.log.json) |
-### Hybrid Task Cascade (HTC)
-|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |
-| R2-101-FPN	    | pytorch	|   20e	  |    -	   |      -	        |  47.5  |	41.6	 | [model](http://download.openmmlab.com/mmdetection/v2.0/res2net/htc_r2_101_fpn_20e_coco/htc_r2_101_fpn_20e_coco-3a8d2112.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/htc_r2_101_fpn_20e_coco/htc_r2_101_fpn_20e_coco_20200515_150029.log.json) |
 
+## Results and Models
+
+### Faster R-CNN
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
+|R2-101-FPN       | pytorch |   2x   |   7.4    |   -           |  43.0  |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/res2net/faster_rcnn_r2_101_fpn_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/res2net/faster_rcnn_r2_101_fpn_2x_coco/faster_rcnn_r2_101_fpn_2x_coco-175f1da6.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/faster_rcnn_r2_101_fpn_2x_coco/faster_rcnn_r2_101_fpn_2x_coco_20200514_231734.log.json) |
+
+### Mask R-CNN
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: | :--------: |
+|R2-101-FPN       | pytorch |    2x   |   7.9    |      -         |   43.6 | 38.7  |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/res2net/mask_rcnn_r2_101_fpn_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/res2net/mask_rcnn_r2_101_fpn_2x_coco/mask_rcnn_r2_101_fpn_2x_coco-17f061e8.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/mask_rcnn_r2_101_fpn_2x_coco/mask_rcnn_r2_101_fpn_2x_coco_20200515_002413.log.json) |
+
+### Cascade R-CNN
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
+|R2-101-FPN       | pytorch |   20e   |   7.8    |      -         |  45.7  |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/res2net/cascade_rcnn_r2_101_fpn_20e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_rcnn_r2_101_fpn_20e_coco/cascade_rcnn_r2_101_fpn_20e_coco-f4b7b7db.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_rcnn_r2_101_fpn_20e_coco/cascade_rcnn_r2_101_fpn_20e_coco_20200515_091644.log.json) |
+
+### Cascade Mask R-CNN
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: | :--------: |
+R2-101-FPN       | pytorch |  20e   |    9.5  |      -         |  46.4  |  40.0  |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco/cascade_mask_rcnn_r2_101_fpn_20e_coco-8a7b41e1.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco/cascade_mask_rcnn_r2_101_fpn_20e_coco_20200515_091645.log.json) |
+
+### Hybrid Task Cascade (HTC)
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: | :--------: |
+| R2-101-FPN     | pytorch |   20e   |    -    |      -         |  47.5  | 41.6  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/res2net/htc_r2_101_fpn_20e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/res2net/htc_r2_101_fpn_20e_coco/htc_r2_101_fpn_20e_coco-3a8d2112.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/res2net/htc_r2_101_fpn_20e_coco/htc_r2_101_fpn_20e_coco_20200515_150029.log.json) |
 
 - Res2Net ImageNet pretrained models are in [Res2Net-PretrainedModels](https://github.com/Res2Net/Res2Net-PretrainedModels).
 - More applications of Res2Net are in [Res2Net-Github](https://github.com/Res2Net/).
