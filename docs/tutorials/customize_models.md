@@ -76,7 +76,7 @@ Create a new file `mmdet/models/necks/pafpn.py`.
 ```python
 from ..builder import NECKS
 
-@NECKS.register
+@NECKS.register_module()
 class PAFPN(nn.Module):
 
     def __init__(self,
