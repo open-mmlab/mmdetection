@@ -150,7 +150,7 @@ def collect_results_cpu(result_part, size, tmpdir=None):
         # sort the results
         ordered_results = []
         for res in itertools.zip_longest(*part_list):
-            ordered_results.extend(filter(lambda x: x is not None, list(res)))
+            ordered_results.extend(filter(lambda x: x is not None, res))
         # the dataloader may pad some samples
         ordered_results = ordered_results[:size]
         # remove tmp dir
@@ -184,8 +184,8 @@ def collect_results_gpu(result_part, size):
                 pickle.loads(recv[:shape[0]].cpu().numpy().tobytes()))
         # sort the results
         ordered_results = []
-        for res in zip(*part_list):
-            ordered_results.extend(list(res))
+        for res in itertools.zip_longest(*part_list):
+            ordered_results.extend(filter(lambda x: x is not None, res))
         # the dataloader may pad some samples
         ordered_results = ordered_results[:size]
         return ordered_results
