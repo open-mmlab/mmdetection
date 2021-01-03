@@ -218,11 +218,11 @@ class FCOSHead(AnchorFreeHead):
         bg_class_ind = self.num_classes
         pos_inds = ((flatten_labels >= 0)
                     & (flatten_labels < bg_class_ind)).nonzero().reshape(-1)
-        num_pos = len(pos_inds)
-        num_pos = max(reduce_mean(torch.tensor(num_pos).cuda()).item(), 1.0)
+        num_pos = torch.tensor(
+            len(pos_inds), dtype=torch.float, device=bbox_preds[0].device)
+        num_pos = max(reduce_mean(num_pos), 1.0)
         loss_cls = self.loss_cls(
-            flatten_cls_scores, flatten_labels,
-            avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
+            flatten_cls_scores, flatten_labels, avg_factor=num_pos)
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_centerness = flatten_centerness[pos_inds]
