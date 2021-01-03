@@ -1,3 +1,4 @@
+import itertools
 import os.path as osp
 import pickle
 import shutil
@@ -148,8 +149,8 @@ def collect_results_cpu(result_part, size, tmpdir=None):
             part_list.append(mmcv.load(part_file))
         # sort the results
         ordered_results = []
-        for res in zip(*part_list):
-            ordered_results.extend(list(res))
+        for res in itertools.zip_longest(*part_list):
+            ordered_results.extend(filter(lambda x: x is not None, list(res)))
         # the dataloader may pad some samples
         ordered_results = ordered_results[:size]
         # remove tmp dir
