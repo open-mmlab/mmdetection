@@ -48,7 +48,7 @@ class EmbeddingRPNHead(nn.Module):
     def init_weights(self):
         """Initialize the init_proposal_bboxes as normalized.
 
-        [c_x,c_y, w, h], and we initialize it to the size of  the entire image
+        [c_x, c_y, w, h], and we initialize it to the size of  the entire image
         """
         nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
         nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
@@ -71,7 +71,7 @@ class EmbeddingRPNHead(nn.Module):
                     (batch_size, num_proposals, proposal_feature_channel)
                 - imgs_whwh (Tensor): Tensor with shape \
                     (batch_size, 4), the dimension means \
-                    [img_width,img_height, img_width, img_height]
+                    [img_width, img_height, img_width, img_height]
         """
         proposals = self.init_proposal_bboxes.weight.clone()
         proposals = bbox_cxcywh_to_xyxy(proposals)

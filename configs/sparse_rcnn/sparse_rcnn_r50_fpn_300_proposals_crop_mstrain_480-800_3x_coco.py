@@ -5,8 +5,7 @@ model = dict(
         _delete_=True,
         type='EmbeddingRPNHead',
         num_proposals=num_proposals,
-        proposal_feature_channel=256,
-    ))
+        proposal_feature_channel=256))
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 

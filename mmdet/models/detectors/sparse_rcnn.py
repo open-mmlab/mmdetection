@@ -44,9 +44,9 @@ class SparseRCNN(TwoStageDetector):
             dict[str, Tensor]: a dictionary of loss components
         """
 
-        assert proposals is None, 'We do not support external proposals'
-        assert gt_masks is None, 'We do not support instance segmenntaion' \
-                                 ' in sparse_rcnn'
+        assert proposals is None, 'Sparse R-CNN does not support' \
+                                  ' external proposals'
+        assert gt_masks is None, 'Sparse R-CNN does not instance segmenntaion'
 
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \

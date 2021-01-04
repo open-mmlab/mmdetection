@@ -1,6 +1,7 @@
 import torch
 
 from mmdet.core import bbox2result, bbox2roi, bbox_xyxy_to_cxcywh
+from mmdet.core.bbox.samplers import PseudoSampler
 from ..builder import HEADS
 from .cascade_roi_head import CascadeRoIHead
 
@@ -12,11 +13,13 @@ class SparseRoIHead(CascadeRoIHead):
 
 
     Args:
-        num_stages (int): Number of stage whole iterative process. Default 6.
-        stage_loss_weights (List[float]): The loss weight of each stage.
-            By default all stages have the same weight 1.
-            bbox_roi_extractor (dict): Config of box roi extractor.
-            bbox_head (dict): Config of box head.
+        num_stages (int, optional): Number of stage whole iterative process.
+            Defaults to 6.
+        stage_loss_weights (Tuple[float], optional): The loss
+            weight of each stage. By default all stages have
+            the same weight 1.
+        bbox_roi_extractor (dict, optional): Config of box roi extractor.
+        bbox_head (dict, optional): Config of box head.
         train_cfg (dict, optional): Configuration information in train stage.
             Defaults to None.
         test_cfg (dict, optional): Configuration information in test stage.
@@ -45,8 +48,7 @@ class SparseRoIHead(CascadeRoIHead):
                      hidden_channels=256,
                      dropout=0.0,
                      roi_feat_size=7,
-                     ffn_act_cfg=dict(type='ReLU', inplace=True),
-                 ),
+                     ffn_act_cfg=dict(type='ReLU', inplace=True)),
                  train_cfg=None,
                  test_cfg=None):
         assert bbox_roi_extractor is not None
@@ -121,8 +123,7 @@ class SparseRoIHead(CascadeRoIHead):
             detach_cls_score_list=[
                 cls_score[i].detach() for i in range(num_imgs)
             ],
-            detach_proposal_list=[item.detach() for item in proposal_list],
-        )
+            detach_proposal_list=[item.detach() for item in proposal_list])
 
         return bbox_results
 
@@ -190,11 +191,11 @@ class SparseRoIHead(CascadeRoIHead):
                 assign_result = self.bbox_assigner[stage].assign(
                     normolize_bbox_ccwh, cls_pred_list[i], gt_bboxes[i],
                     gt_labels[i], img_metas[i])
+                assert isinstance(self.bbox_sampler[stage], PseudoSampler), \
+                    'The logic of `get_targets` in DIIHead makes' \
+                    'Sparse R-CNN only support `PseudoSampler`'
                 sampling_result = self.bbox_sampler[stage].sample(
-                    assign_result,
-                    proposal_list[i],
-                    gt_bboxes[i],
-                )
+                    assign_result, proposal_list[i], gt_bboxes[i])
                 sampling_results.append(sampling_result)
             bbox_targets = self.bbox_head[stage].get_targets(
                 sampling_results,
@@ -269,40 +270,24 @@ class SparseRoIHead(CascadeRoIHead):
 
         if self.bbox_head[-1].loss_cls.use_sigmoid:
             cls_score = cls_score.sigmoid()
-            labels = torch.arange(num_classes)[None].repeat(
-                num_proposals, 1).flatten(0, 1).type_as(proposal_feats)
-            for img_id in range(num_imgs):
-                cls_score_per_img = cls_score[img_id]
-                scores_per_img, topk_indices = cls_score_per_img.flatten(
-                    0, 1).topk(
-                        self.test_cfg.max_per_img, sorted=False)
-                labels_per_img = labels[topk_indices]
-                bbox_pred_per_img = proposal_list[img_id].view(
-                    -1, 1, 4).repeat(1, num_classes, 1).view(-1,
-                                                             4)[topk_indices]
-                if rescale:
-                    scale_factor = img_metas[img_id]['scale_factor']
-                    bbox_pred_per_img /= bbox_pred_per_img.new_tensor(
-                        scale_factor)
-                det_bboxes.append(
-                    torch.cat([bbox_pred_per_img, scores_per_img[:, None]],
-                              dim=1))
-                det_labels.append(labels_per_img)
         else:
-            for img_id in range(num_imgs):
-                bboxes = proposal_list[img_id]
-                scores = cls_score[img_id].softmax(-1)
-                max_score, det_label = scores.max(-1)
-                det_score, topk_indices = max_score.topk(
+            cls_score = cls_score.softmax(-1)[..., :-1]
+        labels = torch.arange(num_classes)[None].repeat(
+            num_proposals, 1).flatten(0, 1).type_as(proposal_feats)
+        for img_id in range(num_imgs):
+            cls_score_per_img = cls_score[img_id]
+            scores_per_img, topk_indices = cls_score_per_img.flatten(
+                0, 1).topk(
                     self.test_cfg.max_per_img, sorted=False)
-                det_label = det_label[topk_indices]
-                bboxes = bboxes[topk_indices]
-                if rescale:
-                    scale_factor = img_metas[img_id]['scale_factor']
-                    bboxes /= bboxes.new_tensor(scale_factor)
-                det_bbox = torch.cat([bboxes, max_score[:, None]], dim=-1)
-                det_bboxes.append(det_bbox)
-                det_labels.append(det_label)
+            labels_per_img = labels[topk_indices]
+            bbox_pred_per_img = proposal_list[img_id].view(-1, 1, 4).repeat(
+                1, num_classes, 1).view(-1, 4)[topk_indices]
+            if rescale:
+                scale_factor = img_metas[img_id]['scale_factor']
+                bbox_pred_per_img /= bbox_pred_per_img.new_tensor(scale_factor)
+            det_bboxes.append(
+                torch.cat([bbox_pred_per_img, scores_per_img[:, None]], dim=1))
+            det_labels.append(labels_per_img)
 
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i], num_classes)
@@ -315,13 +300,7 @@ class SparseRoIHead(CascadeRoIHead):
         raise NotImplementedError(
             'We have not implemented `aug_test` for Sparse R-CNN ')
 
-    def forward_dummy(
-        self,
-        x,
-        proposal_boxes,
-        proposal_features,
-        img_metas,
-    ):
+    def forward_dummy(self, x, proposal_boxes, proposal_features, img_metas):
         """Dummy forward function when do the flops computing."""
         all_stage_bbox_results = []
         proposal_list = [proposal_boxes[i] for i in range(len(proposal_boxes))]

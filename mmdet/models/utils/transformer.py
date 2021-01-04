@@ -748,25 +748,23 @@ class Transformer(nn.Module):
 class DynamicConv(nn.Module):
     """Implements Dynamic Convolution.
 
-    Code is modified from the `official github repo
-    <https://github.com/PeizeSun/SparseR-CNN/blob/main/projects/SparseRCNN
-    /sparsercnn/head.py#L258>`_ .
-
-    Here are the feature shapes of each step:
-
-    N * (S * S) * in_channels --(1st bmm)--> N * (S * S) * feat_channels
-    --(2nd bmm)--> N * (S * S) * out_channels --(fc_layer)--> N * out_channels
-
-    This module use `torch.bmm` instead of instancing 1*1 Conv2d.
-
+    This module generate parameters for each sample and
+    use bmm to implement 1*1 convolution. Code is modified
+    from the `official github repo <https://github.com/PeizeSun/
+    SparseR-CNN/blob/main/projects/SparseRCNN/sparsercnn/head.py#L258>`_ .
 
     Args:
-        in_channels (int): The input feature channel.
-        feat_channels (int): The inner feature channel.
-        out_channels (int): The output feature channel.
-        input_feat_shape (int): The shape of input feature.
-        act_cfg (dict): The activation config for DynamicConv.
-        norm_cfg (dict): Config dict for normalization layer. Default
+        in_channels (int, optional): The input feature channel.
+            Defaults to 256.
+        feat_channels (int, optional): The inner feature channel.
+            Defaults to 64.
+        out_channels (int, optional): The output feature channel.
+            When not specified, it will be set to `in_channels`
+            by default
+        input_feat_shape (int, optional): The shape of input feature.
+            Defaults to 7.
+        act_cfg (dict, optional): The activation config for DynamicConv.
+        norm_cfg (dict, optional): Config dict for normalization layer. Default
             layer normalization.
     """
 
@@ -801,7 +799,19 @@ class DynamicConv(nn.Module):
         self.fc_norm = build_norm_layer(norm_cfg, self.out_channels)[1]
 
     def forward(self, param_feature, input_feature):
-        """Forward function for `DynamicConv`."""
+        """Forward function for `DynamicConv`.
+
+        Args:
+            param_feature (Tensor): The feature can be used
+                to generate the parameter, has shape
+                (1, batch_size, in_channels).
+            input_feature (Tensor): Feature that
+                interact with parameters, has shape
+                (H*W, batch_size, in_channels).
+        Returns:
+            Tensor: The output feature has shape
+                (batch_size, out_channels)
+        """
         assert param_feature.shape[0] == 1
         assert param_feature.shape[-1] == input_feature.shape[-1]
 
@@ -810,13 +820,17 @@ class DynamicConv(nn.Module):
 
         param_in = parameters[:, :, :self.num_params_in].view(
             -1, self.in_channels, self.feat_channels)
-        param_out = parameters[:, :, self.num_params_out:].view(
+        param_out = parameters[:, :, -self.num_params_out:].view(
             -1, self.feat_channels, self.out_channels)
 
+        # input_feature has shape (batch_size, H*W, in_channels)
+        # param_in has shape (batch_size, in_channels, feat_channels)
+        # feature has shape (batch_size, H*W, feat_channels)
         features = torch.bmm(input_feature, param_in)
         features = self.norm_in(features)
         features = self.activation(features)
 
+        # param_out has shape (batch_size, feat_channels, out_channels)
         features = torch.bmm(features, param_out)
         features = self.norm_out(features)
         features = self.activation(features)

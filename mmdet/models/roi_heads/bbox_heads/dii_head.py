@@ -18,22 +18,26 @@ class DIIHead(BBoxHead):
     Detection with Learnable Proposals <https://arxiv.org/abs/2011.12450>`_
 
     Args:
-        num_classes (int): Number of class in dataset. Defaults to 80.
-        num_ffn_fcs (int): The number of fully-connected layers in FFNs.
-            Defaults to 2.
-        num_heads (int): The hidden dimension of FFNs. Defaults to 8.
-        num_cls_fcs (int): The number of fully-connected layers in
-            classification subnet. Defaults to 1.
-        num_reg_fcs (int): The number of fully-connected layers in
-            regression subnet. Defaults to 3.
-        feedforward_channels (int): The hidden dimension of FFNs.
-            Defaults to 2048
-        in_channels (int): Hidden_channels of MultiheadAttention.
+        num_classes (int, optional): Number of class in dataset.
+            Defaults to 80.
+        num_ffn_fcs (int, optional): The number of fully-connected
+            layers in FFNs. Defaults to 2.
+        num_heads (int, optional): The hidden dimension of FFNs.
+            Defaults to 8.
+        num_cls_fcs (int, optional): The number of fully-connected
+            layers in classification subnet. Defaults to 1.
+        num_reg_fcs (int, optional): The number of fully-connected
+            layers in regression subnet. Defaults to 3.
+        feedforward_channels (int, optional): The hidden dimension
+            of FFNs. Defaults to 2048
+        in_channels (int, optional): Hidden_channels of MultiheadAttention.
             Defaults to 256.
-        dropout (float): Probability of drop the channel. Defaults to 0.0
-        ffn_act_cfg (dict): The activation config for FFNs.
-        dynamic_conv_cfg (dict): The convolution config for DynamicConv.
-        loss_iou (dict): The config for iou or giou loss.
+        dropout (float, optional): Probability of drop the channel.
+            Defaults to 0.0
+        ffn_act_cfg (dict, optional): The activation config for FFNs.
+        dynamic_conv_cfg (dict, optional): The convolution config
+            for DynamicConv.
+        loss_iou (dict, optional): The config for iou or giou loss.
 
     """
 
@@ -62,7 +66,6 @@ class DIIHead(BBoxHead):
             reg_decoded_bbox=True,
             reg_class_agnostic=True,
             **kwargs)
-        assert self.reg_class_agnostic is True
         self.loss_iou = build_loss(loss_iou)
         self.in_channels = in_channels
         self.fp16_enabled = False
@@ -109,6 +112,11 @@ class DIIHead(BBoxHead):
                 build_activation_layer(dict(type='ReLU', inplace=True)))
         # over load the self.fc_cls in BBoxHead
         self.fc_reg = nn.Linear(in_channels, 4)
+
+        assert self.reg_class_agnostic, 'DIIHead only suppport when ' \
+                                        '`reg_class_agnostic` is True '
+        assert self.reg_decoded_bbox, 'DIIHead only suppport when ' \
+                                      '`reg_decoded_bbox` is True'
 
     def init_weights(self):
         """Use xavier initialization for all weight parameter and set
@@ -187,9 +195,9 @@ class DIIHead(BBoxHead):
              label_weights,
              bbox_targets,
              bbox_weights,
-             avg_factor=None,
              imgs_whwh=None,
-             reduction_override=None):
+             reduction_override=None,
+             **kwargs):
         """"Loss function of DIIHead, get loss of all images.
 
         Args:
@@ -213,8 +221,6 @@ class DIIHead(BBoxHead):
             bbox_weights (Tensor): Regression loss weight of each
                 proposals's coordinate, has shape
                 (batch_size * num_proposals_single_image, 4),
-            avg_factor (float): Used in normalized regression
-                and classification loss
             imgs_whwh (Tensor): imgs_whwh (Tensor): Tensor with\
                 shape (batch_size, num_proposals, 4), the last
                 dimension means
@@ -270,7 +276,10 @@ class DIIHead(BBoxHead):
 
     def _get_target_single(self, pos_inds, neg_inds, pos_bboxes, neg_bboxes,
                            pos_gt_bboxes, pos_gt_labels, cfg):
-        """Almost the same as the implementation in bbox_head, we add pos_inds
+        """Calculate the ground truth for anchors in single image according to
+        the sampling results.
+
+        Almost the same as the implementation in bbox_head, we add pos_inds
         and neg_inds to select positive and negative samples instead of
         selecting first num_pos as positive samples.
 
@@ -317,9 +326,13 @@ class DIIHead(BBoxHead):
                     gt_labels,
                     rcnn_train_cfg,
                     concat=True):
-        """Almost the same as the implementation in bbox_head, we passed
+        """Calculate the ground truth for all samples in a batch according to
+        the sampling_results.
+
+        Almost the same as the implementation in bbox_head, we passed
         additional parameters pos_inds_list and neg_inds_list to
-        `_get_target_single` function."""
+        `_get_target_single` function.
+        """
         pos_inds_list = [res.pos_inds for res in sampling_results]
         neg_inds_list = [res.neg_inds for res in sampling_results]
         pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
