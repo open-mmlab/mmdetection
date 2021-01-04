@@ -577,7 +577,7 @@ class PAAHead(ATSSHead):
             cfg.nms,
             cfg.max_per_img,
             score_factors=None)
-        if self.with_score_voting:
+        if self.with_score_voting and len(det_bboxes) > 0:
             det_bboxes, det_labels = self.score_voting(det_bboxes, det_labels,
                                                        mlvl_bboxes,
                                                        mlvl_nms_scores,
