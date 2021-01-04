@@ -120,14 +120,14 @@ class SCNetRoIHead(CascadeRoIHead):
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(
             x[:len(bbox_roi_extractor.featmap_strides)], rois)
-        if self.with_semantic:
+        if self.with_semantic and semantic_feat is not None:
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
                 bbox_semantic_feat = F.adaptive_avg_pool2d(
                     bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
-        if self.with_glbctx:
+        if self.with_glbctx and glbctx_feat is not None:
             bbox_feats = self._fuse_glbctx(bbox_feats, glbctx_feat, rois)
         cls_score, bbox_pred, relayed_feat = bbox_head(
             bbox_feats, return_feat=True)
@@ -147,16 +147,16 @@ class SCNetRoIHead(CascadeRoIHead):
         """Mask head forward function used in both training and testing."""
         mask_feats = self.mask_roi_extractor(
             x[:self.mask_roi_extractor.num_inputs], rois)
-        if self.with_semantic:
+        if self.with_semantic and semantic_feat is not None:
             mask_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
             if mask_semantic_feat.shape[-2:] != mask_feats.shape[-2:]:
                 mask_semantic_feat = F.adaptive_avg_pool2d(
                     mask_semantic_feat, mask_feats.shape[-2:])
             mask_feats += mask_semantic_feat
-        if self.with_glbctx:
+        if self.with_glbctx and glbctx_feat is not None:
             mask_feats = self._fuse_glbctx(mask_feats, glbctx_feat, rois)
-        if self.with_feat_relay:
+        if self.with_feat_relay and relayed_feat is not None:
             mask_feats = mask_feats + relayed_feat
         mask_pred = self.mask_head(mask_feats)
         mask_results = dict(mask_pred=mask_pred)

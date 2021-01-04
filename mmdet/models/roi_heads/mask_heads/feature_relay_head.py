@@ -39,9 +39,11 @@ class FeatureRelayHead(nn.Module):
     def forward(self, x):
         """Forward function."""
         N, in_C = x.shape
-        out_C = self.out_conv_channels
-        out_HW = self.roi_feat_size
-        x = self.fc(x)
-        x = x.reshape(N, out_C, out_HW, out_HW)
-        x = self.upsample(x)
-        return x
+        if N > 0:
+            out_C = self.out_conv_channels
+            out_HW = self.roi_feat_size
+            x = self.fc(x)
+            x = x.reshape(N, out_C, out_HW, out_HW)
+            x = self.upsample(x)
+            return x
+        return None
