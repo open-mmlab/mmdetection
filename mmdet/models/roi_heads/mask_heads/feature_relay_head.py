@@ -7,6 +7,10 @@ from mmdet.models.builder import HEADS
 
 @HEADS.register_module()
 class FeatureRelayHead(nn.Module):
+    """Feature Relay Head used in SCNet.
+
+    https://arxiv.org/abs/2012.10150
+    """
 
     def __init__(self,
                  in_channels=1024,
@@ -28,10 +32,12 @@ class FeatureRelayHead(nn.Module):
             scale_factor=scale_factor, mode='bilinear', align_corners=True)
 
     def init_weights(self):
+        """Init weights for the head."""
         kaiming_init(self.fc)
 
     @auto_fp16()
     def forward(self, x):
+        """Forward function."""
         N, in_C = x.shape
         out_C = self.out_conv_channels
         out_HW = self.roi_feat_size

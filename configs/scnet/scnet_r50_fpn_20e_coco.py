@@ -4,7 +4,7 @@ _base_ = [
 ]
 # model settings
 model = dict(
-    type='HybridTaskCascade',
+    type='SCNet',
     pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',

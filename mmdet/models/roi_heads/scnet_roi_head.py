@@ -97,10 +97,7 @@ class SCNetRoIHead(CascadeRoIHead):
         return fused_feats
 
     def _slice_pos_feats(self, feats, sampling_results):
-        """Get features w.r.t.
-
-        pos rois
-        """
+        """Get features from pos rois."""
         num_rois = [res.bboxes.size(0) for res in sampling_results]
         num_pos_rois = [res.pos_bboxes.size(0) for res in sampling_results]
         inds = torch.zeros(sum(num_rois), dtype=torch.bool)
@@ -147,6 +144,7 @@ class SCNetRoIHead(CascadeRoIHead):
                       semantic_feat=None,
                       glbctx_feat=None,
                       relayed_feat=None):
+        """Mask head forward function used in both training and testing."""
         mask_feats = self.mask_roi_extractor(
             x[:self.mask_roi_extractor.num_inputs], rois)
         if self.with_semantic:

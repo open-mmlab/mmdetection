@@ -8,7 +8,10 @@ from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
 
 @HEADS.register_module()
 class GlobalContextHead(nn.Module):
-    """Global context head."""
+    """Global context head used in SCNet.
+
+    https://arxiv.org/abs/2012.10150
+    """
 
     def __init__(self,
                  num_ins,
@@ -61,11 +64,13 @@ class GlobalContextHead(nn.Module):
         self.criterion = nn.BCEWithLogitsLoss()
 
     def init_weights(self):
+        """Init weights for the head."""
         nn.init.normal_(self.fc.weight, 0, 0.01)
         nn.init.constant_(self.fc.bias, 0)
 
     @auto_fp16()
     def forward(self, feats):
+        """Forward function."""
         x = feats[-1]
         for i in range(self.num_convs):
             x = self.convs[i](x)
@@ -79,6 +84,7 @@ class GlobalContextHead(nn.Module):
 
     @force_fp32(apply_to=('pred', ))
     def loss(self, pred, labels):
+        """Loss function."""
         labels = [lbl.unique() for lbl in labels]
         targets = pred.new_zeros(pred.size())
         for i, label in enumerate(labels):
