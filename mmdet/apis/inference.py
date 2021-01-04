@@ -1,6 +1,5 @@
 import warnings
 
-import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import torch
@@ -162,9 +161,8 @@ def show_result_pyplot(model,
                        img,
                        result,
                        score_thr=0.3,
-                       fig_size=(15, 10),
                        title='result',
-                       block=True):
+                       wait_time=0):
     """Visualize the detection results on the image.
 
     Args:
@@ -173,15 +171,17 @@ def show_result_pyplot(model,
         result (tuple[list] or list): The detection result, can be either
             (bbox, segm) or just bbox.
         score_thr (float): The threshold to visualize the bboxes and masks.
-        fig_size (tuple): Figure size of the pyplot figure.
         title (str): Title of the pyplot figure.
-        block (bool): Whether to block GUI.
+        wait_time (float): Value of waitKey param.
+                Default: 0.
     """
     if hasattr(model, 'module'):
         model = model.module
-    img = model.show_result(img, result, score_thr=score_thr, show=False)
-    plt.figure(figsize=fig_size)
-    plt.imshow(mmcv.bgr2rgb(img))
-    plt.title(title)
-    plt.tight_layout()
-    plt.show(block=block)
+    model.show_result(
+        img,
+        result,
+        score_thr=score_thr,
+        show=True,
+        wait_time=wait_time,
+        bbox_color=(72, 101, 241),
+        text_color=(72, 101, 241))

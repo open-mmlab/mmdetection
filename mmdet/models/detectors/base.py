@@ -9,6 +9,7 @@ import torch.nn as nn
 from mmcv.runner import auto_fp16
 from mmcv.utils import print_log
 
+from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.utils import get_root_logger
 
 
@@ -273,7 +274,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     bbox_color='green',
                     text_color='green',
                     thickness=1,
-                    font_scale=0.5,
+                    font_size=10,
                     win_name='',
                     show=False,
                     wait_time=0,
@@ -289,9 +290,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
             text_color (str or tuple or :obj:`Color`): Color of texts.
             thickness (int): Thickness of lines.
-            font_scale (float): Font scales of texts.
+            font_size (int): Font size of texts.
             win_name (str): The window name.
-            wait_time (int): Value of waitKey param.
+            wait_time (float): Value of waitKey param.
                 Default: 0.
             show (bool): Whether to show the image.
                 Default: False.
@@ -336,7 +337,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if out_file is not None:
             show = False
         # draw bounding boxes
-        mmcv.imshow_det_bboxes(
+        imshow_det_bboxes(
             img,
             bboxes,
             labels,
@@ -345,7 +346,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             bbox_color=bbox_color,
             text_color=text_color,
             thickness=thickness,
-            font_scale=font_scale,
+            font_size=font_size,
             win_name=win_name,
             show=show,
             wait_time=wait_time,
