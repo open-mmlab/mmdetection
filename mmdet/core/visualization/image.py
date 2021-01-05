@@ -24,8 +24,9 @@ def imshow_det_bboxes(img,
                       text_color='green',
                       thickness=2,
                       font_scale=0.5,
-                      font_size=10,
+                      font_size=13,
                       win_name='',
+                      fig_size=(15, 10),
                       show=True,
                       wait_time=0,
                       out_file=None):
@@ -37,16 +38,19 @@ def imshow_det_bboxes(img,
             (n, 5).
         labels (ndarray): Labels of bboxes.
         class_names (list[str]): Names of each classes.
-        score_thr (float): Minimum score of bboxes to be shown.
+        score_thr (float): Minimum score of bboxes to be shown.  Default: 0
         bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
+           Default: 'green'
         text_color (str or tuple or :obj:`Color`): Color of texts.
-        thickness (int): Thickness of lines.
-        font_scale (float): Font scales of texts.
-        font_size (int): Font size of texts.
-        show (bool): Whether to show the image.
-        win_name (str): The window name.
-        wait_time (float): Value of waitKey param.
-        out_file (str or None): The filename to write the image.
+           Default: 'green'
+        thickness (int): Thickness of lines. Default: 2
+        font_scale (float): Font scales of texts. Default: 0.5
+        font_size (int): Font size of texts. Default: 13
+        show (bool): Whether to show the image. Default: True
+        win_name (str): The window name. Default: ''
+        fig_size (tuple): Figure size of the pyplot figure. Default: (15,10)
+        wait_time (float): Value of waitKey param. Default: 0.
+        out_file (str or None): The filename to write the image. Default: None
 
     Returns:
         ndarray: The image with bboxes drawn on it.
@@ -72,7 +76,7 @@ def imshow_det_bboxes(img,
     img = mmcv.bgr2rgb(img)
     img = np.ascontiguousarray(img)
 
-    plt.figure(win_name)
+    plt.figure(figsize=fig_size)
     plt.title(win_name)
     plt.imshow(img)
     plt.axis('off')
@@ -89,13 +93,13 @@ def imshow_det_bboxes(img,
         polygons.append(Polygon(np_poly))
         color.append(bbox_color)
         label_text = class_names[
-            label] if class_names is not None else f'cls {label}'
+            label] if class_names is not None else f'class {label}'
         if len(bbox) > 4:
             label_text += f'|{bbox[-1]:.02f}'
         ax.text(
             bbox_int[0],
             bbox_int[1],
-            '%s' % label_text,
+            f'{label_text}',
             color=text_color,
             fontsize=font_size)
 

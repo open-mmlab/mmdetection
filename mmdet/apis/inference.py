@@ -161,8 +161,10 @@ def show_result_pyplot(model,
                        img,
                        result,
                        score_thr=0.3,
+                       fig_size=(15, 10),
                        title='result',
-                       wait_time=0):
+                       block=True,
+                       wait_time=1):
     """Visualize the detection results on the image.
 
     Args:
@@ -171,17 +173,23 @@ def show_result_pyplot(model,
         result (tuple[list] or list): The detection result, can be either
             (bbox, segm) or just bbox.
         score_thr (float): The threshold to visualize the bboxes and masks.
+        fig_size (tuple): Figure size of the pyplot figure.
         title (str): Title of the pyplot figure.
+        block (bool): Whether to block GUI. Default: True
         wait_time (float): Value of waitKey param.
-                Default: 0.
+                Default: 1.
     """
     if hasattr(model, 'module'):
         model = model.module
+    if block:
+        wait_time = 0
     model.show_result(
         img,
         result,
         score_thr=score_thr,
         show=True,
         wait_time=wait_time,
+        fig_size=fig_size,
+        win_name=title,
         bbox_color=(72, 101, 241),
         text_color=(72, 101, 241))
