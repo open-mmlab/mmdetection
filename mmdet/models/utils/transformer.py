@@ -108,9 +108,13 @@ class FFN(nn.Module):
         embed_dims (int): The feature dimension. Same as
             `MultiheadAttention`.
         feedforward_channels (int): The hidden dimension of FFNs.
-        num_fcs (int): The number of fully-connected layers in FFNs.
-        act_cfg (dict): The activation config for FFNs.
-        dropout (float): Probability of an element to be zeroed. Default 0.0.
+        num_fcs (int, optional): The number of fully-connected layers in
+            FFNs. Defaluts to 2.
+        act_cfg (dict, optional): The activation config for FFNs.
+        dropout (float, optional): Probability of an element to be
+            zeroed. Default 0.0.
+        add_residual (bool, optional): Add resudual connection.
+            Defaults to True.
     """
 
     def __init__(self,
@@ -754,17 +758,17 @@ class DynamicConv(nn.Module):
     SparseR-CNN/blob/main/projects/SparseRCNN/sparsercnn/head.py#L258>`_ .
 
     Args:
-        in_channels (int, optional): The input feature channel.
+        in_channels (int): The input feature channel.
             Defaults to 256.
-        feat_channels (int, optional): The inner feature channel.
+        feat_channels (int): The inner feature channel.
             Defaults to 64.
         out_channels (int, optional): The output feature channel.
             When not specified, it will be set to `in_channels`
             by default
-        input_feat_shape (int, optional): The shape of input feature.
+        input_feat_shape (int): The shape of input feature.
             Defaults to 7.
-        act_cfg (dict, optional): The activation config for DynamicConv.
-        norm_cfg (dict, optional): Config dict for normalization layer. Default
+        act_cfg (dict): The activation config for DynamicConv.
+        norm_cfg (dict): Config dict for normalization layer. Default
             layer normalization.
     """
 
@@ -809,7 +813,7 @@ class DynamicConv(nn.Module):
                 interact with parameters, has shape
                 (H*W, batch_size, in_channels).
         Returns:
-            Tensor: The output feature has shape
+            Tensor: The output feature has shape \
                 (batch_size, out_channels)
         """
         assert param_feature.shape[0] == 1

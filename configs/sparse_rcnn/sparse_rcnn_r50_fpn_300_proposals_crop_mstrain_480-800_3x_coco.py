@@ -1,11 +1,6 @@
 _base_ = './sparse_rcnn_r50_fpn_mstrain_480-800_3x_coco.py'
 num_proposals = 300
-model = dict(
-    rpn_head=dict(
-        _delete_=True,
-        type='EmbeddingRPNHead',
-        num_proposals=num_proposals,
-        proposal_feature_channel=256))
+model = dict(rpn_head=dict(num_proposals=num_proposals))
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 

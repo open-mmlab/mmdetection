@@ -1,5 +1,4 @@
 _base_ = [
-    '../_base_/models/cascade_rcnn_r50_fpn.py',
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
@@ -25,7 +24,6 @@ model = dict(
         add_extra_convs='on_input',
         num_outs=4),
     rpn_head=dict(
-        _delete_=True,
         type='EmbeddingRPNHead',
         num_proposals=num_proposals,
         proposal_feature_channel=256),
@@ -71,12 +69,11 @@ model = dict(
                     type='DeltaXYWHBBoxCoder',
                     clip_border=False,
                     target_means=[0., 0., 0., 0.],
-                    target_stds=[0.5, 0.5, 1., 1.]))
-        ] * num_stages))
+                    target_stds=[0.5, 0.5, 1., 1.])) for _ in range(num_stages)
+        ]))
 
 # training and testing settings
 train_cfg = dict(
-    _delete_=True,
     rpn=None,
     rcnn=[
         dict(
@@ -89,7 +86,7 @@ train_cfg = dict(
             pos_weight=1)
     ] * num_stages)
 
-test_cfg = dict(_delete_=True, rpn=None, rcnn=dict(max_per_img=num_proposals))
+test_cfg = dict(rpn=None, rcnn=dict(max_per_img=num_proposals))
 # optimizer
 optimizer = dict(
     _delete_=True,

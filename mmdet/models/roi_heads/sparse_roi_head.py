@@ -13,13 +13,13 @@ class SparseRoIHead(CascadeRoIHead):
 
 
     Args:
-        num_stages (int, optional): Number of stage whole iterative process.
+        num_stages (int): Number of stage whole iterative process.
             Defaults to 6.
-        stage_loss_weights (Tuple[float], optional): The loss
+        stage_loss_weights (Tuple[float]): The loss
             weight of each stage. By default all stages have
             the same weight 1.
-        bbox_roi_extractor (dict, optional): Config of box roi extractor.
-        bbox_head (dict, optional): Config of box head.
+        bbox_roi_extractor (dict): Config of box roi extractor.
+        bbox_head (dict): Config of box head.
         train_cfg (dict, optional): Configuration information in train stage.
             Defaults to None.
         test_cfg (dict, optional): Configuration information in test stage.
@@ -80,27 +80,27 @@ class SparseRoIHead(CascadeRoIHead):
             img_metas (dict): meta information of images.
 
         Returns:
-            dict[str, Tensor]: a dictionary of bbox head outputs, \
+            dict[str, Tensor]: a dictionary of bbox head outputs,
                 Containing the following results:
 
-                    - cls_score (Tensor): The score of each class, has \
-                        shape (batch_size, num_proposals, num_classes) \
-                         when use focal loss or \
-                        (batch_size, num_proposals, num_classes+1) \
-                        otherwise.
+                    - cls_score (Tensor): The score of each class, has
+                      shape (batch_size, num_proposals, num_classes)
+                      when use focal loss or
+                      (batch_size, num_proposals, num_classes+1)
+                      otherwise.
                     - decode_bbox_pred (Tensor): The regression results
-                        with shape (batch_size, num_proposal, 4). \
-                        The last dimension 4 represents \
-                        [tl_x, tl_y, br_x, br_y].
-                    - object_feats (Tensor): The object feature extracted \
-                        from current stage
-                    - detach_cls_score_list (list[Tensor]): The detached \
-                        classification results, length is batch_size, and \
-                        each tensor has shape (num_proposal, num_classes).
-                    - detach_proposal_list (list[tensor]): The detached \
-                        regression results, length is batch_size, and each \
-                        tensor has shape (num_proposal, 4). The last \
-                        dimension 4 represents [tl_x, tl_y, br_x, br_y].
+                      with shape (batch_size, num_proposal, 4).
+                      The last dimension 4 represents
+                      [tl_x, tl_y, br_x, br_y].
+                    - object_feats (Tensor): The object feature extracted
+                      from current stage
+                    - detach_cls_score_list (list[Tensor]): The detached
+                      classification results, length is batch_size, and
+                      each tensor has shape (num_proposal, num_classes).
+                    - detach_proposal_list (list[tensor]): The detached
+                      regression results, length is batch_size, and each
+                      tensor has shape (num_proposal, 4). The last
+                      dimension 4 represents [tl_x, tl_y, br_x, br_y].
         """
         num_imgs = len(img_metas)
         bbox_roi_extractor = self.bbox_roi_extractor[stage]
@@ -113,7 +113,7 @@ class SparseRoIHead(CascadeRoIHead):
             rois,
             torch.ones_like(rois),  # dummy arg
             bbox_pred.view(-1, bbox_pred.size(-1)),
-            [rois.new_zeros(object_feats.size(1))] * num_imgs,
+            [rois.new_zeros(object_feats.size(1)) for _ in range(num_imgs)],
             img_metas)
         bbox_results = dict(
             cls_score=cls_score,
@@ -169,7 +169,7 @@ class SparseRoIHead(CascadeRoIHead):
 
         num_imgs = len(img_metas)
         num_poposals = proposal_boxes.size(1)
-        imgs_whwh = imgs_whwh[:, None, :].expand(num_imgs, num_poposals, 4)
+        imgs_whwh = imgs_whwh.repeat(1, num_poposals, 1)
         all_stage_bbox_results = []
         proposal_list = [proposal_boxes[i] for i in range(len(proposal_boxes))]
         object_feats = proposal_features

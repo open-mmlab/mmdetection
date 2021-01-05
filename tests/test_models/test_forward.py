@@ -58,43 +58,43 @@ def test_sparse_rcnn_forward():
 
     imgs = mm_inputs.pop('imgs')
     img_metas = mm_inputs.pop('img_metas')
-    if torch.cuda.is_available():
-        # Test forward train with non-empty truth batch
-        detector = detector.cuda()
-        imgs = imgs.cuda()
-        detector.train()
-        gt_bboxes = mm_inputs['gt_bboxes']
-        gt_bboxes = [item.cuda() for item in gt_bboxes]
-        gt_labels = mm_inputs['gt_labels']
-        gt_labels = [item.cuda() for item in gt_labels]
-        losses = detector.forward(
-            imgs,
-            img_metas,
-            gt_bboxes=gt_bboxes,
-            gt_labels=gt_labels,
-            return_loss=True)
-        assert isinstance(losses, dict)
-        loss, _ = detector._parse_losses(losses)
-        assert float(loss.item()) > 0
 
-        # Test forward train with an empty truth batch
-        mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
-        imgs = mm_inputs.pop('imgs')
-        imgs = imgs.cuda()
-        img_metas = mm_inputs.pop('img_metas')
-        gt_bboxes = mm_inputs['gt_bboxes']
-        gt_bboxes = [item.cuda() for item in gt_bboxes]
-        gt_labels = mm_inputs['gt_labels']
-        gt_labels = [item.cuda() for item in gt_labels]
-        losses = detector.forward(
-            imgs,
-            img_metas,
-            gt_bboxes=gt_bboxes,
-            gt_labels=gt_labels,
-            return_loss=True)
-        assert isinstance(losses, dict)
-        loss, _ = detector._parse_losses(losses)
-        assert float(loss.item()) > 0
+    # Test forward train with non-empty truth batch
+    detector = detector.cuda()
+    imgs = imgs.cuda()
+    detector.train()
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_bboxes = [item.cuda() for item in gt_bboxes]
+    gt_labels = mm_inputs['gt_labels']
+    gt_labels = [item.cuda() for item in gt_labels]
+    losses = detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
+
+    # Test forward train with an empty truth batch
+    mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
+    imgs = mm_inputs.pop('imgs')
+    imgs = imgs.cuda()
+    img_metas = mm_inputs.pop('img_metas')
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_bboxes = [item.cuda() for item in gt_bboxes]
+    gt_labels = mm_inputs['gt_labels']
+    gt_labels = [item.cuda() for item in gt_labels]
+    losses = detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
 
     # Test forward test
     detector.eval()

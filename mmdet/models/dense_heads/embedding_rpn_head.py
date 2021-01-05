@@ -18,25 +18,16 @@ class EmbeddingRPNHead(nn.Module):
     Args:
         num_proposals (int): Number of init_proposals. Default 100.
         proposal_feature_channel (int): Channel number of
-            init_proposal_feature
-        train_cfg (dict, optional): Necessary parameters of two-stage
-            detector, but always None in this module
-        test_cfg (dict, optional): Necessary parameters of two-stage
-            detector, but always None in this module
+            init_proposal_feature. Defaults to 256.
     """
 
     def __init__(self,
                  num_proposals=100,
                  proposal_feature_channel=256,
-                 train_cfg=None,
-                 test_cfg=None):
-        assert train_cfg is None
-        assert test_cfg is None
+                 **kwargs):
+        super(EmbeddingRPNHead, self).__init__()
         self.num_proposals = num_proposals
         self.proposal_feature_channel = proposal_feature_channel
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-        super(EmbeddingRPNHead, self).__init__()
         self._init_layers()
 
     def _init_layers(self):
@@ -48,7 +39,8 @@ class EmbeddingRPNHead(nn.Module):
     def init_weights(self):
         """Initialize the init_proposal_bboxes as normalized.
 
-        [c_x, c_y, w, h], and we initialize it to the size of  the entire image
+        [c_x, c_y, w, h], and we initialize it to the size of  the entire
+        image.
         """
         nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
         nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
@@ -79,12 +71,16 @@ class EmbeddingRPNHead(nn.Module):
         imgs_whwh = []
         for meta in img_metas:
             h, w, _ = meta['img_shape']
-            imgs_whwh.append(imgs[0].new_tensor([w, h, w, h])[None])
+            imgs_whwh.append(imgs[0].new_tensor([[w, h, w, h]]))
         imgs_whwh = torch.cat(imgs_whwh, dim=0)
-        proposals = proposals[:, None, :] * imgs_whwh
-        proposals = proposals.permute(1, 0, 2)
-        init_proposal_features = self.init_proposal_features.weight.clone()
+        imgs_whwh = imgs_whwh[:, None, :]
 
+        # imgs_whwh has shape (batch_size, 1, 4)
+        # The shape of proposals change from (num_proposals, 4)
+        # to (batch_size ,num_proposals, 4)
+        proposals = proposals * imgs_whwh
+
+        init_proposal_features = self.init_proposal_features.weight.clone()
         init_proposal_features = init_proposal_features[None].expand(
             num_imgs, *init_proposal_features.size())
         return proposals, init_proposal_features, imgs_whwh
@@ -92,7 +88,7 @@ class EmbeddingRPNHead(nn.Module):
     def forward_dummy(self, img, img_metas):
         """Dummy forward function.
 
-        Used in flops calculation
+        Used in flops calculation.
         """
         return self._decode_init_proposals(img, img_metas)
 

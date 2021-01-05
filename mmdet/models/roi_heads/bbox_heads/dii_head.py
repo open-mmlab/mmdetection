@@ -18,26 +18,26 @@ class DIIHead(BBoxHead):
     Detection with Learnable Proposals <https://arxiv.org/abs/2011.12450>`_
 
     Args:
-        num_classes (int, optional): Number of class in dataset.
+        num_classes (int): Number of class in dataset.
             Defaults to 80.
-        num_ffn_fcs (int, optional): The number of fully-connected
+        num_ffn_fcs (int): The number of fully-connected
             layers in FFNs. Defaults to 2.
-        num_heads (int, optional): The hidden dimension of FFNs.
+        num_heads (int): The hidden dimension of FFNs.
             Defaults to 8.
-        num_cls_fcs (int, optional): The number of fully-connected
+        num_cls_fcs (int): The number of fully-connected
             layers in classification subnet. Defaults to 1.
-        num_reg_fcs (int, optional): The number of fully-connected
+        num_reg_fcs (int): The number of fully-connected
             layers in regression subnet. Defaults to 3.
-        feedforward_channels (int, optional): The hidden dimension
+        feedforward_channels (int): The hidden dimension
             of FFNs. Defaults to 2048
-        in_channels (int, optional): Hidden_channels of MultiheadAttention.
+        in_channels (int): Hidden_channels of MultiheadAttention.
             Defaults to 256.
-        dropout (float, optional): Probability of drop the channel.
+        dropout (float): Probability of drop the channel.
             Defaults to 0.0
-        ffn_act_cfg (dict, optional): The activation config for FFNs.
-        dynamic_conv_cfg (dict, optional): The convolution config
+        ffn_act_cfg (dict): The activation config for FFNs.
+        dynamic_conv_cfg (dict): The convolution config
             for DynamicConv.
-        loss_iou (dict, optional): The config for iou or giou loss.
+        loss_iou (dict): The config for iou or giou loss.
 
     """
 
@@ -124,6 +124,9 @@ class DIIHead(BBoxHead):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
+            else:
+                # Initialized all bias to 0
+                nn.init.constant_(p, 0)
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
@@ -140,18 +143,18 @@ class DIIHead(BBoxHead):
                 (batch_size, num_proposals, feature_dimensions)
 
           Returns:
-                tuple: Usually a tuple of classification scores \
-                    and bbox prediction and a intermediate feature.
+                tuple: Usually a tuple of classification scores
+                and bbox prediction and a intermediate feature.
 
-                    - cls_scores (Tensor): Classification scores for \
-                        all proposals, has shape \
-                        (batch_size, num_proposals, num_classes)
-                    - bbox_preds (Tensor): Box energies / deltas for \
-                        all proposals, has shape \
-                        (batch_size, num_proposals, 4)
-                    - obj_feat (Tensor): Object feature before classification \
-                        and regression subnet, has shape \
-                        (batch_size, num_proposal, feature_dimensions) \
+                    - cls_scores (Tensor): Classification scores for
+                      all proposals, has shape
+                      (batch_size, num_proposals, num_classes).
+                    - bbox_preds (Tensor): Box energies / deltas for
+                      all proposals, has shape
+                      (batch_size, num_proposals, 4).
+                    - obj_feat (Tensor): Object feature before classification
+                      and regression subnet, has shape
+                      (batch_size, num_proposal, feature_dimensions).
         """
         N, num_proposals = proposal_feat.shape[:2]
         # Self attention
