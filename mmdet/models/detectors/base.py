@@ -271,9 +271,10 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     img,
                     result,
                     score_thr=0.3,
-                    bbox_color='green',
-                    text_color='green',
+                    bbox_color=(72, 101, 241),
+                    text_color=(72, 101, 241),
                     thickness=1,
+                    font_scale=0.5,
                     font_size=10,
                     win_name='',
                     show=False,
@@ -290,6 +291,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
             text_color (str or tuple or :obj:`Color`): Color of texts.
             thickness (int): Thickness of lines.
+            font_scale (float): Font scales of texts.
             font_size (int): Font size of texts.
             win_name (str): The window name.
             wait_time (float): Value of waitKey param.
@@ -346,6 +348,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             bbox_color=bbox_color,
             text_color=text_color,
             thickness=thickness,
+            font_scale=font_scale,
             font_size=font_size,
             win_name=win_name,
             show=show,

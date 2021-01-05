@@ -1,10 +1,18 @@
 import os.path as osp
+import warnings
 
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
+
+
+def color_val_matplotlib(color):
+    """Convert opencv color value to matplotlib (BGR->RGB->Norm)"""
+    color = mmcv.color_val(color)
+    color = [color / 255 for color in color[::-1]]
+    return tuple(color)
 
 
 def imshow_det_bboxes(img,
@@ -15,6 +23,7 @@ def imshow_det_bboxes(img,
                       bbox_color='green',
                       text_color='green',
                       thickness=2,
+                      font_scale=0.5,
                       font_size=10,
                       win_name='',
                       show=True,
@@ -32,6 +41,7 @@ def imshow_det_bboxes(img,
         bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
         text_color (str or tuple or :obj:`Color`): Color of texts.
         thickness (int): Thickness of lines.
+        font_scale (float): Font scales of texts.
         font_size (int): Font size of texts.
         show (bool): Whether to show the image.
         win_name (str): The window name.
@@ -41,6 +51,8 @@ def imshow_det_bboxes(img,
     Returns:
         ndarray: The image with bboxes drawn on it.
     """
+    warnings.warn('"font_scale" will be deprecated in v2.9.0,'
+                  'Please use "font_size"')
     assert bboxes.ndim == 2
     assert labels.ndim == 1
     assert bboxes.shape[0] == labels.shape[0]
@@ -54,11 +66,9 @@ def imshow_det_bboxes(img,
         bboxes = bboxes[inds, :]
         labels = labels[inds]
 
-    bbox_color = mmcv.color_val(bbox_color)
-    text_color = mmcv.color_val(text_color)
+    bbox_color = color_val_matplotlib(bbox_color)
+    text_color = color_val_matplotlib(text_color)
 
-    bbox_color = [color / 255 for color in bbox_color[::-1]]
-    text_color = [color / 255 for color in text_color[::-1]]
     img = mmcv.bgr2rgb(img)
     img = np.ascontiguousarray(img)
 
