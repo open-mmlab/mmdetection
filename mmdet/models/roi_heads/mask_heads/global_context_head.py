@@ -8,13 +8,22 @@ from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
 
 @HEADS.register_module()
 class GlobalContextHead(nn.Module):
-    """Global context head used in SCNet.
+    """Global context head used in SCNet https://arxiv.org/abs/2012.10150.
 
-    https://arxiv.org/abs/2012.10150
+    Args:
+        num_convs (int, optional): number of convolutional layer in GlbCtxHead.
+            Default: 4.
+        in_channels (int, optional): number of input channels. Default: 256.
+        conv_out_channels (int, optional): number of output channels before
+            classification layer. Default: 256.
+        loss_weight (float, optional): global context loss weight. Default: 1.
+        conv_cfg (dict, optional): config to init conv layer. Default: None.
+        norm_cfg (dict, optional): config to init norm layer. Default: None.
+        conv_to_res (bool, optional): if True, 2 convs will be grouped into
+            1 `SimplifiedBasicBlock` using a skip connection. Default: False.
     """
 
     def __init__(self,
-                 num_ins,
                  num_convs=4,
                  in_channels=256,
                  conv_out_channels=256,
@@ -24,7 +33,6 @@ class GlobalContextHead(nn.Module):
                  norm_cfg=None,
                  conv_to_res=False):
         super(GlobalContextHead, self).__init__()
-        self.num_ins = num_ins
         self.num_convs = num_convs
         self.in_channels = in_channels
         self.conv_out_channels = conv_out_channels

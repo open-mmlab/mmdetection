@@ -7,9 +7,15 @@ from mmdet.models.builder import HEADS
 
 @HEADS.register_module()
 class FeatureRelayHead(nn.Module):
-    """Feature Relay Head used in SCNet.
+    """Feature Relay Head used in SCNet https://arxiv.org/abs/2012.10150.
 
-    https://arxiv.org/abs/2012.10150
+    Args:
+        in_channels (int, optional): number of input channels. Default: 256.
+        conv_out_channels (int, optional): number of output channels before
+            classification layer. Default: 256.
+        roi_feat_size (int, optional): roi feat size at box head. Default: 7.
+        scale_factor (int, optional): scale factor to match roi feat size
+            at mask head. Default: 2.
     """
 
     def __init__(self,

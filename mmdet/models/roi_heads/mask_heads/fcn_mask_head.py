@@ -9,7 +9,6 @@ from torch.nn.modules.utils import _pair
 
 from mmdet.core import mask_target
 from mmdet.models.builder import HEADS, build_loss
-from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
 
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
@@ -31,7 +30,6 @@ class FCNMaskHead(nn.Module):
                  upsample_cfg=dict(type='deconv', scale_factor=2),
                  conv_cfg=None,
                  norm_cfg=None,
-                 conv_to_res=False,
                  loss_mask=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(FCNMaskHead, self).__init__()
@@ -55,34 +53,22 @@ class FCNMaskHead(nn.Module):
         self.class_agnostic = class_agnostic
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.conv_to_res = conv_to_res
         self.fp16_enabled = False
         self.loss_mask = build_loss(loss_mask)
 
-        if conv_to_res:
-            assert conv_kernel_size == 3
-            self.num_res_blocks = num_convs // 2
-            self.convs = ResLayer(
-                SimplifiedBasicBlock,
-                in_channels,
-                self.conv_out_channels,
-                self.num_res_blocks,
-                conv_cfg=conv_cfg,
-                norm_cfg=norm_cfg)
-        else:
-            self.convs = nn.ModuleList()
-            for i in range(self.num_convs):
-                in_channels = (
-                    self.in_channels if i == 0 else self.conv_out_channels)
-                padding = (self.conv_kernel_size - 1) // 2
-                self.convs.append(
-                    ConvModule(
-                        in_channels,
-                        self.conv_out_channels,
-                        self.conv_kernel_size,
-                        padding=padding,
-                        conv_cfg=conv_cfg,
-                        norm_cfg=norm_cfg))
+        self.convs = nn.ModuleList()
+        for i in range(self.num_convs):
+            in_channels = (
+                self.in_channels if i == 0 else self.conv_out_channels)
+            padding = (self.conv_kernel_size - 1) // 2
+            self.convs.append(
+                ConvModule(
+                    in_channels,
+                    self.conv_out_channels,
+                    self.conv_kernel_size,
+                    padding=padding,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg))
         upsample_in_channels = (
             self.conv_out_channels if self.num_convs > 0 else in_channels)
         upsample_cfg_ = self.upsample_cfg.copy()

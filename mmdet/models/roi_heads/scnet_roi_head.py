@@ -8,9 +8,15 @@ from .cascade_roi_head import CascadeRoIHead
 
 @HEADS.register_module()
 class SCNetRoIHead(CascadeRoIHead):
-    """RoIHead for SCNet.
+    """RoIHead for SCNet https://arxiv.org/abs/2012.10150.
 
-    https://arxiv.org/abs/2012.10150
+    Args:
+        num_stages (int): number of cascade stages.
+        stage_loss_weights (list): loss weight of cascade stages.
+        semantic_roi_extractor (dict): config to init semantic roi extractor.
+        semantic_head (dict): config to init semantic head.
+        feat_relay_head (dict): config to init feature_relay_head.
+        glbctx_head (dict): config to init global context head.
     """
 
     def __init__(self,
@@ -67,19 +73,14 @@ class SCNetRoIHead(CascadeRoIHead):
     @property
     def with_semantic(self):
         """bool: whether the head has semantic head"""
-        if hasattr(self, 'semantic_head') and self.semantic_head is not None:
-            return True
-        else:
-            return False
+        return hasattr(self,
+                       'semantic_head') and self.semantic_head is not None
 
     @property
     def with_feat_relay(self):
         """bool: whether the head has feature relay head"""
-        if (hasattr(self, 'feat_relay_head')
-                and self.feat_relay_head is not None):
-            return True
-        else:
-            return False
+        return (hasattr(self, 'feat_relay_head')
+                and self.feat_relay_head is not None)
 
     @property
     def with_glbctx(self):
@@ -130,7 +131,7 @@ class SCNetRoIHead(CascadeRoIHead):
         if self.with_glbctx and glbctx_feat is not None:
             bbox_feats = self._fuse_glbctx(bbox_feats, glbctx_feat, rois)
         cls_score, bbox_pred, relayed_feat = bbox_head(
-            bbox_feats, return_feat=True)
+            bbox_feats, return_shared_feat=True)
 
         bbox_results = dict(
             cls_score=cls_score,
@@ -412,7 +413,7 @@ class SCNetRoIHead(CascadeRoIHead):
 
         if self.with_mask:
             if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
-                mask_classes = self.mask_head[-1].num_classes
+                mask_classes = self.mask_head.num_classes
                 det_segm_results = [[[] for _ in range(mask_classes)]
                                     for _ in range(num_imgs)]
             else:

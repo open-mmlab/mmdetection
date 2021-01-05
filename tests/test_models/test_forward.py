@@ -202,7 +202,7 @@ def test_two_stage_forward(cfg_file):
         input_shape, num_items=[10], with_semantic=with_semantic)
     imgs = mm_inputs.pop('imgs')
     img_metas = mm_inputs.pop('img_metas')
-    losses = detector.forward(imgs, img_metas, **mm_inputs)
+    losses = detector.forward(imgs, img_metas, return_loss=True, **mm_inputs)
     assert isinstance(losses, dict)
     loss, _ = detector._parse_losses(losses)
     loss.requires_grad_(True)

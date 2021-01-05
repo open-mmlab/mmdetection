@@ -132,8 +132,8 @@ class ConvFCBBoxHead(BBoxHead):
                     nn.init.xavier_uniform_(m.weight)
                     nn.init.constant_(m.bias, 0)
 
-    def forward(self, x, return_feat=False):
-        # shared part
+    def _forward_shared(self, x):
+        """Forward function for shared part."""
         if self.num_shared_convs > 0:
             for conv in self.shared_convs:
                 x = conv(x)
@@ -147,10 +147,10 @@ class ConvFCBBoxHead(BBoxHead):
             for fc in self.shared_fcs:
                 x = self.relu(fc(x))
 
-        if return_feat:
-            feature = x
+        return x
 
-        # separate branches
+    def _forward_cls_reg(self, x):
+        """Forward function for classification and regression parts."""
         x_cls = x
         x_reg = x
 
@@ -174,10 +174,17 @@ class ConvFCBBoxHead(BBoxHead):
 
         cls_score = self.fc_cls(x_cls) if self.with_cls else None
         bbox_pred = self.fc_reg(x_reg) if self.with_reg else None
-        if return_feat:
-            return cls_score, bbox_pred, feature
-        else:
-            return cls_score, bbox_pred
+
+        return cls_score, bbox_pred
+
+    def forward(self, x, return_shared_feat=False):
+        x_shared = self._forward_shared(x)
+        out = self._forward_cls_reg(x_shared)
+
+        if return_shared_feat:
+            out += (x_shared, )
+
+        return out
 
 
 @HEADS.register_module()
