@@ -56,14 +56,15 @@ class EmbeddingRPNHead(nn.Module):
 
         Returns:
             Tuple(Tensor):
-                - proposals (Tensor): Decoded proposal bboxes, \
-                    has shape (batch_size, num_proposals, 4)
-                - init_proposal_features (Tensor): Expanded proposal \
-                    features, has shape \
-                    (batch_size, num_proposals, proposal_feature_channel)
-                - imgs_whwh (Tensor): Tensor with shape \
-                    (batch_size, 4), the dimension means \
-                    [img_width, img_height, img_width, img_height]
+
+                - proposals (Tensor): Decoded proposal bboxes,
+                  has shape (batch_size, num_proposals, 4).
+                - init_proposal_features (Tensor): Expanded proposal
+                  features, has shape
+                  (batch_size, num_proposals, proposal_feature_channel).
+                - imgs_whwh (Tensor): Tensor with shape
+                  (batch_size, 4), the dimension means
+                  [img_width, img_height, img_width, img_height].
         """
         proposals = self.init_proposal_bboxes.weight.clone()
         proposals = bbox_cxcywh_to_xyxy(proposals)
