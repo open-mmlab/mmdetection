@@ -58,7 +58,10 @@ def multiclass_nms(multi_bboxes,
         if torch.onnx.is_in_onnx_export():
             raise RuntimeError('[ONNX Error] Can not record NMS '
                                'as it has not been executed this time')
-        return bboxes, labels
+        if return_inds:
+            return bboxes, labels, inds
+        else:
+            return bboxes, labels
 
     # TODO: add size check before feed into batched_nms
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)

@@ -54,7 +54,7 @@ If you are facing issue when installing markdown lint, you may install ruby for 
 # install rvm
 curl -L https://get.rvm.io | bash -s -- --autolibs=read-fail
 # set up environment
-echo 'source $HOME/.bash_profile' >> ~/.bashrc
+# Note that you might need to edit ~/.bashrc, ~/.bash_profile, and ~/.profile
 source ~/.profile
 rvm autolibs disable
 # install ruby
