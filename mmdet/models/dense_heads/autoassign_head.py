@@ -73,7 +73,8 @@ class CenterPrior(nn.Module):
         num_gts = len(labels)
         num_points = sum([len(item) for item in anchor_points_list])
         if num_gts == 0:
-            return gt_bboxes.new_zeros(num_points, num_gts)
+            return gt_bboxes.new_zeros(num_points,
+                                       num_gts), inside_gt_bbox_mask
         center_prior_list = []
         for slvl_points, stride in zip(anchor_points_list, self.stride):
             single_level_points = slvl_points[:, None, :].expand(
