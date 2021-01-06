@@ -9,6 +9,7 @@ from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import get_classes
+from mmdet.datasets import replace_ImageToTensor
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
 
@@ -104,9 +105,13 @@ def inference_detector(model, img):
         # add information into dict
         data = dict(img_info=dict(filename=img), img_prefix=None)
     # build the data pipeline
+    cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     test_pipeline = Compose(cfg.data.test.pipeline)
     data = test_pipeline(data)
     data = collate([data], samples_per_gpu=1)
+    # just get the actual data from DataContainer
+    data['img_metas'] = data['img_metas'][0].data
+    data['img'] = data['img'][0].data
     if next(model.parameters()).is_cuda:
         # scatter to specified GPU
         data = scatter(data, [device])[0]
@@ -115,8 +120,6 @@ def inference_detector(model, img):
             assert not isinstance(
                 m, RoIPool
             ), 'CPU inference with RoIPool is not supported currently.'
-        # just get the actual data from DataContainer
-        data['img_metas'] = data['img_metas'][0].data
 
     # forward the model
     with torch.no_grad():
