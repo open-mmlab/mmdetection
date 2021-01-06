@@ -42,7 +42,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.7.0 was released in 30/11/2020.
+v2.8.0 was released in 04/01/2021.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -107,6 +107,7 @@ Supported methods:
 - [x] [CentripetalNet](configs/centripetalnet/README.md)
 - [x] [VFNet](configs/vfnet/README.md)
 - [x] [DETR](configs/detr/README.md)
+- [x] [CascadeRPN](configs/cascade_rpn/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
