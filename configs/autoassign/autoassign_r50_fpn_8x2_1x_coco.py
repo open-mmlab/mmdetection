@@ -22,8 +22,7 @@ model = dict(
         add_extra_convs=True,
         extra_convs_on_inputs=True,
         num_outs=5,
-        relu_before_extra_convs=True,
-    ),
+        relu_before_extra_convs=True),
     bbox_head=dict(
         type='AutoAssignHead',
         norm_on_bbox=True,
@@ -32,8 +31,7 @@ model = dict(
         stacked_convs=4,
         feat_channels=256,
         strides=[8, 16, 32, 64, 128],
-        loss_bbox=dict(type='GIoULoss', loss_weight=1.0),
-    ))
+        loss_bbox=dict(type='GIoULoss', loss_weight=5.0)))
 train_cfg = None
 test_cfg = dict(
     nms_pre=1000,
@@ -51,7 +49,7 @@ train_pipeline = [
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -65,7 +63,7 @@ test_pipeline = [
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
+            dict(type='Collect', keys=['img'])
         ])
 ]
 data = dict(

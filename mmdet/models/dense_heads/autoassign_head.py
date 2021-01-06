@@ -198,13 +198,11 @@ class AutoAssignHead(FCOSHead):
         Returns:
             tuple[Tensor]:
 
-                - pos_loss (Tensor): The positive loss of all points \
-                    in the gt_bboxes.
+                - pos_loss (Tensor): The positive loss of all points
+                  in the gt_bboxes.
         """
 
-        # 5 is a hyper-parameter to balance between classification
-        # and localization.
-        p_loc = torch.exp(-5 * reg_loss)
+        p_loc = torch.exp(-reg_loss)
         p_cls = (cls_score * objectness)[:, gt_labels]
         p_pos = p_cls * p_loc
 
@@ -241,13 +239,13 @@ class AutoAssignHead(FCOSHead):
         Returns:
             tuple[Tensor]:
 
-                - neg_loss (Tensor): The negative loss of all points \
-                    in the feature map.
+                - neg_loss (Tensor): The negative loss of all points
+                  in the feature map.
         """
         num_gts = len(gt_labels)
         joint_conf = (cls_score * objectness)
         p_neg_weight = torch.ones_like(joint_conf)
-        if num_gts:
+        if num_gts > 0:
             temp_weight = (1 / (1 - ious))
             iou_function_min = temp_weight.min(0)[0][None, :]
             iou_function_max = temp_weight.max(0)[0][None, :]
@@ -400,14 +398,14 @@ class AutoAssignHead(FCOSHead):
         Returns:
             tuple(list[Tensor]):
 
-                - inside_gt_bbox_mask_list (list[Tensor]): Each \
-                    Tensor is with bool type and shape of \
-                    (num_points, num_gt), each value \
-                    is used to mark whether this point falls \
-                    within a certain gt.
-                - concat_lvl_bbox_targets (list[Tensor]): BBox \
-                    targets of each level. Each tensor has shape \
-                    (num_points, num_gt, 4)
+                - inside_gt_bbox_mask_list (list[Tensor]): Each
+                  Tensor is with bool type and shape of
+                  (num_points, num_gt), each value
+                  is used to mark whether this point falls
+                  within a certain gt.
+                - concat_lvl_bbox_targets (list[Tensor]): BBox
+                  targets of each level. Each tensor has shape
+                  (num_points, num_gt, 4).
         """
 
         num_levels = len(points)
@@ -446,11 +444,11 @@ class AutoAssignHead(FCOSHead):
         Returns:
             tuple[Tensor]: Containing the following Tensors:
 
-                - inside_gt_bbox_mask (Tensor): Bool tensor with shape \
-                    (num_points, num_gt), each value is used to mark \
-                    whether this point falls within a certain gt.
-                - bbox_targets (Tensor): BBox targets of each points with \
-                    each gt_bboxes, has shape (num_points, num_gt, 4).
+                - inside_gt_bbox_mask (Tensor): Bool tensor with shape
+                  (num_points, num_gt), each value is used to mark
+                  whether this point falls within a certain gt.
+                - bbox_targets (Tensor): BBox targets of each points with
+                  each gt_bboxes, has shape (num_points, num_gt, 4).
         """
         num_points = points.size(0)
         num_gts = gt_bboxes.size(0)
