@@ -4,6 +4,7 @@ import os.path as osp
 import re
 
 url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/master/'
+titles_to_be_excluded = ['Albu Example', 'Mixed Precision Training']
 
 files = sorted(glob.glob('../configs/*/README.md'))
 
@@ -19,11 +20,16 @@ for f in files:
 
     title = content.split('\n')[0].replace('# ', '')
 
-    titles.append(title)
+    if title in titles_to_be_excluded:
+        continue
 
     ckpts = set(x.lower().strip()
                 for x in re.findall(r'\[model\]\((https?.*)\)', content))
 
+    if len(ckpts) == 0:
+        continue
+
+    titles.append(title)
     num_ckpts += len(ckpts)
 
     statsmsg = f"""
