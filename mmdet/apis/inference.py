@@ -164,7 +164,7 @@ def show_result_pyplot(model,
                        fig_size=(15, 10),
                        title='result',
                        block=True,
-                       wait_time=1):
+                       wait_time=0):
     """Visualize the detection results on the image.
 
     Args:
@@ -177,12 +177,12 @@ def show_result_pyplot(model,
         title (str): Title of the pyplot figure.
         block (bool): Whether to block GUI. Default: True
         wait_time (float): Value of waitKey param.
-                Default: 1.
+                Default: 0.
     """
+    warnings.warn('"block" will be deprecated in v2.9.0,'
+                  'Please use "wait_time"')
     if hasattr(model, 'module'):
         model = model.module
-    if block:
-        wait_time = 0
     model.show_result(
         img,
         result,
