@@ -165,7 +165,7 @@ class FocalLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
         if self.use_sigmoid:
-            if torch.cuda.is_available():
+            if torch.cuda.is_available() and pred.is_cuda:
                 calculate_loss_func = sigmoid_focal_loss
             else:
                 calculate_loss_func = py_sigmoid_focal_loss

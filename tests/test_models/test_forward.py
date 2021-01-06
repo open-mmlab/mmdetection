@@ -60,13 +60,13 @@ def test_sparse_rcnn_forward():
     img_metas = mm_inputs.pop('img_metas')
 
     # Test forward train with non-empty truth batch
-    detector = detector.cuda()
-    imgs = imgs.cuda()
+    detector = detector
+    imgs = imgs
     detector.train()
     gt_bboxes = mm_inputs['gt_bboxes']
-    gt_bboxes = [item.cuda() for item in gt_bboxes]
+    gt_bboxes = [item for item in gt_bboxes]
     gt_labels = mm_inputs['gt_labels']
-    gt_labels = [item.cuda() for item in gt_labels]
+    gt_labels = [item for item in gt_labels]
     losses = detector.forward(
         imgs,
         img_metas,
@@ -80,12 +80,12 @@ def test_sparse_rcnn_forward():
     # Test forward train with an empty truth batch
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
     imgs = mm_inputs.pop('imgs')
-    imgs = imgs.cuda()
+    imgs = imgs
     img_metas = mm_inputs.pop('img_metas')
     gt_bboxes = mm_inputs['gt_bboxes']
-    gt_bboxes = [item.cuda() for item in gt_bboxes]
+    gt_bboxes = [item for item in gt_bboxes]
     gt_labels = mm_inputs['gt_labels']
-    gt_labels = [item.cuda() for item in gt_labels]
+    gt_labels = [item for item in gt_labels]
     losses = detector.forward(
         imgs,
         img_metas,
