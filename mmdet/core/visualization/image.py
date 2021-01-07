@@ -122,7 +122,9 @@ def imshow_det_bboxes(img,
             bbox_int[1],
             f'{label_text}',
             color=text_color,
-            fontsize=font_size)
+            fontsize=font_size,
+            verticalalignment='top',
+            horizontalalignment='left')
         if segms is not None:
             color_mask = mask_colors[labels[i]]
             mask = segms[i].astype(bool)
