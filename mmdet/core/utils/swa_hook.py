@@ -3,7 +3,8 @@ import os.path as osp
 from mmcv.runner import HOOKS, Hook
 from mmcv.runner.checkpoint import save_checkpoint
 from torch.optim.swa_utils import AveragedModel
-from mmdet.core import EvalHook, DistEvalHook
+
+from mmdet.core import DistEvalHook, EvalHook
 
 
 @HOOKS.register_module()

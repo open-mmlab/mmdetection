@@ -4,7 +4,6 @@
 
 [Stochastic Weights Averaging](https://arxiv.org/abs/1803.05407) (SWA) can help improve generalization of deep networks and is found also very effective in object detection. Through extensive experiments, we discover a good policy of applying it to object detection, which can consistently achieve ~1.0 AP improvement over various object detectors on the COCO benchmark.  The recipe is surprisingly simple: **training your detector for an extra 12 epochs using cyclical learning rates and then averaging these 12 checkpoints as your final detection model**, which does not incur any inference cost and is really worth trying. The full report is available at: [https://arxiv.org/abs/2012.12645](https://arxiv.org/abs/2012.12645).
 
-
 ## Citing SWA Object Detection
 
 ```latex
