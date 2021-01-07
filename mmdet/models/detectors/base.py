@@ -273,6 +273,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     score_thr=0.3,
                     bbox_color=(72, 101, 241),
                     text_color=(72, 101, 241),
+                    mask_color=None,
                     thickness=1,
                     font_scale=0.5,
                     font_size=10,
@@ -291,6 +292,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 Default: 0.3.
             bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
             text_color (str or tuple or :obj:`Color`): Color of texts.
+            mask_color (None or str or tuple or :obj:`Color`): Color of masks.
+                   Default: None
             thickness (int): Thickness of lines.
             font_scale (float): Font scales of texts.
             font_size (int): Font size of texts.
@@ -321,22 +324,13 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         ]
         labels = np.concatenate(labels)
         # draw segmentation masks
+        segms = None
         if segm_result is not None and len(labels) > 0:  # non empty
             segms = mmcv.concat_list(segm_result)
-            inds = np.where(bboxes[:, -1] > score_thr)[0]
-            np.random.seed(42)
-            color_masks = [
-                np.random.randint(0, 256, (1, 3), dtype=np.uint8)
-                for _ in range(max(labels) + 1)
-            ]
-            for i in inds:
-                i = int(i)
-                color_mask = color_masks[labels[i]]
-                sg = segms[i]
-                if isinstance(sg, torch.Tensor):
-                    sg = sg.detach().cpu().numpy()
-                mask = sg.astype(bool)
-                img[mask] = img[mask] * 0.5 + color_mask * 0.5
+            if isinstance(segms[0], torch.Tensor):
+                segms = torch.stack(segms, dim=0).detach().cpu().numpy()
+            else:
+                segms = np.stack(segms, axis=0)
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
@@ -345,10 +339,12 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             img,
             bboxes,
             labels,
+            segms,
             class_names=self.CLASSES,
             score_thr=score_thr,
             bbox_color=bbox_color,
             text_color=text_color,
+            mask_color=mask_color,
             thickness=thickness,
             font_scale=font_scale,
             font_size=font_size,

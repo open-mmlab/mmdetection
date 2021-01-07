@@ -18,10 +18,12 @@ def color_val_matplotlib(color):
 def imshow_det_bboxes(img,
                       bboxes,
                       labels,
+                      segms=None,
                       class_names=None,
                       score_thr=0,
                       bbox_color='green',
                       text_color='green',
+                      mask_color='green',
                       thickness=2,
                       font_scale=0.5,
                       font_size=13,
@@ -37,12 +39,15 @@ def imshow_det_bboxes(img,
         bboxes (ndarray): Bounding boxes (with scores), shaped (n, 4) or
             (n, 5).
         labels (ndarray): Labels of bboxes.
+        segms (ndarray or None): Masks, shaped (n,h,w) or None
         class_names (list[str]): Names of each classes.
         score_thr (float): Minimum score of bboxes to be shown.  Default: 0
         bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
            Default: 'green'
         text_color (str or tuple or :obj:`Color`): Color of texts.
            Default: 'green'
+        mask_color (None or str or tuple or :obj:`Color`): Color of masks.
+           Default: None
         thickness (int): Thickness of lines. Default: 2
         font_scale (float): Font scales of texts. Default: 0.5
         font_size (int): Font size of texts. Default: 13
@@ -69,6 +74,24 @@ def imshow_det_bboxes(img,
         inds = scores > score_thr
         bboxes = bboxes[inds, :]
         labels = labels[inds]
+        if segms is not None:
+            segms = segms[inds, ...]
+
+    mask_colors = []
+    if labels.shape[0] > 0:
+        if mask_color is None:
+            # random color
+            np.random.seed(42)
+            mask_colors = [
+                np.random.randint(0, 256, (1, 3), dtype=np.uint8)
+                for _ in range(max(labels) + 1)
+            ]
+        else:
+            # specify  color
+            mask_colors = [
+                np.array(mmcv.color_val(mask_color)[::-1], dtype=np.uint8)
+            ] * (
+                max(labels) + 1)
 
     bbox_color = color_val_matplotlib(bbox_color)
     text_color = color_val_matplotlib(text_color)
@@ -78,14 +101,12 @@ def imshow_det_bboxes(img,
 
     plt.figure(figsize=fig_size)
     plt.title(win_name)
-    plt.imshow(img)
     plt.axis('off')
     ax = plt.gca()
-    ax.set_autoscale_on(False)
+
     polygons = []
     color = []
-
-    for bbox, label in zip(bboxes, labels):
+    for i, (bbox, label) in enumerate(zip(bboxes, labels)):
         bbox_int = bbox.astype(np.int32)
         poly = [[bbox_int[0], bbox_int[1]], [bbox_int[0], bbox_int[3]],
                 [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
@@ -102,6 +123,12 @@ def imshow_det_bboxes(img,
             f'{label_text}',
             color=text_color,
             fontsize=font_size)
+        if segms is not None:
+            color_mask = mask_colors[labels[i]]
+            mask = segms[i].astype(bool)
+            img[mask] = img[mask] * 0.5 + color_mask * 0.5
+
+    plt.imshow(img)
 
     p = PatchCollection(
         polygons, facecolor='none', edgecolors=color, linewidths=thickness)

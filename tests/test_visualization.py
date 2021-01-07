@@ -5,6 +5,7 @@ import tempfile
 import mmcv
 import numpy as np
 import pytest
+import torch
 
 from mmdet.core import visualization as vis
 
@@ -32,3 +33,26 @@ def test_imshow_det_bboxes():
     vis.imshow_det_bboxes(
         image, bbox, label, out_file=tmp_filename, show=False)
     assert osp.isfile(tmp_filename)
+
+    # test shaped (0,)
+    image = np.ones((10, 10, 3), np.uint8)
+    bbox = np.ones((0, 4))
+    label = np.ones((0, ))
+    vis.imshow_det_bboxes(
+        image, bbox, label, out_file=tmp_filename, show=False)
+
+    # test mask
+    image = np.ones((10, 10, 3), np.uint8)
+    bbox = np.array([[2, 1, 3, 3], [3, 4, 6, 6]])
+    label = np.array([0, 1])
+    segms = np.random.random((2, 10, 10)) > 0.5
+    segms = np.array(segms, np.int32)
+    vis.imshow_det_bboxes(
+        image, bbox, label, segms, out_file=tmp_filename, show=False)
+    assert osp.isfile(tmp_filename)
+
+    # test tensor mask type error
+    with pytest.raises(AttributeError):
+        segms = torch.tensor(segms)
+        vis.imshow_det_bboxes(
+            image, bbox, label, segms, out_file=tmp_filename, show=False)
