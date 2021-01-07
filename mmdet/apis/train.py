@@ -1,3 +1,4 @@
+import os
 import random
 
 import numpy as np
@@ -82,33 +83,113 @@ def train_detector(model,
         model = MMDataParallel(
             model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
 
-    # build runner
-    optimizer = build_optimizer(model, cfg.optimizer)
-    runner = EpochBasedRunner(
+    # if just swa training is performed,
+    # skip building the runner for the traditional training
+    if not cfg.get('only_swa_training', False):
+        # build runner
+        optimizer = build_optimizer(model, cfg.optimizer)
+        runner = EpochBasedRunner(
+            model,
+            optimizer=optimizer,
+            work_dir=cfg.work_dir,
+            logger=logger,
+            meta=meta)
+        # an ugly workaround to make .log and .log.json filenames the same
+        runner.timestamp = timestamp
+
+        # fp16 setting
+        fp16_cfg = cfg.get('fp16', None)
+        if fp16_cfg is not None:
+            optimizer_config = Fp16OptimizerHook(
+                **cfg.optimizer_config, **fp16_cfg, distributed=distributed)
+        elif distributed and 'type' not in cfg.optimizer_config:
+            optimizer_config = OptimizerHook(**cfg.optimizer_config)
+        else:
+            optimizer_config = cfg.optimizer_config
+
+        # register hooks
+        runner.register_training_hooks(cfg.lr_config, optimizer_config,
+                                       cfg.checkpoint_config, cfg.log_config,
+                                       cfg.get('momentum_config', None))
+        if distributed:
+            runner.register_hook(DistSamplerSeedHook())
+
+        # register eval hooks
+        if validate:
+            # Support batch_size > 1 in validation
+            val_samples_per_gpu = cfg.data.val.pop('samples_per_gpu', 1)
+            if val_samples_per_gpu > 1:
+                # Replace 'ImageToTensor' to 'DefaultFormatBundle'
+                cfg.data.val.pipeline = replace_ImageToTensor(
+                    cfg.data.val.pipeline)
+            val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
+            val_dataloader = build_dataloader(
+                val_dataset,
+                samples_per_gpu=val_samples_per_gpu,
+                workers_per_gpu=cfg.data.workers_per_gpu,
+                dist=distributed,
+                shuffle=False)
+            eval_cfg = cfg.get('evaluation', {})
+            eval_hook = DistEvalHook if distributed else EvalHook
+            runner.register_hook(
+                eval_hook(val_dataloader, save_best='bbox_mAP', **eval_cfg))
+
+        # user-defined hooks
+        if cfg.get('custom_hooks', None):
+            custom_hooks = cfg.custom_hooks
+            assert isinstance(custom_hooks, list), \
+                f'custom_hooks expect list type, but got {type(custom_hooks)}'
+            for hook_cfg in cfg.custom_hooks:
+                assert isinstance(hook_cfg, dict), \
+                    'Each item in custom_hooks expects dict type, but got ' \
+                    f'{type(hook_cfg)}'
+                hook_cfg = hook_cfg.copy()
+                priority = hook_cfg.pop('priority', 'NORMAL')
+                hook = build_from_cfg(hook_cfg, HOOKS)
+                runner.register_hook(hook, priority=priority)
+
+        if cfg.resume_from:
+            runner.resume(cfg.resume_from)
+        elif cfg.load_from:
+            runner.load_checkpoint(cfg.load_from)
+        runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+    else:
+        # if just swa training is performed, there should be a starting model
+        assert cfg.swa_resume_from is not None or cfg.swa_load_from is not None
+
+    # perform swa training
+    # build swa training runner
+    if not cfg.get('swa_training', False):
+        return
+    from mmdet.core import SWAHook
+    logger.info('Start SWA training')
+    swa_optimizer = build_optimizer(model, cfg.swa_optimizer)
+    swa_runner = EpochBasedRunner(
         model,
-        optimizer=optimizer,
+        optimizer=swa_optimizer,
         work_dir=cfg.work_dir,
         logger=logger,
         meta=meta)
     # an ugly workaround to make .log and .log.json filenames the same
-    runner.timestamp = timestamp
+    swa_runner.timestamp = timestamp
 
     # fp16 setting
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
-        optimizer_config = Fp16OptimizerHook(
-            **cfg.optimizer_config, **fp16_cfg, distributed=distributed)
-    elif distributed and 'type' not in cfg.optimizer_config:
-        optimizer_config = OptimizerHook(**cfg.optimizer_config)
+        swa_optimizer_config = Fp16OptimizerHook(
+            **cfg.swa_optimizer_config, **fp16_cfg, distributed=distributed)
+    elif distributed and 'type' not in cfg.swa_optimizer_config:
+        swa_optimizer_config = OptimizerHook(**cfg.swa_optimizer_config)
     else:
-        optimizer_config = cfg.optimizer_config
+        swa_optimizer_config = cfg.swa_optimizer_config
 
     # register hooks
-    runner.register_training_hooks(cfg.lr_config, optimizer_config,
-                                   cfg.checkpoint_config, cfg.log_config,
-                                   cfg.get('momentum_config', None))
+    swa_runner.register_training_hooks(cfg.swa_lr_config, swa_optimizer_config,
+                                       cfg.swa_checkpoint_config,
+                                       cfg.log_config,
+                                       cfg.get('momentum_config', None))
     if distributed:
-        runner.register_hook(DistSamplerSeedHook())
+        swa_runner.register_hook(DistSamplerSeedHook())
 
     # register eval hooks
     if validate:
@@ -127,9 +208,19 @@ def train_detector(model,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
         eval_hook = DistEvalHook if distributed else EvalHook
-        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+        swa_runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+        swa_eval = True
+        swa_eval_hook = eval_hook(
+            val_dataloader, save_best='bbox_mAP', **eval_cfg)
+    else:
+        swa_eval = False
+        swa_eval_hook = None
 
-    # user-defined hooks
+    # register swa hook
+    swa_hook = SWAHook(swa_eval=swa_eval, eval_hook=swa_eval_hook)
+    swa_runner.register_hook(swa_hook, priority='LOW')
+
+    # register user-defined hooks
     if cfg.get('custom_hooks', None):
         custom_hooks = cfg.custom_hooks
         assert isinstance(custom_hooks, list), \
@@ -141,10 +232,20 @@ def train_detector(model,
             hook_cfg = hook_cfg.copy()
             priority = hook_cfg.pop('priority', 'NORMAL')
             hook = build_from_cfg(hook_cfg, HOOKS)
-            runner.register_hook(hook, priority=priority)
+            swa_runner.register_hook(hook, priority=priority)
 
-    if cfg.resume_from:
-        runner.resume(cfg.resume_from)
-    elif cfg.load_from:
-        runner.load_checkpoint(cfg.load_from)
-    runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+    if cfg.swa_resume_from:
+        swa_runner.resume(cfg.swa_resume_from)
+    elif cfg.swa_load_from:
+        # use the best pretrained model as the starting model for swa training
+        if cfg.swa_load_from == 'best_bbox_mAP.pth':
+            best_model_path = os.path.join(cfg.work_dir, cfg.swa_load_from)
+            assert os.path.exists(best_model_path)
+            # avoid the best pretrained model being overwritten
+            new_best_model_path = os.path.join(cfg.work_dir,
+                                               'best_bbox_mAP_pretrained.pth')
+            os.rename(best_model_path, new_best_model_path)
+            cfg.swa_load_from = new_best_model_path
+        swa_runner.load_checkpoint(cfg.swa_load_from)
+
+    swa_runner.run(data_loaders, cfg.workflow, cfg.swa_total_epochs)
