@@ -237,15 +237,21 @@ def train_detector(model,
     if cfg.swa_resume_from:
         swa_runner.resume(cfg.swa_resume_from)
     elif cfg.swa_load_from:
-        # use the best pretrained model as the starting model for swa training
+        # use the best pretrained model as the starting model
+        # for swa training
         if cfg.swa_load_from == 'best_bbox_mAP.pth':
             best_model_path = os.path.join(cfg.work_dir, cfg.swa_load_from)
-            assert os.path.exists(best_model_path)
             # avoid the best pretrained model being overwritten
             new_best_model_path = os.path.join(cfg.work_dir,
                                                'best_bbox_mAP_pretrained.pth')
-            os.rename(best_model_path, new_best_model_path)
-            cfg.swa_load_from = new_best_model_path
+            if swa_runner.rank == 0:
+                import shutil
+                assert os.path.exists(best_model_path)
+                shutil.copy(
+                    best_model_path,
+                    new_best_model_path,
+                    follow_symlinks=False)
+            cfg.swa_load_from = best_model_path
         swa_runner.load_checkpoint(cfg.swa_load_from)
 
     swa_runner.run(data_loaders, cfg.workflow, cfg.swa_total_epochs)
