@@ -130,7 +130,7 @@ However some functionality is gone in this mode:
 - sigmoid_focal_loss_cuda
 - bbox_overlaps
 
-So if you try to run inference with a model containing above ops you will get an error. The following table shows the details about not support CPU only inference model
+So if you try to run inference with a model containing above ops you will get an error. The following table lists the related methods that cannot inference on CPU due to dependency on these operators
 
 |                        Operator                         |                            Model                             |
 | :-----------------------------------------------------: | :----------------------------------------------------------: |
@@ -139,7 +139,7 @@ So if you try to run inference with a model containing above ops you will get an
 |                         CARAFE                          |                            CARAFE                            |
 |                      SyncBatchNorm                      |                           ResNeSt                            |
 
-notice： The training mode does not support CPU only now
+**Notice**: MMDetection does not support training with CPU for now.
 
 ### Another option: Docker Image
 
