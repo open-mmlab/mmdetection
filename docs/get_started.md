@@ -130,7 +130,16 @@ However some functionality is gone in this mode:
 - sigmoid_focal_loss_cuda
 - bbox_overlaps
 
-So if you try to run inference with a model containing above ops you will get an error.
+So if you try to run inference with a model containing above ops you will get an error. The following table shows the details about not support CPU only inference model
+
+|                        Operator                         |                            Model                             |
+| :-----------------------------------------------------: | :----------------------------------------------------------: |
+| Deformable Convolution/Modulated Deformable Convolution | DCN、Guided Anchoring、RepPoints、CentripetalNet、VFNet、CascadeRPN、NAS-FCOS、DetectoRS |
+|                      MaskedConv2d                       |                       Guided Anchoring                       |
+|                         CARAFE                          |                            CARAFE                            |
+|                      SyncBatchNorm                      |                           ResNeSt                            |
+
+notice： The training mode does not support CPU only now
 
 ### Another option: Docker Image
 
