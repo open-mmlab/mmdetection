@@ -1,6 +1,6 @@
 # 3: Train with customized models and standard datasets
 
-In this note, you will know how to inference, test, and train your own customized models under standard datasets. We use the cityscapes dataset to train a customized Cascade Mask R-CNN R50 model as an example to describe the whole process, which use [`AugFPN`](https://github.com/Gus-Guo/AugFPN) to replace defalut `FPN` as neck, and add `Rotate` or `Translate` as training-time auto augmentation.
+In this note, you will know how to train, test and inference your own customized models under standard datasets. We use the cityscapes dataset to train a customized Cascade Mask R-CNN R50 model as an example to demonstrate the whole process, which use [`AugFPN`](https://github.com/Gus-Guo/AugFPN) to replace defalut `FPN` as neck, and add `Rotate` or `Translate` as training-time auto augmentation.
 
 The basic steps are as below:
 
@@ -52,10 +52,10 @@ Currently the config files in `cityscapes` use COCO pre-trained weights to initi
 You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
 
 ## Prepare your own customized model
-The second step is to use your own module or training setting. Assume that we want to implement a new neck called `AugFPN` to replace with the default `FPN` under the existing detector Cascade Mask R-CNN R50. The following implements a new neck `AugFPN` under MMDetection.
 
+The second step is to use your own module or training setting. Assume that we want to implement a new neck called `AugFPN` to replace with the default `FPN` under the existing detector Cascade Mask R-CNN R50. The following implements`AugFPN` under MMDetection.
 
-#### 1. Define a new neck (e.g. AugFPN)
+### 1. Define a new neck (e.g. AugFPN)
 
 Create a new file `mmdet/models/necks/augfpn.py`.
 
@@ -79,7 +79,7 @@ class AugFPN(nn.Module):
         pass
 ```
 
-#### 2. Import the module
+### 2. Import the module
 
 You can either add the following line to `mmdet/models/necks/__init__.py`,
 
@@ -97,7 +97,7 @@ custom_imports = dict(
 
 to the config file and avoid modifying the original code.
 
-#### 3. Modify the config file
+### 3. Modify the config file
 
 ```python
 neck=dict(
@@ -273,4 +273,3 @@ python tools/test.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10e
 ```
 
 For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
-
