@@ -74,7 +74,7 @@ class AugFPN(nn.Module):
                 add_extra_convs=False):
         pass
 
-    def forward(self, inputs):  # should return a tuple
+    def forward(self, inputs):
         # implementation is ignored
         pass
 ```
