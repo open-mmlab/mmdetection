@@ -762,6 +762,8 @@ class CornerHead(BaseDenseHead):
         return detections, labels
 
     def _bboxes_nms(self, bboxes, labels, cfg):
+        if labels.numel() == 0:
+            return bboxes, labels
         out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
                                        cfg.nms_cfg)
         out_labels = labels[keep]
