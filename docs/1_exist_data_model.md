@@ -228,15 +228,7 @@ Optional arguments:
 - `--cfg-options`:  if specified, the key-value pair optional cfg will be merged into config file
 - `--eval-options`: if specified, the key-value pair optional eval cfg will be kwargs for dataset.evaluate() function, it's only for evaluation
 
-MMDetection supports inference with a single image or batched images in test mode. By default, we use single-image inference and you can use batch inference by modifying `samples_per_gpu` in the config of test data. You can do that either by modifying the config as below.
-
-```shell
-data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
-```
-
-Or you can set it through `--cfg-options` as `--cfg-options data.test.samples_per_gpu=2`
-
-#### Examples
+### Examples
 
 Assume that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
@@ -322,6 +314,56 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
    ```
 
    The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
+
+### Batch Inference
+
+MMDetection supports inference with a single image or batched images in test mode. By default, we use single-image inference and you can use batch inference by modifying `samples_per_gpu` in the config of test data. You can do that either by modifying the config as below.
+
+```shell
+data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
+```
+
+Or you can set it through `--cfg-options` as `--cfg-options data.test.samples_per_gpu=2`
+
+### Deprecated ImageToTensor
+
+In test mode,  `ImageToTensor`  pipeline is deprecated, it's replaced by `DefaultFormatBundle` that recommended to manually replace it in the test data pipeline in your config file.  examples:
+
+```python
+# use ImageToTensor (deprecated)
+pipelines = [
+   dict(type='LoadImageFromFile'),
+   dict(
+       type='MultiScaleFlipAug',
+       img_scale=(1333, 800),
+       flip=False,
+       transforms=[
+           dict(type='Resize', keep_ratio=True),
+           dict(type='RandomFlip'),
+           dict(type='Normalize', mean=[0, 0, 0], std=[1, 1, 1]),
+           dict(type='Pad', size_divisor=32),
+           dict(type='ImageToTensor', keys=['img']),
+           dict(type='Collect', keys=['img']),
+       ])
+   ]
+
+# manually replace ImageToTensor to DefaultFormatBundle (recommended)
+pipelines = [
+   dict(type='LoadImageFromFile'),
+   dict(
+       type='MultiScaleFlipAug',
+       img_scale=(1333, 800),
+       flip=False,
+       transforms=[
+           dict(type='Resize', keep_ratio=True),
+           dict(type='RandomFlip'),
+           dict(type='Normalize', mean=[0, 0, 0], std=[1, 1, 1]),
+           dict(type='Pad', size_divisor=32),
+           dict(type='DefaultFormatBundle'),
+           dict(type='Collect', keys=['img']),
+       ])
+   ]
+```
 
 ## Train predefined models on standard datasets
 
