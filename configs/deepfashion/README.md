@@ -1,5 +1,7 @@
 # DeepFashion
 
+[DATASET]
+
 [MMFashion](https://github.com/open-mmlab/mmfashion) develops "fashion parsing and segmentation" module
 based on the dataset
 [DeepFashion-Inshop](https://drive.google.com/drive/folders/0B7EVK8r0v71pVDZFQXRsMDZCX1E?usp=sharing).
