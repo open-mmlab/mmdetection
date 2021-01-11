@@ -1,5 +1,7 @@
 # Probabilistic Anchor Assignment with IoU Prediction for Object Detection
 
+[ALGORITHM]
+
 ## Results and Models
 
 We provide config files to reproduce the object detection results in the

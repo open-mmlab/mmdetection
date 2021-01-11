@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```
 @InProceedings{li2019scale,
   title={Scale-Aware Trident Networks for Object Detection},
