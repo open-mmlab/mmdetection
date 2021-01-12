@@ -163,12 +163,8 @@ class FocalLoss(nn.Module):
                 calculate_loss_func = sigmoid_focal_loss
             else:
                 num_classes = pred.size(1)
-                binary_target = pred.new_zeros(len(target), num_classes + 1)
-                binary_target.scatter_(
-                    dim=1,
-                    index=target[:, None],
-                    src=torch.ones_like(binary_target))
-                target = binary_target[:, :num_classes]
+                target = F.one_hot(target, num_classes=num_classes + 1)
+                target = target[:, :num_classes]
                 calculate_loss_func = py_sigmoid_focal_loss
 
             loss_cls = self.loss_weight * calculate_loss_func(

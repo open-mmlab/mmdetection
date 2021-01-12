@@ -64,6 +64,9 @@ class SparseRoIHead(CascadeRoIHead):
             bbox_head=bbox_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg)
+        for stage in range(num_stages):
+            assert isinstance(self.bbox_sampler[stage], PseudoSampler), \
+                'Sparse R-CNN only support `PseudoSampler`'
 
     def _bbox_forward(self, stage, x, rois, object_feats, img_metas):
         """Box head forward function used in both training and testing. Returns
@@ -191,9 +194,6 @@ class SparseRoIHead(CascadeRoIHead):
                 assign_result = self.bbox_assigner[stage].assign(
                     normolize_bbox_ccwh, cls_pred_list[i], gt_bboxes[i],
                     gt_labels[i], img_metas[i])
-                assert isinstance(self.bbox_sampler[stage], PseudoSampler), \
-                    'The logic of `get_targets` in DIIHead makes' \
-                    'Sparse R-CNN only support `PseudoSampler`'
                 sampling_result = self.bbox_sampler[stage].sample(
                     assign_result, proposal_list[i], gt_bboxes[i])
                 sampling_results.append(sampling_result)
@@ -293,8 +293,7 @@ class SparseRoIHead(CascadeRoIHead):
         return bbox_results
 
     def aug_test(self, features, proposal_list, img_metas, rescale=False):
-        raise NotImplementedError(
-            'We have not implemented `aug_test` for Sparse R-CNN ')
+        raise NotImplementedError('Sparse R-CNN does not support `aug_test`')
 
     def forward_dummy(self, x, proposal_boxes, proposal_features, img_metas):
         """Dummy forward function when do the flops computing."""

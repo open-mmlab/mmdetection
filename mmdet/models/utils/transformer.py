@@ -808,23 +808,27 @@ class DynamicConv(nn.Module):
         Args:
             param_feature (Tensor): The feature can be used
                 to generate the parameter, has shape
-                (1, batch_size, in_channels).
+                (num_proposals, batch_size, in_channels).
             input_feature (Tensor): Feature that
                 interact with parameters, has shape
-                (H*W, batch_size, in_channels).
+                (batch_size*num_proposals, in_channels, H, W).
+
         Returns:
-            Tensor: The output feature has shape \
-                (batch_size, out_channels)
+            Tensor: The output feature has shape
+            (batch_size*num_proposals, out_channels).
         """
-        assert param_feature.shape[0] == 1
-        assert param_feature.shape[-1] == input_feature.shape[-1]
+        num_proposals, N = param_feature.shape[:2]
+        param_feature = param_feature.permute(1, 0, 2).reshape(
+            N * num_proposals, self.in_channels)
+        input_feature = input_feature.view(N * num_proposals, self.in_channels,
+                                           -1).permute(2, 0, 1)
 
         input_feature = input_feature.permute(1, 0, 2)
-        parameters = self.dynamic_layer(param_feature).permute(1, 0, 2)
+        parameters = self.dynamic_layer(param_feature)
 
-        param_in = parameters[:, :, :self.num_params_in].view(
+        param_in = parameters[:, :self.num_params_in].view(
             -1, self.in_channels, self.feat_channels)
-        param_out = parameters[:, :, -self.num_params_out:].view(
+        param_out = parameters[:, -self.num_params_out:].view(
             -1, self.feat_channels, self.out_channels)
 
         # input_feature has shape (batch_size, H*W, in_channels)

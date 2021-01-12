@@ -152,24 +152,25 @@ class DIIHead(BBoxHead):
                       (batch_size, num_proposal, feature_dimensions).
         """
         N, num_proposals = proposal_feat.shape[:2]
+
         # Self attention
         proposal_feat = proposal_feat.permute(1, 0, 2)
         proposal_feat = self.attention_norm(self.attention(proposal_feat))
+
         # instance interactive
-        proposal_feat = proposal_feat.permute(1, 0, 2).reshape(
-            1, N * num_proposals, self.in_channels)
-        roi_feat = roi_feat.view(N * num_proposals, self.in_channels,
-                                 -1).permute(2, 0, 1)
         proposal_feat_iic = self.instance_interactive_conv(
             proposal_feat, roi_feat)
+        proposal_feat = proposal_feat.permute(1, 0,
+                                              2).reshape(-1, self.in_channels)
         proposal_feat = proposal_feat + self.instance_interactive_conv_dropout(
             proposal_feat_iic)
         obj_feat = self.instance_interactive_conv_norm(proposal_feat)
+
         # FFN
         obj_feat = self.ffn_norm(self.ffn(obj_feat))
-        fc_feat = obj_feat.transpose(0, 1).reshape(N * num_proposals, -1)
-        cls_feat = fc_feat.clone()
-        reg_feat = fc_feat.clone()
+
+        cls_feat = obj_feat
+        reg_feat = obj_feat
 
         for cls_layer in self.cls_fcs:
             cls_feat = cls_layer(cls_feat)
