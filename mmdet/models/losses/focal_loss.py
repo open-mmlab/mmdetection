@@ -20,8 +20,7 @@ def py_sigmoid_focal_loss(pred,
     Args:
         pred (torch.Tensor): The prediction with shape (N, C), C is the
             number of classes
-        target (torch.Tensor): The learning label of the prediction,
-            has shape (N,)
+        target (torch.Tensor): The learning label of the prediction.
         weight (torch.Tensor, optional): Sample-wise loss weight.
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 2.0.
@@ -33,17 +32,12 @@ def py_sigmoid_focal_loss(pred,
             the loss. Defaults to None.
     """
     pred_sigmoid = pred.sigmoid()
-    num_classes = pred_sigmoid.size(1)
-    binary_target = pred.new_zeros(target.size(0), num_classes + 1)
-    binary_target.scatter_(
-        dim=1, index=target[:, None], src=torch.ones_like(binary_target))
-    binary_target = binary_target[:, :num_classes]
-    pt = (1 - pred_sigmoid) * binary_target + pred_sigmoid * \
-         (1 - binary_target)
-    focal_weight = (alpha * binary_target + (1 - alpha) *
-                    (1 - binary_target)) * pt.pow(gamma)
+    target = target.type_as(pred)
+    pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
+    focal_weight = (alpha * target + (1 - alpha) *
+                    (1 - target)) * pt.pow(gamma)
     loss = F.binary_cross_entropy_with_logits(
-        pred, binary_target, reduction='none') * focal_weight
+        pred, target, reduction='none') * focal_weight
     if weight is not None:
         if weight.shape != loss.shape:
             if weight.size(0) == loss.size(0):
@@ -168,6 +162,13 @@ class FocalLoss(nn.Module):
             if torch.cuda.is_available() and pred.is_cuda:
                 calculate_loss_func = sigmoid_focal_loss
             else:
+                num_classes = pred.size(1)
+                binary_target = pred.new_zeros(len(target), num_classes + 1)
+                binary_target.scatter_(
+                    dim=1,
+                    index=target[:, None],
+                    src=torch.ones_like(binary_target))
+                target = binary_target[:, :num_classes]
                 calculate_loss_func = py_sigmoid_focal_loss
 
             loss_cls = self.loss_weight * calculate_loss_func(

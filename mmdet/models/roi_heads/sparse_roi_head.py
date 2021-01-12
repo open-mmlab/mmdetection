@@ -198,12 +198,8 @@ class SparseRoIHead(CascadeRoIHead):
                     assign_result, proposal_list[i], gt_bboxes[i])
                 sampling_results.append(sampling_result)
             bbox_targets = self.bbox_head[stage].get_targets(
-                sampling_results,
-                gt_bboxes,
-                gt_labels,
-                self.train_cfg[stage],
-                True,
-            )
+                sampling_results, gt_bboxes, gt_labels, self.train_cfg[stage],
+                True)
             cls_score = bbox_results['cls_score']
             decode_bbox_pred = bbox_results['decode_bbox_pred']
 

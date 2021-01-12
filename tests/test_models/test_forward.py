@@ -52,13 +52,10 @@ def test_sparse_rcnn_forward():
 
     from mmdet.models import build_detector
     detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
-
     input_shape = (1, 3, 550, 550)
-    mm_inputs = _demo_mm_inputs(input_shape)
-
+    mm_inputs = _demo_mm_inputs(input_shape, num_items=[5])
     imgs = mm_inputs.pop('imgs')
     img_metas = mm_inputs.pop('img_metas')
-
     # Test forward train with non-empty truth batch
     detector = detector
     imgs = imgs
@@ -76,6 +73,7 @@ def test_sparse_rcnn_forward():
     assert isinstance(losses, dict)
     loss, _ = detector._parse_losses(losses)
     assert float(loss.item()) > 0
+    detector.forward_dummy(imgs)
 
     # Test forward train with an empty truth batch
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])

@@ -97,7 +97,7 @@ class SparseRCNN(TwoStageDetector):
         # backbone
         x = self.extract_feat(img)
         # rpn
-        num_imgs = len(img[0])
+        num_imgs = len(img)
         dummy_img_metas = [
             dict(img_shape=(800, 1333, 3)) for _ in range(num_imgs)
         ]

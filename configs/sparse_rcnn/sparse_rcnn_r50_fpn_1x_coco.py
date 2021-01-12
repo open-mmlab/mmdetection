@@ -83,17 +83,12 @@ train_cfg = dict(
                 reg_cost=dict(type='BBoxL1Cost', weight=5.0),
                 iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0)),
             sampler=dict(type='PseudoSampler'),
-            pos_weight=1)
-    ] * num_stages)
+            pos_weight=1) for _ in range(num_stages)
+    ])
 
 test_cfg = dict(rpn=None, rcnn=dict(max_per_img=num_proposals))
 # optimizer
-optimizer = dict(
-    _delete_=True,
-    type='AdamW',
-    lr=0.000025,
-    weight_decay=0.0001,
-)
+optimizer = dict(_delete_=True, type='AdamW', lr=0.000025, weight_decay=0.0001)
 optimizer_config = dict(_delete_=True, grad_clip=dict(max_norm=1, norm_type=2))
 # learning policy
 lr_config = dict(policy='step', step=[8, 11])

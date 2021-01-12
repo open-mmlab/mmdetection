@@ -69,10 +69,8 @@ class DIIHead(BBoxHead):
         self.loss_iou = build_loss(loss_iou)
         self.in_channels = in_channels
         self.fp16_enabled = False
-        self.self_attention = MultiheadAttention(in_channels, num_heads,
-                                                 dropout)
-        self.self_attention_norm = build_norm_layer(
-            dict(type='LN'), in_channels)[1]
+        self.attention = MultiheadAttention(in_channels, num_heads, dropout)
+        self.attention_norm = build_norm_layer(dict(type='LN'), in_channels)[1]
 
         self.instance_interactive_conv = build_transformer(dynamic_conv_cfg)
         self.instance_interactive_conv_dropout = nn.Dropout(dropout)
@@ -156,8 +154,7 @@ class DIIHead(BBoxHead):
         N, num_proposals = proposal_feat.shape[:2]
         # Self attention
         proposal_feat = proposal_feat.permute(1, 0, 2)
-        proposal_feat = self.self_attention_norm(
-            self.self_attention(proposal_feat))
+        proposal_feat = self.attention_norm(self.attention(proposal_feat))
         # instance interactive
         proposal_feat = proposal_feat.permute(1, 0, 2).reshape(
             1, N * num_proposals, self.in_channels)
@@ -258,14 +255,12 @@ class DIIHead(BBoxHead):
                     pos_bbox_pred / imgs_whwh,
                     bbox_targets[pos_inds.type(torch.bool)] / imgs_whwh,
                     bbox_weights[pos_inds.type(torch.bool)],
-                    avg_factor=avg_factor,
-                )
+                    avg_factor=avg_factor)
                 losses['loss_iou'] = self.loss_iou(
                     pos_bbox_pred,
                     bbox_targets[pos_inds.type(torch.bool)],
                     bbox_weights[pos_inds.type(torch.bool)],
-                    avg_factor=avg_factor,
-                )
+                    avg_factor=avg_factor)
             else:
                 losses['loss_bbox'] = bbox_pred.sum() * 0
                 losses['loss_iou'] = bbox_pred.sum() * 0
