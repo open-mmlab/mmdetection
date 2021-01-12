@@ -290,10 +290,13 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 bbox_result or (bbox_result, segm_result).
             score_thr (float, optional): Minimum score of bboxes to be shown.
                 Default: 0.3.
-            bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
-            text_color (str or tuple or :obj:`Color`): Color of texts.
-            mask_color (None or str or tuple or :obj:`Color`): Color of masks.
-                   Default: None
+            bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
+               The tuple of color should be in BGR order. Default: 'green'
+            text_color (str or tuple(int) or :obj:`Color`):Color of texts.
+               The tuple of color should be in BGR order. Default: 'green'
+            mask_color (None or str or tuple(int) or :obj:`Color`):
+               Color of masks. The tuple of color should be in BGR order.
+               Default: None
             thickness (int): Thickness of lines.
             font_scale (float): Font scales of texts.
             font_size (int): Font size of texts.

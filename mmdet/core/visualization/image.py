@@ -42,12 +42,13 @@ def imshow_det_bboxes(img,
         segms (ndarray or None): Masks, shaped (n,h,w) or None
         class_names (list[str]): Names of each classes.
         score_thr (float): Minimum score of bboxes to be shown.  Default: 0
-        bbox_color (str or BGR tuple (int) or :obj:`Color`):
-            Color of bbox lines. Default: 'green'
-        text_color (str or BGR tuple (int) or :obj:`Color`):
-            Color of texts. Default: 'green'
-        mask_color (None or str or BGR tuple (int) or :obj:`Color`):
-            Color of masks. Default: None
+        bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
+           The tuple of color should be in BGR order. Default: 'green'
+        text_color (str or tuple(int) or :obj:`Color`):Color of texts.
+           The tuple of color should be in BGR order. Default: 'green'
+        mask_color (None or str or tuple(int) or :obj:`Color`):
+           Color of masks. The tuple of color should be in BGR order.
+           Default: None
         thickness (int): Thickness of lines. Default: 2
         font_scale (float): Font scales of texts. Default: 0.5
         font_size (int): Font size of texts. Default: 13
