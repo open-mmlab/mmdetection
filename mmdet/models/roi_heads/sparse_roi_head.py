@@ -111,7 +111,7 @@ class SparseRoIHead(CascadeRoIHead):
                                                        object_feats)
         proposal_list = self.bbox_head[stage].refine_bboxes(
             rois,
-            torch.ones_like(rois),  # dummy arg
+            rois.new_zeros(len(rois)),  # dummy arg
             bbox_pred.view(-1, bbox_pred.size(-1)),
             [rois.new_zeros(object_feats.size(1)) for _ in range(num_imgs)],
             img_metas)
