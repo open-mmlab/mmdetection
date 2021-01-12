@@ -24,7 +24,7 @@ class CenterPrior(nn.Module):
         topk (int): The number of points used to calculate the
             center prior when no point falls in gt_bbox. Only work when
             force_topk if True. Defaults to 9.
-        class_num (int): The class number of dataset. Defaults to 80.
+        num_classes (int): The class number of dataset. Defaults to 80.
         stride (tuple[int]): The stride of each input feature map. Defaults
             to (8, 16, 32, 64, 128).
     """
@@ -32,11 +32,11 @@ class CenterPrior(nn.Module):
     def __init__(self,
                  force_topk=False,
                  topk=9,
-                 class_num=80,
+                 num_classes=80,
                  stride=(8, 16, 32, 64, 128)):
         super(CenterPrior, self).__init__()
-        self.mean = nn.Parameter(torch.zeros(class_num, 2))
-        self.sigma = nn.Parameter(torch.ones(class_num, 2))
+        self.mean = nn.Parameter(torch.zeros(num_classes, 2))
+        self.sigma = nn.Parameter(torch.ones(num_classes, 2))
         self.stride = stride
         self.force_topk = force_topk
         self.topk = topk
@@ -146,7 +146,11 @@ class AutoAssignHead(FCOSHead):
                  **kwargs):
         super().__init__(
             *args, conv_bias=True, centerness_on_reg=True, **kwargs)
-        self.center_prior = CenterPrior(force_topk=force_topk, topk=topk)
+        self.center_prior = CenterPrior(
+            force_topk=force_topk,
+            topk=topk,
+            num_classes=self.num_classes,
+            stride=self.strides)
         self.pos_loss_weight = pos_loss_weight
         self.neg_loss_weight = neg_loss_weight
         self.center_loss_weight = center_loss_weight
