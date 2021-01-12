@@ -121,8 +121,8 @@ model = dict(
 
 Assuming your customized dataset is COCO format, make sure you have the correct annotations in the customized dataset:
 
-1. The length for `categories` field should exactly equal the number of classes (e.g. 5 in this example) in your config file.
-2. The `name` in `categories` field should have exactly the same order with `classes` field in your config file.
+1. The length for `categories` field in annotations should exactly equal the tuple length of `classes` fields in your config, meaning the number of classes (e.g. 5 in this example).
+2. The `classes` fields in your config file should have exactly the same elements with the `name` in `categories` of annotations. MMDetection automatically maps the uncontinuous `id` in `categories` to the continuous label indices. So it is the string order of `name` in `categories` field that matters, while the string order of `classes` in config does not matters.
 3. The `category_id` in `annotations` field should be valid, meaning all values in `category_id` should belong to `id` in `categories`.
 
 Here is a valid example of annotations:
