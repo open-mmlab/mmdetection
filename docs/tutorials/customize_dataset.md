@@ -50,42 +50,48 @@ There are three necessary keys in the json file:
 - `categories`: contains the list of categories names and their ID.
 
 After the data pre-processing, there are two steps for users to train the customized new dataset with existing format.
-1. modify the config file to use the new dataset.
+1. modify the config file for using the new dataset.
 2. check the annotations of the new dataset.
-Here we show an example of using a custom dataset of 5 classes to show the above two steps, assuming it is also in COCO format.
+Here we give an example to show the above two steps, which uses a custom dataset of 5 classes with COCO format to train an existing Retinanet R50 FPN detector.
 
-#### Modify the config file to use the new dataset
-There are two aspects involved for the modification in the config file:
-1. `data` field. 
-2. `num_classes` field in the `model` part.
+#### Modify the config file for using the new dataset
+There are two aspects involved in the modification of the config file:
+1. `data` field. Specifically, you need to explicitly add the `classes` fields in `data.train`, `data.val` and `data.test`.
+2. `num_classes` field in the `model` part. Explicitly over-write all the `num_classes` from default value (e.g. 80 in COCO) to your classes number.
 
 In `configs/my_custom_config.py`:
 
 ```python
-...
-# dataset settings
+# the new config inherits the base configs to highlight the necessary modification
+_base_ = './retinanet_r50_fpn_1x_coco.py'
+# 1. dataset settings
 dataset_type = 'CocoDataset'
 classes = ('a', 'b', 'c', 'd', 'e')
-...
 data = dict(
     samples_per_gpu=2,
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
+        # explicitly add your class names to the field `classes`
         classes=classes,
-        ann_file='path/to/your/train/data',
-        ...),
+        ann_file='path/to/your/train/annotation_data',
+        img_prefix='path/to/your/train/image_data'),
     val=dict(
         type=dataset_type,
+        # explicitly add your class names to the field `classes`
         classes=classes,
-        ann_file='path/to/your/val/data',
-        ...),
+        ann_file='path/to/your/val/annotation_data',
+        img_prefix='path/to/your/val/image_data'),
     test=dict(
         type=dataset_type,
+        # explicitly add your class names to the field `classes`
         classes=classes,
-        ann_file='path/to/your/test/data',
-        ...))
-...
+        ann_file='path/to/your/test/annotation_data',
+        img_prefix='path/to/your/test/image_data'))
+        
+# 2. model settings
+# explicitly over-write all the `num_classes` field from default 80 to 5.
+model = dict(bbox_head=dict(num_classes=2))
 ```
 
 #### check the annotations of the new dataset.
