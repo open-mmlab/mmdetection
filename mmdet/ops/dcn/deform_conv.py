@@ -9,6 +9,8 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair, _single
 
+from mmdet.utils.deployment.operations_domain import add_domain
+
 from . import deform_conv_ext
 
 
@@ -26,7 +28,7 @@ class DeformConvFunction(Function):
                  im2col_step=64):
         assert groups == 1
         kh, kw = weight.type().sizes()[2:]
-        return g.op('DeformableConv2D', input, offset, weight,
+        return g.op(add_domain('DeformableConv2D'), input, offset, weight,
                     strides_i=stride, pads_i=[p for pair in zip(padding, padding) for p in pair],
                     dilations_i=dilation, groups_i=groups,
                     deformable_groups_i=deformable_groups,
