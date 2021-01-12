@@ -96,20 +96,21 @@ data = dict(
         img_prefix='path/to/your/test/image_data'))
 
 # 2. model settings
+
 # explicitly over-write all the `num_classes` field from default 80 to 5.
 model = dict(
     roi_head=dict(
         bbox_head=[
             dict(
-                type='Shared2FCBBoxHead', 
+                type='Shared2FCBBoxHead',
                 # explicitly over-write all the `num_classes` field from default 80 to 5.
                 num_classes=5),
             dict(
-                type='Shared2FCBBoxHead', 
+                type='Shared2FCBBoxHead',
                 # explicitly over-write all the `num_classes` field from default 80 to 5.
                 num_classes=5),
             dict(
-                type='Shared2FCBBoxHead', 
+                type='Shared2FCBBoxHead',
                 # explicitly over-write all the `num_classes` field from default 80 to 5.
                 num_classes=5)],
     # explicitly over-write all the `num_classes` field from default 80 to 5.
