@@ -49,8 +49,15 @@ There are three necessary keys in the json file:
 - `annotations`: contains the list of instance annotations.
 - `categories`: contains the list of categories names and their ID.
 
-After the data pre-processing, the users need to further modify the config files to use the dataset.
-Here we show an example of using a custom dataset of 5 classes, assuming it is also in COCO format.
+After the data pre-processing, there are two steps for users to train the customized new dataset with existing format.
+1. modify the config file to use the new dataset.
+2. check the annotations of the new dataset.
+Here we show an example of using a custom dataset of 5 classes to show the above two steps, assuming it is also in COCO format.
+
+#### Modify the config file to use the new dataset
+There are two aspects involved for the modification in the config file:
+1. `data` field. 
+2. `num_classes` field in the `model` part.
 
 In `configs/my_custom_config.py`:
 
@@ -80,6 +87,10 @@ data = dict(
         ...))
 ...
 ```
+
+#### check the annotations of the new dataset.
+
+
 
 We use this way to support CityScapes dataset. The script is in [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/cityscapes.py) and we also provide the finetuning [configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).
 
