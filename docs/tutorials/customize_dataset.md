@@ -50,11 +50,12 @@ There are three necessary keys in the json file:
 - `categories`: contains the list of categories names and their ID.
 
 After the data pre-processing, there are two steps for users to train the customized new dataset with existing format (e.g. COCO format):
-1. modify the config file for using the new dataset.
-2. check the annotations of the new dataset.
+1. modify the config file for using the customized dataset.
+2. Check the annotations of the customized dataset.
+
 Here we give an example to show the above two steps, which uses a customized dataset of 5 classes with COCO format to train an existing Retinanet R50 FPN detector.
 
-#### Modify the config file for using the new dataset
+#### 1. Modify the config file for using the customized dataset.
 There are two aspects involved in the modification of config file:
 1. The `data` field. Specifically, you need to explicitly add the `classes` fields in `data.train`, `data.val` and `data.test`.
 2. The `num_classes` field in the `model` part. Explicitly over-write all the `num_classes` from default value (e.g. 80 in COCO) to your classes number.
@@ -95,7 +96,7 @@ data = dict(
 model = dict(bbox_head=dict(num_classes=5))
 ```
 
-#### check the annotations of the new dataset.
+#### 2. Check the annotations of the customized dataset.
 Assuming your customized dataset is COCO format, make sure you have the correct annotations in the customized dataset:
 1. The length for `categories` field should exactly equal the number of classes (e.g. 5 in this example) in your config file.
 2. The `name` in `categories` field should have exactly the same order with `classes` field in your config file.
