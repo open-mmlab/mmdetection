@@ -54,7 +54,7 @@ After the data pre-processing, there are two steps for users to train the custom
 1. modify the config file for using the customized dataset.
 2. Check the annotations of the customized dataset.
 
-Here we give an example to show the above two steps, which uses a customized dataset of 5 classes with COCO format to train an existing Retinanet R50 FPN detector.
+Here we give an example to show the above two steps, which uses a customized dataset of 5 classes with COCO format to train an existing Cascade MaskRCNN R50 FPN detector.
 
 #### 1. Modify the config file for using the customized dataset
 
@@ -68,7 +68,7 @@ In `configs/my_custom_config.py`:
 ```python
 
 # the new config inherits the base configs to highlight the necessary modification
-_base_ = './retinanet_r50_fpn_1x_coco.py'
+_base_ = './cascade_mask_rcnn_r50_fpn_1x_coco.py'
 
 # 1. dataset settings
 dataset_type = 'CocoDataset'
@@ -97,7 +97,23 @@ data = dict(
 
 # 2. model settings
 # explicitly over-write all the `num_classes` field from default 80 to 5.
-model = dict(bbox_head=dict(num_classes=5))
+model = dict(
+    roi_head=dict(
+        bbox_head=[
+            dict(
+                type='Shared2FCBBoxHead', 
+                # explicitly over-write all the `num_classes` field from default 80 to 5.
+                num_classes=5),
+            dict(
+                type='Shared2FCBBoxHead', 
+                # explicitly over-write all the `num_classes` field from default 80 to 5.
+                num_classes=5),
+            dict(
+                type='Shared2FCBBoxHead', 
+                # explicitly over-write all the `num_classes` field from default 80 to 5.
+                num_classes=5)],
+    # explicitly over-write all the `num_classes` field from default 80 to 5.
+    mask_head=dict(num_classes=5)))
 ```
 
 #### 2. Check the annotations of the customized dataset
