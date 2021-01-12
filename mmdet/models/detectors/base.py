@@ -274,9 +274,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     bbox_color=(72, 101, 241),
                     text_color=(72, 101, 241),
                     mask_color=None,
-                    thickness=1,
+                    thickness=2,
                     font_scale=0.5,
-                    font_size=10,
+                    font_size=13,
                     win_name='',
                     fig_size=(15, 10),
                     show=False,
@@ -297,11 +297,12 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             mask_color (None or str or tuple(int) or :obj:`Color`):
                Color of masks. The tuple of color should be in BGR order.
                Default: None
-            thickness (int): Thickness of lines.
-            font_scale (float): Font scales of texts.
-            font_size (int): Font size of texts.
-            win_name (str): The window name.
+            thickness (int): Thickness of lines. Default: 2
+            font_scale (float): Font scales of texts. Default: 0.5
+            font_size (int): Font size of texts. Default: 13
+            win_name (str): The window name. Default: ''
             fig_size (tuple): Figure size of the pyplot figure.
+                Default: (15, 10)
             wait_time (float): Value of waitKey param.
                 Default: 0.
             show (bool): Whether to show the image.

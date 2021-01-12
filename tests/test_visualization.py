@@ -16,10 +16,13 @@ def test_color():
     assert vis.color_val_matplotlib((1, 2, 3)) == (3 / 255, 2 / 255, 1 / 255)
     assert vis.color_val_matplotlib(100) == (100 / 255, 100 / 255, 100 / 255)
     assert vis.color_val_matplotlib(np.zeros(3, dtype=np.int)) == (0., 0., 0.)
+    # forbid white color
     with pytest.raises(TypeError):
         vis.color_val_matplotlib([255, 255, 255])
+    # forbid float
     with pytest.raises(TypeError):
         vis.color_val_matplotlib(1.0)
+    # overflowed
     with pytest.raises(AssertionError):
         vis.color_val_matplotlib((0, 0, 500))
 

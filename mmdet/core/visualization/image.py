@@ -9,7 +9,15 @@ from matplotlib.patches import Polygon
 
 
 def color_val_matplotlib(color):
-    """Convert opencv color value to matplotlib (BGR->RGB->Norm)"""
+    """Convert various input in BGR order to normalized RGB matplotlib color
+    tuples,
+
+    Args:
+        color (:obj:`Color`/str/tuple/int/ndarray): Color inputs
+
+    Returns:
+        tuple[float]: A tuple of 3 normalized floats indicating RGB channels.
+    """
     color = mmcv.color_val(color)
     color = [color / 255 for color in color[::-1]]
     return tuple(color)
@@ -23,7 +31,7 @@ def imshow_det_bboxes(img,
                       score_thr=0,
                       bbox_color='green',
                       text_color='green',
-                      mask_color='green',
+                      mask_color=None,
                       thickness=2,
                       font_scale=0.5,
                       font_size=13,
@@ -54,7 +62,7 @@ def imshow_det_bboxes(img,
         font_size (int): Font size of texts. Default: 13
         show (bool): Whether to show the image. Default: True
         win_name (str): The window name. Default: ''
-        fig_size (tuple): Figure size of the pyplot figure. Default: (15,10)
+        fig_size (tuple): Figure size of the pyplot figure. Default: (15, 10)
         wait_time (float): Value of waitKey param. Default: 0.
         out_file (str or None): The filename to write the image. Default: None
 
@@ -63,10 +71,14 @@ def imshow_det_bboxes(img,
     """
     warnings.warn('"font_scale" will be deprecated in v2.9.0,'
                   'Please use "font_size"')
-    assert bboxes.ndim == 2
-    assert labels.ndim == 1
-    assert bboxes.shape[0] == labels.shape[0]
-    assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5
+    assert bboxes.ndim == 2, \
+        f' bboxes ndim should be 2, but its ndim is {bboxes.ndim}.'
+    assert labels.ndim == 1, \
+        f' labels ndim should be 1, but its ndim is {labels.ndim}.'
+    assert bboxes.shape[0] == labels.shape[0], \
+        'bboxes.shape[0] and labels.shape[0] should have the same length.'
+    assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5,\
+        f' bboxes.shape[1] should be 4 or 5, but its {bboxes.shape[1]}.'
     img = mmcv.imread(img).copy()
 
     if score_thr > 0:
