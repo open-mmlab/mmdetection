@@ -153,8 +153,7 @@ class PAAHead(ATSSHead):
                     bboxes_weight,
                     pos_inds,
                     pos_gt_index,
-                    anchor_list
-                )
+                    anchor_list)
             num_pos = sum(num_pos)
         # convert all tensor list to a flatten tensor
         cls_scores = torch.cat(cls_scores, 0).view(-1, cls_scores[0].size(-1))
