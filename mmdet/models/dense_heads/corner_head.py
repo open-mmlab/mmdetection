@@ -739,7 +739,7 @@ class CornerHead(BaseDenseHead):
             distance_threshold=self.test_cfg.distance_threshold)
 
         if rescale:
-            batch_bboxes /= img_meta['scale_factor']
+            batch_bboxes /= batch_bboxes.new_tensor(img_meta['scale_factor'])
 
         bboxes = batch_bboxes.view([-1, 4])
         scores = batch_scores.view([-1, 1])
