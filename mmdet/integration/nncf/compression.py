@@ -78,12 +78,24 @@ def get_nncf_config_from_meta(path):
             'get_nncf_config_from_meta should be run for NNCF-compressed checkpoints only'
 
     config_text = meta['config']
-    with tempfile.NamedTemporaryFile(prefix='config_', suffix='.py', mode='w') as f_tmp:
+
+    with tempfile.NamedTemporaryFile(prefix='config_', suffix='.py',
+                                     mode='w', delete=False) as f_tmp:
         f_tmp.write(config_text)
-        cfg = mmcv.Config.fromfile(f_tmp.name)
+        tmp_name = f_tmp.name
+    cfg = mmcv.Config.fromfile(tmp_name)
+    os.unlink(tmp_name)
+
+    nncf_config = cfg.get('nncf_config')
+
+    assert isinstance(nncf_config, dict), (
+            f'Wrong nncf_config part of the config saved in the metainfo'
+            f' of the snapshot {path}:'
+            f' nncf_config={nncf_config}')
+
     nncf_config_part = {
-            'nncf_config': cfg.get('nncf_config'),
-            'find_unused_parameters': cfg.get('find_unused_parameters')
+            'nncf_config': nncf_config,
+            'find_unused_parameters': True
             }
     if nncf_config_part['nncf_config'].get('log_dir'):
         # TODO(LeonidBeynenson): improve work with log dir
