@@ -199,8 +199,7 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             assert bbox_cfg['in_channels'] == bbox_head.in_channels
             assert bbox_cfg['in_channels'] == bbox_head.fc_cls.in_features
             assert bbox_cfg['in_channels'] == bbox_head.fc_reg.in_features
-            assert bbox_cfg[
-                'in_channels'] == bbox_head.self_attention.embed_dims
+            assert bbox_cfg['in_channels'] == bbox_head.attention.embed_dims
             assert bbox_cfg[
                 'feedforward_channels'] == bbox_head.ffn.feedforward_channels
         else:
