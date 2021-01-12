@@ -1,5 +1,6 @@
 # Based off of github.com/rwightman/efficientdet-pytorch
 
+import itertools
 import numpy
 import torch
 import torch.nn as nn
