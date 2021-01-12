@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @article{Ren_2017,
    title={Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks},

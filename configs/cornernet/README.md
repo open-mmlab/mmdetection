@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @inproceedings{law2018cornernet,
   title={Cornernet: Detecting objects as paired keypoints},

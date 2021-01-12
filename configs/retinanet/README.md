@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @inproceedings{lin2017focal,
   title={Focal loss for dense object detection},

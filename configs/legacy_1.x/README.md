@@ -1,5 +1,7 @@
 # Legacy Configs in MMDetection V1.x
 
+[OTHERS]
+
 Configs in this directory implement the legacy configs used by MMDetection V1.x and its model zoos.
 
 To help users convert their models from V1.x to MMDetection V2.0, we provide v1.x configs to inference the converted v1.x models.

@@ -587,8 +587,9 @@ class CascadeRPNHead(BaseDenseHead):
         assert gt_labels is None, 'RPN does not require gt_labels'
 
         featmap_sizes = [featmap.size()[-2:] for featmap in x]
+        device = x[0].device
         anchor_list, valid_flag_list = self.stages[0].get_anchors(
-            featmap_sizes, img_metas)
+            featmap_sizes, img_metas, device=device)
 
         losses = dict()
 
@@ -623,7 +624,9 @@ class CascadeRPNHead(BaseDenseHead):
     def simple_test_rpn(self, x, img_metas):
         """Simple forward test function."""
         featmap_sizes = [featmap.size()[-2:] for featmap in x]
-        anchor_list, _ = self.stages[0].get_anchors(featmap_sizes, img_metas)
+        device = x[0].device
+        anchor_list, _ = self.stages[0].get_anchors(
+            featmap_sizes, img_metas, device=device)
 
         for i in range(self.num_stages):
             stage = self.stages[i]

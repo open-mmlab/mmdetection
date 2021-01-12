@@ -295,7 +295,7 @@ def eval_map(det_results,
             there are minor differences in metrics for different datsets, e.g.
             "voc07", "imagenet_det", etc. Default: None.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmdet.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details. Default: None.
         tpfp_fn (callable | None): The function used to determine true/
             false positives. If None, :func:`tpfp_default` is used as default
             unless dataset is 'det' or 'vid' (:func:`tpfp_imagenet` in this
@@ -417,7 +417,7 @@ def print_map_summary(mean_ap,
         dataset (list[str] | str | None): Dataset name or dataset classes.
         scale_ranges (list[tuple] | None): Range of scales to be evaluated.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmdet.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details. Default: None.
     """
 
     if logger == 'silent':

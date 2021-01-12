@@ -289,7 +289,6 @@ class LVISV05Dataset(CocoDataset):
                               'install mmlvis to install open-mmlab forked '
                               'lvis.')
         self.coco = LVIS(ann_file)
-        assert not self.custom_classes, 'LVIS custom classes is not supported'
         self.cat_ids = self.coco.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.img_ids = self.coco.get_img_ids()
@@ -728,7 +727,6 @@ class LVISV1Dataset(LVISDataset):
                               'install mmlvis to install open-mmlab forked '
                               'lvis.')
         self.coco = LVIS(ann_file)
-        assert not self.custom_classes, 'LVIS custom classes is not supported'
         self.cat_ids = self.coco.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.img_ids = self.coco.get_img_ids()

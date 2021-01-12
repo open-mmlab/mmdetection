@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @article{wang2019fcos,
   title={Nas-fcos: Fast neural architecture search for object detection},

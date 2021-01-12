@@ -11,12 +11,13 @@ The compatible MMDetection and MMCV versions are as below. Please install the co
 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
-| master              | mmcv-full>=1.1.5, <1.3|
+| master              | mmcv-full>=1.2.4, <1.3|
+| 2.8.0               | mmcv-full>=1.2.4, <1.3|
 | 2.7.0               | mmcv-full>=1.1.5, <1.3|
 | 2.6.0               | mmcv-full>=1.1.5, <1.3|
 | 2.5.0               | mmcv-full>=1.1.5, <1.3|
 | 2.4.0               | mmcv-full>=1.1.1, <1.3|
-| 2.3.0               | mmcv-full==1.0.5|
+| 2.3.0               | mmcv-full==1.0.5    |
 | 2.3.0rc0            | mmcv-full>=1.0.2    |
 | 2.2.1               | mmcv==0.6.2         |
 | 2.2.0               | mmcv==0.6.2         |
@@ -117,12 +118,28 @@ In CPU mode you can run the demo/webcam_demo.py for example.
 However some functionality is gone in this mode:
 
 - Deformable Convolution
+- Modulated Deformable Convolution
+- ROI pooling
 - Deformable ROI pooling
 - CARAFE: Content-Aware ReAssembly of FEatures
+- SyncBatchNorm
+- CrissCrossAttention: Criss-Cross Attention
+- MaskedConv2d
+- Temporal Interlace Shift
 - nms_cuda
 - sigmoid_focal_loss_cuda
+- bbox_overlaps
 
-So if you try to run inference with a model containing deformable convolution you will get an error.
+So if you try to run inference with a model containing above ops you will get an error. The following table lists the related methods that cannot inference on CPU due to dependency on these operators
+
+|                        Operator                         |                            Model                             |
+| :-----------------------------------------------------: | :----------------------------------------------------------: |
+| Deformable Convolution/Modulated Deformable Convolution | DCN、Guided Anchoring、RepPoints、CentripetalNet、VFNet、CascadeRPN、NAS-FCOS、DetectoRS |
+|                      MaskedConv2d                       |                       Guided Anchoring                       |
+|                         CARAFE                          |                            CARAFE                            |
+|                      SyncBatchNorm                      |                           ResNeSt                            |
+
+**Notice**: MMDetection does not support training with CPU for now.
 
 ### Another option: Docker Image
 
