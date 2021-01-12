@@ -64,9 +64,11 @@ class SparseRoIHead(CascadeRoIHead):
             bbox_head=bbox_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg)
-        for stage in range(num_stages):
-            assert isinstance(self.bbox_sampler[stage], PseudoSampler), \
-                'Sparse R-CNN only support `PseudoSampler`'
+        # train_cfg would be None when run the test.py
+        if train_cfg is not None:
+            for stage in range(num_stages):
+                assert isinstance(self.bbox_sampler[stage], PseudoSampler), \
+                    'Sparse R-CNN only support `PseudoSampler`'
 
     def _bbox_forward(self, stage, x, rois, object_feats, img_metas):
         """Box head forward function used in both training and testing. Returns
