@@ -124,9 +124,6 @@ class DIIHead(BBoxHead):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
-            else:
-                # Initialized all bias to 0
-                nn.init.constant_(p, 0)
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
@@ -158,15 +155,12 @@ class DIIHead(BBoxHead):
         """
         N, num_proposals = proposal_feat.shape[:2]
         # Self attention
-        proposal_feat = proposal_feat.view(N, num_proposals,
-                                           self.in_channels).permute(1, 0, 2)
+        proposal_feat = proposal_feat.permute(1, 0, 2)
         proposal_feat = self.self_attention_norm(
             self.self_attention(proposal_feat))
         # instance interactive
-        proposal_feat = proposal_feat.view(
-            num_proposals, N,
-            self.in_channels).permute(1, 0, 2).reshape(1, N * num_proposals,
-                                                       self.in_channels)
+        proposal_feat = proposal_feat.permute(1, 0, 2).reshape(
+            1, N * num_proposals, self.in_channels)
         roi_feat = roi_feat.view(N * num_proposals, self.in_channels,
                                  -1).permute(2, 0, 1)
         proposal_feat_iic = self.instance_interactive_conv(
