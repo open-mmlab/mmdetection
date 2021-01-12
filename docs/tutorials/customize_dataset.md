@@ -50,19 +50,23 @@ There are three necessary keys in the json file:
 - `categories`: contains the list of categories names and their ID.
 
 After the data pre-processing, there are two steps for users to train the customized new dataset with existing format (e.g. COCO format):
+
 1. modify the config file for using the customized dataset.
 2. Check the annotations of the customized dataset.
 
 Here we give an example to show the above two steps, which uses a customized dataset of 5 classes with COCO format to train an existing Retinanet R50 FPN detector.
 
-#### 1. Modify the config file for using the customized dataset.
+#### 1. Modify the config file for using the customized dataset
+
 There are two aspects involved in the modification of config file:
+
 1. The `data` field. Specifically, you need to explicitly add the `classes` fields in `data.train`, `data.val` and `data.test`.
 2. The `num_classes` field in the `model` part. Explicitly over-write all the `num_classes` from default value (e.g. 80 in COCO) to your classes number.
 
 In `configs/my_custom_config.py`:
 
 ```python
+
 # the new config inherits the base configs to highlight the necessary modification
 _base_ = './retinanet_r50_fpn_1x_coco.py'
 
@@ -90,19 +94,22 @@ data = dict(
         classes=classes,
         ann_file='path/to/your/test/annotation_data',
         img_prefix='path/to/your/test/image_data'))
-        
+
 # 2. model settings
 # explicitly over-write all the `num_classes` field from default 80 to 5.
 model = dict(bbox_head=dict(num_classes=5))
 ```
 
-#### 2. Check the annotations of the customized dataset.
+#### 2. Check the annotations of the customized dataset
+
 Assuming your customized dataset is COCO format, make sure you have the correct annotations in the customized dataset:
+
 1. The length for `categories` field should exactly equal the number of classes (e.g. 5 in this example) in your config file.
 2. The `name` in `categories` field should have exactly the same order with `classes` field in your config file.
 3. The `category_id` in `annotations` field should be valid, meaning all values in `category_id` should belong to `id` in `categories`.
 
 Here is a valid example of annotations:
+
 ```python
 
 'annotations': [
