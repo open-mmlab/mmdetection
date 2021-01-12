@@ -831,9 +831,10 @@ class DynamicConv(nn.Module):
         param_out = parameters[:, -self.num_params_out:].view(
             -1, self.feat_channels, self.out_channels)
 
-        # input_feature has shape (batch_size, H*W, in_channels)
-        # param_in has shape (batch_size, in_channels, feat_channels)
-        # feature has shape (batch_size, H*W, feat_channels)
+        # input_feature has shape (batch_size*num_proposals, H*W, in_channels)
+        # param_in has shape (batch_size*num_proposals,
+        # in_channels, feat_channels)
+        # feature has shape (batch_size*num_proposals, H*W, feat_channels)
         features = torch.bmm(input_feature, param_in)
         features = self.norm_in(features)
         features = self.activation(features)
