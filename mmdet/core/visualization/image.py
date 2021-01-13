@@ -112,7 +112,7 @@ def imshow_det_bboxes(img,
     img = mmcv.bgr2rgb(img)
     img = np.ascontiguousarray(img)
 
-    plt.figure(figsize=fig_size)
+    plt.figure(win_name, figsize=fig_size)
     plt.title(win_name)
     plt.axis('off')
     ax = plt.gca()
@@ -159,6 +159,8 @@ def imshow_det_bboxes(img,
         dir_name = osp.abspath(osp.dirname(out_file))
         mmcv.mkdir_or_exist(dir_name)
         plt.savefig(out_file)
+        if not show:
+            plt.close()
     if show:
         if wait_time == 0:
             plt.show()
