@@ -808,19 +808,17 @@ class DynamicConv(nn.Module):
         Args:
             param_feature (Tensor): The feature can be used
                 to generate the parameter, has shape
-                (num_proposals, batch_size, in_channels).
+                (num_all_proposals, in_channels).
             input_feature (Tensor): Feature that
                 interact with parameters, has shape
-                (batch_size*num_proposals, in_channels, H, W).
+                (num_all_proposals, in_channels, H, W).
 
         Returns:
             Tensor: The output feature has shape
-            (batch_size*num_proposals, out_channels).
+            (num_all_proposals, out_channels).
         """
-        num_proposals, N = param_feature.shape[:2]
-        param_feature = param_feature.permute(1, 0, 2).reshape(
-            N * num_proposals, self.in_channels)
-        input_feature = input_feature.view(N * num_proposals, self.in_channels,
+        num_proposals = param_feature.size(0)
+        input_feature = input_feature.view(num_proposals, self.in_channels,
                                            -1).permute(2, 0, 1)
 
         input_feature = input_feature.permute(1, 0, 2)
@@ -831,10 +829,9 @@ class DynamicConv(nn.Module):
         param_out = parameters[:, -self.num_params_out:].view(
             -1, self.feat_channels, self.out_channels)
 
-        # input_feature has shape (batch_size*num_proposals, H*W, in_channels)
-        # param_in has shape (batch_size*num_proposals,
-        # in_channels, feat_channels)
-        # feature has shape (batch_size*num_proposals, H*W, feat_channels)
+        # input_feature has shape (num_all_proposals, H*W, in_channels)
+        # param_in has shape (num_all_proposals, in_channels, feat_channels)
+        # feature has shape (num_all_proposals, H*W, feat_channels)
         features = torch.bmm(input_feature, param_in)
         features = self.norm_in(features)
         features = self.activation(features)

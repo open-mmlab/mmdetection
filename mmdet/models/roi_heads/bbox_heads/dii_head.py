@@ -132,7 +132,8 @@ class DIIHead(BBoxHead):
 
         Args:
             roi_feat (Tensor): Roi-pooling features with shape
-                (num_proposals, feature_dimensions, pooling_h , pooling_w).
+                (batch_size*num_proposals, feature_dimensions,
+                pooling_h , pooling_w).
             proposal_feat: Intermediate feature get from diihead in
                 last stage, has shape
                 (batch_size, num_proposals, feature_dimensions)
@@ -158,10 +159,10 @@ class DIIHead(BBoxHead):
         proposal_feat = self.attention_norm(self.attention(proposal_feat))
 
         # instance interactive
-        proposal_feat_iic = self.instance_interactive_conv(
-            proposal_feat, roi_feat)
         proposal_feat = proposal_feat.permute(1, 0,
                                               2).reshape(-1, self.in_channels)
+        proposal_feat_iic = self.instance_interactive_conv(
+            proposal_feat, roi_feat)
         proposal_feat = proposal_feat + self.instance_interactive_conv_dropout(
             proposal_feat_iic)
         obj_feat = self.instance_interactive_conv_norm(proposal_feat)
