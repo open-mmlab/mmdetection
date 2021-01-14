@@ -10,6 +10,43 @@ from mmdet.core.visualization.image import imshow_det_bboxes
 from mmdet.datasets import build_dataset
 
 
+def retrieve_loading_pipeline(pipeline):
+    """Only keep loading image and annotations related configuration
+        Args:
+            pipelines (list[dict]): Data pipeline configs.
+
+        Returns:
+            list: The new pipeline list with only keep
+                  loading image and annotations related configuration.
+
+        Examples:
+            >>> pipelines = [
+            ...    dict(type='LoadImageFromFile'),
+            ...    dict(type='LoadAnnotations', with_bbox=True),
+            ...    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+            ...    dict(type='RandomFlip', flip_ratio=0.5),
+            ...    dict(type='Normalize', **img_norm_cfg),
+            ...    dict(type='Pad', size_divisor=32),
+            ...    dict(type='DefaultFormatBundle'),
+            ...    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+            ...    ]
+            >>> expected_pipelines = [
+            ...    dict(type='LoadImageFromFile'),
+            ...    dict(type='LoadAnnotations', with_bbox=True)
+            ...    ]
+            >>> assert expected_pipelines ==\
+            ...        retrieve_loading_pipeline(pipelines)
+    """
+
+    loading_pipeline_cfg = []
+    for cfg in pipeline:
+        if cfg['type'].startswith('Load'):
+            loading_pipeline_cfg.append(cfg)
+    assert len(loading_pipeline_cfg) == 2, \
+        'pipeline cfg must include Loading image and annotations related type'
+    return loading_pipeline_cfg
+
+
 def visualize(img,
               annotation,
               result,
@@ -69,11 +106,9 @@ class ResultVisualizer(object):
         self.show = show
         self.wait_time = wait_time
         self.show_dir = show_dir
-        self.annotations = [
-            self.dataset.get_ann_info(i) for i in range(len(self.dataset))
-        ]
 
     def _eval_fn(self, det_result, annotation):
+        # mAP
         iou_thrs = np.linspace(
             .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
         mean_aps = []
@@ -82,44 +117,45 @@ class ResultVisualizer(object):
             mean_aps.append(mean_ap)
         return sum(mean_aps) / len(mean_aps)
 
-    def _save_show_images(self, mAPs, out_dir):
+    def _save_image_gts_results(self, mAPs, out_dir=None):
         mmcv.mkdir_or_exist(out_dir)
-        for mAP in mAPs:
-            self._show_image_gts_results(mAP[0], mAP[1], out_dir)
 
-    def _show_image_gts_results(self, index, value, out_dir=None):
-        img_info = self.dataset[index]
-        annotation = self.annotations[index]
-        result = self.results[index]
-        img = img_info['img']
-        filename = img_info['img_info']['filename']
-        if img_info['img_prefix'] is not None:
-            filename = osp.join(img_info['img_prefix'], filename)
-        else:
-            filename = img_info['filename']
-        fname, name = osp.splitext(osp.basename(filename))
-        save_filename = fname + '_' + str(round(value, 3)) + name
-        out_file = osp.join(out_dir, save_filename)
-        visualize(img, annotation, result, self.CLASSES, self.show,
-                  self.wait_time, out_file)
+        for mAP_info in mAPs:
+            index, mAP = mAP_info
+            data_info = self.dataset.prepare_train_img(index)
+
+            # calc save file path
+            filename = data_info['filename']
+            if data_info['img_prefix'] is not None:
+                filename = osp.join(data_info['img_prefix'], filename)
+            else:
+                filename = data_info['filename']
+            fname, name = osp.splitext(osp.basename(filename))
+            save_filename = fname + '_' + str(round(mAP, 3)) + name
+            out_file = osp.join(out_dir, save_filename)
+
+            visualize(data_info['img'], data_info['ann_info'],
+                      self.results[index], self.CLASSES, self.show,
+                      self.wait_time, out_file)
 
     def evaluate(self):
         _mAPs = {}
-        for i, (result,
-                annotation) in enumerate(zip(self.results, self.annotations)):
-            mAP = self._eval_fn(result, annotation)
+        for i, (result, ) in enumerate(zip(self.results)):
+            # self.dataset[i] should not call directly
+            # because there is a risk of mismatch
+            data_info = self.dataset.prepare_train_img(i)
+            mAP = self._eval_fn(result, data_info['ann_info'])
             _mAPs[i] = mAP
 
         # descending select topk image
         _mAPs = list(sorted(_mAPs.items(), key=lambda kv: kv[1]))
-
         good_mAPs = _mAPs[-self.topk:]
         bad_mAPs = _mAPs[:self.topk]
 
         good_dir = osp.abspath(osp.join(self.show_dir, 'good'))
         bad_dir = osp.abspath(osp.join(self.show_dir, 'bad'))
-        self._save_show_images(good_mAPs, good_dir)
-        self._save_show_images(bad_mAPs, bad_dir)
+        self._save_image_gts_results(good_mAPs, good_dir)
+        self._save_image_gts_results(bad_mAPs, bad_dir)
 
 
 def parse_args():
@@ -182,10 +218,7 @@ def main():
         import_modules_from_strings(**cfg['custom_imports'])
 
     cfg.data.test.pop('samples_per_gpu', 0)
-    cfg.data.test.pipeline = [cfg.data.test.pipeline[0]]
-    assert cfg.data.test.pipeline[0]['type'] in [
-        'LoadImageFromFile', 'LoadMultiChannelImageFromFiles'
-    ]
+    cfg.data.test.pipeline = retrieve_loading_pipeline(cfg.data.train.pipeline)
     dataset = build_dataset(cfg.data.test)
     outputs = mmcv.load(args.prediction_path)
     result_visualizer = ResultVisualizer(
