@@ -272,7 +272,8 @@ class GFLHead(AnchorHead):
             loss_bbox = self.loss_bbox(
                 pos_decode_bbox_pred,
                 pos_decode_bbox_targets,
-                weight=weight_targets,
+                weight=weight_targets if torch.any(
+                    weight_targets > 0) else weight_targets[:, None],
                 avg_factor=1.0)
 
             # dfl loss
