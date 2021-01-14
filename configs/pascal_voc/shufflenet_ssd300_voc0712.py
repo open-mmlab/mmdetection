@@ -1,5 +1,8 @@
+custom_imports = dict(
+    imports=['mmdet.models.backbones.shufflenet'],
+    allow_failed_imports=False)
 _base_ = [
-    '../_base_/models/ssd300.py', '../_base_/datasets/voc0712.py',
+    '../_base_/models/shufflenet.py', '../_base_/datasets/voc0712.py',
     '../_base_/default_runtime.py'
 ]
 model = dict(
@@ -9,7 +12,7 @@ model = dict(
 # dataset settings
 dataset_type = 'VOCDataset'
 data_root = 'data/VOC/'
-img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
+img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -48,22 +51,22 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=64,
+    samples_per_gpu=128,
     workers_per_gpu=3,
     train=dict(
         type='RepeatDataset', times=10, dataset=dict(pipeline=train_pipeline)),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
-    policy='step',
+    policy='CosineAnnealing',
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=0.001,
-    step=[16, 20])
+    min_lr_ratio=1e-5)
 checkpoint_config = dict(interval=1)
 # runtime settings
-total_epochs = 24
+total_epochs = 30
