@@ -4,7 +4,6 @@ from mmcv.cnn import ConvModule, kaiming_init
 from mmcv.runner import auto_fp16, force_fp32
 
 from mmdet.models.builder import HEADS
-from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
 
 
 @HEADS.register_module()
@@ -34,8 +33,7 @@ class FusedSemanticHead(nn.Module):
                  ignore_label=255,
                  loss_weight=0.2,
                  conv_cfg=None,
-                 norm_cfg=None,
-                 conv_to_res=False):
+                 norm_cfg=None):
         super(FusedSemanticHead, self).__init__()
         self.num_ins = num_ins
         self.fusion_level = fusion_level
@@ -47,7 +45,6 @@ class FusedSemanticHead(nn.Module):
         self.loss_weight = loss_weight
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.conv_to_res = conv_to_res
         self.fp16_enabled = False
 
         self.lateral_convs = nn.ModuleList()
@@ -61,28 +58,17 @@ class FusedSemanticHead(nn.Module):
                     norm_cfg=self.norm_cfg,
                     inplace=False))
 
-        if self.conv_to_res:
-            num_res_blocks = num_convs // 2
-            self.convs = ResLayer(
-                SimplifiedBasicBlock,
-                in_channels,
-                self.conv_out_channels,
-                num_res_blocks,
-                conv_cfg=self.conv_cfg,
-                norm_cfg=self.norm_cfg)
-            self.num_convs = num_res_blocks
-        else:
-            self.convs = nn.ModuleList()
-            for i in range(self.num_convs):
-                in_channels = self.in_channels if i == 0 else conv_out_channels
-                self.convs.append(
-                    ConvModule(
-                        in_channels,
-                        conv_out_channels,
-                        3,
-                        padding=1,
-                        conv_cfg=self.conv_cfg,
-                        norm_cfg=self.norm_cfg))
+        self.convs = nn.ModuleList()
+        for i in range(self.num_convs):
+            in_channels = self.in_channels if i == 0 else conv_out_channels
+            self.convs.append(
+                ConvModule(
+                    in_channels,
+                    conv_out_channels,
+                    3,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg))
         self.conv_embedding = ConvModule(
             conv_out_channels,
             conv_out_channels,

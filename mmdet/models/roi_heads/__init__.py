@@ -1,6 +1,7 @@
 from .base_roi_head import BaseRoIHead
 from .bbox_heads import (BBoxHead, ConvFCBBoxHead, DoubleConvFCBBoxHead,
-                         Shared2FCBBoxHead, Shared4Conv1FCBBoxHead)
+                         SCNetBBoxHead, Shared2FCBBoxHead,
+                         Shared4Conv1FCBBoxHead)
 from .cascade_roi_head import CascadeRoIHead
 from .double_roi_head import DoubleHeadRoIHead
 from .dynamic_roi_head import DynamicRoIHead
@@ -9,7 +10,7 @@ from .htc_roi_head import HybridTaskCascadeRoIHead
 from .mask_heads import (CoarseMaskHead, FCNMaskHead, FeatureRelayHead,
                          FusedSemanticHead, GlobalContextHead, GridHead,
                          HTCMaskHead, MaskIoUHead, MaskPointHead,
-                         SCNetMaskHead)
+                         SCNetMaskHead, SCNetSemanticHead)
 from .mask_scoring_roi_head import MaskScoringRoIHead
 from .pisa_roi_head import PISARoIHead
 from .point_rend_roi_head import PointRendRoIHead
@@ -27,5 +28,6 @@ __all__ = [
     'HTCMaskHead', 'FusedSemanticHead', 'GridHead', 'MaskIoUHead',
     'SingleRoIExtractor', 'PISARoIHead', 'PointRendRoIHead', 'MaskPointHead',
     'CoarseMaskHead', 'DynamicRoIHead', 'TridentRoIHead', 'SCNetRoIHead',
-    'SCNetMaskHead', 'FeatureRelayHead', 'GlobalContextHead'
+    'SCNetMaskHead', 'SCNetSemanticHead', 'SCNetBBoxHead', 'FeatureRelayHead',
+    'GlobalContextHead'
 ]

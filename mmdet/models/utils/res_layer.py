@@ -103,7 +103,8 @@ class ResLayer(nn.Sequential):
 
 
 class SimplifiedBasicBlock(nn.Module):
-    """Simplified version of original basic residual block:
+    """Simplified version of original basic residual block used for SCNet
+    https://arxiv.org/abs/2012.10150.
 
     - Norm layer is now optional
     - Last ReLU in forward function is removed
@@ -125,6 +126,7 @@ class SimplifiedBasicBlock(nn.Module):
         super(SimplifiedBasicBlock, self).__init__()
         assert dcn is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
+        assert not with_cp, 'Not implemented yet.'
         self.with_norm = norm_cfg is not None
         with_bias = True if norm_cfg is None else False
         self.conv1 = build_conv_layer(
@@ -156,12 +158,12 @@ class SimplifiedBasicBlock(nn.Module):
     @property
     def norm1(self):
         """nn.Module: normalization layer after the first convolution layer"""
-        return getattr(self, self.norm1_name)
+        return getattr(self, self.norm1_name) if self.with_norm else None
 
     @property
     def norm2(self):
         """nn.Module: normalization layer after the second convolution layer"""
-        return getattr(self, self.norm2_name)
+        return getattr(self, self.norm2_name) if self.with_norm else None
 
     def forward(self, x):
         """Forward function."""

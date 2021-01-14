@@ -12,12 +12,13 @@ from mmdet.models.backbones.resnest import Bottleneck as BottleneckS
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.backbones.resnext import Bottleneck as BottleneckX
 from mmdet.models.backbones.trident_resnet import TridentBottleneck
-from mmdet.models.utils import ResLayer
+from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
 
 
 def is_block(modules):
     """Check if is ResNet building block."""
-    if isinstance(modules, (BasicBlock, Bottleneck, BottleneckX, Bottle2neck)):
+    if isinstance(modules, (BasicBlock, Bottleneck, BottleneckX, Bottle2neck,
+                            SimplifiedBasicBlock)):
         return True
     return False
 
@@ -379,6 +380,59 @@ def test_trident_resnet_bottleneck():
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([block.num_branch, 64, 56, 56])
+
+
+def test_simplied_basic_block():
+    with pytest.raises(AssertionError):
+        # Not implemented yet.
+        dcn = dict(type='DCN', deform_groups=1, fallback_on_stride=False)
+        SimplifiedBasicBlock(64, 64, dcn=dcn)
+
+    with pytest.raises(AssertionError):
+        # Not implemented yet.
+        plugins = [
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 16),
+                position='after_conv3')
+        ]
+        SimplifiedBasicBlock(64, 64, plugins=plugins)
+
+    with pytest.raises(AssertionError):
+        # Not implemented yet
+        plugins = [
+            dict(
+                cfg=dict(
+                    type='GeneralizedAttention',
+                    spatial_range=-1,
+                    num_heads=8,
+                    attention_type='0010',
+                    kv_stride=2),
+                position='after_conv2')
+        ]
+        SimplifiedBasicBlock(64, 64, plugins=plugins)
+
+    with pytest.raises(AssertionError):
+        # Not implemented yet
+        SimplifiedBasicBlock(64, 64, with_cp=True)
+
+    # test SimplifiedBasicBlock structure and forward
+    block = SimplifiedBasicBlock(64, 64)
+    assert block.conv1.in_channels == 64
+    assert block.conv1.out_channels == 64
+    assert block.conv1.kernel_size == (3, 3)
+    assert block.conv2.in_channels == 64
+    assert block.conv2.out_channels == 64
+    assert block.conv2.kernel_size == (3, 3)
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
+    # test SimplifiedBasicBlock without norm
+    block = SimplifiedBasicBlock(64, 64, norm_cfg=None)
+    assert block.norm1 is None
+    assert block.norm2 is None
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
 
 
 def test_trident_resnet_backbone():
