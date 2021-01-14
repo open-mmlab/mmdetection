@@ -12,7 +12,7 @@ from mmdet.models import build_detector
 from mmdet.ops import RoIAlign, RoIPool
 
 
-def init_detector(config, checkpoint=None, device='cuda:0'):
+def init_detector(config, checkpoint=None, device='cuda:0', update_config=''):
     """Initialize a detector from config file.
 
     Args:
@@ -29,6 +29,8 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
     elif not isinstance(config, mmcv.Config):
         raise TypeError('config must be a filename or Config object, '
                         f'but got {type(config)}')
+    if update_config:
+        config.merge_from_dict(update_config)
     config.model.pretrained = None
     model = build_detector(config.model, test_cfg=config.test_cfg)
     if checkpoint is not None:
