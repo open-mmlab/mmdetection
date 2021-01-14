@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[ALGORITHM]
+[OTHERS]
 
 ```latex
 @article{micikevicius2017mixed,

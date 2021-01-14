@@ -7,7 +7,6 @@ import re
 import numpy as np
 
 url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/master/'
-titles_to_be_excluded = ['Albu Example', 'Mixed Precision Training']
 
 files = sorted(glob.glob('../configs/*/README.md'))
 
@@ -21,11 +20,7 @@ for f in files:
     with open(f, 'r') as content_file:
         content = content_file.read()
 
-    title = content.split('\n')[0].replace('# ', '')
-
-    if title.strip() in titles_to_be_excluded:
-        continue
-
+    title = content.split('\n')[0].replace('# ', '').strip()
     ckpts = set(x.lower().strip()
                 for x in re.findall(r'\[model\]\((https?.*)\)', content))
 
