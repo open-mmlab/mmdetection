@@ -107,8 +107,6 @@ class ResultVisualizer(object):
         _mAPs = {}
         for i, (result,
                 annotation) in enumerate(zip(self.results, self.annotations)):
-            if i > 10:
-                break
             mAP = self._eval_fn(result, annotation)
             _mAPs[i] = mAP
 
