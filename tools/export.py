@@ -199,7 +199,12 @@ def main(args):
     assert args.opset > 9
 
     torch.set_default_tensor_type(torch.FloatTensor)
-    model = init_detector(args.config, args.checkpoint, device='cpu', update_config=args.update_config)
+
+    config = mmcv.Config.fromfile(args.config)
+    if args.update_config:
+        config.merge_from_dict(args.update_config)
+
+    model = init_detector(config, args.checkpoint, device='cpu')
     model.eval()
     if torch.cuda.is_available():
         model.cuda()
