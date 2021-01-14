@@ -1,7 +1,10 @@
 #!/usr/bin/env python
+import functools as func
 import glob
 import os.path as osp
 import re
+
+import numpy as np
 
 url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/master/'
 titles_to_be_excluded = ['Albu Example', 'Mixed Precision Training']
@@ -20,7 +23,7 @@ for f in files:
 
     title = content.split('\n')[0].replace('# ', '')
 
-    if title in titles_to_be_excluded:
+    if title.strip() in titles_to_be_excluded:
         continue
 
     ckpts = set(x.lower().strip()
@@ -29,21 +32,36 @@ for f in files:
     if len(ckpts) == 0:
         continue
 
+    _papertype = [x for x in re.findall(r'\[([A-Z]+)\]', content)]
+    assert len(_papertype) > 0
+    papertype = _papertype[0]
+
+    paper = set([(papertype, title)])
+
     titles.append(title)
     num_ckpts += len(ckpts)
 
     statsmsg = f"""
-\t* [{title}]({url}) ({len(ckpts)} ckpts)
+\t* [{papertype}] [{title}]({url}) ({len(ckpts)} ckpts)
 """
-    stats.append((title, ckpts, statsmsg))
+    stats.append((paper, ckpts, statsmsg))
 
+allpapers = func.reduce(lambda a, b: a.union(b), [p for p, _, _ in stats])
 msglist = '\n'.join(x for _, _, x in stats)
+
+papertypes, papercounts = np.unique([t for t, _ in allpapers],
+                                    return_counts=True)
+countstr = '\n'.join(
+    [f'   - {t}: {c}' for t, c in zip(papertypes, papercounts)])
 
 modelzoo = f"""
 # Model Zoo Statistics
 
-* Number of papers: {len(titles)}
+* Number of papers: {len(set(titles))}
+{countstr}
+
 * Number of checkpoints: {num_ckpts}
+
 {msglist}
 """
 
