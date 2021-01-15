@@ -18,7 +18,9 @@ The pre-trained modles are converted from [model zoo of pycls](https://github.co
 ## Usage
 
 To use a efficientnet model, there are two steps to do:
+
 1. Convert the model to EfficientNet-style supported by MMDetection
+
 2. Modify backbone and neck in config accordingly
 
 ### Convert model
