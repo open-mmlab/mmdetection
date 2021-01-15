@@ -29,6 +29,7 @@ from mmdet.integration.nncf import (check_nncf_is_enabled,
                                     get_uncompressed_model, is_checkpoint_nncf,
                                     wrap_nncf_model)
 from mmdet.models import detectors
+from mmdet.utils import ExtendedDictAction
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
 from mmdet.utils.deployment.symbolic import (
     register_extra_symbolics, register_extra_symbolics_for_openvino)
@@ -198,7 +199,12 @@ def main(args):
     assert args.opset > 9
 
     torch.set_default_tensor_type(torch.FloatTensor)
-    model = init_detector(args.config, args.checkpoint, device='cpu')
+
+    config = mmcv.Config.fromfile(args.config)
+    if args.update_config:
+        config.merge_from_dict(args.update_config)
+
+    model = init_detector(config, args.checkpoint, device='cpu')
     model.eval()
     if torch.cuda.is_available():
         model.cuda()
@@ -238,7 +244,7 @@ def main(args):
     with torch.no_grad():
         export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=args.opset,
                        alt_ssd_export=getattr(args, 'alt_ssd_export', False),
-                       target=args.target, verbose=True)
+                       target=args.target, verbose=False)
         add_node_names(onnx_model_path)
         print(f'ONNX model has been saved to "{onnx_model_path}"')
 
@@ -269,7 +275,8 @@ def parse_args():
     parser.add_argument('checkpoint', help="path to file with model's weights")
     parser.add_argument('output_dir', help='path to directory to save exported models in')
     parser.add_argument('--opset', type=int, default=10, help='ONNX opset')
-
+    parser.add_argument('--update_config', nargs='+', action=ExtendedDictAction,
+                        help='Update configuration file by parameters specified here.')
     subparsers = parser.add_subparsers(title='target', dest='target', help='target model format')
     subparsers.required = True
     parser_onnx = subparsers.add_parser('onnx', help='export to ONNX')
@@ -280,6 +287,7 @@ def parse_args():
                                  help='use alternative ONNX representation of SSD net')
     parser_openvino.add_argument('--input_format', choices=['BGR', 'RGB'], default='BGR',
                                  help='Input image format for exported model.')
+    
     args = parser.parse_args()
     return args
 
