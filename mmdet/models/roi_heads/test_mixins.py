@@ -67,10 +67,17 @@ class BBoxTestMixin(object):
         num_proposals_per_img = tuple(len(p) for p in proposals)
         rois = rois.split(num_proposals_per_img, 0)
         cls_score = cls_score.split(num_proposals_per_img, 0)
+
         # some detector with_reg is False, bbox_pred will be None
-        bbox_pred = bbox_pred.split(
-            num_proposals_per_img,
-            0) if bbox_pred is not None else [None, None]
+        if bbox_pred is not None:
+            # the bbox prediction of some detectors like SABL is not Tensor
+            if isinstance(bbox_pred, torch.Tensor):
+                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+            else:
+                bbox_pred = self.bbox_head.bbox_pred_split(
+                    bbox_pred, num_proposals_per_img)
+        else:
+            bbox_pred = (None, ) * len(proposals)
 
         # apply bbox post-processing to each image individually
         det_bboxes = []
@@ -102,7 +109,6 @@ class BBoxTestMixin(object):
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
                                      scale_factor, flip, flip_direction)
             rois = bbox2roi([proposals])
-            # recompute feature maps to save GPU memory
             bbox_results = self._bbox_forward(x, rois)
             bboxes, scores = self.bbox_head.get_bboxes(
                 rois,
@@ -142,6 +148,9 @@ class MaskTestMixin(object):
             if det_bboxes.shape[0] == 0:
                 segm_result = [[] for _ in range(self.mask_head.num_classes)]
             else:
+                if rescale and not isinstance(scale_factor,
+                                              (float, torch.Tensor)):
+                    scale_factor = det_bboxes.new_tensor(scale_factor)
                 _bboxes = (
                     det_bboxes[:, :4] *
                     scale_factor if rescale else det_bboxes)
@@ -188,17 +197,33 @@ class MaskTestMixin(object):
                     torch.from_numpy(scale_factor).to(det_bboxes[0].device)
                     for scale_factor in scale_factors
                 ]
-            _bboxes = [
-                det_bboxes[i][:, :4] *
-                scale_factors[i] if rescale else det_bboxes[i][:, :4]
-                for i in range(len(det_bboxes))
-            ]
-            mask_rois = bbox2roi(_bboxes)
-            mask_results = self._mask_forward(x, mask_rois)
-            mask_pred = mask_results['mask_pred']
-            # split batch mask prediction back to each image
-            num_mask_roi_per_img = [len(det_bbox) for det_bbox in det_bboxes]
-            mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
+            if torch.onnx.is_in_onnx_export():
+                # avoid mask_pred.split with static number of prediction
+                mask_preds = []
+                _bboxes = []
+                for i, boxes in enumerate(det_bboxes):
+                    boxes = boxes[:, :4]
+                    if rescale:
+                        boxes *= scale_factors[i]
+                    _bboxes.append(boxes)
+                    img_inds = boxes[:, :1].clone() * 0 + i
+                    mask_rois = torch.cat([img_inds, boxes], dim=-1)
+                    mask_result = self._mask_forward(x, mask_rois)
+                    mask_preds.append(mask_result['mask_pred'])
+            else:
+                _bboxes = [
+                    det_bboxes[i][:, :4] *
+                    scale_factors[i] if rescale else det_bboxes[i][:, :4]
+                    for i in range(len(det_bboxes))
+                ]
+                mask_rois = bbox2roi(_bboxes)
+                mask_results = self._mask_forward(x, mask_rois)
+                mask_pred = mask_results['mask_pred']
+                # split batch mask prediction back to each image
+                num_mask_roi_per_img = [
+                    det_bbox.shape[0] for det_bbox in det_bboxes
+                ]
+                mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
 
             # apply mask post-processing to each image individually
             segm_results = []

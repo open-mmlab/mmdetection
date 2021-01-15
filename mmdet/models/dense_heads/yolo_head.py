@@ -6,16 +6,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, normal_init
+from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
-                        build_bbox_coder, build_sampler, force_fp32,
-                        images_to_levels, multi_apply, multiclass_nms)
+                        build_bbox_coder, build_sampler, images_to_levels,
+                        multi_apply, multiclass_nms)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
+from .dense_test_mixins import BBoxTestMixin
 
 
 @HEADS.register_module()
-class YOLOV3Head(BaseDenseHead):
+class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
     """YOLOV3Head Paper link: https://arxiv.org/abs/1804.02767.
 
     Args:
@@ -168,16 +170,24 @@ class YOLOV3Head(BaseDenseHead):
         return tuple(pred_maps),
 
     @force_fp32(apply_to=('pred_maps', ))
-    def get_bboxes(self, pred_maps, img_metas, cfg=None, rescale=False):
+    def get_bboxes(self,
+                   pred_maps,
+                   img_metas,
+                   cfg=None,
+                   rescale=False,
+                   with_nms=True):
         """Transform network output for a batch into bbox predictions.
 
         Args:
             pred_maps (list[Tensor]): Raw predictions for a batch of images.
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
+                if None, test_cfg would be used. Default: None.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
@@ -195,7 +205,7 @@ class YOLOV3Head(BaseDenseHead):
             ]
             scale_factor = img_metas[img_id]['scale_factor']
             proposals = self._get_bboxes_single(pred_maps_list, scale_factor,
-                                                cfg, rescale)
+                                                cfg, rescale, with_nms)
             result_list.append(proposals)
         return result_list
 
@@ -203,7 +213,8 @@ class YOLOV3Head(BaseDenseHead):
                            pred_maps_list,
                            scale_factor,
                            cfg,
-                           rescale=False):
+                           rescale=False,
+                           with_nms=True):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -211,14 +222,21 @@ class YOLOV3Head(BaseDenseHead):
                 of each single image in the batch.
             scale_factor (ndarray): Scale factor of the image arrange as
                 (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1.
+            tuple(Tensor):
+                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
+                    the first 4 columns are bounding box positions
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                    between 0 and 1.
+                det_labels (Tensor): A (n,) tensor where each item is the
+                    predicted class label of the corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(pred_maps_list) == self.num_levels
@@ -249,14 +267,21 @@ class YOLOV3Head(BaseDenseHead):
 
             # Filtering out all predictions with conf < conf_thr
             conf_thr = cfg.get('conf_thr', -1)
-            conf_inds = conf_pred.ge(conf_thr).nonzero().flatten()
-            bbox_pred = bbox_pred[conf_inds, :]
-            cls_pred = cls_pred[conf_inds, :]
-            conf_pred = conf_pred[conf_inds]
+            if conf_thr > 0:
+                # add as_tuple=False for compatibility in Pytorch 1.6
+                # flatten would create a Reshape op with constant values,
+                # and raise RuntimeError when doing inference in ONNX Runtime
+                # with a different input image (#4221).
+                conf_inds = conf_pred.ge(conf_thr).nonzero(
+                    as_tuple=False).squeeze(1)
+                bbox_pred = bbox_pred[conf_inds, :]
+                cls_pred = cls_pred[conf_inds, :]
+                conf_pred = conf_pred[conf_inds]
 
             # Get top-k prediction
             nms_pre = cfg.get('nms_pre', -1)
-            if 0 < nms_pre < conf_pred.size(0):
+            if 0 < nms_pre < conf_pred.size(0) and (
+                    not torch.onnx.is_in_onnx_export()):
                 _, topk_inds = conf_pred.topk(nms_pre)
                 bbox_pred = bbox_pred[topk_inds, :]
                 cls_pred = cls_pred[topk_inds, :]
@@ -272,7 +297,7 @@ class YOLOV3Head(BaseDenseHead):
         multi_lvl_cls_scores = torch.cat(multi_lvl_cls_scores)
         multi_lvl_conf_scores = torch.cat(multi_lvl_conf_scores)
 
-        if multi_lvl_conf_scores.size(0) == 0:
+        if with_nms and (multi_lvl_conf_scores.size(0) == 0):
             return torch.zeros((0, 5)), torch.zeros((0, ))
 
         if rescale:
@@ -285,15 +310,19 @@ class YOLOV3Head(BaseDenseHead):
         multi_lvl_cls_scores = torch.cat([multi_lvl_cls_scores, padding],
                                          dim=1)
 
-        det_bboxes, det_labels = multiclass_nms(
-            multi_lvl_bboxes,
-            multi_lvl_cls_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img,
-            score_factors=multi_lvl_conf_scores)
-
-        return det_bboxes, det_labels
+        # Support exporting to onnx without nms
+        if with_nms and cfg.get('nms', None) is not None:
+            det_bboxes, det_labels = multiclass_nms(
+                multi_lvl_bboxes,
+                multi_lvl_cls_scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=multi_lvl_conf_scores)
+            return det_bboxes, det_labels
+        else:
+            return (multi_lvl_bboxes, multi_lvl_cls_scores,
+                    multi_lvl_conf_scores)
 
     @force_fp32(apply_to=('pred_maps', ))
     def loss(self,
@@ -487,3 +516,21 @@ class YOLOV3Head(BaseDenseHead):
         neg_map[sampling_result.neg_inds] = 1
 
         return target_map, neg_map
+
+    def aug_test(self, feats, img_metas, rescale=False):
+        """Test function with test time augmentation.
+
+        Args:
+            feats (list[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains features for all images in the batch.
+            img_metas (list[list[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. each dict has image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[ndarray]: bbox results of each class
+        """
+        return self.aug_test_bboxes(feats, img_metas, rescale=rescale)

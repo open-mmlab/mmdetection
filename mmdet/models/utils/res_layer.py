@@ -38,7 +38,7 @@ class ResLayer(nn.Sequential):
         if stride != 1 or inplanes != planes * block.expansion:
             downsample = []
             conv_stride = stride
-            if avg_down and stride != 1:
+            if avg_down:
                 conv_stride = 1
                 downsample.append(
                     nn.AvgPool2d(

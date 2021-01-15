@@ -42,7 +42,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.4.0 was released in 5/9/2020.
+v2.8.0 was released in 04/01/2021.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -51,14 +51,17 @@ A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](
 Results and models are available in the [model zoo](docs/model_zoo.md).
 
 Supported backbones:
+
 - [x] ResNet
 - [x] ResNeXt
 - [x] VGG
 - [x] HRNet
 - [x] RegNet
 - [x] Res2Net
+- [x] ResNeSt
 
 Supported methods:
+
 - [x] [RPN](configs/rpn)
 - [x] [Fast R-CNN](configs/fast_rcnn)
 - [x] [Faster R-CNN](configs/faster_rcnn)
@@ -100,21 +103,25 @@ Supported methods:
 - [x] [Side-Aware Boundary Localization](configs/sabl/README.md)
 - [x] [YOLOv3](configs/yolo/README.md)
 - [x] [PAA](configs/paa/README.md)
+- [x] [YOLACT](configs/yolact/README.md)
+- [x] [CentripetalNet](configs/centripetalnet/README.md)
+- [x] [VFNet](configs/vfnet/README.md)
+- [x] [DETR](configs/detr/README.md)
+- [x] [CascadeRPN](configs/cascade_rpn/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
 ## Installation
 
-Please refer to [install.md](docs/install.md) for installation and dataset preparation.
-
+Please refer to [get_started.md](docs/get_started.md) for installation.
 
 ## Getting Started
 
-Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection.
-We provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
-There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
+Please see [get_started.md](docs/get_started.md) for the basic usage of MMDetection.
+We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/1_exist_data_model.md) and [with new dataset](docs/2_new_data_model.md) for beginners.
+There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), [customizing runtime settings](docs/tutorials/customize_runtime.md) and [useful tools](docs/useful_tools.md).
 
-For trouble shooting, please refer to [trouble_shooting.md](docs/trouble_shooting.md)
+Please refer to [FAQ](docs/faq.md) for frequently asked questions.
 
 ## Contributing
 
@@ -124,7 +131,6 @@ We appreciate all contributions to improve MMDetection. Please refer to [CONTRIB
 
 MMDetection is an open source project that is contributed by researchers and engineers from various colleges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
 We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new detectors.
-
 
 ## Citation
 
@@ -144,8 +150,14 @@ If you use this toolbox or benchmark in your research, please cite this project.
 }
 ```
 
+## Projects in OpenMMLab
 
-## Contact
-
-This repo is currently maintained by Kai Chen ([@hellock](http://github.com/hellock)), Yuhang Cao ([@yhcao6](https://github.com/yhcao6)), Wenwei Zhang ([@ZwwWayne](https://github.com/ZwwWayne)),
-Jiarui Xu ([@xvjiarui](https://github.com/xvjiarui)). Other core developers include Jiangmiao Pang ([@OceanPang](https://github.com/OceanPang)) and Jiaqi Wang ([@myownskyW7](https://github.com/myownskyW7)).
+- [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
+- [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab image classification toolbox and benchmark.
+- [MMDetection](https://github.com/open-mmlab/mmdetection): OpenMMLab detection toolbox and benchmark.
+- [MMDetection3D](https://github.com/open-mmlab/mmdetection3d): OpenMMLab's next-generation platform for general 3D object detection.
+- [MMSegmentation](https://github.com/open-mmlab/mmsegmentation): OpenMMLab semantic segmentation toolbox and benchmark.
+- [MMAction2](https://github.com/open-mmlab/mmaction2): OpenMMLab's next-generation action understanding toolbox and benchmark.
+- [MMTracking](https://github.com/open-mmlab/mmtracking): OpenMMLab video perception toolbox and benchmark.
+- [MMPose](https://github.com/open-mmlab/mmpose): OpenMMLab pose estimation toolbox and benchmark.
+- [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab image and video editing toolbox.

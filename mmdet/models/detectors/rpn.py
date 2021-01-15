@@ -1,6 +1,7 @@
 import mmcv
+from mmcv.image import tensor2imgs
 
-from mmdet.core import bbox_mapping, tensor2imgs
+from mmdet.core import bbox_mapping
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -83,7 +84,8 @@ class RPN(BaseDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        if self.train_cfg.rpn.get('debug', False):
+        if (isinstance(self.train_cfg.rpn, dict)
+                and self.train_cfg.rpn.get('debug', False)):
             self.rpn_head.debug_imgs = tensor2imgs(img)
 
         x = self.extract_feat(img)

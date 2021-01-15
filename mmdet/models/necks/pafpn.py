@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+from mmcv.runner import auto_fp16
 
-from mmdet.core import auto_fp16
 from ..builder import NECKS
 from .fpn import FPN
 
@@ -124,11 +124,16 @@ class PAFPN(FPN):
                     outs.append(F.max_pool2d(outs[-1], 1, stride=2))
             # add conv layers on top of original feature maps (RetinaNet)
             else:
-                if self.extra_convs_on_inputs:
+                if self.add_extra_convs == 'on_input':
                     orig = inputs[self.backbone_end_level - 1]
                     outs.append(self.fpn_convs[used_backbone_levels](orig))
-                else:
+                elif self.add_extra_convs == 'on_lateral':
+                    outs.append(self.fpn_convs[used_backbone_levels](
+                        laterals[-1]))
+                elif self.add_extra_convs == 'on_output':
                     outs.append(self.fpn_convs[used_backbone_levels](outs[-1]))
+                else:
+                    raise NotImplementedError
                 for i in range(used_backbone_levels + 1, self.num_outs):
                     if self.relu_before_extra_convs:
                         outs.append(self.fpn_convs[i](F.relu(outs[-1])))

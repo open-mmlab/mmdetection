@@ -26,6 +26,8 @@ class BucketingBBoxCoder(BaseBBoxCoder):
              To avoid too large offset displacements. Defaults to 1.0.
         cls_ignore_neighbor (bool): Ignore second nearest bucket or Not.
              Defaults to True.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
     """
 
     def __init__(self,
@@ -33,13 +35,15 @@ class BucketingBBoxCoder(BaseBBoxCoder):
                  scale_factor,
                  offset_topk=2,
                  offset_upperbound=1.0,
-                 cls_ignore_neighbor=True):
+                 cls_ignore_neighbor=True,
+                 clip_border=True):
         super(BucketingBBoxCoder, self).__init__()
         self.num_buckets = num_buckets
         self.scale_factor = scale_factor
         self.offset_topk = offset_topk
         self.offset_upperbound = offset_upperbound
         self.cls_ignore_neighbor = cls_ignore_neighbor
+        self.clip_border = clip_border
 
     def encode(self, bboxes, gt_bboxes):
         """Get bucketing estimation and fine regression targets during
@@ -81,7 +85,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
             0) == bboxes.size(0)
         decoded_bboxes = bucket2bbox(bboxes, cls_preds, offset_preds,
                                      self.num_buckets, self.scale_factor,
-                                     max_shape)
+                                     max_shape, self.clip_border)
 
         return decoded_bboxes
 
@@ -262,7 +266,8 @@ def bucket2bbox(proposals,
                 offset_preds,
                 num_buckets,
                 scale_factor=1.0,
-                max_shape=None):
+                max_shape=None,
+                clip_border=True):
     """Apply bucketing estimation (cls preds) and fine regression (offset
     preds) to generate det bboxes.
 
@@ -273,6 +278,8 @@ def bucket2bbox(proposals,
         num_buckets (int): Number of buckets.
         scale_factor (float): Scale factor to rescale proposals.
         max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
 
     Returns:
         tuple[Tensor]: (bboxes, loc_confidence).
@@ -322,7 +329,7 @@ def bucket2bbox(proposals,
     y1 = t_buckets - t_offsets * bucket_h
     y2 = d_buckets - d_offsets * bucket_h
 
-    if max_shape is not None:
+    if clip_border and max_shape is not None:
         x1 = x1.clamp(min=0, max=max_shape[1] - 1)
         y1 = y1.clamp(min=0, max=max_shape[0] - 1)
         x2 = x2.clamp(min=0, max=max_shape[1] - 1)
