@@ -94,7 +94,6 @@ def inference_detector(model, imglist):
 
     is_batch = False
     if isinstance(imglist, list):
-        print("Processing a batch of size", len(imglist))
         is_batch = True
     else:
         imglist = [imglist]
