@@ -228,9 +228,9 @@ class SparseRoIHead(CascadeRoIHead):
 
         Args:
             x (list[Tensor]): list of multi-level img features.
-            proposals (Tensor): Decoded proposal bboxes, has shape
+            proposal_boxes (Tensor): Decoded proposal bboxes, has shape
                 (batch_size, num_proposals, 4)
-            proposal_features (Tensor): Expanded proposal
+            proposal_feats (Tensor): Expanded proposal
                 features, has shape
                 (batch_size, num_proposals, proposal_feature_channel)
             img_metas (dict): meta information of images.

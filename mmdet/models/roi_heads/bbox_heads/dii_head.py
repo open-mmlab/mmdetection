@@ -111,10 +111,10 @@ class DIIHead(BBoxHead):
         # over load the self.fc_cls in BBoxHead
         self.fc_reg = nn.Linear(in_channels, 4)
 
-        assert self.reg_class_agnostic, 'DIIHead only suppport when ' \
-                                        '`reg_class_agnostic` is True '
-        assert self.reg_decoded_bbox, 'DIIHead only suppport when ' \
-                                      '`reg_decoded_bbox` is True'
+        assert self.reg_class_agnostic, 'DIIHead only ' \
+            'suppport `reg_class_agnostic=True` '
+        assert self.reg_decoded_bbox, 'DIIHead only ' \
+            'suppport `reg_decoded_bbox=True`'
 
     def init_weights(self):
         """Use xavier initialization for all weight parameter and set
@@ -122,6 +122,10 @@ class DIIHead(BBoxHead):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
+            else:
+                # adopt the default initialization for
+                # the weight and bias of the layer norm
+                pass
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
@@ -134,12 +138,12 @@ class DIIHead(BBoxHead):
             roi_feat (Tensor): Roi-pooling features with shape
                 (batch_size*num_proposals, feature_dimensions,
                 pooling_h , pooling_w).
-            proposal_feat: Intermediate feature get from diihead in
-                last stage, has shape
+            proposal_feat (Tensor): Intermediate feature get from
+                diihead in last stage, has shape
                 (batch_size, num_proposals, feature_dimensions)
 
           Returns:
-                tuple: Usually a tuple of classification scores
+                tuple[Tensor]: Usually a tuple of classification scores
                 and bbox prediction and a intermediate feature.
 
                     - cls_scores (Tensor): Classification scores for
@@ -270,20 +274,47 @@ class DIIHead(BBoxHead):
 
     def _get_target_single(self, pos_inds, neg_inds, pos_bboxes, neg_bboxes,
                            pos_gt_bboxes, pos_gt_labels, cfg):
-        """Calculate the ground truth for anchors in single image according to
-        the sampling results.
+        """Calculate the ground truth for proposals in the single image
+        according to the sampling results.
 
-        Almost the same as the implementation in bbox_head, we add pos_inds
-        and neg_inds to select positive and negative samples instead of
-        selecting first num_pos as positive samples.
+        Almost the same as the implementation in `bbox_head`,
+        we add pos_inds and neg_inds to select positive and
+        negative samples instead of selecting the first num_pos
+        as positive samples.
 
         Args:
             pos_inds (Tensor): The length is equal to the
-                positive sample numbers, contains all index
-                of positive sample in origin proposal set.
+                positive sample numbers contain all index
+                of the positive sample in the origin proposal set.
             neg_inds (Tensor): The length is equal to the
-                negative sample numbers, contains all index
-                of negative sample in origin proposal set.
+                negative sample numbers contain all index
+                of the negative sample in the origin proposal set.
+            pos_bboxes (Tensor): Contains all the positive boxes,
+                has shape (num_pos, 4), the last dimension 4
+                represents [tl_x, tl_y, br_x, br_y].
+            neg_bboxes (Tensor): Contains all the negative boxes,
+                has shape (num_neg, 4), the last dimension 4
+                represents [tl_x, tl_y, br_x, br_y].
+            pos_gt_bboxes (Tensor): Contains all the gt_boxes,
+                has shape (num_gt, 4), the last dimension 4
+                represents [tl_x, tl_y, br_x, br_y].
+            pos_gt_labels (Tensor): Contains all the gt_labels,
+                has shape (num_gt).
+            cfg (obj:`ConfigDict`): `train_cfg` of R-CNN.
+
+        Returns:
+            Tuple[Tensor]: Ground truth for proposals in a single image.
+            Containing the following Tensors:
+
+                - labels(Tensor): Gt_labels for all proposals, has
+                  shape (num_proposals,).
+                - label_weights(Tensor): Labels_weights for all proposals, has
+                  shape (num_proposals,).
+                - bbox_targets(Tensor):Regression target for all proposals, has
+                  shape (num_proposals, 4), the last dimension 4
+                  represents [tl_x, tl_y, br_x, br_y].
+                - bbox_weights(Tensor):Regression weights for all proposals,
+                  has shape (num_proposals, 4).
         """
         num_pos = pos_bboxes.size(0)
         num_neg = neg_bboxes.size(0)
@@ -326,6 +357,40 @@ class DIIHead(BBoxHead):
         Almost the same as the implementation in bbox_head, we passed
         additional parameters pos_inds_list and neg_inds_list to
         `_get_target_single` function.
+
+        Args:
+            sampling_results (List[obj:SamplingResults]): Assign results of
+                all images in a batch after sampling.
+            gt_bboxes (list[Tensor]): Gt_bboxes of all images in a batch,
+                each tensor has shape (num_gt, 4),  the last dimension 4
+                represents [tl_x, tl_y, br_x, br_y].
+            gt_labels (list[Tensor]): Gt_labels of all images in a batch,
+                each tensor has shape (num_gt,).
+            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
+            concat (bool): Whether to concatenate the results of all
+                the images in a single batch.
+
+        Returns:
+            Tuple[Tensor]: Ground truth for proposals in a single image.
+            Containing the following list of Tensors:
+
+                - labels (list[Tensor],Tensor): Gt_labels for all
+                  proposals in a batch, each tensor in list has
+                  shape (num_proposals,) when `concat=False`, otherwise just
+                  a single tensor has shape (num_all_proposals,).
+                - label_weights (list[Tensor]): Labels_weights for
+                  all proposals in a batch, each tensor in list has shape
+                  (num_proposals,) when `concat=False`, otherwise just a
+                  single tensor has shape (num_all_proposals,).
+                - bbox_targets (list[Tensor],Tensor): Regression target
+                  for all proposals in a batch, each tensor in list has
+                  shape (num_proposals, 4) when `concat=False`, otherwise
+                  just a single tensor has shape (num_all_proposals, 4),
+                  the last dimension 4 represents [tl_x, tl_y, br_x, br_y].
+                - bbox_weights (list[tensor],Tensor): Regression weights for
+                  all proposals in a batch, each tensor in list has shape
+                  (num_proposals, 4) when `concat=False`, otherwise just a
+                  single tensor has shape (num_all_proposals, 4).
         """
         pos_inds_list = [res.pos_inds for res in sampling_results]
         neg_inds_list = [res.neg_inds for res in sampling_results]

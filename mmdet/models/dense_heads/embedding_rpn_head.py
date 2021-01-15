@@ -12,8 +12,8 @@ class EmbeddingRPNHead(nn.Module):
     """RPNHead in the `Sparse R-CNN <https://arxiv.org/abs/2011.12450>`_ .
 
     Unlike traditional RPNHead, this module does not need FPN input, but just
-    decode init_proposal_bboxes and expand first dimension of
-    init_proposal_bboxes and init_proposal_features to the batch_size.
+    decode `init_proposal_bboxes` and expand the first dimension of
+    `init_proposal_bboxes` and `init_proposal_features` to the batch_size.
 
     Args:
         num_proposals (int): Number of init_proposals. Default 100.
