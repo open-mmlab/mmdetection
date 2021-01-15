@@ -308,6 +308,12 @@ class PublicModelsTestCase(unittest.TestCase):
               'ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'
         self.run_pytorch_test(origin_config, self.download_if_not_yet(url))
 
+    def test_pytorch_retinanet_effd0_bifpn_1x_coco(self):
+        origin_config = 'configs/efficientdet/retinanet_effd0_bifpn_1x_coco.py'
+        url = 'https://storage.openvinotoolkit.org/repositories/mmdetection/models/efficientdet/' \
+              'retinanet_effd0_bifpn_1x_coco/epoch_300.pth'
+        self.run_pytorch_test(origin_config, self.download_if_not_yet(url))
+
     # Export
 
     def test_openvino_atss__atss_r50_fpn_1x_coco(self):
@@ -401,6 +407,12 @@ class PublicModelsTestCase(unittest.TestCase):
               'ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'
         self.run_openvino_export_test(origin_config, self.download_if_not_yet(url), alt_ssd_export=True)
 
+    def test_openvino_retinanet_effd0_bifpn_1x_coco(self):
+        origin_config = 'configs/efficientdet/retinanet_effd0_bifpn_1x_coco.py'
+        url = 'https://storage.openvinotoolkit.org/repositories/mmdetection/models/efficientdet/' \
+              'retinanet_effd0_bifpn_1x_coco/epoch_300.pth' 
+        self.run_openvino_export_test(origin_config, self.download_if_not_yet(url))
+
     def test_onnx_atss__atss_r50_fpn_1x_coco(self):
         origin_config = 'configs/atss/atss_r50_fpn_1x_coco.py'
         url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/' \
@@ -438,7 +450,7 @@ class PublicModelsTestCase(unittest.TestCase):
     #           'ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco/' \
     #           'ms_rcnn_r50_caffe_fpn_2x_coco_bbox_mAP-0.388__segm_mAP-0.363_20200506_004738-ee87b137.pth'
     #     self.run_onnx_export_test(origin_config, self.download_if_not_yet(url))
-    
+
     # def test_onnx_htc__htc_r50_fpn_1x(self):
     #     origin_config = 'configs/htc/htc_r50_fpn_20e_coco.py'
     #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/htc/' \
@@ -479,6 +491,12 @@ class PublicModelsTestCase(unittest.TestCase):
         origin_config = 'configs/ssd/ssd300_coco.py'
         url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
               'ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'
+        self.run_onnx_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_onnx_retinanet_effd0_bifpn_1x_coco(self):
+        origin_config = 'configs/efficientdet/retinanet_effd0_bifpn_1x_coco.py'
+        url = 'https://storage.openvinotoolkit.org/repositories/mmdetection/models/efficientdet/' \
+              'retinanet_effd0_bifpn_1x_coco/epoch_300.pth' 
         self.run_onnx_export_test(origin_config, self.download_if_not_yet(url))
 
 
