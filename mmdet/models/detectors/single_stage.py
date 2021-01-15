@@ -6,6 +6,8 @@ from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
+from ...integration.nncf import no_nncf_trace
+
 
 @DETECTORS.register_module()
 class SingleStageDetector(BaseDetector):
@@ -93,8 +95,9 @@ class SingleStageDetector(BaseDetector):
     def simple_test(self, img, img_metas, rescale=False, postprocess=True):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
-        det_bboxes, det_labels = \
-            self.bbox_head.get_bboxes(*outs, img_metas, self.test_cfg, False)[0]
+        with no_nncf_trace():
+            det_bboxes, det_labels = \
+                self.bbox_head.get_bboxes(*outs, img_metas, self.test_cfg, False)[0]
 
         if postprocess:
             return self.postprocess(det_bboxes, det_labels, None, img_metas,
