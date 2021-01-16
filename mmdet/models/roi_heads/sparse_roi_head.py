@@ -219,7 +219,7 @@ class SparseRoIHead(CascadeRoIHead):
     def simple_test(self,
                     x,
                     proposal_boxes,
-                    proposal_feats,
+                    proposal_features,
                     img_metas,
                     imgs_whwh,
                     rescale=False):
@@ -229,7 +229,7 @@ class SparseRoIHead(CascadeRoIHead):
             x (list[Tensor]): list of multi-level img features.
             proposal_boxes (Tensor): Decoded proposal bboxes, has shape
                 (batch_size, num_proposals, 4)
-            proposal_feats (Tensor): Expanded proposal
+            proposal_features (Tensor): Expanded proposal
                 features, has shape
                 (batch_size, num_proposals, proposal_feature_channel)
             img_metas (dict): meta information of images.
@@ -250,9 +250,8 @@ class SparseRoIHead(CascadeRoIHead):
         assert self.with_bbox, 'Bbox head must be implemented.'
         # Decode initial proposals
         num_imgs = len(img_metas)
-        num_proposals = proposal_boxes.size(1)
         proposal_list = [proposal_boxes[i] for i in range(num_imgs)]
-        object_feats = proposal_feats
+        object_feats = proposal_features
         for stage in range(self.num_stages):
             rois = bbox2roi(proposal_list)
             bbox_results = self._bbox_forward(stage, x, rois, object_feats,
@@ -269,16 +268,15 @@ class SparseRoIHead(CascadeRoIHead):
             cls_score = cls_score.sigmoid()
         else:
             cls_score = cls_score.softmax(-1)[..., :-1]
-        labels = torch.arange(num_classes)[None].repeat(
-            num_proposals, 1).flatten(0, 1).type_as(proposal_feats)
+
         for img_id in range(num_imgs):
             cls_score_per_img = cls_score[img_id]
             scores_per_img, topk_indices = cls_score_per_img.flatten(
                 0, 1).topk(
                     self.test_cfg.max_per_img, sorted=False)
-            labels_per_img = labels[topk_indices]
-            bbox_pred_per_img = proposal_list[img_id].view(-1, 1, 4).repeat(
-                1, num_classes, 1).view(-1, 4)[topk_indices]
+            labels_per_img = topk_indices % num_classes
+            bbox_pred_per_img = proposal_list[img_id][topk_indices //
+                                                      num_classes]
             if rescale:
                 scale_factor = img_metas[img_id]['scale_factor']
                 bbox_pred_per_img /= bbox_pred_per_img.new_tensor(scale_factor)
