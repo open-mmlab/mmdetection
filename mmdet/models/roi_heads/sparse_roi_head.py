@@ -11,7 +11,6 @@ class SparseRoIHead(CascadeRoIHead):
     r"""The RoIHead for `Sparse R-CNN: End-to-End Object Detection with
     Learnable Proposals <https://arxiv.org/abs/2011.12450>`_
 
-
     Args:
         num_stages (int): Number of stage whole iterative process.
             Defaults to 6.
@@ -153,9 +152,9 @@ class SparseRoIHead(CascadeRoIHead):
                 (batch_size, num_proposals, proposal_feature_channel)
             img_metas (list[dict]): list of image info dict where
                 each dict has: 'img_shape', 'scale_factor', 'flip',
-                 and may also contain 'filename', 'ori_shape',
-                 'pad_shape', and 'img_norm_cfg'. For details on the
-                 values of these keys see
+                and may also contain 'filename', 'ori_shape',
+                'pad_shape', and 'img_norm_cfg'. For details on the
+                values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
@@ -173,8 +172,8 @@ class SparseRoIHead(CascadeRoIHead):
         """
 
         num_imgs = len(img_metas)
-        num_poposals = proposal_boxes.size(1)
-        imgs_whwh = imgs_whwh.repeat(1, num_poposals, 1)
+        num_proposals = proposal_boxes.size(1)
+        imgs_whwh = imgs_whwh.repeat(1, num_proposals, 1)
         all_stage_bbox_results = []
         proposal_list = [proposal_boxes[i] for i in range(len(proposal_boxes))]
         object_feats = proposal_features
