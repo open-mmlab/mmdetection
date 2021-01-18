@@ -1,50 +1,17 @@
 import argparse
 import os.path as osp
+import warnings
 
 import mmcv
 import numpy as np
+import pycocotools.mask as mask_util
 from mmcv import Config, DictAction
 
 from mmdet.core.evaluation import eval_map
+from mmdet.core.mask.structures import (BitmapMasks, PolygonMasks,
+                                        polygon_to_bitmap)
 from mmdet.core.visualization.image import imshow_det_bboxes
-from mmdet.datasets import build_dataset
-
-
-def retrieve_loading_pipeline(pipeline):
-    """Only keep loading image and annotations related configuration
-        Args:
-            pipelines (list[dict]): Data pipeline configs.
-
-        Returns:
-            list: The new pipeline list with only keep
-                  loading image and annotations related configuration.
-
-        Examples:
-            >>> pipelines = [
-            ...    dict(type='LoadImageFromFile'),
-            ...    dict(type='LoadAnnotations', with_bbox=True),
-            ...    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
-            ...    dict(type='RandomFlip', flip_ratio=0.5),
-            ...    dict(type='Normalize', **img_norm_cfg),
-            ...    dict(type='Pad', size_divisor=32),
-            ...    dict(type='DefaultFormatBundle'),
-            ...    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
-            ...    ]
-            >>> expected_pipelines = [
-            ...    dict(type='LoadImageFromFile'),
-            ...    dict(type='LoadAnnotations', with_bbox=True)
-            ...    ]
-            >>> assert expected_pipelines ==\
-            ...        retrieve_loading_pipeline(pipelines)
-    """
-
-    loading_pipeline_cfg = []
-    for cfg in pipeline:
-        if cfg['type'].startswith('Load'):
-            loading_pipeline_cfg.append(cfg)
-    assert len(loading_pipeline_cfg) == 2, \
-        'pipeline cfg must include Loading image and annotations related type'
-    return loading_pipeline_cfg
+from mmdet.datasets import build_dataset, retrieve_loading_pipeline
 
 
 def visualize(img,
@@ -52,20 +19,42 @@ def visualize(img,
               result,
               class_names=None,
               show=True,
+              show_mask=True,
               wait_time=0,
               out_file=None):
+    if show_mask:
+        gt_masks = annotation.get('gt_masks', None)
+        if gt_masks is not None:
+            if isinstance(gt_masks, BitmapMasks):
+                gt_masks = gt_masks.masks
+            elif isinstance(gt_masks, PolygonMasks):
+                height = gt_masks.height
+                width = gt_masks.width
+                polygon_gt_masks = []
+                for poly_per_obj in gt_masks.masks:
+                    polygon_gt_masks.append(
+                        polygon_to_bitmap(poly_per_obj, height, width))
+                gt_masks = np.stack(polygon_gt_masks).reshape(
+                    -1, height, width)
+            else:
+                warnings.warn('Unsupported data type')
+                gt_masks = None
+    else:
+        gt_masks = None
     imshow_det_bboxes(
         img,
         annotation['bboxes'],
         annotation['labels'],
+        gt_masks,
         class_names=class_names,
         bbox_color=(255, 102, 61),
         text_color=(255, 102, 61),
+        mask_color=(255, 102, 61),
         show=False)
     if isinstance(result, tuple):
         bbox_result, segm_result = result
         if isinstance(segm_result, tuple):
-            segm_result = segm_result[0]
+            segm_result = segm_result[0]  # ms rcnn
     else:
         bbox_result, segm_result = result, None
     bboxes = np.vstack(bbox_result)
@@ -74,20 +63,38 @@ def visualize(img,
         for i, bbox in enumerate(bbox_result)
     ]
     labels = np.concatenate(labels)
+    segms = None
+    if show_mask and segm_result is not None and len(labels) > 0:  # non empty
+        segms = mmcv.concat_list(segm_result)
+        segms = mask_util.decode(segms)
+        segms = segms.transpose(2, 0, 1)
     imshow_det_bboxes(
         img,
         bboxes,
         labels,
-        segms=segm_result,
+        segms=segms,
         class_names=class_names,
         bbox_color=(72, 101, 241),
         text_color=(72, 101, 241),
+        mask_color=(72, 101, 241),
         show=show,
         wait_time=wait_time,
         out_file=out_file)
 
 
 class ResultVisualizer(object):
+    """Display and save evaluation results.
+
+    Args:
+        dataset (Dataset): A PyTorch dataset.
+        results (pickle object): pickle object from test results pkl file
+        topk (int): Number of the highest topk and
+            lowest topk after evaluation index sorting. Default: 20
+        show (bool): Whether to show the image. Default: True
+        wait_time (float): Value of waitKey param. Default: 0.
+        show_dir (str or None): The filename to write the image.
+            Default: 'work_dir'
+    """
 
     def __init__(self,
                  dataset,
@@ -108,12 +115,17 @@ class ResultVisualizer(object):
         self.show_dir = show_dir
 
     def _eval_fn(self, det_result, annotation):
+        # use only bbox det result
+        if isinstance(det_result, tuple):
+            bbox_det_result = [det_result[0]]
+        else:
+            bbox_det_result = [det_result]
         # mAP
         iou_thrs = np.linspace(
             .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
         mean_aps = []
         for thr in iou_thrs:
-            mean_ap, _ = eval_map([det_result], [annotation], iou_thr=thr)
+            mean_ap, _ = eval_map(bbox_det_result, [annotation], iou_thr=thr)
             mean_aps.append(mean_ap)
         return sum(mean_aps) / len(mean_aps)
 
@@ -134,11 +146,16 @@ class ResultVisualizer(object):
             save_filename = fname + '_' + str(round(mAP, 3)) + name
             out_file = osp.join(out_dir, save_filename)
 
-            visualize(data_info['img'], data_info['ann_info'],
-                      self.results[index], self.CLASSES, self.show,
-                      self.wait_time, out_file)
+            visualize(
+                data_info['img'],
+                data_info['ann_info'],
+                self.results[index],
+                self.CLASSES,
+                self.show,
+                wait_time=self.wait_time,
+                out_file=out_file)
 
-    def evaluate(self):
+    def evaluate_and_show(self):
         _mAPs = {}
         for i, (result, ) in enumerate(zip(self.results)):
             # self.dataset[i] should not call directly
@@ -228,7 +245,7 @@ def main():
         show=args.show,
         wait_time=args.wait_time,
         show_dir=args.show_dir)
-    result_visualizer.evaluate()
+    result_visualizer.evaluate_and_show()
 
 
 if __name__ == '__main__':
