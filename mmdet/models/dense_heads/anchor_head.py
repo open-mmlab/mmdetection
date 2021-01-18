@@ -25,8 +25,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         reg_decoded_bbox (bool): If true, the regression loss would be
             applied directly on decoded bounding boxes, meaning both the
             predicted boxes and regression targets are with absolute
-            coordinates format. Default False. Note generally it should be
-            set to `True` when using `IoULoss`, `GIoULoss`, or `DIoULoss`
+            coordinates format. Default False. It should be set to
+            `True` when using `IoULoss`, `GIoULoss`, or `DIoULoss`
             in the bbox head.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
@@ -413,7 +413,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
         if self.reg_decoded_bbox:
             # case when the regression loss (e.g. `IouLoss`, `GIouLoss`)
-            # is applied directly on the decoded bounding boxes, so here
+            # is applied directly on the decoded bounding boxes, so here it
             # decodes the already encoded coordinates to absolute format.
             anchors = anchors.reshape(-1, 4)
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)

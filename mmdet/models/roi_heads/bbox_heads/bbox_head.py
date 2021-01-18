@@ -172,7 +172,7 @@ class BBoxHead(nn.Module):
                 if self.reg_decoded_bbox:
                     # case when the regression loss (e.g. `IouLoss`,
                     # `GIouLoss`, `DIouLoss`) is applied directly on
-                    # the decoded bounding boxes, so here decodes the
+                    # the decoded bounding boxes, so here it decodes the
                     # already encoded coordinates to absolute format.
                     bbox_pred = self.bbox_coder.decode(rois[:, 1:], bbox_pred)
                 if self.reg_class_agnostic:
