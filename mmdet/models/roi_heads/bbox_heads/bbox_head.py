@@ -105,6 +105,10 @@ class BBoxHead(nn.Module):
                 pos_bbox_targets = self.bbox_coder.encode(
                     pos_bboxes, pos_gt_bboxes)
             else:
+                # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
+                # is applied directly on the decoded bounding boxes, both
+                # the predicted boxes and regression targets should be with
+                # absolute coordinate format.
                 pos_bbox_targets = pos_gt_bboxes
             bbox_targets[:num_pos, :] = pos_bbox_targets
             bbox_weights[:num_pos, :] = 1
@@ -166,6 +170,10 @@ class BBoxHead(nn.Module):
             # do not perform bounding box regression for BG anymore.
             if pos_inds.any():
                 if self.reg_decoded_bbox:
+                    # When the regression loss (e.g. `IouLoss`,
+                    # `GIouLoss`, `DIouLoss`) is applied directly on
+                    # the decoded bounding boxes, it decodes the
+                    # already encoded coordinates to absolute format.
                     bbox_pred = self.bbox_coder.decode(rois[:, 1:], bbox_pred)
                 if self.reg_class_agnostic:
                     pos_bbox_pred = bbox_pred.view(
