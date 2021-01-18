@@ -1,6 +1,5 @@
 import warnings
 
-import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import torch
@@ -9,6 +8,7 @@ from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import get_classes
+from mmdet.datasets import replace_ImageToTensor
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
 
@@ -104,9 +104,13 @@ def inference_detector(model, img):
         # add information into dict
         data = dict(img_info=dict(filename=img), img_prefix=None)
     # build the data pipeline
+    cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     test_pipeline = Compose(cfg.data.test.pipeline)
     data = test_pipeline(data)
     data = collate([data], samples_per_gpu=1)
+    # just get the actual data from DataContainer
+    data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
+    data['img'] = [img.data[0] for img in data['img']]
     if next(model.parameters()).is_cuda:
         # scatter to specified GPU
         data = scatter(data, [device])[0]
@@ -115,8 +119,6 @@ def inference_detector(model, img):
             assert not isinstance(
                 m, RoIPool
             ), 'CPU inference with RoIPool is not supported currently.'
-        # just get the actual data from DataContainer
-        data['img_metas'] = data['img_metas'][0].data
 
     # forward the model
     with torch.no_grad():
@@ -164,7 +166,8 @@ def show_result_pyplot(model,
                        score_thr=0.3,
                        fig_size=(15, 10),
                        title='result',
-                       block=True):
+                       block=True,
+                       wait_time=0):
     """Visualize the detection results on the image.
 
     Args:
@@ -175,13 +178,21 @@ def show_result_pyplot(model,
         score_thr (float): The threshold to visualize the bboxes and masks.
         fig_size (tuple): Figure size of the pyplot figure.
         title (str): Title of the pyplot figure.
-        block (bool): Whether to block GUI.
+        block (bool): Whether to block GUI. Default: True
+        wait_time (float): Value of waitKey param.
+                Default: 0.
     """
+    warnings.warn('"block" will be deprecated in v2.9.0,'
+                  'Please use "wait_time"')
     if hasattr(model, 'module'):
         model = model.module
-    img = model.show_result(img, result, score_thr=score_thr, show=False)
-    plt.figure(figsize=fig_size)
-    plt.imshow(mmcv.bgr2rgb(img))
-    plt.title(title)
-    plt.tight_layout()
-    plt.show(block=block)
+    model.show_result(
+        img,
+        result,
+        score_thr=score_thr,
+        show=True,
+        wait_time=wait_time,
+        fig_size=fig_size,
+        win_name=title,
+        bbox_color=(72, 101, 241),
+        text_color=(72, 101, 241))

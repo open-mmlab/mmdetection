@@ -5,6 +5,7 @@ from pathlib import Path
 import mmcv
 from mmcv import Config
 
+from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.datasets.builder import build_dataset
 
 
@@ -25,9 +26,9 @@ def parse_args():
     parser.add_argument('--not-show', default=False, action='store_true')
     parser.add_argument(
         '--show-interval',
-        type=int,
-        default=999,
-        help='the interval of show (ms)')
+        type=float,
+        default=1,
+        help='the interval of show (s)')
     args = parser.parse_args()
     return args
 
@@ -53,14 +54,17 @@ def main():
         filename = os.path.join(args.output_dir,
                                 Path(item['filename']).name
                                 ) if args.output_dir is not None else None
-        mmcv.imshow_det_bboxes(
+
+        imshow_det_bboxes(
             item['img'],
             item['gt_bboxes'],
             item['gt_labels'],
             class_names=dataset.CLASSES,
             show=not args.not_show,
+            wait_time=args.show_interval,
             out_file=filename,
-            wait_time=args.show_interval)
+            bbox_color=(255, 102, 61),
+            text_color=(255, 102, 61))
         progress_bar.update()
 
 
