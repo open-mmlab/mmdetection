@@ -17,7 +17,7 @@
 
 | Model        | Backbone  | Style   | Lr schd | Number of Proposals |Multi-Scale| RandomCrop  | box AP  | Config | Download |
 |:------------:|:---------:|:-------:|:-------:|:-------:            |:-------: |:---------:|:------:|:------:|:--------:|
-| Sparse R-CNN | R-50-FPN  | pytorch | 1x      |   100               | False     |  False     |  37.9  |         |       |
+| Sparse R-CNN | R-50-FPN  | pytorch | 1x      |   100               | False     |  False     |  38.2  |         |       |
 | Sparse R-CNN | R-50-FPN  | pytorch | 3x      |   100               | True     |   False     |  42.8  |         |       |
 | Sparse R-CNN | R-50-FPN  | pytorch | 3x      |   300               | True      |  True      |  45.0  |         |       |
 | Sparse R-CNN | R-101-FPN | pytorch | 3x      |   100               | True      |  False     |  44.2  |         |       |
