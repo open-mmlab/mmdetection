@@ -112,6 +112,18 @@ class XMLDataset(CustomDataset):
                 int(float(bnd_box.find('xmax').text)),
                 int(float(bnd_box.find('ymax').text))
             ]
+            if bbox[0] not in range(self.data_infos[idx]['width']):
+                continue
+            if bbox[2] not in range(self.data_infos[idx]['width']):
+                continue
+            if bbox[1] not in range(self.data_infos[idx]['height']):
+                continue
+            if bbox[3] not in range(self.data_infos[idx]['height']):
+                continue
+            if max(bbox[0], bbox[2]) != bbox[2]:
+                continue
+            if max(bbox[1], bbox[3]) != bbox[3]:
+                continue
             ignore = False
             if self.min_size:
                 assert not self.test_mode
