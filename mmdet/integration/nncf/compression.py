@@ -262,7 +262,7 @@ def change_export_func_first_conv(model):
     try:
         # pylint: disable=protected-access
         module_ = orig_model.backbone.features.init_block.conv.pre_ops._modules['0']
-    except AttributeError as e:
+    except (AttributeError, KeyError) as e:
         logger.info(f'Cannot change an export function for the first Conv due  {e}')
         return model
     module_.op.run_export_quantization = partial(run_hacked_export_quantization, module_.op)
