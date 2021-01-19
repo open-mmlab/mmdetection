@@ -154,7 +154,7 @@ class EvalHook(Hook):
                     osp.join(runner.work_dir,
                              f'best_{self.key_indicator}.pth'))
                 self.logger.info(
-                    f'Now best checkpoint is epoch_{runner.epoch + 1}.pth.'
+                    f'Now best checkpoint is {last_ckpt}. '
                     f'Best {self.key_indicator} is {best_score:0.4f}')
 
     def evaluate(self, runner, results):
@@ -251,5 +251,5 @@ class DistEvalHook(EvalHook):
                         osp.join(runner.work_dir,
                                  f'best_{self.key_indicator}.pth'))
                     self.logger.info(
-                        f'Now best checkpoint is {last_ckpt}.'
+                        f'Now best checkpoint is {last_ckpt}. '
                         f'Best {self.key_indicator} is {best_score:0.4f}')
