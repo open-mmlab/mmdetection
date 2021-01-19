@@ -1,5 +1,6 @@
 import argparse
 import os.path as osp
+import warnings
 
 import numpy as np
 import onnx
@@ -77,8 +78,8 @@ def pytorch2onnx(config_path,
             from mmcv.ops import get_onnxruntime_op_path
             ort_custom_op_path = get_onnxruntime_op_path()
         except (ImportError, ModuleNotFoundError):
-            pass
-
+            warnings.warn('If input model has custom op from mmcv, \
+                you may have to build mmcv with ONNXRuntime from source.')
         model.CLASSES = get_classes(dataset)
         num_classes = len(model.CLASSES)
         # check by onnx
