@@ -141,9 +141,9 @@ class CocoDataset(CustomDataset):
             x1, y1, w, h = ann['bbox']
             if x1 < 0 or x1 >= img_info['width']:
                 continue
-            if (x1 + w) <= 0 or (x1 + w) > img_info['height']:
+            if (x1 + w) <= 0 or (x1 + w) > img_info['width']:
                 continue
-            if y1 < 0 or y1 >= img_info['width']:
+            if y1 < 0 or y1 >= img_info['height']:
                 continue
             if (y1 + h) <= 0 or (y1 + h) >= img_info['height']:
                 continue
