@@ -8,7 +8,7 @@ import torch
 
 from mmdet.utils import get_root_logger
 from .utils import (check_nncf_is_enabled, get_nncf_version, is_nncf_enabled,
-                    load_checkpoint)
+                    load_checkpoint, no_nncf_trace)
 
 if is_nncf_enabled():
     try:
@@ -121,7 +121,7 @@ def wrap_nncf_model(model,
 
     if data_loader_for_init:
         wrapped_loader = MMInitializeDataLoader(data_loader_for_init)
-        nncf_config = register_default_init_args(nncf_config, wrapped_loader)
+        nncf_config = register_default_init_args(nncf_config, wrapped_loader, device=next(model.parameters()).device)
 
     if cfg.get('resume_from'):
         checkpoint_path = cfg.get('resume_from')
@@ -173,7 +173,8 @@ def wrap_nncf_model(model,
         assert len(input_size) == 4 and input_size[0] == 1
         H, W, C = input_size[2], input_size[3], input_size[1]
         device = next(model.parameters()).device
-        return get_fake_input_func(cfg, orig_img_shape=tuple([H, W, C]), device=device)
+        with no_nncf_trace():
+            return get_fake_input_func(cfg, orig_img_shape=tuple([H, W, C]), device=device)
 
     def dummy_forward(model):
         fake_data = _get_fake_data_for_forward(cfg, nncf_config, get_fake_input_func)
