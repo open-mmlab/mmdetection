@@ -39,7 +39,8 @@ def _bboxes_map_eval(det_result, annotation):
         .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
     mean_aps = []
     for thr in iou_thrs:
-        mean_ap, _ = eval_map(bbox_det_result, [annotation], iou_thr=thr, logger='silent')
+        mean_ap, _ = eval_map(
+            bbox_det_result, [annotation], iou_thr=thr, logger='silent')
         mean_aps.append(mean_ap)
     return sum(mean_aps) / len(mean_aps)
 
@@ -110,7 +111,7 @@ class ResultVisualizer(object):
 
         prog_bar = mmcv.ProgressBar(len(results))
         _mAPs = {}
-        for i, (result,) in enumerate(zip(results)):
+        for i, (result, ) in enumerate(zip(results)):
             # self.dataset[i] should not call directly
             # because there is a risk of mismatch
             data_info = dataset.prepare_train_img(i)
@@ -147,29 +148,29 @@ def parse_args():
         'eval',
         type=str,
         help='evaluation metrics, which depends on the dataset, e.g., "bbox",'
-             ' "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC')
+        ' "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC')
     parser.add_argument(
         '--topk',
         default=20,
         type=int,
         help='saved Number of the highest topk '
-             'and lowest topk after index sorting')
+        'and lowest topk after index sorting')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
         action=DictAction,
         help='override some settings in the used config, the key-value pair '
-             'in xxx=yyy format will be merged into config file. If the value to '
-             'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
-             'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
-             'Note that the quotation marks are necessary and that no white space '
-             'is allowed.')
+        'in xxx=yyy format will be merged into config file. If the value to '
+        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
+        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
+        'Note that the quotation marks are necessary and that no white space '
+        'is allowed.')
     parser.add_argument(
         '--eval-options',
         nargs='+',
         action=DictAction,
         help='custom options for evaluation, the key-value pair in xxx=yyy '
-             'format will be kwargs for dataset.evaluate() function')
+        'format will be kwargs for dataset.evaluate() function')
     args = parser.parse_args()
     return args
 
