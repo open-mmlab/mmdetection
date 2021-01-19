@@ -1,6 +1,9 @@
 _base_ = './sparse_rcnn_r50_fpn_mstrain_480-800_3x_coco.py'
 num_proposals = 300
-model = dict(rpn_head=dict(num_proposals=num_proposals))
+model = dict(
+    rpn_head=dict(num_proposals=num_proposals),
+    test_cfg=dict(
+        _delete_=True, rpn=None, rcnn=dict(max_per_img=num_proposals)))
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -47,4 +50,3 @@ train_pipeline = [
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
 data = dict(train=dict(pipeline=train_pipeline))
-test_cfg = dict(_delete_=True, rpn=None, rcnn=dict(max_per_img=num_proposals))
