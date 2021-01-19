@@ -59,3 +59,37 @@ def test_imshow_det_bboxes():
         segms = torch.tensor(segms)
         vis.imshow_det_bboxes(
             image, bbox, label, segms, out_file=tmp_filename, show=False)
+
+
+def test_imshow_gt_det_bboxes():
+    tmp_filename = osp.join(tempfile.gettempdir(), 'det_bboxes_image',
+                            'image.jpg')
+    image = np.ones((10, 10, 3), np.uint8)
+    bbox = np.array([[2, 1, 3, 3], [3, 4, 6, 6]])
+    label = np.array([0, 1])
+    annotation = dict(gt_bboxes=bbox, gt_labels=label)
+    det_result = np.array([[2, 1, 3, 3, 0], [3, 4, 6, 6, 1]])
+    result = [det_result]
+    vis.imshow_gt_det_bboxes(
+        image, annotation, result, out_file=tmp_filename, show=False)
+    assert osp.isfile(tmp_filename)
+
+    # test numpy mask
+    gt_mask = np.ones((2, 10, 10))
+    annotation['gt_masks'] = gt_mask
+    vis.imshow_gt_det_bboxes(
+        image, annotation, result, out_file=tmp_filename, show=False)
+    assert osp.isfile(tmp_filename)
+
+    # test tensor mask
+    gt_mask = torch.ones((2, 10, 10))
+    annotation['gt_masks'] = gt_mask
+    vis.imshow_gt_det_bboxes(
+        image, annotation, result, out_file=tmp_filename, show=False)
+    assert osp.isfile(tmp_filename)
+
+    # test unsupported type
+    annotation['gt_masks'] = []
+    vis.imshow_gt_det_bboxes(
+        image, annotation, result, out_file=tmp_filename, show=False)
+    assert osp.isfile(tmp_filename)

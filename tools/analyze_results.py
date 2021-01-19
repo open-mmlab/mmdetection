@@ -1,75 +1,47 @@
 import argparse
 import os.path as osp
-import warnings
 
 import mmcv
 import numpy as np
-import pycocotools.mask as mask_util
 from mmcv import Config, DictAction
 
 from mmdet.core.evaluation import eval_map
-from mmdet.core.mask.structures import BitmapMasks, PolygonMasks
-from mmdet.core.visualization.image import imshow_det_bboxes
+from mmdet.core.visualization import imshow_gt_det_bboxes
 from mmdet.datasets import build_dataset, retrieve_loading_pipeline
 
 
-def visualize(img,
-              annotation,
-              result,
-              class_names=None,
-              show=True,
-              show_mask=True,
-              wait_time=0,
-              out_file=None):
-    if show_mask:
-        gt_masks = annotation.get('gt_masks', None)
-        if gt_masks is not None:
-            if isinstance(gt_masks, (BitmapMasks, PolygonMasks)):
-                gt_masks = gt_masks.to_ndarray()
-            else:
-                warnings.warn('Unsupported data type')
-                gt_masks = None
+def _bboxes_map_eval_fn(det_result, annotation):
+    """Evaluate mAP of signle image det result.
+
+    Args:
+        det_result (list[list]): [[cls1_det, cls2_det, ...], ...].
+            The outer list indicates images, and the inner list indicates
+            per-class detected bboxes.
+        annotation (dict): Ground truth annotations where keys of
+             annotations are:
+
+            - `bboxes`: numpy array of shape (n, 4)
+            - `labels`: numpy array of shape (n, )
+            - `bboxes_ignore` (optional): numpy array of shape (k, 4)
+            - `labels_ignore` (optional): numpy array of shape (k, )
+
+        Returns:
+            float: mAP
+    """
+
+    # use only bbox det result
+    if isinstance(det_result, tuple):
+        bbox_det_result = [det_result[0]]
     else:
-        gt_masks = None
-    imshow_det_bboxes(
-        img,
-        annotation['bboxes'],
-        annotation['labels'],
-        gt_masks,
-        class_names=class_names,
-        bbox_color=(255, 102, 61),
-        text_color=(255, 102, 61),
-        mask_color=(255, 102, 61),
-        show=False)
-    if isinstance(result, tuple):
-        bbox_result, segm_result = result
-        if isinstance(segm_result, tuple):
-            segm_result = segm_result[0]  # ms rcnn
-    else:
-        bbox_result, segm_result = result, None
-    bboxes = np.vstack(bbox_result)
-    labels = [
-        np.full(bbox.shape[0], i, dtype=np.int32)
-        for i, bbox in enumerate(bbox_result)
-    ]
-    labels = np.concatenate(labels)
-    segms = None
-    if show_mask and segm_result is not None and len(labels) > 0:  # non empty
-        segms = mmcv.concat_list(segm_result)
-        segms = mask_util.decode(segms)
-        segms = segms.transpose(2, 0, 1)
-    imshow_det_bboxes(
-        img,
-        bboxes,
-        labels,
-        segms=segms,
-        class_names=class_names,
-        bbox_color=(72, 101, 241),
-        text_color=(72, 101, 241),
-        mask_color=(72, 101, 241),
-        show=show,
-        wait_time=wait_time,
-        out_file=out_file)
+        bbox_det_result = [det_result]
+    # mAP
+    iou_thrs = np.linspace(
+        .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
+    mean_aps = []
+    for thr in iou_thrs:
+        mean_ap, _ = eval_map(bbox_det_result, [annotation], iou_thr=thr)
+        mean_aps.append(mean_ap)
+    return sum(mean_aps) / len(mean_aps)
 
 
 class ResultVisualizer(object):
@@ -86,45 +58,16 @@ class ResultVisualizer(object):
             Default: 'work_dir'
     """
 
-    def __init__(self,
-                 dataset,
-                 results,
-                 topk=20,
-                 show=False,
-                 wait_time=0,
-                 show_dir='work_dir'):
-        self.topk = topk
-        self.dataset = dataset
-        assert self.topk > 0
-        if (self.topk * 2) > len(self.dataset):
-            self.topk = len(dataset) // 2
-        self.results = results
-        self.CLASSES = self.dataset.CLASSES
+    def __init__(self, show=False, wait_time=0):
         self.show = show
         self.wait_time = wait_time
-        self.show_dir = show_dir
 
-    def _eval_fn(self, det_result, annotation):
-        # use only bbox det result
-        if isinstance(det_result, tuple):
-            bbox_det_result = [det_result[0]]
-        else:
-            bbox_det_result = [det_result]
-        # mAP
-        iou_thrs = np.linspace(
-            .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
-        mean_aps = []
-        for thr in iou_thrs:
-            mean_ap, _ = eval_map(bbox_det_result, [annotation], iou_thr=thr)
-            mean_aps.append(mean_ap)
-        return sum(mean_aps) / len(mean_aps)
-
-    def _save_image_gts_results(self, mAPs, out_dir=None):
+    def _save_image_gts_results(self, dataset, results, mAPs, out_dir=None):
         mmcv.mkdir_or_exist(out_dir)
 
         for mAP_info in mAPs:
             index, mAP = mAP_info
-            data_info = self.dataset.prepare_train_img(index)
+            data_info = dataset.prepare_train_img(index)
 
             # calc save file path
             filename = data_info['filename']
@@ -135,34 +78,61 @@ class ResultVisualizer(object):
             fname, name = osp.splitext(osp.basename(filename))
             save_filename = fname + '_' + str(round(mAP, 3)) + name
             out_file = osp.join(out_dir, save_filename)
-
-            visualize(
+            imshow_gt_det_bboxes(
                 data_info['img'],
-                data_info['ann_info'],
-                self.results[index],
-                self.CLASSES,
-                self.show,
+                data_info,
+                results[index],
+                dataset.CLASSES,
+                show=self.show,
                 wait_time=self.wait_time,
                 out_file=out_file)
 
-    def evaluate_and_show(self):
+    def evaluate_and_show(self,
+                          dataset,
+                          results,
+                          topk=20,
+                          show_dir='work_dir',
+                          eval_fn=None):
+        """Evaluate and show results.
+
+        Args:
+            dataset (Dataset): A PyTorch dataset.
+            results (pickle object): pickle object from test results pkl file
+            topk (int): Number of the highest topk and
+                lowest topk after evaluation index sorting. Default: 20
+            show_dir (str or None): The filename to write the image.
+                Default: 'work_dir'
+            eval_fn (fn): eval function, Default: None
+        """
+
+        assert topk > 0
+        if (topk * 2) > len(dataset):
+            topk = len(dataset) // 2
+
+        if eval_fn is None:
+            eval_fn = _bboxes_map_eval_fn
+        else:
+            assert callable(eval_fn)
+
         _mAPs = {}
-        for i, (result, ) in enumerate(zip(self.results)):
+        for i, (result, ) in enumerate(zip(results)):
+            if i > 40:
+                break
             # self.dataset[i] should not call directly
             # because there is a risk of mismatch
-            data_info = self.dataset.prepare_train_img(i)
-            mAP = self._eval_fn(result, data_info['ann_info'])
+            data_info = dataset.prepare_train_img(i)
+            mAP = eval_fn(result, data_info['ann_info'])
             _mAPs[i] = mAP
 
         # descending select topk image
         _mAPs = list(sorted(_mAPs.items(), key=lambda kv: kv[1]))
-        good_mAPs = _mAPs[-self.topk:]
-        bad_mAPs = _mAPs[:self.topk]
+        good_mAPs = _mAPs[-topk:]
+        bad_mAPs = _mAPs[:topk]
 
-        good_dir = osp.abspath(osp.join(self.show_dir, 'good'))
-        bad_dir = osp.abspath(osp.join(self.show_dir, 'bad'))
-        self._save_image_gts_results(good_mAPs, good_dir)
-        self._save_image_gts_results(bad_mAPs, bad_dir)
+        good_dir = osp.abspath(osp.join(show_dir, 'good'))
+        bad_dir = osp.abspath(osp.join(show_dir, 'bad'))
+        self._save_image_gts_results(dataset, results, good_mAPs, good_dir)
+        self._save_image_gts_results(dataset, results, bad_mAPs, bad_dir)
 
 
 def parse_args():
@@ -228,14 +198,10 @@ def main():
     cfg.data.test.pipeline = retrieve_loading_pipeline(cfg.data.train.pipeline)
     dataset = build_dataset(cfg.data.test)
     outputs = mmcv.load(args.prediction_path)
-    result_visualizer = ResultVisualizer(
-        dataset,
-        outputs,
-        topk=args.topk,
-        show=args.show,
-        wait_time=args.wait_time,
-        show_dir=args.show_dir)
-    result_visualizer.evaluate_and_show()
+
+    result_visualizer = ResultVisualizer(args.show, args.wait_time)
+    result_visualizer.evaluate_and_show(
+        dataset, outputs, topk=args.topk, show_dir=args.show_dir)
 
 
 if __name__ == '__main__':
