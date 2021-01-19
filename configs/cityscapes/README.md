@@ -1,5 +1,7 @@
 # Cityscapes Dataset
 
+[DATASET]
+
 ## Common settings
 
 - All baselines were trained using 8 GPU with a batch size of 8 (1 images per GPU) using the [linear scaling rule](https://arxiv.org/abs/1706.02677) to scale the learning rate.

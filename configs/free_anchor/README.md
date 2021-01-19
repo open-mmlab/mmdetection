@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @inproceedings{zhang2019freeanchor,
   title   =  {{FreeAnchor}: Learning to Match Anchors for Visual Object Detection},

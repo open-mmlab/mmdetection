@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @article{tian2019fcos,
   title={FCOS: Fully Convolutional One-Stage Object Detection},

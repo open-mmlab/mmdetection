@@ -1,5 +1,7 @@
 # WIDER Face Dataset
 
+[DATASET]
+
 To use the WIDER Face dataset you need to download it
 and extract to the `data/WIDERFace` folder. Annotation in the VOC format
 can be found in this [repo](https://github.com/sovrasov/wider-face-pascal-voc-annotations.git).

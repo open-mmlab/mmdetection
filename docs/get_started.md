@@ -118,12 +118,28 @@ In CPU mode you can run the demo/webcam_demo.py for example.
 However some functionality is gone in this mode:
 
 - Deformable Convolution
+- Modulated Deformable Convolution
+- ROI pooling
 - Deformable ROI pooling
 - CARAFE: Content-Aware ReAssembly of FEatures
+- SyncBatchNorm
+- CrissCrossAttention: Criss-Cross Attention
+- MaskedConv2d
+- Temporal Interlace Shift
 - nms_cuda
 - sigmoid_focal_loss_cuda
+- bbox_overlaps
 
-So if you try to run inference with a model containing deformable convolution you will get an error.
+So if you try to run inference with a model containing above ops you will get an error. The following table lists the related methods that cannot inference on CPU due to dependency on these operators
+
+|                        Operator                         |                            Model                             |
+| :-----------------------------------------------------: | :----------------------------------------------------------: |
+| Deformable Convolution/Modulated Deformable Convolution | DCN、Guided Anchoring、RepPoints、CentripetalNet、VFNet、CascadeRPN、NAS-FCOS、DetectoRS |
+|                      MaskedConv2d                       |                       Guided Anchoring                       |
+|                         CARAFE                          |                            CARAFE                            |
+|                      SyncBatchNorm                      |                           ResNeSt                            |
+
+**Notice**: MMDetection does not support training with CPU for now.
 
 ### Another option: Docker Image
 
@@ -172,15 +188,18 @@ PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
 
 ## Verification
 
-To verify whether MMDetection and the required environment are installed correctly, we can run sample python codes to initialize a detector and inference a demo image:
+To verify whether MMDetection and the required environment are installed correctly, we can run sample Python code to initialize a detector and run inference a demo image:
 
 ```python
 from mmdet.apis import init_detector, inference_detector
 
 config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+# download the checkpoint from model zoo and put it in `checkpoints/`
+# url: http://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
 device = 'cuda:0'
 # init a detector
-model = init_detector(config_file, device=device)
+model = init_detector(config_file, checkpoint_file, device=device)
 # inference the demo image
 inference_detector(model, 'demo/demo.jpg')
 ```
