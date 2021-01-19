@@ -5,11 +5,10 @@ import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import pycocotools.mask as mask_util
-import torch
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
-from mmdet.core.mask.structures import BitmapMasks, PolygonMasks
+from ..utils import mask2ndarray
 
 
 def color_val_matplotlib(color):
@@ -81,7 +80,7 @@ def imshow_det_bboxes(img,
         f' labels ndim should be 1, but its ndim is {labels.ndim}.'
     assert bboxes.shape[0] == labels.shape[0], \
         'bboxes.shape[0] and labels.shape[0] should have the same length.'
-    assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5,\
+    assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5, \
         f' bboxes.shape[1] should be 4 or 5, but its {bboxes.shape[1]}.'
     img = mmcv.imread(img).copy()
 
@@ -224,20 +223,19 @@ def imshow_gt_det_bboxes(img,
       show (bool): Whether to show the image. Default: True
       wait_time (float): Value of waitKey param. Default: 0.
       out_file (str or None): The filename to write the image. Default: None
+
+    Returns:
+        ndarray: The image with bboxes or masks drawn on it.
     """
     assert 'gt_bboxes' in annotation
     assert 'gt_labels' in annotation
-    assert isinstance(result, (tuple, list))
+    assert isinstance(
+        result,
+        (tuple, list)), f'Expected tuple or list, but get {type(result)}'
 
     gt_masks = annotation.get('gt_masks', None)
     if gt_masks is not None:
-        if isinstance(gt_masks, (BitmapMasks, PolygonMasks)):
-            gt_masks = gt_masks.to_ndarray()
-        elif isinstance(gt_masks, torch.Tensor):
-            gt_masks = gt_masks.detach().cpu().numpy()
-        elif not isinstance(gt_masks, np.ndarray):
-            warnings.warn(f'Unsupported {type(gt_masks)} data type')
-            gt_masks = None
+        gt_masks = mask2ndarray(gt_masks)
 
     img = mmcv.imread(img)
     img = imshow_det_bboxes(
@@ -266,12 +264,14 @@ def imshow_gt_det_bboxes(img,
         for i, bbox in enumerate(bbox_result)
     ]
     labels = np.concatenate(labels)
+
     segms = None
     if segm_result is not None and len(labels) > 0:  # non empty
         segms = mmcv.concat_list(segm_result)
         segms = mask_util.decode(segms)
         segms = segms.transpose(2, 0, 1)
-    imshow_det_bboxes(
+
+    img = imshow_det_bboxes(
         img,
         bboxes,
         labels,
@@ -288,3 +288,4 @@ def imshow_gt_det_bboxes(img,
         show=show,
         wait_time=wait_time,
         out_file=out_file)
+    return img

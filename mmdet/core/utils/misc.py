@@ -1,7 +1,11 @@
+import warnings
 from functools import partial
 
+import numpy as np
 import torch
 from six.moves import map, zip
+
+from ..mask.structures import BitmapMasks, PolygonMasks
 
 
 def multi_apply(func, *args, **kwargs):
@@ -37,3 +41,19 @@ def unmap(data, count, inds, fill=0):
         ret = data.new_full(new_size, fill)
         ret[inds.type(torch.bool), :] = data
     return ret
+
+
+def mask2ndarray(mask):
+    """Mask to ndarray.
+
+    If the mask type is not `BitmapMasks` or `PolygonMasks` or `torch.Tensor`
+    or 'np.ndarray' return None
+    """
+    if isinstance(mask, (BitmapMasks, PolygonMasks)):
+        mask = mask.to_ndarray()
+    elif isinstance(mask, torch.Tensor):
+        mask = mask.detach().cpu().numpy()
+    elif not isinstance(mask, np.ndarray):
+        warnings.warn(f'Unsupported {type(mask)} data type')
+        mask = None
+    return mask

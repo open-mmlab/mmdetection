@@ -62,7 +62,7 @@ def replace_ImageToTensor(pipelines):
     return pipelines
 
 
-def retrieve_loading_pipeline(pipeline):
+def get_loading_pipeline(pipeline):
     """Only keep loading image and annotations related configuration.
 
     Args:
@@ -88,12 +88,13 @@ def retrieve_loading_pipeline(pipeline):
         ...    dict(type='LoadAnnotations', with_bbox=True)
         ...    ]
         >>> assert expected_pipelines ==\
-        ...        retrieve_loading_pipeline(pipelines)
+        ...        get_loading_pipeline(pipelines)
     """
     loading_pipeline_cfg = []
     for cfg in pipeline:
         if cfg['type'].startswith('Load'):
             loading_pipeline_cfg.append(cfg)
     assert len(loading_pipeline_cfg) == 2, \
-        'pipeline cfg must include Loading image and annotations related type'
+        'The data pipeline in your config file must include ' \
+        'loading image and annotations related pipeline.'
     return loading_pipeline_cfg

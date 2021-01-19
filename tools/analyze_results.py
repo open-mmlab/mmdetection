@@ -7,11 +7,11 @@ from mmcv import Config, DictAction
 
 from mmdet.core.evaluation import eval_map
 from mmdet.core.visualization import imshow_gt_det_bboxes
-from mmdet.datasets import build_dataset, retrieve_loading_pipeline
+from mmdet.datasets import build_dataset, get_loading_pipeline
 
 
-def _bboxes_map_eval_fn(det_result, annotation):
-    """Evaluate mAP of signle image det result.
+def _bboxes_map_eval(det_result, annotation):
+    """Evaluate mAP of single image det result.
 
     Args:
         det_result (list[list]): [[cls1_det, cls2_det, ...], ...].
@@ -25,8 +25,8 @@ def _bboxes_map_eval_fn(det_result, annotation):
             - `bboxes_ignore` (optional): numpy array of shape (k, 4)
             - `labels_ignore` (optional): numpy array of shape (k, )
 
-        Returns:
-            float: mAP
+    Returns:
+        float: mAP
     """
 
     # use only bbox det result
@@ -48,14 +48,8 @@ class ResultVisualizer(object):
     """Display and save evaluation results.
 
     Args:
-        dataset (Dataset): A PyTorch dataset.
-        results (pickle object): pickle object from test results pkl file
-        topk (int): Number of the highest topk and
-            lowest topk after evaluation index sorting. Default: 20
         show (bool): Whether to show the image. Default: True
         wait_time (float): Value of waitKey param. Default: 0.
-        show_dir (str or None): The filename to write the image.
-            Default: 'work_dir'
     """
 
     def __init__(self, show=False, wait_time=0):
@@ -97,12 +91,12 @@ class ResultVisualizer(object):
 
         Args:
             dataset (Dataset): A PyTorch dataset.
-            results (pickle object): pickle object from test results pkl file
+            results (list): Det results from test results pkl file
             topk (int): Number of the highest topk and
                 lowest topk after evaluation index sorting. Default: 20
             show_dir (str or None): The filename to write the image.
                 Default: 'work_dir'
-            eval_fn (fn): eval function, Default: None
+            eval_fn (callable | None): Eval function, Default: None
         """
 
         assert topk > 0
@@ -110,14 +104,12 @@ class ResultVisualizer(object):
             topk = len(dataset) // 2
 
         if eval_fn is None:
-            eval_fn = _bboxes_map_eval_fn
+            eval_fn = _bboxes_map_eval
         else:
             assert callable(eval_fn)
 
         _mAPs = {}
         for i, (result, ) in enumerate(zip(results)):
-            if i > 40:
-                break
             # self.dataset[i] should not call directly
             # because there is a risk of mismatch
             data_info = dataset.prepare_train_img(i)
@@ -158,7 +150,7 @@ def parse_args():
         '--topk',
         default=20,
         type=int,
-        help='Saved Number of the highest topk '
+        help='saved Number of the highest topk '
         'and lowest topk after index sorting')
     parser.add_argument(
         '--cfg-options',
@@ -195,7 +187,7 @@ def main():
         import_modules_from_strings(**cfg['custom_imports'])
 
     cfg.data.test.pop('samples_per_gpu', 0)
-    cfg.data.test.pipeline = retrieve_loading_pipeline(cfg.data.train.pipeline)
+    cfg.data.test.pipeline = get_loading_pipeline(cfg.data.train.pipeline)
     dataset = build_dataset(cfg.data.test)
     outputs = mmcv.load(args.prediction_path)
 
