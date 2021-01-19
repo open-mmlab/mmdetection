@@ -8,8 +8,7 @@ import pycocotools.mask as mask_util
 from mmcv import Config, DictAction
 
 from mmdet.core.evaluation import eval_map
-from mmdet.core.mask.structures import (BitmapMasks, PolygonMasks,
-                                        polygon_to_bitmap)
+from mmdet.core.mask.structures import BitmapMasks, PolygonMasks
 from mmdet.core.visualization.image import imshow_det_bboxes
 from mmdet.datasets import build_dataset, retrieve_loading_pipeline
 
@@ -25,17 +24,8 @@ def visualize(img,
     if show_mask:
         gt_masks = annotation.get('gt_masks', None)
         if gt_masks is not None:
-            if isinstance(gt_masks, BitmapMasks):
-                gt_masks = gt_masks.masks
-            elif isinstance(gt_masks, PolygonMasks):
-                height = gt_masks.height
-                width = gt_masks.width
-                polygon_gt_masks = []
-                for poly_per_obj in gt_masks.masks:
-                    polygon_gt_masks.append(
-                        polygon_to_bitmap(poly_per_obj, height, width))
-                gt_masks = np.stack(polygon_gt_masks).reshape(
-                    -1, height, width)
+            if isinstance(gt_masks, (BitmapMasks, PolygonMasks)):
+                gt_masks = gt_masks.to_ndarray()
             else:
                 warnings.warn('Unsupported data type')
                 gt_masks = None

@@ -4,11 +4,9 @@ import warnings
 from pathlib import Path
 
 import mmcv
-import numpy as np
 from mmcv import Config
 
-from mmdet.core.mask.structures import (BitmapMasks, PolygonMasks,
-                                        polygon_to_bitmap)
+from mmdet.core.mask.structures import BitmapMasks, PolygonMasks
 from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.datasets.builder import build_dataset
 
@@ -60,17 +58,8 @@ def main():
                                 ) if args.output_dir is not None else None
         gt_masks = item.get('gt_masks', None)
         if gt_masks is not None:
-            if isinstance(gt_masks, BitmapMasks):
-                gt_masks = gt_masks.masks
-            elif isinstance(gt_masks, PolygonMasks):
-                height = gt_masks.height
-                width = gt_masks.width
-                polygon_gt_masks = []
-                for poly_per_obj in gt_masks.masks:
-                    polygon_gt_masks.append(
-                        polygon_to_bitmap(poly_per_obj, height, width))
-                gt_masks = np.stack(polygon_gt_masks).reshape(
-                    -1, height, width)
+            if isinstance(gt_masks, (BitmapMasks, PolygonMasks)):
+                gt_masks = gt_masks.to_ndarray()
             else:
                 warnings.warn('Unsupported data type')
                 gt_masks = None
