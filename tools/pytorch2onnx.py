@@ -56,10 +56,11 @@ def pytorch2onnx(config_path,
 
     # simplify onnx model
     if do_simplify:
-        from packaging import version
+        from mmdet import digit_version
         import mmcv
+
         min_required_version = '1.2.5'
-        assert version.parse(mmcv.__version__) >= version.parse(
+        assert digit_version(mmcv.__version__) >= digit_version(
             min_required_version
         ), f'Requires to install mmcv>={min_required_version}'
         from mmcv.onnx.simplify import simplify
