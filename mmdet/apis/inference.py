@@ -35,7 +35,8 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     if cfg_options is not None:
         config.merge_from_dict(cfg_options)
     config.model.pretrained = None
-    model = build_detector(config.model, test_cfg=config.test_cfg)
+    config.model.train_cfg = None
+    model = build_detector(config.model, test_cfg=config.get('test_cfg'))
     if checkpoint is not None:
         map_loc = 'cpu' if device == 'cpu' else None
         checkpoint = load_checkpoint(model, checkpoint, map_location=map_loc)

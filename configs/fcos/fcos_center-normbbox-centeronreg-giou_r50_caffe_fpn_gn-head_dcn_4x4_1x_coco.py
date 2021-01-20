@@ -11,9 +11,9 @@ model = dict(
         dcn_on_last_conv=True,
         center_sampling=True,
         conv_bias=True,
-        loss_bbox=dict(type='GIoULoss', loss_weight=1.0)))
-# training and testing settings
-test_cfg = dict(nms=dict(type='nms', iou_threshold=0.6))
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0)),
+    # training and testing settings
+    test_cfg=dict(nms=dict(type='nms', iou_threshold=0.6)))
 
 # dataset settings
 img_norm_cfg = dict(
