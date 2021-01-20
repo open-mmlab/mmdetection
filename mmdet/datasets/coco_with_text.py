@@ -63,9 +63,12 @@ class CocoWithTextDataset(CocoDataset):
             if ann.get('ignore', False):
                 continue
             x1, y1, w, h = ann['bbox']
-            text = ann['text']['transcription'] if ann['text']['legible'] else ''
+            for text_key in ('text', 'attributes'):
+                if text_key in ann:
+                    break
+            legible = ann[text_key]['legible']
+            text = ann[text_key]['transcription'] if legible else ''
             text = text.lower()
-            assert not ann.get('iscrowd', False) == ann['text']['legible']
             inter_w = max(0, min(x1 + w, img_info['width']) - max(x1, 0))
             inter_h = max(0, min(y1 + h, img_info['height']) - max(y1, 0))
             if inter_w * inter_h == 0:
@@ -78,7 +81,7 @@ class CocoWithTextDataset(CocoDataset):
             if ann['category_id'] not in self.cat_ids:
                 continue
             bbox = [x1, y1, x1 + w, y1 + h]
-            if ann.get('iscrowd', False):
+            if ann.get('iscrowd', False) or not legible:
                 gt_bboxes_ignore.append(bbox)
             else:
                 gt_bboxes.append(bbox)
