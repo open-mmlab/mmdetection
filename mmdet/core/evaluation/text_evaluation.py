@@ -206,9 +206,11 @@ def parse_gt_objects(gt_annotation, use_transcription):
         gt_polygons_list.append(polygon)
 
         transcription = None
-        if 'text' in gt_object:
-            transcription = gt_object['text']['transcription']
-
+        for text_key in ('text', 'attributes'):
+            if text_key in gt_object:
+                transcription = gt_object[text_key]['transcription']
+                break
+        if transcription is not None:
             if transcription == '###' or not transcription:
                 gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
             elif use_transcription:
