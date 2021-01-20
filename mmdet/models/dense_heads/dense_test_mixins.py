@@ -24,8 +24,8 @@ class BBoxTestMixin(object):
             img_shape = img_info[0]['img_shape']
             scale_factor = img_info[0]['scale_factor']
             flip = img_info[0]['flip']
-            flip_direction = img_info[0]['flip_direction']\
-                                if 'flip_direction' in img_info[0] else None
+            flip_direction = (img_info[0]['flip_direction']
+                                if 'flip_direction' in img_info[0] else None)
             bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip,
                                        flip_direction)
             recovered_bboxes.append(bboxes)
