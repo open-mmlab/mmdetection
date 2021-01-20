@@ -50,6 +50,8 @@ def multiclass_nms(multi_bboxes,
 
     # remove low scoring boxes
     valid_mask = scores > score_thr
+    # multiply score_factor after threshold to preserve more bboxes, improve
+    # mAP by 1% for YOLOv3
     if score_factors is not None:
         # expand the shape to match original shape of score
         score_factors = score_factors.view(-1, 1).expand(
