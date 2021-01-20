@@ -43,7 +43,7 @@ def unmap(data, count, inds, fill=0):
 
 
 def mask2ndarray(mask):
-    """Mask to ndarray.
+    """Convert Mask to ndarray..
 
     Args:
         mask (:obj:`BitmapMasks` or :obj:`PolygonMasks` or

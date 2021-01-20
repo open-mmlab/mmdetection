@@ -10,7 +10,7 @@ from mmdet.core.visualization import imshow_gt_det_bboxes
 from mmdet.datasets import build_dataset, get_loading_pipeline
 
 
-def _bboxes_map_eval(det_result, annotation):
+def bbox_map_eval(det_result, annotation):
     """Evaluate mAP of single image det result.
 
     Args:
@@ -105,7 +105,7 @@ class ResultVisualizer(object):
             topk = len(dataset) // 2
 
         if eval_fn is None:
-            eval_fn = _bboxes_map_eval
+            eval_fn = bbox_map_eval
         else:
             assert callable(eval_fn)
 
