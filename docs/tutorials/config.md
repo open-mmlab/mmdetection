@@ -66,7 +66,7 @@ We follow the below style to name config files. Contributors are advised to foll
 
 ## Deprecated train_cfg/test_cfg
 
-The `train_cfg` and `test_cfg` is deprecated in config file, please specify them in model. examples:
+The `train_cfg` and `test_cfg` are deprecated in config file, please specify them in model. The migration example is as below.
 
 ```python
 # deprecated
