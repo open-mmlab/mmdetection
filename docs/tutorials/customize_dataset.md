@@ -49,36 +49,107 @@ There are three necessary keys in the json file:
 - `annotations`: contains the list of instance annotations.
 - `categories`: contains the list of categories names and their ID.
 
-After the data pre-processing, the users need to further modify the config files to use the dataset.
-Here we show an example of using a custom dataset of 5 classes, assuming it is also in COCO format.
+After the data pre-processing, there are two steps for users to train the customized new dataset with existing format (e.g. COCO format):
+
+1. Modify the config file for using the customized dataset.
+2. Check the annotations of the customized dataset.
+
+Here we give an example to show the above two steps, which uses a customized dataset of 5 classes with COCO format to train an existing Cascade MaskRCNN R50 FPN detector.
+
+#### 1. Modify the config file for using the customized dataset
+
+There are two aspects involved in the modification of config file:
+
+1. The `data` field. Specifically, you need to explicitly add the `classes` fields in `data.train`, `data.val` and `data.test`.
+2. The `num_classes` field in the `model` part. Explicitly over-write all the `num_classes` from default value (e.g. 80 in COCO) to your classes number.
 
 In `configs/my_custom_config.py`:
 
 ```python
-...
-# dataset settings
+
+# the new config inherits the base configs to highlight the necessary modification
+_base_ = './cascade_mask_rcnn_r50_fpn_1x_coco.py'
+
+# 1. dataset settings
 dataset_type = 'CocoDataset'
 classes = ('a', 'b', 'c', 'd', 'e')
-...
 data = dict(
     samples_per_gpu=2,
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
+        # explicitly add your class names to the field `classes`
         classes=classes,
-        ann_file='path/to/your/train/data',
-        ...),
+        ann_file='path/to/your/train/annotation_data',
+        img_prefix='path/to/your/train/image_data'),
     val=dict(
         type=dataset_type,
+        # explicitly add your class names to the field `classes`
         classes=classes,
-        ann_file='path/to/your/val/data',
-        ...),
+        ann_file='path/to/your/val/annotation_data',
+        img_prefix='path/to/your/val/image_data'),
     test=dict(
         type=dataset_type,
+        # explicitly add your class names to the field `classes`
         classes=classes,
-        ann_file='path/to/your/test/data',
-        ...))
-...
+        ann_file='path/to/your/test/annotation_data',
+        img_prefix='path/to/your/test/image_data'))
+
+# 2. model settings
+
+# explicitly over-write all the `num_classes` field from default 80 to 5.
+model = dict(
+    roi_head=dict(
+        bbox_head=[
+            dict(
+                type='Shared2FCBBoxHead',
+                # explicitly over-write all the `num_classes` field from default 80 to 5.
+                num_classes=5),
+            dict(
+                type='Shared2FCBBoxHead',
+                # explicitly over-write all the `num_classes` field from default 80 to 5.
+                num_classes=5),
+            dict(
+                type='Shared2FCBBoxHead',
+                # explicitly over-write all the `num_classes` field from default 80 to 5.
+                num_classes=5)],
+    # explicitly over-write all the `num_classes` field from default 80 to 5.
+    mask_head=dict(num_classes=5)))
+```
+
+#### 2. Check the annotations of the customized dataset
+
+Assuming your customized dataset is COCO format, make sure you have the correct annotations in the customized dataset:
+
+1. The length for `categories` field in annotations should exactly equal the tuple length of `classes` fields in your config, meaning the number of classes (e.g. 5 in this example).
+2. The `classes` fields in your config file should have exactly the same elements and the same order with the `name` in `categories` of annotations. MMDetection automatically maps the uncontinuous `id` in `categories` to the continuous label indices, so the string order of `name` in `categories` field affects the order of label indices. Meanwhile, the string order of `classes` in config affects the label text during visualization of predicted bounding boxes.
+3. The `category_id` in `annotations` field should be valid, i.e., all values in `category_id` should belong to `id` in `categories`.
+
+Here is a valid example of annotations:
+
+```python
+
+'annotations': [
+    {
+        'segmentation': [[192.81,
+            247.09,
+            ...
+            219.03,
+            249.06]],  # if you have mask labels
+        'area': 1035.749,
+        'iscrowd': 0,
+        'image_id': 1268,
+        'bbox': [192.81, 224.8, 74.73, 33.43],
+        'category_id': 16,
+        'id': 42986
+    },
+    ...
+],
+
+# MMDetection automatically maps the uncontinuous `id` to the continuous label indices.
+'categories': [
+    {'id': 1, 'name': 'a'}, {'id': 3, 'name': 'b'}, {'id': 4, 'name': 'c'}, {'id': 16, 'name': 'd'}, {'id': 17, 'name': 'e'},
+ ]
 ```
 
 We use this way to support CityScapes dataset. The script is in [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/cityscapes.py) and we also provide the finetuning [configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).

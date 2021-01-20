@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 We provide config files to reproduce the object detection & instance segmentation results in the ICCV 2019 Oral paper for [CARAFE: Content-Aware ReAssembly of FEatures](https://arxiv.org/abs/1905.02188).
 
 ```

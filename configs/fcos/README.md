@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @article{tian2019fcos,
   title={FCOS: Fully Convolutional One-Stage Object Detection},
@@ -28,7 +30,6 @@
 
 **Notes:**
 
-- To be consistent with the author's implementation, we use 4 GPUs with 4 images/GPU for R-50 and R-101 models, and 8 GPUs with 2 image/GPU for X-101 models.
 - The X-101 backbone is X-101-64x4d.
 - Tricks means setting `norm_on_bbox`, `centerness_on_reg`, `center_sampling` as `True`.
 - DCN means using `DCNv2` in both backbone and head.

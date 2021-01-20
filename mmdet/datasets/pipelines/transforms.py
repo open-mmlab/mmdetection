@@ -309,7 +309,7 @@ class Resize(object):
         repr_str += f'(img_scale={self.img_scale}, '
         repr_str += f'multiscale_mode={self.multiscale_mode}, '
         repr_str += f'ratio_range={self.ratio_range}, '
-        repr_str += f'keep_ratio={self.keep_ratio})'
+        repr_str += f'keep_ratio={self.keep_ratio}, '
         repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
 
@@ -1138,7 +1138,7 @@ class MinIoURandomCrop(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(min_ious={self.min_ious}, '
-        repr_str += f'min_crop_size={self.min_crop_size}), '
+        repr_str += f'min_crop_size={self.min_crop_size}, '
         repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
 
@@ -1725,7 +1725,7 @@ class RandomCenterCropPad(object):
         repr_str += f'std={self.input_std}, '
         repr_str += f'to_rgb={self.to_rgb}, '
         repr_str += f'test_mode={self.test_mode}, '
-        repr_str += f'test_pad_mode={self.test_pad_mode}), '
+        repr_str += f'test_pad_mode={self.test_pad_mode}, '
         repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
 
