@@ -46,11 +46,11 @@ def mask2ndarray(mask):
     """Mask to ndarray.
 
     Args:
-        mask (BitmapMasks or PolygonMasks or torch.Tensor or np.ndarray):
-         The mask to be converted.
+        mask (:obj:`BitmapMasks` or :obj:`PolygonMasks` or
+        torch.Tensor or np.ndarray): The mask to be converted.
 
     Returns:
-        np.ndarray: Ndarray mask that has been converted
+        np.ndarray: Ndarray mask of shape (n, h, w) that has been converted
     """
     if isinstance(mask, (BitmapMasks, PolygonMasks)):
         mask = mask.to_ndarray()

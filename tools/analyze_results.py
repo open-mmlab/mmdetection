@@ -95,9 +95,9 @@ class ResultVisualizer(object):
             results (list): Det results from test results pkl file
             topk (int): Number of the highest topk and
                 lowest topk after evaluation index sorting. Default: 20
-            show_dir (str or None): The filename to write the image.
+            show_dir (str or optional): The filename to write the image.
                 Default: 'work_dir'
-            eval_fn (callable | None): Eval function, Default: None
+            eval_fn (callable or optional): Eval function, Default: None
         """
 
         assert topk > 0
