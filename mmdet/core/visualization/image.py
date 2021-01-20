@@ -57,7 +57,7 @@ def imshow_det_bboxes(img,
            The tuple of color should be in BGR order. Default: 'green'
         text_color (str or tuple(int) or :obj:`Color`):Color of texts.
            The tuple of color should be in BGR order. Default: 'green'
-        mask_color (str or tuple(int) or :obj:`Color` or optional):
+        mask_color (str or tuple(int) or :obj:`Color`, optional):
            Color of masks. The tuple of color should be in BGR order.
            Default: None
         thickness (int): Thickness of lines. Default: 2
@@ -67,7 +67,7 @@ def imshow_det_bboxes(img,
         win_name (str): The window name. Default: ''
         fig_size (tuple): Figure size of the pyplot figure. Default: (15, 10)
         wait_time (float): Value of waitKey param. Default: 0.
-        out_file (str or optional): The filename to write the image.
+        out_file (str, optional): The filename to write the image.
             Default: None
 
     Returns:
@@ -207,14 +207,14 @@ def imshow_gt_det_bboxes(img,
            The tuple of color should be in BGR order. Default: (255, 102, 61)
       gt_text_color (str or tuple(int) or :obj:`Color`):Color of texts.
            The tuple of color should be in BGR order. Default: (255, 102, 61)
-      gt_mask_color (str or tuple(int) or :obj:`Color` or optional):
+      gt_mask_color (str or tuple(int) or :obj:`Color`, optional):
            Color of masks. The tuple of color should be in BGR order.
            Default: (255, 102, 61)
       det_bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
            The tuple of color should be in BGR order. Default: (72, 101, 241)
       det_text_color (str or tuple(int) or :obj:`Color`):Color of texts.
            The tuple of color should be in BGR order. Default: (72, 101, 241)
-      det_mask_color (str or tuple(int) or :obj:`Color` or optional):
+      det_mask_color (str or tuple(int) or :obj:`Color`, optional):
            Color of masks. The tuple of color should be in BGR order.
            Default: (72, 101, 241)
       thickness (int): Thickness of lines. Default: 2
@@ -223,7 +223,7 @@ def imshow_gt_det_bboxes(img,
       fig_size (tuple): Figure size of the pyplot figure. Default: (15, 10)
       show (bool): Whether to show the image. Default: True
       wait_time (float): Value of waitKey param. Default: 0.
-      out_file (str or optional): The filename to write the image.
+      out_file (str, optional): The filename to write the image.
          Default: None
 
     Returns:
