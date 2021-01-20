@@ -69,7 +69,7 @@ def get_loading_pipeline(pipeline):
         pipeline (list[dict]): Data pipeline configs.
 
     Returns:
-        list: The new pipeline list with only keep
+        list[dict]: The new pipeline list with only keep
             loading image and annotations related configuration.
 
     Examples:

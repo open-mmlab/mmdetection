@@ -238,6 +238,7 @@ def imshow_gt_det_bboxes(img,
         gt_masks = mask2ndarray(gt_masks)
 
     img = mmcv.imread(img)
+
     img = imshow_det_bboxes(
         img,
         annotation['gt_bboxes'],
@@ -252,12 +253,14 @@ def imshow_gt_det_bboxes(img,
         win_name=win_name,
         fig_size=fig_size,
         show=False)
+
     if isinstance(result, tuple):
         bbox_result, segm_result = result
         if isinstance(segm_result, tuple):
             segm_result = segm_result[0]  # ms rcnn
     else:
         bbox_result, segm_result = result, None
+
     bboxes = np.vstack(bbox_result)
     labels = [
         np.full(bbox.shape[0], i, dtype=np.int32)

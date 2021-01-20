@@ -1,12 +1,11 @@
 import argparse
 import os
-import warnings
 from pathlib import Path
 
 import mmcv
 from mmcv import Config
 
-from mmdet.core.mask.structures import BitmapMasks, PolygonMasks
+from mmdet.core.utils import mask2ndarray
 from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.datasets.builder import build_dataset
 
@@ -52,17 +51,15 @@ def main():
     dataset = build_dataset(cfg.data.train)
 
     progress_bar = mmcv.ProgressBar(len(dataset))
+
     for item in dataset:
         filename = os.path.join(args.output_dir,
                                 Path(item['filename']).name
                                 ) if args.output_dir is not None else None
+
         gt_masks = item.get('gt_masks', None)
         if gt_masks is not None:
-            if isinstance(gt_masks, (BitmapMasks, PolygonMasks)):
-                gt_masks = gt_masks.to_ndarray()
-            else:
-                warnings.warn('Unsupported data type')
-                gt_masks = None
+            gt_masks = mask2ndarray(gt_masks)
 
         imshow_det_bboxes(
             item['img'],
@@ -75,6 +72,7 @@ def main():
             out_file=filename,
             bbox_color=(255, 102, 61),
             text_color=(255, 102, 61))
+
         progress_bar.update()
 
 

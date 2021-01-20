@@ -1,4 +1,5 @@
 # Copyright (c) Open-MMLab. All rights reserved.
+import os
 import os.path as osp
 import tempfile
 
@@ -54,11 +55,12 @@ def test_imshow_det_bboxes():
         image, bbox, label, segms, out_file=tmp_filename, show=False)
     assert osp.isfile(tmp_filename)
 
+    os.remove(tmp_filename)
+
     # test tensor mask type error
     with pytest.raises(AttributeError):
         segms = torch.tensor(segms)
-        vis.imshow_det_bboxes(
-            image, bbox, label, segms, out_file=tmp_filename, show=False)
+        vis.imshow_det_bboxes(image, bbox, label, segms, show=False)
 
 
 def test_imshow_gt_det_bboxes():
@@ -88,8 +90,9 @@ def test_imshow_gt_det_bboxes():
         image, annotation, result, out_file=tmp_filename, show=False)
     assert osp.isfile(tmp_filename)
 
+    os.remove(tmp_filename)
+
     # test unsupported type
     annotation['gt_masks'] = []
-    vis.imshow_gt_det_bboxes(
-        image, annotation, result, out_file=tmp_filename, show=False)
-    assert osp.isfile(tmp_filename)
+    with pytest.raises(TypeError):
+        vis.imshow_gt_det_bboxes(image, annotation, result, show=False)

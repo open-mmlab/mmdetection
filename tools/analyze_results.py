@@ -20,10 +20,10 @@ def _bboxes_map_eval(det_result, annotation):
         annotation (dict): Ground truth annotations where keys of
              annotations are:
 
-            - `bboxes`: numpy array of shape (n, 4)
-            - `labels`: numpy array of shape (n, )
-            - `bboxes_ignore` (optional): numpy array of shape (k, 4)
-            - `labels_ignore` (optional): numpy array of shape (k, )
+            - bboxes: numpy array of shape (n, 4)
+            - labels: numpy array of shape (n, )
+            - bboxes_ignore (optional): numpy array of shape (k, 4)
+            - labels_ignore (optional): numpy array of shape (k, )
 
     Returns:
         float: mAP

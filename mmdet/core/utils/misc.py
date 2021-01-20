@@ -1,4 +1,3 @@
-import warnings
 from functools import partial
 
 import numpy as np
@@ -46,14 +45,17 @@ def unmap(data, count, inds, fill=0):
 def mask2ndarray(mask):
     """Mask to ndarray.
 
-    If the mask type is not `BitmapMasks` or `PolygonMasks` or `torch.Tensor`
-    or 'np.ndarray' return None
+    Args:
+        mask (BitmapMasks or PolygonMasks or torch.Tensor or np.ndarray):
+         The mask to be converted.
+
+    Returns:
+        np.ndarray: Ndarray mask that has been converted
     """
     if isinstance(mask, (BitmapMasks, PolygonMasks)):
         mask = mask.to_ndarray()
     elif isinstance(mask, torch.Tensor):
         mask = mask.detach().cpu().numpy()
     elif not isinstance(mask, np.ndarray):
-        warnings.warn(f'Unsupported {type(mask)} data type')
-        mask = None
+        raise TypeError(f'Unsupported {type(mask)} data type')
     return mask
