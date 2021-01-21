@@ -21,6 +21,10 @@ def parse_args():
         '--nn-module',
         action='store_true',
         help='to train models related to neural network modules')
+    parser.add_argument(
+        '--model-options',
+        nargs='+',
+        help='custom options to special model benchmark')
 
     args = parser.parse_args()
     return args
@@ -131,6 +135,10 @@ def main():
         benchmark_type += data_pipeline_root
     if args.nn_module:
         benchmark_type += nn_module_root
+
+    special_model = args.options
+    if special_model is not None:
+        benchmark_type += special_model
 
     config_dpath = 'configs/'
     benchmark_configs = []
