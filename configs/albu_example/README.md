@@ -2,6 +2,16 @@
 
 [OTHERS]
 
+```
+@article{2018arXiv180906839B,
+  author = {A. Buslaev, A. Parinov, E. Khvedchenya, V.~I. Iglovikov and A.~A. Kalinin},
+  title = "{Albumentations: fast and flexible image augmentations}",
+  journal = {ArXiv e-prints},
+  eprint = {1809.06839},
+  year = 2018
+}
+```
+
 ## Results and Models
 
 | Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
