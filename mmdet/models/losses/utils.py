@@ -1,9 +1,13 @@
 import functools
 
 import torch.nn.functional as F
+import torch
+from typing import Optional
 
 
-def reduce_loss(loss, reduction):
+def reduce_loss(
+        loss : torch.Tensor,
+        reduction : str):
     """Reduce loss as specified.
 
     Args:
@@ -21,9 +25,13 @@ def reduce_loss(loss, reduction):
         return loss.mean()
     elif reduction_enum == 2:
         return loss.sum()
+    return loss
 
-
-def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
+def weight_reduce_loss(
+        loss : torch.Tensor,
+        weight : Optional[torch.Tensor] = None,
+        reduction : str = 'mean',
+        avg_factor : Optional[float] = None):
     """Apply element-wise weight and reduce loss.
 
     Args:

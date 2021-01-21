@@ -112,6 +112,7 @@ def inference_detector(model, img):
     # just get the actual data from DataContainer
     data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
     data['img'] = [img.data[0] for img in data['img']]
+    torch.save(data['img'][0], '/home/cw/pytorch/mmdetection_torch/img.bin')
     if next(model.parameters()).is_cuda:
         # scatter to specified GPU
         data = scatter(data, [device])[0]

@@ -1,9 +1,11 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.ops import sigmoid_focal_loss as _sigmoid_focal_loss
 
 from ..builder import LOSSES
 from .utils import weight_reduce_loss
+from typing import Optional
 
 
 # This method is only for debugging
@@ -41,13 +43,14 @@ def py_sigmoid_focal_loss(pred,
     return loss
 
 
+@torch.jit.ignore
 def sigmoid_focal_loss(pred,
                        target,
-                       weight=None,
-                       gamma=2.0,
-                       alpha=0.25,
-                       reduction='mean',
-                       avg_factor=None):
+                       weight : Optional[torch.Tensor] = None,
+                       gamma : Optional[float] = 2.0,
+                       alpha : Optional[float] =0.25,
+                       reduction : str ='mean',
+                       avg_factor : Optional[int] = None):
     r"""A warpper of cuda version `Focal Loss
     <https://arxiv.org/abs/1708.02002>`_.
 
@@ -91,11 +94,11 @@ def sigmoid_focal_loss(pred,
 class FocalLoss(nn.Module):
 
     def __init__(self,
-                 use_sigmoid=True,
-                 gamma=2.0,
-                 alpha=0.25,
-                 reduction='mean',
-                 loss_weight=1.0):
+                 use_sigmoid : bool = True,
+                 gamma : float = 2.0,
+                 alpha : float = 0.25,
+                 reduction : str = 'mean',
+                 loss_weight : float = 1.0):
         """`Focal Loss <https://arxiv.org/abs/1708.02002>`_
 
         Args:
@@ -119,11 +122,11 @@ class FocalLoss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None):
+                pred : torch.Tensor,
+                target : torch.Tensor,
+                weight : Optional[torch.Tensor] = None,
+                avg_factor : Optional[int] = None,
+                reduction_override : Optional[str] = None):
         """Forward function.
 
         Args:
@@ -140,9 +143,9 @@ class FocalLoss(nn.Module):
         Returns:
             torch.Tensor: The calculated loss
         """
-        assert reduction_override in (None, 'none', 'mean', 'sum')
+        # assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
-            reduction_override if reduction_override else self.reduction)
+            reduction_override if reduction_override is not None else self.reduction)
         if self.use_sigmoid:
             loss_cls = self.loss_weight * sigmoid_focal_loss(
                 pred,

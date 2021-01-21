@@ -8,6 +8,7 @@ from torch.nn.modules.batchnorm import _BatchNorm
 from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 from ..utils import ResLayer
+import torch
 
 
 class BasicBlock(nn.Module):

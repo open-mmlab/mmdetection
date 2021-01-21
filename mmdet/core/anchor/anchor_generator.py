@@ -1,3 +1,4 @@
+from typing import List, Tuple, Optional
 import mmcv
 import numpy as np
 import torch
@@ -6,6 +7,7 @@ from torch.nn.modules.utils import _pair
 from .builder import ANCHOR_GENERATORS
 
 
+@torch.jit.script
 @ANCHOR_GENERATORS.register_module()
 class AnchorGenerator(object):
     """Standard anchor generator for 2D anchor-based detectors.
@@ -56,15 +58,15 @@ class AnchorGenerator(object):
     """
 
     def __init__(self,
-                 strides,
-                 ratios,
-                 scales=None,
-                 base_sizes=None,
-                 scale_major=True,
-                 octave_base_scale=None,
-                 scales_per_octave=None,
-                 centers=None,
-                 center_offset=0.):
+                 strides : List[int],
+                 ratios : List[float],
+                 scales : Optional[List[float]] = None,
+                 base_sizes : Optional[List[int]] = None,
+                 scale_major : bool = True,
+                 octave_base_scale : Optional[int] = None,
+                 scales_per_octave : Optional[int] = None,
+                 centers : Optional[List[Tuple[float, float]]] = None,
+                 center_offset : float = 0.):
         # check center and center_offset
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
@@ -78,7 +80,8 @@ class AnchorGenerator(object):
                 f'{strides} and {centers}'
 
         # calculate base sizes of anchors
-        self.strides = [_pair(stride) for stride in strides]
+        self.strides = [(stride, stride) for stride in strides]
+        # self.strides = [_pair(stride) for stride in strides]
         self.base_sizes = [min(stride) for stride in self.strides
                            ] if base_sizes is None else base_sizes
         assert len(self.base_sizes) == len(self.strides), \
@@ -90,20 +93,20 @@ class AnchorGenerator(object):
                 and scales_per_octave is not None) ^ (scales is not None)), \
             'scales and octave_base_scale with scales_per_octave cannot' \
             ' be set at the same time'
+        self.scales = torch.tensor(0)
         if scales is not None:
-            self.scales = torch.Tensor(scales)
+            self.scales = torch.tensor(scales)
         elif octave_base_scale is not None and scales_per_octave is not None:
-            octave_scales = np.array(
+            octave_scales = torch.tensor(
                 [2**(i / scales_per_octave) for i in range(scales_per_octave)])
-            scales = octave_scales * octave_base_scale
-            self.scales = torch.Tensor(scales)
+            self.scales = octave_scales * octave_base_scale
         else:
             raise ValueError('Either scales or octave_base_scale with '
                              'scales_per_octave should be set')
 
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
-        self.ratios = torch.Tensor(ratios)
+        self.ratios = torch.tensor(ratios)
         self.scale_major = scale_major
         self.centers = centers
         self.center_offset = center_offset
@@ -119,7 +122,7 @@ class AnchorGenerator(object):
         """int: number of feature levels that the generator will be applied"""
         return len(self.strides)
 
-    def gen_base_anchors(self):
+    def gen_base_anchors(self) -> List[torch.Tensor]:
         """Generate base anchors.
 
         Returns:
@@ -129,8 +132,8 @@ class AnchorGenerator(object):
         multi_level_base_anchors = []
         for i, base_size in enumerate(self.base_sizes):
             center = None
-            if self.centers is not None:
-                center = self.centers[i]
+            # if self.centers is not None:
+            #     center = self.centers[i]
             multi_level_base_anchors.append(
                 self.gen_single_level_base_anchors(
                     base_size,
@@ -140,10 +143,10 @@ class AnchorGenerator(object):
         return multi_level_base_anchors
 
     def gen_single_level_base_anchors(self,
-                                      base_size,
-                                      scales,
-                                      ratios,
-                                      center=None):
+                                      base_size : int,
+                                      scales : torch.Tensor,
+                                      ratios : torch.Tensor,
+                                      center : Optional[Tuple[float, float]] = None) -> torch.Tensor:
         """Generate base anchors of a single level.
 
         Args:
@@ -184,7 +187,10 @@ class AnchorGenerator(object):
 
         return base_anchors
 
-    def _meshgrid(self, x, y, row_major=True):
+    def _meshgrid(self,
+            x : torch.Tensor,
+            y : torch.Tensor,
+            row_major : bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
         """Generate mesh grid of x and y.
 
         Args:
@@ -203,7 +209,9 @@ class AnchorGenerator(object):
         else:
             return yy, xx
 
-    def grid_anchors(self, featmap_sizes, device='cuda'):
+    def grid_anchors(self,
+            featmap_sizes : List[Tuple[int, int]],
+            device : str ='cuda') -> List[torch.Tensor]:
         """Generate grid anchors in multiple feature levels.
 
         Args:
@@ -230,10 +238,10 @@ class AnchorGenerator(object):
         return multi_level_anchors
 
     def single_level_grid_anchors(self,
-                                  base_anchors,
-                                  featmap_size,
-                                  stride=(16, 16),
-                                  device='cuda'):
+                                  base_anchors : torch.Tensor,
+                                  featmap_size : Tuple[int, int],
+                                  stride : Tuple[int, int] = (16, 16),
+                                  device : str = 'cuda') -> torch.Tensor:
         """Generate grid anchors of a single level.
 
         Note:
@@ -257,7 +265,7 @@ class AnchorGenerator(object):
         shift_x = torch.arange(0, feat_w, device=device) * stride[0]
         shift_y = torch.arange(0, feat_h, device=device) * stride[1]
 
-        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
+        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y, True)
         shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
         shifts = shifts.type_as(base_anchors)
         # first feat_w elements correspond to the first row of shifts
@@ -270,6 +278,7 @@ class AnchorGenerator(object):
         # then (0, 1), (0, 2), ...
         return all_anchors
 
+    @torch.jit.unused
     def valid_flags(self, featmap_sizes, pad_shape, device='cuda'):
         """Generate valid flags of anchors in multiple feature levels.
 
@@ -297,11 +306,12 @@ class AnchorGenerator(object):
             multi_level_flags.append(flags)
         return multi_level_flags
 
+    @torch.jit.unused
     def single_level_valid_flags(self,
-                                 featmap_size,
-                                 valid_size,
-                                 num_base_anchors,
-                                 device='cuda'):
+                                 featmap_size : Tuple[int, int],
+                                 valid_size : Tuple[int, int],
+                                 num_base_anchors : int,
+                                 device : str = 'cuda'):
         """Generate the valid flags of anchor in a single feature map.
 
         Args:
@@ -322,12 +332,13 @@ class AnchorGenerator(object):
         valid_y = torch.zeros(feat_h, dtype=torch.bool, device=device)
         valid_x[:valid_w] = 1
         valid_y[:valid_h] = 1
-        valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
+        valid_xx, valid_yy = self._meshgrid(valid_x, valid_y, True)
         valid = valid_xx & valid_yy
         valid = valid[:, None].expand(valid.size(0),
                                       num_base_anchors).contiguous().view(-1)
         return valid
 
+    @torch.jit.unused
     def __repr__(self):
         """str: a string that describes the module"""
         indent_str = '    '

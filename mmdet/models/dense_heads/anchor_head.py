@@ -555,7 +555,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         num_levels = len(cls_scores)
 
         device = cls_scores[0].device
-        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
+        featmap_sizes = [(cls_scores[i].shape[-2], cls_scores[i].shape[-1]) for i in range(num_levels)]
+        print(featmap_sizes)
         mlvl_anchors = self.anchor_generator.grid_anchors(
             featmap_sizes, device=device)
 
