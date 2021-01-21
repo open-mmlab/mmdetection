@@ -1,6 +1,10 @@
 import copy
 import warnings
 
+from mmcv.runner.hooks import Hook
+
+from mmdet.models.dense_heads import RPNHead
+
 
 def replace_ImageToTensor(pipelines):
     """Replace the ImageToTensor transform in a data pipeline to
@@ -98,3 +102,27 @@ def get_loading_pipeline(pipeline):
         'The data pipeline in your config file must include ' \
         'loading image and annotations related pipeline.'
     return loading_pipeline_cfg
+
+
+class CompatibleCheckHook(Hook):
+
+    def _check_head(self, model, dataset):
+        """Check whether the `num_classes` in head matches the number of
+        `CLASSSES` in `dataset`.
+
+        Args:
+            model (obj:`MMDataParallel` | obj:`nn.Module`): One stage
+                or Two stage Detector
+            dataset (obj:`CustomDataset`): Detection dataset.
+        """
+
+        for name, module in model.named_modules():
+            if hasattr(module,
+                       'num_classes') and not isinstance(module, RPNHead):
+                assert module.num_classes == len(dataset.CLASSES), \
+                    (f'The `num_classes` ({model.num_classes}) in {name}'
+                     f'does not matches the length of `CLASSES`'
+                     f'{len(dataset.CLASSES)}) in {dataset}')
+
+    def before_train_epoch(self, runner):
+        self._check_head(runner.model, runner.data_loader.dataset)
