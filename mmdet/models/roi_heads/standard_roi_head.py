@@ -255,6 +255,12 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 x, img_metas, det_bboxes, det_labels, rescale=False)
 
         if postprocess:
+            if isinstance(det_masks, tuple): # mask scoring rcnn
+                det_masks, mask_scores = det_masks
+                bbox_results, segm_results = self.postprocess(
+                    det_bboxes, det_labels, det_masks, img_metas, rescale=rescale)
+                return bbox_results, (segm_results, mask_scores)
+                
             return self.postprocess(
                 det_bboxes, det_labels, det_masks, img_metas, rescale=rescale)
         else:
