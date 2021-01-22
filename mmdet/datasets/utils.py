@@ -125,7 +125,17 @@ class CompatibleCheckHook(Hook):
                      f'{len(dataset.CLASSES)}) in {dataset}')
 
     def before_train_epoch(self, runner):
+        """Check whether the training dataset is compatible with head.
+
+        Args:
+            runner (obj:`EpochBasedRunner`): Epoch based Runner.
+        """
         self._check_head(runner.model, runner.data_loader.dataset)
 
-    def after_val_epoch(self, runner):
+    def before_val_epoch(self, runner):
+        """Check whether the dataset in val epoch is compatible with head.
+
+        Args:
+            runner (obj:`EpochBasedRunner`): Epoch based Runner.
+        """
         self._check_head(runner.model, runner.data_loader.dataset)
