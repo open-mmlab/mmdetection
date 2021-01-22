@@ -1,8 +1,8 @@
 import torch
 
 from ..builder import BBOX_ASSIGNERS
-from ..iou_calculators import build_iou_calculator
-from ..transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
+from ..match_costs import build_match_cost
+from ..transforms import bbox_cxcywh_to_xyxy
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
@@ -42,17 +42,12 @@ class HungarianAssigner(BaseAssigner):
     """
 
     def __init__(self,
-                 cls_weight=1.,
-                 bbox_weight=1.,
-                 iou_weight=1.,
-                 iou_calculator=dict(type='BboxOverlaps2D'),
-                 iou_mode='giou'):
-        # defaultly giou cost is used in the official DETR repo.
-        self.iou_mode = iou_mode
-        self.cls_weight = cls_weight
-        self.bbox_weight = bbox_weight
-        self.iou_weight = iou_weight
-        self.iou_calculator = build_iou_calculator(iou_calculator)
+                 cls_cost=dict(type='ClassificationCost', weight=1.),
+                 reg_cost=dict(type='BBoxL1Cost', weight=1.0),
+                 iou_cost=dict(type='IoUCost', iou_mode='giou', weight=1.0)):
+        self.cls_cost = build_match_cost(cls_cost)
+        self.reg_cost = build_match_cost(reg_cost)
+        self.iou_cost = build_match_cost(iou_cost)
 
     def assign(self,
                bbox_pred,
@@ -113,36 +108,21 @@ class HungarianAssigner(BaseAssigner):
                 assigned_gt_inds[:] = 0
             return AssignResult(
                 num_gts, assigned_gt_inds, None, labels=assigned_labels)
-
-        # 2. compute the weighted costs
-        # classification cost.
-        # Following the official DETR repo, contrary to the loss that
-        # NLL is used, we approximate it in 1 - cls_score[gt_label].
-        # The 1 is a constant that doesn't change the matching,
-        # so it can be ommitted.
-        cls_score = cls_pred.softmax(-1)
-        cls_cost = -cls_score[:, gt_labels]  # [num_bboxes, num_gt]
-
-        # regression L1 cost
         img_h, img_w, _ = img_meta['img_shape']
         factor = torch.Tensor([img_w, img_h, img_w,
                                img_h]).unsqueeze(0).to(gt_bboxes.device)
-        gt_bboxes_normalized = gt_bboxes / factor
-        bbox_cost = torch.cdist(
-            bbox_pred, bbox_xyxy_to_cxcywh(gt_bboxes_normalized),
-            p=1)  # [num_bboxes, num_gt]
 
+        # 2. compute the weighted costs
+        # classification and bboxcost.
+        cls_cost = self.cls_cost(cls_pred, gt_labels)
+        # regression L1 cost
+        normalize_gt_bboxes = gt_bboxes / factor
+        reg_cost = self.reg_cost(bbox_pred, normalize_gt_bboxes)
         # regression iou cost, defaultly giou is used in official DETR.
         bboxes = bbox_cxcywh_to_xyxy(bbox_pred) * factor
-        # overlaps: [num_bboxes, num_gt]
-        overlaps = self.iou_calculator(
-            bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
-        # The 1 is a constant that doesn't change the matching, so ommitted.
-        iou_cost = -overlaps
-
+        iou_cost = self.iou_cost(bboxes, gt_bboxes)
         # weighted sum of above three costs
-        cost = self.cls_weight * cls_cost + self.bbox_weight * bbox_cost
-        cost = cost + self.iou_weight * iou_cost
+        cost = cls_cost + reg_cost + iou_cost
 
         # 3. do Hungarian matching on CPU using linear_sum_assignment
         cost = cost.detach().cpu()

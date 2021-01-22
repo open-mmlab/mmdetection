@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+from mmcv.utils import print_log
+
 from mmdet.core import eval_map, eval_recalls
 from .builder import DATASETS
 from .xml_style import XMLDataset
@@ -40,9 +42,7 @@ class VOCDataset(XMLDataset):
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.
                 Default: (100, 300, 1000).
-            iou_thr (float | list[float]): IoU threshold. It must be a float
-                when evaluating mAP, and can be a list when evaluating recall.
-                Default: 0.5.
+            iou_thr (float | list[float]): IoU threshold. Default: 0.5.
             scale_ranges (list[tuple], optional): Scale ranges for evaluating
                 mAP. If not specified, all bounding boxes would be included in
                 evaluation. Default: None.
@@ -59,24 +59,28 @@ class VOCDataset(XMLDataset):
             raise KeyError(f'metric {metric} is not supported')
         annotations = [self.get_ann_info(i) for i in range(len(self))]
         eval_results = OrderedDict()
+        iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
         if metric == 'mAP':
-            assert isinstance(iou_thr, float)
+            assert isinstance(iou_thrs, list)
             if self.year == 2007:
                 ds_name = 'voc07'
             else:
                 ds_name = self.CLASSES
-            mean_ap, _ = eval_map(
-                results,
-                annotations,
-                scale_ranges=None,
-                iou_thr=iou_thr,
-                dataset=ds_name,
-                logger=logger)
-            eval_results['mAP'] = mean_ap
+            mean_aps = []
+            for iou_thr in iou_thrs:
+                print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')
+                mean_ap, _ = eval_map(
+                    results,
+                    annotations,
+                    scale_ranges=None,
+                    iou_thr=iou_thr,
+                    dataset=ds_name,
+                    logger=logger)
+                mean_aps.append(mean_ap)
+                eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)
+            eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
         elif metric == 'recall':
             gt_bboxes = [ann['bboxes'] for ann in annotations]
-            if isinstance(iou_thr, float):
-                iou_thr = [iou_thr]
             recalls = eval_recalls(
                 gt_bboxes, results, proposal_nums, iou_thr, logger=logger)
             for i, num in enumerate(proposal_nums):

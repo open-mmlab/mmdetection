@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @article{Liu_2016,
    title={SSD: Single Shot MultiBox Detector},

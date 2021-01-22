@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```
 @inproceedings{li2019gradient,
   title={Gradient Harmonized Single-stage Detector},

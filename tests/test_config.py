@@ -43,18 +43,13 @@ def test_config_build_detector():
         config_mod = Config.fromfile(config_fpath)
 
         config_mod.model
-        config_mod.train_cfg
-        config_mod.test_cfg
         print(f'Building detector, config_fpath = {config_fpath}')
 
         # Remove pretrained keys to allow for testing in an offline environment
         if 'pretrained' in config_mod.model:
             config_mod.model['pretrained'] = None
 
-        detector = build_detector(
-            config_mod.model,
-            train_cfg=config_mod.train_cfg,
-            test_cfg=config_mod.test_cfg)
+        detector = build_detector(config_mod.model)
         assert detector is not None
 
         optimizer = build_optimizer(detector, config_mod.optimizer)

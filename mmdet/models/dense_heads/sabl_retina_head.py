@@ -33,8 +33,11 @@ class SABLRetinaHead(BaseDenseHead):
         conv_cfg (dict): Config dict for ConvModule. Defaults to None.
         norm_cfg (dict): Config dict for Norm Layer. Defaults to None.
         bbox_coder (dict): Config dict for bbox coder.
-        reg_decoded_bbox (bool): Whether to regress decoded bbox. \
-            Defaults to False.
+        reg_decoded_bbox (bool): If true, the regression loss would be
+            applied directly on decoded bounding boxes, converting both
+            the predicted boxes and regression targets to absolute
+            coordinates format. Default False. It should be `True` when
+            using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
         train_cfg (dict): Training config of SABLRetinaHead.
         test_cfg (dict): Testing config of SABLRetinaHead.
         loss_cls (dict): Config of classification loss.
