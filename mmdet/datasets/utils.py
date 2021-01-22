@@ -107,7 +107,7 @@ def get_loading_pipeline(pipeline):
 class CompatibleCheckHook(Hook):
 
     def _check_head(self, model, dataset):
-        """Check whether the `num_classes` in head matches the number of
+        """Check whether the `num_classes` in head matches the length of
         `CLASSSES` in `dataset`.
 
         Args:
@@ -125,4 +125,7 @@ class CompatibleCheckHook(Hook):
                      f'{len(dataset.CLASSES)}) in {dataset}')
 
     def before_train_epoch(self, runner):
+        self._check_head(runner.model, runner.data_loader.dataset)
+
+    def after_val_epoch(self, runner):
         self._check_head(runner.model, runner.data_loader.dataset)
