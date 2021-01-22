@@ -1,7 +1,8 @@
 import torch
 import torch.nn.functional as F
 
-from mmdet.core import bbox2result, bbox2roi
+from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
+                        merge_aug_masks, multiclass_nms)
 from ..builder import HEADS, build_head, build_roi_extractor
 from .cascade_roi_head import CascadeRoIHead
 
@@ -469,3 +470,116 @@ class SCNetRoIHead(CascadeRoIHead):
             return list(zip(det_bbox_results, det_segm_results))
         else:
             return det_bbox_results
+
+    def aug_test(self, img_feats, proposal_list, img_metas, rescale=False):
+        if self.with_semantic:
+            semantic_feats = [
+                self.semantic_head(feat)[1] for feat in img_feats
+            ]
+        else:
+            semantic_feats = [None] * len(img_metas)
+
+        if self.with_glbctx:
+            glbctx_feats = [self.glbctx_head(feat)[1] for feat in img_feats]
+        else:
+            glbctx_feats = [None] * len(img_metas)
+
+        rcnn_test_cfg = self.test_cfg
+        aug_bboxes = []
+        aug_scores = []
+        for x, img_meta, semantic_feat, glbctx_feat in zip(
+                img_feats, img_metas, semantic_feats, glbctx_feats):
+            # only one image in the batch
+            img_shape = img_meta[0]['img_shape']
+            scale_factor = img_meta[0]['scale_factor']
+            flip = img_meta[0]['flip']
+
+            proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
+                                     scale_factor, flip)
+            # "ms" in variable names means multi-stage
+            ms_scores = []
+
+            rois = bbox2roi([proposals])
+            for i in range(self.num_stages):
+                bbox_head = self.bbox_head[i]
+                bbox_results = self._bbox_forward(
+                    i,
+                    x,
+                    rois,
+                    semantic_feat=semantic_feat,
+                    glbctx_feat=glbctx_feat)
+                ms_scores.append(bbox_results['cls_score'])
+                if i < self.num_stages - 1:
+                    bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                    rois = bbox_head.regress_by_class(
+                        rois, bbox_label, bbox_results['bbox_pred'],
+                        img_meta[0])
+
+            cls_score = sum(ms_scores) / float(len(ms_scores))
+            bboxes, scores = self.bbox_head[-1].get_bboxes(
+                rois,
+                cls_score,
+                bbox_results['bbox_pred'],
+                img_shape,
+                scale_factor,
+                rescale=False,
+                cfg=None)
+            aug_bboxes.append(bboxes)
+            aug_scores.append(scores)
+
+        # after merging, bboxes will be rescaled to the original image size
+        merged_bboxes, merged_scores = merge_aug_bboxes(
+            aug_bboxes, aug_scores, img_metas, rcnn_test_cfg)
+        det_bboxes, det_labels = multiclass_nms(merged_bboxes, merged_scores,
+                                                rcnn_test_cfg.score_thr,
+                                                rcnn_test_cfg.nms,
+                                                rcnn_test_cfg.max_per_img)
+
+        det_bbox_results = bbox2result(det_bboxes, det_labels,
+                                       self.bbox_head[-1].num_classes)
+
+        if self.with_mask:
+            if det_bboxes.shape[0] == 0:
+                det_segm_results = [[]
+                                    for _ in range(self.mask_head.num_classes)]
+            else:
+                aug_masks = []
+                for x, img_meta, semantic_feat, glbctx_feat in zip(
+                        img_feats, img_metas, semantic_feats, glbctx_feats):
+                    img_shape = img_meta[0]['img_shape']
+                    scale_factor = img_meta[0]['scale_factor']
+                    flip = img_meta[0]['flip']
+                    _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
+                                           scale_factor, flip)
+                    mask_rois = bbox2roi([_bboxes])
+                    # get relay feature on mask_rois
+                    bbox_results = self._bbox_forward(
+                        -1,
+                        x,
+                        mask_rois,
+                        semantic_feat=semantic_feat,
+                        glbctx_feat=glbctx_feat)
+                    relayed_feat = bbox_results['relayed_feat']
+                    relayed_feat = self.feat_relay_head(relayed_feat)
+                    mask_results = self._mask_forward(
+                        x,
+                        mask_rois,
+                        semantic_feat=semantic_feat,
+                        glbctx_feat=glbctx_feat,
+                        relayed_feat=relayed_feat)
+                    mask_pred = mask_results['mask_pred']
+                    aug_masks.append(mask_pred.sigmoid().cpu().numpy())
+                merged_masks = merge_aug_masks(aug_masks, img_metas,
+                                               self.test_cfg)
+                ori_shape = img_metas[0][0]['ori_shape']
+                det_segm_results = self.mask_head.get_seg_masks(
+                    merged_masks,
+                    det_bboxes,
+                    det_labels,
+                    rcnn_test_cfg,
+                    ori_shape,
+                    scale_factor=1.0,
+                    rescale=False)
+            return [(det_bbox_results, det_segm_results)]
+        else:
+            return [det_bbox_results]
