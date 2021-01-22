@@ -260,7 +260,7 @@ class PublicModelsTestCase(unittest.TestCase):
               'foveabox/fovea_r50_fpn_4x4_1x_coco/fovea_r50_fpn_4x4_1x_coco_20200219-ee4d5303.pth'
         self.run_pytorch_test(origin_config, self.download_if_not_yet(url))
     
-    def test_pytorch_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
+    def test_pytorch_ms_rcnn__ms_rcnn_r50_caffe_fpn_2x_coco(self):
         origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco.py'
         url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
               'ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco/ms_rcnn_r50_caffe_fpn_2x_coco_bbox_mAP-0.388__segm_mAP-0.363_20200506_004738-ee87b137.pth'
