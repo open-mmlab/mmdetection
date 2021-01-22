@@ -31,7 +31,7 @@ class PublicModelsTestCase(unittest.TestCase):
     snapshots_dir = osp.join(root_dir, 'snapshots')
 
     custom_operations = ['ExperimentalDetectronROIFeatureExtractor',
-                         'PriorBox', 'PriorBoxClustered', 'DetectionOutput', 
+                         'PriorBox', 'PriorBoxClustered', 'DetectionOutput',
                          'DeformableConv2D']
 
     @staticmethod
@@ -144,7 +144,7 @@ class PublicModelsTestCase(unittest.TestCase):
         name = config_path.replace('configs/', '')[:-3]
         test_dir = osp.join(self.root_dir, name, 'openvino_alt_ssd_export' if alt_ssd_export else 'openvino_export')
         log_file, target_config_path = self.prerun(config_path, test_dir)
-        
+
         metrics_str = ' '.join(metrics)
 
         with open(log_file, 'w') as log_f:
@@ -259,13 +259,13 @@ class PublicModelsTestCase(unittest.TestCase):
         url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
               'foveabox/fovea_r50_fpn_4x4_1x_coco/fovea_r50_fpn_4x4_1x_coco_20200219-ee4d5303.pth'
         self.run_pytorch_test(origin_config, self.download_if_not_yet(url))
+    
+    def test_pytorch_ms_rcnn__ms_rcnn_r50_caffe_fpn_2x_coco(self):
+        origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco/ms_rcnn_r50_caffe_fpn_2x_coco_bbox_mAP-0.388__segm_mAP-0.363_20200506_004738-ee87b137.pth'
+        self.run_pytorch_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
 
-    # def test_pytorch_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
-    #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py'
-    #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ms-rcnn/' \
-    #           'ms_rcnn_r50_caffe_fpn_1x_20190624-619934b5.pth'
-    #     self.run_pytorch_test(origin_config, self.download_if_not_yet(url))
-    #
     # def test_pytorch_htc__htc_r50_fpn_1x(self):
     #     origin_config = 'configs/htc/htc_r50_fpn_1x.py'
     #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/' \
@@ -354,10 +354,10 @@ class PublicModelsTestCase(unittest.TestCase):
         self.run_openvino_export_test(origin_config, self.download_if_not_yet(url))
 
     # def test_openvino_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
-    #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py'
-    #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ms-rcnn/' \
-    #           'ms_rcnn_r50_caffe_fpn_1x_20190624-619934b5.pth'
-    #     self.run_openvino_export_test(origin_config, self.download_if_not_yet(url))
+    #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco.py'
+    #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+    #           'ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco/ms_rcnn_r50_caffe_fpn_2x_coco_bbox_mAP-0.388__segm_mAP-0.363_20200506_004738-ee87b137.pth'
+    #     self.run_openvino_export_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
     #
     # def test_openvino_htc__htc_r50_fpn_1x(self):
     #     origin_config = 'configs/htc/htc_r50_fpn_1x.py'
@@ -410,7 +410,7 @@ class PublicModelsTestCase(unittest.TestCase):
     def test_openvino_retinanet_effd0_bifpn_1x_coco(self):
         origin_config = 'configs/efficientdet/retinanet_effd0_bifpn_1x_coco.py'
         url = 'https://storage.openvinotoolkit.org/repositories/mmdetection/models/efficientdet/' \
-              'retinanet_effd0_bifpn_1x_coco/epoch_300.pth' 
+              'retinanet_effd0_bifpn_1x_coco/epoch_300.pth'
         self.run_openvino_export_test(origin_config, self.download_if_not_yet(url))
 
     def test_onnx_atss__atss_r50_fpn_1x_coco(self):
@@ -445,11 +445,10 @@ class PublicModelsTestCase(unittest.TestCase):
         self.run_onnx_export_test(origin_config, self.download_if_not_yet(url))
 
     # def test_onnx_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
-    #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py'
+    #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco.py'
     #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
-    #           'ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco/' \
-    #           'ms_rcnn_r50_caffe_fpn_2x_coco_bbox_mAP-0.388__segm_mAP-0.363_20200506_004738-ee87b137.pth'
-    #     self.run_onnx_export_test(origin_config, self.download_if_not_yet(url))
+    #           'ms_rcnn/ms_rcnn_r50_caffe_fpn_2x_coco/ms_rcnn_r50_caffe_fpn_2x_coco_bbox_mAP-0.388__segm_mAP-0.363_20200506_004738-ee87b137.pth'
+    #     self.run_onnx_export_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
 
     # def test_onnx_htc__htc_r50_fpn_1x(self):
     #     origin_config = 'configs/htc/htc_r50_fpn_20e_coco.py'
