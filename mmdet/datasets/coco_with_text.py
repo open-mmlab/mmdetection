@@ -136,7 +136,7 @@ class CocoWithTextDataset(CocoDataset):
                  iou_thrs=np.arange(0.5, 0.96, 0.05),
                  score_thr=-1):
 
-        metrics = metric if isinstance(metric, list) else [metric]
+        metrics = list(metric) if isinstance(metric, list) else [metric]
 
         computed_metrics = ['word_spotting']
         removed_metrics = []
