@@ -1,10 +1,13 @@
 from os.path import dirname, exists, join, relpath
+from unittest.mock import Mock
 
 import pytest
 import torch
 from mmcv.runner import build_optimizer
 
 from mmdet.core import BitmapMasks, PolygonMasks
+from mmdet.datasets.builder import DATASETS
+from mmdet.datasets.utils import CompatibleCheckHook
 
 
 def _get_config_directory():
@@ -20,6 +23,34 @@ def _get_config_directory():
     if not exists(config_dpath):
         raise Exception('Cannot find config path')
     return config_dpath
+
+
+def _check_compatiblecheckhook(detector, config_mod):
+
+    dummy_runner = Mock()
+    dummy_runner.model = detector
+
+    def get_dataset_name(dataset):
+        # deal with `RepeatDataset`,`ConcatDataset`,`ClassBalancedDataset`..
+        if isinstance(dataset, (list, tuple)):
+            dataset = dataset[0]
+        while ('dataset' in dataset):
+            dataset = dataset['dataset']
+            # ConcatDataset
+            if isinstance(dataset, (list, tuple)):
+                dataset = dataset[0]
+        return dataset['type']
+
+    compatible_check = CompatibleCheckHook()
+    dataset_name = get_dataset_name(config_mod['data']['train'])
+    CLASSES = DATASETS.get(dataset_name).CLASSES
+    dummy_runner.data_loader.dataset.CLASSES = CLASSES
+    compatible_check.before_train_epoch(dummy_runner)
+
+    dataset_name = get_dataset_name(config_mod['data']['val'])
+    CLASSES = DATASETS.get(dataset_name).CLASSES
+    dummy_runner.data_loader.dataset.CLASSES = CLASSES
+    compatible_check.before_val_epoch(dummy_runner)
 
 
 def test_config_build_detector():
@@ -51,6 +82,8 @@ def test_config_build_detector():
 
         detector = build_detector(config_mod.model)
         assert detector is not None
+
+        _check_compatiblecheckhook(detector, config_mod)
 
         optimizer = build_optimizer(detector, config_mod.optimizer)
         assert isinstance(optimizer, torch.optim.Optimizer)

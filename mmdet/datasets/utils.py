@@ -1,7 +1,8 @@
 import copy
 import warnings
 
-from mmcv.runner.hooks import Hook
+from mmcv.cnn import VGG
+from mmcv.runner.hooks import HOOKS, Hook
 
 from mmdet.models.dense_heads import RPNHead
 
@@ -104,6 +105,7 @@ def get_loading_pipeline(pipeline):
     return loading_pipeline_cfg
 
 
+@HOOKS.register_module()
 class CompatibleCheckHook(Hook):
 
     def _check_head(self, model, dataset):
@@ -117,11 +119,11 @@ class CompatibleCheckHook(Hook):
         """
 
         for name, module in model.named_modules():
-            if hasattr(module,
-                       'num_classes') and not isinstance(module, RPNHead):
-                assert module.num_classes == len(dataset.CLASSES), \
-                    (f'The `num_classes` ({model.num_classes}) in {name}'
-                     f'does not matches the length of `CLASSES`'
+            if hasattr(module, 'num_classes') and not isinstance(
+                    module, (RPNHead, VGG)):
+                assert module.num_classes != len(dataset.CLASSES), \
+                    (f'The `num_classes` ({module.num_classes}) in {name} '
+                     f'does not matches the length of `CLASSES` '
                      f'{len(dataset.CLASSES)}) in {dataset}')
 
     def before_train_epoch(self, runner):
