@@ -429,3 +429,33 @@ def test_detr_forward():
                                       rescale=True,
                                       return_loss=False)
             batch_results.append(result)
+
+
+def test_inference_detector():
+    from mmdet.apis import init_detector, inference_detector
+
+    rng = np.random.RandomState(0)
+    img1 = rng.rand(300, 300, 3)
+    img2 = rng.rand(300, 300, 3)
+
+    config = _get_config_module(
+        'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')
+    model = init_detector(config, device='cpu')
+    # test single image
+    result = inference_detector(model, img1)
+    assert isinstance(result, tuple) and len(result[0]) == 80
+    # test multiple image
+    result = inference_detector(model, [img1, img2])
+    assert len(result) == 2 and isinstance(result[0], tuple)
+    result = inference_detector(model, (img1, img2))
+    assert len(result) == 2 and isinstance(result[0], tuple)
+
+    config = _get_config_module(
+        'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py')
+    model = init_detector(config, device='cpu')
+    # test single image
+    result = inference_detector(model, img1)
+    assert len(result) == 80
+    # test multiple image
+    result = inference_detector(model, [img1, img2])
+    assert len(result) == 2 and len(result[0]) == 80
