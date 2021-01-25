@@ -35,7 +35,7 @@ class MaskTextSpotter(MaskRCNN):
             net.eval()
 
             dim = net.hidden_size
-            prev_input = np.random.randn(1).astype(np.float32)
+            prev_input = np.random.randint(0, net.vocab_size, size=(1, ))
             pev_hidden = np.random.randn(1, 1, dim).astype(np.float32)
             prev_cell = np.random.randn(1, 1, dim).astype(np.float32)
             encoder_outputs = np.random.randn(1, input_size[0] * input_size[1], dim).astype(np.float32)
