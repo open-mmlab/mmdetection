@@ -10,7 +10,6 @@ from mmcv.utils import build_from_cfg
 from mmdet.core import DistEvalHook, EvalHook
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
-from mmdet.datasets.utils import CompatibleCheckHook
 from mmdet.utils import get_root_logger
 
 
@@ -108,7 +107,6 @@ def train_detector(model,
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config,
                                    cfg.get('momentum_config', None))
-    runner.register_hook(CompatibleCheckHook())
     if distributed:
         runner.register_hook(DistSamplerSeedHook())
 
