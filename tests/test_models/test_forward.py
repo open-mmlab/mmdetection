@@ -438,8 +438,7 @@ def test_inference_detector():
     img1 = rng.rand(300, 300, 3)
     img2 = rng.rand(300, 300, 3)
 
-    config = _get_config_module(
-        'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')
+    config = _get_config_module('mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')
     model = init_detector(config, device='cpu')
     # test single image
     result = inference_detector(model, img1)
@@ -450,8 +449,7 @@ def test_inference_detector():
     result = inference_detector(model, (img1, img2))
     assert len(result) == 2 and isinstance(result[0], tuple)
 
-    config = _get_config_module(
-        'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py')
+    config = _get_config_module('faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py')
     model = init_detector(config, device='cpu')
     # test single image
     result = inference_detector(model, img1)

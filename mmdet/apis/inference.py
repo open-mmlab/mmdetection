@@ -89,8 +89,8 @@ def inference_detector(model, imgs):
            Either image files or loaded images.
 
     Returns:
-        If imgs is a list or tuple, the same length list type results will be returned,
-        otherwise return the detection results directly.
+        If imgs is a list or tuple, the same length list type results
+        will be returned, otherwise return the detection results directly.
     """
 
     if isinstance(imgs, (list, tuple)):
