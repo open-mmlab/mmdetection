@@ -638,38 +638,3 @@ class DLANet(nn.Module):
             for m in self.modules():
                 if isinstance(m, _BatchNorm):
                     m.eval()
-
-
-# def dla34(pretrained=None, **kwargs):  # DLA-34
-#     model = DLA(depth=34, **kwargs)
-#     return model
-
-# def dla46(pretrained=None, **kwargs):  # DLA-46-C
-#     model = DLA(depth=46, **kwargs)
-#     return model
-
-# def dla60(pretrained=None, **kwargs):  # DLA-60
-#     model = DLA(depth=60, **kwargs)
-#     return model
-
-# def dla102(pretrained=None, **kwargs):  # DLA-102
-#     model = DLA(depth=102, residual_root=True, **kwargs)
-#     return model
-
-# def dla169(pretrained=None, **kwargs):  # DLA-169
-#     model = DLA(depth=169, residual_root=True, **kwargs)
-#     return model
-
-# import cv2
-
-# dla = dla169(pretrained=None)
-# # print(dla)
-# dla.load_state_dict(
-#     torch.load('/home/amax/Work/Datascript/NetModify/dla169-0914e092.pth'),
-#     strict=False)
-# a = cv2.imread('/home/amax/Work/Test/mmdetection/demo/demo.jpg')
-# a = cv2.resize(a, (224, 224))
-# a = torch.from_numpy(a).float()
-# a = a.permute((2, 0, 1)).unsqueeze(0)
-# b = dla(a)
-# print(b[3][0, 0, 0, :])
