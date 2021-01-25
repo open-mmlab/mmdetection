@@ -380,11 +380,20 @@ class FCOSHead(AnchorFreeHead):
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
+        mlvl_centerness = torch.cat(mlvl_centerness)
+
+        # Set max number of box to be feed into nms in deployment
+        if torch.onnx.is_in_onnx_export():
+            nms_pre_deploy = cfg.nms.get('nms_pre_deploy', 2000)
+            max_scores, _ = (mlvl_scores * mlvl_centerness[:, None]).max(dim=1)
+            _, topk_inds = max_scores.topk(nms_pre_deploy)
+            mlvl_scores = mlvl_scores[topk_inds, :]
+            mlvl_bboxes = mlvl_bboxes[topk_inds, :]
+            mlvl_centerness = mlvl_centerness[topk_inds]
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        mlvl_centerness = torch.cat(mlvl_centerness)
 
         if with_nms:
             det_bboxes, det_labels = multiclass_nms(
