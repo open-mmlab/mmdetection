@@ -3,7 +3,7 @@ from .gaussian_target import gaussian_radius, gen_gaussian_target
 from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer
-from .transformer import (FFN, MultiheadAttention, Transformer,
+from .transformer import (FFN, DynamicConv, MultiheadAttention, Transformer,
                           TransformerDecoder, TransformerDecoderLayer,
                           TransformerEncoder, TransformerEncoderLayer)
 
@@ -12,5 +12,5 @@ __all__ = [
     'FFN', 'TransformerEncoderLayer', 'TransformerEncoder',
     'TransformerDecoderLayer', 'TransformerDecoder', 'Transformer',
     'build_transformer', 'build_positional_encoding', 'SinePositionalEncoding',
-    'LearnedPositionalEncoding'
+    'LearnedPositionalEncoding', 'DynamicConv'
 ]

@@ -41,7 +41,6 @@ def test_config_build_detector():
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
         config_mod = Config.fromfile(config_fpath)
-
         config_mod.model
         print(f'Building detector, config_fpath = {config_fpath}')
 
@@ -191,15 +190,28 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             cls_out_channels = bbox_cfg.get('cls_out_channels', 1024)
             assert (cls_out_channels == bbox_head.fc_cls.in_features)
             assert (bbox_cfg.num_classes + 1 == bbox_head.fc_cls.out_features)
+
+        elif bbox_cfg['type'] == 'DIIHead':
+            assert bbox_cfg['num_ffn_fcs'] == bbox_head.ffn.num_fcs
+            # 3 means FC and LN and Relu
+            assert bbox_cfg['num_cls_fcs'] == len(bbox_head.cls_fcs) // 3
+            assert bbox_cfg['num_reg_fcs'] == len(bbox_head.reg_fcs) // 3
+            assert bbox_cfg['in_channels'] == bbox_head.in_channels
+            assert bbox_cfg['in_channels'] == bbox_head.fc_cls.in_features
+            assert bbox_cfg['in_channels'] == bbox_head.fc_reg.in_features
+            assert bbox_cfg['in_channels'] == bbox_head.attention.embed_dims
+            assert bbox_cfg[
+                'feedforward_channels'] == bbox_head.ffn.feedforward_channels
+
         else:
             assert bbox_cfg.in_channels == bbox_head.in_channels
             with_cls = bbox_cfg.get('with_cls', True)
+
             if with_cls:
                 fc_out_channels = bbox_cfg.get('fc_out_channels', 2048)
                 assert (fc_out_channels == bbox_head.fc_cls.in_features)
                 assert (bbox_cfg.num_classes +
                         1 == bbox_head.fc_cls.out_features)
-
             with_reg = bbox_cfg.get('with_reg', True)
             if with_reg:
                 out_dim = (4 if bbox_cfg.reg_class_agnostic else 4 *
