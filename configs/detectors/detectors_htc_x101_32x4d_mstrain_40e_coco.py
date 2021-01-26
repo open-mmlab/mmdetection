@@ -2,15 +2,7 @@ _base_ = './detectors_htc_r50_mstrain_40e_coco.py'
 model = dict(
     pretrained='open-mmlab://resnext101_32x4d',
     backbone=dict(
-        type='DetectoRS_ResNeXt',
-        depth=101,
-        groups=32,
-        base_width=4,
-        #conv_cfg=dict(type='ConvAWS'),
-        #sac=dict(type='SAC', use_deform=True),
-        #stage_with_sac=(False, True, True, True),
-        #output_img=True
-    ),
+        type='DetectoRS_ResNeXt', depth=101, groups=32, base_width=4),
     neck=dict(
         type='RFP',
         rfp_steps=2,
