@@ -432,28 +432,58 @@ def test_detr_forward():
 
 
 def test_inference_detector():
-    from mmdet.apis import init_detector, inference_detector
+    from mmdet.apis import inference_detector
+    from mmdet.models import build_detector
+    from mmcv import ConfigDict
+
+    # small RetinaNet
+    num_class = 3
+    model_dict = dict(
+        type='RetinaNet',
+        pretrained=None,
+        backbone=dict(
+            type='ResNet',
+            depth=18,
+            num_stages=4,
+            out_indices=(3, ),
+            norm_cfg=dict(type='BN', requires_grad=False),
+            norm_eval=True,
+            style='pytorch'),
+        neck=None,
+        bbox_head=dict(
+            type='RetinaHead',
+            num_classes=num_class,
+            in_channels=512,
+            stacked_convs=1,
+            feat_channels=256,
+            anchor_generator=dict(
+                type='AnchorGenerator',
+                octave_base_scale=4,
+                scales_per_octave=3,
+                ratios=[0.5],
+                strides=[32]),
+            bbox_coder=dict(
+                type='DeltaXYWHBBoxCoder',
+                target_means=[.0, .0, .0, .0],
+                target_stds=[1.0, 1.0, 1.0, 1.0]),
+        ),
+        test_cfg=dict(
+            nms_pre=1000,
+            min_bbox_size=0,
+            score_thr=0.05,
+            nms=dict(type='nms', iou_threshold=0.5),
+            max_per_img=100))
 
     rng = np.random.RandomState(0)
     img1 = rng.rand(100, 100, 3)
     img2 = rng.rand(100, 100, 3)
 
-    config = _get_config_module('mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')
-    model = init_detector(config, device='cpu')
+    model = build_detector(ConfigDict(model_dict))
+    config = _get_config_module('retinanet/retinanet_r50_fpn_1x_coco.py')
+    model.cfg = config
     # test single image
     result = inference_detector(model, img1)
-    assert isinstance(result, tuple) and len(result[0]) == 80
+    assert len(result) == num_class
     # test multiple image
     result = inference_detector(model, [img1, img2])
-    assert len(result) == 2 and isinstance(result[0], tuple)
-    result = inference_detector(model, (img1, img2))
-    assert len(result) == 2 and isinstance(result[0], tuple)
-
-    config = _get_config_module('faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py')
-    model = init_detector(config, device='cpu')
-    # test single image
-    result = inference_detector(model, img1)
-    assert len(result) == 80
-    # test multiple image
-    result = inference_detector(model, [img1, img2])
-    assert len(result) == 2 and len(result[0]) == 80
+    assert len(result) == 2 and len(result[0]) == num_class
