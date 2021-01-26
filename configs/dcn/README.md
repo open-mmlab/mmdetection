@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```none
 @inproceedings{dai2017deformable,
   title={Deformable Convolutional Networks},
@@ -9,7 +11,11 @@
   booktitle={Proceedings of the IEEE international conference on computer vision},
   year={2017}
 }
+```
 
+[ALGORITHM]
+
+```
 @article{zhu2018deformable,
   title={Deformable ConvNets v2: More Deformable, Better Results},
   author={Zhu, Xizhou and Hu, Han and Lin, Stephen and Dai, Jifeng},

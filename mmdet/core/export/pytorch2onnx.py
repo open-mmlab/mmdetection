@@ -79,7 +79,8 @@ def build_model_from_cfg(config_path, checkpoint_path):
     cfg.data.test.test_mode = True
 
     # build the model
-    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+    cfg.model.train_cfg = None
+    model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
     load_checkpoint(model, checkpoint_path, map_location='cpu')
     model.cpu().eval()
     return model

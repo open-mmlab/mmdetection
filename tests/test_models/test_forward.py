@@ -37,21 +37,77 @@ def _get_detector_cfg(fname):
     These are deep copied to allow for safe modification of parameters without
     influencing other tests.
     """
-    import mmcv
     config = _get_config_module(fname)
     model = copy.deepcopy(config.model)
-    train_cfg = mmcv.Config(copy.deepcopy(config.train_cfg))
-    test_cfg = mmcv.Config(copy.deepcopy(config.test_cfg))
-    return model, train_cfg, test_cfg
+    return model
+
+
+def test_sparse_rcnn_forward():
+    config_path = 'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py'
+    model = _get_detector_cfg(config_path)
+    model['pretrained'] = None
+    from mmdet.models import build_detector
+    detector = build_detector(model)
+    input_shape = (1, 3, 550, 550)
+    mm_inputs = _demo_mm_inputs(input_shape, num_items=[5])
+    imgs = mm_inputs.pop('imgs')
+    img_metas = mm_inputs.pop('img_metas')
+    # Test forward train with non-empty truth batch
+    detector = detector
+    imgs = imgs
+    detector.train()
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_bboxes = [item for item in gt_bboxes]
+    gt_labels = mm_inputs['gt_labels']
+    gt_labels = [item for item in gt_labels]
+    losses = detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
+    detector.forward_dummy(imgs)
+
+    # Test forward train with an empty truth batch
+    mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
+    imgs = mm_inputs.pop('imgs')
+    imgs = imgs
+    img_metas = mm_inputs.pop('img_metas')
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_bboxes = [item for item in gt_bboxes]
+    gt_labels = mm_inputs['gt_labels']
+    gt_labels = [item for item in gt_labels]
+    losses = detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
+
+    # Test forward test
+    detector.eval()
+    with torch.no_grad():
+        img_list = [g[None, :] for g in imgs]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      rescale=True,
+                                      return_loss=False)
+            batch_results.append(result)
 
 
 def test_rpn_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg(
-        'rpn/rpn_r50_fpn_1x_coco.py')
+    model = _get_detector_cfg('rpn/rpn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
-    detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+    detector = build_detector(model)
 
     input_shape = (1, 3, 224, 224)
     mm_inputs = _demo_mm_inputs(input_shape)
@@ -93,11 +149,11 @@ def test_single_stage_forward_gpu(cfg_file):
         import pytest
         pytest.skip('test requires GPU and torch+cuda')
 
-    model, train_cfg, test_cfg = _get_detector_cfg(cfg_file)
+    model = _get_detector_cfg(cfg_file)
     model['pretrained'] = None
 
     from mmdet.models import build_detector
-    detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+    detector = build_detector(model)
 
     input_shape = (2, 3, 224, 224)
     mm_inputs = _demo_mm_inputs(input_shape)
@@ -129,12 +185,12 @@ def test_single_stage_forward_gpu(cfg_file):
 
 
 def test_faster_rcnn_ohem_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg(
+    model = _get_detector_cfg(
         'faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
-    detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+    detector = build_detector(model)
 
     input_shape = (1, 3, 256, 256)
 
@@ -179,11 +235,11 @@ def test_faster_rcnn_ohem_forward():
     'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py'
 ])
 def test_two_stage_forward(cfg_file):
-    model, train_cfg, test_cfg = _get_detector_cfg(cfg_file)
+    model = _get_detector_cfg(cfg_file)
     model['pretrained'] = None
 
     from mmdet.models import build_detector
-    detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+    detector = build_detector(model)
 
     input_shape = (1, 3, 256, 256)
 
@@ -240,11 +296,11 @@ def test_two_stage_forward(cfg_file):
 @pytest.mark.parametrize(
     'cfg_file', ['ghm/retinanet_ghm_r50_fpn_1x_coco.py', 'ssd/ssd300_coco.py'])
 def test_single_stage_forward_cpu(cfg_file):
-    model, train_cfg, test_cfg = _get_detector_cfg(cfg_file)
+    model = _get_detector_cfg(cfg_file)
     model['pretrained'] = None
 
     from mmdet.models import build_detector
-    detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+    detector = build_detector(model)
 
     input_shape = (1, 3, 300, 300)
     mm_inputs = _demo_mm_inputs(input_shape)
@@ -342,12 +398,11 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
 
 
 def test_yolact_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg(
-        'yolact/yolact_r50_1x8_coco.py')
+    model = _get_detector_cfg('yolact/yolact_r50_1x8_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
-    detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+    detector = build_detector(model)
 
     input_shape = (1, 3, 550, 550)
     mm_inputs = _demo_mm_inputs(input_shape)
@@ -382,12 +437,11 @@ def test_yolact_forward():
 
 
 def test_detr_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg(
-        'detr/detr_r50_8x2_150e_coco.py')
+    model = _get_detector_cfg('detr/detr_r50_8x2_150e_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
-    detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+    detector = build_detector(model)
 
     input_shape = (1, 3, 550, 550)
     mm_inputs = _demo_mm_inputs(input_shape)

@@ -64,6 +64,32 @@ We follow the below style to name config files. Contributors are advised to foll
     For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
 - `{dataset}`: dataset like `coco`, `cityscapes`, `voc_0712`, `wider_face`.
 
+## Deprecated train_cfg/test_cfg
+
+The `train_cfg` and `test_cfg` are deprecated in config file, please specify them in the model config. The original config structure is as below.
+
+```python
+# deprecated
+model = dict(
+   type=...,
+   ...
+)
+train_cfg=dict(...)
+test_cfg=dict(...)
+```
+
+The migration example is as below.
+
+```python
+# recommended
+model = dict(
+   type=...,
+   ...
+   train_cfg=dict(...),
+   test_cfg=dict(...),
+)
+```
+
 ## An Example of Mask R-CNN
 
 To help the users have a basic idea of a complete config and the modules in a modern detection system,
@@ -157,64 +183,64 @@ model = dict(
                 type='CrossEntropyLoss',  # Type of loss used for segmentation
                 use_mask=True,  # Whether to only train the mask in the correct class.
                 loss_weight=1.0))))  # Loss weight of mask branch.
-train_cfg = dict(  # Config of training hyperparameters for rpn and rcnn
-    rpn=dict(  # Training config of rpn
-        assigner=dict(  # Config of assigner
-            type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for many common detectors. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/assigners/max_iou_assigner.py#L10 for more details.
-            pos_iou_thr=0.7,  # IoU >= threshold 0.7 will be taken as positive samples
-            neg_iou_thr=0.3,  # IoU < threshold 0.3 will be taken as negative samples
-            min_pos_iou=0.3,  # The minimal IoU threshold to take boxes as positive samples
-            match_low_quality=True,  # Whether to match the boxes under low quality (see API doc for more details).
-            ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes
-        sampler=dict(  # Config of positive/negative sampler
-            type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/samplers/random_sampler.py#L8 for implementation details.
-            num=256,  # Number of samples
-            pos_fraction=0.5,  # The ratio of positive samples in the total samples.
-            neg_pos_ub=-1,  # The upper bound of negative samples based on the number of positive samples.
-            add_gt_as_proposals=False),  # Whether add GT as proposals after sampling.
-        allowed_border=-1,  # The border allowed after padding for valid anchors.
-        pos_weight=-1,  # The weight of positive samples during training.
-        debug=False),  # Whether to set the debug mode
-    rpn_proposal=dict(  # The config to generate proposals during training
-        nms_across_levels=False,  # Whether to do NMS for boxes across levels
-        nms_pre=2000,  # The number of boxes before NMS
-        nms_post=1000,  # The number of boxes to be kept by NMS
-        max_num=1000,  # The number of boxes to be used after NMS
-        nms_thr=0.7,  # The threshold to be used during NMS
-        min_bbox_size=0),  # The allowed minimal box size
-    rcnn=dict(  # The config for the roi heads.
-        assigner=dict(  # Config of assigner for second stage, this is different for that in rpn
-            type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for all roi_heads for now. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/assigners/max_iou_assigner.py#L10 for more details.
-            pos_iou_thr=0.5,  # IoU >= threshold 0.5 will be taken as positive samples
-            neg_iou_thr=0.5,  # IoU >= threshold 0.5 will be taken as positive samples
-            min_pos_iou=0.5,  # The minimal IoU threshold to take boxes as positive samples
-            match_low_quality=False,  # Whether to match the boxes under low quality (see API doc for more details).
-            ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes
-        sampler=dict(
-            type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/samplers/random_sampler.py#L8 for implementation details.
-            num=512,  # Number of samples
-            pos_fraction=0.25,  # The ratio of positive samples in the total samples.
-            neg_pos_ub=-1,  # The upper bound of negative samples based on the number of positive samples.
-            add_gt_as_proposals=True
-        ),  # Whether add GT as proposals after sampling.
-        mask_size=28,  # Size of mask
-        pos_weight=-1,  # The weight of positive samples during training.
-        debug=False))  # Whether to set the debug mode
-test_cfg = dict(  # Config for testing hyperparameters for rpn and rcnn
-    rpn=dict(  # The config to generate proposals during testing
-        nms_across_levels=False,  # Whether to do NMS for boxes across levels
-        nms_pre=1000,  # The number of boxes before NMS
-        nms_post=1000,  # The number of boxes to be kept by NMS
-        max_num=1000,  # The number of boxes to be used after NMS
-        nms_thr=0.7,  # The threshold to be used during NMS
-        min_bbox_size=0),  # The allowed minimal box size
-    rcnn=dict(  # The config for the roi heads.
-        score_thr=0.05,  # Threshold to filter out boxes
-        nms=dict(  # Config of nms in the second stage
-            type='nms',  # Type of nms
-            iou_thr=0.5),  # NMS threshold
-        max_per_img=100,  # Max number of detections of each image
-        mask_thr_binary=0.5))  # Threshold of mask prediction
+    train_cfg = dict(  # Config of training hyperparameters for rpn and rcnn
+        rpn=dict(  # Training config of rpn
+            assigner=dict(  # Config of assigner
+                type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for many common detectors. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/assigners/max_iou_assigner.py#L10 for more details.
+                pos_iou_thr=0.7,  # IoU >= threshold 0.7 will be taken as positive samples
+                neg_iou_thr=0.3,  # IoU < threshold 0.3 will be taken as negative samples
+                min_pos_iou=0.3,  # The minimal IoU threshold to take boxes as positive samples
+                match_low_quality=True,  # Whether to match the boxes under low quality (see API doc for more details).
+                ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes
+            sampler=dict(  # Config of positive/negative sampler
+                type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/samplers/random_sampler.py#L8 for implementation details.
+                num=256,  # Number of samples
+                pos_fraction=0.5,  # The ratio of positive samples in the total samples.
+                neg_pos_ub=-1,  # The upper bound of negative samples based on the number of positive samples.
+                add_gt_as_proposals=False),  # Whether add GT as proposals after sampling.
+            allowed_border=-1,  # The border allowed after padding for valid anchors.
+            pos_weight=-1,  # The weight of positive samples during training.
+            debug=False),  # Whether to set the debug mode
+        rpn_proposal=dict(  # The config to generate proposals during training
+            nms_across_levels=False,  # Whether to do NMS for boxes across levels
+            nms_pre=2000,  # The number of boxes before NMS
+            nms_post=1000,  # The number of boxes to be kept by NMS
+            max_num=1000,  # The number of boxes to be used after NMS
+            nms_thr=0.7,  # The threshold to be used during NMS
+            min_bbox_size=0),  # The allowed minimal box size
+        rcnn=dict(  # The config for the roi heads.
+            assigner=dict(  # Config of assigner for second stage, this is different for that in rpn
+                type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for all roi_heads for now. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/assigners/max_iou_assigner.py#L10 for more details.
+                pos_iou_thr=0.5,  # IoU >= threshold 0.5 will be taken as positive samples
+                neg_iou_thr=0.5,  # IoU >= threshold 0.5 will be taken as positive samples
+                min_pos_iou=0.5,  # The minimal IoU threshold to take boxes as positive samples
+                match_low_quality=False,  # Whether to match the boxes under low quality (see API doc for more details).
+                ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes
+            sampler=dict(
+                type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/samplers/random_sampler.py#L8 for implementation details.
+                num=512,  # Number of samples
+                pos_fraction=0.25,  # The ratio of positive samples in the total samples.
+                neg_pos_ub=-1,  # The upper bound of negative samples based on the number of positive samples.
+                add_gt_as_proposals=True
+            ),  # Whether add GT as proposals after sampling.
+            mask_size=28,  # Size of mask
+            pos_weight=-1,  # The weight of positive samples during training.
+            debug=False))  # Whether to set the debug mode
+    test_cfg = dict(  # Config for testing hyperparameters for rpn and rcnn
+        rpn=dict(  # The config to generate proposals during testing
+            nms_across_levels=False,  # Whether to do NMS for boxes across levels
+            nms_pre=1000,  # The number of boxes before NMS
+            nms_post=1000,  # The number of boxes to be kept by NMS
+            max_num=1000,  # The number of boxes to be used after NMS
+            nms_thr=0.7,  # The threshold to be used during NMS
+            min_bbox_size=0),  # The allowed minimal box size
+        rcnn=dict(  # The config for the roi heads.
+            score_thr=0.05,  # Threshold to filter out boxes
+            nms=dict(  # Config of nms in the second stage
+                type='nms',  # Type of nms
+                iou_thr=0.5),  # NMS threshold
+            max_per_img=100,  # Max number of detections of each image
+            mask_thr_binary=0.5))  # Threshold of mask prediction
 dataset_type = 'CocoDataset'  # Dataset type, this will be used to define the dataset
 data_root = 'data/coco/'  # Root path of data
 img_norm_cfg = dict(  # Image normalization config to normalize the input images

@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 We provide config files to reproduce the object detection results in the paper [Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection](https://arxiv.org/abs/2006.04388)
 
 ```latex

@@ -1,5 +1,7 @@
 # DeepFashion
 
+[DATASET]
+
 [MMFashion](https://github.com/open-mmlab/mmfashion) develops "fashion parsing and segmentation" module
 based on the dataset
 [DeepFashion-Inshop](https://drive.google.com/drive/folders/0B7EVK8r0v71pVDZFQXRsMDZCX1E?usp=sharing).
@@ -36,6 +38,16 @@ mmdetection
 
 After that you can train the Mask RCNN r50 on DeepFashion-In-shop dataset by launching training with the `mask_rcnn_r50_fpn_1x.py` config
 or creating your own config file.
+
+```
+@inproceedings{liuLQWTcvpr16DeepFashion,
+   author = {Liu, Ziwei and Luo, Ping and Qiu, Shi and Wang, Xiaogang and Tang, Xiaoou},
+   title = {DeepFashion: Powering Robust Clothes Recognition and Retrieval with Rich Annotations},
+   booktitle = {Proceedings of IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+   month = {June},
+   year = {2016}
+}
+```
 
 ## Model Zoo
 
