@@ -26,9 +26,6 @@ optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
     warmup_ratio=1.0 / 3,
     step=[36, 39])
 total_epochs = 40
