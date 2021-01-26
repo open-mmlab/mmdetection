@@ -40,8 +40,6 @@ def multiclass_nms(multi_bboxes,
             multi_scores.size(0), num_classes, 4)
 
     scores = multi_scores[:, :-1]
-    if score_factors is not None:
-        scores = scores * score_factors[:, None]
 
     labels = torch.arange(num_classes, dtype=torch.long)
     labels = labels.view(1, -1).expand_as(scores)
@@ -52,6 +50,14 @@ def multiclass_nms(multi_bboxes,
 
     # remove low scoring boxes
     valid_mask = scores > score_thr
+    # multiply score_factor after threshold to preserve more bboxes, improve
+    # mAP by 1% for YOLOv3
+    if score_factors is not None:
+        # expand the shape to match original shape of score
+        score_factors = score_factors.view(-1, 1).expand(
+            multi_scores.size(0), num_classes)
+        score_factors = score_factors.reshape(-1)
+        scores = scores * score_factors
     inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
     bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
     if inds.numel() == 0:
