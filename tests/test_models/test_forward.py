@@ -344,7 +344,7 @@ def test_yolact_forward():
     from mmdet.models import build_detector
     detector = build_detector(model)
 
-    input_shape = (1, 3, 550, 550)
+    input_shape = (1, 3, 100, 100)
     mm_inputs = _demo_mm_inputs(input_shape)
 
     imgs = mm_inputs.pop('imgs')
@@ -383,7 +383,7 @@ def test_detr_forward():
     from mmdet.models import build_detector
     detector = build_detector(model)
 
-    input_shape = (1, 3, 550, 550)
+    input_shape = (1, 3, 100, 100)
     mm_inputs = _demo_mm_inputs(input_shape)
 
     imgs = mm_inputs.pop('imgs')
@@ -435,8 +435,8 @@ def test_inference_detector():
     from mmdet.apis import init_detector, inference_detector
 
     rng = np.random.RandomState(0)
-    img1 = rng.rand(300, 300, 3)
-    img2 = rng.rand(300, 300, 3)
+    img1 = rng.rand(100, 100, 3)
+    img2 = rng.rand(100, 100, 3)
 
     config = _get_config_module('mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')
     model = init_detector(config, device='cpu')
