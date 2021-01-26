@@ -536,8 +536,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
                 segm_result = [[[]
-                                for _ in range(self.mask_head[-1].num_classes -
-                                               1)]]
+                                for _ in range(self.mask_head[-1].num_classes)]
+                               ]
             else:
                 aug_masks = []
                 aug_img_metas = []
