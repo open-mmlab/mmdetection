@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @article{zhu2019empirical,
   title={An Empirical Study of Spatial Attention Mechanisms in Deep Networks},

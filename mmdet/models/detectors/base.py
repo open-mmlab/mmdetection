@@ -9,6 +9,7 @@ import torch.nn as nn
 from mmcv.runner import auto_fp16
 from mmcv.utils import print_log
 
+from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.utils import get_root_logger
 
 
@@ -270,11 +271,14 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     img,
                     result,
                     score_thr=0.3,
-                    bbox_color='green',
-                    text_color='green',
-                    thickness=1,
+                    bbox_color=(72, 101, 241),
+                    text_color=(72, 101, 241),
+                    mask_color=None,
+                    thickness=2,
                     font_scale=0.5,
+                    font_size=13,
                     win_name='',
+                    fig_size=(15, 10),
                     show=False,
                     wait_time=0,
                     out_file=None):
@@ -286,12 +290,20 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 bbox_result or (bbox_result, segm_result).
             score_thr (float, optional): Minimum score of bboxes to be shown.
                 Default: 0.3.
-            bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
-            text_color (str or tuple or :obj:`Color`): Color of texts.
-            thickness (int): Thickness of lines.
-            font_scale (float): Font scales of texts.
-            win_name (str): The window name.
-            wait_time (int): Value of waitKey param.
+            bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
+               The tuple of color should be in BGR order. Default: 'green'
+            text_color (str or tuple(int) or :obj:`Color`):Color of texts.
+               The tuple of color should be in BGR order. Default: 'green'
+            mask_color (None or str or tuple(int) or :obj:`Color`):
+               Color of masks. The tuple of color should be in BGR order.
+               Default: None
+            thickness (int): Thickness of lines. Default: 2
+            font_scale (float): Font scales of texts. Default: 0.5
+            font_size (int): Font size of texts. Default: 13
+            win_name (str): The window name. Default: ''
+            fig_size (tuple): Figure size of the pyplot figure.
+                Default: (15, 10)
+            wait_time (float): Value of waitKey param.
                 Default: 0.
             show (bool): Whether to show the image.
                 Default: False.
@@ -316,37 +328,32 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         ]
         labels = np.concatenate(labels)
         # draw segmentation masks
+        segms = None
         if segm_result is not None and len(labels) > 0:  # non empty
             segms = mmcv.concat_list(segm_result)
-            inds = np.where(bboxes[:, -1] > score_thr)[0]
-            np.random.seed(42)
-            color_masks = [
-                np.random.randint(0, 256, (1, 3), dtype=np.uint8)
-                for _ in range(max(labels) + 1)
-            ]
-            for i in inds:
-                i = int(i)
-                color_mask = color_masks[labels[i]]
-                sg = segms[i]
-                if isinstance(sg, torch.Tensor):
-                    sg = sg.detach().cpu().numpy()
-                mask = sg.astype(bool)
-                img[mask] = img[mask] * 0.5 + color_mask * 0.5
+            if isinstance(segms[0], torch.Tensor):
+                segms = torch.stack(segms, dim=0).detach().cpu().numpy()
+            else:
+                segms = np.stack(segms, axis=0)
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
         # draw bounding boxes
-        mmcv.imshow_det_bboxes(
+        imshow_det_bboxes(
             img,
             bboxes,
             labels,
+            segms,
             class_names=self.CLASSES,
             score_thr=score_thr,
             bbox_color=bbox_color,
             text_color=text_color,
+            mask_color=mask_color,
             thickness=thickness,
             font_scale=font_scale,
+            font_size=font_size,
             win_name=win_name,
+            fig_size=fig_size,
             show=show,
             wait_time=wait_time,
             out_file=out_file)

@@ -42,7 +42,9 @@ def main():
         import_modules_from_strings(**cfg['custom_imports'])
 
     model = build_detector(
-        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+        cfg.model,
+        train_cfg=cfg.get('train_cfg'),
+        test_cfg=cfg.get('test_cfg'))
     if torch.cuda.is_available():
         model.cuda()
     model.eval()

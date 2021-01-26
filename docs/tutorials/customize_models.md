@@ -76,7 +76,7 @@ Create a new file `mmdet/models/necks/pafpn.py`.
 ```python
 from ..builder import NECKS
 
-@NECKS.register
+@NECKS.register_module()
 class PAFPN(nn.Module):
 
     def __init__(self,
@@ -105,7 +105,7 @@ or alternatively add
 
 ```python
 custom_imports = dict(
-    imports=['mmdet.models.necks.mobilenet'],
+    imports=['mmdet.models.necks.pafpn.py'],
     allow_failed_imports=False)
 ```
 
