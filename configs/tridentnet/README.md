@@ -2,6 +2,8 @@
 
 ## Introduction
 
+Please note that similar to [Detectron2](https://github.com/facebookresearch/detectron2/tree/master/projects/TridentNet), we haven't implemented the Scale-aware Training Scheme in section 4.2 of the paper.
+
 ```
 @InProceedings{li2019scale,
   title={Scale-Aware Trident Networks for Object Detection},
