@@ -47,13 +47,17 @@ def _check_compatiblecheckhook(detector, config_mod):
     if CLASSES is None:
         CLASSES = DATASETS.get(dataset_name).CLASSES
     dummy_runner.data_loader.dataset.CLASSES = CLASSES
+    compatible_check.before_train_epoch(dummy_runner)
 
+    dummy_runner.data_loader.dataset.CLASSES = None
     compatible_check.before_train_epoch(dummy_runner)
 
     dataset_name, CLASSES = get_dataset_name_classes(config_mod['data']['val'])
     if CLASSES is None:
         CLASSES = DATASETS.get(dataset_name).CLASSES
     dummy_runner.data_loader.dataset.CLASSES = CLASSES
+    compatible_check.before_val_epoch(dummy_runner)
+    dummy_runner.data_loader.dataset.CLASSES = None
     compatible_check.before_val_epoch(dummy_runner)
 
 
