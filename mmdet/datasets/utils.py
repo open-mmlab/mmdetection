@@ -4,7 +4,8 @@ import warnings
 from mmcv.cnn import VGG
 from mmcv.runner.hooks import HOOKS, Hook
 
-from mmdet.models.dense_heads import RPNHead
+from mmdet.models.dense_heads import GARPNHead, RPNHead
+from mmdet.models.roi_heads.mask_heads import FusedSemanticHead
 
 
 def replace_ImageToTensor(pipelines):
@@ -120,11 +121,14 @@ class CompatibleCheckHook(Hook):
 
         for name, module in model.named_modules():
             if hasattr(module, 'num_classes') and not isinstance(
-                    module, (RPNHead, VGG)):
+                    module, (RPNHead, VGG, FusedSemanticHead, GARPNHead)):
                 assert module.num_classes == len(dataset.CLASSES), \
-                    (f'The `num_classes` ({module.num_classes}) in {name} '
-                     f'does not matches the length of `CLASSES` '
-                     f'{len(dataset.CLASSES)}) in {dataset}')
+                    (f'The `num_classes` ({module.num_classes}) in '
+                     f'{module.__class__.__name__} of '
+                     f'{model.__class__.__name__} does not matches '
+                     f'the length of `CLASSES` '
+                     f'{len(dataset.CLASSES)}) in '
+                     f'{dataset.__class__.__name__}')
 
     def before_train_epoch(self, runner):
         """Check whether the training dataset is compatible with head.

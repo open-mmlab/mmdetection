@@ -30,7 +30,7 @@ def _check_compatiblecheckhook(detector, config_mod):
     dummy_runner = Mock()
     dummy_runner.model = detector
 
-    def get_dataset_name(dataset):
+    def get_dataset_name_classes(dataset):
         # deal with `RepeatDataset`,`ConcatDataset`,`ClassBalancedDataset`..
         if isinstance(dataset, (list, tuple)):
             dataset = dataset[0]
@@ -39,16 +39,20 @@ def _check_compatiblecheckhook(detector, config_mod):
             # ConcatDataset
             if isinstance(dataset, (list, tuple)):
                 dataset = dataset[0]
-        return dataset['type']
+        return dataset['type'], dataset.get('classes', None)
 
     compatible_check = CompatibleCheckHook()
-    dataset_name = get_dataset_name(config_mod['data']['train'])
-    CLASSES = DATASETS.get(dataset_name).CLASSES
+    dataset_name, CLASSES = get_dataset_name_classes(
+        config_mod['data']['train'])
+    if CLASSES is None:
+        CLASSES = DATASETS.get(dataset_name).CLASSES
     dummy_runner.data_loader.dataset.CLASSES = CLASSES
+
     compatible_check.before_train_epoch(dummy_runner)
 
-    dataset_name = get_dataset_name(config_mod['data']['val'])
-    CLASSES = DATASETS.get(dataset_name).CLASSES
+    dataset_name, CLASSES = get_dataset_name_classes(config_mod['data']['val'])
+    if CLASSES is None:
+        CLASSES = DATASETS.get(dataset_name).CLASSES
     dummy_runner.data_loader.dataset.CLASSES = CLASSES
     compatible_check.before_val_epoch(dummy_runner)
 
@@ -95,6 +99,7 @@ def test_config_build_detector():
 
             head_config = config_mod.model['roi_head']
             _check_roi_head(head_config, detector.roi_head)
+
         # else:
         #     # for single stage detector
         #     # detectors must have bbox head
