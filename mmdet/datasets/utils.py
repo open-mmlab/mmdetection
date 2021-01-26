@@ -107,7 +107,7 @@ def get_loading_pipeline(pipeline):
 
 
 @HOOKS.register_module()
-class CompatibleCheckHook(Hook):
+class NumClassCheckHook(Hook):
 
     def _check_head(self, model, dataset):
         """Check whether the `num_classes` in head matches the length of

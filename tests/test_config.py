@@ -7,7 +7,7 @@ from mmcv.runner import build_optimizer
 
 from mmdet.core import BitmapMasks, PolygonMasks
 from mmdet.datasets.builder import DATASETS
-from mmdet.datasets.utils import CompatibleCheckHook
+from mmdet.datasets.utils import NumClassCheckHook
 
 
 def _get_config_directory():
@@ -41,7 +41,7 @@ def _check_compatiblecheckhook(detector, config_mod):
                 dataset = dataset[0]
         return dataset['type'], dataset.get('classes', None)
 
-    compatible_check = CompatibleCheckHook()
+    compatible_check = NumClassCheckHook()
     dataset_name, CLASSES = get_dataset_name_classes(
         config_mod['data']['train'])
     if CLASSES is None:
