@@ -92,7 +92,7 @@ class SparseRCNN(TwoStageDetector):
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         # backbone
         x = self.extract_feat(img)
