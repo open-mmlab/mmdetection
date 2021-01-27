@@ -197,6 +197,17 @@ We compare the training speed of Mask R-CNN with some other popular frameworks (
 For mmdetection, we benchmark with [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py), which should have the same setting with [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) of detectron2.
 We also provide the [checkpoint](http://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_compare_20200518-10127928.pth) and [training log](http://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_20200518_105755.log.json) for reference. The throughput is computed as the average throughput in iterations 100-500 to skip GPU warmup time.
 
+### Benchmark speed of a new model
+
+We provide [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/benchmark.py) to benchmark the latency.
+The model would be benchmarked with 2000 images and take the average and you can change the output log interval (defaults: 50) by setting `LOG-INTERVAL`.
+
+```shell
+python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
+```
+
+Latency of all models in our model zoo is benchmarked without setting `fuse-conv-bn`, you can get a lower latency by setting it.
+
 | Implementation       | Throughput (img/s) |
 |----------------------|--------------------|
 | [Detectron2](https://github.com/facebookresearch/detectron2) | 62 |
