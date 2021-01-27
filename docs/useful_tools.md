@@ -116,43 +116,43 @@ Params: 37.74 M
 We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. We also support comparing the output results between Pytorch and ONNX model for verification.
 
 ```shell
-python tools/convert_models/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output_file ${ONNX_FILE} [--shape ${INPUT_SHAPE} --verify]
+python tools/model_converters/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output_file ${ONNX_FILE} [--shape ${INPUT_SHAPE} --verify]
 ```
 
 **Note**: This tool is still experimental. Some customized operators are not supported for now. For a detailed description of the usage and the list of supported models, please refer to [pytorch2onnx](tutorials/pytorch2onnx.md).
 
 ### MMDetection 1.x model to MMDetection 2.x
 
-`tools/convert_models/upgrade_model_version.py` upgrades a previous MMDetection checkpoint
+`tools/model_converters/upgrade_model_version.py` upgrades a previous MMDetection checkpoint
  to the new version. Note that this script is not guaranteed to work as some
   breaking changes are introduced in the new version. It is recommended to
    directly use the new checkpoints.
 
 ```shell
-python tools/convert_models/upgrade_model_version.py ${IN_FILE} ${OUT_FILE} [-h] [--num-classes NUM_CLASSES]
+python tools/model_converters/upgrade_model_version.py ${IN_FILE} ${OUT_FILE} [-h] [--num-classes NUM_CLASSES]
 ```
 
 ### RegNet model to MMDetection
 
-`tools/convert_models/regnet2mmdet.py` convert keys in pycls pretrained RegNet models to
+`tools/model_converters/regnet2mmdet.py` convert keys in pycls pretrained RegNet models to
  MMDetection style.
 
 ```shell
-python tools/convert_models/regnet2mmdet.py ${SRC} ${DST} [-h]
+python tools/model_converters/regnet2mmdet.py ${SRC} ${DST} [-h]
 ```
 
 ### Detectron ResNet to Pytorch
 
-`tools/convert_models/detectron2pytorch.py` converts keys in the original detectron pretrained
+`tools/model_converters/detectron2pytorch.py` converts keys in the original detectron pretrained
  ResNet models to PyTorch style.
 
 ```shell
-python tools/convert_models/detectron2pytorch.py ${SRC} ${DST} ${DEPTH} [-h]
+python tools/model_converters/detectron2pytorch.py ${SRC} ${DST} ${DEPTH} [-h]
 ```
 
 ### Prepare a model for publishing
 
-`tools/convert_models/publish_model.py` helps users to prepare their model for publishing.
+`tools/model_converters/publish_model.py` helps users to prepare their model for publishing.
 
 Before you upload a model to AWS, you may want to
 
@@ -162,25 +162,25 @@ Before you upload a model to AWS, you may want to
  filename.
 
 ```shell
-python tools/convert_models/publish_model.py ${INPUT_FILENAME} ${OUTPUT_FILENAME}
+python tools/model_converters/publish_model.py ${INPUT_FILENAME} ${OUTPUT_FILENAME}
 ```
 
 E.g.,
 
 ```shell
-python tools/convert_models/publish_model.py work_dirs/faster_rcnn/latest.pth faster_rcnn_r50_fpn_1x_20190801.pth
+python tools/model_converters/publish_model.py work_dirs/faster_rcnn/latest.pth faster_rcnn_r50_fpn_1x_20190801.pth
 ```
 
 The final output filename will be `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth`.
 
 ## Dataset Conversion
 
-`tools/convert_datasets/` contains tools to convert the Cityscapes dataset
+`tools/data_converters/` contains tools to convert the Cityscapes dataset
  and Pascal VOC dataset to the COCO format.
 
 ```shell
-python tools/convert_datasets/cityscapes.py ${CITYSCAPES_PATH} [-h] [--img-dir ${IMG_DIR}] [--gt-dir ${GT_DIR}] [-o ${OUT_DIR}] [--nproc ${NPROC}]
-python tools/convert_datasets/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}]
+python tools/data_converters/cityscapes.py ${CITYSCAPES_PATH} [-h] [--img-dir ${IMG_DIR}] [--gt-dir ${GT_DIR}] [-o ${OUT_DIR}] [--nproc ${NPROC}]
+python tools/data_converters/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}]
 ```
 
 ## Miscellaneous

@@ -174,12 +174,12 @@ mmdetection
 
 ```
 
-The cityscapes annotations need to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
+The cityscapes annotations need to be converted into the coco format using `tools/data_converters/cityscapes.py`:
 
 ```shell
 pip install cityscapesscripts
 
-python tools/convert_datasets/cityscapes.py \
+python tools/data_converters/cityscapes.py \
     ./data/cityscapes \
     --nproc 8 \
     --out-dir ./data/cityscapes/annotations
