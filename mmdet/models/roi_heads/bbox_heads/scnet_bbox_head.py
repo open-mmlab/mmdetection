@@ -4,9 +4,9 @@ from .convfc_bbox_head import ConvFCBBoxHead
 
 @HEADS.register_module()
 class SCNetBBoxHead(ConvFCBBoxHead):
-    """BBox head for SCNet https://arxiv.org/abs/2012.10150.
+    """BBox head for `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
-    This inherits``ConvFCBBoxHead`` with modified forward() function, allow us
+    This inherits ``ConvFCBBoxHead`` with modified forward() function, allow us
     to get intermediate shared feature.
     """
 

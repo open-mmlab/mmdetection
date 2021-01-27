@@ -9,7 +9,7 @@ from .cascade_roi_head import CascadeRoIHead
 
 @HEADS.register_module()
 class SCNetRoIHead(CascadeRoIHead):
-    """RoIHead for SCNet https://arxiv.org/abs/2012.10150.
+    """RoIHead for `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
     Args:
         num_stages (int): number of cascade stages.
@@ -191,10 +191,7 @@ class SCNetRoIHead(CascadeRoIHead):
                                    *bbox_targets)
 
         bbox_results.update(
-            loss_bbox=loss_bbox,
-            rois=rois,
-            bbox_targets=bbox_targets,
-        )
+            loss_bbox=loss_bbox, rois=rois, bbox_targets=bbox_targets)
         return bbox_results
 
     def _mask_forward_train(self,

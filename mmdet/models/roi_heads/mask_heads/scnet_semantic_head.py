@@ -5,8 +5,7 @@ from .fused_semantic_head import FusedSemanticHead
 
 @HEADS.register_module()
 class SCNetSemanticHead(FusedSemanticHead):
-    """Mask head for SCNet https://arxiv.org/abs/2012.10150. This inherits
-    FusedSemanticHead with additional ``conv_to_res`` argument.
+    """Mask head for `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
     Args:
         conv_to_res (bool, optional): if True, change the conv layers to

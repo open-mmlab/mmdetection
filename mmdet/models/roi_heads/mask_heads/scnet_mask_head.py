@@ -5,7 +5,7 @@ from .fcn_mask_head import FCNMaskHead
 
 @HEADS.register_module()
 class SCNetMaskHead(FCNMaskHead):
-    """Mask head for SCNet https://arxiv.org/abs/2012.10150.
+    """Mask head for `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
     Args:
         conv_to_res (bool, optional): if True, change the conv layers to

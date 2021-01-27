@@ -103,8 +103,8 @@ class ResLayer(nn.Sequential):
 
 
 class SimplifiedBasicBlock(nn.Module):
-    """Simplified version of original basic residual block used for SCNet
-    https://arxiv.org/abs/2012.10150.
+    """Simplified version of original basic residual block. This is used in
+    `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
     - Norm layer is now optional
     - Last ReLU in forward function is removed
