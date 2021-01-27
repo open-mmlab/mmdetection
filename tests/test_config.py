@@ -1,10 +1,13 @@
 from os.path import dirname, exists, join, relpath
+from unittest.mock import Mock
 
 import pytest
 import torch
 from mmcv.runner import build_optimizer
 
 from mmdet.core import BitmapMasks, PolygonMasks
+from mmdet.datasets.builder import DATASETS
+from mmdet.datasets.utils import NumClassCheckHook
 
 
 def _get_config_directory():
@@ -20,6 +23,42 @@ def _get_config_directory():
     if not exists(config_dpath):
         raise Exception('Cannot find config path')
     return config_dpath
+
+
+def _check_numclasscheckhook(detector, config_mod):
+
+    dummy_runner = Mock()
+    dummy_runner.model = detector
+
+    def get_dataset_name_classes(dataset):
+        # deal with `RepeatDataset`,`ConcatDataset`,`ClassBalancedDataset`..
+        if isinstance(dataset, (list, tuple)):
+            dataset = dataset[0]
+        while ('dataset' in dataset):
+            dataset = dataset['dataset']
+            # ConcatDataset
+            if isinstance(dataset, (list, tuple)):
+                dataset = dataset[0]
+        return dataset['type'], dataset.get('classes', None)
+
+    compatible_check = NumClassCheckHook()
+    dataset_name, CLASSES = get_dataset_name_classes(
+        config_mod['data']['train'])
+    if CLASSES is None:
+        CLASSES = DATASETS.get(dataset_name).CLASSES
+    dummy_runner.data_loader.dataset.CLASSES = CLASSES
+    compatible_check.before_train_epoch(dummy_runner)
+
+    dummy_runner.data_loader.dataset.CLASSES = None
+    compatible_check.before_train_epoch(dummy_runner)
+
+    dataset_name, CLASSES = get_dataset_name_classes(config_mod['data']['val'])
+    if CLASSES is None:
+        CLASSES = DATASETS.get(dataset_name).CLASSES
+    dummy_runner.data_loader.dataset.CLASSES = CLASSES
+    compatible_check.before_val_epoch(dummy_runner)
+    dummy_runner.data_loader.dataset.CLASSES = None
+    compatible_check.before_val_epoch(dummy_runner)
 
 
 def test_config_build_detector():
@@ -51,6 +90,8 @@ def test_config_build_detector():
         detector = build_detector(config_mod.model)
         assert detector is not None
 
+        _check_numclasscheckhook(detector, config_mod)
+
         optimizer = build_optimizer(detector, config_mod.optimizer)
         assert isinstance(optimizer, torch.optim.Optimizer)
 
@@ -62,6 +103,7 @@ def test_config_build_detector():
 
             head_config = config_mod.model['roi_head']
             _check_roi_head(head_config, detector.roi_head)
+
         # else:
         #     # for single stage detector
         #     # detectors must have bbox head
