@@ -269,7 +269,8 @@ class BitmapMasks(BaseInstanceMasks):
             resized_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
             resized_masks = np.stack([
-                mmcv.imresize(mask, out_shape, interpolation=interpolation)
+                mmcv.imresize(
+                    mask, out_shape[::-1], interpolation=interpolation)
                 for mask in self.masks
             ])
         return BitmapMasks(resized_masks, *out_shape)

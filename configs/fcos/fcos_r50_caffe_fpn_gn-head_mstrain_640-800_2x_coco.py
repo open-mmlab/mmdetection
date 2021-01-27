@@ -1,7 +1,4 @@
-_base_ = './fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
-model = dict(
-    pretrained='open-mmlab://detectron/resnet101_caffe',
-    backbone=dict(depth=101))
+_base_ = './fcos_r50_caffe_fpn_gn-head_1x_coco.py'
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
@@ -34,8 +31,6 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=4,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
