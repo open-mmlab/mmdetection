@@ -3,11 +3,11 @@ Apart from training/testing scripts, We provide lots of useful tools under the
 
 ## Log Analysis
 
-`tools/analyze_tools/analyze_logs.py` plots loss/mAP curves given a training
+`tools/analysis_tools/analyze_logs.py` plots loss/mAP curves given a training
  log file. Run `pip install seaborn` first to install the dependency.
 
  ```shell
-python tools/analyze_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
+python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
 ```
 
 ![loss curve image](../resources/loss_curve.png)
@@ -17,25 +17,25 @@ Examples:
 - Plot the classification loss of some run.
 
     ```shell
-    python tools/analyze_tools/analyze_logs.py plot_curve log.json --keys loss_cls --legend loss_cls
+    python tools/analysis_tools/analyze_logs.py plot_curve log.json --keys loss_cls --legend loss_cls
     ```
 
 - Plot the classification and regression loss of some run, and save the figure to a pdf.
 
     ```shell
-    python tools/analyze_tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_bbox --out losses.pdf
+    python tools/analysis_tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_bbox --out losses.pdf
     ```
 
 - Compare the bbox mAP of two runs in the same figure.
 
     ```shell
-    python tools/analyze_tools/analyze_logs.py plot_curve log1.json log2.json --keys bbox_mAP --legend run1 run2
+    python tools/analysis_tools/analyze_logs.py plot_curve log1.json log2.json --keys bbox_mAP --legend run1 run2
     ```
 
 - Compute the average training speed.
 
     ```shell
-    python tools/analyze_tools/analyze_logs.py cal_train_time log.json [--include-outliers]
+    python tools/analysis_tools/analyze_logs.py cal_train_time log.json [--include-outliers]
     ```
 
     The output is expected to be like the following.
@@ -52,12 +52,12 @@ Examples:
 
 ### Visualize Datasets
 
-`tools/analyze_tools/browse_dataset.py` helps the user to browse a detection dataset (both
+`tools/misc/browse_dataset.py` helps the user to browse a detection dataset (both
  images and bounding box annotations) visually, or save the image to a
   designated directory.
 
 ```shell
-python tools/analyze_tools/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
+python tools/misc/browse_dataset.py ${CONFIG} [-h] [--skip-type ${SKIP_TYPE[SKIP_TYPE...]}] [--output-dir ${OUTPUT_DIR}] [--not-show] [--show-interval ${SHOW_INTERVAL}]
 ```
 
 ### Visualize Models
@@ -74,20 +74,20 @@ If you need a lightweight GUI for visualizing the detection results, you can ref
 
 ## Error Analysis
 
-`tools/analyze_tools/coco_error_analysis.py` analyzes COCO results per category and by
+`tools/analysis_tools/coco_error_analysis.py` analyzes COCO results per category and by
  different criterion. It can also make a plot to provide useful
   information.
 
 ```shell
-python tools/analyze_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--ann ${ANN}] [--types ${TYPES[TYPES...]}]
+python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--ann ${ANN}] [--types ${TYPES[TYPES...]}]
 ```
 
 ## Model Complexity
 
-`tools/analyze_tools/get_flops.py` is a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
+`tools/analysis_tools/get_flops.py` is a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
 
 ```shell
-python tools/analyze_tools/get_flops.py ${CONFIG_FILE} [--shape ${INPUT_SHAPE}]
+python tools/analysis_tools/get_flops.py ${CONFIG_FILE} [--shape ${INPUT_SHAPE}]
 ```
 
 You will get the results like this.
@@ -116,7 +116,7 @@ Params: 37.74 M
 We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. We also support comparing the output results between Pytorch and ONNX model for verification.
 
 ```shell
-python tools/model_converters/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output_file ${ONNX_FILE} [--shape ${INPUT_SHAPE} --verify]
+python tools/deployment/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output_file ${ONNX_FILE} [--shape ${INPUT_SHAPE} --verify]
 ```
 
 **Note**: This tool is still experimental. Some customized operators are not supported for now. For a detailed description of the usage and the list of supported models, please refer to [pytorch2onnx](tutorials/pytorch2onnx.md).
@@ -179,30 +179,30 @@ The final output filename will be `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth
  and Pascal VOC dataset to the COCO format.
 
 ```shell
-python tools/data_converters/cityscapes.py ${CITYSCAPES_PATH} [-h] [--img-dir ${IMG_DIR}] [--gt-dir ${GT_DIR}] [-o ${OUT_DIR}] [--nproc ${NPROC}]
-python tools/data_converters/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}]
+python tools/dataset_converters/cityscapes.py ${CITYSCAPES_PATH} [-h] [--img-dir ${IMG_DIR}] [--gt-dir ${GT_DIR}] [-o ${OUT_DIR}] [--nproc ${NPROC}]
+python tools/dataset_converters/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}]
 ```
 
 ## Miscellaneous
 
 ### Evaluating a metric
 
-`tools/analyze_tools/eval_metric.py` evaluates certain metrics of a pkl result file
+`tools/analysis_tools/eval_metric.py` evaluates certain metrics of a pkl result file
  according to a config file.
 
 ```shell
-python tools/analyze_tools/eval_metric.py ${CONFIG} ${PKL_RESULTS} [-h] [--format-only] [--eval ${EVAL[EVAL ...]}]
+python tools/analysis_tools/eval_metric.py ${CONFIG} ${PKL_RESULTS} [-h] [--format-only] [--eval ${EVAL[EVAL ...]}]
                       [--cfg-options ${CFG_OPTIONS [CFG_OPTIONS ...]}]
                       [--eval-options ${EVAL_OPTIONS [EVAL_OPTIONS ...]}]
 ```
 
 ### Print the entire config
 
-`tools/analyze_tools/print_config.py` prints the whole config verbatim, expanding all its
+`tools/misc/print_config.py` prints the whole config verbatim, expanding all its
  imports.
 
 ```shell
-python tools/analyze_tools/print_config.py ${CONFIG} [-h] [--options ${OPTIONS [OPTIONS...]}]
+python tools/misc/print_config.py ${CONFIG} [-h] [--options ${OPTIONS [OPTIONS...]}]
 ```
 
 ### Test the robustness of detectors
