@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @InProceedings{kirillov2019pointrend,
   title={{PointRend}: Image Segmentation as Rendering},

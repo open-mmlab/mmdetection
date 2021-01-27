@@ -53,37 +53,39 @@ model = dict(
             bbox_coder=dict(target_stds=[0.04, 0.04, 0.08, 0.08]),
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.5),
-            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))))
-# model training and testing settings
-train_cfg = dict(
-    rpn=[
-        dict(
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))),
+    # model training and testing settings
+    train_cfg=dict(
+        rpn=[
+            dict(
+                assigner=dict(
+                    type='RegionAssigner', center_ratio=0.2, ignore_ratio=0.5),
+                allowed_border=-1,
+                pos_weight=-1,
+                debug=False),
+            dict(
+                assigner=dict(
+                    type='MaxIoUAssigner',
+                    pos_iou_thr=0.7,
+                    neg_iou_thr=0.7,
+                    min_pos_iou=0.3,
+                    ignore_iof_thr=-1),
+                sampler=dict(
+                    type='RandomSampler',
+                    num=256,
+                    pos_fraction=0.5,
+                    neg_pos_ub=-1,
+                    add_gt_as_proposals=False),
+                allowed_border=-1,
+                pos_weight=-1,
+                debug=False)
+        ],
+        rpn_proposal=dict(max_num=300, nms_thr=0.8),
+        rcnn=dict(
             assigner=dict(
-                type='RegionAssigner', center_ratio=0.2, ignore_ratio=0.5),
-            allowed_border=-1,
-            pos_weight=-1,
-            debug=False),
-        dict(
-            assigner=dict(
-                type='MaxIoUAssigner',
-                pos_iou_thr=0.7,
-                neg_iou_thr=0.7,
-                min_pos_iou=0.3,
-                ignore_iof_thr=-1),
-            sampler=dict(
-                type='RandomSampler',
-                num=256,
-                pos_fraction=0.5,
-                neg_pos_ub=-1,
-                add_gt_as_proposals=False),
-            allowed_border=-1,
-            pos_weight=-1,
-            debug=False)
-    ],
-    rpn_proposal=dict(max_num=300, nms_thr=0.8),
-    rcnn=dict(
-        assigner=dict(pos_iou_thr=0.65, neg_iou_thr=0.65, min_pos_iou=0.65),
-        sampler=dict(type='RandomSampler', num=256)))
-test_cfg = dict(rpn=dict(max_num=300, nms_thr=0.8), rcnn=dict(score_thr=1e-3))
+                pos_iou_thr=0.65, neg_iou_thr=0.65, min_pos_iou=0.65),
+            sampler=dict(type='RandomSampler', num=256))),
+    test_cfg=dict(
+        rpn=dict(max_num=300, nms_thr=0.8), rcnn=dict(score_thr=1e-3)))
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

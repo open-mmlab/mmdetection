@@ -14,7 +14,8 @@ def model_aug_test_template(cfg_file):
     cfg = mmcv.Config.fromfile(cfg_file)
     # init model
     cfg.model.pretrained = None
-    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+    cfg.model.train_cfg = None
+    model = build_detector(cfg.model)
 
     # init test pipeline and set aug test
     load_cfg, multi_scale_cfg = cfg.test_pipeline
@@ -92,7 +93,8 @@ def test_cornernet_aug_test():
         'configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py')
     # init model
     cfg.model.pretrained = None
-    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+    cfg.model.train_cfg = None
+    model = build_detector(cfg.model)
 
     # init test pipeline and set aug test
     load_cfg, multi_scale_cfg = cfg.test_pipeline

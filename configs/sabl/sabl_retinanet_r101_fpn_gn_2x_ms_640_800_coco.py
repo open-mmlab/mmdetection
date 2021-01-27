@@ -38,18 +38,18 @@ model = dict(
         loss_bbox_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.5),
         loss_bbox_reg=dict(
-            type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.5)))
-# training and testing settings
-train_cfg = dict(
-    assigner=dict(
-        type='ApproxMaxIoUAssigner',
-        pos_iou_thr=0.5,
-        neg_iou_thr=0.4,
-        min_pos_iou=0.0,
-        ignore_iof_thr=-1),
-    allowed_border=-1,
-    pos_weight=-1,
-    debug=False)
+            type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.5)),
+    # training and testing settings
+    train_cfg=dict(
+        assigner=dict(
+            type='ApproxMaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.4,
+            min_pos_iou=0.0,
+            ignore_iof_thr=-1),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False))
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [

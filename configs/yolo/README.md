@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @misc{redmon2018yolov3,
     title={YOLOv3: An Incremental Improvement},

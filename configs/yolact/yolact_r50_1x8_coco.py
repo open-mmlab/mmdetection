@@ -62,28 +62,28 @@ model = dict(
         num_classes=80,
         in_channels=256,
         loss_segm=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)))
-# training and testing settings
-train_cfg = dict(
-    assigner=dict(
-        type='MaxIoUAssigner',
-        pos_iou_thr=0.5,
-        neg_iou_thr=0.4,
-        min_pos_iou=0.,
-        ignore_iof_thr=-1,
-        gt_max_assign_all=False),
-    # smoothl1_beta=1.,
-    allowed_border=-1,
-    pos_weight=-1,
-    neg_pos_ratio=3,
-    debug=False)
-test_cfg = dict(
-    nms_pre=1000,
-    min_bbox_size=0,
-    score_thr=0.05,
-    iou_thr=0.5,
-    top_k=200,
-    max_per_img=100)
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
+    # training and testing settings
+    train_cfg=dict(
+        assigner=dict(
+            type='MaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.4,
+            min_pos_iou=0.,
+            ignore_iof_thr=-1,
+            gt_max_assign_all=False),
+        # smoothl1_beta=1.,
+        allowed_border=-1,
+        pos_weight=-1,
+        neg_pos_ratio=3,
+        debug=False),
+    test_cfg=dict(
+        nms_pre=1000,
+        min_bbox_size=0,
+        score_thr=0.05,
+        iou_thr=0.5,
+        top_k=200,
+        max_per_img=100))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

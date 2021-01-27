@@ -97,13 +97,12 @@ def _context_for_ohem():
     sys.path.insert(0, dirname(dirname(dirname(__file__))))
     from test_forward import _get_detector_cfg
 
-    model, train_cfg, test_cfg = _get_detector_cfg(
+    model = _get_detector_cfg(
         'faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
-    context = build_detector(
-        model, train_cfg=train_cfg, test_cfg=test_cfg).roi_head
+    context = build_detector(model).roi_head
     return context
 
 
