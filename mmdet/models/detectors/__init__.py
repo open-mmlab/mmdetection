@@ -21,6 +21,7 @@ from .retinanet import RetinaNet
 from .rpn import RPN
 from .scnet import SCNet
 from .single_stage import SingleStageDetector
+from .sparse_rcnn import SparseRCNN
 from .trident_faster_rcnn import TridentFasterRCNN
 from .two_stage import TwoStageDetector
 from .vfnet import VFNet
@@ -32,5 +33,6 @@ __all__ = [
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',
     'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector',
     'FOVEA', 'FSAF', 'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA',
-    'YOLOV3', 'YOLACT', 'VFNet', 'DETR', 'TridentFasterRCNN', 'SCNet'
+    'YOLOV3', 'YOLACT', 'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN',
+    'SCNet'
 ]
