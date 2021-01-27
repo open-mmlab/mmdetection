@@ -195,7 +195,7 @@ We also train [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/mast
 
 ### Training Speed benchmark
 
-We provide [analyze_logs.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analyze_logs.py) to get the overall training time and you can find a example in [Log Analysis](https://mmdetection.readthedocs.io/en/latest/useful_tools.html#log-analysis).
+We provide [analyze_logs.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analyze_logs.py) to get the overall training time and you can find an example in [Log Analysis](https://mmdetection.readthedocs.io/en/latest/useful_tools.html#log-analysis).
 
 We compare the training speed of Mask R-CNN with some other popular frameworks (The data is copied from [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md)).
 For mmdetection, we benchmark with [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py), which should have the same setting with [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) of detectron2.
@@ -220,7 +220,7 @@ The model would be benchmarked with 2000 images and take the average, you can ch
 python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
 ```
 
-Latency of all models in our model zoo is benchmarked without setting `fuse-conv-bn`, you can get a lower latency by setting it.
+The latency of all models in our model zoo is benchmarked without setting `fuse-conv-bn`, you can get a lower latency by setting it.
 
 ## Comparison with Detectron2
 
