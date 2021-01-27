@@ -51,11 +51,14 @@ class ResultVisualizer(object):
     Args:
         show (bool): Whether to show the image. Default: True
         wait_time (float): Value of waitKey param. Default: 0.
+        score_thr (float): Minimum score of bboxes to be shown.
+           Default: 0
     """
 
-    def __init__(self, show=False, wait_time=0):
+    def __init__(self, show=False, wait_time=0, score_thr=0):
         self.show = show
         self.wait_time = wait_time
+        self.score_thr = score_thr
 
     def _save_image_gts_results(self, dataset, results, mAPs, out_dir=None):
         mmcv.mkdir_or_exist(out_dir)
@@ -79,6 +82,7 @@ class ResultVisualizer(object):
                 results[index],
                 dataset.CLASSES,
                 show=self.show,
+                score_thr=self.score_thr,
                 wait_time=self.wait_time,
                 out_file=out_file)
 
@@ -145,16 +149,16 @@ def parse_args():
         default=0,
         help='the interval of show (s), 0 is block')
     parser.add_argument(
-        'eval',
-        type=str,
-        help='evaluation metrics, which depends on the dataset, e.g., "bbox",'
-        ' "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC')
-    parser.add_argument(
         '--topk',
         default=20,
         type=int,
         help='saved Number of the highest topk '
         'and lowest topk after index sorting')
+    parser.add_argument(
+        '--show-score-thr',
+        type=float,
+        default=0,
+        help='score threshold (default: 0.)')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -165,12 +169,6 @@ def parse_args():
         'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
-    parser.add_argument(
-        '--eval-options',
-        nargs='+',
-        action=DictAction,
-        help='custom options for evaluation, the key-value pair in xxx=yyy '
-        'format will be kwargs for dataset.evaluate() function')
     args = parser.parse_args()
     return args
 
@@ -194,7 +192,8 @@ def main():
     dataset = build_dataset(cfg.data.test)
     outputs = mmcv.load(args.prediction_path)
 
-    result_visualizer = ResultVisualizer(args.show, args.wait_time)
+    result_visualizer = ResultVisualizer(args.show, args.wait_time,
+                                         args.show_score_thr)
     result_visualizer.evaluate_and_show(
         dataset, outputs, topk=args.topk, show_dir=args.show_dir)
 

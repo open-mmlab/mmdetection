@@ -278,7 +278,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     font_scale=0.5,
                     font_size=13,
                     win_name='',
-                    fig_size=(15, 10),
                     show=False,
                     wait_time=0,
                     out_file=None):
@@ -301,8 +300,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             font_scale (float): Font scales of texts. Default: 0.5
             font_size (int): Font size of texts. Default: 13
             win_name (str): The window name. Default: ''
-            fig_size (tuple): Figure size of the pyplot figure.
-                Default: (15, 10)
             wait_time (float): Value of waitKey param.
                 Default: 0.
             show (bool): Whether to show the image.
@@ -339,7 +336,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if out_file is not None:
             show = False
         # draw bounding boxes
-        imshow_det_bboxes(
+        img = imshow_det_bboxes(
             img,
             bboxes,
             labels,
@@ -353,7 +350,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             font_scale=font_scale,
             font_size=font_size,
             win_name=win_name,
-            fig_size=fig_size,
             show=show,
             wait_time=wait_time,
             out_file=out_file)
