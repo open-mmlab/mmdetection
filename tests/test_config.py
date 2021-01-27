@@ -25,7 +25,7 @@ def _get_config_directory():
     return config_dpath
 
 
-def _check_compatiblecheckhook(detector, config_mod):
+def _check_numclasscheckhook(detector, config_mod):
 
     dummy_runner = Mock()
     dummy_runner.model = detector
@@ -90,7 +90,7 @@ def test_config_build_detector():
         detector = build_detector(config_mod.model)
         assert detector is not None
 
-        _check_compatiblecheckhook(detector, config_mod)
+        _check_numclasscheckhook(detector, config_mod)
 
         optimizer = build_optimizer(detector, config_mod.optimizer)
         assert isinstance(optimizer, torch.optim.Optimizer)
