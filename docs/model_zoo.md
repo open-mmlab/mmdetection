@@ -11,7 +11,7 @@ You can replace `https://s3.ap-northeast-2.amazonaws.com/open-mmlab` with `https
 - We use distributed training.
 - All pytorch-style pretrained backbones on ImageNet are from PyTorch model zoo, caffe-style pretrained backbones are converted from the newly released model from detectron2.
 - For fair comparison with other codebases, we report the GPU memory as the maximum value of `torch.cuda.max_memory_allocated()` for all 8 GPUs. Note that this value is usually less than what `nvidia-smi` shows.
-- We report the inference time as the total time of network forwarding and post-processing, excluding the data loading time. Results are obtained with the script [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/benchmark.py) which computes the average time on 2000 images.
+- We report the inference time as the total time of network forwarding and post-processing, excluding the data loading time. Results are obtained with the script [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) which computes the average time on 2000 images.
 
 ## Baselines
 
@@ -195,7 +195,7 @@ We also train [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/mast
 
 ### Training Speed benchmark
 
-We provide [analyze_logs.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analyze_logs.py) to get the overall training time and you can find an example in [Log Analysis](https://mmdetection.readthedocs.io/en/latest/useful_tools.html#log-analysis).
+We provide [analyze_logs.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/analyze_logs.py) to get average time of iteration in training. You can find examples in [Log Analysis](https://mmdetection.readthedocs.io/en/latest/useful_tools.html#log-analysis).
 
 We compare the training speed of Mask R-CNN with some other popular frameworks (The data is copied from [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md)).
 For mmdetection, we benchmark with [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py), which should have the same setting with [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) of detectron2.
@@ -213,8 +213,8 @@ We also provide the [checkpoint](http://download.openmmlab.com/mmdetection/v2.0/
 
 ### Inference Speed Benchmark
 
-We provide [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/benchmark.py) to benchmark the latency.
-The model would be benchmarked with 2000 images and take the average, you can change the output log interval (defaults: 50) by setting `LOG-INTERVAL`.
+We provide [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) to benchmark the inference latency.
+The script benchmarkes the model with 2000 images calculates the average time ignoring first 5 images. You can change the output log interval (defaults: 50) by setting `LOG-INTERVAL`.
 
 ```shell
 python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
