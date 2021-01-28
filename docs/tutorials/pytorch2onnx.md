@@ -26,7 +26,7 @@
 ### Usage
 
 ```bash
-python tools/pytorch2onnx.py \
+python tools/deployment/pytorch2onnx.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     --output-file ${OUTPUT_FILE} \
@@ -60,7 +60,7 @@ Description of all arguments:
 Example:
 
 ```bash
-python tools/pytorch2onnx.py \
+python tools/deployment/pytorch2onnx.py \
     configs/yolo/yolov3_d53_mstrain-608_273e_coco.py \
     checkpoints/yolo/yolov3_d53_mstrain-608_273e_coco.pth \
     --output-file checkpoints/yolo/yolov3_d53_mstrain-608_273e_coco.onnx \
