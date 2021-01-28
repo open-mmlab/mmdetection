@@ -154,9 +154,11 @@ class BiFPNNode(nn.Module):
 
         nodes = torch.sum(nodes, dim=-1)
 
+        nodes = self.fusion_convs(nodes)
+
         nodes = self.act_layer(nodes)
 
-        return self.fusion_convs(nodes)
+        return nodes
 
 
 class BiFPNBlock(nn.Module):
