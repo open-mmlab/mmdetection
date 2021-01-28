@@ -108,6 +108,7 @@ Supported methods:
 - [x] [VFNet](configs/vfnet/README.md)
 - [x] [DETR](configs/detr/README.md)
 - [x] [CascadeRPN](configs/cascade_rpn/README.md)
+- [x] [SCNet](configs/scnet/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 

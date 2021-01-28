@@ -167,10 +167,11 @@ def _check_roi_head(config, head):
 
 def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
     import torch.nn as nn
+    # Separate roi_extractor and prev_roi_extractor checks for flexibility
     if isinstance(roi_extractor, nn.ModuleList):
-        if prev_roi_extractor:
-            prev_roi_extractor = prev_roi_extractor[0]
         roi_extractor = roi_extractor[0]
+    if prev_roi_extractor and isinstance(prev_roi_extractor, nn.ModuleList):
+        prev_roi_extractor = prev_roi_extractor[0]
 
     assert (len(config.featmap_strides) == len(roi_extractor.roi_layers))
     assert (config.out_channels == roi_extractor.out_channels)

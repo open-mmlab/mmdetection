@@ -227,14 +227,24 @@ def test_faster_rcnn_ohem_forward():
     assert float(loss.item()) > 0
 
 
-# HTC is not ready yet
 @pytest.mark.parametrize('cfg_file', [
     'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
     'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
     'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
-    'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py'
+    'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py',
+    'htc/htc_r50_fpn_1x_coco.py',
+    'scnet/scnet_r50_fpn_20e_coco.py',
 ])
 def test_two_stage_forward(cfg_file):
+    models_with_semantic = [
+        'htc/htc_r50_fpn_1x_coco.py',
+        'scnet/scnet_r50_fpn_20e_coco.py',
+    ]
+    if cfg_file in models_with_semantic:
+        with_semantic = True
+    else:
+        with_semantic = False
+
     model = _get_detector_cfg(cfg_file)
     model['pretrained'] = None
 
@@ -244,19 +254,11 @@ def test_two_stage_forward(cfg_file):
     input_shape = (1, 3, 256, 256)
 
     # Test forward train with a non-empty truth batch
-    mm_inputs = _demo_mm_inputs(input_shape, num_items=[10])
+    mm_inputs = _demo_mm_inputs(
+        input_shape, num_items=[10], with_semantic=with_semantic)
     imgs = mm_inputs.pop('imgs')
     img_metas = mm_inputs.pop('img_metas')
-    gt_bboxes = mm_inputs['gt_bboxes']
-    gt_labels = mm_inputs['gt_labels']
-    gt_masks = mm_inputs['gt_masks']
-    losses = detector.forward(
-        imgs,
-        img_metas,
-        gt_bboxes=gt_bboxes,
-        gt_labels=gt_labels,
-        gt_masks=gt_masks,
-        return_loss=True)
+    losses = detector.forward(imgs, img_metas, return_loss=True, **mm_inputs)
     assert isinstance(losses, dict)
     loss, _ = detector._parse_losses(losses)
     loss.requires_grad_(True)
@@ -264,19 +266,11 @@ def test_two_stage_forward(cfg_file):
     loss.backward()
 
     # Test forward train with an empty truth batch
-    mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
+    mm_inputs = _demo_mm_inputs(
+        input_shape, num_items=[0], with_semantic=with_semantic)
     imgs = mm_inputs.pop('imgs')
     img_metas = mm_inputs.pop('img_metas')
-    gt_bboxes = mm_inputs['gt_bboxes']
-    gt_labels = mm_inputs['gt_labels']
-    gt_masks = mm_inputs['gt_masks']
-    losses = detector.forward(
-        imgs,
-        img_metas,
-        gt_bboxes=gt_bboxes,
-        gt_labels=gt_labels,
-        gt_masks=gt_masks,
-        return_loss=True)
+    losses = detector.forward(imgs, img_metas, return_loss=True, **mm_inputs)
     assert isinstance(losses, dict)
     loss, _ = detector._parse_losses(losses)
     loss.requires_grad_(True)
@@ -330,7 +324,8 @@ def test_single_stage_forward_cpu(cfg_file):
 
 
 def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
-                    num_items=None, num_classes=10):  # yapf: disable
+                    num_items=None, num_classes=10,
+                    with_semantic=False):  # yapf: disable
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
@@ -358,6 +353,7 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
         'filename': '<demo>.png',
         'scale_factor': 1.0,
         'flip': False,
+        'flip_direction': None,
     } for _ in range(N)]
 
     gt_bboxes = []
@@ -394,6 +390,14 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
         'gt_bboxes_ignore': None,
         'gt_masks': gt_masks,
     }
+
+    if with_semantic:
+        # assume gt_semantic_seg using scale 1/8 of the img
+        gt_semantic_seg = np.random.randint(
+            0, num_classes, (1, 1, H // 8, W // 8), dtype=np.uint8)
+        mm_inputs.update(
+            {'gt_semantic_seg': torch.ByteTensor(gt_semantic_seg)})
+
     return mm_inputs
 
 
