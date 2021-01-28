@@ -7,7 +7,7 @@ from mmdet.models.builder import HEADS
 
 @HEADS.register_module()
 class FeatureRelayHead(nn.Module):
-    """Feature Relay Head used in SCNet https://arxiv.org/abs/2012.10150.
+    """Feature Relay Head used in `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
     Args:
         in_channels (int, optional): number of input channels. Default: 256.
