@@ -59,7 +59,7 @@ class SingleStageDetector(BaseDetector):
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
