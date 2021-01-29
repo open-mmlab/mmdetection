@@ -214,7 +214,7 @@ We also provide the [checkpoint](http://download.openmmlab.com/mmdetection/v2.0/
 ### Inference Speed Benchmark
 
 We provide [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) to benchmark the inference latency.
-The script benchmarkes the model with 2000 images calculates the average time ignoring first 5 images. You can change the output log interval (defaults: 50) by setting `LOG-INTERVAL`.
+The script benchmarkes the model with 2000 images and calculates the average time ignoring first 5 times. You can change the output log interval (defaults: 50) by setting `LOG-INTERVAL`.
 
 ```shell
 python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
