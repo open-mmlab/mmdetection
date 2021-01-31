@@ -20,6 +20,10 @@ class XMLDataset(CustomDataset):
     """
 
     def __init__(self, min_size=None, **kwargs):
+        classes = kwargs.pop('classes', None)
+        self.CLASSES = self.get_classes(classes)
+        assert self.CLASSES is not None, 'CLASSES in `XMLDataset`' \
+                                         ' can not be None'
         super(XMLDataset, self).__init__(**kwargs)
         self.cat2label = {cat: i for i, cat in enumerate(self.CLASSES)}
         self.min_size = min_size
