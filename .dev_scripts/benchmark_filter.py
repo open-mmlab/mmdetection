@@ -36,7 +36,8 @@ basic_arch_root = [
     'foveabox', 'fp16', 'free_anchor', 'fsaf', 'gfl', 'ghm', 'grid_rcnn',
     'guided_anchoring', 'htc', 'libra_rcnn', 'mask_rcnn', 'ms_rcnn',
     'nas_fcos', 'paa', 'pisa', 'point_rend', 'reppoints', 'retinanet', 'rpn',
-    'sabl', 'ssd', 'tridentnet', 'vfnet', 'yolact', 'yolo'
+    'sabl', 'ssd', 'tridentnet', 'vfnet', 'yolact', 'yolo', 'sparse_rcnn',
+    'scnet'
 ]
 
 datasets_root = [
@@ -102,7 +103,7 @@ benchmark_pool = [
     'configs/pafpn/faster_rcnn_r50_pafpn_1x_coco.py',
     'configs/pisa/pisa_mask_rcnn_r50_fpn_1x_coco.py',
     'configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py',
-    'configs/regnet/mask_rcnn_regnetx-3GF_fpn_1x_coco.py',
+    'configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_1x_coco.py',
     'configs/reppoints/reppoints_moment_r50_fpn_gn-neck+head_1x_coco.py',
     'configs/res2net/faster_rcnn_r2_101_fpn_2x_coco.py',
     'configs/resnest/'
@@ -114,7 +115,9 @@ benchmark_pool = [
     'configs/tridentnet/tridentnet_r50_caffe_1x_coco.py',
     'configs/vfnet/vfnet_r50_fpn_1x_coco.py',
     'configs/yolact/yolact_r50_1x8_coco.py',
-    'configs/yolo/yolov3_d53_320_273e_coco.py'
+    'configs/yolo/yolov3_d53_320_273e_coco.py',
+    'configs/sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
+    'configs/scnet/scnet_r50_fpn_1x_coco.py'
 ]
 
 
@@ -131,7 +134,7 @@ def main():
     if args.nn_module:
         benchmark_type += nn_module_root
 
-    special_model = args.options
+    special_model = args.model_options
     if special_model is not None:
         benchmark_type += special_model
 
