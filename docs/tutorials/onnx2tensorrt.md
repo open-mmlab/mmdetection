@@ -17,13 +17,13 @@
 ### Prerequisite
 
 1. Please refer to [get_started.md](https://mmdetection.readthedocs.io/en/latest/get_started.html) for installation of MMCV and MMDetection from source.
-2. Please refer to [ONNXRuntime in mmcv](https://mmcv.readthedocs.io/en/latest/onnxruntime_op.html) and [TensorRT plugin in mmcv](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html) to install `mmcv-full` with ONNXRuntime custom ops and TensorRT plugins.
+2. Please refer to [ONNXRuntime in mmcv](https://mmcv.readthedocs.io/en/latest/onnxruntime_op.html) and [TensorRT plugin in mmcv](https://github.com/open-mmlab/mmcv/blob/master/docs/tensorrt_plugin.md) to install `mmcv-full` with ONNXRuntime custom ops and TensorRT plugins.
 3. Use our tool [pytorch2onnx](https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html) to convert the model from PyTorch to ONNX.
 
 ### Usage
 
 ```bash
-python tools/onnx2tensorrt.py \
+python tools/deployment/onnx2tensorrt.py \
     ${MODEL} \
     --trt-file ${TRT_FILE} \
     --input-img ${INPUT_IMAGE_PATH} \
@@ -52,7 +52,7 @@ Description of all arguments:
 Example:
 
 ```bash
-python tools/onnx2tensorrt.py \
+python tools/deployment/onnx2tensorrt.py \
     checkpoints/retinanet_r50_fpn_1x_coco.onnx \
     --trt-file checkpoints/retinanet_r50_fpn_1x_coco.trt \
     --input-img demo/demo.jpg \
