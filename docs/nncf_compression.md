@@ -5,7 +5,7 @@
 OTEDetection allows making compression of the models by
 [NNCF (Neural Network Compression Framework)](https://github.com/openvinotoolkit/nncf_pytorch).
 
-The work of OTEDetection is checked with [**NNCF 1.5.0**](https://github.com/openvinotoolkit/nncf_pytorch/tree/v1.5.0).
+The work of OTEDetection is checked with [**NNCF 1.6.0**](https://github.com/openvinotoolkit/nncf_pytorch/tree/release_v160).
 Please, use this version of NNCF in case of any issues.
 
 NNCF allows making compression using the following methods
