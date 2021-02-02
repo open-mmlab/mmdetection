@@ -1,6 +1,8 @@
 import bisect
+import copy
 import logging
 import math
+import os
 import os.path as osp
 import tempfile
 from collections import defaultdict
@@ -102,6 +104,22 @@ def _create_dummy_results():
                   [150, 160, 190, 200, 0.96], [250, 260, 350, 360, 0.95]])
     ]
     return [boxes]
+
+
+@pytest.mark.parametrize('config_path',
+                         ['./configs/_base_/datasets/voc0712.py'])
+def test_dataset_init(config_path):
+    if not os.path.exists('./data'):
+        os.symlink('./tests/data', './data')
+    data_config = mmcv.Config.fromfile(config_path)
+    if 'data' not in data_config:
+        return
+    stage_names = ['train', 'val', 'test']
+    for stage_name in stage_names:
+        dataset_config = copy.deepcopy(data_config.data.get(stage_name))
+        dataset = build_dataset(dataset_config)
+        dataset[0]
+    os.unlink('./data')
 
 
 def test_dataset_evaluation():
