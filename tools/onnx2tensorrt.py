@@ -5,7 +5,6 @@ import os.path as osp
 import numpy as np
 import onnx
 import onnxruntime as ort
-import tensorrt as trt
 import torch
 from mmcv.ops import get_onnxruntime_op_path
 from mmcv.tensorrt import (TRTWraper, is_tensorrt_plugin_loaded, onnx2trt,
@@ -13,9 +12,6 @@ from mmcv.tensorrt import (TRTWraper, is_tensorrt_plugin_loaded, onnx2trt,
 from mmcv.visualization.image import imshow_det_bboxes
 
 from mmdet.core import get_classes, preprocess_example_input
-
-_TRT_LOGGER = trt.Logger(trt.Logger.ERROR)
-trt.init_libnvinfer_plugins(_TRT_LOGGER, '')
 
 
 def get_GiB(x: int):
@@ -93,8 +89,8 @@ def onnx2tensorrt(onnx_file,
         np.testing.assert_allclose(
             ort_boxes, trt_boxes, rtol=1e-03, atol=1e-05)
         np.testing.assert_allclose(ort_labels, trt_labels)
-        print('The numerical values are the same \
-                between ONNXRuntime and TensorRT')
+        print('The numerical values are the same ' +
+              'between ONNXRuntime and TensorRT')
 
 
 def parse_args():
