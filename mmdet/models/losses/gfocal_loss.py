@@ -6,8 +6,8 @@ from ..builder import LOSSES
 from .utils import weighted_loss
 
 
-@weighted_loss
 @mmcv.jit(derivate=True, coderize=True)
+@weighted_loss
 def quality_focal_loss(pred, target, beta=2.0):
     r"""Quality Focal Loss (QFL) is from `Generalized Focal Loss: Learning
     Qualified and Distributed Bounding Boxes for Dense Object Detection
@@ -51,8 +51,8 @@ def quality_focal_loss(pred, target, beta=2.0):
     return loss
 
 
-@weighted_loss
 @mmcv.jit(derivate=True, coderize=True)
+@weighted_loss
 def distribution_focal_loss(pred, label):
     r"""Distribution Focal Loss (DFL) is from `Generalized Focal Loss: Learning
     Qualified and Distributed Bounding Boxes for Dense Object Detection
