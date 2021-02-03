@@ -13,4 +13,4 @@ total_epochs = 90000
 runner = 'IterBasedRunner'
 
 checkpoint_config = dict(interval=10000)
-evaluation = dict(interval=100, metric='bbox')
+evaluation = dict(interval=10000, metric='bbox')
