@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 We provide the config files for [DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution](https://arxiv.org/pdf/2006.02334.pdf).
 
 ```BibTeX

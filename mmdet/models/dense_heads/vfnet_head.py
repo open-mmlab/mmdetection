@@ -255,7 +255,10 @@ class VFNetHead(ATSSHead, FCOSHead):
             raise NotImplementedError
 
         # compute star deformable convolution offsets
-        dcn_offset = self.star_dcn_offset(bbox_pred, self.gradient_mul, stride)
+        # converting dcn_offset to reg_feat.dtype thus VFNet can be
+        # trained with FP16
+        dcn_offset = self.star_dcn_offset(bbox_pred, self.gradient_mul,
+                                          stride).to(reg_feat.dtype)
 
         # refine the bbox_pred
         reg_feat = self.relu(self.vfnet_reg_refine_dconv(reg_feat, dcn_offset))

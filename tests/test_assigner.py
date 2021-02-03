@@ -7,8 +7,8 @@ CommandLine:
 import torch
 
 from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
-                                       CenterRegionAssigner, MaxIoUAssigner,
-                                       PointAssigner)
+                                       CenterRegionAssigner, HungarianAssigner,
+                                       MaxIoUAssigner, PointAssigner)
 
 
 def test_max_iou_assigner():
@@ -376,3 +376,49 @@ def test_center_region_assigner_with_empty_gts():
     assert len(assign_result.gt_inds) == 2
     expected_gt_inds = torch.LongTensor([0, 0])
     assert torch.all(assign_result.gt_inds == expected_gt_inds)
+
+
+def test_hungarian_match_assigner():
+    self = HungarianAssigner()
+    assert self.iou_cost.iou_mode == 'giou'
+
+    # test no gt bboxes
+    bbox_pred = torch.rand((10, 4))
+    cls_pred = torch.rand((10, 81))
+    gt_bboxes = torch.empty((0, 4)).float()
+    gt_labels = torch.empty((0, )).long()
+    img_meta = dict(img_shape=(10, 8, 3))
+    assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds == 0)
+    assert torch.all(assign_result.labels == -1)
+
+    # test with gt bboxes
+    gt_bboxes = torch.FloatTensor([[0, 0, 5, 7], [3, 5, 7, 8]])
+    gt_labels = torch.LongTensor([1, 20])
+    assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds > -1)
+    assert (assign_result.gt_inds > 0).sum() == gt_bboxes.size(0)
+    assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)
+
+    # test iou mode
+    self = HungarianAssigner(
+        iou_cost=dict(type='IoUCost', iou_mode='iou', weight=1.0))
+    assert self.iou_cost.iou_mode == 'iou'
+    assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds > -1)
+    assert (assign_result.gt_inds > 0).sum() == gt_bboxes.size(0)
+    assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)
+
+    # test focal loss mode
+    self = HungarianAssigner(
+        iou_cost=dict(type='IoUCost', iou_mode='giou', weight=1.0),
+        cls_cost=dict(type='FocalLossCost', weight=1.))
+    assert self.iou_cost.iou_mode == 'giou'
+    assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds > -1)
+    assert (assign_result.gt_inds > 0).sum() == gt_bboxes.size(0)
+    assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)

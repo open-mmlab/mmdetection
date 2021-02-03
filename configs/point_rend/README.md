@@ -1,7 +1,10 @@
 # PointRend
 
 ## Introduction
-```
+
+[ALGORITHM]
+
+```latex
 @InProceedings{kirillov2019pointrend,
   title={{PointRend}: Image Segmentation as Rendering},
   author={Alexander Kirillov and Yuxin Wu and Kaiming He and Ross Girshick},

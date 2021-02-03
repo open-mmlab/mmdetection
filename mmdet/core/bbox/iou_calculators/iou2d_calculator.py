@@ -52,8 +52,9 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         bboxes2 (Tensor): shape (B, n, 4) in <x1, y1, x2, y2> format or empty.
             B indicates the batch dim, in shape (B1, B2, ..., Bn).
             If ``is_aligned `` is ``True``, then m and n must be equal.
-        mode (str): "iou" (intersection over union) or "iof" (intersection over
-            foreground).
+        mode (str): "iou" (intersection over union), "iof" (intersection over
+            foreground) or "giou" (generalized intersection over union).
+            Default "iou".
         is_aligned (bool, optional): If True, then m and n must be equal.
             Default False.
         eps (float, optional): A value added to the denominator for numerical

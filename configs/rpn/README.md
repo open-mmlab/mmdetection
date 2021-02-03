@@ -1,7 +1,10 @@
 # Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
 
 ## Introduction
-```
+
+[ALGORITHM]
+
+```latex
 @inproceedings{ren2015faster,
   title={Faster r-cnn: Towards real-time object detection with region proposal networks},
   author={Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},

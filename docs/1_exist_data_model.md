@@ -44,6 +44,8 @@ for frame in video:
 
 A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb).
 
+Note:  `inference_detector` only supports single-image inference for now.
+
 ### Asynchronous interface - supported for Python 3.7+
 
 For Python 3.7+, MMDetection also supports async interfaces.
@@ -143,7 +145,7 @@ This section will show how to test existing models on supported datasets.
 
 ### Prepare datasets
 
-Public datasets like Pascal VOC and COCO are available from official websites or mirrors.
+Public datasets like [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/index.html) or mirror and [COCO](https://cocodataset.org/#download) are available from official websites or mirrors. Note: In the detection task, Pascal VOC 2012 is an extension of Pascal VOC 2007 without overlap, and we usually use them together.
 It is recommended to download and extract the dataset somewhere outside the project directory and symlink the dataset root to `$MMDETECTION/data` as below.
 If your folder structure is different, you may need to change the corresponding paths in config files.
 
@@ -172,12 +174,12 @@ mmdetection
 
 ```
 
-The cityscapes annotations need to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
+The [cityscapes](https://www.cityscapes-dataset.com/) annotations need to be converted into the coco format using `tools/dataset_converters/cityscapes.py`:
 
 ```shell
 pip install cityscapesscripts
 
-python tools/convert_datasets/cityscapes.py \
+python tools/dataset_converters/cityscapes.py \
     ./data/cityscapes \
     --nproc 8 \
     --out-dir ./data/cityscapes/annotations
@@ -223,8 +225,10 @@ Optional arguments:
 - `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment. Otherwise, you may encounter an error like `cannot connect to X server`.
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
 - `--show-score-thr`: If specified, detections with scores below this threshold will be removed.
+- `--cfg-options`:  if specified, the key-value pair optional cfg will be merged into config file
+- `--eval-options`: if specified, the key-value pair optional eval cfg will be kwargs for dataset.evaluate() function, it's only for evaluation
 
-#### Examples
+### Examples
 
 Assume that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
@@ -310,6 +314,56 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
    ```
 
    The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
+
+### Batch Inference
+
+MMDetection supports inference with a single image or batched images in test mode. By default, we use single-image inference and you can use batch inference by modifying `samples_per_gpu` in the config of test data. You can do that either by modifying the config as below.
+
+```shell
+data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
+```
+
+Or you can set it through `--cfg-options` as `--cfg-options data.test.samples_per_gpu=2`
+
+### Deprecated ImageToTensor
+
+In test mode,  `ImageToTensor`  pipeline is deprecated, it's replaced by `DefaultFormatBundle` that recommended to manually replace it in the test data pipeline in your config file.  examples:
+
+```python
+# use ImageToTensor (deprecated)
+pipelines = [
+   dict(type='LoadImageFromFile'),
+   dict(
+       type='MultiScaleFlipAug',
+       img_scale=(1333, 800),
+       flip=False,
+       transforms=[
+           dict(type='Resize', keep_ratio=True),
+           dict(type='RandomFlip'),
+           dict(type='Normalize', mean=[0, 0, 0], std=[1, 1, 1]),
+           dict(type='Pad', size_divisor=32),
+           dict(type='ImageToTensor', keys=['img']),
+           dict(type='Collect', keys=['img']),
+       ])
+   ]
+
+# manually replace ImageToTensor to DefaultFormatBundle (recommended)
+pipelines = [
+   dict(type='LoadImageFromFile'),
+   dict(
+       type='MultiScaleFlipAug',
+       img_scale=(1333, 800),
+       flip=False,
+       transforms=[
+           dict(type='Resize', keep_ratio=True),
+           dict(type='RandomFlip'),
+           dict(type='Normalize', mean=[0, 0, 0], std=[1, 1, 1]),
+           dict(type='Pad', size_divisor=32),
+           dict(type='DefaultFormatBundle'),
+           dict(type='Collect', keys=['img']),
+       ])
+   ]
+```
 
 ## Train predefined models on standard datasets
 

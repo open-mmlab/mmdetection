@@ -1,15 +1,21 @@
 # Deformable Convolutional Networks
 
-# Introduction
+## Introduction
 
-```
+[ALGORITHM]
+
+```none
 @inproceedings{dai2017deformable,
   title={Deformable Convolutional Networks},
   author={Dai, Jifeng and Qi, Haozhi and Xiong, Yuwen and Li, Yi and Zhang, Guodong and Hu, Han and Wei, Yichen},
   booktitle={Proceedings of the IEEE international conference on computer vision},
   year={2017}
 }
+```
 
+[ALGORITHM]
+
+```
 @article{zhu2018deformable,
   title={Deformable ConvNets v2: More Deformable, Better Results},
   author={Zhu, Xizhou and Hu, Han and Lin, Stephen and Dai, Jifeng},
