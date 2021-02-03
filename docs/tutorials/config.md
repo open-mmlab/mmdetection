@@ -409,6 +409,7 @@ load_from = None  # load models as a pre-trained model from a given path. This w
 resume_from = None  # Resume checkpoints from a given path, the training will be resumed from the epoch when the checkpoint's is saved.
 workflow = [('train', 1)]  # Workflow for runner. [('train', 1)] means there is only one workflow and the workflow named 'train' is executed once. The workflow trains the model by 12 epochs according to the total_epochs.
 work_dir = 'work_dir'  # Directory to save the model checkpoints and logs for the current experiments.
+runner = 'EpochBasedRunner'  # Type of the runner that runs the workflow, can be either 'EpochBasedRunner' or 'IterBasedRunner'.
 
 ```
 

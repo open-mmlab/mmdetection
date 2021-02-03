@@ -84,7 +84,9 @@ def train_detector(model,
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
-    runner = EpochBasedRunner(
+    assert cfg.runner in ('IterBasedRunner', 'EpochBasedRunner'), \
+        'Currently only support IterBasedRunner and EpochBasedRunner'
+    runner = eval(cfg.runner)(
         model,
         optimizer=optimizer,
         work_dir=cfg.work_dir,
@@ -108,7 +110,8 @@ def train_detector(model,
                                    cfg.checkpoint_config, cfg.log_config,
                                    cfg.get('momentum_config', None))
     if distributed:
-        runner.register_hook(DistSamplerSeedHook())
+        if isinstance(runner, EpochBasedRunner):
+            runner.register_hook(DistSamplerSeedHook())
 
     # register eval hooks
     if validate:

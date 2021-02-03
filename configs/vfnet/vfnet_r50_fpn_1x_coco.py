@@ -106,8 +106,3 @@ lr_config = dict(
     warmup_ratio=0.1,
     step=[8, 11])
 total_epochs = 12
-
-# runtime
-load_from = None
-resume_from = None
-workflow = [('train', 1)]
