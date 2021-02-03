@@ -1,28 +1,9 @@
 import argparse
 import glob
-import json
 import os.path as osp
 
 import mmcv
-
-
-def get_final_results(log_json_path, epoch, results_lut):
-    result_dict = dict()
-    with open(log_json_path, 'r') as f:
-        for line in f.readlines():
-            log_line = json.loads(line)
-            if 'mode' not in log_line.keys():
-                continue
-
-            if log_line['mode'] == 'train' and log_line['epoch'] == epoch:
-                result_dict['memory'] = log_line['memory']
-
-            if log_line['mode'] == 'val' and log_line['epoch'] == epoch:
-                result_dict.update({
-                    key: log_line[key]
-                    for key in results_lut if key in log_line
-                })
-                return result_dict
+from gather_models import get_final_results
 
 
 def parse_args():
