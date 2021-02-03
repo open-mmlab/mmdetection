@@ -12,6 +12,8 @@ def parse_args():
         'json_path', type=str, help='json path output by benchmark_filter')
     parser.add_argument('partition', type=str, help='slurm partition name')
     parser.add_argument(
+        '--max-keep-ckpts', type=int, help='num of max keep ckpts')
+    parser.add_argument(
         '--run', action='store_true', help='run script directly')
     parser.add_argument(
         '--out', type=str, help='path to save model benchmark script')
@@ -40,6 +42,8 @@ def main():
     # stdout is no output
     stdout_cfg = '>/dev/null'
 
+    max_keep_ckpts = args.max_keep_ckpts
+
     commands = []
     for i, cfg in enumerate(model_cfgs):
         # print cfg name
@@ -56,12 +60,17 @@ def main():
         command_info += fname + ' '
         command_info += cfg + ' '
         command_info += out_fname + ' '
+        if max_keep_ckpts:
+            command_info += f'--cfg-options ' \
+                            f'checkpoint_config.max_keep_ckpts=' \
+                            f'{max_keep_ckpts}' + ' '
         command_info += stdout_cfg + ' &'
 
         commands.append(command_info)
 
         if i < len(model_cfgs):
             commands.append('\n')
+
     command_str = ''.join(commands)
     if args.out:
         with open(args.out, 'w') as f:
