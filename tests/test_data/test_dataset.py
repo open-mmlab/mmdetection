@@ -106,6 +106,23 @@ def _create_dummy_results():
     return [boxes]
 
 
+def test_xml_dataset():
+    dataconfig = {
+        'ann_file': 'data/VOCdevkit/VOC2007/ImageSets/Main/test.txt',
+        'img_prefix': 'data/VOCdevkit/VOC2007/',
+        'pipeline': [{
+            'type': 'LoadImageFromFile'
+        }]
+    }
+    VOCDataset = DATASETS.get('VOCDataset')
+
+    class XmlSubClass(VOCDataset):
+        CLASSES = None
+
+    with pytest.raises(AssertionError):
+        XmlSubClass(**dataconfig)
+
+
 @pytest.mark.parametrize('config_path',
                          ['./configs/_base_/datasets/voc0712.py'])
 def test_dataset_init(config_path):
