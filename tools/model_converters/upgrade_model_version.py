@@ -123,7 +123,7 @@ def convert(in_file, out_file, num_classes):
     out_state_dict = OrderedDict()
     meta_info = checkpoint['meta']
     is_two_stage, is_ssd, is_retina, reg_cls_agnostic = parse_config(
-        meta_info['config'])
+        '#' + meta_info['config'])
     if meta_info['mmdet_version'] <= '0.5.3' and is_retina:
         upgrade_retina = True
     else:
