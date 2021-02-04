@@ -5,6 +5,7 @@ from pathlib import Path
 import mmcv
 from mmcv import Config
 
+from mmdet.core.utils import mask2ndarray
 from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.datasets.builder import build_dataset
 
@@ -27,7 +28,7 @@ def parse_args():
     parser.add_argument(
         '--show-interval',
         type=float,
-        default=1,
+        default=2,
         help='the interval of show (s)')
     args = parser.parse_args()
     return args
@@ -50,21 +51,28 @@ def main():
     dataset = build_dataset(cfg.data.train)
 
     progress_bar = mmcv.ProgressBar(len(dataset))
+
     for item in dataset:
         filename = os.path.join(args.output_dir,
                                 Path(item['filename']).name
                                 ) if args.output_dir is not None else None
 
+        gt_masks = item.get('gt_masks', None)
+        if gt_masks is not None:
+            gt_masks = mask2ndarray(gt_masks)
+
         imshow_det_bboxes(
             item['img'],
             item['gt_bboxes'],
             item['gt_labels'],
+            gt_masks,
             class_names=dataset.CLASSES,
             show=not args.not_show,
             wait_time=args.show_interval,
             out_file=filename,
             bbox_color=(255, 102, 61),
             text_color=(255, 102, 61))
+
         progress_bar.update()
 
 

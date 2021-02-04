@@ -10,7 +10,7 @@ from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from robustness_eval import get_results
+from tools.analysis_tools.robustness_eval import get_results
 
 from mmdet import datasets
 from mmdet.apis import multi_gpu_test, set_random_seed, single_gpu_test
@@ -272,8 +272,8 @@ def main():
                 shuffle=False)
 
             # build the model and load checkpoint
-            model = build_detector(
-                cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+            cfg.model.train_cfg = None
+            model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
             fp16_cfg = cfg.get('fp16', None)
             if fp16_cfg is not None:
                 wrap_fp16_model(model)

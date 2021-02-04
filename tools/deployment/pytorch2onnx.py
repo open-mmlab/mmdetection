@@ -1,5 +1,6 @@
 import argparse
 import os.path as osp
+import warnings
 
 import numpy as np
 import onnx
@@ -20,7 +21,8 @@ def pytorch2onnx(config_path,
                  verify=False,
                  normalize_cfg=None,
                  dataset='coco',
-                 test_img=None):
+                 test_img=None,
+                 do_simplify=False):
 
     input_config = {
         'input_shape': input_shape,
@@ -52,10 +54,32 @@ def pytorch2onnx(config_path,
         opset_version=opset_version)
 
     model.forward = orig_model.forward
+
+    # simplify onnx model
+    if do_simplify:
+        from mmdet import digit_version
+        import mmcv
+
+        min_required_version = '1.2.5'
+        assert digit_version(mmcv.__version__) >= digit_version(
+            min_required_version
+        ), f'Requires to install mmcv>={min_required_version}'
+        from mmcv.onnx.simplify import simplify
+
+        input_dic = {'input': one_img.detach().cpu().numpy()}
+        _ = simplify(output_file, [input_dic], output_file)
     print(f'Successfully exported ONNX model: {output_file}')
     if verify:
-        from mmdet.core import get_classes
+        from mmdet.core import get_classes, bbox2result
         from mmdet.apis import show_result_pyplot
+
+        ort_custom_op_path = ''
+        try:
+            from mmcv.ops import get_onnxruntime_op_path
+            ort_custom_op_path = get_onnxruntime_op_path()
+        except (ImportError, ModuleNotFoundError):
+            warnings.warn('If input model has custom op from mmcv, \
+                you may have to build mmcv with ONNXRuntime from source.')
         model.CLASSES = get_classes(dataset)
         num_classes = len(model.CLASSES)
         # check by onnx
@@ -76,8 +100,11 @@ def pytorch2onnx(config_path,
         ]
         net_feed_input = list(set(input_all) - set(input_initializer))
         assert (len(net_feed_input) == 1)
-        sess = rt.InferenceSession(output_file)
-        from mmdet.core import bbox2result
+        session_options = rt.SessionOptions()
+        # register custom op for onnxruntime
+        if osp.exists(ort_custom_op_path):
+            session_options.register_custom_ops_library(ort_custom_op_path)
+        sess = rt.InferenceSession(output_file, session_options)
         onnx_outputs = sess.run(None,
                                 {net_feed_input[0]: one_img.detach().numpy()})
         output_names = [_.name for _ in sess.get_outputs()]
@@ -102,11 +129,7 @@ def pytorch2onnx(config_path,
 
         if show:
             show_result_pyplot(
-                model,
-                one_meta['show_img'],
-                pytorch_results,
-                title='Pytorch',
-                block=False)
+                model, one_meta['show_img'], pytorch_results, title='Pytorch')
             show_result_pyplot(
                 model, one_meta['show_img'], onnx_results, title='ONNX')
 
@@ -145,6 +168,10 @@ def parse_args():
         action='store_true',
         help='verify the onnx model output against pytorch output')
     parser.add_argument(
+        '--simplify',
+        action='store_true',
+        help='Whether to simplify onnx model.')
+    parser.add_argument(
         '--shape',
         type=int,
         nargs='+',
@@ -173,7 +200,7 @@ if __name__ == '__main__':
 
     if not args.input_img:
         args.input_img = osp.join(
-            osp.dirname(__file__), '../tests/data/color.jpg')
+            osp.dirname(__file__), '../../tests/data/color.jpg')
 
     if len(args.shape) == 1:
         input_shape = (1, 3, args.shape[0], args.shape[0])
@@ -199,4 +226,5 @@ if __name__ == '__main__':
         verify=args.verify,
         normalize_cfg=normalize_cfg,
         dataset=args.dataset,
-        test_img=args.test_img)
+        test_img=args.test_img,
+        do_simplify=args.simplify)

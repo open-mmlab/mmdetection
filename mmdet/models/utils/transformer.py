@@ -108,9 +108,13 @@ class FFN(nn.Module):
         embed_dims (int): The feature dimension. Same as
             `MultiheadAttention`.
         feedforward_channels (int): The hidden dimension of FFNs.
-        num_fcs (int): The number of fully-connected layers in FFNs.
-        act_cfg (dict): The activation config for FFNs.
-        dropout (float): Probability of an element to be zeroed. Default 0.0.
+        num_fcs (int, optional): The number of fully-connected layers in
+            FFNs. Defaluts to 2.
+        act_cfg (dict, optional): The activation config for FFNs.
+        dropout (float, optional): Probability of an element to be
+            zeroed. Default 0.0.
+        add_residual (bool, optional): Add resudual connection.
+            Defaults to True.
     """
 
     def __init__(self,
@@ -741,4 +745,116 @@ class Transformer(nn.Module):
         repr_str += f'num_fcs={self.num_fcs}, '
         repr_str += f'pre_norm={self.pre_norm}, '
         repr_str += f'return_intermediate_dec={self.return_intermediate_dec})'
+        return repr_str
+
+
+@TRANSFORMER.register_module()
+class DynamicConv(nn.Module):
+    """Implements Dynamic Convolution.
+
+    This module generate parameters for each sample and
+    use bmm to implement 1*1 convolution. Code is modified
+    from the `official github repo <https://github.com/PeizeSun/
+    SparseR-CNN/blob/main/projects/SparseRCNN/sparsercnn/head.py#L258>`_ .
+
+    Args:
+        in_channels (int): The input feature channel.
+            Defaults to 256.
+        feat_channels (int): The inner feature channel.
+            Defaults to 64.
+        out_channels (int, optional): The output feature channel.
+            When not specified, it will be set to `in_channels`
+            by default
+        input_feat_shape (int): The shape of input feature.
+            Defaults to 7.
+        act_cfg (dict): The activation config for DynamicConv.
+        norm_cfg (dict): Config dict for normalization layer. Default
+            layer normalization.
+    """
+
+    def __init__(self,
+                 in_channels=256,
+                 feat_channels=64,
+                 out_channels=None,
+                 input_feat_shape=7,
+                 act_cfg=dict(type='ReLU', inplace=True),
+                 norm_cfg=dict(type='LN')):
+        super(DynamicConv, self).__init__()
+        self.in_channels = in_channels
+        self.feat_channels = feat_channels
+        self.out_channels_raw = out_channels
+        self.input_feat_shape = input_feat_shape
+        self.act_cfg = act_cfg
+        self.norm_cfg = norm_cfg
+        self.out_channels = out_channels if out_channels else in_channels
+
+        self.num_params_in = self.in_channels * self.feat_channels
+        self.num_params_out = self.out_channels * self.feat_channels
+        self.dynamic_layer = nn.Linear(
+            self.in_channels, self.num_params_in + self.num_params_out)
+
+        self.norm_in = build_norm_layer(norm_cfg, self.feat_channels)[1]
+        self.norm_out = build_norm_layer(norm_cfg, self.out_channels)[1]
+
+        self.activation = build_activation_layer(act_cfg)
+
+        num_output = self.out_channels * input_feat_shape**2
+        self.fc_layer = nn.Linear(num_output, self.out_channels)
+        self.fc_norm = build_norm_layer(norm_cfg, self.out_channels)[1]
+
+    def forward(self, param_feature, input_feature):
+        """Forward function for `DynamicConv`.
+
+        Args:
+            param_feature (Tensor): The feature can be used
+                to generate the parameter, has shape
+                (num_all_proposals, in_channels).
+            input_feature (Tensor): Feature that
+                interact with parameters, has shape
+                (num_all_proposals, in_channels, H, W).
+
+        Returns:
+            Tensor: The output feature has shape
+            (num_all_proposals, out_channels).
+        """
+        num_proposals = param_feature.size(0)
+        input_feature = input_feature.view(num_proposals, self.in_channels,
+                                           -1).permute(2, 0, 1)
+
+        input_feature = input_feature.permute(1, 0, 2)
+        parameters = self.dynamic_layer(param_feature)
+
+        param_in = parameters[:, :self.num_params_in].view(
+            -1, self.in_channels, self.feat_channels)
+        param_out = parameters[:, -self.num_params_out:].view(
+            -1, self.feat_channels, self.out_channels)
+
+        # input_feature has shape (num_all_proposals, H*W, in_channels)
+        # param_in has shape (num_all_proposals, in_channels, feat_channels)
+        # feature has shape (num_all_proposals, H*W, feat_channels)
+        features = torch.bmm(input_feature, param_in)
+        features = self.norm_in(features)
+        features = self.activation(features)
+
+        # param_out has shape (batch_size, feat_channels, out_channels)
+        features = torch.bmm(features, param_out)
+        features = self.norm_out(features)
+        features = self.activation(features)
+
+        features = features.flatten(1)
+        features = self.fc_layer(features)
+        features = self.fc_norm(features)
+        features = self.activation(features)
+
+        return features
+
+    def __repr__(self):
+        """str: a string that describes the module"""
+        repr_str = self.__class__.__name__
+        repr_str += f'(in_channels={self.in_channels}, '
+        repr_str += f'feat_channels={self.feat_channels}, '
+        repr_str += f'out_channels={self.out_channels_raw}, '
+        repr_str += f'input_feat_shape={self.input_feat_shape}, '
+        repr_str += f'act_cfg={self.act_cfg}, '
+        repr_str += f'norm_cfg={self.norm_cfg})'
         return repr_str

@@ -14,7 +14,8 @@ def model_aug_test_template(cfg_file):
     cfg = mmcv.Config.fromfile(cfg_file)
     # init model
     cfg.model.pretrained = None
-    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+    cfg.model.train_cfg = None
+    model = build_detector(cfg.model)
 
     # init test pipeline and set aug test
     load_cfg, multi_scale_cfg = cfg.test_pipeline
@@ -86,13 +87,22 @@ def test_htc_aug_test():
     assert len(aug_result[0][1]) == 80
 
 
+def test_scnet_aug_test():
+    aug_result = model_aug_test_template(
+        'configs/scnet/scnet_r50_fpn_1x_coco.py')
+    assert len(aug_result[0]) == 2
+    assert len(aug_result[0][0]) == 80
+    assert len(aug_result[0][1]) == 80
+
+
 def test_cornernet_aug_test():
     # get config
     cfg = mmcv.Config.fromfile(
         'configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py')
     # init model
     cfg.model.pretrained = None
-    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+    cfg.model.train_cfg = None
+    model = build_detector(cfg.model)
 
     # init test pipeline and set aug test
     load_cfg, multi_scale_cfg = cfg.test_pipeline

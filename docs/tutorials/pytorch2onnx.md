@@ -26,7 +26,7 @@
 ### Usage
 
 ```bash
-python tools/pytorch2onnx.py \
+python tools/deployment/pytorch2onnx.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     --output-file ${OUTPUT_FILE} \
@@ -55,11 +55,12 @@ Description of all arguments:
 - `--opset-version` : The opset version of ONNX. If not specified, it will be set to `11`.
 - `--show`: Determines whether to print the architecture of the exported model. If not specified, it will be set to `False`.
 - `--verify`: Determines whether to verify the correctness of an exported model. If not specified, it will be set to `False`.
+- `--simplify`: Determines whether to simplify the exported ONNX model. If not specified, it will be set to `False`.
 
 Example:
 
 ```bash
-python tools/pytorch2onnx.py \
+python tools/deployment/pytorch2onnx.py \
     configs/yolo/yolov3_d53_mstrain-608_273e_coco.py \
     checkpoints/yolo/yolov3_d53_mstrain-608_273e_coco.pth \
     --output-file checkpoints/yolo/yolov3_d53_mstrain-608_273e_coco.onnx \
@@ -90,6 +91,8 @@ Notes:
 
 ## Reminders
 
+- When the input model has custom op such as `RoIAlign` and if you want to verify the exported ONNX model, you may have to build `mmcv` with [ONNXRuntime](https://mmcv.readthedocs.io/en/latest/onnxruntime_op.html) from source.
+- `mmcv.onnx.simplify` feature is based on [onnx-simplifier](https://github.com/daquexian/onnx-simplifier). If you want to try it, please refer to [onnx in `mmcv`](https://mmcv.readthedocs.io/en/latest/onnx.html) and [onnxruntime op in `mmcv`](https://mmcv.readthedocs.io/en/latest/onnxruntime_op.html) for more information.
 - If you meet any problem with the listed models above, please create an issue and it would be taken care of soon. For models not included in the list, please try to dig a little deeper and debug a little bit more and hopefully solve them by yourself.
 - Because this feature is experimental and may change fast, please always try with the latest `mmcv` and `mmdetecion`.
 
