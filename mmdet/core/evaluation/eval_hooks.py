@@ -230,7 +230,11 @@ class DistEvalHook(EvalHook):
         self.gpu_collect = gpu_collect
 
     def after_train_epoch(self, runner):
-
+        # Synchronization of BatchNorm's buffer (running_mean
+        # and running_var) is not supported in the DDP of pytorch,
+        # which may cause the inconsistent performance of models in
+        # different ranks, so we broadcast BatchNorm's buffers
+        # of rank 0 to other ranks to avoid this.
         if self.broadcast_bn_buffer:
             model = runner.model
             for name, module in model.named_modules():
