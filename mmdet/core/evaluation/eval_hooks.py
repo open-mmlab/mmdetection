@@ -201,7 +201,6 @@ class DistEvalHook(EvalHook):
             ``CheckpointHook`` should device EvalHook. Default: None.
         rule (str | None): Comparison rule for best score. If set to None,
             it will infer a reasonable rule. Default: 'None'.
-         (str | None): Comparison rule for best score. If set to None,
         broadcast_bn_buffer (bool): Whether to broadcast the
             buffer(running_mean and running_var) of rank 0 to other rank
             before evaluation. Default: True.
