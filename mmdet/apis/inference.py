@@ -80,30 +80,29 @@ class LoadImage(object):
         return results
 
 
-def inference_detector(model, imglist):
+def inference_detector(model, imgs):
     """Inference image(s) with the detector.
 
     Args:
         model (nn.Module): The loaded detector.
-        imgs (str/ndarray or list[str/ndarray]): Either image files or loaded
-            images.
+        imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
+           Either image files or loaded images.
 
     Returns:
-        If imgs is a str, a generator will be returned, otherwise return the
-        detection results directly.
+        If imgs is a list or tuple, the same length list type results
+        will be returned, otherwise return the detection results directly.
     """
 
-    is_batch = False
-    if isinstance(imglist, list):
+    if isinstance(imgs, (list, tuple)):
         is_batch = True
     else:
-        imglist = [imglist]
+        imgs = [imgs]
+        is_batch = False
 
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
-    results = []
 
-    if isinstance(imglist[0], np.ndarray):
+    if isinstance(imgs[0], np.ndarray):
         cfg = cfg.copy()
         # set loading pipeline type
         cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
@@ -111,8 +110,8 @@ def inference_detector(model, imglist):
     cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     test_pipeline = Compose(cfg.data.test.pipeline)
 
-    datalist = []
-    for img in imglist:
+    datas = []
+    for img in imgs:
         # prepare data
         if isinstance(img, np.ndarray):
             # directly add img
@@ -122,9 +121,9 @@ def inference_detector(model, imglist):
             data = dict(img_info=dict(filename=img), img_prefix=None)
         # build the data pipeline
         data = test_pipeline(data)
-        datalist.append(data)
+        datas.append(data)
 
-    data = collate(datalist, samples_per_gpu=len(imglist))
+    data = collate(datas, samples_per_gpu=len(imgs))
     # just get the actual data from DataContainer
     data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
     data['img'] = [img.data[0] for img in data['img']]
@@ -143,8 +142,8 @@ def inference_detector(model, imglist):
 
     if not is_batch:
         return results[0]
-
-    return results
+    else:
+        return results
 
 
 async def async_inference_detector(model, img):
