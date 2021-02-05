@@ -80,7 +80,7 @@ class LoadImage(object):
         return results
 
 
-def inference_detector(model, img):
+def inference_detector(model, imglist):
     """Inference image(s) with the detector.
 
     Args:
@@ -92,23 +92,39 @@ def inference_detector(model, img):
         If imgs is a str, a generator will be returned, otherwise return the
         detection results directly.
     """
+
+    is_batch = False
+    if isinstance(imglist, list):
+        is_batch = True
+    else:
+        imglist = [imglist]
+
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
-    # prepare data
-    if isinstance(img, np.ndarray):
-        # directly add img
-        data = dict(img=img)
+    results = []
+
+    if isinstance(imglist[0], np.ndarray):
         cfg = cfg.copy()
         # set loading pipeline type
         cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
-    else:
-        # add information into dict
-        data = dict(img_info=dict(filename=img), img_prefix=None)
-    # build the data pipeline
+
     cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     test_pipeline = Compose(cfg.data.test.pipeline)
-    data = test_pipeline(data)
-    data = collate([data], samples_per_gpu=1)
+
+    datalist = []
+    for img in imglist:
+        # prepare data
+        if isinstance(img, np.ndarray):
+            # directly add img
+            data = dict(img=img)
+        else:
+            # add information into dict
+            data = dict(img_info=dict(filename=img), img_prefix=None)
+        # build the data pipeline
+        data = test_pipeline(data)
+        datalist.append(data)
+
+    data = collate(datalist, samples_per_gpu=len(imglist))
     # just get the actual data from DataContainer
     data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
     data['img'] = [img.data[0] for img in data['img']]
@@ -123,8 +139,12 @@ def inference_detector(model, img):
 
     # forward the model
     with torch.no_grad():
-        result = model(return_loss=False, rescale=True, **data)[0]
-    return result
+        results = model(return_loss=False, rescale=True, **data)
+
+    if not is_batch:
+        return results[0]
+
+    return results
 
 
 async def async_inference_detector(model, img):
