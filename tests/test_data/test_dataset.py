@@ -114,13 +114,15 @@ def test_xml_dataset():
             'type': 'LoadImageFromFile'
         }]
     }
-    VOCDataset = DATASETS.get('VOCDataset')
+    XMLDataset = DATASETS.get('XMLDataset')
 
-    class XmlSubClass(VOCDataset):
+    class XMLDatasetSubClass(XMLDataset):
         CLASSES = None
 
+    # get_ann_info and _filter_imgs of XMLDataset
+    # would use self.CLASSES, we added CLASSES not NONE
     with pytest.raises(AssertionError):
-        XmlSubClass(**dataconfig)
+        XMLDatasetSubClass(**dataconfig)
 
 
 @pytest.mark.parametrize('config_path',
