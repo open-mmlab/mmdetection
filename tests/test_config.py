@@ -1,10 +1,13 @@
 from os.path import dirname, exists, join, relpath
+from unittest.mock import Mock
 
 import pytest
 import torch
 from mmcv.runner import build_optimizer
 
 from mmdet.core import BitmapMasks, PolygonMasks
+from mmdet.datasets.builder import DATASETS
+from mmdet.datasets.utils import NumClassCheckHook
 
 
 def _get_config_directory():
@@ -20,6 +23,42 @@ def _get_config_directory():
     if not exists(config_dpath):
         raise Exception('Cannot find config path')
     return config_dpath
+
+
+def _check_numclasscheckhook(detector, config_mod):
+
+    dummy_runner = Mock()
+    dummy_runner.model = detector
+
+    def get_dataset_name_classes(dataset):
+        # deal with `RepeatDataset`,`ConcatDataset`,`ClassBalancedDataset`..
+        if isinstance(dataset, (list, tuple)):
+            dataset = dataset[0]
+        while ('dataset' in dataset):
+            dataset = dataset['dataset']
+            # ConcatDataset
+            if isinstance(dataset, (list, tuple)):
+                dataset = dataset[0]
+        return dataset['type'], dataset.get('classes', None)
+
+    compatible_check = NumClassCheckHook()
+    dataset_name, CLASSES = get_dataset_name_classes(
+        config_mod['data']['train'])
+    if CLASSES is None:
+        CLASSES = DATASETS.get(dataset_name).CLASSES
+    dummy_runner.data_loader.dataset.CLASSES = CLASSES
+    compatible_check.before_train_epoch(dummy_runner)
+
+    dummy_runner.data_loader.dataset.CLASSES = None
+    compatible_check.before_train_epoch(dummy_runner)
+
+    dataset_name, CLASSES = get_dataset_name_classes(config_mod['data']['val'])
+    if CLASSES is None:
+        CLASSES = DATASETS.get(dataset_name).CLASSES
+    dummy_runner.data_loader.dataset.CLASSES = CLASSES
+    compatible_check.before_val_epoch(dummy_runner)
+    dummy_runner.data_loader.dataset.CLASSES = None
+    compatible_check.before_val_epoch(dummy_runner)
 
 
 def test_config_build_detector():
@@ -41,7 +80,6 @@ def test_config_build_detector():
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
         config_mod = Config.fromfile(config_fpath)
-
         config_mod.model
         print(f'Building detector, config_fpath = {config_fpath}')
 
@@ -51,6 +89,8 @@ def test_config_build_detector():
 
         detector = build_detector(config_mod.model)
         assert detector is not None
+
+        _check_numclasscheckhook(detector, config_mod)
 
         optimizer = build_optimizer(detector, config_mod.optimizer)
         assert isinstance(optimizer, torch.optim.Optimizer)
@@ -63,6 +103,7 @@ def test_config_build_detector():
 
             head_config = config_mod.model['roi_head']
             _check_roi_head(head_config, detector.roi_head)
+
         # else:
         #     # for single stage detector
         #     # detectors must have bbox head
@@ -126,10 +167,11 @@ def _check_roi_head(config, head):
 
 def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
     import torch.nn as nn
+    # Separate roi_extractor and prev_roi_extractor checks for flexibility
     if isinstance(roi_extractor, nn.ModuleList):
-        if prev_roi_extractor:
-            prev_roi_extractor = prev_roi_extractor[0]
         roi_extractor = roi_extractor[0]
+    if prev_roi_extractor and isinstance(prev_roi_extractor, nn.ModuleList):
+        prev_roi_extractor = prev_roi_extractor[0]
 
     assert (len(config.featmap_strides) == len(roi_extractor.roi_layers))
     assert (config.out_channels == roi_extractor.out_channels)
@@ -191,15 +233,28 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             cls_out_channels = bbox_cfg.get('cls_out_channels', 1024)
             assert (cls_out_channels == bbox_head.fc_cls.in_features)
             assert (bbox_cfg.num_classes + 1 == bbox_head.fc_cls.out_features)
+
+        elif bbox_cfg['type'] == 'DIIHead':
+            assert bbox_cfg['num_ffn_fcs'] == bbox_head.ffn.num_fcs
+            # 3 means FC and LN and Relu
+            assert bbox_cfg['num_cls_fcs'] == len(bbox_head.cls_fcs) // 3
+            assert bbox_cfg['num_reg_fcs'] == len(bbox_head.reg_fcs) // 3
+            assert bbox_cfg['in_channels'] == bbox_head.in_channels
+            assert bbox_cfg['in_channels'] == bbox_head.fc_cls.in_features
+            assert bbox_cfg['in_channels'] == bbox_head.fc_reg.in_features
+            assert bbox_cfg['in_channels'] == bbox_head.attention.embed_dims
+            assert bbox_cfg[
+                'feedforward_channels'] == bbox_head.ffn.feedforward_channels
+
         else:
             assert bbox_cfg.in_channels == bbox_head.in_channels
             with_cls = bbox_cfg.get('with_cls', True)
+
             if with_cls:
                 fc_out_channels = bbox_cfg.get('fc_out_channels', 2048)
                 assert (fc_out_channels == bbox_head.fc_cls.in_features)
                 assert (bbox_cfg.num_classes +
                         1 == bbox_head.fc_cls.out_features)
-
             with_reg = bbox_cfg.get('with_reg', True)
             if with_reg:
                 out_dim = (4 if bbox_cfg.reg_class_agnostic else 4 *

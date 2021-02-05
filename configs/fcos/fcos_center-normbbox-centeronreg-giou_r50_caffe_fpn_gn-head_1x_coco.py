@@ -1,4 +1,4 @@
-_base_ = 'fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
+_base_ = 'fcos_r50_caffe_fpn_gn-head_1x_coco.py'
 
 model = dict(
     pretrained='open-mmlab://detectron2/resnet50_caffe',
@@ -41,8 +41,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=4,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
