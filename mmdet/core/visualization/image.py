@@ -175,12 +175,10 @@ def imshow_det_bboxes(img,
     img = mmcv.rgb2bgr(img)
 
     if show:
-
-        # Why not use cv2 to display ?: In some cases, opencv will
+        # We do not use cv2 for display because in some cases, opencv will
         # conflict with Qt, it will output a warning: Current thread
         # is not the object's thread. You can refer to
         # https://github.com/opencv/opencv-python/issues/46 for details
-
         if wait_time == 0:
             plt.show()
         else:
