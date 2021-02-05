@@ -66,7 +66,7 @@ if __name__ == '__main__':
                     continue
                 result_dict[config_name] = model_performance
             else:
-                print(f'not exist: {ckpt_path}')
+                print(f'{config_name} not exist: {ckpt_path}')
 
         else:
             print(f'not exist: {result_path}')
