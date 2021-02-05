@@ -9,6 +9,8 @@ from matplotlib.patches import Polygon
 
 from ..utils import mask2ndarray
 
+EPS = 1e-2
+
 
 def color_val_matplotlib(color):
     """Convert various input in BGR order to normalized RGB matplotlib color
@@ -118,16 +120,14 @@ def imshow_det_bboxes(img,
     plt.title(win_name)
     canvas = fig.canvas
     dpi = fig.get_dpi()
-    # add a small 1e-2 to avoid precision lost due to matplotlib's truncation
+    # add a small EPS to avoid precision lost due to matplotlib's truncation
     # (https://github.com/matplotlib/matplotlib/issues/15363)
-    fig.set_size_inches(
-        (width + 1e-2) / dpi,
-        (height + 1e-2) / dpi,
-    )
-    # remove white edges
-    ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
+    fig.set_size_inches((width + EPS) / dpi, (height + EPS) / dpi)
+
+    # remove white edges by set subplot margin
+    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    ax = plt.gca()
     ax.axis('off')
-    ax.imshow(img, extent=(0, width, height, 0), interpolation='nearest')
 
     polygons = []
     color = []
@@ -167,17 +167,19 @@ def imshow_det_bboxes(img,
         polygons, facecolor='none', edgecolors=color, linewidths=thickness)
     ax.add_collection(p)
 
-    s, _ = canvas.print_to_buffer()
-    buffer = np.frombuffer(s, dtype='uint8')
+    stream, _ = canvas.print_to_buffer()
+    buffer = np.frombuffer(stream, dtype='uint8')
     img_rgba = buffer.reshape(height, width, 4)
     rgb, alpha = np.split(img_rgba, [3], axis=2)
     img = rgb.astype('uint8')
     img = mmcv.rgb2bgr(img)
 
     if show:
-        # warning: Current thread is not the object's thread .
-        # cv2.namedWindow(win_name, 0)
-        # mmcv.imshow(img, win_name, wait_time)
+
+        # Why not use cv2 to display ?: In some cases, opencv will
+        # conflict with Qt, it will output a warning: Current thread
+        # is not the object's thread. You can refer to
+        # https://github.com/opencv/opencv-python/issues/46 for details
 
         if wait_time == 0:
             plt.show()
