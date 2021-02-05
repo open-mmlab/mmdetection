@@ -14,7 +14,7 @@ def parse_args():
         type=str,
         help='root path of benchmarked models to be gathered')
     parser.add_argument(
-        'benchmark_json', type=str, help='benchmark models json path')
+        'benchmark_json', type=str, help='json path of benchmark models')
 
     args = parser.parse_args()
     return args
@@ -40,16 +40,16 @@ if __name__ == '__main__':
             cfg = mmcv.Config.fromfile(config)
             total_epochs = cfg.total_epochs
 
-            results_lut = cfg.evaluation.metric
-            if not isinstance(results_lut, list):
-                results_lut = [results_lut]
+            final_results = cfg.evaluation.metric
+            if not isinstance(final_results, list):
+                final_results = [final_results]
 
-            results_lut_out = []
-            for key in results_lut:
+            final_results_out = []
+            for key in final_results:
                 if 'proposal_fast' in key:
-                    results_lut_out.append('AR@1000')  # RPN
+                    final_results_out.append('AR@1000')  # RPN
                 elif 'mAP' not in key:
-                    results_lut_out.append(key + '_mAP')
+                    final_results_out.append(key + '_mAP')
 
             # 2 determine whether total_epochs ckpt exists
             ckpt_path = f'epoch_{total_epochs}.pth'
@@ -60,16 +60,16 @@ if __name__ == '__main__':
                 # 3 read metric
                 model_performance = get_final_results(log_json_path,
                                                       total_epochs,
-                                                      results_lut_out)
+                                                      final_results_out)
                 if model_performance is None:
                     print(f'log file error: {log_json_path}')
                     continue
-                result_dict[config_name] = model_performance
+                result_dict[config] = model_performance
             else:
-                print(f'{config_name} not exist: {ckpt_path}')
+                print(f'{config} not exist: {ckpt_path}')
 
         else:
-            print(f'not exist: {result_path}')
+            print(f'not exist: {config}')
 
     # 4 print results
     print('===================================')

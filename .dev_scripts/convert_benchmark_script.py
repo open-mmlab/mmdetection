@@ -12,7 +12,10 @@ def parse_args():
         'json_path', type=str, help='json path output by benchmark_filter')
     parser.add_argument('partition', type=str, help='slurm partition name')
     parser.add_argument(
-        '--max-keep-ckpts', type=int, help='The maximum checkpoints to keep')
+        '--max-keep-ckpts',
+        type=int,
+        default=1,
+        help='The maximum checkpoints to keep')
     parser.add_argument(
         '--run', action='store_true', help='run script directly')
     parser.add_argument(
