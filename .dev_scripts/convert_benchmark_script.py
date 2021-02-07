@@ -12,6 +12,11 @@ def parse_args():
         'json_path', type=str, help='json path output by benchmark_filter')
     parser.add_argument('partition', type=str, help='slurm partition name')
     parser.add_argument(
+        '--max-keep-ckpts',
+        type=int,
+        default=1,
+        help='The maximum checkpoints to keep')
+    parser.add_argument(
         '--run', action='store_true', help='run script directly')
     parser.add_argument(
         '--out', type=str, help='path to save model benchmark script')
@@ -40,28 +45,35 @@ def main():
     # stdout is no output
     stdout_cfg = '>/dev/null'
 
+    max_keep_ckpts = args.max_keep_ckpts
+
     commands = []
     for i, cfg in enumerate(model_cfgs):
         # print cfg name
-        echo_info = 'echo \'' + cfg + '\' &'
+        echo_info = f'echo \'{cfg}\' &'
         commands.append(echo_info)
         commands.append('\n')
 
         fname, _ = osp.splitext(osp.basename(cfg))
         out_fname = osp.join(root_name, fname)
         # default setting
-        command_info = 'GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ' \
-                       + train_script_name + ' '
-        command_info += partition + ' '
-        command_info += fname + ' '
-        command_info += cfg + ' '
-        command_info += out_fname + ' '
-        command_info += stdout_cfg + ' &'
+        command_info = f'GPUS=8  GPUS_PER_NODE=8  ' \
+                       f'CPUS_PER_TASK=2 {train_script_name} '
+        command_info += f'{partition} '
+        command_info += f'{fname} '
+        command_info += f'{cfg} '
+        command_info += f'{out_fname} '
+        if max_keep_ckpts:
+            command_info += f'--cfg-options ' \
+                            f'checkpoint_config.max_keep_ckpts=' \
+                            f'{max_keep_ckpts}' + ' '
+        command_info += f'{stdout_cfg} &'
 
         commands.append(command_info)
 
         if i < len(model_cfgs):
             commands.append('\n')
+
     command_str = ''.join(commands)
     if args.out:
         with open(args.out, 'w') as f:
