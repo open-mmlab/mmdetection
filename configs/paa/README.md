@@ -2,6 +2,15 @@
 
 [ALGORITHM]
 
+```latex
+@inproceedings{paa-eccv2020,
+  title={Probabilistic Anchor Assignment with IoU Prediction for Object Detection},
+  author={Kim, Kang and Lee, Hee Seok},
+  booktitle = {ECCV},
+  year={2020}
+}
+```
+
 ## Results and Models
 
 We provide config files to reproduce the object detection results in the
