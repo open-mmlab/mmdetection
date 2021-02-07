@@ -2,11 +2,15 @@ import argparse
 import os
 import os.path as osp
 
-import imageio
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
+
+try:
+    import imageio
+except ImportError:
+    imageio = None
 
 
 def parse_args():
@@ -44,6 +48,9 @@ def create_gif(frames, gif_name, duration=2):
         duration (int): Display interval (s),
             Default: 2
     """
+    if imageio is None:
+        raise RuntimeError('imageio is not installed,'
+                           'Please use “pip install imageio” to install')
     imageio.mimsave(gif_name, frames, 'GIF', duration=duration)
 
 
