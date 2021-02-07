@@ -204,6 +204,7 @@ def show_result_pyplot(model,
     """
     warnings.warn('"block" will be deprecated in v2.9.0,'
                   'Please use "wait_time"')
+    warnings.warn('"fig_size" are deprecated and takes no effect.')
     if hasattr(model, 'module'):
         model = model.module
     model.show_result(
@@ -212,7 +213,6 @@ def show_result_pyplot(model,
         score_thr=score_thr,
         show=True,
         wait_time=wait_time,
-        fig_size=fig_size,
         win_name=title,
         bbox_color=(72, 101, 241),
         text_color=(72, 101, 241))
