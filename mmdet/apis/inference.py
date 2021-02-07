@@ -185,7 +185,7 @@ def show_result_pyplot(model,
     """
     warnings.warn('"block" will be deprecated in v2.9.0,'
                   'Please use "wait_time"')
-    warnings.warn('"fig_size" will be deprecated in v2.9.0')
+    warnings.warn('"fig_size" are deprecated and takes no effect.')
     if hasattr(model, 'module'):
         model = model.module
     model.show_result(

@@ -34,18 +34,21 @@ def test_imshow_det_bboxes():
     image = np.ones((10, 10, 3), np.uint8)
     bbox = np.array([[2, 1, 3, 3], [3, 4, 6, 6]])
     label = np.array([0, 1])
-    vis.imshow_det_bboxes(
+    out_image = vis.imshow_det_bboxes(
         image, bbox, label, out_file=tmp_filename, show=False)
     assert osp.isfile(tmp_filename)
+    assert image.shape == out_image.shape
+    assert not np.allclose(image, out_image)
     os.remove(tmp_filename)
 
     # test grayscale images
     image = np.ones((10, 10), np.uint8)
     bbox = np.array([[2, 1, 3, 3], [3, 4, 6, 6]])
     label = np.array([0, 1])
-    vis.imshow_det_bboxes(
+    out_image = vis.imshow_det_bboxes(
         image, bbox, label, out_file=tmp_filename, show=False)
     assert osp.isfile(tmp_filename)
+    assert image.shape == out_image.shape[:2]
     os.remove(tmp_filename)
 
     # test shaped (0,)
@@ -83,9 +86,11 @@ def test_imshow_gt_det_bboxes():
     annotation = dict(gt_bboxes=bbox, gt_labels=label)
     det_result = np.array([[2, 1, 3, 3, 0], [3, 4, 6, 6, 1]])
     result = [det_result]
-    vis.imshow_gt_det_bboxes(
+    out_image = vis.imshow_gt_det_bboxes(
         image, annotation, result, out_file=tmp_filename, show=False)
     assert osp.isfile(tmp_filename)
+    assert image.shape == out_image.shape
+    assert not np.allclose(image, out_image)
     os.remove(tmp_filename)
 
     # test grayscale images
