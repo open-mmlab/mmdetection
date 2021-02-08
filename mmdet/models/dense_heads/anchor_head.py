@@ -554,11 +554,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
-        device = cls_scores[0].device
-        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes, device=device)
-
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -569,25 +564,15 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            if with_nms:
-                # some heads don't support with_nms argument
-                proposals = self._get_bboxes_single(cls_score_list,
-                                                    bbox_pred_list,
-                                                    mlvl_anchors, img_shape,
-                                                    scale_factor, cfg, rescale)
-            else:
-                proposals = self._get_bboxes_single(cls_score_list,
-                                                    bbox_pred_list,
-                                                    mlvl_anchors, img_shape,
-                                                    scale_factor, cfg, rescale,
-                                                    with_nms)
+            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                img_shape, scale_factor, cfg,
+                                                rescale, with_nms)
             result_list.append(proposals)
         return result_list
 
     def _get_bboxes_single(self,
                            cls_score_list,
                            bbox_pred_list,
-                           mlvl_anchors,
                            img_shape,
                            scale_factor,
                            cfg,
@@ -600,8 +585,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 Has shape (num_anchors * num_classes, H, W).
             bbox_pred_list (list[Tensor]): Box energies / deltas for a single
                 scale level with shape (num_anchors * 4, H, W).
-            mlvl_anchors (list[Tensor]): Box reference for a single scale level
-                with shape (num_total_anchors, 4).
             img_shape (tuple[int]): Shape of the input image,
                 (height, width, 3).
             scale_factor (ndarray): Scale factor of the image arange as
@@ -619,12 +602,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 5-th column is a score between 0 and 1.
         """
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
+        assert len(cls_score_list) == len(bbox_pred_list)
         mlvl_bboxes = []
         mlvl_scores = []
-        for cls_score, bbox_pred, anchors in zip(cls_score_list,
-                                                 bbox_pred_list, mlvl_anchors):
+        for level_idx, (cls_score, bbox_pred) in enumerate(
+                zip(cls_score_list, bbox_pred_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            height, width = cls_score.shape[-2:]
+            device = cls_score.device
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
@@ -643,9 +628,24 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     # BG cat_id: num_class
                     max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
+                # recover the grid index in feature map from topk_inds
+                # only generate anchors on the filtered grids to reduce latency
+                num_anchors = self.anchor_generator.num_base_anchors[level_idx]
+                anchor_id = topk_inds % num_anchors
+                x = (topk_inds // num_anchors) % width
+                y = (topk_inds // width // num_anchors) % height
+                anchors = torch.stack([x, y, x, y], 1).to(scores.dtype) \
+                    * self.anchor_generator.strides[level_idx][0] \
+                    + self.anchor_generator.base_anchors[
+                        level_idx][anchor_id, :].to(device)
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
+            else:
+                anchors = self.anchor_generator.single_level_grid_anchors(
+                    self.anchor_generator.base_anchors[level_idx].to(device),
+                    [height, width],
+                    self.anchor_generator.strides[level_idx],
+                    device=device)
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
