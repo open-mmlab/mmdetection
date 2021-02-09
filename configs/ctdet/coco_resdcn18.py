@@ -1,3 +1,6 @@
+_base_ = [
+    '../_base_/default_runtime.py', '../_base_/datasets/coco_detection.py'
+]
 optimizer = dict(type='Adam', lr=5e-4)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
@@ -27,10 +30,11 @@ data_root = 'data/coco/'
 evaluation = dict(interval=1, metric='bbox')
 img_norm_cfg = dict(
     mean=[104.04, 113.985, 119.85], std=[73.695, 69.87, 70.89], to_rgb=False)
+norm_cfg = dict(type='BN')
+
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True, color_type='color'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Albu', ),
     dict(
         type='RandomCenterCropPad',
         crop_size=(512, 512),
@@ -45,7 +49,7 @@ train_pipeline = [
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', color_type='color', to_float32=True),
+    dict(type='LoadImageFromFile', to_float32=True),
     dict(
         type='MultiScaleFlipAug',
         # scale_factor=[0.5, 0.75, 1., 1.25, 1.5],
@@ -72,32 +76,19 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=1,
-    train=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
-        pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=test_pipeline))
-
+    samples_per_gpu=8,
+    workers_per_gpu=4,
+    train=dict(pipeline=train_pipeline),
+    val=dict(pipeline=test_pipeline),
+    test=dict(pipeline=test_pipeline))
 model = dict(
     type='CTDetNet',
     pretrained='resnet18-5c106cde.pth',
-    backbone=dict(type='ResNet', depth=18),
+    backbone=dict(type='ResNet', depth=18, norm_cfg=norm_cfg),
     neck=dict(
-        type='CenternetDeconv',
-        in_channels=64,
-        num_filters=[512, 256, 128],
+        type='CT_ResNeck',
+        in_channels=512,
+        num_filters=[256, 128, 64],
         num_kernels=[4, 4, 4],
     ),
     bbox_head=dict(

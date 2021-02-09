@@ -161,8 +161,6 @@ def main():
 
     # build the dataloader
     dataset = build_dataset(cfg.data.test)
-    for i in range(10):
-        dataset.__getitem__(i)
     data_loader = build_dataloader(
         dataset,
         samples_per_gpu=samples_per_gpu,
