@@ -26,7 +26,7 @@ def model_aug_test_template(cfg_file):
     transform = build_from_cfg(multi_scale_cfg, PIPELINES)
 
     results = dict(
-        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
         img_info=dict(filename='color.jpg'))
     results = transform(load(results))
     assert len(results['img']) == 6
@@ -43,7 +43,7 @@ def model_aug_test_template(cfg_file):
 
 def test_aug_test_size():
     results = dict(
-        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
         img_info=dict(filename='color.jpg'))
 
     # Define simple pipeline
@@ -113,7 +113,7 @@ def test_cornernet_aug_test():
     transform = build_from_cfg(multi_scale_cfg, PIPELINES)
 
     results = dict(
-        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
         img_info=dict(filename='color.jpg'))
     results = transform(load(results))
     assert len(results['img']) == 6
