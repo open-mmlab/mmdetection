@@ -2,6 +2,19 @@
 
 [DATASET]
 
+```
+@Article{Everingham10,
+   author = "Everingham, M. and Van~Gool, L. and Williams, C. K. I. and Winn, J. and Zisserman, A.",
+   title = "The Pascal Visual Object Classes (VOC) Challenge",
+   journal = "International Journal of Computer Vision",
+   volume = "88",
+   year = "2010",
+   number = "2",
+   month = jun,
+   pages = "303--338",
+}
+```
+
 ## Results and Models
 
 | Architecture | Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |

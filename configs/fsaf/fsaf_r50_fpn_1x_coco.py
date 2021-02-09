@@ -31,20 +31,18 @@ model = dict(
             type='IoULoss',
             eps=1e-6,
             loss_weight=1.0,
-            reduction='none'),
-    ))
-
-# training and testing settings
-train_cfg = dict(
-    assigner=dict(
-        _delete_=True,
-        type='CenterRegionAssigner',
-        pos_scale=0.2,
-        neg_scale=0.2,
-        min_pos_iof=0.01),
-    allowed_border=-1,
-    pos_weight=-1,
-    debug=False)
+            reduction='none')),
+    # training and testing settings
+    train_cfg=dict(
+        assigner=dict(
+            _delete_=True,
+            type='CenterRegionAssigner',
+            pos_scale=0.2,
+            neg_scale=0.2,
+            min_pos_iof=0.01),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False))
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=10, norm_type=2))

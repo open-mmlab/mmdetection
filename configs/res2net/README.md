@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[BACKBONE]
+[ALGORITHM]
 
 We propose a novel building block for CNNs, namely Res2Net, by constructing hierarchical residual-like connections within one single residual block. The Res2Net represents multi-scale features at a granular level and increases the range of receptive fields for each network layer.
 

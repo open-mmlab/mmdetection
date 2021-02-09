@@ -117,6 +117,17 @@ def test_bitmap_mask_resize():
                        [0, 0, 0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0, 1, 1]]])
     assert (resized_masks.masks == truth).all()
 
+    # resize to non-square
+    raw_masks = np.diag(np.ones(4, dtype=np.uint8))[np.newaxis, ...]
+    bitmap_masks = BitmapMasks(raw_masks, 4, 4)
+    resized_masks = bitmap_masks.resize((4, 8))
+    assert len(resized_masks) == 1
+    assert resized_masks.height == 4
+    assert resized_masks.width == 8
+    truth = np.array([[[1, 1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 0, 0, 0, 0],
+                       [0, 0, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 0, 0, 1, 1]]])
+    assert (resized_masks.masks == truth).all()
+
 
 def test_bitmap_mask_flip():
     # flip with empty bitmap masks
@@ -419,6 +430,20 @@ def test_polygon_mask_resize():
     assert resized_masks3.to_ndarray().shape == (2, 10, 10)
     truth3 = np.stack([truth1, np.pad(truth2, ((0, 4), (0, 4)), 'constant')])
     assert (resized_masks3.to_ndarray() == truth3).all()
+
+    # resize to non-square
+    raw_masks4 = [[np.array([1, 1, 3, 1, 4, 3, 2, 4, 1, 3], dtype=np.float)]]
+    polygon_masks4 = PolygonMasks(raw_masks4, 5, 5)
+    resized_masks4 = polygon_masks4.resize((5, 10))
+    assert len(resized_masks4) == 1
+    assert resized_masks4.height == 5
+    assert resized_masks4.width == 10
+    assert resized_masks4.to_ndarray().shape == (1, 5, 10)
+    truth4 = np.array(
+        [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+         [0, 0, 1, 1, 1, 1, 1, 1, 0, 0], [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], np.uint8)
+    assert (resized_masks4.to_ndarray() == truth4).all()
 
 
 def test_polygon_mask_flip():
