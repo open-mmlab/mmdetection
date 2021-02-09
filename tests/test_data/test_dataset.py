@@ -1,6 +1,8 @@
 import bisect
+import copy
 import logging
 import math
+import os
 import os.path as osp
 import tempfile
 from collections import defaultdict
@@ -104,6 +106,41 @@ def _create_dummy_results():
     return [boxes]
 
 
+def test_xml_dataset():
+    dataconfig = {
+        'ann_file': 'data/VOCdevkit/VOC2007/ImageSets/Main/test.txt',
+        'img_prefix': 'data/VOCdevkit/VOC2007/',
+        'pipeline': [{
+            'type': 'LoadImageFromFile'
+        }]
+    }
+    XMLDataset = DATASETS.get('XMLDataset')
+
+    class XMLDatasetSubClass(XMLDataset):
+        CLASSES = None
+
+    # get_ann_info and _filter_imgs of XMLDataset
+    # would use self.CLASSES, we added CLASSES not NONE
+    with pytest.raises(AssertionError):
+        XMLDatasetSubClass(**dataconfig)
+
+
+@pytest.mark.parametrize('config_path',
+                         ['./configs/_base_/datasets/voc0712.py'])
+def test_dataset_init(config_path):
+    if not os.path.exists('./data'):
+        os.symlink('./tests/data', './data')
+    data_config = mmcv.Config.fromfile(config_path)
+    if 'data' not in data_config:
+        return
+    stage_names = ['train', 'val', 'test']
+    for stage_name in stage_names:
+        dataset_config = copy.deepcopy(data_config.data.get(stage_name))
+        dataset = build_dataset(dataset_config)
+        dataset[0]
+    os.unlink('./data')
+
+
 def test_dataset_evaluation():
     tmp_dir = tempfile.TemporaryDirectory()
     # create dummy data
@@ -204,11 +241,18 @@ def test_dataset_evaluation():
     tmp_dir.cleanup()
 
 
+@patch('mmdet.datasets.CocoDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.CustomDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.XMLDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.CityscapesDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.CocoDataset._filter_imgs', MagicMock)
+@patch('mmdet.datasets.CustomDataset._filter_imgs', MagicMock)
+@patch('mmdet.datasets.XMLDataset._filter_imgs', MagicMock)
+@patch('mmdet.datasets.CityscapesDataset._filter_imgs', MagicMock)
 @pytest.mark.parametrize('dataset',
                          ['CocoDataset', 'VOCDataset', 'CityscapesDataset'])
 def test_custom_classes_override_default(dataset):
     dataset_class = DATASETS.get(dataset)
-    dataset_class.load_annotations = MagicMock()
     if dataset in ['CocoDataset', 'CityscapesDataset']:
         dataset_class.coco = MagicMock()
         dataset_class.cat_ids = MagicMock()
@@ -225,7 +269,6 @@ def test_custom_classes_override_default(dataset):
 
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ('bus', 'car')
-    assert custom_dataset.custom_classes
 
     # Test setting classes as a list
     custom_dataset = dataset_class(
@@ -237,7 +280,6 @@ def test_custom_classes_override_default(dataset):
 
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ['bus', 'car']
-    assert custom_dataset.custom_classes
 
     # Test overriding not a subset
     custom_dataset = dataset_class(
@@ -249,7 +291,6 @@ def test_custom_classes_override_default(dataset):
 
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ['foo']
-    assert custom_dataset.custom_classes
 
     # Test default behavior
     custom_dataset = dataset_class(
@@ -260,7 +301,6 @@ def test_custom_classes_override_default(dataset):
         img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
 
     assert custom_dataset.CLASSES == original_classes
-    assert not custom_dataset.custom_classes
 
     # Test sending file path
     import tempfile
@@ -277,7 +317,6 @@ def test_custom_classes_override_default(dataset):
 
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ['bus', 'car']
-    assert custom_dataset.custom_classes
 
 
 def test_dataset_wrapper():
@@ -460,3 +499,32 @@ def _build_demo_runner():
     runner = EpochBasedRunner(
         model=model, work_dir=tmp_dir, logger=logging.getLogger())
     return runner
+
+
+@pytest.mark.parametrize('classes, expected_length', [(['bus'], 2),
+                                                      (['car'], 1),
+                                                      (['bus', 'car'], 2)])
+def test_allow_empty_images(classes, expected_length):
+    dataset_class = DATASETS.get('CocoDataset')
+    # Filter empty images
+    filtered_dataset = dataset_class(
+        ann_file='tests/data/coco_sample.json',
+        img_prefix='tests/data',
+        pipeline=[],
+        classes=classes,
+        filter_empty_gt=True)
+
+    # Get all
+    full_dataset = dataset_class(
+        ann_file='tests/data/coco_sample.json',
+        img_prefix='tests/data',
+        pipeline=[],
+        classes=classes,
+        filter_empty_gt=False)
+
+    assert len(filtered_dataset) == expected_length
+    assert len(filtered_dataset.img_ids) == expected_length
+    assert len(full_dataset) == 3
+    assert len(full_dataset.img_ids) == 3
+    assert filtered_dataset.CLASSES == classes
+    assert full_dataset.CLASSES == classes

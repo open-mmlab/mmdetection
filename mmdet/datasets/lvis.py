@@ -2,6 +2,7 @@ import itertools
 import logging
 import os.path as osp
 import tempfile
+from collections import OrderedDict
 
 import numpy as np
 from mmcv.utils import print_log
@@ -275,12 +276,19 @@ class LVISV05Dataset(CocoDataset):
         """
 
         try:
+            import lvis
+            assert lvis.__version__ >= '10.5.3'
             from lvis import LVIS
+        except AssertionError:
+            raise AssertionError('Incompatible version of lvis is installed. '
+                                 'Run pip uninstall lvis first. Then run pip '
+                                 'install mmlvis to install open-mmlab forked '
+                                 'lvis. ')
         except ImportError:
-            raise ImportError('Please follow config/lvis/README.md to '
-                              'install open-mmlab forked lvis first.')
+            raise ImportError('Package lvis is not installed. Please run pip '
+                              'install mmlvis to install open-mmlab forked '
+                              'lvis.')
         self.coco = LVIS(ann_file)
-        assert not self.custom_classes, 'LVIS custom classes is not supported'
         self.cat_ids = self.coco.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.img_ids = self.coco.get_img_ids()
@@ -328,10 +336,18 @@ class LVISV05Dataset(CocoDataset):
         """
 
         try:
+            import lvis
+            assert lvis.__version__ >= '10.5.3'
             from lvis import LVISResults, LVISEval
+        except AssertionError:
+            raise AssertionError('Incompatible version of lvis is installed. '
+                                 'Run pip uninstall lvis first. Then run pip '
+                                 'install mmlvis to install open-mmlab forked '
+                                 'lvis. ')
         except ImportError:
-            raise ImportError('Please follow config/lvis/README.md to '
-                              'install open-mmlab forked lvis first.')
+            raise ImportError('Package lvis is not installed. Please run pip '
+                              'install mmlvis to install open-mmlab forked '
+                              'lvis.')
         assert isinstance(results, list), 'results must be a list'
         assert len(results) == len(self), (
             'The length of results is not equal to the dataset len: {} != {}'.
@@ -350,7 +366,7 @@ class LVISV05Dataset(CocoDataset):
             tmp_dir = None
         result_files = self.results2json(results, jsonfile_prefix)
 
-        eval_results = {}
+        eval_results = OrderedDict()
         # get original api
         lvis_gt = self.coco
         for metric in metrics:
@@ -698,12 +714,19 @@ class LVISV1Dataset(LVISDataset):
 
     def load_annotations(self, ann_file):
         try:
+            import lvis
+            assert lvis.__version__ >= '10.5.3'
             from lvis import LVIS
+        except AssertionError:
+            raise AssertionError('Incompatible version of lvis is installed. '
+                                 'Run pip uninstall lvis first. Then run pip '
+                                 'install mmlvis to install open-mmlab forked '
+                                 'lvis. ')
         except ImportError:
-            raise ImportError('Please follow config/lvis/README.md to '
-                              'install open-mmlab forked lvis first.')
+            raise ImportError('Package lvis is not installed. Please run pip '
+                              'install mmlvis to install open-mmlab forked '
+                              'lvis.')
         self.coco = LVIS(ann_file)
-        assert not self.custom_classes, 'LVIS custom classes is not supported'
         self.cat_ids = self.coco.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.img_ids = self.coco.get_img_ids()

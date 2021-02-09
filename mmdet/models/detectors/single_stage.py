@@ -59,7 +59,7 @@ class SingleStageDetector(BaseDetector):
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
@@ -89,6 +89,7 @@ class SingleStageDetector(BaseDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+        super(SingleStageDetector, self).forward_train(img, img_metas)
         x = self.extract_feat(img)
         losses = self.bbox_head.forward_train(x, img_metas, gt_bboxes,
                                               gt_labels, gt_bboxes_ignore)
@@ -104,7 +105,9 @@ class SingleStageDetector(BaseDetector):
                 Defaults to False.
 
         Returns:
-            np.ndarray: proposals
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
@@ -118,8 +121,29 @@ class SingleStageDetector(BaseDetector):
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
         ]
-        return bbox_results[0]
+        return bbox_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        """Test function with test time augmentation."""
-        raise NotImplementedError
+        """Test function with test time augmentation.
+
+        Args:
+            imgs (list[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            img_metas (list[list[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. each dict has image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
+        """
+        assert hasattr(self.bbox_head, 'aug_test'), \
+            f'{self.bbox_head.__class__.__name__}' \
+            ' does not support test-time augmentation'
+
+        feats = self.extract_feats(imgs)
+        return [self.bbox_head.aug_test(feats, img_metas, rescale=rescale)]
