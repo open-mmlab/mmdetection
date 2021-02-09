@@ -184,7 +184,7 @@ def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
                 roi_extractor.roi_layers[0].use_torchvision)
     elif 'aligned' in config.roi_layer:
         assert (
-                config.roi_layer.aligned == roi_extractor.roi_layers[0].aligned)
+            config.roi_layer.aligned == roi_extractor.roi_layers[0].aligned)
 
     if prev_roi_extractor:
         assert (roi_extractor.roi_layers[0].aligned ==
@@ -244,7 +244,7 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             assert bbox_cfg['in_channels'] == bbox_head.fc_reg.in_features
             assert bbox_cfg['in_channels'] == bbox_head.attention.embed_dims
             assert bbox_cfg[
-                       'feedforward_channels'] == bbox_head.ffn.feedforward_channels
+                'feedforward_channels'] == bbox_head.ffn.feedforward_channels
 
         else:
             assert bbox_cfg.in_channels == bbox_head.in_channels
@@ -258,7 +258,7 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             with_reg = bbox_cfg.get('with_reg', True)
             if with_reg:
                 out_dim = (4 if bbox_cfg.reg_class_agnostic else 4 *
-                                                                 bbox_cfg.num_classes)
+                           bbox_cfg.num_classes)
                 assert bbox_head.fc_reg.out_features == out_dim
 
 
@@ -303,7 +303,8 @@ def test_config_data_pipeline(config_rpath):
     """Test whether the data pipeline is valid and can process corner cases.
 
     CommandLine:
-        xdoctest -m tests/test_runtime/test_config.py test_config_build_data_pipeline
+        xdoctest -m tests/test_runtime/
+            test_config.py test_config_build_data_pipeline
     """
     from mmcv import Config
     from mmdet.datasets.pipelines import Compose
@@ -322,9 +323,9 @@ def test_config_data_pipeline(config_rpath):
             for i in range(num_obj):
                 masks.append([])
                 masks[-1].append(
-                    np.random.uniform(0, min(h - 1, w - 1), (8 + 4 * i,)))
+                    np.random.uniform(0, min(h - 1, w - 1), (8 + 4 * i, )))
                 masks[-1].append(
-                    np.random.uniform(0, min(h - 1, w - 1), (10 + 4 * i,)))
+                    np.random.uniform(0, min(h - 1, w - 1), (10 + 4 * i, )))
             masks = PolygonMasks(masks, h, w)
         return masks
 
