@@ -68,6 +68,7 @@ class Resize(object):
                  ratio_range=None,
                  keep_ratio=True,
                  bbox_clip_border=True,
+                 center_resize=False,
                  backend='cv2',
                  override=False):
         if img_scale is None:
@@ -93,6 +94,7 @@ class Resize(object):
         # TODO: refactor the override option in Resize
         self.override = override
         self.bbox_clip_border = bbox_clip_border
+        self.center_resize = center_resize
 
     @staticmethod
     def random_select(img_scales):
