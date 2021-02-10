@@ -17,7 +17,7 @@ We provide the code for reproducing experiment results of [SCNet](https://arxiv.
 
 ## Dataset
 
-SCNet requires COCO and COCO-stuff dataset for training. You need to download and extract it in the COCO dataset path.
+SCNet requires COCO and [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) dataset for training. You need to download and extract it in the COCO dataset path.
 The directory should be like this.
 
 ```none
