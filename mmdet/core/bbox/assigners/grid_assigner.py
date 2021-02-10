@@ -74,9 +74,9 @@ class GridAssigner(BaseAssigner):
         # compute iou between all gt and bboxes
         overlaps = self.iou_calculator(gt_bboxes, bboxes)
 
-        # 1. assign 0 by default
+        # 1. assign -1 by default
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),
-                                             0,
+                                             -1,
                                              dtype=torch.long)
 
         if num_gts == 0 or num_bboxes == 0:
