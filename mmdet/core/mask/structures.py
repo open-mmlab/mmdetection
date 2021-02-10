@@ -323,7 +323,7 @@ class BitmapMasks(BaseInstanceMasks):
                         out_shape,
                         inds,
                         device='cpu',
-                        interpolation='bilinear'):
+                        interpolation='bilinear', rounded=True):
         """See :func:`BaseInstanceMasks.crop_and_resize`."""
         if len(self.masks) == 0:
             empty_masks = np.empty((0, *out_shape), dtype=np.uint8)
@@ -345,7 +345,10 @@ class BitmapMasks(BaseInstanceMasks):
                 0, inds).to(dtype=rois.dtype)
             targets = roi_align(gt_masks_th[:, None, :, :], rois, out_shape,
                                 1.0, 0, 'avg', True).squeeze(1)
-            resized_masks = (targets >= 0.5).cpu().numpy()
+            if rounded:
+                resized_masks = (targets >= 0.5).cpu().numpy()
+            else:
+                resized_masks = targets.cpu().numpy()
         else:
             resized_masks = []
         return BitmapMasks(resized_masks, *out_shape)
@@ -633,11 +636,17 @@ class PolygonMasks(BaseInstanceMasks):
                         out_shape,
                         inds,
                         device='cpu',
-                        interpolation='bilinear'):
+                        interpolation='bilinear',
+                        rounded=True):
         """see :func:`BaseInstanceMasks.crop_and_resize`"""
         out_h, out_w = out_shape
         if len(self.masks) == 0:
             return PolygonMasks([], out_h, out_w)
+
+        if not rounded:
+            raise ValueError(
+                'Polygon are always binary, '
+                'setting rounded=False is unsupported')
 
         resized_masks = []
         for i in range(len(bboxes)):
