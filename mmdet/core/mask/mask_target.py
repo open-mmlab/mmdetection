@@ -18,6 +18,26 @@ def mask_target(pos_proposals_list, pos_assigned_gt_inds_list, gt_masks_list,
 
     Returns:
         list[Tensor]: Mask target of each image.
+
+    Example:
+        >>> from mmdet.core.mask.mask_target import *  # NOQA
+        >>> import mmdet
+        >>> import mmcv
+        >>> from mmdet.core.mask import BitmapMasks
+        >>> H, W = 14, 14
+        >>> cfg = mmcv.Config({'mask_size': 14})
+        >>> pos_proposals_list = [torch.Tensor([
+        >>>     [176.2425,   5.5929, 190.9414, 204.9541],
+        >>>     [ 57.3241, 133.6170, 197.3850, 195.3102],
+        >>>     [ 74.8448, 186.4010, 176.0314, 203.7681],
+        >>>     [ 25.9790,  32.6989, 122.4416,  81.8580],
+        >>>     [  0.0000,   0.0000, 120.1398,  79.8232],
+        >>> ])]
+        >>> pos_assigned_gt_inds_list = [torch.Tensor([0, 1, 2, 1, 1]).long()]
+        >>> rng = np.random.RandomState(0)
+        >>> gt_masks_list = [BitmapMasks((rng.rand(3, H, W)), height=H, width=W)]
+        >>> mask_targets = mask_target(
+        >>>     pos_proposals_list, pos_assigned_gt_inds_list, gt_masks_list, cfg)
     """
     cfg_list = [cfg for _ in range(len(pos_proposals_list))]
     mask_targets = map(mask_target_single, pos_proposals_list,
@@ -40,6 +60,34 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
 
     Returns:
         Tensor: Mask target of each positive proposals in the image.
+
+    Example:
+        >>> from mmdet.core.mask.mask_target import *  # NOQA
+        >>> import mmdet
+        >>> import mmcv
+        >>> from mmdet.core.mask import BitmapMasks
+        >>> H, W = 32, 32
+        >>> cfg = mmcv.Config({'mask_size': 8})
+        >>> rng = np.random.RandomState(0)
+        >>> # Masks for each ground truth box (relative to the image)
+        >>> #gt_masks_data = (rng.rand(3, H, W) > 0.5).astype(np.float)
+        >>> gt_masks_data = rng.rand(3, H, W)
+        >>> gt_masks = BitmapMasks(gt_masks_data, height=H, width=W)
+        >>> # Predicted positive boxes
+        >>> pos_proposals = torch.FloatTensor([
+        >>>     [ 16.2,   5.5, 19.9, 20.9],
+        >>>     [ 17.3,  13.6, 19.3, 19.3],
+        >>>     [ 14.8,  16.4, 17.0, 23.7],
+        >>>     [  0.0,   0.0, 16.0, 16.0],
+        >>>     [  4.0,   0.0, 20.0, 16.0],
+        >>> ])
+        >>> # For each predicted proposal, its assignment to a gt mask
+        >>> pos_assigned_gt_inds = torch.LongTensor([0, 1, 2, 1, 1])
+        >>> # It seems that the masks must be in the space of the box
+        >>> # proposals.
+        >>> mask_targets = mask_target_single(
+        >>>     pos_proposals, pos_assigned_gt_inds, gt_masks, cfg)
+        >>> print(mask_targets)
     """
     device = pos_proposals.device
     mask_size = _pair(cfg.mask_size)
