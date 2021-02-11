@@ -24,19 +24,19 @@ def mask_target(pos_proposals_list, pos_assigned_gt_inds_list, gt_masks_list,
         >>> import mmdet
         >>> from mmdet.core.mask import BitmapMasks
         >>> from mmdet.core.mask.mask_target import *
-        >>> H, W = 18, 18
-        >>> cfg = mmcv.Config({'mask_size': (14, 14)})
+        >>> H, W = 17, 18
+        >>> cfg = mmcv.Config({'mask_size': (13, 14)})
         >>> rng = np.random.RandomState(0)
         >>> # Positive proposals (tl_x, tl_y, br_x, br_y) for each image
         >>> pos_proposals_list = [
         >>>     torch.Tensor([
-        >>>         [176.2425,   5.5929, 190.9414, 204.9541],
-        >>>         [ 57.3241, 133.6170, 197.3850, 195.3102],
+        >>>         [ 7.2425,  5.5929, 13.9414, 14.9541],
+        >>>         [ 7.3241,  3.6170, 16.3850, 15.3102],
         >>>     ]),
         >>>     torch.Tensor([
-        >>>         [ 74.8448, 186.4010, 176.0314, 203.7681],
-        >>>         [ 25.9790,  32.6989, 122.4416,  81.8580],
-        >>>         [  0.0000,   0.0000, 120.1398,  79.8232],
+        >>>         [ 4.8448, 6.4010, 7.0314, 9.7681],
+        >>>         [ 5.9790, 2.6989, 7.4416, 4.8580],
+        >>>         [ 0.0000, 0.0000, 0.1398, 9.8232],
         >>>     ]),
         >>> ]
         >>> # Corresponding class index for each proposal for each image
