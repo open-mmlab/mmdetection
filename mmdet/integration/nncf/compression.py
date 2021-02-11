@@ -192,6 +192,7 @@ def wrap_nncf_model(model,
     def wrap_inputs(args, kwargs):
         # during dummy_forward
         if not len(kwargs):
+            args[0][0] = nncf_model_input(args[0][0])
             return args, kwargs
 
         # during building original graph
