@@ -4,6 +4,8 @@ import warnings
 from mmcv.cnn import VGG
 from mmcv.runner.hooks import HOOKS, Hook
 
+from mmdet.datasets.builder import PIPELINES
+from mmdet.datasets.pipelines import LoadAnnotations, LoadImageFromFile
 from mmdet.models.dense_heads import GARPNHead, RPNHead
 from mmdet.models.roi_heads.mask_heads import FusedSemanticHead
 
@@ -98,7 +100,10 @@ def get_loading_pipeline(pipeline):
     """
     loading_pipeline_cfg = []
     for cfg in pipeline:
-        if cfg['type'].startswith('Load'):
+        obj_cls = PIPELINES.get(cfg['type'])
+        if obj_cls is None:
+            continue
+        if isinstance(obj_cls, (LoadImageFromFile, LoadAnnotations)):
             loading_pipeline_cfg.append(cfg)
     assert len(loading_pipeline_cfg) == 2, \
         'The data pipeline in your config file must include ' \
