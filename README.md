@@ -1,7 +1,3 @@
-<div align="center">
-  <img src="resources/mmdet-logo.png" width="600"/>
-</div>
-
 # OTEDetection
 
 ![](https://img.shields.io/badge/python-3.6%2B-green)
