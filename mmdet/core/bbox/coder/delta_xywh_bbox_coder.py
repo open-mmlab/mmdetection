@@ -9,27 +9,43 @@ from mmdet.core.bbox.transforms import clamp
 
 @BBOX_CODERS.register_module()
 class DeltaXYWHBBoxCoder(BaseBBoxCoder):
-    """Delta XYWH BBox coder
+    """Delta XYWH BBox coder.
 
     Following the practice in `R-CNN <https://arxiv.org/abs/1311.2524>`_,
     this coder encodes bbox (x1, y1, x2, y2) into delta (dx, dy, dw, dh) and
     decodes delta (dx, dy, dw, dh) back to original bbox (x1, y1, x2, y2).
 
     Args:
-        target_means (Sequence[float]): denormalizing means of target for
+        target_means (Sequence[float]): Denormalizing means of target for
             delta coordinates
-        target_stds (Sequence[float]): denormalizing standard deviation of
+        target_stds (Sequence[float]): Denormalizing standard deviation of
             target for delta coordinates
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
     """
 
     def __init__(self,
                  target_means=(0., 0., 0., 0.),
-                 target_stds=(1., 1., 1., 1.)):
+                 target_stds=(1., 1., 1., 1.),
+                 clip_border=True):
         super(BaseBBoxCoder, self).__init__()
         self.means = target_means
         self.stds = target_stds
+        self.clip_border = clip_border
 
     def encode(self, bboxes, gt_bboxes):
+        """Get box regression transformation deltas that can be used to
+        transform the ``bboxes`` into the ``gt_bboxes``.
+
+        Args:
+            bboxes (torch.Tensor): Source boxes, e.g., object proposals.
+            gt_bboxes (torch.Tensor): Target of the transformation, e.g.,
+                ground-truth boxes.
+
+        Returns:
+            torch.Tensor: Box transformation deltas
+        """
+
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bbox2delta(bboxes, gt_bboxes, self.means, self.stds)
@@ -40,9 +56,23 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
                pred_bboxes,
                max_shape=None,
                wh_ratio_clip=16 / 1000):
+        """Apply transformation `pred_bboxes` to `boxes`.
+
+        Args:
+            boxes (torch.Tensor): Basic boxes.
+            pred_bboxes (torch.Tensor): Encoded boxes with shape
+            max_shape (tuple[int], optional): Maximum shape of boxes.
+                Defaults to None.
+            wh_ratio_clip (float, optional): The allowed ratio between
+                width and height.
+
+        Returns:
+            torch.Tensor: Decoded boxes.
+        """
+
         assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means, self.stds,
-                                    max_shape, wh_ratio_clip)
+                                    max_shape, wh_ratio_clip, self.clip_border)
 
         return decoded_bboxes
 
@@ -52,7 +82,7 @@ def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
 
     We usually compute the deltas of x, y, w, h of proposals w.r.t ground
     truth bboxes to get regression target.
-    This is the inverse function of `delta2bbox()`
+    This is the inverse function of :func:`delta2bbox`.
 
     Args:
         proposals (Tensor): Boxes to be transformed, shape (N, ..., 4)
@@ -64,7 +94,6 @@ def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     Returns:
         Tensor: deltas with shape (N, 4), where columns represent dx, dy,
             dw, dh.
-
     """
     assert proposals.size() == gt.size()
 
@@ -98,12 +127,13 @@ def delta2bbox(rois,
                means=(0., 0., 0., 0.),
                stds=(1., 1., 1., 1.),
                max_shape=None,
-               wh_ratio_clip=16 / 1000):
+               wh_ratio_clip=16 / 1000,
+               clip_border=True):
     """Apply deltas to shift/scale base boxes.
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are
     network outputs used to shift/scale those boxes.
-    This is the inverse function of `bbox2delta()`
+    This is the inverse function of :func:`bbox2delta`.
 
     Args:
         rois (Tensor): Boxes to be transformed. Has shape (N, 4)
@@ -115,6 +145,8 @@ def delta2bbox(rois,
             coordinates
         max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
 
     Returns:
         Tensor: Boxes with shape (N, 4), where columns represent
@@ -165,10 +197,11 @@ def delta2bbox(rois,
     y1 = gy - gh * 0.5
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
-    if max_shape is not None:
-        x1 = clamp(x1, min=0, max=max_shape[1])
-        y1 = clamp(y1, min=0, max=max_shape[0])
-        x2 = clamp(x2, min=0, max=max_shape[1])
-        y2 = clamp(y2, min=0, max=max_shape[0])
-    bboxes = torch.stack([x1, y1, x2, y2], dim=2).view_as(deltas)
+
+    if clip_border and max_shape is not None:
+        x1 = x1.clamp(min=0, max=max_shape[1])
+        y1 = y1.clamp(min=0, max=max_shape[0])
+        x2 = x2.clamp(min=0, max=max_shape[1])
+        y2 = y2.clamp(min=0, max=max_shape[0])
+    bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
     return bboxes

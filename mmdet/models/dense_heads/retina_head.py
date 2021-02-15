@@ -7,8 +7,8 @@ from .anchor_head import AnchorHead
 
 @HEADS.register_module()
 class RetinaHead(AnchorHead):
-    """An anchor-based head used in
-    `RetinaNet <https://arxiv.org/pdf/1708.02002.pdf>`_.
+    r"""An anchor-based head used in `RetinaNet
+    <https://arxiv.org/pdf/1708.02002.pdf>`_.
 
     The head contains two subnetworks. The first classifies anchor boxes and
     the second regresses deltas for the anchors.
@@ -48,6 +48,7 @@ class RetinaHead(AnchorHead):
             **kwargs)
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -80,6 +81,7 @@ class RetinaHead(AnchorHead):
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
 
     def init_weights(self):
+        """Initialize weights of the head."""
         for m in self.cls_convs:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
@@ -89,6 +91,18 @@ class RetinaHead(AnchorHead):
         normal_init(self.retina_reg, std=0.01)
 
     def forward_single(self, x):
+        """Forward feature of a single scale level.
+
+        Args:
+            x (Tensor): Features of a single scale level.
+
+        Returns:
+            tuple:
+                cls_score (Tensor): Cls scores for a single scale level
+                    the channels number is num_anchors * num_classes.
+                bbox_pred (Tensor): Box energies / deltas for a single scale
+                    level, the channels number is num_anchors * 4.
+        """
         cls_feat = x
         reg_feat = x
         for cls_conv in self.cls_convs:

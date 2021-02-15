@@ -19,8 +19,9 @@ class Bottleneck(_Bottleneck):
                  base_channels=64,
                  **kwargs):
         """Bottleneck block for ResNeXt.
-        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
-        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
+
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
+        it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
 
@@ -82,6 +83,27 @@ class Bottleneck(_Bottleneck):
             bias=False)
         self.add_module(self.norm3_name, norm3)
 
+        if self.with_plugins:
+            self._del_block_plugins(self.after_conv1_plugin_names +
+                                    self.after_conv2_plugin_names +
+                                    self.after_conv3_plugin_names)
+            self.after_conv1_plugin_names = self.make_block_plugins(
+                width, self.after_conv1_plugins)
+            self.after_conv2_plugin_names = self.make_block_plugins(
+                width, self.after_conv2_plugins)
+            self.after_conv3_plugin_names = self.make_block_plugins(
+                self.planes * self.expansion, self.after_conv3_plugins)
+
+    def _del_block_plugins(self, plugin_names):
+        """delete plugins for block if exist.
+
+        Args:
+            plugin_names (list[str]): List of plugins name to delete.
+        """
+        assert isinstance(plugin_names, list)
+        for plugin_name in plugin_names:
+            del self._modules[plugin_name]
+
 
 @BACKBONES.register_module()
 class ResNeXt(ResNet):
@@ -123,6 +145,7 @@ class ResNeXt(ResNet):
         super(ResNeXt, self).__init__(**kwargs)
 
     def make_res_layer(self, **kwargs):
+        """Pack all blocks in a stage into a ``ResLayer``"""
         return ResLayer(
             groups=self.groups,
             base_width=self.base_width,

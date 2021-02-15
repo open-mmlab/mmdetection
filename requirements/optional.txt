@@ -7,3 +7,4 @@ tensorboard
 imagesize==1.2.0
 PyYAML==5.3.1
 sty==1.0.0b12
+mmlvis

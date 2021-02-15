@@ -6,6 +6,16 @@ from .base_sampler import BaseSampler
 
 @BBOX_SAMPLERS.register_module()
 class RandomSampler(BaseSampler):
+    """Random sampler.
+
+    Args:
+        num (int): Number of samples
+        pos_fraction (float): Fraction of positive samples
+        neg_pos_up (int, optional): Upper bound number of negative and
+            positive samples. Defaults to -1.
+        add_gt_as_proposals (bool, optional): Whether to add ground truth
+            boxes as proposals. Defaults to True.
+    """
 
     def __init__(self,
                  num,
@@ -36,8 +46,11 @@ class RandomSampler(BaseSampler):
 
         is_tensor = isinstance(gallery, torch.Tensor)
         if not is_tensor:
-            gallery = torch.tensor(
-                gallery, dtype=torch.long, device=torch.cuda.current_device())
+            if torch.cuda.is_available():
+                device = torch.cuda.current_device()
+            else:
+                device = 'cpu'
+            gallery = torch.tensor(gallery, dtype=torch.long, device=device)
         perm = torch.randperm(gallery.numel(), device=gallery.device)[:num]
         rand_inds = gallery[perm]
         if not is_tensor:

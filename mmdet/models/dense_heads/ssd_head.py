@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
+from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, multi_apply)
@@ -13,6 +14,22 @@ from .anchor_head import AnchorHead
 # TODO: add loss evaluator for SSD
 @HEADS.register_module()
 class SSDHead(AnchorHead):
+    """SSD head used in https://arxiv.org/abs/1512.02325.
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        anchor_generator (dict): Config dict for anchor generator
+        bbox_coder (dict): Config of bounding box coder.
+        reg_decoded_bbox (bool): If true, the regression loss would be
+            applied directly on decoded bounding boxes, converting both
+            the predicted boxes and regression targets to absolute
+            coordinates format. Default False. It should be `True` when
+            using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
+        train_cfg (dict): Training config of anchor head.
+        test_cfg (dict): Testing config of anchor head.
+    """  # noqa: W605
 
     def __init__(self,
                  num_classes=80,
@@ -24,9 +41,9 @@ class SSDHead(AnchorHead):
                      strides=[8, 16, 32, 64, 100, 300],
                      ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                      basesize_ratio_range=(0.1, 0.9)),
-                 background_label=None,
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
+                     clip_border=True,
                      target_means=[.0, .0, .0, .0],
                      target_stds=[1.0, 1.0, 1.0, 1.0],
                  ),
@@ -82,12 +99,6 @@ class SSDHead(AnchorHead):
         self.reg_convs = nn.ModuleList(reg_convs)
         self.cls_convs = nn.ModuleList(cls_convs)
 
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
-
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.reg_decoded_bbox = reg_decoded_bbox
         self.use_sigmoid_cls = False
@@ -109,11 +120,27 @@ class SSDHead(AnchorHead):
                 self.loss_weights.data[i] = 0.
 
     def init_weights(self):
+        """Initialize weights of the head."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 xavier_init(m, distribution='uniform', bias=0)
 
     def forward(self, feats):
+        """Forward features from the upstream network.
+
+        Args:
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple:
+                cls_scores (list[Tensor]): Classification scores for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * num_classes.
+                bbox_preds (list[Tensor]): Box energies / deltas for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * 4.
+        """
         cls_scores = []
         bbox_preds = []
         for feat, reg_conv, cls_conv in zip(feats, self.reg_convs,
@@ -124,12 +151,37 @@ class SSDHead(AnchorHead):
 
     def loss_single(self, cls_score, bbox_pred, anchor, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):
+        """Compute loss of a single image.
+
+        Args:
+            cls_score (Tensor): Box scores for eachimage
+                Has shape (num_total_anchors, num_classes).
+            bbox_pred (Tensor): Box energies / deltas for each image
+                level with shape (num_total_anchors, 4).
+            anchors (Tensor): Box reference for each scale level with shape
+                (num_total_anchors, 4).
+            labels (Tensor): Labels of each anchors with shape
+                (num_total_anchors,).
+            label_weights (Tensor): Label weights of each anchor with shape
+                (num_total_anchors,)
+            bbox_targets (Tensor): BBox regression targets of each anchor wight
+                shape (num_total_anchors, 4).
+            bbox_weights (Tensor): BBox regression loss weights of each anchor
+                with shape (num_total_anchors, 4).
+            num_total_samples (int): If sampling, num total samples equal to
+                the number of total anchors; Otherwise, it is the number of
+                positive anchors.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
         pos_inds = ((labels >= 0) &
-                    (labels < self.background_label)).nonzero().reshape(-1)
-        neg_inds = (labels == self.background_label).nonzero().view(-1)
+                    (labels < self.num_classes)).nonzero().reshape(-1)
+        neg_inds = (labels == self.num_classes).nonzero().view(-1)
 
         num_pos_samples = pos_inds.size(0)
         num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples
@@ -141,6 +193,9 @@ class SSDHead(AnchorHead):
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
 
         if self.reg_decoded_bbox:
+            # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
+            # is applied directly on the decoded bounding boxes, it
+            # decodes the already encoded coordinates to absolute format.
             bbox_pred = self.bbox_coder.decode(anchor, bbox_pred)
 
         loss_bbox = smooth_l1_loss(
@@ -151,6 +206,7 @@ class SSDHead(AnchorHead):
             avg_factor=num_total_samples)
         return loss_cls[None], loss_bbox
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
              cls_scores,
              bbox_preds,
@@ -158,6 +214,24 @@ class SSDHead(AnchorHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute losses of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.anchor_generator.num_levels
 

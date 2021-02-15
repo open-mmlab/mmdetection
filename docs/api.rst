@@ -1,4 +1,4 @@
-API Documentation
+API Reference
 =================
 
 mmdet.apis
@@ -19,6 +19,11 @@ bbox
 .. automodule:: mmdet.core.bbox
     :members:
 
+export
+^^^^^^^^^^
+.. automodule:: mmdet.core.export
+    :members:
+
 mask
 ^^^^^^^^^^
 .. automodule:: mmdet.core.mask
@@ -32,11 +37,6 @@ evaluation
 post_processing
 ^^^^^^^^^^^^^^^
 .. automodule:: mmdet.core.post_processing
-    :members:
-
-fp16
-^^^^^^^^^^
-.. automodule:: mmdet.core.fp16
     :members:
 
 optimizer
@@ -93,4 +93,9 @@ roi_heads
 losses
 ^^^^^^^^^^
 .. automodule:: mmdet.models.losses
+    :members:
+
+utils
+^^^^^^^^^^
+.. automodule:: mmdet.models.utils
     :members:

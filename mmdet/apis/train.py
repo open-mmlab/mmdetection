@@ -3,14 +3,17 @@ import random
 import torch
 from copy import copy
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, LoggerHook,
-                         OptimizerHook, build_optimizer, load_checkpoint)
+from mmcv.runner import (HOOKS, DistSamplerSeedHook, EpochBasedRunner, LoggerHook,
+                         Fp16OptimizerHook, OptimizerHook, build_optimizer, load_checkpoint)
 
 from mmdet.core import (DistEvalHook, DistEvalPlusBeforeRunHook, EvalHook,
                         EvalPlusBeforeRunHook, Fp16OptimizerHook)
-from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.integration.nncf import CompressionHook, wrap_nncf_model
 from mmdet.parallel import MMDataCPU
+from mmcv.utils import build_from_cfg
+
+from mmdet.datasets import (build_dataloader, build_dataset,
+                            replace_ImageToTensor)
 from mmdet.utils import get_root_logger
 from .fake_input import get_fake_input
 
@@ -149,10 +152,16 @@ def train_detector(model,
 
     # register eval hooks
     if validate:
+        # Support batch_size > 1 in validation
+        val_samples_per_gpu = cfg.data.val.pop('samples_per_gpu', 1)
+        if val_samples_per_gpu > 1:
+            # Replace 'ImageToTensor' to 'DefaultFormatBundle'
+            cfg.data.val.pipeline = replace_ImageToTensor(
+                cfg.data.val.pipeline)
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
         val_dataloader = build_dataloader(
             val_dataset,
-            samples_per_gpu=1,
+            samples_per_gpu=val_samples_per_gpu,
             workers_per_gpu=cfg.data.workers_per_gpu,
             dist=distributed,
             shuffle=False)
@@ -164,6 +173,19 @@ def train_detector(model,
 
     if nncf_enable_compression:
         runner.register_hook(CompressionHook(compression_ctrl=compression_ctrl))
+    # user-defined hooks
+    if cfg.get('custom_hooks', None):
+        custom_hooks = cfg.custom_hooks
+        assert isinstance(custom_hooks, list), \
+            f'custom_hooks expect list type, but got {type(custom_hooks)}'
+        for hook_cfg in cfg.custom_hooks:
+            assert isinstance(hook_cfg, dict), \
+                'Each item in custom_hooks expects dict type, but got ' \
+                f'{type(hook_cfg)}'
+            hook_cfg = hook_cfg.copy()
+            priority = hook_cfg.pop('priority', 'NORMAL')
+            hook = build_from_cfg(hook_cfg, HOOKS)
+            runner.register_hook(hook, priority=priority)
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from, map_location=map_location)

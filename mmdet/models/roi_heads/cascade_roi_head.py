@@ -46,6 +46,12 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             test_cfg=test_cfg)
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
+        """Initialize box head and box roi extractor.
+
+        Args:
+            bbox_roi_extractor (dict): Config of box roi extractor.
+            bbox_head (dict): Config of box in box head.
+        """
         self.bbox_roi_extractor = nn.ModuleList()
         self.bbox_head = nn.ModuleList()
         if not isinstance(bbox_roi_extractor, list):
@@ -60,6 +66,12 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.bbox_head.append(build_head(head))
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
+        """Initialize mask head and mask roi extractor.
+
+        Args:
+            mask_roi_extractor (dict): Config of mask roi extractor.
+            mask_head (dict): Config of mask in mask head.
+        """
         self.mask_head = nn.ModuleList()
         if not isinstance(mask_head, list):
             mask_head = [mask_head for _ in range(self.num_stages)]
@@ -82,16 +94,24 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_roi_extractor = self.bbox_roi_extractor
 
     def init_assigner_sampler(self):
-        # build assigner and smapler for each stage
+        """Initialize assigner and sampler for each stage."""
         self.bbox_assigner = []
         self.bbox_sampler = []
         if self.train_cfg is not None:
-            for rcnn_train_cfg in self.train_cfg:
+            for idx, rcnn_train_cfg in enumerate(self.train_cfg):
                 self.bbox_assigner.append(
                     build_assigner(rcnn_train_cfg.assigner))
-                self.bbox_sampler.append(build_sampler(rcnn_train_cfg.sampler))
+                self.current_stage = idx
+                self.bbox_sampler.append(
+                    build_sampler(rcnn_train_cfg.sampler, context=self))
 
     def init_weights(self, pretrained):
+        """Initialize the weights in head.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if self.with_shared_head:
             self.shared_head.init_weights(pretrained=pretrained)
         for i in range(self.num_stages):
@@ -104,6 +124,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.mask_head[i].init_weights()
 
     def forward_dummy(self, x, proposals):
+        """Dummy forward function."""
         # bbox head
         outs = ()
         rois = bbox2roi([proposals])
@@ -121,6 +142,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return outs
 
     def _bbox_forward(self, stage, x, rois):
+        """Box head forward function used in both training and testing."""
         bbox_roi_extractor = self.bbox_roi_extractor[stage]
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
@@ -134,6 +156,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def _bbox_forward_train(self, stage, x, sampling_results, gt_bboxes,
                             gt_labels, rcnn_train_cfg):
+        """Run forward function and calculate loss for box head in training."""
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(stage, x, rois)
         bbox_targets = self.bbox_head[stage].get_targets(
@@ -147,6 +170,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return bbox_results
 
     def _mask_forward(self, stage, x, rois):
+        """Mask head forward function used in both training and testing."""
         mask_roi_extractor = self.mask_roi_extractor[stage]
         mask_head = self.mask_head[stage]
         mask_feats = mask_roi_extractor(x[:mask_roi_extractor.num_inputs],
@@ -164,11 +188,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                             gt_masks,
                             rcnn_train_cfg,
                             bbox_feats=None):
+        """Run forward function and calculate loss for mask head in
+        training."""
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-        if len(pos_rois) == 0:
-            # If there are no predicted and/or truth boxes, then we cannot
-            # compute head / mask losses
-            return dict(loss_mask=None)
         mask_results = self._mask_forward(stage, x, pos_rois)
 
         mask_targets = self.mask_head[stage].get_targets(
@@ -191,23 +213,17 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         """
         Args:
             x (list[Tensor]): list of multi-level img features.
-
             img_metas (list[dict]): list of image info dict where each dict
                 has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-
             proposals (list[Tensors]): list of region proposals.
-
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
-
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
-
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
-
             gt_masks (None | Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
 
@@ -255,11 +271,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 mask_results = self._mask_forward_train(
                     i, x, sampling_results, gt_masks, rcnn_train_cfg,
                     bbox_results['bbox_feats'])
-                # TODO: Support empty tensor input. #2280
-                if mask_results['loss_mask'] is not None:
-                    for name, value in mask_results['loss_mask'].items():
-                        losses[f's{i}.{name}'] = (
-                            value * lw if 'loss' in name else value)
+                for name, value in mask_results['loss_mask'].items():
+                    losses[f's{i}.{name}'] = (
+                        value * lw if 'loss' in name else value)
 
             # refine bboxes
             if i < self.num_stages - 1:
@@ -267,13 +281,17 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 # bbox_targets is a tuple
                 roi_labels = bbox_results['bbox_targets'][0]
                 with torch.no_grad():
+                    roi_labels = torch.where(
+                        roi_labels == self.bbox_head[i].num_classes,
+                        bbox_results['cls_score'][:, :-1].argmax(1),
+                        roi_labels)
                     proposal_list = self.bbox_head[i].refine_bboxes(
                         bbox_results['rois'], roi_labels,
                         bbox_results['bbox_pred'], pos_is_gts, img_metas)
 
         return losses
 
-    def simple_test(self, x, proposal_list, img_metas, rescale=False, postprocess=True):
+   def simple_test(self, x, proposal_list, img_metas, rescale=False, postprocess=True):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
         img_shape = img_metas[0]['img_shape']
@@ -349,7 +367,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 results = (*ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
             else:
                 results = ms_bbox_result['ensemble']
-        return results
+        return result 
 
     def postprocess(self,
                     det_bboxes,
@@ -415,7 +433,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 ms_scores.append(bbox_results['cls_score'])
 
                 if i < self.num_stages - 1:
-                    bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                    bbox_label = bbox_results['cls_score'][:, :-1].argmax(
+                        dim=1)
                     rois = self.bbox_head[i].regress_by_class(
                         rois, bbox_label, bbox_results['bbox_pred'],
                         img_meta[0])
@@ -445,8 +464,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [[]
-                               for _ in range(self.mask_head[-1].num_classes)]
+                segm_result = [[[]
+                                for _ in range(self.mask_head[-1].num_classes)]
+                               ]
             else:
                 aug_masks = []
                 aug_img_metas = []
@@ -475,6 +495,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     ori_shape,
                     scale_factor=1.0,
                     rescale=False)
-            return bbox_result, segm_result
+            return [(bbox_result, segm_result)]
         else:
-            return bbox_result
+            return [bbox_result]

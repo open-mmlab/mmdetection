@@ -12,7 +12,7 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch',
-        dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),
+        dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)))
 # dataset settings
 img_norm_cfg = dict(

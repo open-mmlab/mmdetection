@@ -1,8 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
-from mmcv.runner import load_checkpoint
+from mmcv.runner import auto_fp16, load_checkpoint
 
-from mmdet.core import auto_fp16
 from mmdet.models.backbones import ResNet
 from mmdet.models.builder import SHARED_HEADS
 from mmdet.models.utils import ResLayer as _ResLayer
@@ -46,6 +45,12 @@ class ResLayer(nn.Module):
         self.add_module(f'layer{stage + 1}', res_layer)
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in the module.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if isinstance(pretrained, str):
             logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)

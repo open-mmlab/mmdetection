@@ -22,22 +22,22 @@ model = dict(
                 alpha=0.5,
                 gamma=1.5,
                 beta=1.0,
-                loss_weight=1.0))))
-# model training and testing settings
-train_cfg = dict(
-    rcnn=dict(
-        sampler=dict(
-            _delete_=True,
-            type='CombinedSampler',
-            num=512,
-            pos_fraction=0.25,
-            add_gt_as_proposals=True,
-            pos_sampler=dict(type='InstanceBalancedPosSampler'),
-            neg_sampler=dict(
-                type='IoUBalancedNegSampler',
-                floor_thr=-1,
-                floor_fraction=0,
-                num_bins=3))))
+                loss_weight=1.0))),
+    # model training and testing settings
+    train_cfg=dict(
+        rcnn=dict(
+            sampler=dict(
+                _delete_=True,
+                type='CombinedSampler',
+                num=512,
+                pos_fraction=0.25,
+                add_gt_as_proposals=True,
+                pos_sampler=dict(type='InstanceBalancedPosSampler'),
+                neg_sampler=dict(
+                    type='IoUBalancedNegSampler',
+                    floor_thr=-1,
+                    floor_fraction=0,
+                    num_bins=3)))))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

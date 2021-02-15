@@ -56,6 +56,7 @@ def _concat_dataset(cfg, default_args=None):
     img_prefixes = cfg.get('img_prefix', None)
     seg_prefixes = cfg.get('seg_prefix', None)
     proposal_files = cfg.get('proposal_file', None)
+    separate_eval = cfg.get('separate_eval', True)
 
     if cfg.get('img_prefix_auto', False):
         img_prefixes = get_image_prefixes_auto(cfg, ann_files)
@@ -64,6 +65,9 @@ def _concat_dataset(cfg, default_args=None):
     num_dset = len(ann_files)
     for i in range(num_dset):
         data_cfg = copy.deepcopy(cfg)
+        # pop 'separate_eval' since it is not a valid key for common datasets.
+        if 'separate_eval' in data_cfg:
+            data_cfg.pop('separate_eval')
         data_cfg['ann_file'] = ann_files[i]
         if isinstance(img_prefixes, (list, tuple)):
             data_cfg['img_prefix'] = img_prefixes[i]
@@ -86,6 +90,10 @@ def build_dataset(cfg, default_args=None):
                                    ClassBalancedDataset)
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
+    elif cfg['type'] == 'ConcatDataset':
+        dataset = ConcatDataset(
+            [build_dataset(c, default_args) for c in cfg['datasets']],
+            cfg.get('separate_eval', True))
     elif cfg['type'] == 'RepeatDataset':
         dataset = RepeatDataset(
             build_dataset(cfg['dataset'], default_args), cfg['times'])

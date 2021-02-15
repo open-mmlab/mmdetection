@@ -7,11 +7,9 @@ from .base_sampler import BaseSampler
 
 @BBOX_SAMPLERS.register_module()
 class OHEMSampler(BaseSampler):
-    """
-    Online Hard Example Mining Sampler described in [1]_.
-
-    References:
-        .. [1] https://arxiv.org/pdf/1604.03540.pdf
+    r"""Online Hard Example Mining Sampler described in `Training Region-based
+    Object Detectors with Online Hard Example Mining
+    <https://arxiv.org/abs/1604.03540>`_.
     """
 
     def __init__(self,
@@ -23,20 +21,21 @@ class OHEMSampler(BaseSampler):
                  **kwargs):
         super(OHEMSampler, self).__init__(num, pos_fraction, neg_pos_ub,
                                           add_gt_as_proposals)
-        if not hasattr(context, 'num_stages'):
-            self.bbox_roi_extractor = context.bbox_roi_extractor
-            self.bbox_head = context.bbox_head
+        self.context = context
+        if not hasattr(self.context, 'num_stages'):
+            self.bbox_head = self.context.bbox_head
         else:
-            self.bbox_roi_extractor = context.bbox_roi_extractor[
-                context.current_stage]
-            self.bbox_head = context.bbox_head[context.current_stage]
+            self.bbox_head = self.context.bbox_head[self.context.current_stage]
 
     def hard_mining(self, inds, num_expected, bboxes, labels, feats):
         with torch.no_grad():
             rois = bbox2roi([bboxes])
-            bbox_feats = self.bbox_roi_extractor(
-                feats[:self.bbox_roi_extractor.num_inputs], rois)
-            cls_score, _ = self.bbox_head(bbox_feats)
+            if not hasattr(self.context, 'num_stages'):
+                bbox_results = self.context._bbox_forward(feats, rois)
+            else:
+                bbox_results = self.context._bbox_forward(
+                    self.context.current_stage, feats, rois)
+            cls_score = bbox_results['cls_score']
             loss = self.bbox_head.loss(
                 cls_score=cls_score,
                 bbox_pred=None,
@@ -55,6 +54,18 @@ class OHEMSampler(BaseSampler):
                     bboxes=None,
                     feats=None,
                     **kwargs):
+        """Sample positive boxes.
+
+        Args:
+            assign_result (:obj:`AssignResult`): Assigned results
+            num_expected (int): Number of expected positive samples
+            bboxes (torch.Tensor, optional): Boxes. Defaults to None.
+            feats (list[torch.Tensor], optional): Multi-level features.
+                Defaults to None.
+
+        Returns:
+            torch.Tensor: Indices  of positive samples
+        """
         # Sample some hard positive samples
         pos_inds = torch.nonzero(assign_result.gt_inds > 0, as_tuple=False)
         if pos_inds.numel() != 0:
@@ -71,6 +82,18 @@ class OHEMSampler(BaseSampler):
                     bboxes=None,
                     feats=None,
                     **kwargs):
+        """Sample negative boxes.
+
+        Args:
+            assign_result (:obj:`AssignResult`): Assigned results
+            num_expected (int): Number of expected negative samples
+            bboxes (torch.Tensor, optional): Boxes. Defaults to None.
+            feats (list[torch.Tensor], optional): Multi-level features.
+                Defaults to None.
+
+        Returns:
+            torch.Tensor: Indices  of negative samples
+        """
         # Sample some hard negative samples
         neg_inds = torch.nonzero(assign_result.gt_inds == 0, as_tuple=False)
         if neg_inds.numel() != 0:

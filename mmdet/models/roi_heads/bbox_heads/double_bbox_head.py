@@ -119,7 +119,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
         self.relu = nn.ReLU(inplace=True)
 
     def _add_conv_branch(self):
-        """Add the fc branch which consists of a sequential of conv layers"""
+        """Add the fc branch which consists of a sequential of conv layers."""
         branch_convs = nn.ModuleList()
         for i in range(self.num_convs):
             branch_convs.append(
@@ -131,7 +131,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
         return branch_convs
 
     def _add_fc_branch(self):
-        """Add the fc branch which consists of a sequential of fc layers"""
+        """Add the fc branch which consists of a sequential of fc layers."""
         branch_fcs = nn.ModuleList()
         for i in range(self.num_fcs):
             fc_in_channels = (

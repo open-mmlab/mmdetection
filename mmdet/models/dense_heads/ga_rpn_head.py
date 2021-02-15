@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
+from mmcv.ops import nms
 
-from mmdet.ops import nms
 from ..builder import HEADS
 from .guided_anchor_head import GuidedAnchorHead
 from .rpn_test_mixin import RPNTestMixin
@@ -14,19 +14,22 @@ class GARPNHead(RPNTestMixin, GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""
 
     def __init__(self, in_channels, **kwargs):
-        super(GARPNHead, self).__init__(
-            1, in_channels, background_label=0, **kwargs)
+        super(GARPNHead, self).__init__(1, in_channels, **kwargs)
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.rpn_conv = nn.Conv2d(
             self.in_channels, self.feat_channels, 3, padding=1)
         super(GARPNHead, self)._init_layers()
 
     def init_weights(self):
+        """Initialize weights of the head."""
         normal_init(self.rpn_conv, std=0.01)
         super(GARPNHead, self).init_weights()
 
     def forward_single(self, x):
+        """Forward feature of a single scale level."""
+
         x = self.rpn_conv(x)
         x = F.relu(x, inplace=True)
         (cls_score, bbox_pred, shape_pred,
@@ -113,15 +116,14 @@ class GARPNHead(RPNTestMixin, GuidedAnchorHead):
                     as_tuple=False).squeeze()
                 proposals = proposals[valid_inds, :]
                 scores = scores[valid_inds]
-            proposals = torch.cat([proposals, scores.unsqueeze(-1)], dim=-1)
             # NMS in current level
-            proposals, _ = nms(proposals, cfg.nms_thr)
+            proposals, _ = nms(proposals, scores, cfg.nms_thr)
             proposals = proposals[:cfg.nms_post, :]
             mlvl_proposals.append(proposals)
         proposals = torch.cat(mlvl_proposals, 0)
         if cfg.nms_across_levels:
             # NMS across multi levels
-            proposals, _ = nms(proposals, cfg.nms_thr)
+            proposals, _ = nms(proposals[:, :4], proposals[:, -1], cfg.nms_thr)
             proposals = proposals[:cfg.max_num, :]
         else:
             scores = proposals[:, 4]

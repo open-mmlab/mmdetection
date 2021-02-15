@@ -6,12 +6,17 @@ import os
 import os.path as osp
 import pycocotools.mask as maskUtils
 import time
-import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 from mmcv import Config
 from mmcv.parallel import collate, scatter
+import warnings
+
+import mmcv
+import torch
+from mmcv import Config, DictAction
 from mmcv.runner import get_dist_info, init_dist
+from mmcv.utils import get_git_hash
 
 from mmdet import __version__
 from mmdet.apis import set_random_seed, train_detector
@@ -55,18 +60,39 @@ def parse_args():
     parser.add_argument(
         '--update_config', nargs='+', action=ExtendedDictAction, help='arguments in dict')
     parser.add_argument(
+        '--options',
+        nargs='+',
+        action=DictAction,
+        help='override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file (deprecate), '
+        'change to --cfg-options instead.')
+    parser.add_argument(
+        '--cfg-options',
+        nargs='+',
+        action=DictAction,
+        help='override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file. If the value to '
+        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
+        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
+        'Note that the quotation marks are necessary and that no white space '
+        'is allowed.')
+    parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
-    parser.add_argument(
-        '--autoscale-lr',
-        action='store_true',
-        help='automatically scale lr with the number of gpus')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
+
+    if args.options and args.cfg_options:
+        raise ValueError(
+            '--options and --cfg-options cannot be both '
+            'specified, --options is deprecated in favor of --cfg-options')
+    if args.options:
+        warnings.warn('--options is deprecated in favor of --cfg-options')
+        args.cfg_options = args.options
 
     return args
 
@@ -165,6 +191,9 @@ def main():
     cfg_samples_per_gpu = cfg.data.samples_per_gpu
     if args.update_config is not None:
         cfg.merge_from_dict(args.update_config)
+    if cfg.get('custom_imports', None):
+        from mmcv.utils import import_modules_from_strings
+        import_modules_from_strings(**cfg['custom_imports'])
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -184,10 +213,6 @@ def main():
     else:
         cfg.gpu_ids = range(1) if args.gpus is None else range(args.gpus)
 
-    if args.autoscale_lr:
-        # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
-        cfg.optimizer['lr'] = cfg.optimizer['lr'] * len(cfg.gpu_ids) / 8
-
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
         distributed = False
@@ -198,6 +223,9 @@ def main():
         else:
             cfg.dist_params['backend'] = 'gloo'
             init_dist_cpu(args.launcher, **cfg.dist_params)
+        # re-set gpu_ids with distributed training mode
+        _, world_size = get_dist_info()
+        cfg.gpu_ids = range(world_size)
 
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
@@ -225,7 +253,7 @@ def main():
     logger.info('Environment info:\n' + dash_line + env_info + '\n' +
                 dash_line)
     meta['env_info'] = env_info
-
+    meta['config'] = cfg.pretty_text
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
@@ -242,9 +270,12 @@ def main():
         set_random_seed(args.seed, deterministic=args.deterministic)
     cfg.seed = args.seed
     meta['seed'] = args.seed
+    meta['exp_name'] = osp.basename(args.config)
 
     model = build_detector(
-        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+        cfg.model,
+        train_cfg=cfg.get('train_cfg'),
+        test_cfg=cfg.get('test_cfg'))
 
     datasets = [build_dataset(cfg.data.train)]
 
@@ -276,8 +307,7 @@ def main():
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
-            mmdet_version=__version__,
-            config=cfg.pretty_text,
+            mmdet_version=__version__ + get_git_hash()[:7],
             CLASSES=datasets[0].CLASSES)
         # also save nncf status in the checkpoint -- it is important,
         # since it is used in wrap_nncf_model for loading NNCF-compressed models

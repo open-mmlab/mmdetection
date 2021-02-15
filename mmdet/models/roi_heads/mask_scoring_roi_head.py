@@ -18,11 +18,19 @@ class MaskScoringRoIHead(StandardRoIHead):
         self.mask_iou_head = build_head(mask_iou_head)
 
     def init_weights(self, pretrained):
+        """Initialize the weights in head.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(MaskScoringRoIHead, self).init_weights(pretrained)
         self.mask_iou_head.init_weights()
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
+        """Run forward function and calculate loss for Mask head in
+        training."""
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
         mask_results = super(MaskScoringRoIHead,
                              self)._mask_forward_train(x, sampling_results,
@@ -53,29 +61,62 @@ class MaskScoringRoIHead(StandardRoIHead):
                          det_bboxes,
                          det_labels,
                          rescale=False):
-        # image shape of the first image in the batch (only one)
-        ori_shape = img_metas[0]['ori_shape']
-        scale_factor = img_metas[0]['scale_factor']
+        """Obtain mask prediction without augmentation."""
+        # image shapes of images in the batch
+        ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
+        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
-        if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes)]
-            mask_scores = [[] for _ in range(self.mask_head.num_classes)]
+        num_imgs = len(det_bboxes)
+        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
+            num_classes = self.mask_head.num_classes
+            segm_results = [[[] for _ in range(num_classes)]
+                            for _ in range(num_imgs)]
+            mask_scores = [[[] for _ in range(num_classes)]
+                           for _ in range(num_imgs)]
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
-            _bboxes = (
-                det_bboxes[:, :4] *
-                det_bboxes.new_tensor(scale_factor) if rescale else det_bboxes)
-            mask_rois = bbox2roi([_bboxes])
+            if rescale and not isinstance(scale_factors[0], float):
+                scale_factors = [
+                    torch.from_numpy(scale_factor).to(det_bboxes[0].device)
+                    for scale_factor in scale_factors
+                ]
+            _bboxes = [
+                det_bboxes[i][:, :4] *
+                scale_factors[i] if rescale else det_bboxes[i]
+                for i in range(num_imgs)
+            ]
+            mask_rois = bbox2roi(_bboxes)
             mask_results = self._mask_forward(x, mask_rois)
-            segm_result = self.mask_head.get_seg_masks(
-                mask_results['mask_pred'], _bboxes, det_labels, self.test_cfg,
-                ori_shape, scale_factor, rescale)
+            concat_det_labels = torch.cat(det_labels)
             # get mask scores with mask iou head
+            mask_feats = mask_results['mask_feats']
+            mask_pred = mask_results['mask_pred']
             mask_iou_pred = self.mask_iou_head(
-                mask_results['mask_feats'],
-                mask_results['mask_pred'][range(det_labels.size(0)),
-                                          det_labels])
-            mask_scores = self.mask_iou_head.get_mask_scores(
-                mask_iou_pred, det_bboxes, det_labels)
-        return segm_result, mask_scores
+                mask_feats, mask_pred[range(concat_det_labels.size(0)),
+                                      concat_det_labels])
+            # split batch mask prediction back to each image
+            num_bboxes_per_img = tuple(len(_bbox) for _bbox in _bboxes)
+            mask_preds = mask_pred.split(num_bboxes_per_img, 0)
+            mask_iou_preds = mask_iou_pred.split(num_bboxes_per_img, 0)
+
+            # apply mask post-processing to each image individually
+            segm_results = []
+            mask_scores = []
+            for i in range(num_imgs):
+                if det_bboxes[i].shape[0] == 0:
+                    segm_results.append(
+                        [[] for _ in range(self.mask_head.num_classes)])
+                    mask_scores.append(
+                        [[] for _ in range(self.mask_head.num_classes)])
+                else:
+                    segm_result = self.mask_head.get_seg_masks(
+                        mask_preds[i], _bboxes[i], det_labels[i],
+                        self.test_cfg, ori_shapes[i], scale_factors[i],
+                        rescale)
+                    # get mask scores with mask iou head
+                    mask_score = self.mask_iou_head.get_mask_scores(
+                        mask_iou_preds[i], det_bboxes[i], det_labels[i])
+                    segm_results.append(segm_result)
+                    mask_scores.append(mask_score)
+        return list(zip(segm_results, mask_scores))
