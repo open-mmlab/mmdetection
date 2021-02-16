@@ -20,6 +20,8 @@ class XMLDataset(CustomDataset):
     """
 
     def __init__(self, min_size=None, **kwargs):
+        assert self.CLASSES or kwargs.get(
+            'classes', None), 'CLASSES in `XMLDataset` can not be None.'
         super(XMLDataset, self).__init__(**kwargs)
         self.cat2label = {cat: i for i, cat in enumerate(self.CLASSES)}
         self.min_size = min_size
@@ -43,8 +45,6 @@ class XMLDataset(CustomDataset):
             tree = ET.parse(xml_path)
             root = tree.getroot()
             size = root.find('size')
-            width = 0
-            height = 0
             if size is not None:
                 width = int(size.find('width').text)
                 height = int(size.find('height').text)
