@@ -284,7 +284,7 @@ class GFLHead(AnchorHead):
         else:
             loss_bbox = bbox_pred.sum() * 0
             loss_dfl = bbox_pred.sum() * 0
-            weight_targets = torch.tensor(0.).cuda()
+            weight_targets = bbox_pred.new_tensor(0)
 
         # cls (qfl) loss
         loss_cls = self.loss_cls(
@@ -362,9 +362,7 @@ class GFLHead(AnchorHead):
                 num_total_samples=num_total_samples)
 
         avg_factor = sum(avg_factor)
-        # when avg_factor is 0, it will be an integer rather than a float
-        # so convert it manually to avoid the failure of integer division
-        avg_factor = reduce_mean(avg_factor.float()).item()
+        avg_factor = reduce_mean(avg_factor).item()
         losses_bbox = list(map(lambda x: x / avg_factor, losses_bbox))
         losses_dfl = list(map(lambda x: x / avg_factor, losses_dfl))
         return dict(
