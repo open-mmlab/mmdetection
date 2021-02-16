@@ -164,4 +164,4 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 24
+runner = dict(max_epochs=24)

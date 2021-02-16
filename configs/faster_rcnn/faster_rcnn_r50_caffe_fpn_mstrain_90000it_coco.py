@@ -7,10 +7,9 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.001,
     step=[60000, 80000])
-total_epochs = 90000
 
 # Runner type
-runner = 'IterBasedRunner'
+runner = dict(_delete_=True, type='IterBasedRunner', max_iters=90000)
 
 checkpoint_config = dict(interval=10000)
 evaluation = dict(interval=10000, metric='bbox')

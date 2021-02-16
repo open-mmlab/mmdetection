@@ -102,4 +102,4 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
     step=[190])
-total_epochs = 210
+runner = dict(max_epochs=210)
