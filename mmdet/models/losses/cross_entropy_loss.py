@@ -101,7 +101,7 @@ def mask_cross_entropy(pred,
 
     Args:
         pred (torch.Tensor): The prediction with shape (N, C, *), C is the
-            number of classes. The trailing * is spatio-temporal dimensions.
+            number of classes. The trailing * indicates arbitrary shape.
         target (torch.Tensor): The learning label of the prediction.
         label (torch.Tensor): ``label`` indicates the class label of the mask
             corresponding object. This will be used to select the mask in the
