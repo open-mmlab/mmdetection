@@ -210,8 +210,7 @@ def parse_pr_objects(pr_annotation, conf_thr, use_transcription, word_spotting):
         pr_polygons_list.append(polygon)
         pr_confidences_list.append(pr_object['score'])
         if use_transcription:
-            transcription = pr_object['text']['transcription']
-            pr_transcriptions.append(transcription)
+            pr_transcriptions.append(pr_object['text']['transcription'])
 
     # Filter out detections with low confidence.
     filter_mask = [(el > conf_thr) for el in pr_confidences_list]
