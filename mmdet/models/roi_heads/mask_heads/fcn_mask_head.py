@@ -179,6 +179,12 @@ class FCNMaskHead(nn.Module):
             det_labels (Tensor): shape (n, )
             rcnn_test_cfg (dict): rcnn testing config
             ori_shape (Tuple): original image height and width, shape (2,)
+            scale_factor(float | Tensor): if ``rescale is True`` box
+                coordinates are divided by this scale factor, otherwise output
+                mask shape is multiplied by this factor.
+            rescale (bool): if True, the resulting masks will be rescaled to
+                ``ori_shape`` and boxes will be, otherwise ``ori_shape``
+                will be multipled by ``scale_factor``.
 
         Returns:
             list[list]: encoded masks. The c-th item in the outer list
@@ -187,7 +193,6 @@ class FCNMaskHead(nn.Module):
                 class label c.
 
         Example:
-            >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
             >>> import mmcv
             >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
             >>> N = 7  # N = number of extracted ROIs
