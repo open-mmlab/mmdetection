@@ -189,6 +189,7 @@ class FCNMaskHead(nn.Module):
         Example:
             >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
             >>> import mmcv
+            >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
             >>> N = 7  # N = number of extracted ROIs
             >>> C, H, W = 11, 32, 32
             >>> # Create example instance of FCN Mask Head.
