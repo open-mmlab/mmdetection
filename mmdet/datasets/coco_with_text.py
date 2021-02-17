@@ -189,7 +189,7 @@ class CocoWithTextDataset(CocoDataset):
                     write_file.write(s + '\n')
 
         subprocess.run(f'cd {tempdir}; zip -q pr.zip *', check=True, shell=True)
-        print(f'{tempdir}/pr.zip')
+        logging.info(f'Results archived to {tempdir}/pr.zip')
 
     @staticmethod
     def _filter_predictions(predictions, det_thr, rec_thr):
@@ -216,7 +216,6 @@ class CocoWithTextDataset(CocoDataset):
             lexicon_mapping = [line.strip().split(' ') for line in read_file]
             lexicon_mapping = {pair[0].upper(): ' '.join(pair[1:]) for pair in lexicon_mapping}
         return lexicon_mapping
-
 
     def evaluate(self,
                  results,
