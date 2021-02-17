@@ -20,17 +20,20 @@ from .builder import DATASETS
 from .custom import CustomDataset
 
 
-def get_polygon(segm, bbox):
+def get_polygon(segm, bbox, return_rect):
+    xmin, ymin, xmax, ymax, conf = bbox
     if segm is not None:
         mask = decode(segm)
         contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]
         if contours:
             contour = sorted(contours, key=lambda x: -cv2.contourArea(x))[0]
-            return  cv2.boxPoints(cv2.minAreaRect(contour)).reshape(-1)
-    xmin, ymin, xmax, ymax, _ = bbox
+            if return_rect:
+                return cv2.boxPoints(cv2.minAreaRect(contour)).reshape(-1), conf
+            else:
+                return contour.reshape(-1), conf
     contour = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax]
 
-    return contour
+    return contour, conf
 
 @DATASETS.register_module()
 class CocoDataset(CustomDataset):
@@ -446,10 +449,10 @@ class CocoDataset(CustomDataset):
                         per_image_predictions = []
 
                         for bbox, segm in zip(boxes, segms):
-                            contour = get_polygon(segm, bbox)
+                            contour, conf = get_polygon(segm, bbox)
                             per_image_predictions.append({
                                 'segmentation': contour,
-                                'score': 1.0,
+                                'score': conf,
                             })
 
                         predictions.append(per_image_predictions)

@@ -14,12 +14,16 @@ class StandardRoIHeadWithText(StandardRoIHead):
     """Simplest base roi head including one bbox head, one mask head and one text head.
     """
 
-    def __init__(self, text_roi_extractor, text_head, text_thr, alphabet='  ' + string.ascii_lowercase + string.digits, *args, **kwargs):
+    def __init__(self, text_roi_extractor, text_head, text_thr,
+                 alphabet='  ' + string.ascii_lowercase + string.digits,
+                 mask_text_features=False,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.with_text = True
         self.init_text_head(text_roi_extractor, text_head)
         self.alphabet = alphabet
         self.text_thr = text_thr
+        self.mask_text_features = mask_text_features
         if self.train_cfg:
             self.text_bbox_assigner = build_assigner(self.train_cfg.text_assigner)
             self.text_bbox_sampler = build_sampler(self.train_cfg.text_sampler)
@@ -60,7 +64,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
 
             gt_masks (None | Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
-            
+
             gt_texts (None | list[numpy.ndarray]) : true encoded texts for each box
                 used if the architecture supports a text task.
 
@@ -90,13 +94,13 @@ class StandardRoIHeadWithText(StandardRoIHead):
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 text_sampling_results.append(sampling_result)
 
-            text_results = self._text_forward_train(x, text_sampling_results, gt_texts)
+            text_results = self._text_forward_train(x, text_sampling_results, gt_texts, gt_masks)
             if text_results['loss_text'] is not None:
                 losses.update(text_results)
 
         return losses
 
-    def _text_forward(self, x, rois=None, pos_inds=None, bbox_feats=None, matched_gt_texts=None):
+    def _text_forward(self, x, rois=None, pos_inds=None, bbox_feats=None, matched_gt_texts=None, det_masks=None):
         assert ((rois is not None) ^
                 (pos_inds is not None and bbox_feats is not None))
         if rois is not None:
@@ -108,13 +112,19 @@ class StandardRoIHeadWithText(StandardRoIHead):
             assert bbox_feats is not None
             text_feats = bbox_feats[pos_inds]
 
+        if self.mask_text_features:
+            hard_masks = det_masks > 0.5
+            hard_masks = torch.unsqueeze(hard_masks, 1)
+            hard_masks = hard_masks.repeat(1, text_feats.shape[1], 1, 1)
+            text_feats = text_feats * hard_masks
+
         text_results = self.text_head.forward(text_feats, matched_gt_texts)
         if self.training:
             return dict(loss_text=text_results)
         else:
             return dict(text_results=text_results)
 
-    def _text_forward_train(self, x, sampling_results, gt_texts):
+    def _text_forward_train(self, x, sampling_results, gt_texts, gt_masks):
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
             with torch.no_grad():
@@ -138,7 +148,8 @@ class StandardRoIHeadWithText(StandardRoIHead):
                 matched_gt_texts = [text if aps >= self.area_per_symbol_thr else
                                         [] for text, aps in zip(matched_gt_texts, area_per_symbol)]
 
-            text_results = self._text_forward(x, pos_rois, matched_gt_texts=matched_gt_texts)
+            mask_targets = self.mask_head.get_targets(sampling_results, gt_masks, self.train_cfg)
+            text_results = self._text_forward(x, pos_rois, matched_gt_texts=matched_gt_texts, det_masks=mask_targets)
         else:
             raise NotImplementedError()
 
@@ -148,6 +159,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
                          x,
                          img_metas,
                          det_bboxes,
+                         det_masks,
                          rescale=False):
         # image shape of the first image in the batch (only one)
         ori_shape = img_metas[0]['ori_shape']
@@ -164,6 +176,12 @@ class StandardRoIHeadWithText(StandardRoIHead):
             decoded_texts = torch.empty([0, 0, 0],
                                     dtype=det_bboxes.dtype,
                                     device=det_bboxes.device)
+
+            confidences = torch.empty([0, 0, 0],
+                                    dtype=det_bboxes.dtype,
+                                    device=det_bboxes.device)
+
+            distributions = []
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
@@ -173,12 +191,14 @@ class StandardRoIHeadWithText(StandardRoIHead):
             _bboxes = (
                 det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
             text_rois = bbox2roi([_bboxes])
-            text_results = self._text_forward(x, text_rois)
+            text_results = self._text_forward(x, text_rois, det_masks=det_masks)
             if torch.onnx.is_in_onnx_export():
                 return text_results
             text_results = text_results['text_results'].permute(1, 0, 2)
             text_results = torch.nn.functional.softmax(text_results, dim=-1)
+            confidences = []
             decoded_texts = []
+            distributions = []
             for text in text_results:
                 predicted_confidences, encoded = text.topk(1)
                 predicted_confidences = predicted_confidences.cpu().numpy()
@@ -190,10 +210,14 @@ class StandardRoIHeadWithText(StandardRoIHead):
                     if l == 1:
                         break
                     decoded += self.alphabet[l]
-
+                confidences.append(confidence)
+                assert self.alphabet[0] == self.alphabet[1] == ' '
+                distribution = np.transpose(text.cpu().numpy())[2:, :len(decoded) + 1]
+                distributions.append(distribution)
+               
                 decoded_texts.append(decoded if confidence >= self.text_thr else '')
 
-        return decoded_texts
+        return decoded_texts, confidences, distributions
 
     def simple_test(self,
                     x,
@@ -213,7 +237,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
             det_masks = self.simple_test_mask(
                 x, img_metas, det_bboxes, det_labels, rescale=False)
 
-        det_texts = self.simple_test_text(x, img_metas, det_bboxes)
+        det_texts = self.simple_test_text(x, img_metas, det_bboxes, det_masks)
 
         if postprocess:
             bbox_results, segm_results = self.postprocess(

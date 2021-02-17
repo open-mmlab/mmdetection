@@ -1,16 +1,40 @@
 import collections
 import copy
 import logging
+import os
 import string
+import subprocess
+import tempfile
 
+import editdistance
 import numpy as np
 from mmcv.utils import print_log
 from pycocotools.cocoeval import COCOeval
+from tqdm import tqdm
 
 from mmdet.core import text_eval
+from mmdet.core.evaluation.text_evaluation import strip
 from .builder import DATASETS
 from .coco import CocoDataset, ConcatenatedCocoDataset, get_polygon
+from .weighted_editdistance import weighted_edit_distance
 
+
+def find_in_lexicon(sequence, lexicon, lexicon_mapping, char_distrib):
+    sequence = sequence.upper()
+    distances = [editdistance.eval(sequence, word.upper()) for word in lexicon]
+    argmin = np.argmin(distances)
+    distance = distances[argmin]
+    if char_distrib is not None:
+        small_lexicon = [word for i, word in enumerate(lexicon) if distances[i] <= distance + 2]
+        distances = [weighted_edit_distance(sequence, word.upper(), char_distrib) for word in small_lexicon]
+        argmin = np.argmin(distances)
+        distance = distances[argmin]
+        word = small_lexicon[argmin]
+    else:
+        word = lexicon[argmin]
+    if lexicon_mapping:
+        word = lexicon_mapping[word]
+    return word, distance
 
 @DATASETS.register_module()
 class CocoWithTextDataset(CocoDataset):
@@ -126,6 +150,74 @@ class CocoWithTextDataset(CocoDataset):
 
         return ann
 
+    @staticmethod
+    def _parse_metric(metric):
+        metric = metric.split('@')
+        metric_params = {
+            'lexicon': None,
+            'lexicon_mapping': None,
+            'det_thr' : 0.0,
+            'rec_thr' : 0.0,
+            'dataset': 'icdar15'
+        }
+        if len(metric) == 2:
+            params = {k:v for k,v in [kv.split('=') for kv in metric[1].split(',')]}
+            metric_params.update(params)
+            metric_params['det_thr'] = float(metric_params['det_thr'])
+            metric_params['rec_thr'] = float(metric_params['rec_thr'])
+        metric = metric[0]
+
+        assert metric_params['dataset'] in ('icdar15', 'totaltext')
+        allowed_keys = {'lexicon', 'lexicon_mapping', 'det_thr', 'rec_thr', 'dataset'}
+        assert all((k in allowed_keys) for k in metric_params.keys())
+
+        return metric, metric_params
+
+    def _dump_predictions(self, predictions, dataset_format):
+        tempdir = tempfile.mkdtemp()
+        assert dataset_format in ('icdar15', 'totaltext')
+        suffix = 'res_' if dataset_format == 'icdar15' else 'gt_'
+        for i, per_image_predictions in tqdm(enumerate(predictions)):
+            image_basename = os.path.basename(self.data_infos[i]['filename'])
+            dest = suffix + image_basename[:-3] + 'txt'
+            dest = f'{tempdir}/{dest}'
+            with open(dest, 'w') as write_file:
+                for prediction in per_image_predictions:
+                    contour = prediction['segmentation']
+                    text = prediction['text']['transcription']
+                    s = ','.join([str(int(x)) for x in contour]) + ',' + text
+                    write_file.write(s + '\n')
+
+        subprocess.run(f'cd {tempdir}; zip -q pr.zip *', check=True, shell=True)
+        print(f'{tempdir}/pr.zip')
+
+    @staticmethod
+    def _filter_predictions(predictions, det_thr, rec_thr):
+        filtered_predictions = []
+        for per_image_predictions in predictions:
+            filtered_per_image_predictions = [p for p in per_image_predictions if p['score'] >= det_thr]
+            filtered_per_image_predictions = [p for p in filtered_per_image_predictions if p['text']['score'] >= rec_thr]
+            filtered_predictions.append(filtered_per_image_predictions)
+        return filtered_predictions
+
+    @staticmethod
+    def _read_lexicon(path):
+        if not path:
+            return []
+        with open(path) as read_file:
+            lexicon = [line.strip() for line in read_file]
+        return lexicon
+
+    @staticmethod
+    def _read_lexicon_mapping(path):
+        if not path:
+            return {}
+        with open(path) as read_file:
+            lexicon_mapping = [line.strip().split(' ') for line in read_file]
+            lexicon_mapping = {pair[0].upper(): ' '.join(pair[1:]) for pair in lexicon_mapping}
+        return lexicon_mapping
+
+
     def evaluate(self,
                  results,
                  metric='bbox',
@@ -138,13 +230,20 @@ class CocoWithTextDataset(CocoDataset):
 
         metrics = list(metric) if isinstance(metric, list) else [metric]
 
-        computed_metrics = ['word_spotting']
+        computed_metrics = ['word_spotting', 'e2e_recognition']
         removed_metrics = []
 
         for computed_metric in computed_metrics:
-            if computed_metric in metrics:
-                metrics.remove(computed_metric)
-                removed_metrics.append(computed_metric)
+            metric = [metric for metric in metrics if metric.startswith(computed_metric)]
+            if metric:
+                metric = metric[0]
+                metrics.remove(metric)
+                removed_metrics.append(metric)
+
+        for metric in removed_metrics:
+            if metric.split('@')[0] not in computed_metrics:
+                raise RuntimeError(f'Unknonwn metric: {metric}')
+
         eval_results = super().evaluate(results, metrics, logger, jsonfile_prefix, classwise, proposal_nums, iou_thrs, score_thr)
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
@@ -156,7 +255,9 @@ class CocoWithTextDataset(CocoDataset):
                 msg = '\n' + msg
             print_log(msg, logger=logger)
 
-            metric_type = 'bbox' if metric in ['word_spotting'] else metric
+            metric, metric_params = self._parse_metric(metric)
+
+            metric_type = 'bbox'
             if metric_type not in result_files:
                 raise KeyError(f'{metric_type} is not in results')
             try:
@@ -168,43 +269,55 @@ class CocoWithTextDataset(CocoDataset):
                     level=logging.ERROR)
                 break
 
-            iou_type = 'bbox' if metric in {'word_spotting'} else metric
+            iou_type = 'bbox'
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
-            if metric in ['word_spotting']:
-                predictions = []
-                for res in results:
-                    boxes = res[0][0]
-                    segms = res[1][0]
-                    texts = res[2]
+            lexicon_path = metric_params['lexicon']
+            lexicon = self._read_lexicon(lexicon_path)
 
-                    per_image_predictions = []
+            lexicon_pairs_path = metric_params['lexicon_mapping']
+            lexicon_mapping = self._read_lexicon_mapping(lexicon_pairs_path)
 
-                    for bbox, segm, text in zip(boxes, segms, texts):
-                        if text or metric == 'f1':
-                            text = text.upper()
-                            contour = get_polygon(segm, bbox)
-                            per_image_predictions.append({
-                                'segmentation': contour,
-                                'score': 1.0,
-                                'text': {
-                                    'transcription': text
-                                }
-                            })
+            predictions = []
+            for res in tqdm(results):
+                boxes = res[0][0]
+                segms = res[1][0]
+                texts, text_confidences, character_distributions = res[2]
+                per_image_predictions = []
 
-                    predictions.append(per_image_predictions)
+                for bbox, segm, text, text_conf, char_distrib in zip(boxes, segms, texts, text_confidences, character_distributions):
+                    if text:
+                        text = text.upper()
+                        if lexicon:
+                            text, _ = find_in_lexicon(text, lexicon, lexicon_mapping, char_distrib)
+                            # if metric.startswith('word_spotting'):
+                            #     text = strip(text)
+                        contour, conf = get_polygon(segm, bbox, metric_params['dataset'] == 'icdar15')
+                        per_image_predictions.append({
+                            'segmentation': contour,
+                            'score': conf,
+                            'text': {
+                                'transcription': text,
+                                'score' : text_conf
+                            }
+                        })
+                predictions.append(per_image_predictions)
+            gt_annotations = cocoEval.cocoGt.imgToAnns
+            filtered_predictions = self._filter_predictions(
+                predictions, metric_params['det_thr'], metric_params['rec_thr']
+            )
+            self._dump_predictions(filtered_predictions, metric_params['dataset'])
+            recall, precision, hmean, _ = text_eval(
+                filtered_predictions, gt_annotations, score_thr,
+                show_recall_graph=False,
+                use_transcriptions=True,
+                word_spotting=metric.startswith('word_spotting'))
 
-                gt_annotations = cocoEval.cocoGt.imgToAnns
-                recall, precision, hmean, _ = text_eval(
-                    predictions, gt_annotations, score_thr,
-                    show_recall_graph=False,
-                    use_transcriptions=True)
-                print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
-                      format(recall, precision, hmean))
-                eval_results[metric + '/hmean'] = float(f'{hmean:.3f}')
-                eval_results[metric + '/precision'] = float(f'{precision:.3f}')
-                eval_results[metric + '/recall'] = float(f'{recall:.3f}')
+            print(f'Text detection recall={recall} precision={precision} hmean={hmean}')
+            eval_results[metric + '/hmean'] = float(f'{hmean:.3f}')
+            eval_results[metric + '/precision'] = float(f'{precision:.3f}')
+            eval_results[metric + '/recall'] = float(f'{recall:.3f}')
 
         if tmp_dir is not None:
             tmp_dir.cleanup()
