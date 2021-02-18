@@ -93,7 +93,7 @@ def cvt_annotations(devkit_path, years, split, out_file):
 
 
 def cvt_to_coco_json(annotations):
-    image_id = 20180000000
+    image_id = 0
     annotation_id = 0
     coco = dict()
     coco['images'] = []
@@ -133,12 +133,7 @@ def cvt_to_coco_json(annotations):
             annotation_item['ignore'] = 0
             annotation_item['iscrowd'] = 0
         annotation_item['image_id'] = int(image_id)
-        annotation_item['bbox'] = [
-            int(xywh[0]),
-            int(xywh[1]),
-            int(xywh[2]),
-            int(xywh[3])
-        ]
+        annotation_item['bbox'] = xywh.astype(int).tolist()
         annotation_item['category_id'] = int(category_id)
         annotation_item['id'] = int(annotation_id)
         coco['annotations'].append(annotation_item)
@@ -147,7 +142,7 @@ def cvt_to_coco_json(annotations):
     for category_id, name in enumerate(voc_classes()):
         category_item = dict()
         category_item['supercategory'] = str('none')
-        category_item['id'] = int(category_id + 1)
+        category_item['id'] = int(category_id)
         category_item['name'] = str(name)
         coco['categories'].append(category_item)
 
@@ -190,10 +185,10 @@ def parse_args():
     parser.add_argument('devkit_path', help='pascal voc devkit path')
     parser.add_argument('-o', '--out-dir', help='output path')
     parser.add_argument(
-        '--out_format',
+        '--out-format',
         default='pkl',
-        choices=('pkl', 'json'),
-        help='output format, "json" indicates coco annotation format')
+        choices=('pkl', 'coco'),
+        help='output format, "coco" indicates coco annotation format')
     args = parser.parse_args()
     return args
 
@@ -215,6 +210,8 @@ def main():
         raise IOError(f'The devkit path {devkit_path} contains neither '
                       '"VOC2007" nor "VOC2012" subfolder')
     out_fmt = f'.{args.out_format}'
+    if args.out_format == 'coco':
+        out_fmt = '.json'
     for year in years:
         if year == '2007':
             prefix = 'voc07'
