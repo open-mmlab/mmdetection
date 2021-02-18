@@ -232,12 +232,11 @@ class CocoWithTextDataset(CocoDataset):
         computed_metrics = ['word_spotting', 'e2e_recognition']
         removed_metrics = []
 
-        for computed_metric in computed_metrics:
-            metric = [metric for metric in metrics if metric.startswith(computed_metric)]
-            if metric:
-                metric = metric[0]
-                metrics.remove(metric)
+        for metric in metrics:
+            if any(metric.startswith(computed_metric) for computed_metric in computed_metrics):
                 removed_metrics.append(metric)
+
+        metrics = [metric for metric in metrics if metric not in removed_metrics]
 
         for metric in removed_metrics:
             if metric.split('@')[0] not in computed_metrics:
