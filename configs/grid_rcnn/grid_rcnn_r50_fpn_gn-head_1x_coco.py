@@ -8,4 +8,4 @@ lr_config = dict(
     step=[8, 11])
 checkpoint_config = dict(interval=1)
 # runtime settings
-total_epochs = 12
+runner = dict(max_epochs=12)
