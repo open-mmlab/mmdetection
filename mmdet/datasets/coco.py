@@ -449,7 +449,7 @@ class CocoDataset(CustomDataset):
                         per_image_predictions = []
 
                         for bbox, segm in zip(boxes, segms):
-                            contour, conf = get_polygon(segm, bbox)
+                            contour, conf = get_polygon(segm, bbox, return_rect=True)
                             per_image_predictions.append({
                                 'segmentation': contour,
                                 'score': conf,
