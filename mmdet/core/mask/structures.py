@@ -513,7 +513,7 @@ class BitmapMasks(BaseInstanceMasks):
         return torch.tensor(self.masks, dtype=dtype, device=device)
 
     @classmethod
-    def random(cls, num_masks=3, H=32, W=32, dtype=np.uint8, rng=None):
+    def random(cls, num_masks=3, height=32, width=32, dtype=np.uint8, rng=None):
         """
         Generate random bitmap masks for demo / testing purposes.
 
@@ -525,8 +525,8 @@ class BitmapMasks(BaseInstanceMasks):
         """
         from mmdet.utils.util_random import ensure_rng
         rng = ensure_rng(rng)
-        masks = (rng.rand(num_masks, H, W) > 0.1).astype(dtype)
-        self = cls(masks, height=H, width=W)
+        masks = (rng.rand(num_masks, height, width) > 0.1).astype(dtype)
+        self = cls(masks, height=height, width=width)
         return self
 
 
@@ -898,7 +898,7 @@ class PolygonMasks(BaseInstanceMasks):
         return torch.tensor(ndarray_masks, dtype=dtype, device=device)
 
     @classmethod
-    def random(cls, num_masks=3, H=32, W=32, n_verts=5, dtype=np.float32,
+    def random(cls, num_masks=3, height=32, width=32, n_verts=5, dtype=np.float32,
                rng=None):
         """
         Generate random polygon masks for demo / testing purposes.
@@ -1006,10 +1006,10 @@ class PolygonMasks(BaseInstanceMasks):
         masks = []
         for _ in range(num_masks):
             exterior = _order_vertices(_gen_polygon(n_verts, 0.9, 0.9))
-            exterior = (exterior * [(W, H)]).astype(dtype)
+            exterior = (exterior * [(width, height)]).astype(dtype)
             masks.append([exterior.ravel()])
 
-        self = cls(masks, H, W)
+        self = cls(masks, height, width)
         return self
 
 
