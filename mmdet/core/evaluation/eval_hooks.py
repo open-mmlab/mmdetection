@@ -259,11 +259,11 @@ class DistEvalHook(EvalHook):
                     dist.broadcast(module.running_mean, 0)
 
     def after_train_epoch(self, runner):
-        if self.broadcast_bn_buffer:
-            self._broadcast_bn_buffer(runner)
-
         if not self.by_epoch or not self.evaluation_flag(runner):
             return
+
+        if self.broadcast_bn_buffer:
+            self._broadcast_bn_buffer(runner)
 
         from mmdet.apis import multi_gpu_test
         tmpdir = self.tmpdir
