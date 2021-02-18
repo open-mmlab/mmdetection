@@ -394,7 +394,7 @@ lr_config = dict(  # Learning rate scheduler config used to register LrUpdater h
     warmup_ratio=
     0.001,  # The ratio of the starting learning rate used for warmup
     step=[8, 11])  # Steps to decay the learning rate
-total_epochs = 12  # Total epochs to train the model
+runner = dict(type='EpochBasedRunner', max_epochs=12) # Runner that runs the workflow in total max_epochs
 checkpoint_config = dict(  # Config to set the checkpoint hook, Refer to https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/checkpoint.py for implementation.
     interval=1)  # The save interval is 1
 log_config = dict(  # config to register logger hook
@@ -409,7 +409,6 @@ load_from = None  # load models as a pre-trained model from a given path. This w
 resume_from = None  # Resume checkpoints from a given path, the training will be resumed from the epoch when the checkpoint's is saved.
 workflow = [('train', 1)]  # Workflow for runner. [('train', 1)] means there is only one workflow and the workflow named 'train' is executed once. The workflow trains the model by 12 epochs according to the total_epochs.
 work_dir = 'work_dir'  # Directory to save the model checkpoints and logs for the current experiments.
-
 ```
 
 ## FAQ
