@@ -146,7 +146,7 @@ class EvalHook(Hook):
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         key_score = self.evaluate(runner, results)
         if self.save_best:
-            self.save_best(runner, key_score)
+            self.save_best_checkpoint(runner, key_score)
 
     def after_train_iter(self, runner):
         if self.by_epoch or not self.every_n_iters(runner, self.interval):
@@ -155,9 +155,9 @@ class EvalHook(Hook):
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         key_score = self.evaluate(runner, results)
         if self.save_best:
-            self.save_best(runner, key_score)
+            self.save_best_checkpoint(runner, key_score)
 
-    def save_best_cpt(self, runner, key_score):
+    def save_best_checkpoint(self, runner, key_score):
         best_score = runner.meta['hook_msgs'].get(
             'best_score', self.init_value_map[self.rule])
         if self.compare_func(key_score, best_score):
@@ -244,7 +244,7 @@ class DistEvalHook(EvalHook):
         self.tmpdir = tmpdir
         self.gpu_collect = gpu_collect
 
-    def after_train_epoch(self, runner):
+    def _broadcast_bn_buffer(self, runner):
         # Synchronization of BatchNorm's buffer (running_mean
         # and running_var) is not supported in the DDP of pytorch,
         # which may cause the inconsistent performance of models in
@@ -257,6 +257,10 @@ class DistEvalHook(EvalHook):
                               _BatchNorm) and module.track_running_stats:
                     dist.broadcast(module.running_var, 0)
                     dist.broadcast(module.running_mean, 0)
+
+    def after_train_epoch(self, runner):
+        if self.broadcast_bn_buffer:
+            self._broadcast_bn_buffer(runner)
 
         if not self.by_epoch or not self.evaluation_flag(runner):
             return
@@ -274,24 +278,14 @@ class DistEvalHook(EvalHook):
             print('\n')
             key_score = self.evaluate(runner, results)
             if self.save_best:
-                self.save_best_cpt(runner, key_score)
+                self.save_best_checkpoint(runner, key_score)
 
     def after_train_iter(self, runner):
         if self.by_epoch or not self.every_n_iters(runner, self.interval):
             return
 
-        # Synchronization of BatchNorm's buffer (running_mean
-        # and running_var) is not supported in the DDP of pytorch,
-        # which may cause the inconsistent performance of models in
-        # different ranks, so we broadcast BatchNorm's buffers
-        # of rank 0 to other ranks to avoid this.
         if self.broadcast_bn_buffer:
-            model = runner.model
-            for name, module in model.named_modules():
-                if isinstance(module,
-                              _BatchNorm) and module.track_running_stats:
-                    dist.broadcast(module.running_var, 0)
-                    dist.broadcast(module.running_mean, 0)
+            self._broadcast_bn_buffer(runner)
 
         from mmdet.apis import multi_gpu_test
         tmpdir = self.tmpdir
@@ -306,4 +300,4 @@ class DistEvalHook(EvalHook):
             print('\n')
             key_score = self.evaluate(runner, results)
             if self.save_best:
-                self.save_best_cpt(runner, key_score)
+                self.save_best_checkpoint(runner, key_score)
