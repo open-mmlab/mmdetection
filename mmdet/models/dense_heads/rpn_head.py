@@ -162,7 +162,11 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 scores = scores[valid_inds]
                 ids = ids[valid_inds]
 
-        # TODO: remove the hard coded nms type
-        nms_cfg = dict(type='nms', iou_threshold=cfg.nms_thr)
-        dets, keep = batched_nms(proposals, scores, ids, nms_cfg)
-        return dets[:cfg.nms_post]
+        # refactor the nms cfg
+        # this is used for avoid breaking change
+        if 'nms' not in cfg:
+            cfg.nms = dict(type='nms', iou_threshold=cfg.nms_thr)
+            cfg.max_per_image = cfg.nms_post
+
+        dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+        return dets[:cfg.max_per_img]
