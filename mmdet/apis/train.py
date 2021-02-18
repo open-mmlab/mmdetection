@@ -87,7 +87,7 @@ def train_detector(model,
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
 
-    if cfg.get('runner') is None:
+    if 'runner' not in cfg:
         cfg.runner = {
             'type': 'EpochBasedRunner',
             'max_epochs': cfg.total_epochs
@@ -95,6 +95,9 @@ def train_detector(model,
         warnings.warn(
             'config is now expected to have a `runner` section, '
             'please set `runner` in your config.', UserWarning)
+    else:
+        if 'total_epochs' in cfg:
+            assert cfg.total_epochs == cfg.runner.max_epochs
 
     runner = build_runner(
         cfg.runner,
