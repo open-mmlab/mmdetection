@@ -179,10 +179,11 @@ class FCNMaskHead(nn.Module):
             det_labels (Tensor): shape (n, )
             rcnn_test_cfg (dict): rcnn testing config
             ori_shape (Tuple): original image height and width, shape (2,)
-            scale_factor(float | Tensor): the scale factor defined in the
-                preprocessing pipeline.
-            rescale (bool): whether to resize the predicted masks back to the
-                original size or not.
+            scale_factor(float | Tensor): If ``rescale is True``, box
+                coordinates are divided by this scale factor to fit
+                ``ori_shape``.
+            rescale (bool): If True, the resulting masks will be rescaled to
+                ``ori_shape``.
 
         Returns:
             list[list]: encoded masks. The c-th item in the outer list
