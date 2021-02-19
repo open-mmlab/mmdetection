@@ -14,10 +14,10 @@ class CosineAnealingLrLastEpochUpdaterHook(CosineAnealingLrUpdaterHook):
 
     def __init__(self, last_epoch=-1, **kwargs):
         assert last_epoch != 0
-        if last_epoch > 0:
-            assert self.by_epoch, '"last_epoch" requires "by_epoch" LR updating'
         self.last_epoch = int(last_epoch)
         super(CosineAnealingLrLastEpochUpdaterHook, self).__init__(**kwargs)
+        if last_epoch > 0:
+            assert self.by_epoch, '"last_epoch" requires "by_epoch" LR updating'
 
     def get_lr(self, runner, base_lr):
         if self.last_epoch == -1:
