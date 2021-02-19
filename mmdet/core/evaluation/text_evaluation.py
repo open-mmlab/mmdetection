@@ -199,7 +199,7 @@ def parse_gt_objects(gt_annotation, use_transcription, word_spotting):
     return gt_polygons_list, gt_dont_care_polygon_nums, gt_transcriptions
 
 
-def parse_pr_objects(pr_annotation, conf_thr, use_transcription, word_spotting):
+def parse_pr_objects(pr_annotation, conf_thr, use_transcription):
     """ Parses predicted objects from annotation. """
 
     pr_polygons_list = []
@@ -327,7 +327,7 @@ def text_eval(pr_annotations, gt_annotations, conf_thr,
         gt_polygons_list, gt_dont_care_polygon_nums, gt_transcriptions = parse_gt_objects(
             gt_annotations[frame_id], use_transcriptions, word_spotting)
         pr_polygons_list, pr_confidences_list, pr_transcriptions = parse_pr_objects(
-            pr_annotations[frame_id], conf_thr, use_transcriptions, word_spotting)
+            pr_annotations[frame_id], conf_thr, use_transcriptions)
 
         pr_dont_care_polygon_nums = match_dont_care_objects(
             gt_polygons_list, gt_dont_care_polygon_nums, pr_polygons_list)
