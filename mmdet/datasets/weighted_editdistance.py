@@ -27,7 +27,7 @@ def ed_insert_cost(i, word1, scores):
     if i < len(word1) - 1:
         c1 = char2num(word1[i])
         c2 = char2num(word1[i + 1])
-        return (scores[c1][i] + scores[c2][i+1])/2
+        return (scores[c1][i] + scores[c2][i+1]) / 2
     else:
         c1 = char2num(word1[i])
         return scores[c1][i]
