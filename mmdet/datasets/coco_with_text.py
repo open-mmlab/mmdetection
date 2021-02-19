@@ -289,8 +289,8 @@ class CocoWithTextDataset(CocoDataset):
                         text = text.upper()
                         if lexicon:
                             text, _ = find_in_lexicon(text, lexicon, lexicon_mapping, char_distrib)
-                            # if metric.startswith('word_spotting'):
-                            #     text = strip(text)
+                            if metric == 'word_spotting':
+                                text = strip(text)
                         contour, conf = get_polygon(segm, bbox, metric_params['dataset'] == 'icdar15')
                         per_image_predictions.append({
                             'segmentation': [int(x) for x in contour],

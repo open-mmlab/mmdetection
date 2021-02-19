@@ -112,7 +112,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
             assert bbox_feats is not None
             text_feats = bbox_feats[pos_inds]
 
-        if self.mask_text_features:
+        if self.mask_text_features and det_masks:
             hard_masks = det_masks > 0.5
             hard_masks = torch.unsqueeze(hard_masks, 1)
             hard_masks = hard_masks.repeat(1, text_feats.shape[1], 1, 1)
@@ -214,7 +214,6 @@ class StandardRoIHeadWithText(StandardRoIHead):
                 assert self.alphabet[0] == self.alphabet[1] == ' '
                 distribution = np.transpose(text.cpu().numpy())[2:, :len(decoded) + 1]
                 distributions.append(distribution)
-               
                 decoded_texts.append(decoded if confidence >= self.text_thr else '')
 
         return decoded_texts, confidences, distributions
