@@ -187,7 +187,7 @@ class FCNMaskHead(nn.Module):
 
         Returns:
             list[list]: encoded masks. The c-th item in the outer list
-                corresonds to the c-th class. Given the c-th outer list, the
+                corresponds to the c-th class. Given the c-th outer list, the
                 i-th item in that inner list is the mask for the i-th box with
                 class label c.
 

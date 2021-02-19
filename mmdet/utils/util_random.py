@@ -1,6 +1,4 @@
-"""
-Helpers for random number generators
-"""
+"""Helpers for random number generators."""
 import numpy as np
 
 
@@ -23,7 +21,7 @@ def ensure_rng(rng=None):
             a numpy random number generator
 
     References:
-        .. [1] https://gitlab.kitware.com/computer-vision/kwarray/blob/master/kwarray/util_random.py#L270
+        .. [1] https://gitlab.kitware.com/computer-vision/kwarray/blob/master/kwarray/util_random.py#L270  # noqa: E501
     """
 
     if rng is None:

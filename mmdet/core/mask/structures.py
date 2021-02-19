@@ -513,9 +513,13 @@ class BitmapMasks(BaseInstanceMasks):
         return torch.tensor(self.masks, dtype=dtype, device=device)
 
     @classmethod
-    def random(cls, num_masks=3, height=32, width=32, dtype=np.uint8, rng=None):
-        """
-        Generate random bitmap masks for demo / testing purposes.
+    def random(cls,
+               num_masks=3,
+               height=32,
+               width=32,
+               dtype=np.uint8,
+               rng=None):
+        """Generate random bitmap masks for demo / testing purposes.
 
         Example:
             >>> from mmdet.core.mask.structures import BitmapMasks
@@ -748,15 +752,14 @@ class PolygonMasks(BaseInstanceMasks):
                   direction='horizontal',
                   fill_val=None,
                   interpolation=None):
-        """
-        Translate the PolygonMasks.
+        """Translate the PolygonMasks.
 
         Example:
             >>> self = PolygonMasks.random(dtype=np.int)
             >>> out_shape = (self.height, self.width)
             >>> new = self.translate(out_shape, 4., direction='horizontal')
             >>> assert np.all(new.masks[0][0][1::2] == self.masks[0][0][1::2])
-            >>> assert np.all(new.masks[0][0][0::2] == self.masks[0][0][0::2] + 4)
+            >>> assert np.all(new.masks[0][0][0::2] == self.masks[0][0][0::2] + 4)  # noqa: E501
         """
         assert fill_val is None or fill_val == 0, 'Here fill_val is not '\
             f'used, and defaultly should be None or 0. got {fill_val}.'
@@ -898,15 +901,19 @@ class PolygonMasks(BaseInstanceMasks):
         return torch.tensor(ndarray_masks, dtype=dtype, device=device)
 
     @classmethod
-    def random(cls, num_masks=3, height=32, width=32, n_verts=5, dtype=np.float32,
+    def random(cls,
+               num_masks=3,
+               height=32,
+               width=32,
+               n_verts=5,
+               dtype=np.float32,
                rng=None):
-        """
-        Generate random polygon masks for demo / testing purposes.
+        """Generate random polygon masks for demo / testing purposes.
 
         Adapted from [1]_
 
         References:
-            .. [1] https://gitlab.kitware.com/computer-vision/kwimage/-/blob/928cae35ca8/kwimage/structs/polygon.py#L379
+            .. [1] https://gitlab.kitware.com/computer-vision/kwimage/-/blob/928cae35ca8/kwimage/structs/polygon.py#L379  # noqa: E501
 
         Example:
             >>> from mmdet.core.mask.structures import PolygonMasks
@@ -917,8 +924,7 @@ class PolygonMasks(BaseInstanceMasks):
         rng = ensure_rng(rng)
 
         def _gen_polygon(n, irregularity, spikeyness):
-            """
-            Creates the polygon by sampling points on a circle around the
+            """Creates the polygon by sampling points on a circle around the
             centre.  Random noise is added by varying the angular spacing
             between sequential points, and by varying the radial distance of
             each point from the centre.
@@ -997,7 +1003,8 @@ class PolygonMasks(BaseInstanceMasks):
             mlng = verts.T[1].sum() / len(verts)
 
             tau = np.pi * 2
-            angle = (np.arctan2(mlat - verts.T[0], verts.T[1] - mlng) + tau) % tau
+            angle = (np.arctan2(mlat - verts.T[0], verts.T[1] - mlng) +
+                     tau) % tau
             sortx = angle.argsort()
             verts = verts.take(sortx, axis=0)
             return verts
