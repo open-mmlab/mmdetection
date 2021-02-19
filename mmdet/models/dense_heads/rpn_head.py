@@ -1,6 +1,10 @@
+import copy
+import warnings
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv import Config
 from mmcv.cnn import normal_init
 from mmcv.ops import batched_nms
 
@@ -162,12 +166,21 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 scores = scores[valid_inds]
                 ids = ids[valid_inds]
 
-        # refactor the nms cfg
-        # this is used for avoid breaking change
         if 'nms' not in cfg:
-            cfg.nms = dict(type='nms', iou_threshold=cfg.nms_thr)
-            cfg.max_per_image = cfg.nms_post
+            cfg = copy.deepcopy(cfg)
+            warnings.warn('In rpn_proposal or test_cfg, '
+                          'nms_thr has been moved to a dict named nms as'
+                          'iou_threshold, max_num has been renamed as '
+                          'max_per_img, name of original arguments and '
+                          'the way to specify iou_threshold of NMS will '
+                          'be deprecated.')
+            cfg.nms = Config(dict(type='nms', iou_threshold=cfg.nms_thr))
+            cfg.max_per_img = cfg.nms_post
             assert cfg.max_num == cfg.nms_post
+        if 'max_num' in cfg:
+            assert cfg.max_num == cfg.max_per_img
+        if 'nms_thr' in cfg:
+            assert cfg.nms.iou_threshold == cfg.nms_thr
 
         dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
         return dets[:cfg.max_per_img]

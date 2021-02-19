@@ -1,6 +1,10 @@
+import copy
+import warnings
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv import Config
 from mmcv.cnn import normal_init
 from mmcv.ops import nms
 
@@ -69,15 +73,22 @@ class GARPNHead(RPNTestMixin, GuidedAnchorHead):
                            cfg,
                            rescale=False):
         cfg = self.test_cfg if cfg is None else cfg
-
-        # refactor the nms cfg
-        # this is used for avoid breaking change
         if 'nms' not in cfg:
-            cfg.nms = dict(type='nms', iou_threshold=cfg.nms_thr)
-            cfg.max_per_img = cfg.max_num
-
+            cfg = copy.deepcopy(cfg)
+            warnings.warn(
+                'In rpn_proposal or test_cfg, '
+                'nms_thr has been moved to a dict named nms as'
+                'iou_threshold, max_num has been renamed as max_per_img, '
+                'name of original arguments and the way to specify '
+                'iou_threshold of NMS will be deprecated.')
+            cfg.nms = Config(dict(type='nms', iou_threshold=cfg.nms_thr))
+        if 'max_num' in cfg:
+            assert cfg.max_num == cfg.max_per_img
+        if 'nms_thr' in cfg:
+            assert cfg.nms.iou_threshold == cfg.nms_thr
         assert cfg.nms.get('type', 'nms') == 'nms', 'GARPNHead only support ' \
             'naive nms.'
+
         mlvl_proposals = []
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
