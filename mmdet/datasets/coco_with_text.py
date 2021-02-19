@@ -189,7 +189,7 @@ class CocoWithTextDataset(CocoDataset):
                     write_file.write(s + '\n')
 
         subprocess.run(f'cd {tempdir}; zip -q pr.zip *', check=True, shell=True)
-        logging.info(f'Results archived to {tempdir}/pr.zip')
+        print(f'Results archived to {tempdir}/pr.zip')
 
     @staticmethod
     def _filter_predictions(predictions, det_thr, rec_thr):
@@ -293,7 +293,7 @@ class CocoWithTextDataset(CocoDataset):
                             #     text = strip(text)
                         contour, conf = get_polygon(segm, bbox, metric_params['dataset'] == 'icdar15')
                         per_image_predictions.append({
-                            'segmentation': contour,
+                            'segmentation': [int(x) for x in contour],
                             'score': conf,
                             'text': {
                                 'transcription': text,
