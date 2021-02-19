@@ -74,7 +74,7 @@ def merge_aug_proposals(aug_proposals, img_metas, cfg):
                               cfg.nms.iou_threshold)
     scores = merged_proposals[:, 4]
     _, order = scores.sort(0, descending=True)
-    num = min(cfg.max_pre_img, merged_proposals.shape[0])
+    num = min(cfg.max_per_img, merged_proposals.shape[0])
     order = order[:num]
     merged_proposals = merged_proposals[order, :]
     return merged_proposals
