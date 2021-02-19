@@ -73,19 +73,36 @@ class GARPNHead(RPNTestMixin, GuidedAnchorHead):
                            cfg,
                            rescale=False):
         cfg = self.test_cfg if cfg is None else cfg
-        if 'nms' not in cfg:
-            cfg = copy.deepcopy(cfg)
+
+        cfg = copy.deepcopy(cfg)
+
+        # deprecate arguments warning
+        if 'nms' not in cfg or 'max_num' in cfg or 'nms_thr' in cfg:
             warnings.warn(
                 'In rpn_proposal or test_cfg, '
                 'nms_thr has been moved to a dict named nms as'
                 'iou_threshold, max_num has been renamed as max_per_img, '
                 'name of original arguments and the way to specify '
                 'iou_threshold of NMS will be deprecated.')
+        if 'nms' not in cfg:
             cfg.nms = Config(dict(type='nms', iou_threshold=cfg.nms_thr))
         if 'max_num' in cfg:
-            assert cfg.max_num == cfg.max_per_img
+            if 'max_per_img' in cfg:
+                assert cfg.max_num == cfg.max_per_img, f'You ' \
+                    f'set max_num and max_per_img at the same time, ' \
+                    f'but get {cfg.max_num} ' \
+                    f'and {cfg.max_per_img} respectively' \
+                    'Please delete max_num which will be deprecated.'
+            else:
+                cfg.max_per_img = cfg.max_num
         if 'nms_thr' in cfg:
-            assert cfg.nms.iou_threshold == cfg.nms_thr
+            assert cfg.nms.iou_threshold == cfg.nms_thr, f'You set ' \
+                f'iou_threshold in nms and ' \
+                f'nms_thr at the same time, but get ' \
+                f'{cfg.nms.iou_threshold} and {cfg.nms_thr}' \
+                f' respectively. Please delete the ' \
+                f'nms_thr which will be deprecated.'
+
         assert cfg.nms.get('type', 'nms') == 'nms', 'GARPNHead only support ' \
             'naive nms.'
 
