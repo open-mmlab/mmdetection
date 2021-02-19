@@ -36,8 +36,7 @@ def ed_insert_cost(i, word1, scores):
 def ed_replace_cost(i, j, word1, word2, scores):
     c1 = char2num(word1[i])
     c2 = char2num(word2[j])
-
-    return max(1 - scores[c2][i]/scores[c1][i]*5, 0)
+    return max(1 - scores[c2][i] / scores[c1][i] * 5, 0)
 
 def char2num(char):
     alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
