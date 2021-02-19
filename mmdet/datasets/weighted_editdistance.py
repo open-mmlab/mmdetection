@@ -13,7 +13,7 @@ def weighted_edit_distance(word1, word2, scores):
         for j in range(1, m + 1):
             delete_cost = ed_delete_cost(j - 1, word1, scores)
             insert_cost = ed_insert_cost(j - 1, word1, scores)
-            replace_cost = ed_replace_cost(j-1, i-1, word1, word2, scores) if word1[j - 1] != word2[i - 1] else 0
+            replace_cost = ed_replace_cost(j - 1, i - 1, word1, word2, scores) if word1[j - 1] != word2[i - 1] else 0
             dp[i][j] = min(dp[i - 1][j] + insert_cost, dp[i][j - 1] + delete_cost, dp[i - 1][j - 1] + replace_cost)
 
     return dp[n][m]
