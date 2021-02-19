@@ -69,6 +69,15 @@ class GARPNHead(RPNTestMixin, GuidedAnchorHead):
                            cfg,
                            rescale=False):
         cfg = self.test_cfg if cfg is None else cfg
+
+        # refactor the nms cfg
+        # this is used for avoid breaking change
+        if 'nms' not in cfg:
+            cfg.nms = dict(type='nms', iou_threshold=cfg.nms_thr)
+            cfg.max_per_img = cfg.max_num
+
+        assert cfg.nms.get('type', 'nms') == 'nms', 'GARPNHead only support ' \
+            'naive nms.'
         mlvl_proposals = []
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
@@ -117,17 +126,18 @@ class GARPNHead(RPNTestMixin, GuidedAnchorHead):
                 proposals = proposals[valid_inds, :]
                 scores = scores[valid_inds]
             # NMS in current level
-            proposals, _ = nms(proposals, scores, cfg.nms_thr)
+            proposals, _ = nms(proposals, scores, cfg.nms.iou_threshold)
             proposals = proposals[:cfg.nms_post, :]
             mlvl_proposals.append(proposals)
         proposals = torch.cat(mlvl_proposals, 0)
-        if cfg.nms_across_levels:
+        if cfg.get('nms_across_levels', False):
             # NMS across multi levels
-            proposals, _ = nms(proposals[:, :4], proposals[:, -1], cfg.nms_thr)
-            proposals = proposals[:cfg.max_num, :]
+            proposals, _ = nms(proposals[:, :4], proposals[:, -1],
+                               cfg.nms.iou_threshold)
+            proposals = proposals[:cfg.max_per_img, :]
         else:
             scores = proposals[:, 4]
-            num = min(cfg.max_num, proposals.shape[0])
+            num = min(cfg.max_per_img, proposals.shape[0])
             _, topk_inds = scores.topk(num)
             proposals = proposals[topk_inds, :]
         return proposals

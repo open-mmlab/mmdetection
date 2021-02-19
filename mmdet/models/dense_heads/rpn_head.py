@@ -167,6 +167,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
         if 'nms' not in cfg:
             cfg.nms = dict(type='nms', iou_threshold=cfg.nms_thr)
             cfg.max_per_image = cfg.nms_post
+            assert cfg.max_num == cfg.nms_post
 
         dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
         return dets[:cfg.max_per_img]
