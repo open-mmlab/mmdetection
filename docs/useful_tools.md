@@ -73,13 +73,13 @@ Description of all arguments:
 - `show_dir`: Directory where painted GT and detection images will be saved
 - `--show`：Determines whether to show painted images, If not specified, it will be set to `False`
 - `--wait-time`: The interval of show (s), 0 is block
-- `--topk`: Saved images number of the highest and lowest topk scores after index sorting. If not specified, it will be set to `20`.
+- `--topk`: The number of saved images that have the highest and lowest `topk` scores after sorting. If not specified, it will be set to `20`.
 - `--show-score-thr`:  Show score threshold. If not specified, it will be set to `0`.
 - `--cfg-options`: If specified, the key-value pair optional cfg will be merged into config file
 
 **Examples**:
 
-Assume that you have already got result file in pickle format from `tools/test.py`  to the path `result.pkl`.
+Assume that you have got result file in pickle format from `tools/test.py`  in the path './result.pkl'.
 
 1. Test Faster R-CNN and visualize the results, save images to the directory `results/`
 
