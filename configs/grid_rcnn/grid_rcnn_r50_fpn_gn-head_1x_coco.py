@@ -1,4 +1,4 @@
-_base_ = ['../grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py']
+_base_ = ['grid_rcnn_r50_fpn_gn-head_2x_coco.py']
 # learning policy
 lr_config = dict(
     policy='step',

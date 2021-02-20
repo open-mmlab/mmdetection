@@ -35,7 +35,7 @@ def merge_aug_proposals(aug_proposals, img_metas, cfg):
     if 'nms' not in cfg or 'max_num' in cfg or 'nms_thr' in cfg:
         warnings.warn(
             'In rpn_proposal or test_cfg, '
-            'nms_thr has been moved to a dict named nms as'
+            'nms_thr has been moved to a dict named nms as '
             'iou_threshold, max_num has been renamed as max_per_img, '
             'name of original arguments and the way to specify '
             'iou_threshold of NMS will be deprecated.')
