@@ -75,5 +75,5 @@ lr_config = dict(
     warmup_ratio=0.1,
     step=[30, 40])
 # runtime settings
-runner = dict(total_epochs=50)
+runner = dict(max_epochs=50)
 evaluation = dict(interval=2)

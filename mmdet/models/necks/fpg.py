@@ -6,6 +6,12 @@ from ..builder import NECKS
 
 
 class Transition(nn.Module):
+    """Base class for transition.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+    """
 
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -16,37 +22,21 @@ class Transition(nn.Module):
         pass
 
 
-class LastIdentity(Transition):
+class UpInterpolationConv(Transition):
+    """A transition used for up-sampling.
 
-    def __init__(self, in_channels, out_channels, **kwargs):
-        super().__init__(in_channels, out_channels)
+    Firstly up-sampling the input by interpolation and follow by a
+    conv for refining.
 
-    def forward(self, inputs):
-        return inputs[-1]
-
-
-class UpInterpolation(Transition):
-
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 scale_factor=2,
-                 mode='nearest',
-                 align_corners=None):
-        super().__init__(in_channels, out_channels)
-        self.mode = mode
-        self.scale_factor = scale_factor
-        self.align_corners = align_corners
-
-    def forward(self, x):
-        return F.interpolate(
-            x,
-            scale_factor=self.scale_factor,
-            mode=self.mode,
-            align_corners=self.align_corners)
-
-
-class UpInterpolationConv(UpInterpolation):
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        scale_factor (int): Up-sampling factor. Default: 2.
+        mode (int): Interpolation mode. Default: nearest.
+        align_corners (bool): Whether align corners when interpolation.
+            Default: None.
+        kernel_size (int): Kernel size for the conv.
+    """
 
     def __init__(self,
                  in_channels,
@@ -56,26 +46,36 @@ class UpInterpolationConv(UpInterpolation):
                  align_corners=None,
                  kernel_size=3,
                  **kwargs):
-        super().__init__(
+        super().__init__(in_channels, out_channels)
+        self.mode = mode
+        self.scale_factor = scale_factor
+        self.align_corners = align_corners
+        self.conv = ConvModule(
             in_channels,
             out_channels,
-            scale_factor=scale_factor,
-            mode=mode,
-            align_corners=align_corners)
-        self.conv = ConvModule(
-            self.in_channels,
-            self.out_channels,
             kernel_size,
             padding=(kernel_size - 1) // 2,
             **kwargs)
 
     def forward(self, x):
-        x = super().forward(x)
+        x = F.interpolate(
+            x,
+            scale_factor=self.scale_factor,
+            mode=self.mode,
+            align_corners=self.align_corners)
         x = self.conv(x)
         return x
 
 
 class LastConv(Transition):
+    """A transition used for refining the output of the last stage.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        num_inputs (int): Number of inputs of the FPN features.
+        kernel_size (int): Kernel size for the conv.
+    """
 
     def __init__(self,
                  in_channels,
@@ -102,7 +102,10 @@ class FPG(nn.Module):
     """FPG.
 
     Implementation of `Feature Pyramid Grids (FPG)
-    <https://arxiv.org/abs/2004.03580>`_
+    <https://arxiv.org/abs/2004.03580>`_.
+    This implementation only gives the basic structure stated in the paper.
+    But users can implement different transition type to fully explore the
+    the potential power of the structure of FPG.
 
     Args:
         in_channels (int): Number of input channels (feature maps of all levels
@@ -134,9 +137,7 @@ class FPG(nn.Module):
 
     transition_types = {
         'conv': ConvModule,
-        'interpolation': UpInterpolation,
         'interpolation_conv': UpInterpolationConv,
-        'last_identity': LastIdentity,
         'last_conv': LastConv,
     }
 
@@ -288,16 +289,12 @@ class FPG(nn.Module):
 
         self.output_transition = nn.ModuleList()  # output levels
         for i in range(self.num_outs):
-            if self.output_trans is None:
-                self.output_transition.append(
-                    LastIdentity(self.inter_channels[i], self.out_channels))
-            else:
-                trans = self.build_trans(
-                    self.output_trans,
-                    self.inter_channels[i],
-                    self.out_channels,
-                    num_inputs=self.stack_times + 1)
-                self.output_transition.append(trans)
+            trans = self.build_trans(
+                self.output_trans,
+                self.inter_channels[i],
+                self.out_channels,
+                num_inputs=self.stack_times + 1)
+            self.output_transition.append(trans)
 
         self.relu = nn.ReLU(inplace=True)
 
