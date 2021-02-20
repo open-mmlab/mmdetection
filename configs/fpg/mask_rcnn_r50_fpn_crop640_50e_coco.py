@@ -13,12 +13,7 @@ model = dict(
         norm_cfg=norm_cfg,
         num_outs=5),
     roi_head=dict(
-        bbox_head=dict(
-            type='ConvFCBBoxHead',
-            num_shared_convs=4,
-            num_shared_fcs=1,
-            norm_cfg=norm_cfg),
-        mask_head=dict(norm_cfg=norm_cfg)))
+        bbox_head=dict(norm_cfg=norm_cfg), mask_head=dict(norm_cfg=norm_cfg)))
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
