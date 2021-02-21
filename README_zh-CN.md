@@ -8,7 +8,7 @@
 
 ## 简介
 
-[English](README.md) | [简体中文](README_zh-CN.md)
+[English](README.md) | 简体中文
 
 MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 OpenMMLab 项目的一部分，这个项目由香港中文大学多媒体实验室和商汤科技联合发起。
 
