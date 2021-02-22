@@ -27,18 +27,18 @@ def test_hourglass_backbone():
     model.init_weights()
     model.train()
 
-    imgs = torch.randn(1, 3, 511, 511)
+    imgs = torch.randn(1, 3, 256, 256)
     feat = model(imgs)
     assert len(feat) == 1
-    assert feat[0].shape == torch.Size([1, 256, 128, 128])
+    assert feat[0].shape == torch.Size([1, 256, 64, 64])
 
     # Test HourglassNet-104
     model = HourglassNet(num_stacks=2)
     model.init_weights()
     model.train()
 
-    imgs = torch.randn(1, 3, 511, 511)
+    imgs = torch.randn(1, 3, 256, 256)
     feat = model(imgs)
     assert len(feat) == 2
-    assert feat[0].shape == torch.Size([1, 256, 128, 128])
-    assert feat[1].shape == torch.Size([1, 256, 128, 128])
+    assert feat[0].shape == torch.Size([1, 256, 64, 64])
+    assert feat[1].shape == torch.Size([1, 256, 64, 64])
