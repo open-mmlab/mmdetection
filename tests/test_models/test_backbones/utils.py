@@ -1,4 +1,3 @@
-import torch
 from torch.nn.modules import GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
@@ -21,19 +20,6 @@ def is_norm(modules):
     if isinstance(modules, (GroupNorm, _BatchNorm)):
         return True
     return False
-
-
-def all_zeros(modules):
-    """Check if the weight(and bias) is all zero."""
-    weight_zero = torch.allclose(modules.weight.data,
-                                 torch.zeros_like(modules.weight.data))
-    if hasattr(modules, 'bias'):
-        bias_zero = torch.allclose(modules.bias.data,
-                                   torch.zeros_like(modules.bias.data))
-    else:
-        bias_zero = True
-
-    return weight_zero and bias_zero
 
 
 def check_norm_state(modules, train_state):

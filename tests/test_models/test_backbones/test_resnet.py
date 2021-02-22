@@ -1,5 +1,6 @@
 import pytest
 import torch
+from mmcv import assert_params_all_zeros
 from mmcv.ops import DeformConv2dPack
 from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
@@ -7,7 +8,7 @@ from torch.nn.modules.batchnorm import _BatchNorm
 from mmdet.models.backbones import ResNet, ResNetV1d
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
-from .utils import all_zeros, check_norm_state, is_block, is_norm
+from .utils import check_norm_state, is_block, is_norm
 
 
 def test_resnet_basic_block():
@@ -426,7 +427,7 @@ def test_resnet_backbone():
     assert len(model.stem) == 9
     model.init_weights()
     model.train()
-    check_norm_state(model.stem, False)
+    assert check_norm_state(model.stem, False)
     for param in model.stem.parameters():
         assert param.requires_grad is False
     for i in range(1, frozen_stages + 1):
@@ -621,9 +622,9 @@ def test_resnet_backbone():
     model.init_weights()
     for m in model.modules():
         if isinstance(m, Bottleneck):
-            assert all_zeros(m.norm3)
+            assert assert_params_all_zeros(m.norm3)
         elif isinstance(m, BasicBlock):
-            assert all_zeros(m.norm2)
+            assert assert_params_all_zeros(m.norm2)
     model.train()
 
     imgs = torch.randn(1, 3, 224, 224)
