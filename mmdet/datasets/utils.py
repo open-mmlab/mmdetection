@@ -101,9 +101,8 @@ def get_loading_pipeline(pipeline):
     loading_pipeline_cfg = []
     for cfg in pipeline:
         obj_cls = PIPELINES.get(cfg['type'])
-        if obj_cls is None:
-            continue
-        if isinstance(obj_cls, (LoadImageFromFile, LoadAnnotations)):
+        # TODO：use more elegant way to distinguish loading modules
+        if obj_cls is not None and obj_cls in (LoadImageFromFile, LoadAnnotations):
             loading_pipeline_cfg.append(cfg)
     assert len(loading_pipeline_cfg) == 2, \
         'The data pipeline in your config file must include ' \
