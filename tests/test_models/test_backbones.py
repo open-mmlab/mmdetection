@@ -4,8 +4,10 @@ from mmcv.ops import DeformConv2dPack
 from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.backbones import (RegNet, Res2Net, ResNeSt, ResNet,
+from mmdet.models.backbones import (DLANet, RegNet, Res2Net, ResNeSt, ResNet,
                                     ResNetV1d, ResNeXt, TridentResNet)
+from mmdet.models.backbones.dla import BasicBlock as BasicBlockD
+from mmdet.models.backbones.dla import Bottleneck as BottleneckD
 from mmdet.models.backbones.hourglass import HourglassNet
 from mmdet.models.backbones.res2net import Bottle2neck
 from mmdet.models.backbones.resnest import Bottleneck as BottleneckS
@@ -1085,3 +1087,112 @@ def test_resnest_backbone():
     assert feat[1].shape == torch.Size([2, 512, 28, 28])
     assert feat[2].shape == torch.Size([2, 1024, 14, 14])
     assert feat[3].shape == torch.Size([2, 2048, 7, 7])
+
+
+def test_dla_basic_block():
+    with pytest.raises(AssertionError):
+        # Not implemented yet.
+        dcn = dict(type='DCN', deform_groups=1, fallback_on_stride=False)
+        BasicBlockD(64, 64, dcn=dcn)
+
+    with pytest.raises(AssertionError):
+        # Not implemented yet.
+        plugins = [
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 16),
+                position='after_conv3')
+        ]
+        BasicBlockD(64, 64, plugins=plugins)
+
+    with pytest.raises(AssertionError):
+        # Not implemented yet
+        plugins = [
+            dict(
+                cfg=dict(
+                    type='GeneralizedAttention',
+                    spatial_range=-1,
+                    num_heads=8,
+                    attention_type='0010',
+                    kv_stride=2),
+                position='after_conv2')
+        ]
+        BasicBlockD(64, 64, plugins=plugins)
+
+    # test DLANet BasicBlockD structure and forward
+    block = BasicBlockD(64, 64)
+    assert block.conv1.in_channels == 64
+    assert block.conv1.out_channels == 64
+    assert block.conv1.kernel_size == (3, 3)
+    assert block.conv2.in_channels == 64
+    assert block.conv2.out_channels == 64
+    assert block.conv2.kernel_size == (3, 3)
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
+    # Test DLANet BasicBlock with checkpoint forward
+    block = BasicBlockD(64, 64, with_cp=True)
+    assert block.with_cp
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
+
+def test_dla_bottleneck():
+    with pytest.raises(AssertionError):
+        # Style must be in ['pytorch', 'caffe']
+        BottleneckD(64, 64, style='tensorflow')
+
+    # Test DLANet Bottleneck structure
+    block = BottleneckD(64, 64, style='pytorch')
+    assert block.conv2.stride == (1, 1)
+    assert block.conv2.out_channels == 32
+
+    # Test DLANet Bottleneck with DCN
+    dcn = dict(type='DCN', deform_groups=1, fallback_on_stride=False)
+    with pytest.raises(AssertionError):
+        # conv_cfg must be None if dcn is not None
+        BottleneckD(64, 64, dcn=dcn, conv_cfg=dict(type='Conv'))
+    BottleneckD(64, 64, dcn=dcn)
+
+    # Test DLANet Bottleneck forward
+    block = BottleneckD(64, 64)
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x, None)
+
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+    # Test DLANet Bottleneck forward with plugins
+    plugins = [
+        dict(
+            cfg=dict(
+                type='GeneralizedAttention',
+                spatial_range=-1,
+                num_heads=8,
+                attention_type='0010',
+                kv_stride=2),
+            stages=(False, False, True, True),
+            position='after_conv2')
+    ]
+    block = BottleneckD(64, 64, plugins=plugins)
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
+
+def test_dla_backbone():
+    with pytest.raises(KeyError):
+        # DLANet depth should be in [34, 46, 60, 102, 169]
+        DLANet(depth=18)
+
+    # Test DLANet60
+    model = DLANet(depth=60)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(2, 3, 224, 224)
+    feat = model(imgs)
+    assert len(feat) == 4
+    assert feat[0].shape == torch.Size([2, 128, 56, 56])
+    assert feat[1].shape == torch.Size([2, 256, 28, 28])
+    assert feat[2].shape == torch.Size([2, 512, 14, 14])
+    assert feat[3].shape == torch.Size([2, 1024, 7, 7])

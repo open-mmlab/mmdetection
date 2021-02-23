@@ -16,5 +16,3 @@ model = dict(
         in_channels=[128, 256, 512, 1024],
         out_channels=256,
         num_outs=5))
-
-find_unused_parameters = True

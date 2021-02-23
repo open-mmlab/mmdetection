@@ -17,8 +17,6 @@ model = dict(
         out_channels=256,
         num_outs=5))
 
-find_unused_parameters = True
-
 # learning policy
 lr_config = dict(step=[16, 19])
 total_epochs = 20
