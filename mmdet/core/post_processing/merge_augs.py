@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 import torch
-from mmcv import Config
+from mmcv import ConfigDict
 from mmcv.ops import nms
 
 from ..bbox import bbox_mapping_back
@@ -40,7 +40,7 @@ def merge_aug_proposals(aug_proposals, img_metas, cfg):
             'name of original arguments and the way to specify '
             'iou_threshold of NMS will be deprecated.')
     if 'nms' not in cfg:
-        cfg.nms = Config(dict(type='nms', iou_threshold=cfg.nms_thr))
+        cfg.nms = ConfigDict(dict(type='nms', iou_threshold=cfg.nms_thr))
     if 'max_num' in cfg:
         if 'max_per_img' in cfg:
             assert cfg.max_num == cfg.max_per_img, f'You set max_num and ' \
