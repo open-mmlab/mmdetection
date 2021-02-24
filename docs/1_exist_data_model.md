@@ -111,7 +111,7 @@ Examples:
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
@@ -133,7 +133,7 @@ Examples:
 
 ```shell
 python demo/webcam_demo.py \
-    configs/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
@@ -156,10 +156,10 @@ python demo/video_demo.py \
 Examples:
 
 ```shell
-python demo/video_demo.py you_video_file_path.mp4 \
-    configs/faster_rcnn_r50_fpn_1x_coco.py \
+python demo/video_demo.py demo/demo.mp4 \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
-    --out result_video.mp4
+    --out result.mp4
 ```
 
 ## Test existing models on standard datasets
