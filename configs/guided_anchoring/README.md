@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 We provide config files to reproduce the results in the CVPR 2019 paper for [Region Proposal by Guided Anchoring](https://arxiv.org/abs/1901.03278).
 
 ```latex

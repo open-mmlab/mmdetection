@@ -144,25 +144,25 @@ class PAAHead(ATSSHead):
                                        bboxes_weight, pos_inds)
 
         with torch.no_grad():
-            labels, label_weights, bbox_weights, num_pos = multi_apply(
-                self.paa_reassign,
-                pos_losses_list,
-                labels,
-                labels_weight,
-                bboxes_weight,
-                pos_inds,
-                pos_gt_index,
-                anchor_list,
-            )
+            reassign_labels, reassign_label_weight, \
+                reassign_bbox_weights, num_pos = multi_apply(
+                    self.paa_reassign,
+                    pos_losses_list,
+                    labels,
+                    labels_weight,
+                    bboxes_weight,
+                    pos_inds,
+                    pos_gt_index,
+                    anchor_list)
             num_pos = sum(num_pos)
         # convert all tensor list to a flatten tensor
         cls_scores = torch.cat(cls_scores, 0).view(-1, cls_scores[0].size(-1))
         bbox_preds = torch.cat(bbox_preds, 0).view(-1, bbox_preds[0].size(-1))
         iou_preds = torch.cat(iou_preds, 0).view(-1, iou_preds[0].size(-1))
-        labels = torch.cat(labels, 0).view(-1)
+        labels = torch.cat(reassign_labels, 0).view(-1)
         flatten_anchors = torch.cat(
             [torch.cat(item, 0) for item in anchor_list])
-        labels_weight = torch.cat(labels_weight, 0).view(-1)
+        labels_weight = torch.cat(reassign_label_weight, 0).view(-1)
         bboxes_target = torch.cat(bboxes_target,
                                   0).view(-1, bboxes_target[0].size(-1))
 
@@ -288,7 +288,9 @@ class PAAHead(ATSSHead):
         """
         if not len(pos_inds):
             return label, label_weight, bbox_weight, 0
-
+        label = label.clone()
+        label_weight = label_weight.clone()
+        bbox_weight = bbox_weight.clone()
         num_gt = pos_gt_inds.max() + 1
         num_level = len(anchors)
         num_anchors_each_level = [item.size(0) for item in anchors]
@@ -577,7 +579,7 @@ class PAAHead(ATSSHead):
             cfg.nms,
             cfg.max_per_img,
             score_factors=None)
-        if self.with_score_voting:
+        if self.with_score_voting and len(det_bboxes) > 0:
             det_bboxes, det_labels = self.score_voting(det_bboxes, det_labels,
                                                        mlvl_bboxes,
                                                        mlvl_nms_scores,

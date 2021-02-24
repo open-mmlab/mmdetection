@@ -136,6 +136,24 @@ class FCNMaskHead(nn.Module):
 
     @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, mask_targets, labels):
+        """
+        Example:
+            >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
+            >>> N = 7  # N = number of extracted ROIs
+            >>> C, H, W = 11, 32, 32
+            >>> # Create example instance of FCN Mask Head.
+            >>> # There are lots of variations depending on the configuration
+            >>> self = FCNMaskHead(num_classes=C, num_convs=1)
+            >>> inputs = torch.rand(N, self.in_channels, H, W)
+            >>> mask_pred = self.forward(inputs)
+            >>> sf = self.scale_factor
+            >>> labels = torch.randint(0, C, size=(N,))
+            >>> # With the default properties the mask targets should indicate
+            >>> # a (potentially soft) single-class label
+            >>> mask_targets = torch.rand(N, H * sf, W * sf)
+            >>> loss = self.loss(mask_pred, mask_targets, labels)
+            >>> print('loss = {!r}'.format(loss))
+        """
         loss = dict()
         if mask_pred.size(0) == 0:
             loss_mask = mask_pred.sum()
@@ -159,12 +177,43 @@ class FCNMaskHead(nn.Module):
                 it will be converted to numpy array outside of this method.
             det_bboxes (Tensor): shape (n, 4/5)
             det_labels (Tensor): shape (n, )
-            img_shape (Tensor): shape (3, )
             rcnn_test_cfg (dict): rcnn testing config
-            ori_shape: original image size
+            ori_shape (Tuple): original image height and width, shape (2,)
+            scale_factor(float | Tensor): If ``rescale is True``, box
+                coordinates are divided by this scale factor to fit
+                ``ori_shape``.
+            rescale (bool): If True, the resulting masks will be rescaled to
+                ``ori_shape``.
 
         Returns:
-            list[list]: encoded masks
+            list[list]: encoded masks. The c-th item in the outer list
+                corresponds to the c-th class. Given the c-th outer list, the
+                i-th item in that inner list is the mask for the i-th box with
+                class label c.
+
+        Example:
+            >>> import mmcv
+            >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
+            >>> N = 7  # N = number of extracted ROIs
+            >>> C, H, W = 11, 32, 32
+            >>> # Create example instance of FCN Mask Head.
+            >>> self = FCNMaskHead(num_classes=C, num_convs=0)
+            >>> inputs = torch.rand(N, self.in_channels, H, W)
+            >>> mask_pred = self.forward(inputs)
+            >>> # Each input is associated with some bounding box
+            >>> det_bboxes = torch.Tensor([[1, 1, 42, 42 ]] * N)
+            >>> det_labels = torch.randint(0, C, size=(N,))
+            >>> rcnn_test_cfg = mmcv.Config({'mask_thr_binary': 0, })
+            >>> ori_shape = (H * 4, W * 4)
+            >>> scale_factor = torch.FloatTensor((1, 1))
+            >>> rescale = False
+            >>> # Encoded masks are a list for each category.
+            >>> encoded_masks = self.get_seg_masks(
+            >>>     mask_pred, det_bboxes, det_labels, rcnn_test_cfg, ori_shape,
+            >>>     scale_factor, rescale
+            >>> )
+            >>> assert len(encoded_masks) == C
+            >>> assert sum(list(map(len, encoded_masks))) == N
         """
         if isinstance(mask_pred, torch.Tensor):
             mask_pred = mask_pred.sigmoid()

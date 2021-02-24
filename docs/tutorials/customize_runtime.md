@@ -264,10 +264,14 @@ By default the hook's priority is set as `NORMAL` during registration.
 
 If the hook is already implemented in MMCV, you can directly modify the config to use the hook as below
 
+#### 4. Example: `NumClassCheckHook`
+
+We implement a customized hook named  [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/utils.py) to check whether the `num_classes` in head matches the length of `CLASSSES` in `dataset`.
+
+We set it in [default_runtime.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/_base_/default_runtime.py).
+
 ```python
-custom_hooks = [
-    dict(type='MyHook', a=a_value, b=b_value, priority='NORMAL')
-]
+custom_hooks = [dict(type='NumClassCheckHook')]
 ```
 
 ### Modify default runtime hooks

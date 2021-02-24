@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 We provide config files to reproduce the results in the CVPR 2019 paper for [Hybrid Task Cascade](https://arxiv.org/abs/1901.07518).
 
 ```latex
@@ -15,7 +17,7 @@ We provide config files to reproduce the results in the CVPR 2019 paper for [Hyb
 
 ## Dataset
 
-HTC requires COCO and COCO-stuff dataset for training. You need to download and extract it in the COCO dataset path.
+HTC requires COCO and [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) dataset for training. You need to download and extract it in the COCO dataset path.
 The directory should be like this.
 
 ```none
