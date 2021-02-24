@@ -15,6 +15,25 @@ We provide the config files for [DetectoRS: Detecting Objects with Recursive Fea
 }
 ```
 
+## Dataset
+
+DetectoRS requires COCO and [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) dataset for training. You need to download and extract it in the COCO dataset path.
+The directory should be like this.
+
+```none
+mmdetection
+├── mmdet
+├── tools
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
+|   |   ├── stuffthingmaps
+```
+
 ## Results and Models
 
 DetectoRS includes two major components:

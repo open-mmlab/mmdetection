@@ -34,7 +34,7 @@ For more general usage, we also provide script `regnet2mmdet.py` in the tools di
 ResNet-style checkpoints used in MMDetection.
 
 ```bash
-python -u tools/regnet2mmdet.py ${PRETRAIN_PATH} ${STORE_PATH}
+python -u tools/model_converters/regnet2mmdet.py ${PRETRAIN_PATH} ${STORE_PATH}
 ```
 
 This script convert model from `PRETRAIN_PATH` and store the converted model in `STORE_PATH`.

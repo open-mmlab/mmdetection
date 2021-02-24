@@ -4,4 +4,4 @@ model = dict(
     backbone=dict(type='Res2Net', depth=101, scales=4, base_width=26))
 # learning policy
 lr_config = dict(step=[16, 19])
-total_epochs = 20
+runner = dict(max_epochs=20)

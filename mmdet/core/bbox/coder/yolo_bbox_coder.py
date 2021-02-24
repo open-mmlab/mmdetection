@@ -1,3 +1,4 @@
+import mmcv
 import torch
 
 from ..builder import BBOX_CODERS
@@ -21,6 +22,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         super(BaseBBoxCoder, self).__init__()
         self.eps = eps
 
+    @mmcv.jit(coderize=True)
     def encode(self, bboxes, gt_bboxes, stride):
         """Get box regression transformation deltas that can be used to
         transform the ``bboxes`` into the ``gt_bboxes``.
@@ -55,6 +57,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
             [x_center_target, y_center_target, w_target, h_target], dim=-1)
         return encoded_bboxes
 
+    @mmcv.jit(coderize=True)
     def decode(self, bboxes, pred_bboxes, stride):
         """Apply transformation `pred_bboxes` to `boxes`.
 

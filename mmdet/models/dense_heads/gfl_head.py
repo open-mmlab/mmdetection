@@ -284,7 +284,7 @@ class GFLHead(AnchorHead):
         else:
             loss_bbox = bbox_pred.sum() * 0
             loss_dfl = bbox_pred.sum() * 0
-            weight_targets = torch.tensor(0).cuda()
+            weight_targets = bbox_pred.new_tensor(0)
 
         # cls (qfl) loss
         loss_cls = self.loss_cls(

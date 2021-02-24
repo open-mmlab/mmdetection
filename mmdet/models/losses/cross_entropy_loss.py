@@ -100,10 +100,10 @@ def mask_cross_entropy(pred,
     """Calculate the CrossEntropy loss for masks.
 
     Args:
-        pred (torch.Tensor): The prediction with shape (N, C), C is the number
-            of classes.
+        pred (torch.Tensor): The prediction with shape (N, C, *), C is the
+            number of classes. The trailing * indicates arbitrary shape.
         target (torch.Tensor): The learning label of the prediction.
-        label (torch.Tensor): ``label`` indicates the class label of the mask'
+        label (torch.Tensor): ``label`` indicates the class label of the mask
             corresponding object. This will be used to select the mask in the
             of the class which the object belongs to when the mask prediction
             if not class-agnostic.
@@ -115,6 +115,19 @@ def mask_cross_entropy(pred,
 
     Returns:
         torch.Tensor: The calculated loss
+
+    Example:
+        >>> N, C = 3, 11
+        >>> H, W = 2, 2
+        >>> pred = torch.randn(N, C, H, W) * 1000
+        >>> target = torch.rand(N, H, W)
+        >>> label = torch.randint(0, C, size=(N,))
+        >>> reduction = 'mean'
+        >>> avg_factor = None
+        >>> class_weights = None
+        >>> loss = mask_cross_entropy(pred, target, label, reduction,
+        >>>                           avg_factor, class_weights)
+        >>> assert loss.shape == (1,)
     """
     # TODO: handle these two reserved arguments
     assert reduction == 'mean' and avg_factor is None
