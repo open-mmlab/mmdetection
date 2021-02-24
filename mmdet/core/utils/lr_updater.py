@@ -2,20 +2,20 @@ from mmcv.runner import HOOKS
 from mmcv.runner.hooks.lr_updater import CosineAnealingLrUpdaterHook, annealing_cos
 
 @HOOKS.register_module()
-class CosineAnealingLrLastEpochUpdaterHook(CosineAnealingLrUpdaterHook):
+class CosineAnealingLrUntilEpochUpdaterHook(CosineAnealingLrUpdaterHook):
     """The same LR updater as CosineAnealing but with `last epoch` support.
 
     Args:
         last_epoch (int, optional): The number of the last epoch where LR
             updating stops. This value can be greater than total_epochs. If it
-            is equal to -1 LR will update until the the end of the training.
+            is equal to -1 LR will update until the end of the training.
             Default: -1.
     """
 
     def __init__(self, last_epoch=-1, **kwargs):
         assert last_epoch != 0
         self.last_epoch = int(last_epoch)
-        super(CosineAnealingLrLastEpochUpdaterHook, self).__init__(**kwargs)
+        super(CosineAnealingLrUntilEpochUpdaterHook, self).__init__(**kwargs)
         if last_epoch > 0:
             assert self.by_epoch, '"last_epoch" requires "by_epoch" LR updating'
 
