@@ -46,10 +46,11 @@ def main():
                                        (frame_width, frame_height))
     else:
         video_writer = None
-
+    prog_bar = mmcv.ProgressBar(num_frames)
     ind = 0
     while ind < num_frames:
         ind += 1
+        prog_bar.update()
         ret, frame = video_capture.read()
         if ret:
             result = inference_detector(model, frame)
@@ -59,7 +60,6 @@ def main():
                 mmcv.imshow(frame, 'video', args.wait_time)
             if video_writer:
                 video_writer.write(frame)
-            print(f'Processed frame {ind}/{num_frames}')
         else:
             print(f'Fail to read {args.video} video')
             break
@@ -67,6 +67,7 @@ def main():
     video_capture.release()
     if video_writer:
         video_writer.release()
+    cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
