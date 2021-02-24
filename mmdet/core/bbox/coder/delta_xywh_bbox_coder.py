@@ -1,3 +1,4 @@
+import mmcv
 import numpy as np
 import torch
 
@@ -75,6 +76,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         return decoded_bboxes
 
 
+@mmcv.jit(coderize=True)
 def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     """Compute deltas of proposals w.r.t. gt.
 
@@ -120,6 +122,7 @@ def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     return deltas
 
 
+@mmcv.jit(coderize=True)
 def delta2bbox(rois,
                deltas,
                means=(0., 0., 0., 0.),
