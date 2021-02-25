@@ -15,6 +15,7 @@ def _get_config_directory():
     try:
         # Assume we are running in the source mmdetection repo
         repo_dpath = dirname(dirname(__file__))
+        repo_dpath = join(repo_dpath, '..')
     except NameError:
         # For IPython development when this __file__ is not defined
         import mmdet
@@ -26,7 +27,6 @@ def _get_config_directory():
 
 
 def _check_numclasscheckhook(detector, config_mod):
-
     dummy_runner = Mock()
     dummy_runner.model = detector
 
@@ -303,7 +303,8 @@ def test_config_data_pipeline(config_rpath):
     """Test whether the data pipeline is valid and can process corner cases.
 
     CommandLine:
-        xdoctest -m tests/test_config.py test_config_build_data_pipeline
+        xdoctest -m tests/test_runtime/
+            test_config.py test_config_build_data_pipeline
     """
     from mmcv import Config
     from mmdet.datasets.pipelines import Compose

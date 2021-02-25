@@ -12,7 +12,7 @@ class TestLoading(object):
 
     @classmethod
     def setup_class(cls):
-        cls.data_prefix = osp.join(osp.dirname(__file__), '../data')
+        cls.data_prefix = osp.join(osp.dirname(__file__), '../../data')
 
     def test_load_img(self):
         results = dict(

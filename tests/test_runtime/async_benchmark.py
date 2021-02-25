@@ -27,6 +27,7 @@ async def main():
     interface.
     """
     project_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    project_dir = os.path.join(project_dir, '..')
 
     config_file = os.path.join(
         project_dir, 'configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')

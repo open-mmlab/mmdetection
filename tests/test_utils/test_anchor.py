@@ -1,7 +1,7 @@
 """
 CommandLine:
-    pytest tests/test_anchor.py
-    xdoctest tests/test_anchor.py zero
+    pytest tests/test_utils/test_anchor.py
+    xdoctest tests/test_utils/test_anchor.py zero
 
 """
 import torch
