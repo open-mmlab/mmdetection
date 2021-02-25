@@ -6,8 +6,7 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, LoggerHook,
                          OptimizerHook, build_optimizer, load_checkpoint)
 
-from mmdet.core import (CosineAnealingLrUntilEpochUpdaterHook, DistEvalHook,
-                        DistEvalPlusBeforeRunHook, EvalHook,
+from mmdet.core import (DistEvalHook, DistEvalPlusBeforeRunHook, EvalHook,
                         EvalPlusBeforeRunHook, Fp16OptimizerHook)
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.integration.nncf import CompressionHook, wrap_nncf_model
@@ -139,14 +138,8 @@ def train_detector(model,
     else:
         optimizer_config = cfg.optimizer_config
 
-    if cfg['lr_config']['policy'] == 'CosineAnealingUntilEpoch':
-        cfg.lr_config.pop('policy')
-        lr_config = CosineAnealingLrUntilEpochUpdaterHook(**cfg.lr_config)
-    else:
-        lr_config = cfg.lr_config
-
     # register hooks
-    runner.register_training_hooks(lr_config, optimizer_config,
+    runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config,
                                    cfg.get('momentum_config', None))
     if distributed:
