@@ -35,23 +35,20 @@ def main():
     model = init_detector(args.config, args.checkpoint, device=args.device)
 
     video_reader = mmcv.VideoReader(args.video)
+    video_writer = None
     if args.out:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         video_writer = cv2.VideoWriter(
             args.out, fourcc, video_reader.fps,
             (video_reader.width, video_reader.height))
-    else:
-        video_writer = None
 
-    prog_bar = mmcv.ProgressBar(len(video_reader))
-    for frame in video_reader:
-        prog_bar.update()
+    for frame in mmcv.track_iter_progress(video_reader):
         result = inference_detector(model, frame)
         frame = model.show_result(frame, result, score_thr=args.score_thr)
         if args.show:
             cv2.namedWindow('video', 0)
             mmcv.imshow(frame, 'video', args.wait_time)
-        if video_writer:
+        if args.out:
             video_writer.write(frame)
 
     if video_writer:
