@@ -52,6 +52,7 @@ model = dict(
                 add_gt_as_proposals=False),
             allowed_border=-1,
             center_ratio=0.2,
-            ignore_ratio=0.5)))
+            ignore_ratio=0.5)),
+    test_cfg=dict(rpn=dict(nms_post=1000)))
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

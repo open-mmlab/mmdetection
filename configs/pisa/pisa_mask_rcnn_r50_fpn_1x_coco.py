@@ -7,11 +7,9 @@ model = dict(
             loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))),
     train_cfg=dict(
         rpn_proposal=dict(
-            nms_across_levels=False,
             nms_pre=2000,
-            nms_post=2000,
-            max_num=2000,
-            nms_thr=0.7,
+            max_per_img=2000,
+            nms=dict(type='nms', iou_threshold=0.7),
             min_bbox_size=0),
         rcnn=dict(
             sampler=dict(
@@ -26,9 +24,7 @@ model = dict(
             carl=dict(k=1, bias=0.2))),
     test_cfg=dict(
         rpn=dict(
-            nms_across_levels=False,
             nms_pre=2000,
-            nms_post=2000,
-            max_num=2000,
-            nms_thr=0.7,
+            max_per_img=2000,
+            nms=dict(type='nms', iou_threshold=0.7),
             min_bbox_size=0)))
