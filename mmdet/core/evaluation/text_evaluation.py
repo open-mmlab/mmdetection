@@ -23,32 +23,6 @@ IOU_CONSTRAINT = 0.5
 AREA_PRECISION_CONSTRAINT = 0.5
 
 
-def masks_to_rects(masks, is_rle):
-    rects = []
-    for mask in masks:
-        decoded_mask = mask_utils.decode(mask) if is_rle else mask
-        decoded_mask = np.ascontiguousarray(decoded_mask)
-        contours, _ = cv2.findContours(decoded_mask, cv2.RETR_EXTERNAL,
-                                       cv2.CHAIN_APPROX_NONE)[-2:]
-
-        areas = []
-        boxes = []
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            areas.append(area)
-
-            rect = cv2.minAreaRect(contour)
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
-            boxes.append(box)
-
-        if areas:
-            i = np.argmax(areas)
-            rects.append(boxes[i])
-
-    return rects
-
-
 def polygon_from_points(points):
     """ Returns a Polygon object to use with the Polygon2 class from a list of points:
         x1,y1,x2,y2,x3,y3,x4,y4,... """
@@ -190,7 +164,7 @@ def is_word(text):
     return True
 
 
-def parse_gt_objects(gt_annotation, use_transcription):
+def parse_gt_objects(gt_annotation, use_transcription, word_spotting):
     """ Parses groundtruth objects from annotation. """
 
     gt_polygons_list = []
@@ -213,7 +187,7 @@ def parse_gt_objects(gt_annotation, use_transcription):
         if transcription is not None:
             if transcription == '###' or not transcription:
                 gt_dont_care_polygon_nums.append(len(gt_polygons_list) - 1)
-            elif use_transcription:
+            elif use_transcription and word_spotting:
                 if is_word(transcription):
                     transcription = strip(transcription)
                 else:
@@ -266,9 +240,23 @@ def match_dont_care_objects(gt_polygons_list, gt_dont_care_polygon_nums,
 
     return pr_dont_care_polygon_nums
 
+def match_transcriptions(text_gt, text_pr, word_spotting):
+    if text_gt == text_pr:
+        return True
+    elif not word_spotting:
+        special_characters = '!?.:,*"()·[]/\''
+
+        begin = int(text_gt[0] in special_characters)
+        end = len(text_gt) - int(text_gt[-1] in special_characters)
+
+        if text_gt[begin:end] == text_pr:
+            return True
+
+    return False
 
 def match(gt_polygons_list, gt_transcriptions, gt_dont_care_polygon_nums,
-          pr_polygons_list, pr_transcriptions, pr_dont_care_polygon_nums):
+          pr_polygons_list, pr_transcriptions, pr_dont_care_polygon_nums,
+          word_spotting):
     """ Matches all objects. """
 
     pr_matched_nums = []
@@ -293,8 +281,7 @@ def match(gt_polygons_list, gt_transcriptions, gt_dont_care_polygon_nums,
                     gt_rect_mat[gt_idx] = 1
                     pr_rect_mat[pr_idx] = 1
                     if gt_transcriptions is not None and pr_transcriptions is not None:
-                        if gt_transcriptions[gt_idx].lower(
-                        ) == pr_transcriptions[pr_idx].lower():
+                        if  match_transcriptions(gt_transcriptions[gt_idx].lower(), pr_transcriptions[pr_idx].lower(), word_spotting):
                             pr_matched_nums.append(pr_idx)
                         else:
                             print(gt_transcriptions[gt_idx],
@@ -310,7 +297,8 @@ def match(gt_polygons_list, gt_transcriptions, gt_dont_care_polygon_nums,
 def text_eval(pr_annotations, gt_annotations, conf_thr,
               images=None, show_recall_graph=False,
               imshow_delay=1,
-              use_transcriptions=False):
+              use_transcriptions=False,
+              word_spotting=True):
     """ Annotation format:
         {"image_path": [
                             {"points": [x1,y1,x2,y2,x3,y3,x4,y4],
@@ -337,7 +325,7 @@ def text_eval(pr_annotations, gt_annotations, conf_thr,
 
     for frame_id, _ in enumerate(gt_annotations):
         gt_polygons_list, gt_dont_care_polygon_nums, gt_transcriptions = parse_gt_objects(
-            gt_annotations[frame_id], use_transcriptions)
+            gt_annotations[frame_id], use_transcriptions, word_spotting)
         pr_polygons_list, pr_confidences_list, pr_transcriptions = parse_pr_objects(
             pr_annotations[frame_id], conf_thr, use_transcriptions)
 
@@ -349,7 +337,8 @@ def text_eval(pr_annotations, gt_annotations, conf_thr,
         if gt_polygons_list and pr_polygons_list:
             pr_matched_nums, pr_matched_but_not_recognized, gt_matched_nums = match(
                 gt_polygons_list, gt_transcriptions, gt_dont_care_polygon_nums,
-                pr_polygons_list, pr_transcriptions, pr_dont_care_polygon_nums)
+                pr_polygons_list, pr_transcriptions, pr_dont_care_polygon_nums,
+                word_spotting)
             matched_sum += len(pr_matched_nums)
 
             for pr_num in range(len(pr_polygons_list)):
