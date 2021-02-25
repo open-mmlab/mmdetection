@@ -34,37 +34,26 @@ def main():
 
     model = init_detector(args.config, args.checkpoint, device=args.device)
 
-    video_capture = cv2.VideoCapture(args.video)
-    frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(video_capture.get(cv2.CAP_PROP_FPS))
-    num_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
-
+    video_reader = mmcv.VideoReader(args.video)
     if args.out:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        video_writer = cv2.VideoWriter(args.out, fourcc, fps,
-                                       (frame_width, frame_height))
+        video_writer = cv2.VideoWriter(
+            args.out, fourcc, video_reader.fps,
+            (video_reader.width, video_reader.height))
     else:
         video_writer = None
-    prog_bar = mmcv.ProgressBar(num_frames)
-    ind = 0
-    while ind < num_frames:
-        ind += 1
-        prog_bar.update()
-        ret, frame = video_capture.read()
-        if ret:
-            result = inference_detector(model, frame)
-            frame = model.show_result(frame, result, score_thr=args.score_thr)
-            if args.show:
-                cv2.namedWindow('video', 0)
-                mmcv.imshow(frame, 'video', args.wait_time)
-            if video_writer:
-                video_writer.write(frame)
-        else:
-            print(f'Fail to read {args.video} video')
-            break
 
-    video_capture.release()
+    prog_bar = mmcv.ProgressBar(len(video_reader))
+    for frame in video_reader:
+        prog_bar.update()
+        result = inference_detector(model, frame)
+        frame = model.show_result(frame, result, score_thr=args.score_thr)
+        if args.show:
+            cv2.namedWindow('video', 0)
+            mmcv.imshow(frame, 'video', args.wait_time)
+        if video_writer:
+            video_writer.write(frame)
+
     if video_writer:
         video_writer.release()
     cv2.destroyAllWindows()
