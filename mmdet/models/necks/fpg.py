@@ -25,8 +25,8 @@ class Transition(nn.Module):
 class UpInterpolationConv(Transition):
     """A transition used for up-sampling.
 
-    Firstly up-sampling the input by interpolation and follow by a
-    conv for refining.
+    Up-sample the input by interpolation then refines the feature by
+    a convolution layer.
 
     Args:
         in_channels (int): Number of input channels.
@@ -35,7 +35,7 @@ class UpInterpolationConv(Transition):
         mode (int): Interpolation mode. Default: nearest.
         align_corners (bool): Whether align corners when interpolation.
             Default: None.
-        kernel_size (int): Kernel size for the conv.
+        kernel_size (int): Kernel size for the conv. Default: 3.
     """
 
     def __init__(self,
@@ -74,7 +74,7 @@ class LastConv(Transition):
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
         num_inputs (int): Number of inputs of the FPN features.
-        kernel_size (int): Kernel size for the conv.
+        kernel_size (int): Kernel size for the conv. Default: 3.
     """
 
     def __init__(self,
@@ -104,7 +104,7 @@ class FPG(nn.Module):
     Implementation of `Feature Pyramid Grids (FPG)
     <https://arxiv.org/abs/2004.03580>`_.
     This implementation only gives the basic structure stated in the paper.
-    But users can implement different transition type to fully explore the
+    But users can implement different type of transitions to fully explore the
     the potential power of the structure of FPG.
 
     Args:
