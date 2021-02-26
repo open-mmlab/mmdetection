@@ -645,7 +645,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     # BG cat_id: num_class
                     max_scores, _ = scores[:, :-1].max(dim=1)
                 scores_shape = torch._shape_as_tensor(scores)
-                nms_pre = torch.where(scores_shape[0] < nms_pre, scores_shape[0], torch.tensor(nms_pre))
+                nms_pre = torch.where(scores_shape[0] < nms_pre,
+                                      scores_shape[0],
+                                      torch.tensor(nms_pre))
                 _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
