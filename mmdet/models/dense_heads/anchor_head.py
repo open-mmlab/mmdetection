@@ -569,7 +569,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
-            if imgs is not None:
+            if torch.onnx.is_in_onnx_export():
+                assert imgs is not None
                 img_shape = torch._shape_as_tensor(imgs[img_id])
             else:
                 img_shape = img_metas[img_id]['img_shape']
