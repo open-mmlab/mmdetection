@@ -199,9 +199,19 @@ def delta2bbox(rois,
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
     if clip_border and max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1])
-        y1 = y1.clamp(min=0, max=max_shape[0])
-        x2 = x2.clamp(min=0, max=max_shape[1])
-        y2 = y2.clamp(min=0, max=max_shape[0])
+        min = torch.tensor(0, dtype=torch.float32)
+        min = min.expand(x1.size())
+        max1 = torch.tensor(max_shape[3], dtype=torch.float32)
+        max1 = max1.expand(x1.size())
+        max2 = torch.tensor(max_shape[2], dtype=torch.float32)
+        max2 = max2.expand(x1.size())
+        x1 = torch.where(x1 < min, min, x1)
+        x1 = torch.where(x1 > max1, max1, x1)
+        y1 = torch.where(y1 < min, min, y1)
+        y1 = torch.where(y1 > max2, max2, y1)
+        x2 = torch.where(x2 < min, min, x2)
+        x2 = torch.where(x2 > max1, max1, x2)
+        y2 = torch.where(y2 < min, min, y2)
+        y2 = torch.where(y2 > max2, max2, y2)
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
     return bboxes

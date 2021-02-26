@@ -498,6 +498,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                    cls_scores,
                    bbox_preds,
                    img_metas,
+                   imgs,
                    cfg=None,
                    rescale=False,
                    with_nms=True):
@@ -510,6 +511,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 level with shape (N, num_anchors * 4, H, W)
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
+            imgs (list[torch.Tensor]): List of multiple images
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used
             rescale (bool): If True, return boxes in original image space.
@@ -545,7 +547,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             >>> # note the input lists are over different levels, not images
             >>> cls_scores, bbox_preds = [cls_score], [bbox_pred]
             >>> result_list = self.get_bboxes(cls_scores, bbox_preds,
-            >>>                               img_metas, cfg)
+            >>>                               img_metas, img, cfg)
             >>> det_bboxes, det_labels = result_list[0]
             >>> assert len(result_list) == 1
             >>> assert det_bboxes.shape[1] == 5
@@ -567,7 +569,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
-            img_shape = img_metas[img_id]['img_shape']
+            img_shape = torch._shape_as_tensor(imgs[img_id])
             scale_factor = img_metas[img_id]['scale_factor']
             if with_nms:
                 # some heads don't support with_nms argument
@@ -633,7 +635,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+            if nms_pre > 0:
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
@@ -642,6 +644,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     # since mmdet v2.0
                     # BG cat_id: num_class
                     max_scores, _ = scores[:, :-1].max(dim=1)
+                scores_shape = torch._shape_as_tensor(scores)
+                nms_pre = torch.where(scores_shape[0] < nms_pre, scores_shape[0], torch.tensor(nms_pre))
                 _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
