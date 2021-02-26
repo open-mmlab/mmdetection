@@ -18,12 +18,12 @@ All backbones are Resnet-50 in pytorch style.
 
 | Method       | Neck        | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
 |:------------:|:-----------:|:-------:|:--------:|:--------------:|:------:|:-------:|:-------:|:--------:|
-| Faster R-CNN | FPG         | 50e     | 13.2     | -              | 42.2   | -       |[config]() |
-| Faster R-CNN | FPG-cha128  | 50e     | 13.2     | -              | 41.2   | -       |[config]() |
-| Mask R-CNN   | FPG         | 50e     | 23.2     | -              | 42.7   | 37.8    |[config]() |
-| Mask R-CNN   | FPG-cha128  | 50e     | 15.3     | -              | 41.7   | 36.9    |[config]() |
-| RetinaNet    | FPG         | 50e     | 13.2     | -              |        | -       |[config]() |
-| RetinaNet    | FPG-cha128  | 50e     | 13.2     | -              |        | -       |[config]() |
+| Faster R-CNN | FPG         | 50e     | 20.0     | -              | 42.2   | -       |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fpg/faster_rcnn_r50_fpg_crop640_50e_coco.py) |
+| Faster R-CNN | FPG-chn128  | 50e     | 11.9     | -              | 41.2   | -       |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fpg/faster_rcnn_r50_fpg-chn128_crop640_50e_coco.py) |
+| Mask R-CNN   | FPG         | 50e     | 23.2     | -              | 42.7   | 37.8    |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fpg/mask_rcnn_r50_fpg_crop640_50e_coco.py) |
+| Mask R-CNN   | FPG-chn128  | 50e     | 15.3     | -              | 41.7   | 36.9    |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fpg/mask_rcnn_r50_fpg-chn128_crop640_50e_coco.py) |
+| RetinaNet    | FPG         | 50e     | 20.8     | -              | 40.5   | -       |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fpg/retinanet_r50_fpg_crop640_50e_coco.py) |
+| RetinaNet    | FPG-chn128  | 50e     |          | -              |        | -       |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fpg/retinanet_r50_fpg-chn128_crop640_50e_coco.py) |
 
-**Note**: Cha128 means to decrease the number of channels of features and convs from 256 (default) to 128 in
+**Note**: Chn128 means to decrease the number of channels of features and convs from 256 (default) to 128 in
 Neck and BBox Head, which can greatly decrease memory consumption without sacrificing much precision.

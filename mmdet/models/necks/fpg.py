@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, caffe2_xavier_init, constant_init
+from mmcv.cnn import ConvModule, caffe2_xavier_init, constant_init, is_norm
 
 from ..builder import NECKS
 
@@ -114,8 +114,9 @@ class FPG(nn.Module):
         num_outs (int): Number of output scales.
         stack_times (int): The number of times the pyramid architecture will
             be stacked.
-        paths (list(str)): Specify the top-down or bottom-up order of each
-            stack level, each elements is 'bu' or 'td'.
+        paths (list[str]): Specify the path order of each stack level.
+            Each element in the list should be either 'bu' (bottom-up) or
+            'td' (top-down).
         inter_channels (int): Number of inter channels.
         same_up_trans (dict): Transition that goes down at the same stage.
         same_down_trans (dict): Transition that goes up at the same stage.
@@ -308,8 +309,7 @@ class FPG(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 caffe2_xavier_init(m)
-            elif isinstance(m,
-                            (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
+            elif is_norm(m):
                 constant_init(m, 1.0)
 
     def fuse(self, fuse_dict):
@@ -359,7 +359,6 @@ class FPG(nn.Module):
                 across_up_trans = self.fpn_transitions[i][lvl]['across_up']
                 across_skip_trans = self.fpn_transitions[i][lvl]['across_skip']
                 # init output
-                # x = torch.zeros_like(current_outs[lvl])
                 to_fuse = dict(
                     same=None, lateral=None, across_up=None, across_down=None)
                 # same downsample/upsample
