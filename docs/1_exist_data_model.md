@@ -91,7 +91,7 @@ asyncio.run(main())
 
 ### Demos
 
-We also provide two demo scripts, implemented with high-level APIs and supporting functionality codes.
+We also provide three demo scripts, implemented with high-level APIs and supporting functionality codes.
 Source codes are available [here](https://github.com/open-mmlab/mmdetection/tree/master/demo).
 
 #### Image demo
@@ -111,7 +111,7 @@ Examples:
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
@@ -133,8 +133,33 @@ Examples:
 
 ```shell
 python demo/webcam_demo.py \
-    configs/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+```
+
+#### Video demo
+
+This script performs inference on a video.
+
+```shell
+python demo/video_demo.py \
+    ${VIDEO_FILE} \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--score-thr ${SCORE_THR}] \
+    [--out ${OUT_FILE}] \
+    [--show] \
+    [--wait-time ${WAIT_TIME}]
+```
+
+Examples:
+
+```shell
+python demo/video_demo.py demo/demo.mp4 \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --out result.mp4
 ```
 
 ## Test existing models on standard datasets

@@ -7,7 +7,7 @@ from mmdet.datasets.builder import PIPELINES
 
 def test_default_format_bundle():
     results = dict(
-        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_prefix=osp.join(osp.dirname(__file__), '../../data'),
         img_info=dict(filename='color.jpg'))
     load = dict(type='LoadImageFromFile')
     load = build_from_cfg(load, PIPELINES)

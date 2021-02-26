@@ -20,4 +20,4 @@ train_pipeline = [
 
 data = dict(train=dict(pipeline=train_pipeline))
 lr_config = dict(policy='step', step=[27, 33])
-runner = dict(max_epochs=36)
+runner = dict(type='EpochBasedRunner', max_epochs=36)

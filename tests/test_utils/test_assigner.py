@@ -1,8 +1,8 @@
 """Tests the Assigner objects.
 
 CommandLine:
-    pytest tests/test_assigner.py
-    xdoctest tests/test_assigner.py zero
+    pytest tests/test_utils/test_assigner.py
+    xdoctest tests/test_utils/test_assigner.py zero
 """
 import torch
 
