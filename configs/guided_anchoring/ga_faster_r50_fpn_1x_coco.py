@@ -55,10 +55,11 @@ model = dict(
             allowed_border=-1,
             center_ratio=0.2,
             ignore_ratio=0.5),
-        rpn_proposal=dict(max_num=300),
+        rpn_proposal=dict(nms_post=1000, max_per_img=300),
         rcnn=dict(
             assigner=dict(pos_iou_thr=0.6, neg_iou_thr=0.6, min_pos_iou=0.6),
             sampler=dict(type='RandomSampler', num=256))),
-    test_cfg=dict(rpn=dict(max_num=300), rcnn=dict(score_thr=1e-3)))
+    test_cfg=dict(
+        rpn=dict(nms_post=1000, max_per_img=300), rcnn=dict(score_thr=1e-3)))
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

@@ -38,7 +38,7 @@ def test_resize():
     # test assertion if both scale and scale_factor are setted
     with pytest.raises(AssertionError):
         results = dict(
-            img_prefix=osp.join(osp.dirname(__file__), '../data'),
+            img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
             img_info=dict(filename='color.jpg'))
         load = dict(type='LoadImageFromFile')
         load = build_from_cfg(load, PIPELINES)
@@ -54,7 +54,7 @@ def test_resize():
 
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
     results['img'] = img
     results['img2'] = copy.deepcopy(img)
     results['img_shape'] = img.shape
@@ -108,7 +108,7 @@ def test_flip():
 
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
     original_img = copy.deepcopy(img)
     results['img'] = img
     results['img2'] = copy.deepcopy(img)
@@ -136,7 +136,7 @@ def test_flip():
 
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
     original_img = copy.deepcopy(img)
     results['img'] = img
     results['img_shape'] = img.shape
@@ -162,7 +162,7 @@ def test_flip():
 
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
     original_img = copy.deepcopy(img)
     results['img'] = img
     results['img_shape'] = img.shape
@@ -188,7 +188,7 @@ def test_random_crop():
 
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
     results['img'] = img
 
     results['img_shape'] = img.shape
@@ -315,7 +315,7 @@ def test_min_iou_random_crop():
 
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
     results['img'] = img
 
     results['img_shape'] = img.shape
@@ -363,7 +363,7 @@ def test_pad():
     transform = build_from_cfg(transform, PIPELINES)
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
     original_img = copy.deepcopy(img)
     results['img'] = img
     results['img2'] = copy.deepcopy(img)
@@ -402,7 +402,7 @@ def test_normalize():
     transform = build_from_cfg(transform, PIPELINES)
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
     original_img = copy.deepcopy(img)
     results['img'] = img
     results['img2'] = copy.deepcopy(img)
@@ -424,7 +424,7 @@ def test_normalize():
 
 def test_albu_transform():
     results = dict(
-        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
         img_info=dict(filename='color.jpg'))
 
     # Define simple pipeline
@@ -535,7 +535,7 @@ def test_random_center_crop_pad():
         build_from_cfg(transform, PIPELINES)
 
     results = dict(
-        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
         img_info=dict(filename='color.jpg'))
 
     load = dict(type='LoadImageFromFile', to_float32=True)
@@ -636,7 +636,7 @@ def test_multi_scale_flip_aug():
 
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
     results['img'] = img
     results['img_shape'] = img.shape
     results['ori_shape'] = img.shape
@@ -667,7 +667,7 @@ def test_multi_scale_flip_aug():
 
     # test pipeline of coco_detection
     results = dict(
-        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
         img_info=dict(filename='color.jpg'))
     load_cfg, multi_scale_cfg = mmcv.Config.fromfile(
         'configs/_base_/datasets/coco_detection.py').test_pipeline
@@ -715,7 +715,7 @@ def test_cutout():
 
     results = dict()
     img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
 
     results['img'] = img
     results['img_shape'] = img.shape
