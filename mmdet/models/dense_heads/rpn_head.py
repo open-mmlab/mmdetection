@@ -137,9 +137,15 @@ class RPNHead(RPNTestMixin, AnchorHead):
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
                 # sort is faster than topk
                 # _, topk_inds = scores.topk(cfg.nms_pre)
-                ranked_scores, rank_inds = scores.sort(descending=True)
-                topk_inds = rank_inds[:cfg.nms_pre]
-                scores = ranked_scores[:cfg.nms_pre]
+                if torch.onnx.is_in_onnx_export():
+                    # sort op will be converted to TopK in onnx
+                    # and k<=3480 in TensorRT
+                    _, topk_inds = scores.topk(cfg.nms_pre)
+                    scores = scores[topk_inds]
+                else:
+                    ranked_scores, rank_inds = scores.sort(descending=True)
+                    topk_inds = rank_inds[:cfg.nms_pre]
+                    scores = ranked_scores[:cfg.nms_pre]
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
                 anchors = anchors[topk_inds, :]
             mlvl_scores.append(scores)
@@ -155,7 +161,8 @@ class RPNHead(RPNTestMixin, AnchorHead):
             anchors, rpn_bbox_pred, max_shape=img_shape)
         ids = torch.cat(level_ids)
 
-        if cfg.min_bbox_size > 0:
+        # Skip nonzero op while exporting to ONNX
+        if cfg.min_bbox_size > 0 and (not torch.onnx.is_in_onnx_export()):
             w = proposals[:, 2] - proposals[:, 0]
             h = proposals[:, 3] - proposals[:, 1]
             valid_inds = torch.nonzero(

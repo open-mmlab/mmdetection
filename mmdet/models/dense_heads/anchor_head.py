@@ -654,6 +654,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
+        # Set max number of box to be feed into nms in deployment
+        deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
+        if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
+            max_scores, _ = mlvl_scores.max(dim=1)
+            _, topk_inds = max_scores.topk(deploy_nms_pre)
+            mlvl_scores = mlvl_scores[topk_inds, :]
+            mlvl_bboxes = mlvl_bboxes[topk_inds, :]
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
             # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
