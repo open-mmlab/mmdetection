@@ -297,8 +297,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         multi_lvl_cls_scores = torch.cat(multi_lvl_cls_scores)
         multi_lvl_conf_scores = torch.cat(multi_lvl_conf_scores)
         # Set max number of box to be feed into nms in deployment
-        if torch.onnx.is_in_onnx_export():
-            deploy_nms_pre = cfg.nms.get('deploy_nms_pre', 2000)
+        deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
+        if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
             _, topk_inds = multi_lvl_conf_scores.topk(deploy_nms_pre)
             multi_lvl_bboxes = multi_lvl_bboxes[topk_inds, :]
             multi_lvl_cls_scores = multi_lvl_cls_scores[topk_inds, :]
