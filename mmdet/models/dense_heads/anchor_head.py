@@ -498,7 +498,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                    cls_scores,
                    bbox_preds,
                    img_metas,
-                   imgs,
+                   imgs=None,
                    cfg=None,
                    rescale=False,
                    with_nms=True):
@@ -569,7 +569,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
-            img_shape = torch._shape_as_tensor(imgs[img_id])
+            if imgs is not None:
+                img_shape = torch._shape_as_tensor(imgs[img_id])
+            else:
+                img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             if with_nms:
                 # some heads don't support with_nms argument
