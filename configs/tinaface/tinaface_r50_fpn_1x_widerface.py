@@ -70,7 +70,7 @@ model = dict(
             pos_weight=-1,
             debug=False),
     test_cfg=dict(
-            nms_pre=1000,
+            nms_pre=-1,
             min_bbox_size=0,
             score_thr=0.01,
             nms=dict(type='nms', iou_threshold=0.45),
@@ -96,5 +96,5 @@ test_pipeline = [
         ])
 ]
 
-data = dict(test=dict(pipeline=test_pipeline))
+data = dict(test=dict(min_size=1,offset=0,pipeline=test_pipeline))
 
