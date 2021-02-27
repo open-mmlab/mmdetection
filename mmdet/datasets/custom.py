@@ -85,11 +85,7 @@ class CustomDataset(Dataset):
                                               self.proposal_file)
         # load annotations (and proposals)
         self.data_infos = self.load_annotations(self.ann_file)
-        
-        # filter data infos if classes are customized
-        if self.custom_classes:
-            self.data_infos = self.get_subset_by_classes()
-            
+
         if self.proposal_file is not None:
             self.proposals = self.load_proposals(self.proposal_file)
         else:
@@ -101,8 +97,7 @@ class CustomDataset(Dataset):
             self.data_infos = [self.data_infos[i] for i in valid_inds]
             if self.proposals is not None:
                 self.proposals = [self.proposals[i] for i in valid_inds]
-        # set group flag for the sampler
-        if not self.test_mode:
+            # set group flag for the sampler
             self._set_group_flag()
 
         # processing pipeline
@@ -214,9 +209,6 @@ class CustomDataset(Dataset):
 
         img_info = self.data_infos[idx]
         ann_info = self.get_ann_info(idx)
-        if len(ann_info['bboxes']) == 0:
-            return None
-
         results = dict(img_info=img_info, ann_info=ann_info)
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]
@@ -256,10 +248,8 @@ class CustomDataset(Dataset):
             tuple[str] or list[str]: Names of categories of the dataset.
         """
         if classes is None:
-            cls.custom_classes = False
             return cls.CLASSES
 
-        cls.custom_classes = True
         if isinstance(classes, str):
             # take it as a file path
             class_names = mmcv.list_from_file(classes)
@@ -270,111 +260,17 @@ class CustomDataset(Dataset):
 
         return class_names
 
-    def get_subset_by_classes(self):   #添加
-        return self.data_infos
-
-    def xyxy2xywh(self, bbox):  #添加
-        """Convert ``xyxy`` style bounding boxes to ``xywh`` style for COCO
-        evaluation.
-
-        Args:
-            bbox (numpy.ndarray): The bounding boxes, shape (4, ), in
-                ``xyxy`` order.
-
-        Returns:
-            list[float]: The converted bounding boxes, in ``xywh`` order.
-        """
-
-        _bbox = bbox.tolist()
-        return [
-            _bbox[0],
-            _bbox[1],
-            _bbox[2] - _bbox[0],
-            _bbox[3] - _bbox[1],
-        ]
-
-    def _det2json(self, results):  #添加
-        """Convert detection results to COCO json style."""
-        json_results = []
-        for idx in range(len(self)):
-            img_id = self.img_ids[idx]
-            result = results[idx]
-            for label in range(len(result)):
-                bboxes = result[label]
-                for i in range(bboxes.shape[0]):
-                    data = dict()
-                    data['image_id'] = img_id
-                    data['bbox'] = self.xyxy2xywh(bboxes[i])
-                    data['score'] = float(bboxes[i][4])
-                    data['category_id'] = label + 1
-                    json_results.append(data)
-        return json_results
-
-    def results2json(self, results, outfile_prefix):  #添加
-        """Dump the detection results to a COCO style json file.
-
-        There are 3 types of results: proposals, bbox predictions, mask
-        predictions, and they have different data types. This method will
-        automatically recognize the type, and dump them to json files.
-
-        Args:
-            results (list[list | tuple | ndarray]): Testing results of the
-                dataset.
-            outfile_prefix (str): The filename prefix of the json files. If the
-                prefix is "somepath/xxx", the json files will be named
-                "somepath/xxx.bbox.json", "somepath/xxx.segm.json",
-                "somepath/xxx.proposal.json".
-
-        Returns:
-            dict[str: str]: Possible keys are "bbox", "segm", "proposal", and \
-                values are corresponding filenames.
-        """
-        result_files = dict()
-        assert isinstance(results[0], list)
-
-        json_results = self._det2json(results)
-        result_files['bbox'] = f'{outfile_prefix}.bbox.json'
-        result_files['proposal'] = f'{outfile_prefix}.bbox.json'
-        fileio.dump(json_results, result_files['bbox'])
-
-        return result_files
-
-    def format_results(self, results, jsonfile_prefix=None, **kwargs): #区别
-        """Format the results to json (standard format for COCO evaluation).
-
-        Args:
-            results (list[tuple | numpy.ndarray]): Testing results of the
-                dataset.
-            jsonfile_prefix (str | None): The prefix of json files. It includes
-                the file path and the prefix of filename, e.g., "a/b/prefix".
-                If not specified, a temp file will be created. Default: None.
-
-        Returns:
-            tuple: (result_files, tmp_dir), result_files is a dict containing \
-                the json filepaths, tmp_dir is the temporal directory created \
-                for saving json files when jsonfile_prefix is not specified.
-        """
-        assert isinstance(results, list), 'results must be a list'
-        assert len(results) == len(self), (
-            'The length of results is not equal to the dataset len: {} != {}'.
-            format(len(results), len(self)))
-
-        if jsonfile_prefix is None:
-            tmp_dir = tempfile.TemporaryDirectory()
-            jsonfile_prefix = osp.join(tmp_dir.name, 'results')
-        else:
-            tmp_dir = None
-        result_files = self.results2json(results, jsonfile_prefix)
-        return result_files, tmp_dir
+    def format_results(self, results, **kwargs):
+        """Place holder to format result to dataset specific output."""
+        pass
 
     def evaluate(self,
                  results,
                  metric='mAP',
                  logger=None,
-                 jsonfile_prefix=None,   #区别
                  proposal_nums=(100, 300, 1000),
                  iou_thr=0.5,
-                 scale_ranges=None):  #修改
+                 scale_ranges=None):
         """Evaluate the dataset.
 
         Args:
@@ -385,15 +281,10 @@ class CustomDataset(Dataset):
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.
                 Default: (100, 300, 1000).
-            iou_thr (float | list[float]): IoU threshold. It must be a float
-                when evaluating mAP, and can be a list when evaluating recall.
-                Default: 0.5.
+            iou_thr (float | list[float]): IoU threshold. Default: 0.5.
             scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
                 Default: None.
         """
-        if jsonfile_prefix is not None:  #添加
-            result_files, tmp_dir = self.format_results(
-                results, jsonfile_prefix)
 
         if not isinstance(metric, str):
             assert len(metric) == 1
@@ -402,27 +293,29 @@ class CustomDataset(Dataset):
         if metric not in allowed_metrics:
             raise KeyError(f'metric {metric} is not supported')
         annotations = [self.get_ann_info(i) for i in range(len(self))]
-        eval_results = {}  #区别
+        eval_results = OrderedDict()
         iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
         if metric == 'mAP':
-            assert isinstance(iou_thr, float)
-            mean_ap, _ = eval_map(
-                results,
-                annotations,
-                scale_ranges=scale_ranges,
-                iou_thr=iou_thr,
-                dataset=self.CLASSES,
-                logger=logger)
-            eval_results['mAP'] = mean_ap
+            assert isinstance(iou_thrs, list)
+            mean_aps = []
+            for iou_thr in iou_thrs:
+                print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')
+                mean_ap, _ = eval_map(
+                    results,
+                    annotations,
+                    scale_ranges=scale_ranges,
+                    iou_thr=iou_thr,
+                    dataset=self.CLASSES,
+                    logger=logger)
+                mean_aps.append(mean_ap)
+                eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)
+            eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
         elif metric == 'recall':
-            # results : len:pics, results[0][0] shape (n,5)
             gt_bboxes = [ann['bboxes'] for ann in annotations]
-            if isinstance(iou_thr, float):
-                iou_thr = [iou_thr]
             recalls = eval_recalls(
                 gt_bboxes, results, proposal_nums, iou_thr, logger=logger)
             for i, num in enumerate(proposal_nums):
-                for j, iou in enumerate(iou_thr):
+                for j, iou in enumerate(iou_thrs):
                     eval_results[f'recall@{num}@{iou}'] = recalls[i, j]
             if recalls.shape[1] > 1:
                 ar = recalls.mean(axis=1)
