@@ -4,6 +4,7 @@ import numpy as np
 import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 from ..builder import HEADS, build_head, build_roi_extractor
 from .standard_roi_head import StandardRoIHead
 from .test_mixins import dummy_pad

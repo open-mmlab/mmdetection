@@ -8,6 +8,8 @@ from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
                         multiclass_nms)
 from mmdet.core.mask.transforms import mask2result
 from mmdet.core.utils.misc import dummy_pad
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
+from mmdet.integration.nncf.utils import no_nncf_trace
 from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
@@ -304,7 +306,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         ms_segm_result = {}
         ms_scores = []
         rcnn_test_cfg = self.test_cfg
-
         rois = bbox2roi(proposal_list)
         for i in range(self.num_stages):
             bbox_results = self._bbox_forward(i, x, rois)
@@ -314,7 +315,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             bbox_pred = bbox_results['bbox_pred']
             num_proposals_per_img = tuple(
                 len(proposals) for proposals in proposal_list)
-            if torch.onnx.is_in_onnx_export():
+            if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
                 # Avoid split operation during exporting to ONNX
                 rois = [rois]
                 cls_score = [cls_score]
@@ -322,7 +323,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 rois = rois.split(num_proposals_per_img, 0)
                 cls_score = cls_score.split(num_proposals_per_img, 0)
             if isinstance(bbox_pred, torch.Tensor):
-                if torch.onnx.is_in_onnx_export():
+                if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
                     # Avoid split operation during exporting to ONNX
                     bbox_pred = [bbox_pred]
                 else:
@@ -334,37 +335,38 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
             if i < self.num_stages - 1:
                 bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
-                rois = torch.cat([
-                    self.bbox_head[i].regress_by_class(rois[j], bbox_label[j],
-                                                       bbox_pred[j],
-                                                       img_metas[j])
-                    for j in range(num_imgs)
-                ])
-
+                with no_nncf_trace():
+                    rois = torch.cat([
+                        self.bbox_head[i].regress_by_class(rois[j], bbox_label[j],
+                                                           bbox_pred[j],
+                                                           img_metas[j])
+                        for j in range(num_imgs)
+                    ])
+        with no_nncf_trace():
         # average scores of each image by stages
-        cls_score = [
-            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-            for i in range(num_imgs)
-        ]
-        # apply bbox post-processing to each image individually
-        det_bboxes = []
-        det_labels = []
-        for i in range(num_imgs):
-            det_bbox, det_label = self.bbox_head[-1].get_bboxes(
-                rois[i],
-                cls_score[i],
-                bbox_pred[i],
-                img_shapes[i],
-                scale_factors[i],
-                rescale=False,
-                cfg=rcnn_test_cfg)
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
+            cls_score = [
+                sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+                for i in range(num_imgs)
+            ]
+            # apply bbox post-processing to each image individually
+            det_bboxes = []
+            det_labels = []
+            for i in range(num_imgs):
+                det_bbox, det_label = self.bbox_head[-1].get_bboxes(
+                    rois[i],
+                    cls_score[i],
+                    bbox_pred[i],
+                    img_shapes[i],
+                    scale_factors[i],
+                    rescale=False,
+                    cfg=rcnn_test_cfg)
+                det_bboxes.append(det_bbox)
+                det_labels.append(det_label)
 
         ms_bbox_result['ensemble'] = (det_bboxes, det_labels)
 
         if self.with_mask:
-            if torch.onnx.is_in_onnx_export() and det_bboxes[0].shape[0] == 0:
+            if (torch.onnx.is_in_onnx_export() or is_in_nncf_tracing()) and det_bboxes[0].shape[0] == 0:
                 # If there are no detection there is nothing to do for a mask head.
                 # But during ONNX export we should run mask head
                 # for it to appear in the graph.
@@ -397,7 +399,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     mask_results = self._mask_forward(i, x, mask_rois)
                     mask_pred = mask_results['mask_pred']
                     # split batch mask prediction back to each image
-                    if torch.onnx.is_in_onnx_export():
+                    if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
                         mask_pred = [mask_pred]
                     else:
                         mask_pred = mask_pred.split(num_mask_rois_per_img, 0)
@@ -405,27 +407,28 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
                 # apply mask post-processing to each image individually
                 segm_results = []
-                for i in range(num_imgs):
-                    aug_mask = [mask[i] for mask in aug_masks]
-                    merged_masks = merge_aug_masks(
-                        aug_mask, [[img_metas[i]]] * self.num_stages,
-                        rcnn_test_cfg)
-                    segm_result = self.mask_head[-1].get_seg_masks(
-                        merged_masks, _bboxes[i], det_labels[i],
-                        rcnn_test_cfg, ori_shapes[i], scale_factors[i],
-                        rescale)
-                    segm_results.append(segm_result)
+                with no_nncf_trace():
+                    for i in range(num_imgs):
+                        aug_mask = [mask[i] for mask in aug_masks]
+                        merged_masks = merge_aug_masks(
+                            aug_mask, [[img_metas[i]]] * self.num_stages,
+                            rcnn_test_cfg)
+                        segm_result = self.mask_head[-1].get_seg_masks(
+                            merged_masks, _bboxes[i], det_labels[i],
+                            rcnn_test_cfg, ori_shapes[i], scale_factors[i],
+                            rescale)
+                        segm_results.append(segm_result)
             ms_segm_result['ensemble'] = segm_results
-
-        if postprocess:
-            det_masks = ms_segm_result['ensemble'] if self.with_mask else [None for _ in det_bboxes]
-            results = [self.postprocess(det_bboxes[i], det_labels[i], det_masks[i], img_metas[i], rescale=rescale)
-                       for i in range(len(det_bboxes))]
-        else:
-            if self.with_mask:
-                results = (*ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
+        with no_nncf_trace():
+            if postprocess:
+                det_masks = ms_segm_result['ensemble'] if self.with_mask else [None for _ in det_bboxes]
+                results = [self.postprocess(det_bboxes[i], det_labels[i], det_masks[i], img_metas[i], rescale=rescale)
+                           for i in range(len(det_bboxes))]
             else:
-                results = ms_bbox_result['ensemble']
+                if self.with_mask:
+                    results = (*ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
+                else:
+                    results = ms_bbox_result['ensemble']
         return results
 
     def postprocess(self,
