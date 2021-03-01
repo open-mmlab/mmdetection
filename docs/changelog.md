@@ -5,8 +5,7 @@
 #### Highlights
 
 - Support new methods: [FPG](https://arxiv.org/abs/2004.03580)
-- Move `train_cfg` and `test_cfg` into model in configs
-- Support to visualize results based on prediction quality
+- Support ONNX2TensorRT for SSD, FSAF, FCOS, YOLOv3, and Faster R-CNN.
 
 #### New Features
 
@@ -15,12 +14,12 @@
 - Support video demo (#4420)
 - Add seed option for sampler (#4665)
 - Support to customize type of runner (#4570, #4669)
-- Support synchronizing BN buffer in eval_hook (#4582)
+- Support synchronizing BN buffer in `EvalHook` (#4582)
 - Add script for GIF demo (#4573)
 
 #### Bug Fixes
 
-- Fix ConfigDict AttributeError and add colab link (#4643)
+- Fix ConfigDict AttributeError and add Colab link (#4643)
 - Avoid crash in empty gt training of GFL head (#4631)
 - Fix `iou_thrs` bug in RPN evaluation (#4581)
 - Fix syntax error of config when upgrading model version (#4584)
@@ -33,7 +32,7 @@
 - Add doctests for mask target generation and mask structures (#4614)
 - Use deep copy when copying pipeline arguments (#4621)
 - Update documentations (#4642, #4650, #4620, #4630)
-- Remove redundant code calling import_modules_from_strings (#4601)
+- Remove redundant code calling `import_modules_from_strings` (#4601)
 - Clean deprecated FP16 API (#4571)
 - Check whether `CLASSES` is correctly initialized in the intialization of `XMLDataset` (#4555)
 - Support batch inference in the inference API (#4462, #4526)
