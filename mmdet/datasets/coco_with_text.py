@@ -305,7 +305,7 @@ class CocoWithTextDataset(CocoDataset):
             filtered_predictions = self._filter_predictions(
                 predictions, metric_params['det_thr'], metric_params['rec_thr']
             )
-            self._dump_predictions(filtered_predictions, metric_params['dataset'])
+            # self._dump_predictions(filtered_predictions, metric_params['dataset'])
             recall, precision, hmean, _ = text_eval(
                 filtered_predictions, gt_annotations, score_thr,
                 show_recall_graph=False,
