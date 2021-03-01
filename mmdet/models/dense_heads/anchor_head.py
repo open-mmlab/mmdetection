@@ -571,7 +571,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             ]
             if torch.onnx.is_in_onnx_export():
                 assert imgs is not None
-                img_shape = torch._shape_as_tensor(imgs[img_id])
+                img_shape = torch._shape_as_tensor(imgs[img_id].permute(
+                    2, 3, 1, 0))
             else:
                 img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']

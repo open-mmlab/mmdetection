@@ -202,9 +202,9 @@ def delta2bbox(rois,
         if torch.onnx.is_in_onnx_export():
             zero = torch.tensor(0, dtype=torch.float32)
             zero = zero.expand(x1.size())
-            width = torch.tensor(max_shape[3], dtype=torch.float32)
+            width = torch.tensor(max_shape[1], dtype=torch.float32)
             width = width.expand(x1.size())
-            height = torch.tensor(max_shape[2], dtype=torch.float32)
+            height = torch.tensor(max_shape[0], dtype=torch.float32)
             height = height.expand(x1.size())
             x1 = torch.where(x1 < zero, zero, x1)
             x1 = torch.where(x1 > width, width, x1)
