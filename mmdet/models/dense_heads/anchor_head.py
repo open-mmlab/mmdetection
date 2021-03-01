@@ -639,7 +639,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0:
+            if nms_pre > 0 and scores.shape[0] > nms_pre:
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
@@ -648,9 +648,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     # since mmdet v2.0
                     # BG cat_id: num_class
                     max_scores, _ = scores[:, :-1].max(dim=1)
-                scores_shape = torch._shape_as_tensor(scores)
-                nms_pre = torch.where(scores_shape[0] < nms_pre,
-                                      scores_shape[0], torch.tensor(nms_pre))
                 _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
