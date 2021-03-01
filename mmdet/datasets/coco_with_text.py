@@ -281,7 +281,12 @@ class CocoWithTextDataset(CocoDataset):
             for res in tqdm(results):
                 boxes = res[0][0]
                 segms = res[1][0]
-                texts, text_confidences, character_distributions = res[2]
+                if len(res[2]) == 3:
+                    texts, text_confidences, character_distributions = res[2]
+                else:
+                    texts = res[2]
+                    text_confidences = [1.0 for _ in texts]
+                    character_distributions = [None for _ in texts]
                 per_image_predictions = []
 
                 for bbox, segm, text, text_conf, char_distrib in zip(boxes, segms, texts, text_confidences, character_distributions):
@@ -305,7 +310,7 @@ class CocoWithTextDataset(CocoDataset):
             filtered_predictions = self._filter_predictions(
                 predictions, metric_params['det_thr'], metric_params['rec_thr']
             )
-            # self._dump_predictions(filtered_predictions, metric_params['dataset'])
+            self._dump_predictions(filtered_predictions, metric_params['dataset'])
             recall, precision, hmean, _ = text_eval(
                 filtered_predictions, gt_annotations, score_thr,
                 show_recall_graph=False,
