@@ -1,5 +1,43 @@
 ## Changelog
 
+### v2.10.0 (01/03/2021)
+
+#### Highlights
+
+- Support new methods: [FPG](https://arxiv.org/abs/2004.03580)
+- Support ONNX2TensorRT for SSD, FSAF, FCOS, YOLOv3, and Faster R-CNN.
+
+#### New Features
+
+- Support ONNX2TensorRT for SSD, FSAF, FCOS, YOLOv3, and Faster R-CNN (#4569)
+- Support [Feature Pyramid Grids (FPG)](https://arxiv.org/abs/2004.03580) (#4645)
+- Support video demo (#4420)
+- Add seed option for sampler (#4665)
+- Support to customize type of runner (#4570, #4669)
+- Support synchronizing BN buffer in `EvalHook` (#4582)
+- Add script for GIF demo (#4573)
+
+#### Bug Fixes
+
+- Fix ConfigDict AttributeError and add Colab link (#4643)
+- Avoid crash in empty gt training of GFL head (#4631)
+- Fix `iou_thrs` bug in RPN evaluation (#4581)
+- Fix syntax error of config when upgrading model version (#4584)
+
+#### Improvements
+
+- Refactor unit test file structures (#4600)
+- Refactor nms config (#4636)
+- Get loading pipeline by checking the class directly rather than through config strings (#4619)
+- Add doctests for mask target generation and mask structures (#4614)
+- Use deep copy when copying pipeline arguments (#4621)
+- Update documentations (#4642, #4650, #4620, #4630)
+- Remove redundant code calling `import_modules_from_strings` (#4601)
+- Clean deprecated FP16 API (#4571)
+- Check whether `CLASSES` is correctly initialized in the intialization of `XMLDataset` (#4555)
+- Support batch inference in the inference API (#4462, #4526)
+- Clean deprecated warning and fix 'meta' error (#4695)
+
 ### v2.9.0 (01/02/2021)
 
 #### Highlights
