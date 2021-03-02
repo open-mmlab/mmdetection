@@ -36,6 +36,7 @@
 - Clean deprecated FP16 API (#4571)
 - Check whether `CLASSES` is correctly initialized in the intialization of `XMLDataset` (#4555)
 - Support batch inference in the inference API (#4462, #4526)
+- Clean deprecated warning and fix 'meta' error (#4695)
 
 ### v2.9.0 (01/02/2021)
 
