@@ -678,12 +678,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=2)
 
         if with_nms:
-            det_results = []
-            for (bboxes, scores) in zip(mlvl_bboxes, mlvl_scores):
-                det_bbox, det_label = multiclass_nms(bboxes, scores,
-                                                     cfg.score_thr, cfg.nms,
-                                                     cfg.max_per_img)
-                det_results.append(tuple([det_bbox, det_label]))
+            det_results = multiclass_nms(mlvl_bboxes, mlvl_scores,
+                                         cfg.score_thr, cfg.nms,
+                                         cfg.max_per_img)
             return det_results
         else:
             return mlvl_bboxes, mlvl_scores
