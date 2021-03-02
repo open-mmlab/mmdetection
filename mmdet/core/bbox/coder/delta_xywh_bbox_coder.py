@@ -171,22 +171,25 @@ def delta2bbox(rois,
                 [0.0000, 0.3161, 4.1945, 0.6839],
                 [5.0000, 5.0000, 5.0000, 5.0000]])
     """
-    means = deltas.new_tensor(means).view(1, -1).repeat(1, deltas.size(1) // 4)
-    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(1) // 4)
+    means = deltas.new_tensor(means).view(1, -1).expand(
+        deltas.size(0), 1, -1).repeat(1, deltas.size(1), 1)
+    stds = deltas.new_tensor(stds).view(1, -1).expand(deltas.size(0), 1,
+                                                      -1).repeat(
+                                                          1, deltas.size(1), 1)
     denorm_deltas = deltas * stds + means
-    dx = denorm_deltas[:, 0::4]
-    dy = denorm_deltas[:, 1::4]
-    dw = denorm_deltas[:, 2::4]
-    dh = denorm_deltas[:, 3::4]
+    dx = denorm_deltas[..., 0::4]
+    dy = denorm_deltas[..., 1::4]
+    dw = denorm_deltas[..., 2::4]
+    dh = denorm_deltas[..., 3::4]
     max_ratio = np.abs(np.log(wh_ratio_clip))
     dw = dw.clamp(min=-max_ratio, max=max_ratio)
     dh = dh.clamp(min=-max_ratio, max=max_ratio)
     # Compute center of each roi
-    px = ((rois[:, 0] + rois[:, 2]) * 0.5).unsqueeze(1).expand_as(dx)
-    py = ((rois[:, 1] + rois[:, 3]) * 0.5).unsqueeze(1).expand_as(dy)
+    px = ((rois[..., 0] + rois[..., 2]) * 0.5).unsqueeze(2).expand_as(dx)
+    py = ((rois[..., 1] + rois[..., 3]) * 0.5).unsqueeze(2).expand_as(dy)
     # Compute width/height of each roi
-    pw = (rois[:, 2] - rois[:, 0]).unsqueeze(1).expand_as(dw)
-    ph = (rois[:, 3] - rois[:, 1]).unsqueeze(1).expand_as(dh)
+    pw = (rois[..., 2] - rois[..., 0]).unsqueeze(2).expand_as(dw)
+    ph = (rois[..., 3] - rois[..., 1]).unsqueeze(2).expand_as(dh)
     # Use exp(network energy) to enlarge/shrink each roi
     gw = pw * dw.exp()
     gh = ph * dh.exp()
@@ -199,9 +202,21 @@ def delta2bbox(rois,
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
     if clip_border and max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1])
-        y1 = y1.clamp(min=0, max=max_shape[0])
-        x2 = x2.clamp(min=0, max=max_shape[1])
-        y2 = y2.clamp(min=0, max=max_shape[0])
+        min = torch.tensor(0, dtype=torch.float32, device=x1.device)
+        min = min.expand(x1.size())
+        max_x = torch.tensor(
+            max_shape[:, 1], dtype=torch.float32, device=x1.device)
+        max_x = max_x.view(x1.size(0), 1, 1).expand(x1.size(0), x1.size(1), 1)
+        max_y = torch.tensor(
+            max_shape[:, 0], dtype=torch.float32, device=x1.device)
+        max_y = max_y.view(x1.size(0), 1, 1).expand(x1.size(0), x1.size(1), 1)
+        x1 = torch.where(x1 < min, min, x1)
+        x1 = torch.where(x1 > max_x, max_x, x1)
+        y1 = torch.where(y1 < min, min, y1)
+        y1 = torch.where(y1 > max_y, max_y, y1)
+        x2 = torch.where(x2 < min, min, x2)
+        x2 = torch.where(x2 > max_x, max_x, x2)
+        y2 = torch.where(y2 < min, min, y2)
+        y2 = torch.where(y2 > max_y, max_y, y2)
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
     return bboxes
