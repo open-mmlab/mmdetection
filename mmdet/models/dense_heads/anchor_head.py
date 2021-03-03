@@ -561,7 +561,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         cls_score_list = [cls_scores[i].detach() for i in range(num_levels)]
         bbox_pred_list = [bbox_preds[i].detach() for i in range(num_levels)]
-        # TODO
+
         img_shape = [
             img_metas[i]['img_shape'] for i in range(cls_scores[0].shape[0])
         ]
@@ -600,9 +600,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scale level with shape (num_anchors * 4, H, W).
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
-            img_shapes (tuple[int]): Shape of the input image,
+            img_shapes (list[tuple[int]]): Shape of the input image,
                 (height, width, 3).
-            scale_factors (ndarray): Scale factor of the image arange as
+            scale_factors (list[ndarray]): Scale factor of the image arange as
                 (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -623,17 +623,18 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         for cls_score, bbox_pred, anchors in zip(cls_score_list,
                                                  bbox_pred_list, mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            batch_size = cls_score.shape[0]
             cls_score = cls_score.permute(0, 2, 3,
-                                          1).reshape(cls_score.shape[0], -1,
+                                          1).reshape(batch_size, -1,
                                                      self.cls_out_channels)
             if self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
             else:
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(0, 2, 3,
-                                          1).reshape(cls_score.shape[0], -1, 4)
+                                          1).reshape(batch_size, -1, 4)
+            anchors = anchors.repeat(batch_size, 1, 1)
             nms_pre = cfg.get('nms_pre', -1)
-            anchors = anchors.repeat(bbox_pred.shape[0], 1, 1)
             if nms_pre > 0 and scores.shape[1] > nms_pre:
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
@@ -645,14 +646,15 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     max_scores, _ = scores[..., :-1].max(dim=2)
 
                 _, topk_inds = max_scores.topk(nms_pre)
-                batch_index = torch.range(0, topk_inds.shape[0] -
-                                          1).unsqueeze(-1).expand(
-                                              topk_inds.size()).long()
+                batch_index = torch.arange(0, batch_size).unsqueeze(-1).expand(
+                    topk_inds.size()).long()
                 anchors = anchors[batch_index, topk_inds, :]
                 bbox_pred = bbox_pred[batch_index, topk_inds, :]
                 scores = scores[batch_index, topk_inds, :]
 
-            img_shapes = anchors.new_tensor(img_shapes)[..., :2]
+            img_shapes = torch.as_tensor(
+                img_shapes, dtype=torch.float32,
+                device=anchors.device)[..., :2]
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)

@@ -144,7 +144,7 @@ def delta2bbox(rois,
         means (Sequence[float]): Denormalizing means for delta coordinates
         stds (Sequence[float]): Denormalizing standard deviation for delta
             coordinates
-        max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
+        max_shape (Tensor): Maximum bounds for boxes. specifies (H, W)
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Defaults to True.
@@ -202,21 +202,18 @@ def delta2bbox(rois,
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
     if clip_border and max_shape is not None:
-        min = torch.tensor(0, dtype=torch.float32, device=x1.device)
-        min = min.expand(x1.size())
-        max_x = torch.tensor(
-            max_shape[:, 1], dtype=torch.float32, device=x1.device)
-        max_x = max_x.view(x1.size(0), 1, 1).expand(x1.size(0), x1.size(1), 1)
-        max_y = torch.tensor(
-            max_shape[:, 0], dtype=torch.float32, device=x1.device)
-        max_y = max_y.view(x1.size(0), 1, 1).expand(x1.size(0), x1.size(1), 1)
-        x1 = torch.where(x1 < min, min, x1)
+        min_xy = torch.as_tensor(0, dtype=torch.float32, device=x1.device)
+        min_xy = min_xy.expand(x1.size())
+        max_xy = max_shape.unsqueeze(1).expand(x1.size(0), x1.size(1), 2)
+        max_x = max_xy[..., 1:]
+        max_y = max_xy[..., 0:1]
+        x1 = torch.where(x1 < min_xy, min_xy, x1)
         x1 = torch.where(x1 > max_x, max_x, x1)
-        y1 = torch.where(y1 < min, min, y1)
+        y1 = torch.where(y1 < min_xy, min_xy, y1)
         y1 = torch.where(y1 > max_y, max_y, y1)
-        x2 = torch.where(x2 < min, min, x2)
+        x2 = torch.where(x2 < min_xy, min_xy, x2)
         x2 = torch.where(x2 > max_x, max_x, x2)
-        y2 = torch.where(y2 < min, min, y2)
+        y2 = torch.where(y2 < min_xy, min_xy, y2)
         y2 = torch.where(y2 > max_y, max_y, y2)
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
     return bboxes
