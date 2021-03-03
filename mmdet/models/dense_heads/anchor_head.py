@@ -633,7 +633,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_pred = bbox_pred.permute(0, 2, 3,
                                           1).reshape(cls_score.shape[0], -1, 4)
             nms_pre = cfg.get('nms_pre', -1)
-            anchors = anchors.repeat(bbox_pred.shape[0], 1, 1)
             if nms_pre > 0 and scores.shape[1] > nms_pre:
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
@@ -645,13 +644,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     max_scores, _ = scores[..., :-1].max(dim=2)
 
                 _, topk_inds = max_scores.topk(nms_pre)
-                batch_index = torch.range(0, topk_inds.shape[0] -
-                                          1).unsqueeze(-1).expand(
-                                              topk_inds.size()).long()
-                anchors = anchors[batch_index, topk_inds, :]
-                bbox_pred = bbox_pred[batch_index, topk_inds, :]
-                scores = scores[batch_index, topk_inds, :]
-
+                batch_inds = torch.arange(cls_score.shape[0]).view(
+                    -1, 1).expand_as(topk_inds).long()
+                anchors = anchors[topk_inds, :]
+                bbox_pred = bbox_pred[batch_inds, topk_inds, :]
+                scores = scores[batch_inds, topk_inds, :]
+            else:
+                anchors = anchors.repeat(bbox_pred.shape[0], 1, 1)
             img_shapes = anchors.new_tensor(img_shapes)[..., :2]
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shapes)
@@ -664,11 +663,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            # TODO
-            max_scores, _ = mlvl_scores.max(dim=1)
+            max_scores, _ = mlvl_scores.max(dim=2)
             _, topk_inds = max_scores.topk(deploy_nms_pre)
-            mlvl_scores = mlvl_scores[topk_inds, :]
-            mlvl_bboxes = mlvl_bboxes[topk_inds, :]
+            batch_inds = torch.arange(mlvl_scores.shape[0]).view(
+                -1, 1).expand_as(topk_inds)
+            mlvl_scores = mlvl_scores[batch_inds, topk_inds]
+            mlvl_bboxes = mlvl_bboxes[batch_inds, topk_inds]
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
             # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
