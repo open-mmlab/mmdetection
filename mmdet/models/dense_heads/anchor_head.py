@@ -620,6 +620,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
+        img_shapes = torch.as_tensor(
+            img_shapes, dtype=torch.float32,
+            device=cls_score_list[0].device)[..., :2]
         for cls_score, bbox_pred, anchors in zip(cls_score_list,
                                                  bbox_pred_list, mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
@@ -633,7 +636,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(0, 2, 3,
                                           1).reshape(batch_size, -1, 4)
-            anchors = anchors.repeat(batch_size, 1, 1)
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[1] > nms_pre:
                 # Get maximum scores for foreground classes.
@@ -652,10 +654,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 bbox_pred = bbox_pred[batch_inds, topk_inds, :]
                 scores = scores[batch_inds, topk_inds, :]
             else:
-                anchors = anchors.repeat(bbox_pred.shape[0], 1, 1)
-            img_shapes = torch.as_tensor(
-                img_shapes, dtype=torch.float32,
-                device=anchors.device)[..., :2]
+                anchors = anchors.repeat(batch_size, 1, 1)
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
