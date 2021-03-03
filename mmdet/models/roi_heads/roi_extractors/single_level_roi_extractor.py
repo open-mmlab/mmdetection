@@ -96,6 +96,12 @@ class SingleRoIExtractor(BaseRoIExtractor):
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
                 roi_feats[inds] = roi_feats_t
             else:
+                # Sometimes some pyramid levels will not be used for RoI
+                # feature extraction and this will cause an incomplete
+                # computation graph in one GPU, which is different from those
+                # in other GPUs and will cause a hanging error.
+                # Therefore, we add it to ensure each feature pyramid is
+                # included in the computation graph to avoid runtime bugs.
                 roi_feats += sum(
                     x.view(-1)[0]
                     for x in self.parameters()) * 0. + feats[i].sum() * 0.
