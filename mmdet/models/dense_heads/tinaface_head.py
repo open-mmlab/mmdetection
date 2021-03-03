@@ -3,6 +3,7 @@ import torch.nn as nn
 from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init,
                       normal_init)
 from mmcv.runner import force_fp32
+from mmcv.ops.nms import batched_nms
 
 from mmdet.core import (build_assigner, build_sampler,
                         multiclass_nms)
@@ -213,10 +214,13 @@ class TinaFaceHead(AnchorHead):
                 det_labels (Tensor): A (n,) tensor where each item is the
                     predicted class label of the corresponding box.
         """
+        alpha = 0.4
+        height_th = 9
+
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
-        mlvl_centerness = []
+        # mlvl_centerness = []
         for cls_score, bbox_pred, centerness, anchors in zip(
                 cls_scores, bbox_preds, iou, mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
@@ -224,7 +228,15 @@ class TinaFaceHead(AnchorHead):
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            centerness = centerness.permute(1, 2, 0).reshape(-1).sigmoid()
+            centerness = centerness.permute(1, 2, 0).reshape(-1, 1).sigmoid()
+
+            if alpha is None:
+                scores *= centerness
+            elif isinstance(alpha, float):
+                scores = torch.pow(scores, 2 * alpha) * torch.pow(
+                    centerness, 2 * (1 - alpha))
+            else:
+                raise ValueError("alpha must be float or None")
 
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
@@ -233,33 +245,144 @@ class TinaFaceHead(AnchorHead):
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-                centerness = centerness[topk_inds]
+                # centerness = centerness[topk_inds]
 
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-            mlvl_centerness.append(centerness)
+            # mlvl_centerness.append(centerness)
+
+        def filter_boxes(boxes, min_scale, max_scale):
+            ws = boxes[:, 2] - boxes[:, 0]
+            hs = boxes[:, 3] - boxes[:, 1]
+            scales = torch.sqrt(ws * hs)
+
+            return (scales >= max(1, min_scale)) & (scales <= max_scale)
 
         mlvl_bboxes = torch.cat(mlvl_bboxes)
+        mlvl_scores = torch.cat(mlvl_scores)
+
+        keeps = filter_boxes(mlvl_bboxes, 1, 10000)
+        mlvl_bboxes = mlvl_bboxes[keeps]
+        mlvl_scores = mlvl_scores[keeps]
+
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
+
         # Add a dummy background class to the backend when using sigmoid
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        mlvl_centerness = torch.cat(mlvl_centerness)
+        # mlvl_centerness = torch.cat(mlvl_centerness)
+
+        if height_th is not None:
+            hs = mlvl_bboxes[:, 3] - mlvl_bboxes[:, 1]
+            valid = (hs >= height_th)
+            mlvl_bboxes, mlvl_scores = (
+                mlvl_bboxes[valid], mlvl_scores[valid])
 
         if with_nms:
-            det_bboxes, det_labels = multiclass_nms(
+            det_bboxes, det_labels = self._lb_multiclass_nms(
                 mlvl_bboxes,
                 mlvl_scores,
                 cfg.score_thr,
                 cfg.nms,
                 cfg.max_per_img,
-                score_factors=mlvl_centerness)
+                score_factors=None)
             return det_bboxes, det_labels
         else:
-            return mlvl_bboxes, mlvl_scores, mlvl_centerness
+            return mlvl_bboxes, mlvl_scores
+
+    def _lb_multiclass_nms(self,multi_bboxes,
+                           multi_scores,
+                           score_thr,
+                           nms_cfg,
+                           max_num=-1,
+                           score_factors=None):
+        """NMS for multi-class bboxes.
+
+        Args:
+            multi_bboxes (Tensor): shape (n, #class*4) or (n, 4)
+            multi_scores (Tensor): shape (n, #class), where the last column
+                contains scores of the background class, but this will be ignored.
+            score_thr (float): bbox threshold, bboxes with scores lower than it
+                will not be considered.
+            nms_thr (float): NMS IoU threshold
+            max_num (int): if there are more than max_num bboxes after NMS,
+                only top max_num will be kept.
+            score_factors (Tensor): The factors multiplied to scores before
+                applying NMS
+
+        Returns:
+            tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels \
+                are 0-based.
+        """
+        num_classes = multi_scores.size(1) - 1
+        # exclude background category
+        if multi_bboxes.shape[1] > 4:
+            bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)
+        else:
+            bboxes = multi_bboxes[:, None].expand(
+                multi_scores.size(0), num_classes, 4)
+        scores = multi_scores[:, :-1]
+
+        # filter out boxes with low scores
+        valid_mask = scores > score_thr
+
+        # We use masked_select for ONNX exporting purpose,
+        # which is equivalent to bboxes = bboxes[valid_mask]
+        # (TODO): as ONNX does not support repeat now,
+        # we have to use this ugly code
+        bboxes = torch.masked_select(
+            bboxes,
+            torch.stack((valid_mask, valid_mask, valid_mask, valid_mask),
+                        -1)).view(-1, 4)
+        if score_factors is not None:
+            scores = scores * score_factors[:, None]
+        scores = torch.masked_select(scores, valid_mask)
+        labels = valid_mask.nonzero()[:, 1]
+
+        if bboxes.numel() == 0:
+            bboxes = multi_bboxes.new_zeros((0, 5))
+            labels = multi_bboxes.new_zeros((0,), dtype=torch.long)
+
+            if torch.onnx.is_in_onnx_export():
+                raise RuntimeError('[ONNX Error] Can not record NMS '
+                                   'as it has not been executed this time')
+            return bboxes, labels
+
+        inds = scores.argsort(descending=True)
+        bboxes = bboxes[inds]
+        scores = scores[inds]
+        labels = labels[inds]
+
+        batch_bboxes = torch.empty((0, 4),
+                                   dtype=bboxes.dtype,
+                                   device=bboxes.device)
+        batch_scores = torch.empty((0,), dtype=scores.dtype, device=scores.device)
+        batch_labels = torch.empty((0,), dtype=labels.dtype, device=labels.device)
+        while bboxes.shape[0] > 0:
+            num = min(100000, bboxes.shape[0])
+            batch_bboxes = torch.cat([batch_bboxes, bboxes[:num]])
+            batch_scores = torch.cat([batch_scores, scores[:num]])
+            batch_labels = torch.cat([batch_labels, labels[:num]])
+            bboxes = bboxes[num:]
+            scores = scores[num:]
+            labels = labels[num:]
+
+            _, keep = batched_nms(batch_bboxes, batch_scores, batch_labels,
+                                  nms_cfg)
+            batch_bboxes = batch_bboxes[keep]
+            batch_scores = batch_scores[keep]
+            batch_labels = batch_labels[keep]
+
+        dets = torch.cat([batch_bboxes, batch_scores[:, None]], dim=-1)
+        labels = batch_labels
+
+        if max_num > 0:
+            dets = dets[:max_num]
+            labels = labels[:max_num]
+
+        return dets, labels
