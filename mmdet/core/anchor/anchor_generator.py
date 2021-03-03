@@ -196,8 +196,9 @@ class AnchorGenerator(object):
         Returns:
             tuple[torch.Tensor]: The mesh grids of x and y.
         """
-        xx = x.repeat(len(y))
-        yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
+        # use shape instead of len to keep tracing while exporting to onnx
+        xx = x.repeat(y.shape[0])
+        yy = y.view(-1, 1).repeat(1, x.shape[0]).view(-1)
         if row_major:
             return xx, yy
         else:
@@ -250,10 +251,8 @@ class AnchorGenerator(object):
         Returns:
             torch.Tensor: Anchors in the overall feature maps.
         """
+        # keep as Tensor, so that we can covert to ONNX correctly
         feat_h, feat_w = featmap_size
-        # convert Tensor to int, so that we can covert to ONNX correctlly
-        feat_h = int(feat_h)
-        feat_w = int(feat_w)
         shift_x = torch.arange(0, feat_w, device=device) * stride[0]
         shift_y = torch.arange(0, feat_h, device=device) * stride[1]
 

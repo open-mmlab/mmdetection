@@ -620,6 +620,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
+        # convert to tensor to keep tracing
+        nms_pre_tensor = torch.tensor(
+            cfg.get('nms_pre', -1),
+            device=cls_score_list[0].device,
+            dtype=torch.long)
         mlvl_bboxes = []
         mlvl_scores = []
         for cls_score, bbox_pred, anchors in zip(cls_score_list,
@@ -632,8 +637,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             else:
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+            # Always keep topk op for dynamic input in onnx
+            if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
+                                       or scores.shape[-2] > nms_pre_tensor):
+                from torch import _shape_as_tensor
+                # keep shape as tensor and get k
+                num_anchor = _shape_as_tensor(scores)[-2]
+                nms_pre = torch.where(nms_pre_tensor < num_anchor,
+                                      nms_pre_tensor, num_anchor)
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
