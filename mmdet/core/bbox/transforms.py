@@ -120,9 +120,9 @@ def distance2bbox(points, distance, max_shape=None):
     """Decode distance prediction to bounding box.
 
     Args:
-        points (Tensor): Shape (n, 2), [x, y].
+        points (Tensor): Shape (b, n, 2) or (n, 2), [x, y].
         distance (Tensor): Distance from the given point to 4
-            boundaries (left, top, right, bottom).
+            boundaries (left, top, right, bottom). Shape (b, n, 4)
         max_shape (Tensor): Shape of the image.
 
     Returns:
