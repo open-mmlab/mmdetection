@@ -34,7 +34,7 @@ def fpn_config(test_step_name):
             out_channels=out_channels,
             add_extra_convs=True,
             num_outs=5)
-        fpn_model.eval()
+        fpn_model.cpu().eval()
         return fpn_model, feats
     elif (test_step_names[test_step_name] == 1):
         # Tests for fpn with no extra convs (pooling is used instead)
@@ -43,7 +43,7 @@ def fpn_config(test_step_name):
             out_channels=out_channels,
             add_extra_convs=False,
             num_outs=5)
-        fpn_model.eval()
+        fpn_model.cpu().eval()
         return fpn_model, feats
     elif (test_step_names[test_step_name] == 2):
         fpn_model = FPN(
@@ -53,7 +53,7 @@ def fpn_config(test_step_name):
             no_norm_on_lateral=False,
             norm_cfg=dict(type='BN', requires_grad=True),
             num_outs=5)
-        fpn_model.eval()
+        fpn_model.cpu().eval()
         return fpn_model, feats
     elif (test_step_names[test_step_name] == 3):
         fpn_model = FPN(
@@ -62,7 +62,7 @@ def fpn_config(test_step_name):
             add_extra_convs=True,
             upsample_cfg=dict(mode='bilinear', align_corners=True),
             num_outs=5)
-        fpn_model.eval()
+        fpn_model.cpu().eval()
         return fpn_model, feats
     elif (test_step_names[test_step_name] == 4):
         fpn_model = FPN(
@@ -71,7 +71,7 @@ def fpn_config(test_step_name):
             add_extra_convs=True,
             upsample_cfg=dict(scale_factor=2),
             num_outs=5)
-        fpn_model.eval()
+        fpn_model.cpu().eval()
         return fpn_model, feats
     elif (test_step_names[test_step_name] == 5):
         fpn_model = FPN(
@@ -79,7 +79,7 @@ def fpn_config(test_step_name):
             out_channels=out_channels,
             add_extra_convs='on_input',
             num_outs=5)
-        fpn_model.eval()
+        fpn_model.cpu().eval()
         return fpn_model, feats
     elif (test_step_names[test_step_name] == 6):
         fpn_model = FPN(
@@ -87,7 +87,7 @@ def fpn_config(test_step_name):
             out_channels=out_channels,
             add_extra_convs='on_lateral',
             num_outs=5)
-        fpn_model.eval()
+        fpn_model.cpu().eval()
         return fpn_model, feats
     elif (test_step_names[test_step_name] == 7):
         fpn_model = FPN(
@@ -95,7 +95,7 @@ def fpn_config(test_step_name):
             out_channels=out_channels,
             add_extra_convs='on_output',
             num_outs=5)
-        fpn_model.eval()
+        fpn_model.cpu().eval()
         return fpn_model, feats
 
 

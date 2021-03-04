@@ -144,7 +144,7 @@ def retinanet_config(test_step_name):
         test_step=test_step_names[test_step_name],
         num_classes=4,
         in_channels=1)
-    model.eval()
+    model.cpu().eval()
 
     feat = [
         torch.rand(1, 1, 256 // (2**(i + 2)), 256 // (2**(i + 2)))
@@ -189,7 +189,6 @@ class YoloV3HeadTest(nn.Module):
         self.img_metas = img_metas
         self.test_step = test_step
         self.with_nms = with_nms
-        self.head.eval()
 
     def forward(self, feat):
         """Forward feature according self.test_step.
@@ -270,7 +269,7 @@ def yolo_config(test_step_name):
         out_channels=[32, 16, 8],
         num_classes=4,
         test_step=test_step_names[test_step_name])
-    model.eval()
+    model.cpu().eval()
 
     feat = [
         torch.rand(1, 1, 256 // (2**(i + 2)), 256 // (2**(i + 2)))

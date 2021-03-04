@@ -27,15 +27,16 @@ def verify_model(model, feat):
         feat (list[Tensor]): A list of tensors from torch.rand to simulate
             input, each is a 4D-tensor.
     """
-    torch.onnx.export(
-        model,
-        feat,
-        onnx_io,
-        export_params=True,
-        keep_initializers_as_inputs=True,
-        do_constant_folding=True,
-        verbose=False,
-        opset_version=11)
+    with torch.no_grad():
+        torch.onnx.export(
+            model,
+            feat,
+            onnx_io,
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11)
 
     onnx_model = onnx.load(onnx_io)
     onnx.checker.check_model(onnx_model)
