@@ -217,9 +217,9 @@ def delta2bbox(rois,
         max_shape = torch.as_tensor(
             max_shape, dtype=torch.float32, device=x1.device)[..., :2]
         min_xy = torch.as_tensor(0, dtype=torch.float32, device=x1.device)
-        min_xy = min_xy.expand(x1.size())
-        max_xy = torch.cat([max_shape, max_shape],
-                           dim=-1).flip(dims=[-1]).unsqueeze(-2)
+        max_xy = torch.cat(
+            [max_shape] * (deltas.size(-1) // 2),
+            dim=-1).flip(dims=[-1]).unsqueeze(-2)
         bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
         bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 

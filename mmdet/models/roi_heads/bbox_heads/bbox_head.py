@@ -280,11 +280,8 @@ class BBoxHead(nn.Module):
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
 
         if bbox_pred is not None:
-            img_shape = torch.as_tensor(
-                img_shape, dtype=torch.float32,
-                device=bbox_pred.device)[..., :2][None]
             bboxes = self.bbox_coder.decode(
-                rois[:, 1:][None], bbox_pred[None], max_shape=img_shape)[0]
+                rois[:, 1:], bbox_pred, max_shape=img_shape)
         else:
             bboxes = rois[:, 1:].clone()
             if img_shape is not None:
