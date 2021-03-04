@@ -22,7 +22,7 @@ def makeplot(rs, ps, outDir, class_name, iou_type):
     types = ['C75', 'C50', 'Loc', 'Sim', 'Oth', 'BG', 'FN']
     for i in range(len(areaNames)):
         area_ps = ps[..., i, 0]
-        figure_tile = iou_type + '-' + class_name + '-' + areaNames[i]
+        figure_title = iou_type + '-' + class_name + '-' + areaNames[i]
         aps = [ps_.mean() for ps_ in area_ps]
         ps_curve = [
             ps_.mean(axis=1) if ps_.ndim > 1 else ps_ for ps_ in area_ps
@@ -43,10 +43,10 @@ def makeplot(rs, ps, outDir, class_name, iou_type):
         plt.ylabel('precision')
         plt.xlim(0, 1.0)
         plt.ylim(0, 1.0)
-        plt.title(figure_tile)
+        plt.title(figure_title)
         plt.legend()
         # plt.show()
-        fig.savefig(outDir + f'/{figure_tile}.png')
+        fig.savefig(outDir + f'/{figure_title}.png')
         plt.close(fig)
 
 
@@ -54,8 +54,12 @@ def autolabel(ax, rects):
     """Attach a text label above each bar in *rects*, displaying its height."""
     for rect in rects:
         height = rect.get_height()
+        if height > 0 and height <= 1:  # for percent values
+            text_label = '{:2.0f}'.format(height * 100)
+        else:
+            text_label = '{:2.0f}'.format(height)
         ax.annotate(
-            '{:2.0f}'.format(height * 100),
+            text_label,
             xy=(rect.get_x() + rect.get_width() / 2, height),
             xytext=(0, 3),  # 3 points vertical offset
             textcoords='offset points',
@@ -65,18 +69,18 @@ def autolabel(ax, rects):
         )
 
 
-def makeplot2(rs, ps, outDir, class_name, iou_type):
+def makebarplot(rs, ps, outDir, class_name, iou_type):
     areaNames = ['allarea', 'small', 'medium', 'large']
     types = ['C75', 'C50', 'Loc', 'Sim', 'Oth', 'BG', 'FN']
     fig, ax = plt.subplots()
     x = np.arange(len(areaNames))  # the areaNames locations
     width = 0.60  # the width of the bars
-    rects = []
-    figure_tile = iou_type + '-' + class_name + '-' + 'ap bar plot'
+    rects_list = []
+    figure_title = iou_type + '-' + class_name + '-' + 'ap bar plot'
     for i in range(len(types) - 1):
         type_ps = ps[i, ..., 0]
         aps = [ps_.mean() for ps_ in type_ps.T]
-        rects.append(
+        rects_list.append(
             ax.bar(
                 x - width / 2 + (i + 1) * width / len(types),
                 aps,
@@ -86,16 +90,17 @@ def makeplot2(rs, ps, outDir, class_name, iou_type):
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Mean Average Precision (mAP)')
-    ax.set_title(figure_tile)
+    ax.set_title(figure_title)
     ax.set_xticks(x)
     ax.set_xticklabels(areaNames)
     ax.legend()
 
-    for rect in rects:
-        autolabel(ax, rect)
+    # Add score texts over bars
+    for rects in rects_list:
+        autolabel(ax, rects)
 
-    fig.tight_layout()
-    fig.savefig(outDir + f'/{figure_tile}.png')
+    # Save plot
+    fig.savefig(outDir + f'/{figure_title}.png')
     plt.close(fig)
 
 
@@ -199,9 +204,10 @@ def analyze_results(res_file, ann_file, res_types, out_dir):
             ps[5, :, k, :, :] = ps[4, :, k, :, :] > 0
             ps[6, :, k, :, :] = 1.0
             makeplot(recThrs, ps[:, :, k], res_out_dir, nm['name'], iou_type)
-            makeplot2(recThrs, ps[:, :, k], res_out_dir, nm['name'], iou_type)
+            makebarplot(recThrs, ps[:, :, k], res_out_dir, nm['name'],
+                        iou_type)
         makeplot(recThrs, ps, res_out_dir, 'allclass', iou_type)
-        makeplot2(recThrs, ps, res_out_dir, 'allclass', iou_type)
+        makebarplot(recThrs, ps, res_out_dir, 'allclass', iou_type)
 
 
 def main():
