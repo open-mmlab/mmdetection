@@ -12,11 +12,11 @@ from pycocotools.cocoeval import COCOeval
 def makeplot(rs, ps, outDir, class_name, iou_type):
     cs = np.vstack([
         np.ones((2, 3)),
-        np.array([.31, .51, .74]),
-        np.array([.75, .31, .30]),
-        np.array([.36, .90, .38]),
-        np.array([.50, .39, .64]),
-        np.array([1, .6, 0])
+        np.array([0.31, 0.51, 0.74]),
+        np.array([0.75, 0.31, 0.30]),
+        np.array([0.36, 0.90, 0.38]),
+        np.array([0.50, 0.39, 0.64]),
+        np.array([1, 0.6, 0]),
     ])
     areaNames = ['allarea', 'small', 'medium', 'large']
     types = ['C75', 'C50', 'Loc', 'Sim', 'Oth', 'BG', 'FN']
@@ -37,16 +37,66 @@ def makeplot(rs, ps, outDir, class_name, iou_type):
                 ps_curve[k],
                 ps_curve[k + 1],
                 color=cs[k],
-                label=str(f'[{aps[k]:.3f}]' + types[k]))
+                label=str(f'[{aps[k]:.3f}]' + types[k]),
+            )
         plt.xlabel('recall')
         plt.ylabel('precision')
-        plt.xlim(0, 1.)
-        plt.ylim(0, 1.)
+        plt.xlim(0, 1.0)
+        plt.ylim(0, 1.0)
         plt.title(figure_tile)
         plt.legend()
         # plt.show()
         fig.savefig(outDir + f'/{figure_tile}.png')
         plt.close(fig)
+
+
+def autolabel(ax, rects):
+    """Attach a text label above each bar in *rects*, displaying its height."""
+    for rect in rects:
+        height = rect.get_height()
+        ax.annotate(
+            '{:2.0f}'.format(height * 100),
+            xy=(rect.get_x() + rect.get_width() / 2, height),
+            xytext=(0, 3),  # 3 points vertical offset
+            textcoords='offset points',
+            ha='center',
+            va='bottom',
+            fontsize='x-small',
+        )
+
+
+def makeplot2(rs, ps, outDir, class_name, iou_type):
+    areaNames = ['allarea', 'small', 'medium', 'large']
+    types = ['C75', 'C50', 'Loc', 'Sim', 'Oth', 'BG', 'FN']
+    fig, ax = plt.subplots()
+    x = np.arange(len(areaNames))  # the areaNames locations
+    width = 0.60  # the width of the bars
+    rects = []
+    figure_tile = iou_type + '-' + class_name + '-' + 'ap bar plot'
+    for i in range(len(types) - 1):
+        type_ps = ps[i, ..., 0]
+        aps = [ps_.mean() for ps_ in type_ps.T]
+        rects.append(
+            ax.bar(
+                x - width / 2 + (i + 1) * width / len(types),
+                aps,
+                width / len(types),
+                label=types[i],
+            ))
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Mean Average Precision (mAP)')
+    ax.set_title(figure_tile)
+    ax.set_xticks(x)
+    ax.set_xticklabels(areaNames)
+    ax.legend()
+
+    for rect in rects:
+        autolabel(ax, rect)
+
+    fig.tight_layout()
+    fig.savefig(outDir + f'/{figure_tile}.png')
+    plt.close(fig)
 
 
 def analyze_individual_category(k, cocoDt, cocoGt, catId, iou_type):
@@ -67,15 +117,14 @@ def analyze_individual_category(k, cocoDt, cocoGt, catId, iou_type):
     gt = copy.deepcopy(cocoGt)
     child_catIds = gt.getCatIds(supNms=[nm['supercategory']])
     for idx, ann in enumerate(gt.dataset['annotations']):
-        if (ann['category_id'] in child_catIds
-                and ann['category_id'] != catId):
+        if ann['category_id'] in child_catIds and ann['category_id'] != catId:
             gt.dataset['annotations'][idx]['ignore'] = 1
             gt.dataset['annotations'][idx]['iscrowd'] = 1
             gt.dataset['annotations'][idx]['category_id'] = catId
     cocoEval = COCOeval(gt, copy.deepcopy(dt), iou_type)
     cocoEval.params.imgIds = imgIds
     cocoEval.params.maxDets = [100]
-    cocoEval.params.iouThrs = [.1]
+    cocoEval.params.iouThrs = [0.1]
     cocoEval.params.useCats = 1
     cocoEval.evaluate()
     cocoEval.accumulate()
@@ -91,7 +140,7 @@ def analyze_individual_category(k, cocoDt, cocoGt, catId, iou_type):
     cocoEval = COCOeval(gt, copy.deepcopy(dt), iou_type)
     cocoEval.params.imgIds = imgIds
     cocoEval.params.maxDets = [100]
-    cocoEval.params.iouThrs = [.1]
+    cocoEval.params.iouThrs = [0.1]
     cocoEval.params.useCats = 1
     cocoEval.evaluate()
     cocoEval.accumulate()
@@ -122,7 +171,7 @@ def analyze_results(res_file, ann_file, res_types, out_dir):
         cocoEval = COCOeval(
             copy.deepcopy(cocoGt), copy.deepcopy(cocoDt), iou_type)
         cocoEval.params.imgIds = imgIds
-        cocoEval.params.iouThrs = [.75, .5, .1]
+        cocoEval.params.iouThrs = [0.75, 0.5, 0.1]
         cocoEval.params.maxDets = [100]
         cocoEval.evaluate()
         cocoEval.accumulate()
@@ -147,10 +196,12 @@ def analyze_results(res_file, ann_file, res_types, out_dir):
             ps[4, :, k, :, :] = ps_allcategory
             # fill in background and false negative errors and plot
             ps[ps == -1] = 0
-            ps[5, :, k, :, :] = (ps[4, :, k, :, :] > 0)
+            ps[5, :, k, :, :] = ps[4, :, k, :, :] > 0
             ps[6, :, k, :, :] = 1.0
             makeplot(recThrs, ps[:, :, k], res_out_dir, nm['name'], iou_type)
+            makeplot2(recThrs, ps[:, :, k], res_out_dir, nm['name'], iou_type)
         makeplot(recThrs, ps, res_out_dir, 'allclass', iou_type)
+        makeplot2(recThrs, ps, res_out_dir, 'allclass', iou_type)
 
 
 def main():
@@ -160,7 +211,8 @@ def main():
     parser.add_argument(
         '--ann',
         default='data/coco/annotations/instances_val2017.json',
-        help='annotation file path')
+        help='annotation file path',
+    )
     parser.add_argument(
         '--types', type=str, nargs='+', default=['bbox'], help='result types')
     args = parser.parse_args()
