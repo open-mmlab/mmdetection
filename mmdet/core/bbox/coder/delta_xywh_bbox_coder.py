@@ -172,10 +172,12 @@ def delta2bbox(rois,
                 [5.0000, 5.0000, 5.0000, 5.0000]])
     """
     means = deltas.new_tensor(means).view(1, -1).expand(
-        deltas.size(0), 1, -1).repeat(1, deltas.size(1), 1)
+        deltas.size(0), 1, -1).repeat(1, deltas.size(1),
+                                      deltas.size(2) // 4)
     stds = deltas.new_tensor(stds).view(1, -1).expand(deltas.size(0), 1,
                                                       -1).repeat(
-                                                          1, deltas.size(1), 1)
+                                                          1, deltas.size(1),
+                                                          deltas.size(2) // 4)
     denorm_deltas = deltas * stds + means
     dx = denorm_deltas[..., 0::4]
     dy = denorm_deltas[..., 1::4]
