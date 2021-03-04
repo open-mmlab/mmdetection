@@ -396,7 +396,7 @@ class ATSSHead(AnchorHead):
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
             img_shapes (list[tuple[int]]): Shape of the input image,
-                (height, width, 3).
+                list[(height, width, 3)].
             scale_factors (list[ndarray]): Scale factor of the image arrange as
                 (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config | None): Test / postprocessing configuration,
@@ -418,8 +418,6 @@ class ATSSHead(AnchorHead):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         device = cls_scores[0].device
         batch_size = cls_scores[0].shape[0]
-        img_shapes = torch.as_tensor(
-            img_shapes, dtype=torch.float32, device=device)[..., :2]
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
             cfg.get('nms_pre', -1), device=device, dtype=torch.long)

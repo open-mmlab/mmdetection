@@ -238,20 +238,22 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(pred_maps_list) == self.num_levels
-        multi_lvl_bboxes = []
-        multi_lvl_cls_scores = []
-        multi_lvl_conf_scores = []
-        num_levels = len(pred_maps_list)
-        featmap_sizes = [
-            pred_maps_list[i].shape[-2:] for i in range(num_levels)
-        ]
+
         device = pred_maps_list[0].device
         batch_size = pred_maps_list[0].shape[0]
+
+        featmap_sizes = [
+            pred_maps_list[i].shape[-2:] for i in range(self.num_levels)
+        ]
         multi_lvl_anchors = self.anchor_generator.grid_anchors(
             featmap_sizes, device)
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
             cfg.get('nms_pre', -1), device=device, dtype=torch.long)
+
+        multi_lvl_bboxes = []
+        multi_lvl_cls_scores = []
+        multi_lvl_conf_scores = []
         for i in range(self.num_levels):
             # get some key info for current scale
             pred_map = pred_maps_list[i]
@@ -317,6 +319,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         multi_lvl_bboxes = torch.cat(multi_lvl_bboxes, dim=1)
         multi_lvl_cls_scores = torch.cat(multi_lvl_cls_scores, dim=1)
         multi_lvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
+
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
@@ -338,7 +341,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
         # In mmdet 2.x, the class_id for background is num_classes.
         # i.e., the last column.
-        padding = multi_lvl_cls_scores.new_zeros(multi_lvl_cls_scores.shape[0],
+        padding = multi_lvl_cls_scores.new_zeros(batch_size,
                                                  multi_lvl_cls_scores.shape[1],
                                                  1)
         multi_lvl_cls_scores = torch.cat([multi_lvl_cls_scores, padding],
