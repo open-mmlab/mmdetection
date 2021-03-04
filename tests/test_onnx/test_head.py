@@ -9,9 +9,8 @@ from mmdet.models.dense_heads import RetinaHead, YOLOV3Head
 test_step_names = {
     'forward_single': 0,
     'forward': 1,
-    'get_anchor': 2,
-    '_get_bboxes_single': 3,
-    'get_bboxes': 4
+    '_get_bboxes_single': 2,
+    'get_bboxes': 3
 }
 
 
@@ -65,15 +64,7 @@ class AnchorHeadTest(nn.Module):
         cls_scores, bbox_preds = self.head.forward(feat)
         if (self.test_step == 1):  # forward test
             return cls_scores + bbox_preds
-        if (self.test_step == 2):  # get_anchor test
-            featmap_sizes = [featmap.size()[-2:] for featmap in feat]
-            anchors_outs = self.head.get_anchors(
-                featmap_sizes, self.img_metas, device='cpu')
-            ret_list = []
-            for i in anchors_outs:
-                ret_list += i[0]
-            return ret_list
-        if (self.test_step == 3):  # get_bboxes test
+        if (self.test_step == 2):  # get_bboxes test
             num_levels = len(cls_scores)
             featmap_sizes = [
                 cls_scores[i][0].shape[-2:] for i in range(num_levels)
@@ -100,7 +91,7 @@ class AnchorHeadTest(nn.Module):
                 return [mlvl_bboxes] + [mlvl_scores]
         result_list = self.head.get_bboxes(cls_scores, bbox_preds,
                                            self.img_metas)
-        if (self.test_step == 4):  # get_bboxes test
+        if (self.test_step == 3):  # get_bboxes test
             return list(result_list[0])
 
 
@@ -198,6 +189,7 @@ class YoloV3HeadTest(nn.Module):
         self.img_metas = img_metas
         self.test_step = test_step
         self.with_nms = with_nms
+        self.head.eval()
 
     def forward(self, feat):
         """Forward feature according self.test_step.
@@ -213,7 +205,7 @@ class YoloV3HeadTest(nn.Module):
         pred_maps = self.head.forward(feat)
         if (self.test_step == 1):  # forward test
             return list(pred_maps[0])
-        if (self.test_step == 3):  # get_bboxes test
+        if (self.test_step == 2):  # get_bboxes test
             num_levels = len(pred_maps[0])
             pred_maps_list = [
                 pred_maps[0][i][0].detach() for i in range(num_levels)
@@ -228,7 +220,7 @@ class YoloV3HeadTest(nn.Module):
                                                None, self.with_nms)
                 return outs[0] + outs[1] + outs[2]
         result_list = self.head.get_bboxes(pred_maps[0], self.img_metas)
-        if (self.test_step == 4):  # get_bboxes test
+        if (self.test_step == 3):  # get_bboxes test
             return list(result_list[0])
 
 
@@ -295,11 +287,6 @@ def test_retinanet_head_forward_single():
 
 def test_retinanet_head_forward():
     outs = retinanet_config('forward')
-    verify_model(*outs)
-
-
-def test_retinanet_head_get_anchor():
-    outs = retinanet_config('get_anchor')
     verify_model(*outs)
 
 
