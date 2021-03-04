@@ -245,24 +245,33 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         featmap_sizes = [
             pred_maps_list[i].shape[-2:] for i in range(num_levels)
         ]
+        device = pred_maps_list[0].device
+        batch_size = pred_maps_list[0].shape[0]
         multi_lvl_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes, pred_maps_list[0][0].device)
+            featmap_sizes, device)
+        # convert to tensor to keep tracing
+        nms_pre_tensor = torch.tensor(
+            cfg.get('nms_pre', -1), device=device, dtype=torch.long)
         for i in range(self.num_levels):
             # get some key info for current scale
             pred_map = pred_maps_list[i]
             stride = self.featmap_strides[i]
-            batch_size = pred_map.shape[0]
-
             # (b,h, w, num_anchors*num_attrib) ->
             # (b,h*w*num_anchors, num_attrib)
             pred_map = pred_map.permute(0, 2, 3,
                                         1).reshape(batch_size, -1,
                                                    self.num_attrib)
-
-            pred_map[..., :2] = torch.sigmoid(pred_map[..., :2])
-            multi_lvl_anchor = multi_lvl_anchors[i].repeat(batch_size, 1, 1)
+            # Inplace operation like
+            # ```pred_map[..., :2] = \torch.sigmoid(pred_map[..., :2])```
+            # would create constant tensor when exporting to onnx
+            pred_map_conf = torch.sigmoid(pred_map[..., :2])
+            pred_map_rest = pred_map[..., 2:]
+            pred_map = torch.cat([pred_map_conf, pred_map_rest], dim=-1)
+            pred_map_boxes = pred_map[..., :4]
+            multi_lvl_anchor = multi_lvl_anchors[i]
+            multi_lvl_anchor = multi_lvl_anchor.expand_as(pred_map_boxes)
             bbox_pred = self.bbox_coder.decode(multi_lvl_anchor,
-                                               pred_map[..., :4], stride)
+                                               pred_map_boxes, stride)
             # conf and cls
             conf_pred = torch.sigmoid(pred_map[..., 4])
             cls_pred = torch.sigmoid(pred_map[..., 5:]).view(
@@ -284,8 +293,14 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             #     conf_pred = conf_pred[conf_inds]
 
             # Get top-k prediction
-            nms_pre = cfg.get('nms_pre', -1)
-            if 0 < nms_pre < conf_pred.size(0):
+            # Always keep topk op for dynamic input in onnx
+            if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
+                                       or conf_pred.shape[1] > nms_pre_tensor):
+                from torch import _shape_as_tensor
+                # keep shape as tensor and get k
+                num_anchor = _shape_as_tensor(conf_pred)[1].to(device)
+                nms_pre = torch.where(nms_pre_tensor < num_anchor,
+                                      nms_pre_tensor, num_anchor)
                 _, topk_inds = conf_pred.topk(nms_pre)
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds).long()
@@ -303,13 +318,16 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         multi_lvl_cls_scores = torch.cat(multi_lvl_cls_scores, dim=1)
         multi_lvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
         # Set max number of box to be feed into nms in deployment
-        # TODO
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
             _, topk_inds = multi_lvl_conf_scores.topk(deploy_nms_pre)
-            multi_lvl_bboxes = multi_lvl_bboxes[topk_inds, :]
-            multi_lvl_cls_scores = multi_lvl_cls_scores[topk_inds, :]
-            multi_lvl_conf_scores = multi_lvl_conf_scores[topk_inds]
+            batch_inds = torch.arange(batch_size).view(
+                -1, 1).expand_as(topk_inds).long()
+            multi_lvl_bboxes = multi_lvl_bboxes[batch_inds, topk_inds, :]
+            multi_lvl_cls_scores = multi_lvl_cls_scores[batch_inds,
+                                                        topk_inds, :]
+            multi_lvl_conf_scores = multi_lvl_conf_scores[batch_inds,
+                                                          topk_inds]
         # TODO
         if with_nms and (multi_lvl_conf_scores.size(0) == 0):
             return torch.zeros((0, 5)), torch.zeros((0, ))
