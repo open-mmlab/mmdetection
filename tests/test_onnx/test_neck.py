@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+# isot:disable
 from utils import verify_model
 
 from mmdet.models.necks import FPN, YOLOV3Neck
@@ -16,7 +17,7 @@ test_step_names = {
     'extra_convs_outputs': 7,
 }
 
-data_path = 'tests/test_onnx/data/'
+data_path = './test_onnx/data/'
 
 
 def fpn_config(test_step_name):

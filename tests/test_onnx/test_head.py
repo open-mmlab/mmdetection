@@ -2,6 +2,7 @@ import mmcv
 import numpy as np
 import torch
 import torch.nn as nn
+# isot:disable
 from utils import verify_model
 
 from mmdet.models.dense_heads import RetinaHead, YOLOV3Head
@@ -14,7 +15,7 @@ test_step_names = {
     'get_bboxes': 3
 }
 
-data_path = 'tests/test_onnx/data/'
+data_path = './test_onnx/data'
 
 
 class AnchorHeadTest(nn.Module):
