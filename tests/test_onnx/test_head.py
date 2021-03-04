@@ -279,7 +279,7 @@ def yolo_config(test_step_name):
     yolov3_head_data = 'yolov3_head_'
     for i in range(len(model.head.anchor_generator.strides)):
         data_name = data_path + yolov3_head_data + str(i) + '.npy'
-        feat.append.torch.tensor(np.load(data_name))
+        feat.append(torch.tensor(np.load(data_name)))
 
     return model, feat
 
