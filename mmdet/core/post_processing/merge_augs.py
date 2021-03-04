@@ -101,9 +101,15 @@ def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
         flip_direction = img_info[0]['flip_direction']
         if flip:
             if flip_direction == 'horizontal':
-                mask = mask[:, :, :, ::-1]
+                if isinstance(mask, torch.Tensor):
+                    mask = mask.flip([3])
+                else:
+                    mask = mask[:, :, :, ::-1]
             elif flip_direction == 'vertical':
-                mask = mask[:, :, ::-1, :]
+                if isinstance(mask, torch.Tensor):
+                    mask = mask.flip([2])
+                else:
+                    mask = mask[:, :, ::-1, :]
             else:
                 raise ValueError(
                     f"Invalid flipping direction '{flip_direction}'")

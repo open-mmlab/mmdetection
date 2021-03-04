@@ -3,6 +3,8 @@ import torch.nn.functional as F
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
+from mmdet.core.mask.transforms import mask2result
+from mmdet.core.utils.misc import dummy_pad
 from ..builder import HEADS, build_head, build_roi_extractor
 from .cascade_roi_head import CascadeRoIHead
 
@@ -36,6 +38,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         self.semantic_fusion = semantic_fusion
         self.interleaved = interleaved
         self.mask_info_flow = mask_info_flow
+        self.avg_pooling = torch.nn.AvgPool2d(kernel_size=2)  # Use during export to ONNX
 
     def init_weights(self, pretrained):
         """Initialize the weights in head.
@@ -173,8 +176,11 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
-                bbox_semantic_feat = F.adaptive_avg_pool2d(
-                    bbox_semantic_feat, bbox_feats.shape[-2:])
+                if torch.onnx.is_in_onnx_export():
+                    bbox_semantic_feat = self.avg_pooling(bbox_semantic_feat)
+                else:
+                    bbox_semantic_feat = F.adaptive_avg_pool2d(
+                        bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
         cls_score, bbox_pred = bbox_head(bbox_feats)
 
@@ -335,7 +341,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         return losses
 
-    def simple_test(self, x, proposal_list, img_metas, rescale=False):
+    def simple_test(self, x, proposal_list, img_metas, rescale=False, postprocess=False):
         """Test without augmentation."""
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)
@@ -362,17 +368,22 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             cls_score = bbox_results['cls_score']
             bbox_pred = bbox_results['bbox_pred']
             num_proposals_per_img = tuple(len(p) for p in proposal_list)
-            rois = rois.split(num_proposals_per_img, 0)
-            cls_score = cls_score.split(num_proposals_per_img, 0)
-            bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+            if torch.onnx.is_in_onnx_export():
+                rois = [rois]
+                cls_score = [cls_score]
+                bbox_pred = [bbox_pred]
+            else:
+                rois = rois.split(num_proposals_per_img, 0)
+                cls_score = cls_score.split(num_proposals_per_img, 0)
+                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
                 bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
                 rois = torch.cat([
-                    bbox_head.regress_by_class(rois[i], bbox_label[i],
-                                               bbox_pred[i], img_metas[i])
-                    for i in range(num_imgs)
+                    bbox_head.regress_by_class(rois[j], bbox_label[j],
+                                               bbox_pred[j], img_metas[j])
+                    for j in range(num_imgs)
                 ])
 
         # average scores of each image by stages
@@ -391,18 +402,22 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                 bbox_pred[i],
                 img_shapes[i],
                 scale_factors[i],
-                rescale=rescale,
+                rescale=False,
                 cfg=rcnn_test_cfg)
             det_bboxes.append(det_bbox)
             det_labels.append(det_label)
-        bbox_result = [
-            bbox2result(det_bboxes[i], det_labels[i],
-                        self.bbox_head[-1].num_classes)
-            for i in range(num_imgs)
-        ]
-        ms_bbox_result['ensemble'] = bbox_result
+
+        ms_bbox_result['ensemble'] = (det_bboxes, det_labels)
 
         if self.with_mask:
+            if torch.onnx.is_in_onnx_export() and det_bboxes[0].shape[0] == 0:
+                # If there are no detection there is nothing to do for a mask head.
+                # But during ONNX export we should run mask head
+                # for it to appear in the graph.
+                # So add one zero / dummy ROI that will be mapped
+                # to an Identity op in the graph.
+                det_bboxes = [dummy_pad(det_bboxes[0], (0, 0, 0, 1))]
+                det_labels = [dummy_pad(det_labels[0], (0, 1))]
             if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
                 mask_classes = self.mask_head[-1].num_classes
                 segm_results = [[[] for _ in range(mask_classes)]
@@ -418,7 +433,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     scale_factors[i] if rescale else det_bboxes[i]
                     for i in range(num_imgs)
                 ]
-                mask_rois = bbox2roi(_bboxes)
+                mask_rois = bbox2roi(det_bboxes)
                 aug_masks = []
                 mask_roi_extractor = self.mask_roi_extractor[-1]
                 mask_feats = mask_roi_extractor(
@@ -438,9 +453,11 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                         mask_pred = mask_head(mask_feats)
 
                     # split batch mask prediction back to each image
-                    mask_pred = mask_pred.split(num_bbox_per_img, 0)
-                    aug_masks.append(
-                        [mask.sigmoid().cpu().numpy() for mask in mask_pred])
+                    if torch.onnx.is_in_onnx_export():
+                        mask_pred = [mask_pred]
+                    else:
+                        mask_pred = mask_pred.split(num_bbox_per_img, 0)
+                    aug_masks.append(mask_pred)
 
                 # apply mask post-processing to each image individually
                 segm_results = []
@@ -461,11 +478,16 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                         segm_results.append(segm_result)
             ms_segm_result['ensemble'] = segm_results
 
-        if self.with_mask:
-            results = list(
-                zip(ms_bbox_result['ensemble'], ms_segm_result['ensemble']))
+        if postprocess:
+            det_masks = ms_segm_result['ensemble'] if self.with_mask else [None for _ in det_bboxes]
+            results = [self.postprocess(det_bboxes[i], det_labels[i], det_masks[i], img_metas[i], rescale=rescale)
+                       for i in range(len(det_bboxes))]
         else:
-            results = ms_bbox_result['ensemble']
+            if self.with_mask:
+                results = list(
+                    zip(*ms_bbox_result['ensemble'], ms_segm_result['ensemble']))
+            else:
+                results = ms_bbox_result['ensemble']
 
         return results
 
@@ -570,13 +592,13 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                                 mask_feats, last_feat)
                         else:
                             mask_pred = mask_head(mask_feats)
-                        aug_masks.append(mask_pred.sigmoid().cpu().numpy())
+                        aug_masks.append(mask_pred)
                         aug_img_metas.append(img_meta)
                 merged_masks = merge_aug_masks(aug_masks, aug_img_metas,
                                                self.test_cfg)
 
                 ori_shape = img_metas[0][0]['ori_shape']
-                segm_result = self.mask_head[-1].get_seg_masks(
+                det_masks = self.mask_head[-1].get_seg_masks(
                     merged_masks,
                     det_bboxes,
                     det_labels,
@@ -584,6 +606,14 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     ori_shape,
                     scale_factor=1.0,
                     rescale=False)
+
+                segm_result = mask2result(
+                    det_bboxes,
+                    det_labels,
+                    det_masks,
+                    self.mask_head[-1].num_classes,
+                    mask_thr_binary=self.test_cfg.mask_thr_binary,
+                    img_size=ori_shape[:2])
             return [(bbox_result, segm_result)]
         else:
             return [bbox_result]

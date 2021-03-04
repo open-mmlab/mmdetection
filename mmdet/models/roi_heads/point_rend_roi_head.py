@@ -136,7 +136,8 @@ class PointRendRoIHead(StandardRoIHead):
                          img_metas,
                          det_bboxes,
                          det_labels,
-                         rescale=False):
+                         rescale=False,
+                         postprocess=False):
         """Obtain mask prediction without augmentation."""
         ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)

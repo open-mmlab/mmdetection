@@ -183,12 +183,12 @@ def test_dataset_evaluation():
         pipeline=[])
     concat_dataset = build_dataset(coco_cfg)
     eval_results = concat_dataset.evaluate(fake_concat_results)
-    assert eval_results['0_bbox_mAP'] == 1
-    assert eval_results['0_bbox_mAP_50'] == 1
-    assert eval_results['0_bbox_mAP_75'] == 1
-    assert eval_results['1_bbox_mAP'] == 1
-    assert eval_results['1_bbox_mAP_50'] == 1
-    assert eval_results['1_bbox_mAP_75'] == 1
+    assert eval_results['bbox_mAP'] == 1
+    assert eval_results['bbox_mAP_50'] == 1
+    assert eval_results['bbox_mAP_75'] == 1
+    assert eval_results['bbox_mAP'] == 1
+    assert eval_results['bbox_mAP_50'] == 1
+    assert eval_results['bbox_mAP_75'] == 1
 
     # create dummy data
     fake_pkl_file = osp.join(tmp_dir.name, 'fake_data.pkl')

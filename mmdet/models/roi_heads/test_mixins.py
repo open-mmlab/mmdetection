@@ -62,6 +62,16 @@ class BBoxTestMixin(object):
         bbox_results = self._bbox_forward(x, rois)
         img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+        if torch.onnx.is_in_onnx_export():
+            det_bboxes, det_labels = self.bbox_head.get_bboxes(
+                rois,
+                bbox_results['cls_score'],
+                bbox_results['bbox_pred'],
+                img_shapes[0],
+                scale_factors[0],
+                rescale=rescale,
+                cfg=rcnn_test_cfg)
+            return [det_bboxes], [det_labels]
 
         # split batch bbox prediction back to each image
         cls_score = bbox_results['cls_score']
@@ -184,21 +194,22 @@ class MaskTestMixin(object):
                          det_labels,
                          rescale=False):
         # image shape of the first image in the batch (only one)
-        ori_shape = img_metas[0]['ori_shape']
-        scale_factor = img_metas[0]['scale_factor']
-        if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
+        num_imgs = len(det_bboxes)
+        ori_shapes = [img_metas[0]['ori_shape']]
+        scale_factors = [img_metas[0]['scale_factor']]
+        if torch.onnx.is_in_onnx_export() and det_bboxes[0].shape[0] == 0:
             # If there are no detection there is nothing to do for a mask head.
             # But during ONNX export we should run mask head
             # for it to appear in the graph.
             # So add one zero / dummy ROI that will be mapped
             # to an Identity op in the graph.
-            det_bboxes = dummy_pad(det_bboxes, (0, 0, 0, 1))
-            det_labels = dummy_pad(det_labels, (0, 1))
+            det_bboxes = [dummy_pad(det_bboxes[0], (0, 0, 0, 1))]
+            det_labels = [dummy_pad(det_labels[0], (0, 1))]
 
-        if det_bboxes.shape[0] == 0:
-            segm_result = torch.empty([0, 0, 0],
-                                    dtype=det_bboxes.dtype,
-                                    device=det_bboxes.device)
+        if det_bboxes[0].shape[0] == 0:
+            segm_results = [torch.empty([0, 0, 0],
+                                    dtype=det_bboxes[0].dtype,
+                                    device=det_bboxes[0].device)]
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
@@ -213,13 +224,13 @@ class MaskTestMixin(object):
                 _bboxes = []
                 for i, boxes in enumerate(det_bboxes):
                     boxes = boxes[:, :4]
-                    if rescale:
-                        boxes *= scale_factors[i]
-                    _bboxes.append(boxes)
-                    img_inds = boxes[:, :1].clone() * 0 + i
-                    mask_rois = torch.cat([img_inds, boxes], dim=-1)
-                    mask_result = self._mask_forward(x, mask_rois)
-                    mask_preds.append(mask_result['mask_pred'])
+                    _bboxes = (boxes[:, :4] * scale_factors[0] if rescale else boxes)
+                    mask_rois = bbox2roi([_bboxes])
+                    mask_results = self._mask_forward(x, mask_rois)
+                    segm_result = self.mask_head.get_seg_masks(
+                        mask_results['mask_pred'], _bboxes, det_labels[0], self.test_cfg,
+                        ori_shapes[0], scale_factors[0], rescale)
+                    return [segm_result]
             else:
                 _bboxes = [
                     det_bboxes[i][:, :4] *

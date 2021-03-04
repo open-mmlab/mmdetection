@@ -222,7 +222,8 @@ class SparseRoIHead(CascadeRoIHead):
                     proposal_features,
                     img_metas,
                     imgs_whwh,
-                    rescale=False):
+                    rescale=False,
+                    postprocess=False):
         """Test without augmentation.
 
         Args:

@@ -9,7 +9,7 @@ from mmcv.cnn import fuse_conv_bn
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
 from mmdet.apis import get_fake_input, multi_gpu_test, single_gpu_test
-from mmdet.core import wrap_fp16_model
+from mmcv.runner import wrap_fp16_model
 from mmdet.integration.nncf import (check_nncf_is_enabled,
                                     get_nncf_config_from_meta,
                                     is_checkpoint_nncf, wrap_nncf_model)
@@ -91,9 +91,6 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
-    parser.add_argument(
-        '--update_config', nargs='+', action=ExtendedDictAction,
-        help='Update configuration file by parameters specified here.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -124,10 +121,8 @@ def main():
         raise ValueError('The output file must be a pkl file.')
 
     cfg = Config.fromfile(args.config)
-    if args.update_config:
-        cfg.merge_from_dict(args.update_config)
-    #if args.cfg_options is not None:
-    #    cfg.merge_from_dict(args.cfg_options)
+    if args.cfg_options is not None:
+        cfg.merge_from_dict(args.cfg_options)
     # import modules from string list.
     if cfg.get('custom_imports', None):
         from mmcv.utils import import_modules_from_strings

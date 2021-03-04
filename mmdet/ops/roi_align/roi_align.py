@@ -107,9 +107,9 @@ roi_align = RoIAlignFunction.apply
 class RoIAlign(nn.Module):
 
     def __init__(self,
-                 out_size,
+                 output_size,
                  spatial_scale,
-                 sample_num=0,
+                 sampling_ratio=0,
                  use_torchvision=False,
                  aligned=True):
         """
@@ -146,10 +146,10 @@ class RoIAlign(nn.Module):
             performance if ROIAlign is used together with conv layers.
         """
         super(RoIAlign, self).__init__()
-        self.out_size = _pair(out_size)
+        self.output_size = _pair(output_size)
         self.spatial_scale = float(spatial_scale)
         self.aligned = aligned
-        self.sample_num = int(sample_num)
+        self.sampling_ratio = int(sampling_ratio)
         self.use_torchvision = use_torchvision
         assert not (use_torchvision and
                     aligned), 'Torchvision does not support aligned RoIAlgin'
@@ -165,18 +165,18 @@ class RoIAlign(nn.Module):
 
         if self.use_torchvision:
             from torchvision.ops import roi_align as tv_roi_align
-            return tv_roi_align(features, rois, self.out_size,
-                                self.spatial_scale, self.sample_num)
+            return tv_roi_align(features, rois, self.output_size,
+                                self.spatial_scale, self.sampling_ratio)
         else:
-            return roi_align(features, rois, self.out_size, self.spatial_scale,
-                             self.sample_num, self.aligned)
+            return roi_align(features, rois, self.output_size, self.spatial_scale,
+                             self.sampling_ratio, self.aligned)
 
     def __repr__(self):
         indent_str = '\n    '
         format_str = self.__class__.__name__
-        format_str += f'({indent_str}out_size={self.out_size},'
+        format_str += f'({indent_str}out_size={self.output_size},'
         format_str += f'{indent_str}spatial_scale={self.spatial_scale},'
-        format_str += f'{indent_str}sample_num={self.sample_num},'
+        format_str += f'{indent_str}sampling_ratio={self.sampling_ratio},'
         format_str += f'{indent_str}use_torchvision={self.use_torchvision},'
         format_str += f'{indent_str}aligned={self.aligned})'
         return format_str

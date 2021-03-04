@@ -391,7 +391,7 @@ class CocoDataset(CustomDataset):
                  jsonfile_prefix=None,
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
-                 iou_thrs=np.arange(0.5, 0.96, 0.05),
+                 iou_thrs=None,
                  score_thr=-1,
                  metric_items=None):
         """Evaluation in COCO protocol.

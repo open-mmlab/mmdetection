@@ -60,7 +60,8 @@ class MaskScoringRoIHead(StandardRoIHead):
                          img_metas,
                          det_bboxes,
                          det_labels,
-                         rescale=False):
+                         rescale=False,
+                         postprocess=False):
         """Obtain mask prediction without augmentation."""
         # image shapes of images in the batch
         ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)

@@ -4,9 +4,8 @@ import torch.nn.functional as F
 from mmcv.cnn import normal_init
 from torch.onnx import is_in_onnx_export
 
-from mmdet.ops import batched_nms
+from mmcv.ops import batched_nms
 from ...core.utils.misc import topk
-#from mmcv.ops import batched_nms
 
 from ..builder import HEADS
 from .anchor_head import AnchorHead

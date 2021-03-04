@@ -7,7 +7,7 @@ from mmcv.runner import (HOOKS, DistSamplerSeedHook, EpochBasedRunner, LoggerHoo
                          Fp16OptimizerHook, OptimizerHook, build_optimizer, load_checkpoint)
 
 from mmdet.core import (DistEvalHook, DistEvalPlusBeforeRunHook, EvalHook,
-                        EvalPlusBeforeRunHook, Fp16OptimizerHook)
+                        EvalPlusBeforeRunHook)
 from mmdet.integration.nncf import CompressionHook, wrap_nncf_model
 from mmdet.parallel import MMDataCPU
 from mmcv.utils import build_from_cfg

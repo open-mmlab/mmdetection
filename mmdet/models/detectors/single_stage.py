@@ -102,13 +102,17 @@ class SingleStageDetector(BaseDetector):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
         with no_nncf_trace():
-            det_bboxes, det_labels = \
-                self.bbox_head.get_bboxes(*outs, img_metas, self.test_cfg, False)[0]
+            bbox_results = \
+                self.bbox_head.get_bboxes(*outs, img_metas, self.test_cfg, False)
+        if torch.onnx.is_in_onnx_export():
+            return bbox_results[0]
 
         if postprocess:
-            return self.postprocess(det_bboxes, det_labels, None, img_metas,
-                                    rescale=rescale)
-        return det_bboxes, det_labels
+            bbox_results = [
+                self.postprocess(det_bboxes, det_labels, None, img_metas, rescale=rescale)
+                for det_bboxes, det_labels in bbox_results
+            ]
+        return bbox_results
 
     def postprocess(self,
                     det_bboxes,

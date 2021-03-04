@@ -1,8 +1,6 @@
 import torch
 from mmcv.runner import force_fp32
 
-from mmdet import ops
-from mmdet.core import force_fp32
 from mmdet.core.utils.misc import topk
 from mmdet.models.builder import ROI_EXTRACTORS
 from mmdet.utils.deployment.symbolic import py_symbolic
@@ -11,9 +9,9 @@ from .base_roi_extractor import BaseRoIExtractor
 
 def adapter(self, feats, rois):
     return ((rois,) + tuple(feats), 
-        {'output_size': self.roi_layers[0].out_size[0],
+        {'output_size': self.roi_layers[0].output_size[0],
          'featmap_strides': self.featmap_strides,
-         'sample_num': self.roi_layers[0].sample_num})
+         'sample_num': self.roi_layers[0].sampling_ratio})
 
 
 @ROI_EXTRACTORS.register_module()
@@ -61,20 +59,6 @@ class SingleRoIExtractor(BaseRoIExtractor):
         target_lvls = target_lvls.clamp(min=0, max=num_levels - 1).long()
         return target_lvls
 
-    def roi_rescale(self, rois, scale_factor):
-        cx = (rois[:, 1] + rois[:, 3]) * 0.5
-        cy = (rois[:, 2] + rois[:, 4]) * 0.5
-        w = rois[:, 3] - rois[:, 1]
-        h = rois[:, 4] - rois[:, 2]
-        new_w = w * scale_factor
-        new_h = h * scale_factor
-        x1 = cx - new_w * 0.5
-        x2 = cx + new_w * 0.5
-        y1 = cy - new_h * 0.5
-        y2 = cy + new_h * 0.5
-        new_rois = torch.stack((rois[:, 0], x1, y1, x2, y2), dim=-1)
-        return new_rois
-    
     @py_symbolic(op_name='roi_feature_extractor', adapter=adapter)
     @force_fp32(apply_to=('feats', ), out_fp16=True)
     def forward(self, feats, rois, roi_scale_factor=None):
@@ -96,9 +80,11 @@ class SingleRoIExtractor(BaseRoIExtractor):
                 (target_lvls == level).int()).view(-1)
             level_rois = rois[level_indices]
             indices.append(level_indices)
-
-            level_feats = extractor(feat, level_rois)
-            roi_feats.append(level_feats)
+            try:
+                level_feats = extractor(feat, level_rois)
+                roi_feats.append(level_feats)
+            except:
+                pass
         # Concatenate roi features from different pyramid levels
         # and rearrange them to match original ROIs order.
         indices = torch.cat(indices, dim=0)

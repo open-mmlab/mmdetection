@@ -127,7 +127,7 @@ class NumClassCheckHook(Hook):
         else:
             for name, module in model.named_modules():
                 if hasattr(module, 'num_classes') and not isinstance(
-                        module, (RPNHead, VGG, FusedSemanticHead, GARPNHead)):
+                        module, (RPNHead, VGG, FusedSemanticHead, GARPNHead)) and name != 'backbone':
                     assert module.num_classes == len(dataset.CLASSES), \
                         (f'The `num_classes` ({module.num_classes}) in '
                          f'{module.__class__.__name__} of '

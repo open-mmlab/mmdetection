@@ -29,6 +29,11 @@ from .vfnet import VFNet
 from .yolact import YOLACT
 from .yolo import YOLOV3
 
+# Replace custom ops
+import mmdet.ops.nms
+import mmdet.ops.roi_align
+
+
 __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',

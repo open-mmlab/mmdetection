@@ -11,7 +11,7 @@ from torch.nn.modules.utils import _pair, _single
 
 from mmdet.utils.deployment.operations_domain import add_domain
 
-from . import deform_conv_ext
+from mmcv import _ext
 
 
 class DeformConvFunction(Function):
@@ -69,7 +69,7 @@ class DeformConvFunction(Function):
             cur_im2col_step = min(ctx.im2col_step, input.shape[0])
             assert (input.shape[0] %
                     cur_im2col_step) == 0, 'im2col step must divide batchsize'
-            deform_conv_ext.deform_conv_forward(
+            _ext.deform_conv_forward(
                 input, weight, offset, output, ctx.bufs_[0], ctx.bufs_[1],
                 weight.size(3), weight.size(2), ctx.stride[1], ctx.stride[0],
                 ctx.padding[1], ctx.padding[0], ctx.dilation[1],
@@ -94,7 +94,7 @@ class DeformConvFunction(Function):
             if ctx.needs_input_grad[0] or ctx.needs_input_grad[1]:
                 grad_input = torch.zeros_like(input)
                 grad_offset = torch.zeros_like(offset)
-                deform_conv_ext.deform_conv_backward_input(
+                _ext.deform_conv_backward_input(
                     input, offset, grad_output, grad_input,
                     grad_offset, weight, ctx.bufs_[0], weight.size(3),
                     weight.size(2), ctx.stride[1], ctx.stride[0],
@@ -104,7 +104,7 @@ class DeformConvFunction(Function):
 
             if ctx.needs_input_grad[2]:
                 grad_weight = torch.zeros_like(weight)
-                deform_conv_ext.deform_conv_backward_parameters(
+                _ext.deform_conv_backward_parameters(
                     input, offset, grad_output,
                     grad_weight, ctx.bufs_[0], ctx.bufs_[1], weight.size(3),
                     weight.size(2), ctx.stride[1], ctx.stride[0],
@@ -161,7 +161,7 @@ class ModulatedDeformConvFunction(Function):
         output = input.new_empty(
             ModulatedDeformConvFunction._infer_shape(ctx, input, weight))
         ctx._bufs = [input.new_empty(0), input.new_empty(0)]
-        deform_conv_ext.modulated_deform_conv_forward(
+        _ext.modulated_deform_conv_forward(
             input, weight, bias, ctx._bufs[0], offset, mask, output,
             ctx._bufs[1], weight.shape[2], weight.shape[3], ctx.stride,
             ctx.stride, ctx.padding, ctx.padding, ctx.dilation, ctx.dilation,
@@ -179,7 +179,7 @@ class ModulatedDeformConvFunction(Function):
         grad_mask = torch.zeros_like(mask)
         grad_weight = torch.zeros_like(weight)
         grad_bias = torch.zeros_like(bias)
-        deform_conv_ext.modulated_deform_conv_backward(
+        _ext.modulated_deform_conv_backward(
             input, weight, bias, ctx._bufs[0], offset, mask, ctx._bufs[1],
             grad_input, grad_weight, grad_bias, grad_offset, grad_mask,
             grad_output, weight.shape[2], weight.shape[3], ctx.stride,
@@ -219,7 +219,7 @@ class DeformConv(nn.Module):
                  padding=0,
                  dilation=1,
                  groups=1,
-                 deformable_groups=1,
+                 deform_groups=1,
                  bias=False):
         super(DeformConv, self).__init__()
 
@@ -237,7 +237,7 @@ class DeformConv(nn.Module):
         self.padding = _pair(padding)
         self.dilation = _pair(dilation)
         self.groups = groups
-        self.deformable_groups = deformable_groups
+        self.deformable_groups = deform_groups
         # enable compatibility with nn.Conv2d
         self.transposed = False
         self.output_padding = _single(0)
@@ -274,7 +274,7 @@ class DeformConv(nn.Module):
         return out
 
 
-@CONV_LAYERS.register_module('DCN')
+@CONV_LAYERS.register_module('DCN', force=True)
 class DeformConvPack(DeformConv):
     """A Deformable Conv Encapsulation that acts as normal Conv layers.
 
@@ -362,7 +362,7 @@ class ModulatedDeformConv(nn.Module):
                  padding=0,
                  dilation=1,
                  groups=1,
-                 deformable_groups=1,
+                 deform_groups=1,
                  bias=True):
         super(ModulatedDeformConv, self).__init__()
         self.in_channels = in_channels
@@ -372,7 +372,7 @@ class ModulatedDeformConv(nn.Module):
         self.padding = padding
         self.dilation = dilation
         self.groups = groups
-        self.deformable_groups = deformable_groups
+        self.deformable_groups = deform_groups
         self.with_bias = bias
         # enable compatibility with nn.Conv2d
         self.transposed = False
@@ -402,7 +402,7 @@ class ModulatedDeformConv(nn.Module):
                                      self.groups, self.deformable_groups)
 
 
-@CONV_LAYERS.register_module('DCNv2')
+@CONV_LAYERS.register_module('DCNv2', force=True)
 class ModulatedDeformConvPack(ModulatedDeformConv):
     """A ModulatedDeformable Conv Encapsulation that acts as normal Conv layers.
 

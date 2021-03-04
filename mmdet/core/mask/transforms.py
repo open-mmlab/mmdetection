@@ -27,7 +27,7 @@ def mask2result(det_bboxes,
                 num_classes,
                 mask_thr_binary=0.5,
                 img_size=None):
-    masks = det_masks
+    masks = det_masks[0] if isinstance(det_masks, list) else det_masks
     bboxes = det_bboxes[:, :4]
     labels = det_labels
 

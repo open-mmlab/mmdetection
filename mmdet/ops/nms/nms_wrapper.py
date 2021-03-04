@@ -8,7 +8,7 @@ from mmdet.utils.deployment.symbolic import py_symbolic
 from . import nms_ext
 
 
-def nms(dets, iou_thr, score_thr=0.0, max_num=-1, device_id=None):
+def nms(dets, iou_threshold, score_thr=0.0, max_num=-1, device_id=None):
     """Dispatch to either CPU or GPU NMS implementations.
 
     The input can be either a torch tensor or numpy array. GPU NMS will be used
@@ -52,7 +52,7 @@ def nms(dets, iou_thr, score_thr=0.0, max_num=-1, device_id=None):
     if max_num < 0:
         max_num = int(dets_th.size(0))
 
-    inds = nms_core(dets_th, iou_thr, score_thr, max_num)
+    inds = nms_core(dets_th, iou_threshold, score_thr, max_num)
 
     if is_numpy:
         inds = inds.cpu().numpy()
@@ -77,7 +77,7 @@ def nms_core(dets, iou_thr, score_thr, max_num):
     return inds
 
 
-def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
+def soft_nms(dets, iou_threshold, method='linear', sigma=0.5, min_score=1e-3):
     """Dispatch to only CPU Soft NMS implementations.
 
     The input can be either a torch tensor or numpy array.
@@ -85,7 +85,7 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
 
     Arguments:
         dets (torch.Tensor or np.ndarray): bboxes with scores.
-        iou_thr (float): IoU threshold for Soft NMS.
+        iou_threshold (float): IoU threshold for Soft NMS.
         method (str): either 'linear' or 'gaussian'
         sigma (float): hyperparameter for gaussian method
         min_score (float): score filter threshold
@@ -119,7 +119,7 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
     method_codes = {'linear': 1, 'gaussian': 2}
     if method not in method_codes:
         raise ValueError(f'Invalid method for SoftNMS: {method}')
-    results = nms_ext.soft_nms(dets_t, iou_thr, method_codes[method], sigma,
+    results = nms_ext.soft_nms(dets_t, iou_threshold, method_codes[method], sigma,
                                min_score)
 
     new_dets = results[:, :5]

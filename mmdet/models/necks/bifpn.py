@@ -5,12 +5,12 @@ import numpy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmdet.core import auto_fp16
+from mmcv.runner import auto_fp16
 
 from ..builder import NECKS
 
 from mmcv.cnn import normal_init, xavier_init, ConvModule
-# from mmcv.cnn.bricks import DepthwiseSeparableConvModule
+
 
 act_fn_list = ["silu", "swish", "hswish", "relu", "relu6", "mish", "srelu"]
 

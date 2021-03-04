@@ -9,7 +9,7 @@ from torch.nn.modules.utils import _pair
 
 from mmdet.core import mask_target
 from mmdet.models.builder import HEADS, build_loss
-from mmcvt.ops import Conv2d
+from mmcv.ops import Conv2d
 from mmcv.ops.carafe import CARAFEPack
 from mmdet.core.utils.misc import arange
 
@@ -169,95 +169,9 @@ class FCNMaskHead(nn.Module):
         Returns:
             list[list]: encoded masks
         """
-        #segm_result = mask_pred[arange(end=det_labels.shape[0], device=mask_pred.device),
-        #                        det_labels].sigmoid()
-        #return segm_result
-        if isinstance(mask_pred, torch.Tensor):
-            mask_pred = mask_pred.sigmoid()
-        else:
-            mask_pred = det_bboxes.new_tensor(mask_pred)
-
-        device = mask_pred.device
-        cls_segms = [[] for _ in range(self.num_classes)
-                     ]  # BG is not included in num_classes
-        bboxes = det_bboxes[:, :4]
-        labels = det_labels
-
-        if rescale:
-            img_h, img_w = ori_shape[:2]
-        else:
-            if isinstance(scale_factor, float):
-                img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
-                img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
-            else:
-                w_scale, h_scale = scale_factor[0], scale_factor[1]
-                img_h = np.round(ori_shape[0] * h_scale.item()).astype(
-                    np.int32)
-                img_w = np.round(ori_shape[1] * w_scale.item()).astype(
-                    np.int32)
-            scale_factor = 1.0
-
-        if not isinstance(scale_factor, (float, torch.Tensor)):
-            scale_factor = bboxes.new_tensor(scale_factor)
-        bboxes = bboxes / scale_factor
-
-        if torch.onnx.is_in_onnx_export():
-            # TODO: Remove after F.grid_sample is supported.
-            from torchvision.models.detection.roi_heads \
-                import paste_masks_in_image
-            masks = paste_masks_in_image(mask_pred, bboxes, ori_shape[:2])
-            thr = rcnn_test_cfg.get('mask_thr_binary', 0)
-            if thr > 0:
-                masks = masks >= thr
-            return masks
-
-        N = len(mask_pred)
-        # The actual implementation split the input into chunks,
-        # and paste them chunk by chunk.
-        if device.type == 'cpu':
-            # CPU is most efficient when they are pasted one by one with
-            # skip_empty=True, so that it performs minimal number of
-            # operations.
-            num_chunks = N
-        else:
-            # GPU benefits from parallelism for larger chunks,
-            # but may have memory issue
-            num_chunks = int(
-                np.ceil(N * img_h * img_w * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
-            assert (num_chunks <=
-                    N), 'Default GPU_MEM_LIMIT is too small; try increasing it'
-        chunks = torch.chunk(torch.arange(N, device=device), num_chunks)
-
-        threshold = rcnn_test_cfg.mask_thr_binary
-        im_mask = torch.zeros(
-            N,
-            img_h,
-            img_w,
-            device=device,
-            dtype=torch.bool if threshold >= 0 else torch.uint8)
-
-        if not self.class_agnostic:
-            mask_pred = mask_pred[range(N), labels][:, None]
-
-        for inds in chunks:
-            masks_chunk, spatial_inds = _do_paste_mask(
-                mask_pred[inds],
-                bboxes[inds],
-                img_h,
-                img_w,
-                skip_empty=device.type == 'cpu')
-
-            if threshold >= 0:
-                masks_chunk = (masks_chunk >= threshold).to(dtype=torch.bool)
-            else:
-                # for visualization and debugging
-                masks_chunk = (masks_chunk * 255).to(dtype=torch.uint8)
-
-            im_mask[(inds, ) + spatial_inds] = masks_chunk
-
-        for i in range(N):
-            cls_segms[labels[i]].append(im_mask[i].detach().cpu().numpy())
-        return cls_segms
+        segm_result = mask_pred[arange(end=det_labels.shape[0], device=mask_pred.device),
+                                det_labels].sigmoid()
+        return segm_result
 
 
 def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):

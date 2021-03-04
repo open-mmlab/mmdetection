@@ -6,8 +6,9 @@ from torch.onnx import is_in_onnx_export
 from torch.onnx.symbolic_opset9 import reshape
 from torch.onnx.symbolic_opset10 import _slice
 
+import mmdet.ops.nms  # Replace mmcv.ops.nms by one from mmdet.ops.nms
 from mmdet.integration.nncf import no_nncf_trace
-from ...ops.nms import batched_nms
+from mmcv.ops import batched_nms
 from ...utils.deployment.symbolic import py_symbolic
 from ..utils.misc import dummy_pad, topk
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
@@ -86,7 +87,7 @@ def multiclass_nms_core(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=
 
     if bboxes.numel() == 0:
         dets = multi_bboxes.new_zeros((0, 6))
-        return dets
+        return dets, None
 
     # TODO: add size check before feed into batched_nms
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)

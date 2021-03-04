@@ -6,9 +6,8 @@ from mmcv.ops import DeformConv2d
 from mmdet.core import multi_apply, multiclass_nms
 from mmdet.core.utils.misc import arange, meshgrid, topk
 from mmdet.core.bbox.transforms import clamp
-from mmdet.ops import DeformConv
-from ..builder import HEADS, build_loss
-from .base_dense_head import BaseDenseHead
+from mmdet.ops.dcn import DeformConv  # Replace mmcv.ops.DeformConv by one from mmdet.ops
+from ..builder import HEADS
 from .anchor_free_head import AnchorFreeHead
 
 INF = 1e8

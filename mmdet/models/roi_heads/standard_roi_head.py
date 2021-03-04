@@ -252,22 +252,26 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=False)
 
-        det_masks = None
+        det_masks = [None for _ in det_bboxes]
         if self.with_mask:
             det_masks = self.simple_test_mask(
                 x, img_metas, det_bboxes, det_labels, rescale=False)
 
         if postprocess:
-            if isinstance(det_masks, tuple): # mask scoring rcnn
-                det_masks, mask_scores = det_masks
-                bbox_results, segm_results = self.postprocess(
-                    det_bboxes, det_labels, det_masks, img_metas, rescale=rescale)
-                return bbox_results, (segm_results, mask_scores)
-                
-            return self.postprocess(
-                det_bboxes, det_labels, det_masks, img_metas, rescale=rescale)
+            if len(det_masks) and isinstance(det_masks[0], tuple): # mask scoring rcnn
+                results = []
+                for i in range(len(det_bboxes)):
+                    det_mask, mask_scores = det_masks[i]
+                    bbox_results, segm_results = self.postprocess(
+                        det_bboxes[i], det_labels[i], det_mask, img_metas[i], rescale=rescale)
+                    masks_with_scores = (segm_results, mask_scores)
+                    results.append((bbox_results, masks_with_scores))
+                return results
+
+            return [self.postprocess(det_bboxes[i], det_labels[i], det_masks[i], img_metas[i], rescale=rescale)
+                    for i in range(len(det_bboxes))]
         else:
-            if det_masks is None:
+            if det_masks is None or None in det_masks:
                 return det_bboxes, det_labels
             else:
                 return det_bboxes, det_labels, det_masks
@@ -278,9 +282,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     det_masks,
                     img_meta,
                     rescale=False):
-        img_h, img_w = img_meta[0]['ori_shape'][:2]
+        img_h, img_w = img_meta['ori_shape'][:2]
         num_classes = self.bbox_head.num_classes
-        scale_factor = img_meta[0]['scale_factor']
+        scale_factor = img_meta['scale_factor']
         if isinstance(scale_factor, float):
             scale_factor = np.asarray((scale_factor, ) * 4)
 
