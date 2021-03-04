@@ -668,19 +668,16 @@ class CornerHead(BaseDenseHead):
                 Default: True.
         """
         assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(img_metas)
-        result_list = []
-        for img_id in range(len(img_metas)):
-            result_list.append(
-                self._get_bboxes_single(
-                    tl_heats[-1][img_id:img_id + 1, :],
-                    br_heats[-1][img_id:img_id + 1, :],
-                    tl_offs[-1][img_id:img_id + 1, :],
-                    br_offs[-1][img_id:img_id + 1, :],
-                    img_metas[img_id],
-                    tl_emb=tl_embs[-1][img_id:img_id + 1, :],
-                    br_emb=br_embs[-1][img_id:img_id + 1, :],
-                    rescale=rescale,
-                    with_nms=with_nms))
+        result_list = self._get_bboxes_single(
+            tl_heats[-1],
+            br_heats[-1],
+            tl_offs[-1],
+            br_offs[-1],
+            img_metas,
+            tl_emb=tl_embs[-1],
+            br_emb=br_embs[-1],
+            rescale=rescale,
+            with_nms=with_nms)
 
         return result_list
 
@@ -689,7 +686,7 @@ class CornerHead(BaseDenseHead):
                            br_heat,
                            tl_off,
                            br_off,
-                           img_meta,
+                           img_metas,
                            tl_emb=None,
                            br_emb=None,
                            tl_centripetal_shift=None,
@@ -707,7 +704,7 @@ class CornerHead(BaseDenseHead):
                 shape (N, corner_offset_channels, H, W).
             br_off (Tensor): Bottom-right corner offset for current level with
                 shape (N, corner_offset_channels, H, W).
-            img_meta (dict): Meta information of current image, e.g.,
+            img_metas (list[dict]): Meta information of current image, e.g.,
                 image size, scaling factor, etc.
             tl_emb (Tensor): Top-left corner embedding for current level with
                 shape (N, corner_emb_channels, H, W).
@@ -722,8 +719,6 @@ class CornerHead(BaseDenseHead):
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
         """
-        if isinstance(img_meta, (list, tuple)):
-            img_meta = img_meta[0]
 
         batch_bboxes, batch_scores, batch_clses = self.decode_heatmap(
             tl_heat=tl_heat.sigmoid(),
@@ -734,33 +729,42 @@ class CornerHead(BaseDenseHead):
             br_emb=br_emb,
             tl_centripetal_shift=tl_centripetal_shift,
             br_centripetal_shift=br_centripetal_shift,
-            img_meta=img_meta,
+            img_metas=img_metas,
             k=self.test_cfg.corner_topk,
             kernel=self.test_cfg.local_maximum_kernel,
             distance_threshold=self.test_cfg.distance_threshold)
 
+        batch_size = batch_bboxes.shape[0]
         if rescale:
-            batch_bboxes /= batch_bboxes.new_tensor(img_meta['scale_factor'])
+            scale_factor = [
+                img_metas[i]['scale_factor'] for i in range(batch_size)
+            ]
 
-        bboxes = batch_bboxes.view([-1, 4])
-        scores = batch_scores.view([-1, 1])
-        clses = batch_clses.view([-1, 1])
+            batch_bboxes /= batch_bboxes.new_tensor(scale_factor).unsqueeze(1)
 
-        idx = scores.argsort(dim=0, descending=True)
-        bboxes = bboxes[idx].view([-1, 4])
-        scores = scores[idx].view(-1)
-        clses = clses[idx].view(-1)
+        bboxes = batch_bboxes.view(batch_size, -1, 4)
+        scores = batch_scores.view(batch_size, -1, 1)
+        clses = batch_clses.view(batch_size, -1, 1)
 
+        idx = scores.argsort(dim=1, descending=True)
+        batch_inds = torch.arange(batch_size).view(-1, 1, 1).expand_as(idx)
+        bboxes = bboxes[batch_inds, idx].view(batch_size, -1, 4)
+        scores = scores[batch_inds, idx].view(batch_size, -1)
+        clses = clses[batch_inds, idx].view(batch_size, -1)
         detections = torch.cat([bboxes, scores.unsqueeze(-1)], -1)
-        keepinds = (detections[:, -1] > -0.1)
-        detections = detections[keepinds]
-        labels = clses[keepinds]
 
-        if with_nms:
-            detections, labels = self._bboxes_nms(detections, labels,
-                                                  self.test_cfg)
+        det_results = []
+        for (detection, cls) in zip(detections, clses):
+            keepinds = (detection[:, -1] > -0.1)
+            detection = detection[keepinds]
+            label = cls[keepinds]
 
-        return detections, labels
+            if with_nms:
+                detection, label = self._bboxes_nms(detection, label,
+                                                    self.test_cfg)
+            det_results.append(tuple([detection, label]))
+
+        return det_results
 
     def _bboxes_nms(self, bboxes, labels, cfg):
         if labels.numel() == 0:
@@ -870,7 +874,7 @@ class CornerHead(BaseDenseHead):
                        br_emb=None,
                        tl_centripetal_shift=None,
                        br_centripetal_shift=None,
-                       img_meta=None,
+                       img_metas=None,
                        k=100,
                        kernel=3,
                        distance_threshold=0.5,
@@ -894,7 +898,7 @@ class CornerHead(BaseDenseHead):
                 for current level with shape (N, 2, H, W).
             br_centripetal_shift (Tensor | None): Bottom-right centripetal
                 shift for current level with shape (N, 2, H, W).
-            img_meta (dict): Meta information of current image, e.g.,
+            img_metas (list[dict]): Meta information of current image, e.g.,
                 image size, scaling factor, etc.
             k (int): Get top k corner keypoints from heatmap.
             kernel (int): Max pooling kernel for extract local maximum pixels.
@@ -917,7 +921,11 @@ class CornerHead(BaseDenseHead):
             and br_centripetal_shift is not None)
         assert with_embedding + with_centripetal_shift == 1
         batch, _, height, width = tl_heat.size()
-        inp_h, inp_w, _ = img_meta['pad_shape']
+        img_shapes = [img_metas[i]['pad_shape'] for i in range(batch)]
+        img_shapes = torch.as_tensor(
+            img_shapes, dtype=torch.float32, device=tl_heat.device)
+        inp_h, inp_w = img_shapes[:, 0:1].unsqueeze(
+            -1), img_shapes[:, 1:2].unsqueeze(-1)
 
         # perform nms on heatmaps
         tl_heat = self._local_maximum(tl_heat, kernel=kernel)
@@ -968,8 +976,11 @@ class CornerHead(BaseDenseHead):
             br_ctxs *= (inp_w / width)
             br_ctys *= (inp_h / height)
 
-        x_off = img_meta['border'][2]
-        y_off = img_meta['border'][0]
+        borders = [img_metas[i]['border'] for i in range(batch)]
+        borders = torch.as_tensor(
+            borders, dtype=torch.float32, device=tl_xs.device)
+        x_off = borders[:, 2:3].unsqueeze(-1)
+        y_off = borders[:, 0:1].unsqueeze(-1)
 
         tl_xs -= x_off
         tl_ys -= y_off
