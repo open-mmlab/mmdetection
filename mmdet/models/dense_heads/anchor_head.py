@@ -562,10 +562,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         cls_score_list = [cls_scores[i].detach() for i in range(num_levels)]
         bbox_pred_list = [bbox_preds[i].detach() for i in range(num_levels)]
 
-        img_shape = [
+        img_shapes = [
             img_metas[i]['img_shape'] for i in range(cls_scores[0].shape[0])
         ]
-        scale_factor = [
+        scale_factors = [
             img_metas[i]['scale_factor'] for i in range(cls_scores[0].shape[0])
         ]
 
@@ -573,13 +573,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             # some heads don't support with_nms argument
             result_list = self._get_bboxes_single(cls_score_list,
                                                   bbox_pred_list, mlvl_anchors,
-                                                  img_shape, scale_factor, cfg,
-                                                  rescale)
+                                                  img_shapes, scale_factors,
+                                                  cfg, rescale)
         else:
             result_list = self._get_bboxes_single(cls_score_list,
                                                   bbox_pred_list, mlvl_anchors,
-                                                  img_shape, scale_factor, cfg,
-                                                  rescale, with_nms)
+                                                  img_shapes, scale_factors,
+                                                  cfg, rescale, with_nms)
         return result_list
 
     def _get_bboxes_single(self,
@@ -591,7 +591,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                            cfg,
                            rescale=False,
                            with_nms=True):
-        """Transform outputs for a single batch item into bbox predictions.
+        """Transform outputs for a batch item into bbox predictions.
 
         Args:
             cls_score_list (list[Tensor]): Box scores for a single scale level
@@ -600,10 +600,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scale level with shape (num_anchors * 4, H, W).
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
-            img_shapes (list[tuple[int]]): Shape of the input image,
-                (height, width, 3).
-            scale_factors (list[ndarray]): Scale factor of the image arange as
-                (w_scale, h_scale, w_scale, h_scale).
+            img_shapes (list[tuple[int]]): Shape of the batch input image,
+                list[(height, width, 3)].
+            scale_factors (list[ndarray]): Scale factor of the batch
+                image arange as list[(w_scale, h_scale, w_scale, h_scale)].
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
@@ -618,20 +618,18 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
+        batch_size = cls_score_list[0].shape[0]
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
             cfg.get('nms_pre', -1),
             device=cls_score_list[0].device,
             dtype=torch.long)
+
         mlvl_bboxes = []
         mlvl_scores = []
-        img_shapes = torch.as_tensor(
-            img_shapes, dtype=torch.float32,
-            device=cls_score_list[0].device)[..., :2]
         for cls_score, bbox_pred, anchors in zip(cls_score_list,
                                                  bbox_pred_list, mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            batch_size = cls_score.shape[0]
             cls_score = cls_score.permute(0, 2, 3,
                                           1).reshape(batch_size, -1,
                                                      self.cls_out_channels)
@@ -672,25 +670,27 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 anchors, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
+
         mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factors).unsqueeze(1)
         mlvl_scores = torch.cat(mlvl_scores, dim=1)
+
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
             max_scores, _ = mlvl_scores.max(dim=2)
             _, topk_inds = max_scores.topk(deploy_nms_pre)
-            batch_inds = torch.arange(mlvl_scores.shape[0]).view(
-                -1, 1).expand_as(topk_inds)
+            batch_inds = torch.arange(batch_size).view(-1,
+                                                       1).expand_as(topk_inds)
             mlvl_scores = mlvl_scores[batch_inds, topk_inds]
             mlvl_bboxes = mlvl_bboxes[batch_inds, topk_inds]
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
             # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
             # BG cat_id: num_class
-            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0],
-                                            mlvl_scores.shape[1], 1)
+            padding = mlvl_scores.new_zeros(batch_size, mlvl_scores.shape[1],
+                                            1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=2)
 
         if with_nms:

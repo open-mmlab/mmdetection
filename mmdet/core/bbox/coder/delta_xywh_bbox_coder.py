@@ -58,8 +58,9 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            boxes (torch.Tensor): Basic boxes.
-            pred_bboxes (torch.Tensor): Encoded boxes with shape
+            bboxes (torch.Tensor): Basic boxes. Shape (B, N, 4) or (N, 4)
+            pred_bboxes (torch.Tensor): Encoded boxes with
+               shape (B, N, 4) or (N, 4)
             max_shape (tuple[int], optional): Maximum shape of boxes.
                 Defaults to None.
             wh_ratio_clip (float, optional): The allowed ratio between
@@ -70,6 +71,8 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         """
 
         assert pred_bboxes.size(0) == bboxes.size(0)
+        if pred_bboxes.ndim == 3:
+            assert pred_bboxes.size(1) == bboxes.size(1)
         decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means, self.stds,
                                     max_shape, wh_ratio_clip, self.clip_border)
 
@@ -137,20 +140,22 @@ def delta2bbox(rois,
     This is the inverse function of :func:`bbox2delta`.
 
     Args:
-        rois (Tensor): Boxes to be transformed. Has shape (N, 4)
+        rois (Tensor): Boxes to be transformed. Has shape (N, 4) or (B, N, 4)
         deltas (Tensor): Encoded offsets with respect to each roi.
-            Has shape (N, 4 * num_classes). Note N = num_anchors * W * H when
-            rois is a grid of anchors. Offset encoding follows [1]_.
+            Has shape (N, 4 * num_classes) or (N, 4).
+            Note N = num_anchors * W * H when rois is a grid of anchors.
+            Offset encoding follows [1]_.
         means (Sequence[float]): Denormalizing means for delta coordinates
         stds (Sequence[float]): Denormalizing standard deviation for delta
             coordinates
-        max_shape (Tensor): Maximum bounds for boxes. specifies (H, W)
+        max_shape (list[tuple[int]] or tuple[int]): Maximum bounds for boxes.
+            specifies (H, W, C)
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Defaults to True.
 
     Returns:
-        Tensor: Boxes with shape (N, 4), where columns represent
+        Tensor: Boxes with shape (B, N, 4) or (N, 4), where 4 represent
             tl_x, tl_y, br_x, br_y.
 
     References:
@@ -165,19 +170,17 @@ def delta2bbox(rois,
         >>>                        [  1.,   1.,   1.,   1.],
         >>>                        [  0.,   0.,   2.,  -1.],
         >>>                        [ 0.7, -1.9, -0.5,  0.3]])
-        >>> delta2bbox(rois, deltas, max_shape=(32, 32))
+        >>> delta2bbox(rois, deltas, max_shape=(32, 32, 3))
         tensor([[0.0000, 0.0000, 1.0000, 1.0000],
                 [0.1409, 0.1409, 2.8591, 2.8591],
                 [0.0000, 0.3161, 4.1945, 0.6839],
                 [5.0000, 5.0000, 5.0000, 5.0000]])
     """
-    means = deltas.new_tensor(means).view(1, -1).expand(
-        deltas.size(0), 1, -1).repeat(1, deltas.size(1),
-                                      deltas.size(2) // 4)
-    stds = deltas.new_tensor(stds).view(1, -1).expand(deltas.size(0), 1,
-                                                      -1).repeat(
-                                                          1, deltas.size(1),
-                                                          deltas.size(2) // 4)
+
+    means = deltas.new_tensor(means).view(1,
+                                          -1).repeat(1,
+                                                     deltas.size(-1) // 4)
+    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(-1) // 4)
     denorm_deltas = deltas * stds + means
     dx = denorm_deltas[..., 0::4]
     dy = denorm_deltas[..., 1::4]
@@ -189,11 +192,11 @@ def delta2bbox(rois,
     x1, y1 = rois[..., 0], rois[..., 1]
     x2, y2 = rois[..., 2], rois[..., 3]
     # Compute center of each roi
-    px = ((x1 + x2) * 0.5).unsqueeze(2).expand_as(dx)
-    py = ((y1 + y2) * 0.5).unsqueeze(2).expand_as(dy)
+    px = ((x1 + x2) * 0.5).unsqueeze(-1).expand_as(dx)
+    py = ((y1 + y2) * 0.5).unsqueeze(-1).expand_as(dy)
     # Compute width/height of each roi
-    pw = (x2 - x1).unsqueeze(2).expand_as(dw)
-    ph = (y2 - y1).unsqueeze(2).expand_as(dh)
+    pw = (x2 - x1).unsqueeze(-1).expand_as(dw)
+    ph = (y2 - y1).unsqueeze(-1).expand_as(dh)
     # Use exp(network energy) to enlarge/shrink each roi
     gw = pw * dw.exp()
     gh = ph * dh.exp()
@@ -206,11 +209,14 @@ def delta2bbox(rois,
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
     if clip_border and max_shape is not None:
+        if isinstance(max_shape, list):
+            assert len(max_shape) == x1.shape[0]
+        max_shape = torch.as_tensor(
+            max_shape, dtype=torch.float32, device=x1.device)[..., :2]
         min_xy = torch.as_tensor(0, dtype=torch.float32, device=x1.device)
         min_xy = min_xy.expand(x1.size())
-        max_xy = max_shape.unsqueeze(1).expand(x1.size(0), x1.size(1), 2)
-        max_x = max_xy[..., 1:]
-        max_y = max_xy[..., 0:1]
+        max_x = max_shape[..., 1:].unsqueeze(-1)
+        max_y = max_shape[..., 0:1].unsqueeze(-1)
         x1 = torch.where(x1 < min_xy, min_xy, x1)
         x1 = torch.where(x1 > max_x, max_x, x1)
         y1 = torch.where(y1 < min_xy, min_xy, y1)
