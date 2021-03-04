@@ -356,16 +356,19 @@ class FCOSHead(AnchorFreeHead):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
+        device = cls_scores[0].device
+        batch_size = cls_scores[0].shape[0]
         img_shapes = torch.as_tensor(
-            img_shapes, dtype=torch.float32,
-            device=cls_scores[0].device)[..., :2]
+            img_shapes, dtype=torch.float32, device=device)[..., :2]
+        # convert to tensor to keep tracing
+        nms_pre_tensor = torch.tensor(
+            cfg.get('nms_pre', -1), device=device, dtype=torch.long)
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_centerness = []
         for cls_score, bbox_pred, centerness, points in zip(
                 cls_scores, bbox_preds, centernesses, mlvl_points):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            batch_size = cls_score.shape[0]
             scores = cls_score.permute(0, 2, 3, 1).reshape(
                 batch_size, -1, self.cls_out_channels).sigmoid()
             centerness = centerness.permute(0, 2, 3,
@@ -374,8 +377,15 @@ class FCOSHead(AnchorFreeHead):
 
             bbox_pred = bbox_pred.permute(0, 2, 3,
                                           1).reshape(batch_size, -1, 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[1] > nms_pre:
+            # Always keep topk op for dynamic input in onnx
+            if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
+                                       or scores.shape[-2] > nms_pre_tensor):
+                from torch import _shape_as_tensor
+                # keep shape as tensor and get k
+                num_anchor = _shape_as_tensor(scores)[-2].to(device)
+                nms_pre = torch.where(nms_pre_tensor < num_anchor,
+                                      nms_pre_tensor, num_anchor)
+
                 max_scores, _ = (scores * centerness[..., None]).max(dim=2)
                 _, topk_inds = max_scores.topk(nms_pre)
                 points = points[topk_inds, :]
@@ -398,7 +408,9 @@ class FCOSHead(AnchorFreeHead):
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            max_scores, _ = (mlvl_scores * mlvl_centerness[:, None]).max(dim=2)
+            max_scores, _ = (
+                mlvl_scores *
+                mlvl_centerness.unsqueeze(2).expand_as(mlvl_scores)).max(dim=2)
             _, topk_inds = max_scores.topk(deploy_nms_pre)
             batch_inds = torch.arange(mlvl_scores.shape[0]).view(
                 -1, 1).expand_as(topk_inds)
