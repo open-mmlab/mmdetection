@@ -208,6 +208,9 @@ def delta2bbox(rois,
     y1 = gy - gh * 0.5
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
+
+    bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
+
     if clip_border and max_shape is not None:
         if isinstance(max_shape, list):
             assert len(max_shape) == x1.shape[0]
@@ -215,15 +218,9 @@ def delta2bbox(rois,
             max_shape, dtype=torch.float32, device=x1.device)[..., :2]
         min_xy = torch.as_tensor(0, dtype=torch.float32, device=x1.device)
         min_xy = min_xy.expand(x1.size())
-        max_x = max_shape[..., 1:].unsqueeze(-1)
-        max_y = max_shape[..., 0:1].unsqueeze(-1)
-        x1 = torch.where(x1 < min_xy, min_xy, x1)
-        x1 = torch.where(x1 > max_x, max_x, x1)
-        y1 = torch.where(y1 < min_xy, min_xy, y1)
-        y1 = torch.where(y1 > max_y, max_y, y1)
-        x2 = torch.where(x2 < min_xy, min_xy, x2)
-        x2 = torch.where(x2 > max_x, max_x, x2)
-        y2 = torch.where(y2 < min_xy, min_xy, y2)
-        y2 = torch.where(y2 > max_y, max_y, y2)
-    bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
+        max_xy = torch.cat([max_shape, max_shape],
+                           dim=-1).flip(dims=[-1]).unsqueeze(-2)
+        bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
+        bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+
     return bboxes
