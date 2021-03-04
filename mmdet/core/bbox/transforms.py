@@ -123,7 +123,8 @@ def distance2bbox(points, distance, max_shape=None):
         points (Tensor): Shape (b, n, 2) or (n, 2), [x, y].
         distance (Tensor): Distance from the given point to 4
             boundaries (left, top, right, bottom). Shape (b, n, 4)
-        max_shape (Tensor): Shape of the image.
+        max_shape (list[tuple[int]] or tuple[int]): Maximum bounds for boxes.
+            specifies (H, W, C)
 
     Returns:
         Tensor: Decoded bboxes.
@@ -132,21 +133,22 @@ def distance2bbox(points, distance, max_shape=None):
     y1 = points[..., 1] - distance[..., 1]
     x2 = points[..., 0] + distance[..., 2]
     y2 = points[..., 1] + distance[..., 3]
+
+    bboxes = torch.stack([x1, y1, x2, y2], -1)
+
     if max_shape is not None:
+        if isinstance(max_shape, list):
+            assert len(max_shape) == x1.shape[0]
+        max_shape = torch.as_tensor(
+            max_shape, dtype=torch.float32, device=x1.device)[..., :2]
         min_xy = torch.as_tensor(0, dtype=torch.float32, device=x1.device)
-        min_xy = min_xy.expand(x1.size())
-        max_xy = max_shape.unsqueeze(1).expand(x1.size(0), x1.size(1), 2)
-        max_x = max_xy[..., 1]
-        max_y = max_xy[..., 0]
-        x1 = torch.where(x1 < min_xy, min_xy, x1)
-        x1 = torch.where(x1 > max_x, max_x, x1)
-        y1 = torch.where(y1 < min_xy, min_xy, y1)
-        y1 = torch.where(y1 > max_y, max_y, y1)
-        x2 = torch.where(x2 < min_xy, min_xy, x2)
-        x2 = torch.where(x2 > max_x, max_x, x2)
-        y2 = torch.where(y2 < min_xy, min_xy, y2)
-        y2 = torch.where(y2 > max_y, max_y, y2)
-    return torch.stack([x1, y1, x2, y2], -1)
+        min_xy = min_xy.expand(x1.size()).unsqueeze(-1)
+        max_xy = torch.cat([max_shape, max_shape],
+                           dim=-1).flip(dims=[-1]).unsqueeze(-2)
+        bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
+        bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+
+    return bboxes
 
 
 def bbox2distance(points, bbox, max_dis=None, eps=0.1):

@@ -335,7 +335,7 @@ class FCOSHead(AnchorFreeHead):
             mlvl_points (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_points, 4).
             img_shapes (list[tuple[int]]): Shape of the input image,
-                (height, width, 3).
+                list[(height, width, 3)].
             scale_factors (list[ndarray]): Scale factor of the image arrange as
                 (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config | None): Test / postprocessing configuration,
@@ -358,8 +358,6 @@ class FCOSHead(AnchorFreeHead):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         device = cls_scores[0].device
         batch_size = cls_scores[0].shape[0]
-        img_shapes = torch.as_tensor(
-            img_shapes, dtype=torch.float32, device=device)[..., :2]
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
             cfg.get('nms_pre', -1), device=device, dtype=torch.long)
@@ -399,6 +397,7 @@ class FCOSHead(AnchorFreeHead):
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
+
         mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factors).unsqueeze(1)
@@ -417,10 +416,11 @@ class FCOSHead(AnchorFreeHead):
             mlvl_scores = mlvl_scores[batch_inds, topk_inds, :]
             mlvl_bboxes = mlvl_bboxes[batch_inds, topk_inds, :]
             mlvl_centerness = mlvl_centerness[batch_inds, topk_inds]
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0],
-                                        mlvl_scores.shape[1], 1)
+
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
+        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0],
+                                        mlvl_scores.shape[1], 1)
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=2)
 
         if with_nms:
