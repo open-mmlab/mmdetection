@@ -294,23 +294,23 @@ class FCOSHead(AnchorFreeHead):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         mlvl_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                       bbox_preds[0].device)
-        result_list = []
-        for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
-            centerness_pred_list = [
-                centernesses[i][img_id].detach() for i in range(num_levels)
-            ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self._get_bboxes_single(
-                cls_score_list, bbox_pred_list, centerness_pred_list,
-                mlvl_points, img_shape, scale_factor, cfg, rescale, with_nms)
-            result_list.append(det_bboxes)
+
+        cls_score_list = [cls_scores[i].detach() for i in range(num_levels)]
+        bbox_pred_list = [bbox_preds[i].detach() for i in range(num_levels)]
+        centerness_pred_list = [
+            centernesses[i].detach() for i in range(num_levels)
+        ]
+        img_shapes = [
+            img_metas[i]['img_shape'] for i in range(cls_scores[0].shape[0])
+        ]
+        scale_factors = [
+            img_metas[i]['scale_factor'] for i in range(cls_scores[0].shape[0])
+        ]
+        result_list = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                              centerness_pred_list,
+                                              mlvl_points, img_shapes,
+                                              scale_factors, cfg, rescale,
+                                              with_nms)
         return result_list
 
     def _get_bboxes_single(self,
@@ -318,8 +318,8 @@ class FCOSHead(AnchorFreeHead):
                            bbox_preds,
                            centernesses,
                            mlvl_points,
-                           img_shape,
-                           scale_factor,
+                           img_shapes,
+                           scale_factors,
                            cfg,
                            rescale=False,
                            with_nms=True):
@@ -334,9 +334,9 @@ class FCOSHead(AnchorFreeHead):
                 with shape (num_points * 4, H, W).
             mlvl_points (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_points, 4).
-            img_shape (tuple[int]): Shape of the input image,
+            img_shapes (list[tuple[int]]): Shape of the input image,
                 (height, width, 3).
-            scale_factor (ndarray): Scale factor of the image arrange as
+            scale_factors (list[ndarray]): Scale factor of the image arrange as
                 (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -356,57 +356,74 @@ class FCOSHead(AnchorFreeHead):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
+        img_shapes = torch.as_tensor(
+            img_shapes, dtype=torch.float32,
+            device=cls_scores[0].device)[..., :2]
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_centerness = []
         for cls_score, bbox_pred, centerness, points in zip(
                 cls_scores, bbox_preds, centernesses, mlvl_points):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
-            centerness = centerness.permute(1, 2, 0).reshape(-1).sigmoid()
+            batch_size = cls_score.shape[0]
+            scores = cls_score.permute(0, 2, 3, 1).reshape(
+                batch_size, -1, self.cls_out_channels).sigmoid()
+            centerness = centerness.permute(0, 2, 3,
+                                            1).reshape(batch_size,
+                                                       -1).sigmoid()
 
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            bbox_pred = bbox_pred.permute(0, 2, 3,
+                                          1).reshape(batch_size, -1, 4)
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
-                max_scores, _ = (scores * centerness[:, None]).max(dim=1)
+            if nms_pre > 0 and scores.shape[1] > nms_pre:
+                max_scores, _ = (scores * centerness[..., None]).max(dim=2)
                 _, topk_inds = max_scores.topk(nms_pre)
                 points = points[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                centerness = centerness[topk_inds]
-            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
+                batch_inds = torch.arange(batch_size).view(
+                    -1, 1).expand_as(topk_inds).long()
+                bbox_pred = bbox_pred[batch_inds, topk_inds, :]
+                scores = scores[batch_inds, topk_inds, :]
+                centerness = centerness[batch_inds, topk_inds]
+
+            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
+        mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        mlvl_centerness = torch.cat(mlvl_centerness)
+            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factors).unsqueeze(1)
+        mlvl_scores = torch.cat(mlvl_scores, dim=1)
+        mlvl_centerness = torch.cat(mlvl_centerness, dim=1)
 
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            max_scores, _ = (mlvl_scores * mlvl_centerness[:, None]).max(dim=1)
+            max_scores, _ = (mlvl_scores * mlvl_centerness[:, None]).max(dim=2)
             _, topk_inds = max_scores.topk(deploy_nms_pre)
-            mlvl_scores = mlvl_scores[topk_inds, :]
-            mlvl_bboxes = mlvl_bboxes[topk_inds, :]
-            mlvl_centerness = mlvl_centerness[topk_inds]
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
+            batch_inds = torch.arange(mlvl_scores.shape[0]).view(
+                -1, 1).expand_as(topk_inds)
+            mlvl_scores = mlvl_scores[batch_inds, topk_inds, :]
+            mlvl_bboxes = mlvl_bboxes[batch_inds, topk_inds, :]
+            mlvl_centerness = mlvl_centerness[batch_inds, topk_inds]
+        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0],
+                                        mlvl_scores.shape[1], 1)
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
+        mlvl_scores = torch.cat([mlvl_scores, padding], dim=2)
 
         if with_nms:
-            det_bboxes, det_labels = multiclass_nms(
-                mlvl_bboxes,
-                mlvl_scores,
-                cfg.score_thr,
-                cfg.nms,
-                cfg.max_per_img,
-                score_factors=mlvl_centerness)
-            return det_bboxes, det_labels
+            det_results = []
+            for (bboxes, scores, centerness) in zip(mlvl_bboxes, mlvl_scores,
+                                                    mlvl_centerness):
+                det_bbox, det_label = multiclass_nms(
+                    bboxes,
+                    scores,
+                    cfg.score_thr,
+                    cfg.nms,
+                    cfg.max_per_img,
+                    score_factors=centerness)
+                det_results.append(tuple([det_bbox, det_label]))
+            return det_results
         else:
             return mlvl_bboxes, mlvl_scores, mlvl_centerness
 

@@ -123,20 +123,29 @@ def distance2bbox(points, distance, max_shape=None):
         points (Tensor): Shape (n, 2), [x, y].
         distance (Tensor): Distance from the given point to 4
             boundaries (left, top, right, bottom).
-        max_shape (tuple): Shape of the image.
+        max_shape (Tensor): Shape of the image.
 
     Returns:
         Tensor: Decoded bboxes.
     """
-    x1 = points[:, 0] - distance[:, 0]
-    y1 = points[:, 1] - distance[:, 1]
-    x2 = points[:, 0] + distance[:, 2]
-    y2 = points[:, 1] + distance[:, 3]
+    x1 = points[..., 0] - distance[..., 0]
+    y1 = points[..., 1] - distance[..., 1]
+    x2 = points[..., 0] + distance[..., 2]
+    y2 = points[..., 1] + distance[..., 3]
     if max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1])
-        y1 = y1.clamp(min=0, max=max_shape[0])
-        x2 = x2.clamp(min=0, max=max_shape[1])
-        y2 = y2.clamp(min=0, max=max_shape[0])
+        min_xy = torch.as_tensor(0, dtype=torch.float32, device=x1.device)
+        min_xy = min_xy.expand(x1.size())
+        max_xy = max_shape.unsqueeze(1).expand(x1.size(0), x1.size(1), 2)
+        max_x = max_xy[..., 1]
+        max_y = max_xy[..., 0]
+        x1 = torch.where(x1 < min_xy, min_xy, x1)
+        x1 = torch.where(x1 > max_x, max_x, x1)
+        y1 = torch.where(y1 < min_xy, min_xy, y1)
+        y1 = torch.where(y1 > max_y, max_y, y1)
+        x2 = torch.where(x2 < min_xy, min_xy, x2)
+        x2 = torch.where(x2 > max_x, max_x, x2)
+        y2 = torch.where(y2 < min_xy, min_xy, y2)
+        y2 = torch.where(y2 > max_y, max_y, y2)
     return torch.stack([x1, y1, x2, y2], -1)
 
 
