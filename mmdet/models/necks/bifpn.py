@@ -156,7 +156,9 @@ class BiFPNNode(nn.Module):
 
         nodes = self.act_layer(nodes)
 
-        return self.fusion_convs(nodes)
+        nodes = self.fusion_convs(nodes)
+
+        return nodes
 
 
 class BiFPNBlock(nn.Module):

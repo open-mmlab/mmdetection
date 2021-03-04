@@ -12,3 +12,4 @@ onnx>=1.6.0
 onnxruntime>=1.1.2
 lxml
 Polygon3==3.0.8
+editdistance
