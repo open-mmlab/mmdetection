@@ -113,7 +113,7 @@ def yolo_config(test_step_name):
     if (test_step_names[test_step_name] == 0):
         yolo_model = YOLOV3Neck(
             in_channels=in_channels, out_channels=out_channels, num_scales=3)
-        yolo_model.eval()
+        yolo_model.cpu().eval()
         return yolo_model, feats
 
 
