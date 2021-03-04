@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from utils import verify_model
 
@@ -14,6 +15,8 @@ test_step_names = {
     'extra_convs_laterals': 6,
     'extra_convs_outputs': 7,
 }
+
+data_path = 'tests/test_onnx/data/'
 
 
 def fpn_config(test_step_name):
@@ -100,16 +103,16 @@ def fpn_config(test_step_name):
 
 
 def yolo_config(test_step_name):
-    s = 64
-    in_channels = [64, 32, 16]
-    feat_sizes = [s // 2**i for i in range(3)]  # [64, 32, 16]
-    out_channels = [32, 16, 8]
+    in_channels = [16, 8, 4]
+    out_channels = [8, 4, 2]
 
     # FPN expects a multiple levels of features per image
-    feats = [
-        torch.rand(1, in_channels[len(in_channels) - 1 - i], feat_sizes[i],
-                   feat_sizes[i]) for i in range(len(in_channels))
-    ]
+    feats = []
+    yolov3_neck_data = 'yolov3_neck_'
+    for i in range(len(in_channels)):
+        data_name = data_path + yolov3_neck_data + str(i) + '.npy'
+        feats.append(torch.tensor(np.load(data_name)))
+
     if (test_step_names[test_step_name] == 0):
         yolo_model = YOLOV3Neck(
             in_channels=in_channels, out_channels=out_channels, num_scales=3)

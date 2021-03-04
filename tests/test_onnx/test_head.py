@@ -1,4 +1,5 @@
 import mmcv
+import numpy as np
 import torch
 import torch.nn as nn
 from utils import verify_model
@@ -12,6 +13,8 @@ test_step_names = {
     '_get_bboxes_single': 2,
     'get_bboxes': 3
 }
+
+data_path = 'tests/test_onnx/data/'
 
 
 class AnchorHeadTest(nn.Module):
@@ -107,7 +110,7 @@ def retinanet_config(test_step_name):
         list[Tensor]: A list of tensors from torch.rand to simulate input,
             each is a 4D-tensor.
     """
-    s = 256
+    s = 128
     img_metas = [{
         'img_shape': (s, s, 3),
         'scale_factor': 1,
@@ -146,10 +149,11 @@ def retinanet_config(test_step_name):
         in_channels=1)
     model.cpu().eval()
 
-    feat = [
-        torch.rand(1, 1, 256 // (2**(i + 2)), 256 // (2**(i + 2)))
-        for i in range(len(model.head.anchor_generator.strides))
-    ]
+    feat = []
+    retina_head_data = 'retina_head_'
+    for i in range(len(model.head.anchor_generator.strides)):
+        data_name = data_path + retina_head_data + str(i) + '.npy'
+        feat.append(torch.tensor(np.load(data_name)))
 
     if (test_step_name != 'forward_single'):
         return model, feat
@@ -271,10 +275,11 @@ def yolo_config(test_step_name):
         test_step=test_step_names[test_step_name])
     model.cpu().eval()
 
-    feat = [
-        torch.rand(1, 1, 256 // (2**(i + 2)), 256 // (2**(i + 2)))
-        for i in range(len(model.head.anchor_generator.strides))
-    ]
+    feat = []
+    yolov3_head_data = 'yolov3_head_'
+    for i in range(len(model.head.anchor_generator.strides)):
+        data_name = data_path + yolov3_head_data + str(i) + '.npy'
+        feat.append.torch.tensor(np.load(data_name))
 
     return model, feat
 
