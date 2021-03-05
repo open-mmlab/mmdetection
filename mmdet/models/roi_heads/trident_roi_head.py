@@ -24,9 +24,10 @@ class TridentRoIHead(StandardRoIHead):
         super(TridentRoIHead, self).__init__(**kwargs)
 
     def merge_trident_bboxes(self, trident_det_bboxes, trident_det_labels):
+        """Merge bbox predictions of each branches."""
         if trident_det_bboxes.numel() == 0:
             det_bboxes = trident_det_bboxes.new_zeros((0, 5))
-            det_labels = trident_det_bboxes.new_zeros((0,), dtype=torch.long)
+            det_labels = trident_det_bboxes.new_zeros((0, ), dtype=torch.long)
         else:
             nms_bboxes = trident_det_bboxes[:, :4]
             nms_scores = trident_det_bboxes[:, 4].contiguous()
@@ -63,11 +64,14 @@ class TridentRoIHead(StandardRoIHead):
                 det_bboxes_list[_] = det_bboxes_list[_].new_empty((0, 5))
         det_results = [
             self.merge_trident_bboxes(
-                torch.cat(det_bboxes_list[i * num_branch:(i + 1) * num_branch]),
-                torch.cat(det_labels_list[i * num_branch:(i + 1) * num_branch]),
-            )
-            for i in range(len(img_metas) // num_branch)]
-        det_bboxes, det_labels = ([item[i] for item in det_results] for i in (0, 1))
+                torch.cat(det_bboxes_list[i * num_branch:(i + 1) *
+                                          num_branch]),
+                torch.cat(det_labels_list[i * num_branch:(i + 1) *
+                                          num_branch]),
+            ) for i in range(len(img_metas) // num_branch)
+        ]
+        det_bboxes, det_labels = ([item[i] for item in det_results]
+                                  for i in (0, 1))
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
                         self.bbox_head.num_classes)
