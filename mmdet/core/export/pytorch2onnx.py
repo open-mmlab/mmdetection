@@ -126,7 +126,8 @@ def preprocess_example_input(input_config):
         normalize_cfg = input_config['normalize_cfg']
         mean = np.array(normalize_cfg['mean'], dtype=np.float32)
         std = np.array(normalize_cfg['std'], dtype=np.float32)
-        one_img = mmcv.imnormalize(one_img, mean, std)
+        to_rgb = normalize_cfg.get('to_rgb', True)
+        one_img = mmcv.imnormalize(one_img, mean, std, to_rgb=to_rgb)
     one_img = one_img.transpose(2, 0, 1)
     one_img = torch.from_numpy(one_img).unsqueeze(0).float().requires_grad_(
         True)

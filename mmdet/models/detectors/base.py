@@ -275,7 +275,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     text_color=(72, 101, 241),
                     mask_color=None,
                     thickness=2,
-                    font_scale=0.5,
                     font_size=13,
                     win_name='',
                     show=False,
@@ -297,7 +296,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                Color of masks. The tuple of color should be in BGR order.
                Default: None
             thickness (int): Thickness of lines. Default: 2
-            font_scale (float): Font scales of texts. Default: 0.5
             font_size (int): Font size of texts. Default: 13
             win_name (str): The window name. Default: ''
             wait_time (float): Value of waitKey param.
@@ -347,7 +345,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             text_color=text_color,
             mask_color=mask_color,
             thickness=thickness,
-            font_scale=font_scale,
             font_size=font_size,
             win_name=win_name,
             show=show,

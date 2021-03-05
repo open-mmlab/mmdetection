@@ -40,7 +40,7 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     if checkpoint is not None:
         map_loc = 'cpu' if device == 'cpu' else None
         checkpoint = load_checkpoint(model, checkpoint, map_location=map_loc)
-        if 'CLASSES' in checkpoint['meta']:
+        if 'CLASSES' in checkpoint.get('meta', {}):
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
             warnings.simplefilter('once')
@@ -184,9 +184,7 @@ def show_result_pyplot(model,
                        img,
                        result,
                        score_thr=0.3,
-                       fig_size=(15, 10),
                        title='result',
-                       block=True,
                        wait_time=0):
     """Visualize the detection results on the image.
 
@@ -196,15 +194,10 @@ def show_result_pyplot(model,
         result (tuple[list] or list): The detection result, can be either
             (bbox, segm) or just bbox.
         score_thr (float): The threshold to visualize the bboxes and masks.
-        fig_size (tuple): Figure size of the pyplot figure.
         title (str): Title of the pyplot figure.
-        block (bool): Whether to block GUI. Default: True
         wait_time (float): Value of waitKey param.
                 Default: 0.
     """
-    warnings.warn('"block" will be deprecated in v2.9.0,'
-                  'Please use "wait_time"')
-    warnings.warn('"fig_size" are deprecated and takes no effect.')
     if hasattr(model, 'module'):
         model = model.module
     model.show_result(

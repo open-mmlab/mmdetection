@@ -9,3 +9,4 @@
    customize_losses.md
    finetune.md
    pytorch2onnx.md
+   onnx2tensorrt.md
