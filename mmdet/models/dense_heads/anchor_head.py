@@ -498,7 +498,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                    cls_scores,
                    bbox_preds,
                    img_metas,
-                   imgs=None,
                    cfg=None,
                    rescale=False,
                    with_nms=True):
@@ -511,7 +510,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 level with shape (N, num_anchors * 4, H, W)
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            imgs (list[torch.Tensor]): List of multiple images
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used
             rescale (bool): If True, return boxes in original image space.
@@ -547,7 +545,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             >>> # note the input lists are over different levels, not images
             >>> cls_scores, bbox_preds = [cls_score], [bbox_pred]
             >>> result_list = self.get_bboxes(cls_scores, bbox_preds,
-            >>>                               img_metas, img, cfg)
+            >>>                               img_metas, cfg)
             >>> det_bboxes, det_labels = result_list[0]
             >>> assert len(result_list) == 1
             >>> assert det_bboxes.shape[1] == 5
@@ -570,9 +568,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
             if torch.onnx.is_in_onnx_export():
-                assert imgs is not None
-                img_shape = torch._shape_as_tensor(imgs[img_id].permute(
-                    2, 3, 1, 0))
+                img_shape = img_metas[img_id]['img_shape_for_onnx']
             else:
                 img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
