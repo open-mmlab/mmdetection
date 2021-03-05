@@ -639,6 +639,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(0, 2, 3,
                                           1).reshape(batch_size, -1, 4)
+            anchors = anchors.expand_as(bbox_pred)
             # Always keep topk op for dynamic input in onnx
             if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
                                        or scores.shape[-2] > nms_pre_tensor):
@@ -661,11 +662,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 _, topk_inds = max_scores.topk(nms_pre)
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds).long()
-                anchors = anchors[topk_inds, :]
+                anchors = anchors[batch_inds, topk_inds, :]
                 bbox_pred = bbox_pred[batch_inds, topk_inds, :]
                 scores = scores[batch_inds, topk_inds, :]
-            else:
-                anchors = anchors.repeat(batch_size, 1, 1)
+
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
@@ -679,7 +679,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            max_scores, _ = mlvl_scores.max(dim=2)
+            # Get maximum scores for foreground classes.
+            if self.use_sigmoid_cls:
+                max_scores, _ = mlvl_scores.max(dim=2)
+            else:
+                # remind that we set FG labels to [0, num_class-1]
+                # since mmdet v2.0
+                # BG cat_id: num_class
+                max_scores, _ = mlvl_scores[..., :-1].max(dim=2)
             _, topk_inds = max_scores.topk(deploy_nms_pre)
             batch_inds = torch.arange(batch_size).view(-1,
                                                        1).expand_as(topk_inds)
