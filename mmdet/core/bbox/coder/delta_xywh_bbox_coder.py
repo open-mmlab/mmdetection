@@ -199,6 +199,8 @@ def delta2bbox(rois,
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
     if clip_border and max_shape is not None:
+        # use where() to replace clip(),
+        # because clip()'s attr min/max do not support dynamic in onnx
         if torch.onnx.is_in_onnx_export():
             zero = torch.tensor(0, dtype=torch.float32)
             zero = zero.expand(x1.size())

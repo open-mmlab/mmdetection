@@ -567,6 +567,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
+            # get origin input shape to support onnx dynamic shape
             if torch.onnx.is_in_onnx_export():
                 img_shape = img_metas[img_id]['img_shape_for_onnx']
             else:
