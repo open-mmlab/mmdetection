@@ -111,9 +111,6 @@ class RPNHead(RPNTestMixin, AnchorHead):
         """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
-        img_shapes = torch.as_tensor(
-            img_shapes, dtype=torch.float32,
-            device=cls_scores[0].device)[..., :2]
         # bboxes from different level should be independent during NMS,
         # level_ids are used as labels for batched NMS to separate them
         level_ids = []

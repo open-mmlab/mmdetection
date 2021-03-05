@@ -120,9 +120,9 @@ def distance2bbox(points, distance, max_shape=None):
     """Decode distance prediction to bounding box.
 
     Args:
-        points (Tensor): Shape (b, n, 2) or (n, 2), [x, y].
+        points (Tensor): Shape (B, N, 2) or (N, 2).
         distance (Tensor): Distance from the given point to 4
-            boundaries (left, top, right, bottom). Shape (b, n, 4)
+            boundaries (left, top, right, bottom). Shape (B, N, 4) or (N, 4)
         max_shape (list[tuple[int]] or tuple[int]): Maximum bounds for boxes.
             specifies (H, W, C)
 
@@ -139,10 +139,8 @@ def distance2bbox(points, distance, max_shape=None):
     if max_shape is not None:
         if isinstance(max_shape, list):
             assert len(max_shape) == x1.shape[0]
-        max_shape = torch.as_tensor(
-            max_shape, dtype=torch.float32, device=x1.device)[..., :2]
-        min_xy = torch.as_tensor(0, dtype=torch.float32, device=x1.device)
-        min_xy = min_xy.expand(x1.size()).unsqueeze(-1)
+        max_shape = x1.new_tensor(max_shape)[..., :2]
+        min_xy = x1.new_tensor(0)
         max_xy = torch.cat([max_shape, max_shape],
                            dim=-1).flip(dims=[-1]).unsqueeze(-2)
         bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)

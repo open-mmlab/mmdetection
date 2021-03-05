@@ -202,8 +202,8 @@ class GFLHead(AnchorHead):
         Returns:
             Tensor: Anchor centers with shape (N, 2), "xy" format.
         """
-        anchors_cx = (anchors[:, 2] + anchors[:, 0]) / 2
-        anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
+        anchors_cx = (anchors[..., 2] + anchors[..., 0]) / 2
+        anchors_cy = (anchors[..., 3] + anchors[..., 1]) / 2
         return torch.stack([anchors_cx, anchors_cy], dim=-1)
 
     def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
@@ -372,8 +372,8 @@ class GFLHead(AnchorHead):
                            cls_scores,
                            bbox_preds,
                            mlvl_anchors,
-                           img_shape,
-                           scale_factor,
+                           img_shapes,
+                           scale_factors,
                            cfg,
                            rescale=False,
                            with_nms=True):
@@ -387,9 +387,9 @@ class GFLHead(AnchorHead):
                 integral set.
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
-            img_shape (tuple[int]): Shape of the input image,
-                (height, width, 3).
-            scale_factor (ndarray): Scale factor of the image arange as
+            img_shapes (list[tuple[int]]): Shape of the input image,
+                list[(height, width, 3)].
+            scale_factors (list[ndarray]): Scale factor of the image arange as
                 (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -409,6 +409,8 @@ class GFLHead(AnchorHead):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
+        batch_size = cls_scores[0].shape[0]
+
         mlvl_bboxes = []
         mlvl_scores = []
         for cls_score, bbox_pred, stride, anchors in zip(
@@ -416,41 +418,49 @@ class GFLHead(AnchorHead):
                 mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             assert stride[0] == stride[1]
+            scores = cls_score.permute(0, 2, 3, 1).reshape(
+                batch_size, -1, self.cls_out_channels).sigmoid()
+            bbox_pred = bbox_pred.permute(0, 2, 3, 1)
 
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
-            bbox_pred = bbox_pred.permute(1, 2, 0)
             bbox_pred = self.integral(bbox_pred) * stride[0]
+            bbox_pred = bbox_pred.reshape(batch_size, -1, 4)
 
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
-                max_scores, _ = scores.max(dim=1)
+            if nms_pre > 0 and scores.shape[1] > nms_pre:
+                max_scores, _ = scores.max(dim=2)
                 _, topk_inds = max_scores.topk(nms_pre)
+                batch_inds = torch.arange(batch_size).view(
+                    -1, 1).expand_as(topk_inds).long()
                 anchors = anchors[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
+                bbox_pred = bbox_pred[batch_inds, topk_inds, :]
+                scores = scores[batch_inds, topk_inds, :]
+            else:
+                anchors = anchors.expand_as(bbox_pred)
 
             bboxes = distance2bbox(
-                self.anchor_center(anchors), bbox_pred, max_shape=img_shape)
+                self.anchor_center(anchors), bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
+        mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
+            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factors).unsqueeze(1)
 
-        mlvl_scores = torch.cat(mlvl_scores)
+        mlvl_scores = torch.cat(mlvl_scores, dim=1)
         # Add a dummy background class to the backend when using sigmoid
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
+        padding = mlvl_scores.new_zeros(batch_size, mlvl_scores.shape[1], 1)
+        mlvl_scores = torch.cat([mlvl_scores, padding], dim=2)
 
         if with_nms:
-            det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-            return det_bboxes, det_labels
+            det_results = []
+            for (bboxes, scores) in zip(mlvl_bboxes, mlvl_scores):
+                det_bbox, det_label = multiclass_nms(bboxes, scores,
+                                                     cfg.score_thr, cfg.nms,
+                                                     cfg.max_per_img)
+                det_results.append(tuple([det_bbox, det_label]))
+            return det_results
         else:
             return mlvl_bboxes, mlvl_scores
 

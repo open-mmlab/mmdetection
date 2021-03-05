@@ -400,18 +400,22 @@ class CentripetalHead(CornerHead):
                 Default: True.
         """
         assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(img_metas)
-
-        result_list = self._get_bboxes_single(
-            tl_heats[-1],
-            br_heats[-1],
-            tl_offs[-1],
-            br_offs[-1],
-            img_metas,
-            tl_emb=None,
-            br_emb=None,
-            tl_centripetal_shift=tl_centripetal_shifts[-1],
-            br_centripetal_shift=br_centripetal_shifts[-1],
-            rescale=rescale,
-            with_nms=with_nms)
+        result_list = []
+        for img_id in range(len(img_metas)):
+            result_list.append(
+                self._get_bboxes_single(
+                    tl_heats[-1][img_id:img_id + 1, :],
+                    br_heats[-1][img_id:img_id + 1, :],
+                    tl_offs[-1][img_id:img_id + 1, :],
+                    br_offs[-1][img_id:img_id + 1, :],
+                    img_metas[img_id],
+                    tl_emb=None,
+                    br_emb=None,
+                    tl_centripetal_shift=tl_centripetal_shifts[-1][
+                        img_id:img_id + 1, :],
+                    br_centripetal_shift=br_centripetal_shifts[-1][
+                        img_id:img_id + 1, :],
+                    rescale=rescale,
+                    with_nms=with_nms))
 
         return result_list

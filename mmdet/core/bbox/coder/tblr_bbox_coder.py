@@ -50,15 +50,15 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            boxes (torch.Tensor): Basic boxes.
+            bboxes (torch.Tensor): Basic boxes.Shape (B, N, 4) or (N, 4)
             pred_bboxes (torch.Tensor): Encoded boxes with shape
-            max_shape (tuple[int], optional): Maximum shape of boxes.
-                Defaults to None.
+                (B, N, 4) or (N, 4)
+            max_shape (list[tuple[int]] or tuple[int], optional):
+               Maximum bounds for boxes. specifies (H, W, C)
 
         Returns:
             torch.Tensor: Decoded boxes.
         """
-        assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = tblr2bboxes(
             bboxes,
             pred_bboxes,
@@ -133,43 +133,53 @@ def tblr2bboxes(priors,
 
     Args:
         priors (Tensor): Prior boxes in point form (x0, y0, x1, y1)
-          Shape: (n,4).
+          Shape: (N,4) or (B, N, 4).
         tblr (Tensor): Coords of network output in tblr form
-          Shape: (n, 4).
+          Shape: (N, 4) or (B, N, 4).
         normalizer (Sequence[float] | float): Normalization parameter of
           encoded boxes. By list, it represents the normalization factors at
           tblr dims. By float, it is the unified normalization factor at all
           dims. Default: 4.0
         normalize_by_wh (bool): Whether the tblr coordinates have been
           normalized by the side length (wh) of prior bboxes.
-        max_shape (tuple, optional): Shape of the image. Decoded bboxes
-          exceeding which will be clamped.
+        max_shape (list[tuple[int]] or tuple[int], optional):
+           Maximum bounds for boxes. specifies (H, W, C)
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Defaults to True.
 
     Return:
-        encoded boxes (Tensor), Shape: (n, 4)
+        encoded boxes (Tensor), Shape: (N, 4) or (B, N, 4)
     """
     if not isinstance(normalizer, float):
         normalizer = torch.tensor(normalizer, device=priors.device)
         assert len(normalizer) == 4, 'Normalizer must have length = 4'
     assert priors.size(0) == tblr.size(0)
+    if priors.ndim == 3:
+        assert priors.size(1) == tblr.size(1)
+
     loc_decode = tblr * normalizer
-    prior_centers = (priors[:, 0:2] + priors[:, 2:4]) / 2
+    prior_centers = (priors[..., 0:2] + priors[..., 2:4]) / 2
     if normalize_by_wh:
-        wh = priors[:, 2:4] - priors[:, 0:2]
-        w, h = torch.split(wh, 1, dim=1)
-        loc_decode[:, :2] *= h  # tb
-        loc_decode[:, 2:] *= w  # lr
-    top, bottom, left, right = loc_decode.split((1, 1, 1, 1), dim=1)
-    xmin = prior_centers[:, 0].unsqueeze(1) - left
-    xmax = prior_centers[:, 0].unsqueeze(1) + right
-    ymin = prior_centers[:, 1].unsqueeze(1) - top
-    ymax = prior_centers[:, 1].unsqueeze(1) + bottom
-    boxes = torch.cat((xmin, ymin, xmax, ymax), dim=1)
+        wh = priors[..., 2:4] - priors[..., 0:2]
+        w, h = torch.split(wh, 1, dim=-1)
+        loc_decode[..., :2] *= h  # tb
+        loc_decode[..., 2:] *= w  # lr
+    top, bottom, left, right = loc_decode.split((1, 1, 1, 1), dim=-1)
+    xmin = prior_centers[..., 0].unsqueeze(-1) - left
+    xmax = prior_centers[..., 0].unsqueeze(-1) + right
+    ymin = prior_centers[..., 1].unsqueeze(-1) - top
+    ymax = prior_centers[..., 1].unsqueeze(-1) + bottom
+
+    bboxes = torch.cat((xmin, ymin, xmax, ymax), dim=-1)
+
     if clip_border and max_shape is not None:
-        boxes[:, 0].clamp_(min=0, max=max_shape[1])
-        boxes[:, 1].clamp_(min=0, max=max_shape[0])
-        boxes[:, 2].clamp_(min=0, max=max_shape[1])
-        boxes[:, 3].clamp_(min=0, max=max_shape[0])
-    return boxes
+        if isinstance(max_shape, list):
+            assert len(max_shape) == priors.shape[0]
+        max_shape = priors.new_tensor(max_shape)[..., :2]
+        min_xy = priors.new_tensor(0)
+        max_xy = torch.cat([max_shape, max_shape],
+                           dim=-1).flip(dims=[-1]).unsqueeze(-2)
+        bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
+        bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+
+    return bboxes
