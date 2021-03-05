@@ -1,12 +1,10 @@
-import os.path as osp
 import warnings
+from os import getcwd
+from os import path as osp
 
-import numpy as np
 import onnx
 import onnxruntime as ort
 import torch
-
-onnx_io = 'tmp.onnx'
 
 ort_custom_op_path = ''
 try:
@@ -17,7 +15,7 @@ except (ImportError, ModuleNotFoundError):
         you may have to build mmcv with ONNXRuntime from source.')
 
 
-def verify_model(model, feat):
+def verify_model(feat, onnx_io='tmp.onnx'):
     """Run the model in the pytorch env and onnxruntime env, and match the
     output of each other.
 
@@ -27,16 +25,6 @@ def verify_model(model, feat):
         feat (list[Tensor]): A list of tensors from torch.rand to simulate
             input, each is a 4D-tensor.
     """
-    with torch.no_grad():
-        torch.onnx.export(
-            model,
-            feat,
-            onnx_io,
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
 
     onnx_model = onnx.load(onnx_io)
     onnx.checker.check_model(onnx_model)
@@ -46,17 +34,40 @@ def verify_model(model, feat):
     if osp.exists(ort_custom_op_path):
         session_options.register_custom_ops_library(ort_custom_op_path)
     sess = ort.InferenceSession(onnx_io, session_options)
-    onnx_outputs = sess.run(
-        None,
-        {sess.get_inputs()[i].name: feat[i].numpy()
-         for i in range(len(feat))})
+    if isinstance(feat, torch.Tensor):
+        onnx_outputs = sess.run(None,
+                                {sess.get_inputs()[0].name: feat.numpy()})
+    else:
+        onnx_outputs = sess.run(None, {
+            sess.get_inputs()[i].name: feat[i].numpy()
+            for i in range(len(feat))
+        })
+    return onnx_outputs
 
-    torch_outputs = model.forward(feat)
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
 
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+def list_gen(outputs):
+    while True:
+        ret = []
+        flags = True
+        for i in outputs:
+            if not isinstance(i, torch.Tensor):
+                flags = False
+                for j in i:
+                    ret.append(j)
+            else:
+                ret.append(i)
+        outputs = ret
+        if flags:
+            break
+    return outputs
+
+
+def get_data_path():
+    exe_path = getcwd().split('/')[-1]
+    if exe_path == 'tests':
+        data_path = osp.join(getcwd(), 'test_onnx/data/')
+    elif exe_path == 'test_onnx':
+        data_path = osp.join(getcwd(), 'data/')
+    else:
+        data_path = osp.join(getcwd(), 'tests/test_onnx/data/')
+    return data_path

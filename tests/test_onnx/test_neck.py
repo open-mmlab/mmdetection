@@ -1,9 +1,10 @@
 import numpy as np
 import torch
-# isot:disable
-from utils import verify_model
 
 from mmdet.models.necks import FPN, YOLOV3Neck
+from .utils import get_data_path, list_gen, verify_model
+
+onnx_io = 'tmp.onnx'
 
 # Control the returned model of neck_config()
 test_step_names = {
@@ -17,7 +18,33 @@ test_step_names = {
     'extra_convs_outputs': 7,
 }
 
-data_path = './test_onnx/data/'
+data_path = get_data_path()
+
+
+def ort_validate(fpn_model, feats):
+    with torch.no_grad():
+        torch.onnx.export(
+            fpn_model,
+            feats,
+            onnx_io,
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11)
+
+    onnx_outputs = verify_model(feats)
+
+    torch_outputs = fpn_model.forward(feats)
+    torch_outputs = list_gen(torch_outputs)
+    torch_outputs = [
+        torch_output.detach().numpy() for torch_output in torch_outputs
+    ]
+
+    # match torch_outputs and onnx_outputs
+    for i in range(len(onnx_outputs)):
+        np.testing.assert_allclose(
+            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
 
 
 def fpn_config(test_step_name):
@@ -123,44 +150,44 @@ def yolo_config(test_step_name):
 
 def test_fpn_normal():
     outs = fpn_config('normal')
-    verify_model(*outs)
+    ort_validate(*outs)
 
 
 def test_fpn_wo_extra_convs():
     outs = fpn_config('wo_extra_convs')
-    verify_model(*outs)
+    ort_validate(*outs)
 
 
 def test_fpn_lateral_bns():
     outs = fpn_config('lateral_bns')
-    verify_model(*outs)
+    ort_validate(*outs)
 
 
 def test_fpn_bilinear_upsample():
     outs = fpn_config('bilinear_upsample')
-    verify_model(*outs)
+    ort_validate(*outs)
 
 
 def test_fpn_scale_factor():
     outs = fpn_config('scale_factor')
-    verify_model(*outs)
+    ort_validate(*outs)
 
 
 def test_fpn_extra_convs_inputs():
     outs = fpn_config('extra_convs_inputs')
-    verify_model(*outs)
+    ort_validate(*outs)
 
 
 def test_fpn_extra_convs_laterals():
     outs = fpn_config('extra_convs_laterals')
-    verify_model(*outs)
+    ort_validate(*outs)
 
 
 def test_fpn_extra_convs_outputs():
     outs = fpn_config('extra_convs_outputs')
-    verify_model(*outs)
+    ort_validate(*outs)
 
 
 def test_yolo_normal():
     outs = yolo_config('normal')
-    verify_model(*outs)
+    ort_validate(*outs)
