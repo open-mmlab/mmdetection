@@ -15,6 +15,7 @@
 import argparse
 import os.path as osp
 import sys
+from packaging import version
 from subprocess import DEVNULL, CalledProcessError, run
 
 import mmcv
@@ -33,6 +34,10 @@ from mmdet.utils import ExtendedDictAction
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
 from mmdet.utils.deployment.symbolic import (
     register_extra_symbolics, register_extra_symbolics_for_openvino)
+
+
+def get_min_opset_version():
+    return 10 if version.parse(torch.__version__) < version.parse('1.7.0') else 11
 
 
 def export_to_onnx(model,
@@ -274,7 +279,7 @@ def parse_args():
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help="path to file with model's weights")
     parser.add_argument('output_dir', help='path to directory to save exported models in')
-    parser.add_argument('--opset', type=int, default=10, help='ONNX opset')
+    parser.add_argument('--opset', type=int, default=get_min_opset_version(), help='ONNX opset')
     parser.add_argument('--update_config', nargs='+', action=ExtendedDictAction,
                         help='Update configuration file by parameters specified here.')
     subparsers = parser.add_subparsers(title='target', dest='target', help='target model format')
