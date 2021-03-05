@@ -646,7 +646,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                        or scores.shape[-2] > nms_pre_tensor):
                 from torch import _shape_as_tensor
                 # keep shape as tensor and get k
-                num_anchor = _shape_as_tensor(scores)[-2]
+                num_anchor = _shape_as_tensor(scores)[-2].to(nms_pre_tensor)
                 nms_pre = torch.where(nms_pre_tensor < num_anchor,
                                       nms_pre_tensor, num_anchor)
                 # Get maximum scores for foreground classes.
