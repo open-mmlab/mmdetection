@@ -101,6 +101,7 @@ class EmbeddingRPNHead(nn.Module):
         """Forward function in testing stage."""
         return self._decode_init_proposals(img, img_metas)
 
+    # TODO: is right ?
     def show_result(self, data):
         """Show the init proposals in EmbeddingRPN.
 
