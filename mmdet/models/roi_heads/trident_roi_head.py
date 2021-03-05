@@ -24,7 +24,7 @@ class TridentRoIHead(StandardRoIHead):
         super(TridentRoIHead, self).__init__(**kwargs)
 
     def merge_trident_bboxes(self, trident_det_bboxes, trident_det_labels):
-        """Merge bbox predictions of each branches."""
+        """Merge bbox predictions of each branch."""
         if trident_det_bboxes.numel() == 0:
             det_bboxes = trident_det_bboxes.new_zeros((0, 5))
             det_labels = trident_det_bboxes.new_zeros((0, ), dtype=torch.long)
