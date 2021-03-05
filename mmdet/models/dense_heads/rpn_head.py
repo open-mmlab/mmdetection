@@ -117,6 +117,9 @@ class RPNHead(RPNTestMixin, AnchorHead):
         mlvl_scores = []
         mlvl_bbox_preds = []
         mlvl_valid_anchors = []
+        # convert to tensor to keep tracing
+        nms_pre_tensor = torch.tensor(
+            cfg.nms_pre, device=cls_scores[0].device, dtype=torch.long)
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
@@ -134,12 +137,18 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 scores = rpn_cls_score.softmax(dim=1)[:, 0]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
-            if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
+            # Always keep dynamic in onnx model
+            if cfg.nms_pre > 0 and (torch.onnx.is_in_onnx_export()
+                                    or scores.shape[0] > nms_pre_tensor):
+                # keep shape as tensor and get nms_pre
+                scores_shape = torch._shape_as_tensor(scores)
+                nms_pre = torch.where(scores_shape[0] < cfg.nms_pre,
+                                      scores_shape[0], nms_pre_tensor)
                 # sort is faster than topk
                 # _, topk_inds = scores.topk(cfg.nms_pre)
                 ranked_scores, rank_inds = scores.sort(descending=True)
-                topk_inds = rank_inds[:cfg.nms_pre]
-                scores = ranked_scores[:cfg.nms_pre]
+                topk_inds = rank_inds[:nms_pre]
+                scores = ranked_scores[:nms_pre]
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
                 anchors = anchors[topk_inds, :]
             mlvl_scores.append(scores)

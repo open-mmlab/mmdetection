@@ -190,6 +190,8 @@ class TwoStageDetector(BaseDetector):
 
         x = self.extract_feat(img)
 
+        if torch.onnx.is_in_onnx_export():
+            img_metas[0]['img_shape_for_onnx'] = img.shape[2:]
         if proposals is None:
             proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         else:
