@@ -16,14 +16,14 @@ except (ImportError, ModuleNotFoundError):
 
 
 def verify_model(feat, onnx_io='tmp.onnx'):
-    """Run the model in the pytorch env and onnxruntime env, and match the
-    output of each other.
+    """Run the model in onnxruntime env.
 
     Args:
-        model (nn.Module): the model which used to run in pytorch and onnx-
-            runtime.
-        feat (list[Tensor]): A list of tensors from torch.rand to simulate
-            input, each is a 4D-tensor.
+        feat (list[Tensor]): A list of tensors from torch.rand,
+            each is a 4D-tensor.
+
+    Returns:
+        list[Tensor]: onnxruntime infer result, each is a np.array
     """
 
     onnx_model = onnx.load(onnx_io)
@@ -46,6 +46,7 @@ def verify_model(feat, onnx_io='tmp.onnx'):
 
 
 def list_gen(outputs):
+    """Generate a list with only torch.Tensor."""
     while True:
         ret = []
         flags = True
@@ -63,6 +64,7 @@ def list_gen(outputs):
 
 
 def get_data_path():
+    """Get test data path."""
     exe_path = getcwd().split('/')[-1]
     if exe_path == 'tests':
         data_path = osp.join(getcwd(), 'test_onnx/data/')

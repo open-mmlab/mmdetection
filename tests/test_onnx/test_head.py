@@ -1,3 +1,4 @@
+import pickle
 from functools import partial
 
 import mmcv
@@ -93,6 +94,7 @@ def yolo_config():
 @pytest.mark.skipif(
     torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_retina_head_forward_single():
+    """Test RetinaNet Head single forward in torch and onnxruntime env."""
     retina_model = retinanet_config()
 
     feat = torch.rand(1, retina_model.in_channels, 32, 32)
@@ -126,8 +128,8 @@ def test_retina_head_forward_single():
 @pytest.mark.skipif(
     torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_retina_head_forward():
+    """Test RetinaNet Head forward in torch and onnxruntime env."""
     retina_model = retinanet_config()
-
     s = 128
     feats = [
         torch.rand(1, retina_model.in_channels, s // (2**(i + 2)),
@@ -168,20 +170,12 @@ def test_retinanet_head_get_bboxes_single():
     retina_model = retinanet_config()
     s = 128
 
-    cls_score = []
-    retina_head_data = 'retina_head_get_bboxex_'
-    for i in range(len(retina_model.anchor_generator.strides)):
-        data_name = data_path + retina_head_data + str(i) + '.npy'
-        cls_score.append(torch.tensor(np.load(data_name)[0]))
-
-    bboxes = []
-    retina_head_data = 'retina_head_get_bboxex_'
-    for i in range(len(retina_model.anchor_generator.strides)):
-        data_name = data_path + \
-                    retina_head_data + \
-                    str(i + len(retina_model.anchor_generator.strides)) + \
-                    '.npy'
-        bboxes.append(torch.tensor(np.load(data_name)[0]))
+    retina_head_data = 'retina_head_get_bboxes.pickle'
+    with open(data_path + retina_head_data, 'rb') as f:
+        feats = pickle.load(f)
+    feats = [feat[0] for feat in feats]
+    cls_score = feats[:5]
+    bboxes = feats[5:]
 
     featmap_sizes = [
         cls_score[i][0].shape[-2:]
@@ -232,20 +226,12 @@ def test_retinanet_head_get_bboxes():
         'scale_factor': 1,
         'pad_shape': (s, s, 3)
     }]
-    cls_score = []
-    retina_head_data = 'retina_head_get_bboxex_'
-    for i in range(len(retina_model.anchor_generator.strides)):
-        data_name = data_path + retina_head_data + str(i) + '.npy'
-        cls_score.append(torch.tensor(np.load(data_name)))
 
-    bboxes = []
-    retina_head_data = 'retina_head_get_bboxex_'
-    for i in range(len(retina_model.anchor_generator.strides)):
-        data_name = data_path + \
-                    retina_head_data + \
-                    str(i + len(retina_model.anchor_generator.strides)) + \
-                    '.npy'
-        bboxes.append(torch.tensor(np.load(data_name)))
+    retina_head_data = 'retina_head_get_bboxes.pickle'
+    with open(data_path + retina_head_data, 'rb') as f:
+        feats = pickle.load(f)
+    cls_score = feats[:5]
+    bboxes = feats[5:]
 
     retina_model.get_bboxes = partial(
         retina_model.get_bboxes, img_metas=img_metas)
@@ -317,11 +303,10 @@ def test_yolov3_head_forward():
 def test_yolov3_head_get_bboxes_single():
     yolo_model = yolo_config()
 
-    pred_map = []
-    yolo_head_data = 'yolov3_head_get_bboxex_'
-    for i in range(len(yolo_model.anchor_generator.strides)):
-        data_name = data_path + yolo_head_data + str(i) + '.npy'
-        pred_map.append(torch.tensor(np.load(data_name)[0]))
+    yolo_head_data = 'yolov3_head_get_bboxes.pickle'
+    with open(data_path + yolo_head_data, 'rb') as f:
+        pred_maps = pickle.load(f)
+    pred_map = [pred_map[0] for pred_map in pred_maps]
 
     yolo_model._get_bboxes_single = partial(
         yolo_model._get_bboxes_single, scale_factor=1, cfg=None)
@@ -364,11 +349,10 @@ def test_yolov3_head_get_bboxes():
         'scale_factor': 1,
         'pad_shape': (s, s, 3)
     }]
-    pred_maps = []
-    yolo_head_data = 'yolov3_head_get_bboxex_'
-    for i in range(len(yolo_model.anchor_generator.strides)):
-        data_name = data_path + yolo_head_data + str(i) + '.npy'
-        pred_maps.append(torch.tensor(np.load(data_name)))
+
+    yolo_head_data = 'yolov3_head_get_bboxes.pickle'
+    with open(data_path + yolo_head_data, 'rb') as f:
+        pred_maps = pickle.load(f)
 
     yolo_model.get_bboxes = partial(yolo_model.get_bboxes, img_metas=img_metas)
     wrap_model = WrapFunction(yolo_model.get_bboxes)

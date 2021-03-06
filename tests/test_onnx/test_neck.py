@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 import pytest
 import torch
@@ -49,12 +51,13 @@ def ort_validate(fpn_model, feats):
 
 
 def fpn_config(test_step_name):
+    """Return the corresponding class containing the attributes according to
+    the test_step_names."""
     s = 64
     in_channels = [8, 16, 32, 64]
     feat_sizes = [s // 2**i for i in range(4)]  # [64, 32, 16, 8]
     out_channels = 8
 
-    # FPN expects a multiple levels of features per image
     feats = [
         torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
         for i in range(len(in_channels))
@@ -135,12 +138,9 @@ def yolo_config(test_step_name):
     in_channels = [16, 8, 4]
     out_channels = [8, 4, 2]
 
-    # FPN expects a multiple levels of features per image
-    feats = []
-    yolov3_neck_data = 'yolov3_neck_'
-    for i in range(len(in_channels)):
-        data_name = data_path + yolov3_neck_data + str(i) + '.npy'
-        feats.append(torch.tensor(np.load(data_name)))
+    yolov3_neck_data = 'yolov3_neck.pickle'
+    with open(data_path + yolov3_neck_data, 'rb') as f:
+        feats = pickle.load(f)
 
     if (test_step_names[test_step_name] == 0):
         yolo_model = YOLOV3Neck(
