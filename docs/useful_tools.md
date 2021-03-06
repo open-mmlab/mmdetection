@@ -101,7 +101,7 @@ python tools/analysis_tools/analyze_results.py \
        --topk 50
 ```
 
-3. If you want to filter the low score prediction results, you can specify the `show_score_the` parameter
+3. If you want to filter the low score prediction results, you can specify the `show-score-thr` parameter
 
 ```shell
 python tools/analysis_tools/analyze_results.py \

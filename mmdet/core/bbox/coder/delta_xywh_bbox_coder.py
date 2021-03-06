@@ -199,9 +199,27 @@ def delta2bbox(rois,
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
     if clip_border and max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1])
-        y1 = y1.clamp(min=0, max=max_shape[0])
-        x2 = x2.clamp(min=0, max=max_shape[1])
-        y2 = y2.clamp(min=0, max=max_shape[0])
+        # use where() to replace clip(),
+        # because clip()'s attr min/max do not support dynamic in onnx
+        if torch.onnx.is_in_onnx_export():
+            zero = torch.tensor(0, dtype=torch.float32)
+            zero = zero.expand(x1.size())
+            width = torch.tensor(max_shape[1], dtype=torch.float32)
+            width = width.expand(x1.size())
+            height = torch.tensor(max_shape[0], dtype=torch.float32)
+            height = height.expand(x1.size())
+            x1 = torch.where(x1 < zero, zero, x1)
+            x1 = torch.where(x1 > width, width, x1)
+            y1 = torch.where(y1 < zero, zero, y1)
+            y1 = torch.where(y1 > height, height, y1)
+            x2 = torch.where(x2 < zero, zero, x2)
+            x2 = torch.where(x2 > width, width, x2)
+            y2 = torch.where(y2 < zero, zero, y2)
+            y2 = torch.where(y2 > height, height, y2)
+        else:
+            x1 = x1.clamp(min=0, max=max_shape[1])
+            y1 = y1.clamp(min=0, max=max_shape[0])
+            x2 = x2.clamp(min=0, max=max_shape[1])
+            y2 = y2.clamp(min=0, max=max_shape[0])
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
     return bboxes
