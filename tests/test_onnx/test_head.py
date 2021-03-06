@@ -222,9 +222,10 @@ def test_retinanet_head_get_bboxes():
     retina_model = retinanet_config()
     s = 128
     img_metas = [{
-        'img_shape': (s, s, 3),
+        'img_shape_for_onnx': (s, s, 3),
         'scale_factor': 1,
-        'pad_shape': (s, s, 3)
+        'pad_shape': (s, s, 3),
+        'img_shape': (s, s, 2)
     }]
 
     retina_head_data = 'retina_head_get_bboxes.pickle'
