@@ -192,7 +192,8 @@ class TwoStageDetector(BaseDetector):
 
         # get origin input shape to onnx dynamic input shape
         if torch.onnx.is_in_onnx_export():
-            img_metas[0]['img_shape_for_onnx'] = img.shape[2:]
+            img_shape = torch._shape_as_tensor(img[2:])
+            img_metas[0]['img_shape_for_onnx'] = img_shape
 
         if proposals is None:
             proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
