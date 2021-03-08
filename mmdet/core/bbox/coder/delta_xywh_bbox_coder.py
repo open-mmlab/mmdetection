@@ -59,12 +59,15 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
         Args:
             bboxes (torch.Tensor): Basic boxes. Shape (B, N, 4) or (N, 4)
-            pred_bboxes (torch.Tensor): Encoded boxes with
-               shape (B, N, 4) or (N, 4)
+            pred_bboxes (Tensor): Encoded offsets with respect to each roi.
+               Has shape (B, N, num_classes * 4) or (B, N, 4) or
+               (N, num_classes * 4) or (N, 4). Note N = num_anchors * W * H
+               when rois is a grid of anchors.Offset encoding follows [1]_.
             max_shape (Sequence[int] or torch.Tensor or Sequence[
                Sequence[int]],optional): Maximum bounds for boxes, specifies
-               (H, W, C) or (H, W). If bboxes shape is (B, N, 4),then the
-               length of max_shape should also be B.
+               (H, W, C) or (H, W). If bboxes shape is (B, N, 4), then
+               the max_shape should be a Sequence[Sequence[int]]
+               and the length of max_shape should also be B.
             wh_ratio_clip (float, optional): The allowed ratio between
                 width and height.
 
@@ -144,23 +147,24 @@ def delta2bbox(rois,
     Args:
         rois (Tensor): Boxes to be transformed. Has shape (N, 4) or (B, N, 4)
         deltas (Tensor): Encoded offsets with respect to each roi.
-            Has shape (B, N, 4 * num_classes) or (B, N, 4) or
-            (N, 4 * num_classes) or (N, 4). Note N = num_anchors * W * H
+            Has shape (B, N, num_classes * 4) or (B, N, 4) or
+            (N, num_classes * 4) or (N, 4). Note N = num_anchors * W * H
             when rois is a grid of anchors.Offset encoding follows [1]_.
         means (Sequence[float]): Denormalizing means for delta coordinates
         stds (Sequence[float]): Denormalizing standard deviation for delta
             coordinates
-        max_shape (Sequence[int] or torch.Tensor or Sequence[Sequence[int]],
-            optional): Maximum bounds for boxes, specifies (H, W, C) or (H, W).
-            If rois shape is (B, N, 4),then the length of max_shape should
-            also be B.
+        max_shape (Sequence[int] or torch.Tensor or Sequence[
+            Sequence[int]],optional): Maximum bounds for boxes, specifies
+            (H, W, C) or (H, W). If rois shape is (B, N, 4), then
+            the max_shape should be a Sequence[Sequence[int]]
+            and the length of max_shape should also be B.
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Defaults to True.
 
     Returns:
-        Tensor: Boxes with shape (B, N, 4 * num_classes) or (B, N, 4) or
-           (N, 4 * num_classes) or (N, 4), where 4 represent
+        Tensor: Boxes with shape (B, N, num_classes * 4) or (B, N, 4) or
+           (N, num_classes * 4) or (N, 4), where 4 represent
            tl_x, tl_y, br_x, br_y.
 
     References:
@@ -220,6 +224,7 @@ def delta2bbox(rois,
             max_shape = x1.new_tensor(max_shape)
         max_shape = max_shape[..., :2].type_as(x1)
         if max_shape.ndim == 2:
+            assert bboxes.ndim == 3
             assert max_shape.size(0) == bboxes.size(0)
 
         min_xy = x1.new_tensor(0)

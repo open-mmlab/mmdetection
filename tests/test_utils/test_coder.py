@@ -53,6 +53,11 @@ def test_delta_bbox_coder():
         coder.decode(
             batch_rois, batch_deltas, max_shape=[(32, 32), (32, 32), (32, 32)])
 
+    rois = torch.zeros((0, 4))
+    deltas = torch.zeros((0, 4))
+    out = coder.decode(rois, deltas, max_shape=(32, 32))
+    assert rois.shape == out.shape
+
 
 def test_tblr_bbox_coder():
     coder = TBLRBBoxCoder(normalizer=15.)
@@ -82,3 +87,8 @@ def test_tblr_bbox_coder():
     # test max_shape is not equal to batch
     with pytest.raises(AssertionError):
         coder.decode(batch_rois, batch_deltas, max_shape=[(13, 12)])
+
+    rois = torch.zeros((0, 4))
+    deltas = torch.zeros((0, 4))
+    out = coder.decode(rois, deltas, max_shape=(32, 32))
+    assert rois.shape == out.shape

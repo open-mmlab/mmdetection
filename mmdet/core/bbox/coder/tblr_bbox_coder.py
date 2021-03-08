@@ -52,11 +52,12 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         Args:
             bboxes (torch.Tensor): Basic boxes.Shape (B, N, 4) or (N, 4)
             pred_bboxes (torch.Tensor): Encoded boxes with shape
-                (B, N, 4) or (N, 4)
+               (B, N, 4) or (N, 4)
             max_shape (Sequence[int] or torch.Tensor or Sequence[
-                Sequence[int]], optional): Maximum bounds for boxes, specifies
-                (H, W, C) or (H, W). If bboxes shape is (B, N, 4),then the
-                length of max_shape should also be B.
+               Sequence[int]],optional): Maximum bounds for boxes, specifies
+               (H, W, C) or (H, W). If bboxes shape is (B, N, 4), then
+               the max_shape should be a Sequence[Sequence[int]]
+               and the length of max_shape should also be B.
 
         Returns:
             torch.Tensor: Decoded boxes.
@@ -146,13 +147,14 @@ def tblr2bboxes(priors,
           normalized by the side length (wh) of prior bboxes.
         max_shape (Sequence[int] or torch.Tensor or Sequence[
             Sequence[int]],optional): Maximum bounds for boxes, specifies
-            (H, W, C) or (H, W). If priors shape is (B, N, 4),then the
-            length of max_shape should also be B.
+            (H, W, C) or (H, W). If priors shape is (B, N, 4), then
+            the max_shape should be a Sequence[Sequence[int]]
+            and the length of max_shape should also be B.
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Defaults to True.
 
     Return:
-        encoded boxes (Tensor), Shape: (N, 4) or (B, N, 4)
+        encoded boxes (Tensor): Boxes with shape (N, 4) or (B, N, 4)
     """
     if not isinstance(normalizer, float):
         normalizer = torch.tensor(normalizer, device=priors.device)
@@ -181,6 +183,7 @@ def tblr2bboxes(priors,
             max_shape = priors.new_tensor(max_shape)
         max_shape = max_shape[..., :2].type_as(priors)
         if max_shape.ndim == 2:
+            assert bboxes.ndim == 3
             assert max_shape.size(0) == bboxes.size(0)
 
         min_xy = priors.new_tensor(0)
