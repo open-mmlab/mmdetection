@@ -53,9 +53,10 @@ class TBLRBBoxCoder(BaseBBoxCoder):
             bboxes (torch.Tensor): Basic boxes.Shape (B, N, 4) or (N, 4)
             pred_bboxes (torch.Tensor): Encoded boxes with shape
                 (B, N, 4) or (N, 4)
-            max_shape (list[tuple[int]] or tuple[int] or torch.Tensor,
-               optional): Maximum bounds for boxes. Specifies (H, W,
-               C) or (H, W)
+            max_shape (Sequence[int] or torch.Tensor or Sequence[
+                Sequence[int]], optional): Maximum bounds for boxes, specifies
+                (H, W, C) or (H, W). If bboxes shape is (B, N, 4),then the
+                length of max_shape should also be B.
 
         Returns:
             torch.Tensor: Decoded boxes.
@@ -143,8 +144,10 @@ def tblr2bboxes(priors,
           dims. Default: 4.0
         normalize_by_wh (bool): Whether the tblr coordinates have been
           normalized by the side length (wh) of prior bboxes.
-        max_shape (list[tuple[int]] or tuple[int] or torch.Tensor, optional):
-           Maximum bounds for boxes. specifies (H, W, C) or (H, W)
+        max_shape (Sequence[int] or torch.Tensor or Sequence[
+            Sequence[int]],optional): Maximum bounds for boxes, specifies
+            (H, W, C) or (H, W). If priors shape is (B, N, 4),then the
+            length of max_shape should also be B.
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Defaults to True.
 
@@ -174,12 +177,11 @@ def tblr2bboxes(priors,
     bboxes = torch.cat((xmin, ymin, xmax, ymax), dim=-1)
 
     if clip_border and max_shape is not None:
-        if isinstance(max_shape, torch.Tensor):
-            max_shape = max_shape[..., :2].type_as(priors)
-        else:
-            if isinstance(max_shape, list):
-                assert len(max_shape) == priors.shape[0]
-            max_shape = priors.new_tensor(max_shape)[..., :2]
+        if not isinstance(max_shape, torch.Tensor):
+            max_shape = priors.new_tensor(max_shape)
+        max_shape = max_shape[..., :2].type_as(priors)
+        if max_shape.ndim == 2:
+            assert max_shape.size(0) == bboxes.size(0)
 
         min_xy = priors.new_tensor(0)
         max_xy = torch.cat([max_shape, max_shape],

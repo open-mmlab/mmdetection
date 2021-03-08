@@ -61,8 +61,10 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
             bboxes (torch.Tensor): Basic boxes. Shape (B, N, 4) or (N, 4)
             pred_bboxes (torch.Tensor): Encoded boxes with
                shape (B, N, 4) or (N, 4)
-            max_shape (list[tuple[int]] or tuple[int] or tensor, optional):
-               Maximum bounds for boxes. specifies (H, W, C) or (H, W)
+            max_shape (Sequence[int] or torch.Tensor or Sequence[
+               Sequence[int]],optional): Maximum bounds for boxes, specifies
+               (H, W, C) or (H, W). If bboxes shape is (B, N, 4),then the
+               length of max_shape should also be B.
             wh_ratio_clip (float, optional): The allowed ratio between
                 width and height.
 
@@ -148,8 +150,10 @@ def delta2bbox(rois,
         means (Sequence[float]): Denormalizing means for delta coordinates
         stds (Sequence[float]): Denormalizing standard deviation for delta
             coordinates
-        max_shape (list[tuple[int]] or tuple[int] or tensor, optional):
-            Maximum bounds for boxes. specifies (H, W, C) or (H, W)
+        max_shape (Sequence[int] or torch.Tensor or Sequence[Sequence[int]],
+            optional): Maximum bounds for boxes, specifies (H, W, C) or (H, W).
+            If rois shape is (B, N, 4),then the length of max_shape should
+            also be B.
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Defaults to True.
@@ -212,14 +216,11 @@ def delta2bbox(rois,
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
 
     if clip_border and max_shape is not None:
-        # use where() to replace clamp(),
-        # because clamp()'s attr min/max do not support dynamic in onnx
-        if isinstance(max_shape, torch.Tensor):
-            max_shape = max_shape[..., :2].type_as(x1)
-        else:
-            if isinstance(max_shape, list):
-                assert len(max_shape) == x1.shape[0]
-            max_shape = x1.new_tensor(max_shape)[..., :2]
+        if not isinstance(max_shape, torch.Tensor):
+            max_shape = x1.new_tensor(max_shape)
+        max_shape = max_shape[..., :2].type_as(x1)
+        if max_shape.ndim == 2:
+            assert max_shape.size(0) == bboxes.size(0)
 
         min_xy = x1.new_tensor(0)
         max_xy = torch.cat(

@@ -50,7 +50,8 @@ def test_delta_bbox_coder():
 
     # test max_shape is not equal to batch
     with pytest.raises(AssertionError):
-        coder.decode(batch_rois, batch_deltas, max_shape=[(32, 32)])
+        coder.decode(
+            batch_rois, batch_deltas, max_shape=[(32, 32), (32, 32), (32, 32)])
 
 
 def test_tblr_bbox_coder():
