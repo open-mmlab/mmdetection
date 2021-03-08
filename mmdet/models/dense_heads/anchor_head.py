@@ -578,26 +578,25 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         if with_nms:
             # some heads don't support with_nms argument
-            result_list = self._get_bboxes_single(cls_score_list,
-                                                  bbox_pred_list, mlvl_anchors,
-                                                  img_shapes, scale_factors,
-                                                  cfg, rescale)
+            result_list = self._get_bboxes(cls_score_list, bbox_pred_list,
+                                           mlvl_anchors, img_shapes,
+                                           scale_factors, cfg, rescale)
         else:
-            result_list = self._get_bboxes_single(cls_score_list,
-                                                  bbox_pred_list, mlvl_anchors,
-                                                  img_shapes, scale_factors,
-                                                  cfg, rescale, with_nms)
+            result_list = self._get_bboxes(cls_score_list, bbox_pred_list,
+                                           mlvl_anchors, img_shapes,
+                                           scale_factors, cfg, rescale,
+                                           with_nms)
         return result_list
 
-    def _get_bboxes_single(self,
-                           cls_score_list,
-                           bbox_pred_list,
-                           mlvl_anchors,
-                           img_shapes,
-                           scale_factors,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
+    def _get_bboxes(self,
+                    cls_score_list,
+                    bbox_pred_list,
+                    mlvl_anchors,
+                    img_shapes,
+                    scale_factors,
+                    cfg,
+                    rescale=False,
+                    with_nms=True):
         """Transform outputs for a batch item into bbox predictions.
 
         Args:
@@ -678,39 +677,42 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
-        mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
+        batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factors).unsqueeze(1)
-        mlvl_scores = torch.cat(mlvl_scores, dim=1)
+            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
+                scale_factors).unsqueeze(1)
+        batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
 
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
             # Get maximum scores for foreground classes.
             if self.use_sigmoid_cls:
-                max_scores, _ = mlvl_scores.max(-1)
+                batch_mlvl_scores, _ = batch_mlvl_scores.max(-1)
             else:
                 # remind that we set FG labels to [0, num_class-1]
                 # since mmdet v2.0
                 # BG cat_id: num_class
-                max_scores, _ = mlvl_scores[..., :-1].max(-1)
-            _, topk_inds = max_scores.topk(deploy_nms_pre)
+                batch_mlvl_scores, _ = batch_mlvl_scores[..., :-1].max(-1)
+            _, topk_inds = batch_mlvl_scores.topk(deploy_nms_pre)
             batch_inds = torch.arange(batch_size).view(-1,
                                                        1).expand_as(topk_inds)
-            mlvl_scores = mlvl_scores[batch_inds, topk_inds]
-            mlvl_bboxes = mlvl_bboxes[batch_inds, topk_inds]
+            batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds]
+            batch_mlvl_bboxes = batch_mlvl_bboxes[batch_inds, topk_inds]
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
             # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
             # BG cat_id: num_class
-            padding = mlvl_scores.new_zeros(batch_size, mlvl_scores.shape[1],
-                                            1)
-            mlvl_scores = torch.cat([mlvl_scores, padding], dim=-1)
+            padding = batch_mlvl_scores.new_zeros(batch_size,
+                                                  batch_mlvl_scores.shape[1],
+                                                  1)
+            batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
 
         if with_nms:
             det_results = []
-            for (bboxes, scores) in zip(mlvl_bboxes, mlvl_scores):
-                det_bbox, det_label = multiclass_nms(bboxes, scores,
+            for (mlvl_bboxes, mlvl_scores) in zip(batch_mlvl_bboxes,
+                                                  batch_mlvl_scores):
+                det_bbox, det_label = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                      cfg.score_thr, cfg.nms,
                                                      cfg.max_per_img)
                 det_results.append(tuple([det_bbox, det_label]))
