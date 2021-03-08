@@ -10,7 +10,8 @@ import torch.nn as nn
 from mmcv.cnn import Scale
 
 from mmdet import digit_version
-from mmdet.models.dense_heads import FCOSHead, RetinaHead, YOLOV3Head
+from mmdet.models.dense_heads import (FCOSHead, FSAFHead, RetinaHead, SSDHead,
+                                      YOLOV3Head)
 from .utils import flat, verify_model
 
 onnx_io = 'tmp.onnx'
@@ -560,6 +561,274 @@ def test_fcos_head_get_bboxes():
     onnx_outputs = verify_model(cls_scores + bboxes + centerness)
 
     torch_outputs = wrap_model.forward(cls_scores, bboxes, centerness)
+    torch_outputs = flat(torch_outputs)
+    torch_outputs = [
+        torch_output.detach().numpy() for torch_output in torch_outputs
+    ]
+
+    # match torch_outputs and onnx_outputs
+    for i in range(len(onnx_outputs)):
+        np.testing.assert_allclose(
+            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+
+
+def fsaf_config():
+    cfg = dict(
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            octave_base_scale=1,
+            scales_per_octave=1,
+            ratios=[1.0],
+            strides=[4, 8, 16, 32, 64]),
+        bbox_coder=dict(type='TBLRBBoxCoder', normalizer=4.0))
+
+    test_cfg = mmcv.Config(
+        dict(
+            nms_pre=0,
+            deploy_nms_pre=0,
+            min_bbox_size=0,
+            score_thr=0.05,
+            nms=dict(type='nms', iou_threshold=0.5),
+            max_per_img=100))
+
+    model = FSAFHead(num_classes=4, in_channels=1, test_cfg=test_cfg, **cfg)
+    model.requires_grad_(False)
+    model.eval()
+    return model
+
+
+def test_fsaf_head_forward_single():
+    fsaf_model = fsaf_config()
+
+    feat = torch.rand(1, fsaf_model.in_channels, 32, 32)
+    wrap_model = WrapFunction(fsaf_model.forward_single)
+    wrap_model.cpu().eval()
+    with torch.no_grad():
+        torch.onnx.export(
+            wrap_model,
+            feat,
+            onnx_io,
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11)
+
+    onnx_outputs = verify_model(feat)
+
+    torch_outputs = wrap_model.forward(feat)
+    torch_outputs = flat(torch_outputs)
+    torch_outputs = [
+        torch_output.detach().numpy() for torch_output in torch_outputs
+    ]
+
+    # match torch_outputs and onnx_outputs
+    for i in range(len(onnx_outputs)):
+        np.testing.assert_allclose(
+            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+
+
+def test_fsaf_head_forward():
+    """Test RetinaNet Head forward in torch and onnxruntime env."""
+    fsaf_model = fsaf_config()
+    s = 128
+    feats = [
+        torch.rand(1, fsaf_model.in_channels, s // (2**(i + 2)),
+                   s // (2**(i + 2)))
+        for i in range(len(fsaf_model.anchor_generator.strides))
+    ]
+
+    wrap_model = WrapFunction(fsaf_model.forward)
+    wrap_model.cpu().eval()
+    with torch.no_grad():
+        torch.onnx.export(
+            wrap_model,
+            feats,
+            onnx_io,
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11)
+
+    onnx_outputs = verify_model(feats)
+
+    torch_outputs = wrap_model.forward(feats)
+    torch_outputs = flat(torch_outputs)
+    torch_outputs = [
+        torch_output.detach().numpy() for torch_output in torch_outputs
+    ]
+
+    # match torch_outputs and onnx_outputs
+    for i in range(len(onnx_outputs)):
+        np.testing.assert_allclose(
+            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+
+
+def ssd_config():
+    """SSD Head Config."""
+    cfg = dict(
+        anchor_generator=dict(
+            type='SSDAnchorGenerator',
+            scale_major=False,
+            input_size=300,
+            basesize_ratio_range=(0.15, 0.9),
+            strides=[8, 16, 32, 64, 100, 300],
+            ratios=[[2], [2, 3], [2, 3], [2, 3], [2], [2]]),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[0.1, 0.1, 0.2, 0.2]))
+
+    test_cfg = mmcv.Config(
+        dict(
+            nms=dict(type='nms', iou_threshold=0.45),
+            min_bbox_size=0,
+            score_thr=0.02,
+            max_per_img=200))
+
+    model = SSDHead(
+        num_classes=4,
+        in_channels=(4, 8, 4, 2, 2, 2),
+        test_cfg=test_cfg,
+        **cfg)
+
+    model.requires_grad_(False)
+    model.eval()
+    return model
+
+
+def test_ssd_head_forward():
+    ssd_model = ssd_config()
+
+    featmap_size = [38, 19, 10, 6, 5, 3, 1]
+
+    feats = [
+        torch.rand(1, ssd_model.in_channels[i], featmap_size[i],
+                   featmap_size[i]) for i in range(len(ssd_model.in_channels))
+    ]
+
+    wrap_model = WrapFunction(ssd_model.forward)
+    wrap_model.cpu().eval()
+    with torch.no_grad():
+        torch.onnx.export(
+            wrap_model,
+            feats,
+            onnx_io,
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11)
+
+    onnx_outputs = verify_model(feats)
+
+    torch_outputs = wrap_model.forward(feats)
+    torch_outputs = flat(torch_outputs)
+    torch_outputs = [
+        torch_output.detach().numpy() for torch_output in torch_outputs
+    ]
+
+    # match torch_outputs and onnx_outputs
+    for i in range(len(onnx_outputs)):
+        np.testing.assert_allclose(
+            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+
+
+def test_ssd_head_get_bboxes_single():
+    ssd_model = ssd_config()
+    s = 300
+
+    featmap_sizes = [[38, 38], [19, 19], [10, 10], [5, 5], [3, 3], [1, 1]]
+
+    cls_score = [
+        torch.rand(
+            ssd_model.anchor_generator.num_base_anchors[i] *
+            (ssd_model.num_classes + 1), featmap_sizes[i][0],
+            featmap_sizes[i][1])
+        for i in range(len(ssd_model.anchor_generator.num_base_anchors))
+    ]
+    bboxes = [
+        torch.rand(ssd_model.anchor_generator.num_base_anchors[i] * 4,
+                   featmap_sizes[i][0], featmap_sizes[i][1])
+        for i in range(len(ssd_model.anchor_generator.num_base_anchors))
+    ]
+
+    anchors = ssd_model.anchor_generator.grid_anchors(
+        featmap_sizes, device='cpu')
+
+    ssd_model._get_bboxes_single = partial(
+        ssd_model._get_bboxes_single,
+        mlvl_anchors=anchors,
+        img_shape=(s, s, 3),
+        scale_factor=1,
+        cfg=None)
+    wrap_model = WrapFunction(ssd_model._get_bboxes_single)
+    wrap_model.cpu().eval()
+    with torch.no_grad():
+        torch.onnx.export(
+            wrap_model, (cls_score, bboxes),
+            onnx_io,
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11)
+
+    onnx_outputs = verify_model(cls_score + bboxes)
+
+    torch_outputs = wrap_model.forward(cls_score, bboxes)
+    torch_outputs = flat(torch_outputs)
+    torch_outputs = [
+        torch_output.detach().numpy() for torch_output in torch_outputs
+    ]
+
+    # match torch_outputs and onnx_outputs
+    for i in range(len(onnx_outputs)):
+        np.testing.assert_allclose(
+            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+
+
+def test_ssd_head_get_bboxes():
+    ssd_model = ssd_config()
+    s = 300
+    img_metas = [{
+        'img_shape_for_onnx': (s, s, 3),
+        'scale_factor': 1,
+        'pad_shape': (s, s, 3),
+        'img_shape': (s, s, 2)
+    }]
+
+    featmap_sizes = [[38, 38], [19, 19], [10, 10], [5, 5], [3, 3], [1, 1]]
+
+    cls_score = [
+        torch.rand(
+            1, ssd_model.anchor_generator.num_base_anchors[i] *
+            (ssd_model.num_classes + 1), featmap_sizes[i][0],
+            featmap_sizes[i][1])
+        for i in range(len(ssd_model.anchor_generator.num_base_anchors))
+    ]
+    bboxes = [
+        torch.rand(1, ssd_model.anchor_generator.num_base_anchors[i] * 4,
+                   featmap_sizes[i][0], featmap_sizes[i][1])
+        for i in range(len(ssd_model.anchor_generator.num_base_anchors))
+    ]
+    ssd_model.get_bboxes = partial(ssd_model.get_bboxes, img_metas=img_metas)
+    wrap_model = WrapFunction(ssd_model.get_bboxes)
+    wrap_model.cpu().eval()
+    with torch.no_grad():
+        torch.onnx.export(
+            wrap_model, (cls_score, bboxes),
+            onnx_io,
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11)
+
+    onnx_outputs = verify_model(cls_score + bboxes)
+
+    torch_outputs = wrap_model.forward(cls_score, bboxes)
     torch_outputs = flat(torch_outputs)
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
