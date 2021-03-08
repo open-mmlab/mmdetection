@@ -567,7 +567,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
-            img_shape = img_metas[img_id]['img_shape']
+            # get origin input shape to support onnx dynamic shape
+            if torch.onnx.is_in_onnx_export():
+                img_shape = img_metas[img_id]['img_shape_for_onnx']
+            else:
+                img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             if with_nms:
                 # some heads don't support with_nms argument
@@ -642,7 +646,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                        or scores.shape[-2] > nms_pre_tensor):
                 from torch import _shape_as_tensor
                 # keep shape as tensor and get k
-                num_anchor = _shape_as_tensor(scores)[-2]
+                num_anchor = _shape_as_tensor(scores)[-2].to(nms_pre_tensor)
                 nms_pre = torch.where(nms_pre_tensor < num_anchor,
                                       nms_pre_tensor, num_anchor)
                 # Get maximum scores for foreground classes.
