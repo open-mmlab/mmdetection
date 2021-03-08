@@ -1,3 +1,4 @@
+import os.path as osp
 import pickle
 
 import numpy as np
@@ -6,7 +7,7 @@ import torch
 
 from mmdet import digit_version
 from mmdet.models.necks import FPN, YOLOV3Neck
-from .utils import get_data_path, list_gen, verify_model
+from .utils import flat, verify_model
 
 min_required_version = '1.5.0'
 if digit_version(torch.__version__) <= digit_version(min_required_version):
@@ -28,7 +29,7 @@ test_step_names = {
     'extra_convs_outputs': 7,
 }
 
-data_path = get_data_path()
+data_path = osp.join(osp.dirname(__file__), 'data/')
 
 
 def ort_validate(fpn_model, feats):
@@ -46,7 +47,7 @@ def ort_validate(fpn_model, feats):
     onnx_outputs = verify_model(feats)
 
     torch_outputs = fpn_model.forward(feats)
-    torch_outputs = list_gen(torch_outputs)
+    torch_outputs = flat(torch_outputs)
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]
@@ -145,7 +146,7 @@ def yolo_config(test_step_name):
     in_channels = [16, 8, 4]
     out_channels = [8, 4, 2]
 
-    yolov3_neck_data = 'yolov3_neck.pickle'
+    yolov3_neck_data = 'yolov3_neck.pkl'
     with open(data_path + yolov3_neck_data, 'rb') as f:
         feats = pickle.load(f)
 

@@ -1,5 +1,4 @@
 import warnings
-from os import getcwd
 from os import path as osp
 
 import onnx
@@ -23,7 +22,7 @@ def verify_model(feat, onnx_io='tmp.onnx'):
             each is a 4D-tensor.
 
     Returns:
-        list[Tensor]: onnxruntime infer result, each is a np.array
+        list[np.array]: onnxruntime infer result, each is a np.array
     """
 
     onnx_model = onnx.load(onnx_io)
@@ -45,31 +44,23 @@ def verify_model(feat, onnx_io='tmp.onnx'):
     return onnx_outputs
 
 
-def list_gen(outputs):
-    """Generate a list with only torch.Tensor."""
-    while True:
-        ret = []
-        flags = True
-        for i in outputs:
-            if not isinstance(i, torch.Tensor):
-                flags = False
-                for j in i:
-                    ret.append(j)
-            else:
-                ret.append(i)
-        outputs = ret
-        if flags:
-            break
-    return outputs
+def flat(outputs):
+    """Convert the torch forward outputs containing tuple or list to a list
+    only containing torch.Tensor.
 
+    Args:
+        output (list(Tensor) | tuple(list(Tensor) | ...): the outputs
+        in torch env, maybe containing nested structures such as list
+        or tuple.
 
-def get_data_path():
-    """Get test data path."""
-    exe_path = getcwd().split('/')[-1]
-    if exe_path == 'tests':
-        data_path = osp.join(getcwd(), 'test_onnx/data/')
-    elif exe_path == 'test_onnx':
-        data_path = osp.join(getcwd(), 'data/')
+    Returns:
+        list(Tensor): a list only containing torch.Tensor
+    """
+    ret = []
+    if not isinstance(outputs, torch.Tensor):
+        for sub in outputs:
+            for x in flat(sub):
+                ret += [x]
     else:
-        data_path = osp.join(getcwd(), 'tests/test_onnx/data/')
-    return data_path
+        ret += [outputs]
+    return ret
