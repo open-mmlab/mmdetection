@@ -564,11 +564,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         if torch.onnx.is_in_onnx_export():
             img_shapes = [
-                img_metas[i]['img_shape_for_onnx'] for i in range(cls_scores[0].shape[0])
+                img_metas[i]['img_shape_for_onnx']
+                for i in range(cls_scores[0].shape[0])
             ]
         else:
             img_shapes = [
-                img_metas[i]['img_shape'] for i in range(cls_scores[0].shape[0])
+                img_metas[i]['img_shape']
+                for i in range(cls_scores[0].shape[0])
             ]
         scale_factors = [
             img_metas[i]['scale_factor'] for i in range(cls_scores[0].shape[0])
@@ -657,12 +659,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
-                    max_scores, _ = scores.max(dim=2)
+                    max_scores, _ = scores.max(-1)
                 else:
                     # remind that we set FG labels to [0, num_class-1]
                     # since mmdet v2.0
                     # BG cat_id: num_class
-                    max_scores, _ = scores[..., :-1].max(dim=2)
+                    max_scores, _ = scores[..., :-1].max(-1)
 
                 _, topk_inds = max_scores.topk(nms_pre)
                 batch_inds = torch.arange(batch_size).view(
@@ -686,12 +688,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
             # Get maximum scores for foreground classes.
             if self.use_sigmoid_cls:
-                max_scores, _ = mlvl_scores.max(dim=2)
+                max_scores, _ = mlvl_scores.max(-1)
             else:
                 # remind that we set FG labels to [0, num_class-1]
                 # since mmdet v2.0
                 # BG cat_id: num_class
-                max_scores, _ = mlvl_scores[..., :-1].max(dim=2)
+                max_scores, _ = mlvl_scores[..., :-1].max(-1)
             _, topk_inds = max_scores.topk(deploy_nms_pre)
             batch_inds = torch.arange(batch_size).view(-1,
                                                        1).expand_as(topk_inds)
@@ -703,7 +705,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(batch_size, mlvl_scores.shape[1],
                                             1)
-            mlvl_scores = torch.cat([mlvl_scores, padding], dim=2)
+            mlvl_scores = torch.cat([mlvl_scores, padding], dim=-1)
 
         if with_nms:
             det_results = []
