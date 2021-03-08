@@ -516,16 +516,16 @@ class PAAHead(ATSSHead):
             label_channels=1,
             unmap_outputs=True)
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           iou_preds,
-                           mlvl_anchors,
-                           img_shapes,
-                           scale_factors,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
+    def _get_bboxes(self,
+                    cls_scores,
+                    bbox_preds,
+                    iou_preds,
+                    mlvl_anchors,
+                    img_shapes,
+                    scale_factors,
+                    cfg,
+                    rescale=False,
+                    with_nms=True):
         """Transform outputs for a single batch item into labeled boxes.
 
         This method is almost same as `ATSSHead._get_bboxes()`.

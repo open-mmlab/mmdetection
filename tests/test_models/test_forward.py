@@ -137,7 +137,7 @@ def test_rpn_forward():
         'retinanet/retinanet_r50_fpn_1x_coco.py',
         'guided_anchoring/ga_retinanet_r50_fpn_1x_coco.py',
         'ghm/retinanet_ghm_r50_fpn_1x_coco.py',
-        'fcos/fcos_center_r50_caffe_fpn_gn-head_4x4_1x_coco.py',
+        'fcos/fcos_center_r50_caffe_fpn_gn-head_1x_coco.py',
         'foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py',
         # 'free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
         # 'atss/atss_r50_fpn_1x_coco.py',  # not ready for topk
