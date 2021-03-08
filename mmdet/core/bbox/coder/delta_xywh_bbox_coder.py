@@ -156,7 +156,8 @@ def delta2bbox(rois,
 
     Returns:
         Tensor: Boxes with shape (B, N, 4 * num_classes) or (B, N, 4) or
-           (B, N, 4) or (N, 4), where 4 represent tl_x, tl_y, br_x, br_y.
+           (N, 4 * num_classes) or (N, 4), where 4 represent
+           tl_x, tl_y, br_x, br_y.
 
     References:
         .. [1] https://arxiv.org/abs/1311.2524
@@ -223,7 +224,7 @@ def delta2bbox(rois,
         min_xy = x1.new_tensor(0)
         max_xy = torch.cat(
             [max_shape] * (deltas.size(-1) // 2),
-            dim=-1).flip(dims=[-1]).unsqueeze(-2)
+            dim=-1).flip(-1).unsqueeze(-2)
         bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
         bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 
