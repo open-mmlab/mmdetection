@@ -79,14 +79,14 @@ class RPNHead(RPNTestMixin, AnchorHead):
         return dict(
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_anchors,
-                           img_shapes,
-                           scale_factors,
-                           cfg,
-                           rescale=False):
+    def _get_bboxes(self,
+                    cls_scores,
+                    bbox_preds,
+                    mlvl_anchors,
+                    img_shapes,
+                    scale_factors,
+                    cfg,
+                    rescale=False):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -105,9 +105,12 @@ class RPNHead(RPNTestMixin, AnchorHead):
             rescale (bool): If True, return boxes in original image space.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1.
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class labelof the
+                corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
@@ -132,7 +135,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 # num_class in RPN head since mmdet v2.5, which is unified to
                 # be consistent with other head since mmdet v2.0. In mmdet v2.0
                 # to v2.4 we keep BG label as 0 and FG label as 1 in rpn head.
-                scores = rpn_cls_score.softmax(dim=2)[..., 0]
+                scores = rpn_cls_score.softmax(-1)[..., 0]
             rpn_bbox_pred = rpn_bbox_pred.permute(0, 2, 3, 1).reshape(
                 batch_size, -1, 4)
             anchors = mlvl_anchors[idx]
@@ -154,24 +157,24 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 rpn_bbox_pred = rpn_bbox_pred[batch_inds, topk_inds, :]
                 anchors = anchors[topk_inds, :]
             else:
-                anchors = anchors.repeat(batch_size, 1, 1)
+                anchors = anchors.expand_as(rpn_bbox_pred)
             mlvl_scores.append(scores)
             mlvl_bbox_preds.append(rpn_bbox_pred)
             mlvl_valid_anchors.append(anchors)
             level_ids.append(
                 scores.new_full((
-                    scores.size(0),
+                    batch_size,
                     scores.size(1),
                 ),
                                 idx,
                                 dtype=torch.long))
 
-        scores = torch.cat(mlvl_scores, dim=1)
-        anchors = torch.cat(mlvl_valid_anchors, dim=1)
-        rpn_bbox_pred = torch.cat(mlvl_bbox_preds, dim=1)
-        proposals = self.bbox_coder.decode(
-            anchors, rpn_bbox_pred, max_shape=img_shapes)
-        ids = torch.cat(level_ids, dim=1)
+        batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
+        batch_mlvl_anchors = torch.cat(mlvl_valid_anchors, dim=1)
+        batch_mlvl_rpn_bbox_pred = torch.cat(mlvl_bbox_preds, dim=1)
+        batch_mlvl_proposals = self.bbox_coder.decode(
+            batch_mlvl_anchors, batch_mlvl_rpn_bbox_pred, max_shape=img_shapes)
+        batch_mlvl_ids = torch.cat(level_ids, dim=1)
 
         # deprecate arguments warning
         if 'nms' not in cfg or 'max_num' in cfg or 'nms_thr' in cfg:
@@ -203,23 +206,27 @@ class RPNHead(RPNTestMixin, AnchorHead):
         # Skip nonzero op while exporting to ONNX
         if torch.onnx.is_in_onnx_export():
             # TODO
-            dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+            dets, keep = batched_nms(batch_mlvl_proposals, batch_mlvl_scores,
+                                     batch_mlvl_ids, cfg.nms)
             return dets[:cfg.max_per_img]
         else:
             result_list = []
-            for (proposal, score, id_) in zip(proposals, scores, ids):
+            for (mlvl_proposals, mlvl_scores,
+                 mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
+                                  batch_mlvl_ids):
                 if cfg.min_bbox_size > 0:
-                    w = proposal[:, 2] - proposal[:, 0]
-                    h = proposal[:, 3] - proposal[:, 1]
+                    w = mlvl_proposals[:, 2] - mlvl_proposals[:, 0]
+                    h = mlvl_proposals[:, 3] - mlvl_proposals[:, 1]
                     valid_ind = torch.nonzero(
                         (w >= cfg.min_bbox_size)
                         & (h >= cfg.min_bbox_size),
                         as_tuple=False).squeeze()
-                    if valid_ind.sum().item() != len(proposal):
-                        proposal = proposal[valid_ind, :]
-                        score = score[valid_ind]
-                        id_ = id_[valid_ind]
+                    if valid_ind.sum().item() != len(mlvl_proposals):
+                        mlvl_proposals = mlvl_proposals[valid_ind, :]
+                        mlvl_scores = mlvl_scores[valid_ind]
+                        mlvl_ids = mlvl_ids[valid_ind]
 
-                dets, keep = batched_nms(proposal, score, id_, cfg.nms)
+                dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
+                                         cfg.nms)
                 result_list.append(dets[:cfg.max_per_img])
             return result_list

@@ -367,23 +367,22 @@ class ATSSHead(AnchorHead):
         scale_factors = [
             img_metas[i]['scale_factor'] for i in range(cls_scores[0].shape[0])
         ]
-        result_list = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                              centerness_pred_list,
-                                              mlvl_anchors, img_shapes,
-                                              scale_factors, cfg, rescale,
-                                              with_nms)
+        result_list = self._get_bboxes(cls_score_list, bbox_pred_list,
+                                       centerness_pred_list, mlvl_anchors,
+                                       img_shapes, scale_factors, cfg, rescale,
+                                       with_nms)
         return result_list
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           centernesses,
-                           mlvl_anchors,
-                           img_shapes,
-                           scale_factors,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
+    def _get_bboxes(self,
+                    cls_scores,
+                    bbox_preds,
+                    centernesses,
+                    mlvl_anchors,
+                    img_shapes,
+                    scale_factors,
+                    cfg,
+                    rescale=False,
+                    with_nms=True):
         """Transform outputs for a single batch item into labeled boxes.
 
         Args:
@@ -407,13 +406,12 @@ class ATSSHead(AnchorHead):
                 Default: True.
 
         Returns:
-            tuple(Tensor):
-                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
-                    the first 4 columns are bounding box positions
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
-                    between 0 and 1.
-                det_labels (Tensor): A (n,) tensor where each item is the
-                    predicted class label of the corresponding box.
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class label of the
+                corresponding box.
         """
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         device = cls_scores[0].device
@@ -444,7 +442,7 @@ class ATSSHead(AnchorHead):
                 nms_pre = torch.where(nms_pre_tensor < num_anchor,
                                       nms_pre_tensor, num_anchor)
 
-                max_scores, _ = (scores * centerness[..., None]).max(dim=2)
+                max_scores, _ = (scores * centerness[..., None]).max(-1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds, :]
                 batch_inds = torch.arange(batch_size).view(
@@ -461,44 +459,53 @@ class ATSSHead(AnchorHead):
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
 
-        mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
+        batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factors).unsqueeze(1)
-        mlvl_scores = torch.cat(mlvl_scores, dim=1)
-        mlvl_centerness = torch.cat(mlvl_centerness, dim=1)
+            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
+                scale_factors).unsqueeze(1)
+        batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
+        batch_mlvl_centerness = torch.cat(mlvl_centerness, dim=1)
 
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            max_scores, _ = (
-                mlvl_scores *
-                mlvl_centerness.unsqueeze(2).expand_as(mlvl_scores)).max(dim=2)
-            _, topk_inds = max_scores.topk(deploy_nms_pre)
+            batch_mlvl_scores, _ = (
+                batch_mlvl_scores *
+                batch_mlvl_centerness.unsqueeze(2).expand_as(batch_mlvl_scores)
+            ).max(-1)
+            _, topk_inds = batch_mlvl_scores.topk(deploy_nms_pre)
             batch_inds = torch.arange(batch_size).view(-1,
                                                        1).expand_as(topk_inds)
-            mlvl_scores = mlvl_scores[batch_inds, topk_inds, :]
-            mlvl_bboxes = mlvl_bboxes[batch_inds, topk_inds, :]
-            mlvl_centerness = mlvl_centerness[batch_inds, topk_inds]
+            batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds, :]
+            batch_mlvl_bboxes = batch_mlvl_bboxes[batch_inds, topk_inds, :]
+            batch_mlvl_centerness = batch_mlvl_centerness[batch_inds,
+                                                          topk_inds]
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
-        padding = mlvl_scores.new_zeros(batch_size, mlvl_scores.shape[1], 1)
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=2)
+        padding = batch_mlvl_scores.new_zeros(batch_size,
+                                              batch_mlvl_scores.shape[1], 1)
+        batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
 
         if with_nms:
             det_results = []
-            for (bboxes, scores, centerness) in zip(mlvl_bboxes, mlvl_scores,
-                                                    mlvl_centerness):
+            for (mlvl_bboxes, mlvl_scores,
+                 mlvl_centerness) in zip(batch_mlvl_bboxes, batch_mlvl_scores,
+                                         batch_mlvl_centerness):
                 det_bbox, det_label = multiclass_nms(
-                    bboxes,
-                    scores,
+                    mlvl_bboxes,
+                    mlvl_scores,
                     cfg.score_thr,
                     cfg.nms,
                     cfg.max_per_img,
-                    score_factors=centerness)
+                    score_factors=mlvl_centerness)
                 det_results.append(tuple([det_bbox, det_label]))
-            return det_results
         else:
-            return mlvl_bboxes, mlvl_scores, mlvl_centerness
+            det_results = [
+                tuple(mlvl_bs)
+                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores,
+                                   batch_mlvl_centerness)
+            ]
+        return det_results
 
     def get_targets(self,
                     anchor_list,

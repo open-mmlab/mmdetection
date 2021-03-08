@@ -368,15 +368,15 @@ class GFLHead(AnchorHead):
         return dict(
             loss_cls=losses_cls, loss_bbox=losses_bbox, loss_dfl=losses_dfl)
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_anchors,
-                           img_shapes,
-                           scale_factors,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
+    def _get_bboxes(self,
+                    cls_scores,
+                    bbox_preds,
+                    mlvl_anchors,
+                    img_shapes,
+                    scale_factors,
+                    cfg,
+                    rescale=False,
+                    with_nms=True):
         """Transform outputs for a single batch item into labeled boxes.
 
         Args:
@@ -399,13 +399,12 @@ class GFLHead(AnchorHead):
                 Default: True.
 
         Returns:
-            tuple(Tensor):
-                det_bboxes (Tensor): Bbox predictions in shape (N, 5), where
-                    the first 4 columns are bounding box positions
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
-                    between 0 and 1.
-                det_labels (Tensor): A (N,) tensor where each item is the
-                    predicted class label of the corresponding box.
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class labelof the
+                corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
@@ -427,7 +426,7 @@ class GFLHead(AnchorHead):
 
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[1] > nms_pre:
-                max_scores, _ = scores.max(dim=2)
+                max_scores, _ = scores.max(-1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds).long()
@@ -442,27 +441,33 @@ class GFLHead(AnchorHead):
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
-        mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
+        batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factors).unsqueeze(1)
+            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
+                scale_factors).unsqueeze(1)
 
-        mlvl_scores = torch.cat(mlvl_scores, dim=1)
+        batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
         # Add a dummy background class to the backend when using sigmoid
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
-        padding = mlvl_scores.new_zeros(batch_size, mlvl_scores.shape[1], 1)
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=2)
+        padding = batch_mlvl_scores.new_zeros(batch_size,
+                                              batch_mlvl_scores.shape[1], 1)
+        batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
 
         if with_nms:
             det_results = []
-            for (bboxes, scores) in zip(mlvl_bboxes, mlvl_scores):
-                det_bbox, det_label = multiclass_nms(bboxes, scores,
+            for (mlvl_bboxes, mlvl_scores) in zip(batch_mlvl_bboxes,
+                                                  batch_mlvl_scores):
+                det_bbox, det_label = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                      cfg.score_thr, cfg.nms,
                                                      cfg.max_per_img)
                 det_results.append(tuple([det_bbox, det_label]))
-            return det_results
         else:
-            return mlvl_bboxes, mlvl_scores
+            det_results = [
+                tuple(mlvl_bs)
+                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores)
+            ]
+        return det_results
 
     def get_targets(self,
                     anchor_list,

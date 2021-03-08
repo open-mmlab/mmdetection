@@ -203,16 +203,16 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             img_metas[i]['scale_factor']
             for i in range(pred_maps_list[0].shape[0])
         ]
-        result_list = self._get_bboxes_single(pred_maps_list, scale_factors,
-                                              cfg, rescale, with_nms)
+        result_list = self._get_bboxes(pred_maps_list, scale_factors, cfg,
+                                       rescale, with_nms)
         return result_list
 
-    def _get_bboxes_single(self,
-                           pred_maps_list,
-                           scale_factors,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
+    def _get_bboxes(self,
+                    pred_maps_list,
+                    scale_factors,
+                    cfg,
+                    rescale=False,
+                    with_nms=True):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -228,13 +228,12 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 Default: True.
 
         Returns:
-            tuple(Tensor):
-                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
-                    the first 4 columns are bounding box positions
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
-                    between 0 and 1.
-                det_labels (Tensor): A (n,) tensor where each item is the
-                    predicted class label of the corresponding box.
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class label of the
+                corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(pred_maps_list) == self.num_levels
@@ -316,55 +315,56 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             multi_lvl_conf_scores.append(conf_pred)
 
         # Merge the results of different scales together
-        multi_lvl_bboxes = torch.cat(multi_lvl_bboxes, dim=1)
-        multi_lvl_cls_scores = torch.cat(multi_lvl_cls_scores, dim=1)
-        multi_lvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
+        batch_mlvl_bboxes = torch.cat(multi_lvl_bboxes, dim=1)
+        batch_mlvl_scores = torch.cat(multi_lvl_cls_scores, dim=1)
+        batch_mlvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
 
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            _, topk_inds = multi_lvl_conf_scores.topk(deploy_nms_pre)
+            _, topk_inds = batch_mlvl_conf_scores.topk(deploy_nms_pre)
             batch_inds = torch.arange(batch_size).view(
                 -1, 1).expand_as(topk_inds).long()
-            multi_lvl_bboxes = multi_lvl_bboxes[batch_inds, topk_inds, :]
-            multi_lvl_cls_scores = multi_lvl_cls_scores[batch_inds,
-                                                        topk_inds, :]
-            multi_lvl_conf_scores = multi_lvl_conf_scores[batch_inds,
-                                                          topk_inds]
+            batch_mlvl_bboxes = batch_mlvl_bboxes[batch_inds, topk_inds, :]
+            batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds, :]
+            batch_mlvl_conf_scores = batch_mlvl_conf_scores[batch_inds,
+                                                            topk_inds]
         # TODO
-        if with_nms and (multi_lvl_conf_scores.size(0) == 0):
+        if with_nms and (batch_mlvl_conf_scores.size(0) == 0):
             return torch.zeros((0, 5)), torch.zeros((0, ))
 
         if rescale:
-            multi_lvl_bboxes /= multi_lvl_bboxes.new_tensor(
+            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
                 scale_factors).unsqueeze(1)
 
         # In mmdet 2.x, the class_id for background is num_classes.
         # i.e., the last column.
-        padding = multi_lvl_cls_scores.new_zeros(batch_size,
-                                                 multi_lvl_cls_scores.shape[1],
-                                                 1)
-        multi_lvl_cls_scores = torch.cat([multi_lvl_cls_scores, padding],
-                                         dim=2)
+        padding = batch_mlvl_scores.new_zeros(batch_size,
+                                              batch_mlvl_scores.shape[1], 1)
+        batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
 
         # Support exporting to onnx without nms
         if with_nms and cfg.get('nms', None) is not None:
             det_results = []
-            for (bboxes, scores, conf_scores) in zip(multi_lvl_bboxes,
-                                                     multi_lvl_cls_scores,
-                                                     multi_lvl_conf_scores):
+            for (mlvl_bboxes, mlvl_scores,
+                 mlvl_conf_scores) in zip(batch_mlvl_bboxes, batch_mlvl_scores,
+                                          batch_mlvl_conf_scores):
                 det_bboxes, det_labels = multiclass_nms(
-                    bboxes,
-                    scores,
+                    mlvl_bboxes,
+                    mlvl_scores,
                     cfg.score_thr,
                     cfg.nms,
                     cfg.max_per_img,
-                    score_factors=conf_scores)
+                    score_factors=mlvl_conf_scores)
                 det_results.append(tuple([det_bboxes, det_labels]))
-            return det_results
+
         else:
-            return (multi_lvl_bboxes, multi_lvl_cls_scores,
-                    multi_lvl_conf_scores)
+            det_results = [
+                tuple(mlvl_bs)
+                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores,
+                                   batch_mlvl_conf_scores)
+            ]
+        return det_results
 
     @force_fp32(apply_to=('pred_maps', ))
     def loss(self,
