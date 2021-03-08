@@ -618,9 +618,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 Default: True.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1.
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class labelof the
+                corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
@@ -716,9 +719,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                                      cfg.score_thr, cfg.nms,
                                                      cfg.max_per_img)
                 det_results.append(tuple([det_bbox, det_label]))
-            return det_results
         else:
-            return mlvl_bboxes, mlvl_scores
+            det_results = [
+                tuple(mlvl_bs)
+                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores)
+            ]
+        return det_results
 
     def aug_test(self, feats, img_metas, rescale=False):
         """Test function with test time augmentation.
