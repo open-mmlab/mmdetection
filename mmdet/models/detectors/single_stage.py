@@ -111,6 +111,11 @@ class SingleStageDetector(BaseDetector):
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
+        # get origin input shape to support onnx dynamic shape
+        if torch.onnx.is_in_onnx_export():
+            # get shape as tensor
+            img_shape = torch._shape_as_tensor(img)[2:]
+            img_metas[0]['img_shape_for_onnx'] = img_shape
         bbox_list = self.bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
         # skip post-processing when exporting to ONNX

@@ -562,9 +562,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         cls_score_list = [cls_scores[i].detach() for i in range(num_levels)]
         bbox_pred_list = [bbox_preds[i].detach() for i in range(num_levels)]
 
-        img_shapes = [
-            img_metas[i]['img_shape'] for i in range(cls_scores[0].shape[0])
-        ]
+        if torch.onnx.is_in_onnx_export():
+            img_shapes = [
+                img_metas[i]['img_shape_for_onnx'] for i in range(cls_scores[0].shape[0])
+            ]
+        else:
+            img_shapes = [
+                img_metas[i]['img_shape'] for i in range(cls_scores[0].shape[0])
+            ]
         scale_factors = [
             img_metas[i]['scale_factor'] for i in range(cls_scores[0].shape[0])
         ]
