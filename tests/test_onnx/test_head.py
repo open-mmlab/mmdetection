@@ -7,12 +7,19 @@ import pytest
 import torch
 import torch.nn as nn
 
+from mmdet import digit_version
 from mmdet.models.dense_heads import RetinaHead, YOLOV3Head
 from .utils import get_data_path, list_gen, verify_model
 
 onnx_io = 'tmp.onnx'
 
 data_path = get_data_path()
+
+min_required_version = '1.5.0'
+if digit_version(torch.__version__) <= digit_version(min_required_version):
+    pytest.skip(
+        'ort backend does not support version below 1.5.0',
+        allow_module_level=True)
 
 
 class WrapFunction(nn.Module):
@@ -91,8 +98,6 @@ def yolo_config():
     return model
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_retina_head_forward_single():
     """Test RetinaNet Head single forward in torch and onnxruntime env."""
     retina_model = retinanet_config()
@@ -125,8 +130,6 @@ def test_retina_head_forward_single():
             torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_retina_head_forward():
     """Test RetinaNet Head forward in torch and onnxruntime env."""
     retina_model = retinanet_config()
@@ -164,8 +167,6 @@ def test_retina_head_forward():
             torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_retinanet_head_get_bboxes_single():
     retina_model = retinanet_config()
     s = 128
@@ -216,8 +217,6 @@ def test_retinanet_head_get_bboxes_single():
             torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_retinanet_head_get_bboxes():
     retina_model = retinanet_config()
     s = 128
@@ -262,8 +261,6 @@ def test_retinanet_head_get_bboxes():
             torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_yolov3_head_forward():
     yolo_model = yolo_config()
 
@@ -299,8 +296,6 @@ def test_yolov3_head_forward():
             torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_yolov3_head_get_bboxes_single():
     yolo_model = yolo_config()
 
@@ -339,8 +334,6 @@ def test_yolov3_head_get_bboxes_single():
             torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_yolov3_head_get_bboxes():
     yolo_model = yolo_config()
 

@@ -4,8 +4,15 @@ import numpy as np
 import pytest
 import torch
 
+from mmdet import digit_version
 from mmdet.models.necks import FPN, YOLOV3Neck
 from .utils import get_data_path, list_gen, verify_model
+
+min_required_version = '1.5.0'
+if digit_version(torch.__version__) <= digit_version(min_required_version):
+    pytest.skip(
+        'ort backend does not support version below 1.5.0',
+        allow_module_level=True)
 
 onnx_io = 'tmp.onnx'
 
@@ -149,64 +156,46 @@ def yolo_config(test_step_name):
         return yolo_model, feats
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_fpn_normal():
     outs = fpn_config('normal')
     ort_validate(*outs)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_fpn_wo_extra_convs():
     outs = fpn_config('wo_extra_convs')
     ort_validate(*outs)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_fpn_lateral_bns():
     outs = fpn_config('lateral_bns')
     ort_validate(*outs)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_fpn_bilinear_upsample():
     outs = fpn_config('bilinear_upsample')
     ort_validate(*outs)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_fpn_scale_factor():
     outs = fpn_config('scale_factor')
     ort_validate(*outs)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_fpn_extra_convs_inputs():
     outs = fpn_config('extra_convs_inputs')
     ort_validate(*outs)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_fpn_extra_convs_laterals():
     outs = fpn_config('extra_convs_laterals')
     ort_validate(*outs)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_fpn_extra_convs_outputs():
     outs = fpn_config('extra_convs_outputs')
     ort_validate(*outs)
 
 
-@pytest.mark.skipif(
-    torch.__version__ < '1.5.0', reason='does not support version below 1.5.0')
 def test_yolo_normal():
     outs = yolo_config('normal')
     ort_validate(*outs)
