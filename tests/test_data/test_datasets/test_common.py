@@ -355,3 +355,15 @@ def test_allow_empty_images(classes, expected_length):
     assert len(full_dataset.img_ids) == 3
     assert filtered_dataset.CLASSES == classes
     assert full_dataset.CLASSES == classes
+
+def test_repr():
+    tmp_dir = tempfile.TemporaryDirectory()
+    # create dummy data
+    fake_pkl_file = osp.join(tmp_dir.name, 'fake_data.pkl')
+    _create_dummy_custom_pkl(fake_pkl_file)
+
+    # test single custom dataset repr
+    custom_dataset = CustomDataset(
+        ann_file=fake_pkl_file, classes=('car',), pipeline=[])
+
+    assert repr(custom_dataset) == "car: 4"
