@@ -579,13 +579,11 @@ def fsaf_config():
             octave_base_scale=1,
             scales_per_octave=1,
             ratios=[1.0],
-            strides=[4, 8, 16, 32, 64]),
-        bbox_coder=dict(type='TBLRBBoxCoder', normalizer=4.0))
+            strides=[8, 16, 32, 64, 128]))
 
     test_cfg = mmcv.Config(
         dict(
-            nms_pre=0,
-            deploy_nms_pre=0,
+            nms_pre=1000,
             min_bbox_size=0,
             score_thr=0.05,
             nms=dict(type='nms', iou_threshold=0.5),
@@ -593,7 +591,6 @@ def fsaf_config():
 
     model = FSAFHead(num_classes=4, in_channels=1, test_cfg=test_cfg, **cfg)
     model.requires_grad_(False)
-    model.eval()
     return model
 
 
@@ -654,6 +651,100 @@ def test_fsaf_head_forward():
     onnx_outputs = verify_model(feats)
 
     torch_outputs = wrap_model.forward(feats)
+    torch_outputs = flat(torch_outputs)
+    torch_outputs = [
+        torch_output.detach().numpy() for torch_output in torch_outputs
+    ]
+
+    # match torch_outputs and onnx_outputs
+    for i in range(len(onnx_outputs)):
+        np.testing.assert_allclose(
+            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+
+
+def test_fsaf_head_get_bboxes_single():
+    fsaf_model = fsaf_config()
+    s = 256
+
+    fsaf_head_data = 'fsaf_head_get_bboxes.pkl'
+    with open(data_path + fsaf_head_data, 'rb') as f:
+        feats = pickle.load(f)
+    feats = [feat[0] for feat in feats]
+    cls_score = feats[:5]
+    bbox = feats[5:]
+
+    featmap_sizes = [
+        cls_score[i].shape[-2:]
+        for i in range(len(fsaf_model.anchor_generator.strides))
+    ]
+
+    anchors = fsaf_model.anchor_generator.grid_anchors(
+        featmap_sizes, device='cpu')
+
+    fsaf_model._get_bboxes_single = partial(
+        fsaf_model._get_bboxes_single,
+        mlvl_anchors=anchors,
+        img_shape=(s, s, 3),
+        scale_factor=1,
+        cfg=None)
+    wrap_model = WrapFunction(fsaf_model._get_bboxes_single)
+    wrap_model.cpu().eval()
+    with torch.no_grad():
+        torch.onnx.export(
+            wrap_model, (cls_score, bbox),
+            onnx_io,
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11)
+
+    onnx_outputs = verify_model(cls_score + bbox)
+
+    torch_outputs = flat(wrap_model.forward(cls_score, bbox))
+    torch_outputs = [
+        torch_output.detach().numpy() for torch_output in torch_outputs
+    ]
+
+    # match torch_outputs and onnx_outputs
+    for i in range(len(onnx_outputs)):
+        np.testing.assert_allclose(
+            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+
+
+def test_fsaf_head_get_bboxes():
+    fsaf_model = fsaf_config()
+    s = 256
+    img_metas = [{
+        'img_shape_for_onnx': (s, s, 3),
+        'scale_factor': 1,
+        'pad_shape': (s, s, 3),
+        'img_shape': (s, s, 2)
+    }]
+
+    fsaf_head_data = 'fsaf_head_get_bboxes.pkl'
+    with open(data_path + fsaf_head_data, 'rb') as f:
+        feats = pickle.load(f)
+    feats = [feat for feat in feats]
+    cls_score = feats[:5]
+    bboxes = feats[5:]
+
+    fsaf_model.get_bboxes = partial(fsaf_model.get_bboxes, img_metas=img_metas)
+    wrap_model = WrapFunction(fsaf_model.get_bboxes)
+    wrap_model.cpu().eval()
+    with torch.no_grad():
+        torch.onnx.export(
+            wrap_model, (cls_score, bboxes),
+            onnx_io,
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11)
+
+    onnx_outputs = verify_model(cls_score + bboxes)
+
+    torch_outputs = wrap_model.forward(cls_score, bboxes)
     torch_outputs = flat(torch_outputs)
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
@@ -741,18 +832,12 @@ def test_ssd_head_get_bboxes_single():
 
     featmap_sizes = [[38, 38], [19, 19], [10, 10], [5, 5], [3, 3], [1, 1]]
 
-    cls_score = [
-        torch.rand(
-            ssd_model.anchor_generator.num_base_anchors[i] *
-            (ssd_model.num_classes + 1), featmap_sizes[i][0],
-            featmap_sizes[i][1])
-        for i in range(len(ssd_model.anchor_generator.num_base_anchors))
-    ]
-    bboxes = [
-        torch.rand(ssd_model.anchor_generator.num_base_anchors[i] * 4,
-                   featmap_sizes[i][0], featmap_sizes[i][1])
-        for i in range(len(ssd_model.anchor_generator.num_base_anchors))
-    ]
+    ssd_head_data = 'ssd_head_get_bboxes.pkl'
+    with open(data_path + ssd_head_data, 'rb') as f:
+        feats = pickle.load(f)
+    feats = [feat[0] for feat in feats]
+    cls_score = feats[:6]
+    bboxes = feats[6:]
 
     anchors = ssd_model.anchor_generator.grid_anchors(
         featmap_sizes, device='cpu')
@@ -799,20 +884,12 @@ def test_ssd_head_get_bboxes():
         'img_shape': (s, s, 2)
     }]
 
-    featmap_sizes = [[38, 38], [19, 19], [10, 10], [5, 5], [3, 3], [1, 1]]
+    ssd_head_data = 'ssd_head_get_bboxes.pkl'
+    with open(data_path + ssd_head_data, 'rb') as f:
+        feats = pickle.load(f)
+    cls_score = feats[:6]
+    bboxes = feats[6:]
 
-    cls_score = [
-        torch.rand(
-            1, ssd_model.anchor_generator.num_base_anchors[i] *
-            (ssd_model.num_classes + 1), featmap_sizes[i][0],
-            featmap_sizes[i][1])
-        for i in range(len(ssd_model.anchor_generator.num_base_anchors))
-    ]
-    bboxes = [
-        torch.rand(1, ssd_model.anchor_generator.num_base_anchors[i] * 4,
-                   featmap_sizes[i][0], featmap_sizes[i][1])
-        for i in range(len(ssd_model.anchor_generator.num_base_anchors))
-    ]
     ssd_model.get_bboxes = partial(ssd_model.get_bboxes, img_metas=img_metas)
     wrap_model = WrapFunction(ssd_model.get_bboxes)
     wrap_model.cpu().eval()
