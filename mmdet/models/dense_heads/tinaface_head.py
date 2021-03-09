@@ -28,12 +28,11 @@ class TinaFaceHead(AnchorHead):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        super(TinaFaceHead, self).__init__(num_classes,in_channels, **kwargs)
+        super(TinaFaceHead, self).__init__(num_classes, in_channels, **kwargs)
 
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
-            # SSD sampling=False so use PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.loss_centerness = build_loss(loss_iou)
@@ -160,13 +159,13 @@ class TinaFaceHead(AnchorHead):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
-            centerness_pred_list = [
+            iou_pred_list = [
                 iou[i][img_id].detach() for i in range(num_levels)
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                centerness_pred_list,
+                                                iou_pred_list,
                                                 mlvl_anchors, img_shape,
                                                 scale_factor, cfg, rescale,
                                                 with_nms)
@@ -176,7 +175,7 @@ class TinaFaceHead(AnchorHead):
     def _get_bboxes_single(self,
                            cls_scores,
                            bbox_preds,
-                           iou,
+                           ious,
                            mlvl_anchors,
                            img_shape,
                            scale_factor,
@@ -190,7 +189,7 @@ class TinaFaceHead(AnchorHead):
                 with shape (num_anchors * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for a single
                 scale level with shape (num_anchors * 4, H, W).
-            iou (list[Tensor]): iou for a single scale level
+            ious (list[Tensor]): iou for a single scale level
                 with shape (num_anchors * 1, H, W).
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
@@ -214,56 +213,50 @@ class TinaFaceHead(AnchorHead):
                 det_labels (Tensor): A (n,) tensor where each item is the
                     predicted class label of the corresponding box.
         """
-        alpha = 0.4
-        height_th = 9
+        alpha = cfg.get('alpha', None)
+        height_th = cfg.get('height_th', None)
+        min_scale = cfg.get('min_scale', 1)
+        max_scale = cfg.get('max_scale', 10000)
+        split_thr = cfg.get('split_thr', 10000)
 
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
-        # mlvl_centerness = []
-        for cls_score, bbox_pred, centerness, anchors in zip(
-                cls_scores, bbox_preds, iou, mlvl_anchors):
+        for cls_score, bbox_pred, iou, anchors in zip(
+                cls_scores, bbox_preds, ious, mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
 
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            centerness = centerness.permute(1, 2, 0).reshape(-1, 1).sigmoid()
+            iou = iou.permute(1, 2, 0).reshape(-1, 1).sigmoid()
 
             if alpha is None:
-                scores *= centerness
+                scores *= iou
             elif isinstance(alpha, float):
                 scores = torch.pow(scores, 2 * alpha) * torch.pow(
-                    centerness, 2 * (1 - alpha))
+                    iou, 2 * (1 - alpha))
             else:
                 raise ValueError("alpha must be float or None")
 
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
-                max_scores, _ = (scores * centerness[:, None]).max(dim=1)
+                max_scores, _ = (scores * iou[:, None]).max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-                # centerness = centerness[topk_inds]
 
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-            # mlvl_centerness.append(centerness)
-
-        def filter_boxes(boxes, min_scale, max_scale):
-            ws = boxes[:, 2] - boxes[:, 0]
-            hs = boxes[:, 3] - boxes[:, 1]
-            scales = torch.sqrt(ws * hs)
-
-            return (scales >= max(1, min_scale)) & (scales <= max_scale)
 
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         mlvl_scores = torch.cat(mlvl_scores)
 
-        keeps = filter_boxes(mlvl_bboxes, 1, 10000)
+        # TODO：Whether the function is valid
+        keeps = self._filter_boxes(mlvl_bboxes, min_scale, max_scale)
         mlvl_bboxes = mlvl_bboxes[keeps]
         mlvl_scores = mlvl_scores[keeps]
 
@@ -275,7 +268,6 @@ class TinaFaceHead(AnchorHead):
         # BG cat_id: num_class
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        # mlvl_centerness = torch.cat(mlvl_centerness)
 
         if height_th is not None:
             hs = mlvl_bboxes[:, 3] - mlvl_bboxes[:, 1]
@@ -284,23 +276,30 @@ class TinaFaceHead(AnchorHead):
                 mlvl_bboxes[valid], mlvl_scores[valid])
 
         if with_nms:
-            det_bboxes, det_labels = self._lb_multiclass_nms(
+            det_bboxes, det_labels = self.split_batch_nms(
                 mlvl_bboxes,
                 mlvl_scores,
                 cfg.score_thr,
                 cfg.nms,
                 cfg.max_per_img,
-                score_factors=None)
+                split_thr)
             return det_bboxes, det_labels
         else:
             return mlvl_bboxes, mlvl_scores
 
-    def _lb_multiclass_nms(self,multi_bboxes,
-                           multi_scores,
-                           score_thr,
-                           nms_cfg,
-                           max_num=-1,
-                           score_factors=None):
+    def _filter_boxes(self, boxes, min_scale, max_scale):
+        ws = boxes[:, 2] - boxes[:, 0]
+        hs = boxes[:, 3] - boxes[:, 1]
+        scales = torch.sqrt(ws * hs)
+        return (scales >= max(1, min_scale)) & (scales <= max_scale)
+
+    def split_batch_nms(self,
+                        multi_bboxes,
+                        multi_scores,
+                        score_thr,
+                        nms_cfg,
+                        max_num=-1,
+                        split_thr=10000):
         """NMS for multi-class bboxes.
 
         Args:
@@ -312,8 +311,6 @@ class TinaFaceHead(AnchorHead):
             nms_thr (float): NMS IoU threshold
             max_num (int): if there are more than max_num bboxes after NMS,
                 only top max_num will be kept.
-            score_factors (Tensor): The factors multiplied to scores before
-                applying NMS
 
         Returns:
             tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels \
@@ -326,28 +323,22 @@ class TinaFaceHead(AnchorHead):
         else:
             bboxes = multi_bboxes[:, None].expand(
                 multi_scores.size(0), num_classes, 4)
+
         scores = multi_scores[:, :-1]
 
-        # filter out boxes with low scores
-        valid_mask = scores > score_thr
+        labels = torch.arange(num_classes, dtype=torch.long)
+        labels = labels.view(1, -1).expand_as(scores)
 
-        # We use masked_select for ONNX exporting purpose,
-        # which is equivalent to bboxes = bboxes[valid_mask]
-        # (TODO): as ONNX does not support repeat now,
-        # we have to use this ugly code
-        bboxes = torch.masked_select(
-            bboxes,
-            torch.stack((valid_mask, valid_mask, valid_mask, valid_mask),
-                        -1)).view(-1, 4)
-        if score_factors is not None:
-            scores = scores * score_factors[:, None]
-        scores = torch.masked_select(scores, valid_mask)
-        labels = valid_mask.nonzero()[:, 1]
+        bboxes = bboxes.reshape(-1, 4)
+        scores = scores.reshape(-1)
+        labels = labels.reshape(-1)
+
+        # remove low scoring boxes
+        valid_mask = scores > score_thr
+        inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
+        bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
 
         if bboxes.numel() == 0:
-            bboxes = multi_bboxes.new_zeros((0, 5))
-            labels = multi_bboxes.new_zeros((0,), dtype=torch.long)
-
             if torch.onnx.is_in_onnx_export():
                 raise RuntimeError('[ONNX Error] Can not record NMS '
                                    'as it has not been executed this time')
@@ -364,7 +355,7 @@ class TinaFaceHead(AnchorHead):
         batch_scores = torch.empty((0,), dtype=scores.dtype, device=scores.device)
         batch_labels = torch.empty((0,), dtype=labels.dtype, device=labels.device)
         while bboxes.shape[0] > 0:
-            num = min(100000, bboxes.shape[0])
+            num = min(int(split_thr), bboxes.shape[0])
             batch_bboxes = torch.cat([batch_bboxes, bboxes[:num]])
             batch_scores = torch.cat([batch_scores, scores[:num]])
             batch_labels = torch.cat([batch_labels, labels[:num]])

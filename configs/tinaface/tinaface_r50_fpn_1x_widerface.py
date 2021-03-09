@@ -43,7 +43,7 @@ model = dict(
         feat_channels=256,
         anchor_generator=dict(
             type='AnchorGenerator',
-            octave_base_scale=2**(4 / 3),
+            octave_base_scale=2 ** (4 / 3),
             scales_per_octave=3,
             ratios=[1.3],
             strides=[4, 8, 16, 32, 64, 128]),
@@ -59,26 +59,27 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0)),
     train_cfg=dict(
-            assigner=dict(
-                type='MaxIoUAssigner',
-                pos_iou_thr=0.35,
-                neg_iou_thr=0.35,
-                min_pos_iou=0.35,
-                ignore_iof_thr=-1,
-                gpu_assign_thr=100),
-            allowed_border=-1,
-            pos_weight=-1,
-            debug=False),
+        assigner=dict(
+            type='MaxIoUAssigner',
+            pos_iou_thr=0.35,
+            neg_iou_thr=0.35,
+            min_pos_iou=0.35,
+            ignore_iof_thr=-1,
+            gpu_assign_thr=100),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False),
     test_cfg=dict(
-            nms_pre=-1,
-            min_bbox_size=0,
-            score_thr=0.01,
-            nms=dict(type='nms', iou_threshold=0.45),
-            max_per_img=-1),
+        alpha=0.4,
+        height_th=9,
+        nms_pre=-1,
+        min_bbox_size=0,
+        score_thr=0.01,
+        nms=dict(type='nms', iou_threshold=0.45),
+        max_per_img=-1),
 )
 
-optimizer=dict(type='SGD', lr=3.75e-3, momentum=0.9, weight_decay=5e-4)
-
+optimizer = dict(type='SGD', lr=3.75e-3, momentum=0.9, weight_decay=5e-4)
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -96,5 +97,4 @@ test_pipeline = [
         ])
 ]
 
-data = dict(test=dict(min_size=1,offset=0,pipeline=test_pipeline))
-
+data = dict(test=dict(min_size=1, offset=0, pipeline=test_pipeline))
