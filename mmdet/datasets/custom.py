@@ -322,3 +322,14 @@ class CustomDataset(Dataset):
                 for i, num in enumerate(proposal_nums):
                     eval_results[f'AR@{num}'] = ar[i]
         return eval_results
+
+    def __repr__(self):
+        '''Print the number of instance number for each class in the dataset'''
+        instance_count = {c:0 for c in range(len(self.CLASSES))}
+
+        # count the instance number in each image
+        for anno in self.data_infos:
+            for l in anno['labels']:
+                instance_count[l]+=1
+
+        return '\n'.join(["{}: {}".format(self.CLASSES[cls], count) for cls, count in instance_count.items()])
