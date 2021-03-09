@@ -44,7 +44,7 @@ def verify_model(feat, onnx_io='tmp.onnx'):
     return onnx_outputs
 
 
-def flat(outputs):
+def convert_list(outputs):
     """Convert the torch forward outputs containing tuple or list to a list
     only containing torch.Tensor.
 
@@ -59,7 +59,7 @@ def flat(outputs):
     ret = []
     if not isinstance(outputs, torch.Tensor):
         for sub in outputs:
-            for x in flat(sub):
+            for x in convert_list(sub):
                 ret += [x]
     else:
         ret += [outputs]

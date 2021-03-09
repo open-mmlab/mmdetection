@@ -7,10 +7,9 @@ import torch
 
 from mmdet import digit_version
 from mmdet.models.necks import FPN, YOLOV3Neck
-from .utils import flat, verify_model
+from .utils import convert_list, verify_model
 
-min_required_version = '1.5.0'
-if digit_version(torch.__version__) <= digit_version(min_required_version):
+if digit_version(torch.__version__) <= digit_version('1.5.0'):
     pytest.skip(
         'ort backend does not support version below 1.5.0',
         allow_module_level=True)
@@ -47,7 +46,7 @@ def ort_validate(fpn_model, feats):
     onnx_outputs = verify_model(feats)
 
     torch_outputs = fpn_model.forward(feats)
-    torch_outputs = flat(torch_outputs)
+    torch_outputs = convert_list(torch_outputs)
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]

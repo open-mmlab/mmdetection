@@ -1,3 +1,3 @@
-from .utils import flat, verify_model
+from .utils import convert_list, verify_model
 
-__all__ = ['verify_model', 'flat']
+__all__ = ['verify_model', 'convert_list']

@@ -10,14 +10,13 @@ import torch.nn as nn
 
 from mmdet import digit_version
 from mmdet.models.dense_heads import RetinaHead, YOLOV3Head
-from .utils import flat, verify_model
+from .utils import convert_list, verify_model
 
 onnx_io = 'tmp.onnx'
 
 data_path = osp.join(osp.dirname(__file__), 'data/')
 
-min_required_version = '1.5.0'
-if digit_version(torch.__version__) <= digit_version(min_required_version):
+if digit_version(torch.__version__) <= digit_version('1.5.0'):
     pytest.skip(
         'ort backend does not support version below 1.5.0',
         allow_module_level=True)
@@ -88,7 +87,7 @@ def test_retina_head_forward_single():
     onnx_outputs = verify_model(feat)
 
     torch_outputs = wrap_model.forward(feat)
-    torch_outputs = flat(torch_outputs)
+    torch_outputs = convert_list(torch_outputs)
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]
@@ -125,8 +124,7 @@ def test_retina_head_forward():
 
     onnx_outputs = verify_model(feats)
 
-    torch_outputs = wrap_model.forward(feats)
-    torch_outputs = flat(torch_outputs)
+    torch_outputs = convert_list(wrap_model.forward(feats))
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]
@@ -179,7 +177,7 @@ def test_retinanet_head_get_bboxes_single():
     onnx_outputs = verify_model(cls_score + bboxes + anchors)
 
     torch_outputs = wrap_model.forward(cls_score, bboxes, anchors)
-    torch_outputs = flat(torch_outputs)
+    torch_outputs = convert_list(torch_outputs)
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]
@@ -225,7 +223,7 @@ def test_retinanet_head_get_bboxes():
     onnx_outputs = verify_model(cls_score + bboxes)
 
     torch_outputs = wrap_model.forward(cls_score, bboxes)
-    torch_outputs = flat(torch_outputs)
+    torch_outputs = convert_list(torch_outputs)
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]
@@ -294,8 +292,7 @@ def test_yolov3_head_forward():
 
     onnx_outputs = verify_model(feats)
 
-    torch_outputs = wrap_model.forward(feats)
-    torch_outputs = flat(torch_outputs)
+    torch_outputs = convert_list(wrap_model.forward(feats))
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]
@@ -334,8 +331,7 @@ def test_yolov3_head_get_bboxes_single():
 
     onnx_outputs = verify_model(pred_map)
 
-    torch_outputs = wrap_model.forward(pred_map)
-    torch_outputs = flat(torch_outputs)
+    torch_outputs = convert_list(wrap_model.forward(pred_map))
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]
@@ -380,7 +376,7 @@ def test_yolov3_head_get_bboxes():
     onnx_outputs = verify_model(pred_maps)
 
     torch_outputs = wrap_model.forward(pred_maps)
-    torch_outputs = flat(torch_outputs)
+    torch_outputs = convert_list(torch_outputs)
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]
