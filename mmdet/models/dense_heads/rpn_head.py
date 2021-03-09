@@ -117,6 +117,8 @@ class RPNHead(RPNTestMixin, AnchorHead):
         mlvl_scores = []
         mlvl_bbox_preds = []
         mlvl_valid_anchors = []
+        nms_pre_tensor = torch.tensor(
+            cfg.nms_pre, device=cls_scores[0].device, dtype=torch.long)
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
@@ -134,20 +136,26 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 scores = rpn_cls_score.softmax(dim=1)[:, 0]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
-            if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
+            if cfg.nms_pre > 0:
                 # sort is faster than topk
                 # _, topk_inds = scores.topk(cfg.nms_pre)
+                # keep topk op for dynamic k in onnx model
                 if torch.onnx.is_in_onnx_export():
                     # sort op will be converted to TopK in onnx
                     # and k<=3480 in TensorRT
-                    _, topk_inds = scores.topk(cfg.nms_pre)
+                    scores_shape = torch._shape_as_tensor(scores)
+                    nms_pre = torch.where(scores_shape[0] < nms_pre_tensor,
+                                          scores_shape[0], nms_pre_tensor)
+                    _, topk_inds = scores.topk(nms_pre)
                     scores = scores[topk_inds]
-                else:
+                    rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
+                    anchors = anchors[topk_inds, :]
+                elif scores.shape[0] > cfg.nms_pre:
                     ranked_scores, rank_inds = scores.sort(descending=True)
                     topk_inds = rank_inds[:cfg.nms_pre]
                     scores = ranked_scores[:cfg.nms_pre]
-                rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
-                anchors = anchors[topk_inds, :]
+                    rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
+                    anchors = anchors[topk_inds, :]
             mlvl_scores.append(scores)
             mlvl_bbox_preds.append(rpn_bbox_pred)
             mlvl_valid_anchors.append(anchors)
