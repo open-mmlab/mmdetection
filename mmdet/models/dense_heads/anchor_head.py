@@ -563,10 +563,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         bbox_pred_list = [bbox_preds[i].detach() for i in range(num_levels)]
 
         if torch.onnx.is_in_onnx_export():
-            img_shapes = [
-                img_metas[i]['img_shape_for_onnx']
-                for i in range(cls_scores[0].shape[0])
-            ]
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+            img_shapes = img_metas[0]['img_shape_for_onnx']
         else:
             img_shapes = [
                 img_metas[i]['img_shape']

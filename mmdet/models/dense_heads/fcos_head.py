@@ -300,9 +300,16 @@ class FCOSHead(AnchorFreeHead):
         centerness_pred_list = [
             centernesses[i].detach() for i in range(num_levels)
         ]
-        img_shapes = [
-            img_metas[i]['img_shape'] for i in range(cls_scores[0].shape[0])
-        ]
+        if torch.onnx.is_in_onnx_export():
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+            img_shapes = img_metas[0]['img_shape_for_onnx']
+        else:
+            img_shapes = [
+                img_metas[i]['img_shape']
+                for i in range(cls_scores[0].shape[0])
+            ]
         scale_factors = [
             img_metas[i]['scale_factor'] for i in range(cls_scores[0].shape[0])
         ]
