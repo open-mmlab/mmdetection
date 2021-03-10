@@ -96,11 +96,10 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
             # encode mask results
-            if isinstance(result, tuple):
-                result = list(result)
-                result[1] = encode_mask_results(result[1])
-                result = tuple(result)
-        results.append(result)
+            if isinstance(result[0], tuple):
+                result = [(bbox_results, encode_mask_results(mask_results))
+                          for bbox_results, mask_results in result]
+            results.extend(result)
 
         if rank == 0:
             batch_size = len(result)

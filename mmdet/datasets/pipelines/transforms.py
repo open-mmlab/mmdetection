@@ -1370,8 +1370,8 @@ class Albu(object):
                     results['texts'] = np.array(
                         [results['texts'][i] for i in results['idx_mapper']])
 
-                assert len(results['bboxes']) == len(results['texts'])
-                assert len(results['masks']) == len(results['texts'])
+                    assert len(results['bboxes']) == len(results['texts'])
+                    assert len(results['masks']) == len(results['texts'])
 
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):

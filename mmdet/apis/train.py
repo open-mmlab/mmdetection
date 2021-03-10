@@ -1,10 +1,12 @@
+import warnings
 import numpy as np
 import random
 import torch
 from copy import copy
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (HOOKS, DistSamplerSeedHook, EpochBasedRunner, LoggerHook,
-                         Fp16OptimizerHook, OptimizerHook, build_optimizer, load_checkpoint)
+                         Fp16OptimizerHook, OptimizerHook, build_optimizer, load_checkpoint,
+                         build_runner)
 
 from mmdet.core import (DistEvalHook, DistEvalPlusBeforeRunHook, EvalHook,
                         EvalPlusBeforeRunHook)
@@ -122,12 +124,24 @@ def train_detector(model,
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
-    runner = EpochBasedRunner(
-        model,
-        optimizer=optimizer,
-        work_dir=cfg.work_dir,
-        logger=logger,
-        meta=meta)
+
+    if 'runner' not in cfg:
+        cfg.runner = {
+            'type': 'EpochBasedRunner',
+            'max_epochs': cfg.total_epochs
+        }
+    else:
+        if 'total_epochs' in cfg:
+            assert cfg.total_epochs == cfg.runner.max_epochs
+
+    runner = build_runner(
+        cfg.runner,
+        default_args=dict(
+            model=model,
+            optimizer=optimizer,
+            work_dir=cfg.work_dir,
+            logger=logger,
+            meta=meta))
     # an ugly workaround to make .log and .log.json filenames the same
     runner.timestamp = timestamp
 
@@ -146,7 +160,8 @@ def train_detector(model,
                                    cfg.checkpoint_config, cfg.log_config,
                                    cfg.get('momentum_config', None))
     if distributed:
-        runner.register_hook(DistSamplerSeedHook())
+        if isinstance(runner, EpochBasedRunner):
+            runner.register_hook(DistSamplerSeedHook())
 
     add_logging_on_first_and_last_iter(runner)
 
@@ -166,6 +181,7 @@ def train_detector(model,
             dist=distributed,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
+        eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
         if nncf_enable_compression:
             eval_hook = DistEvalPlusBeforeRunHook if distributed else EvalPlusBeforeRunHook
@@ -190,4 +206,4 @@ def train_detector(model,
     if cfg.resume_from:
         runner.resume(cfg.resume_from, map_location=map_location)
 
-    runner.run(data_loaders, cfg.workflow, cfg.total_epochs, compression_ctrl=compression_ctrl)
+    runner.run(data_loaders, cfg.workflow, compression_ctrl=compression_ctrl)

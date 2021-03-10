@@ -209,7 +209,7 @@ class BiFPNBlock(nn.Module):
         return tuple(output[-self.num_outs::])
 
 
-@NECKS.register_module
+@NECKS.register_module('BiFPN')
 class BiFPN(nn.Module):
 
     def __init__(self,

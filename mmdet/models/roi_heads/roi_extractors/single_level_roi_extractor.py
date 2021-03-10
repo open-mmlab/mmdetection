@@ -77,7 +77,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
         for level, (feat, extractor) in enumerate(zip(feats, self.roi_layers)):
             # Explicit casting to int is required for ONNXRuntime.
             level_indices = torch.nonzero(
-                (target_lvls == level).int()).view(-1)
+                (target_lvls == level).int(), as_tuple=False).view(-1)
             level_rois = rois[level_indices]
             indices.append(level_indices)
             try:

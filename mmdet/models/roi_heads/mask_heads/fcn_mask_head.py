@@ -9,7 +9,6 @@ from torch.nn.modules.utils import _pair
 
 from mmdet.core import mask_target
 from mmdet.models.builder import HEADS, build_loss
-from mmcv.ops import Conv2d
 from mmcv.ops.carafe import CARAFEPack
 from mmdet.core.utils.misc import arange
 
