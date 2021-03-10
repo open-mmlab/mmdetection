@@ -278,21 +278,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             cls_pred = torch.sigmoid(pred_map[..., 5:]).view(
                 batch_size, -1, self.num_classes)  # Cls pred one-hot.
 
-            # TODO： Batch inference does not support
-            # Filtering out all predictions with conf < conf_thr
-            # conf_thr = cfg.get('conf_thr', -1)
-            # if conf_thr > 0 and (not torch.onnx.is_in_onnx_export()):
-            #     # TensorRT not support NonZero
-            #     # add as_tuple=False for compatibility in Pytorch 1.6
-            #     # flatten would create a Reshape op with constant values,
-            #     # and raise RuntimeError when doing inference in ONNX Runtime
-            #     # with a different input image (#4221).
-            #     conf_inds = conf_pred.ge(conf_thr).nonzero(
-            #         as_tuple=False).squeeze(1)
-            #     bbox_pred = bbox_pred[conf_inds, :]
-            #     cls_pred = cls_pred[conf_inds, :]
-            #     conf_pred = conf_pred[conf_inds]
-
             # Get top-k prediction
             # Always keep topk op for dynamic input in onnx
             if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
@@ -349,6 +334,20 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             for (mlvl_bboxes, mlvl_scores,
                  mlvl_conf_scores) in zip(batch_mlvl_bboxes, batch_mlvl_scores,
                                           batch_mlvl_conf_scores):
+                # Filtering out all predictions with conf < conf_thr
+                conf_thr = cfg.get('conf_thr', -1)
+                if conf_thr > 0 and (not torch.onnx.is_in_onnx_export()):
+                    # TensorRT not support NonZero
+                    # add as_tuple=False for compatibility in Pytorch 1.6
+                    # flatten would create a Reshape op with constant values,
+                    # and raise RuntimeError when doing inference in ONNX
+                    # Runtime with a different input image (#4221).
+                    conf_inds = mlvl_conf_scores.ge(conf_thr).nonzero(
+                        as_tuple=False).squeeze(1)
+                    mlvl_bboxes = mlvl_bboxes[conf_inds, :]
+                    mlvl_scores = mlvl_scores[conf_inds, :]
+                    mlvl_conf_scores = mlvl_conf_scores[conf_inds]
+
                 det_bboxes, det_labels = multiclass_nms(
                     mlvl_bboxes,
                     mlvl_scores,

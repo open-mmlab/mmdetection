@@ -164,7 +164,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
                     topk_inds = rank_inds[:, :cfg.nms_pre]
                     scores = ranked_scores[:, :cfg.nms_pre]
                     batch_inds = torch.arange(batch_size).view(
-                        -1, 1).expand_as(topk_inds).long()
+                        -1, 1).expand_as(topk_inds)
                     rpn_bbox_pred = rpn_bbox_pred[batch_inds, topk_inds, :]
                     anchors = anchors[batch_inds, topk_inds, :]
 
