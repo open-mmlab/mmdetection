@@ -138,6 +138,17 @@ class RPN(BaseDetector):
                                                 flip_direction)
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
-    def show_result(self, data, result, dataset=None, top_k=20, **kwargs):
-        """Show RPN proposals on the image."""
+    def show_result(self, data, result, top_k=20, **kwargs):
+        """Show RPN proposals on the image.
+
+        Args:
+            data (str or np.ndarray): Image filename or loaded image.
+            result (Tensor or tuple): The results to draw over `img`
+                bbox_result or (bbox_result, segm_result).
+            top_k (int): Plot the first k bboxes only
+               if set positive. Default: 20
+
+        Returns:
+            np.ndarray: The image with bboxes drawn on it.
+        """
         mmcv.imshow_bboxes(data, result, top_k=top_k)
