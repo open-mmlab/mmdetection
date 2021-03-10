@@ -325,11 +325,19 @@ class CustomDataset(Dataset):
 
     def __repr__(self):
         '''Print the number of instance number for each class in the dataset'''
+        if self.CLASSES is None:
+            return "Dataset is empty"
+
         instance_count = np.zeros(len(self.CLASSES))
 
         # count the instance number in each image
-        for anno in self.data_infos:
-            unique, counts = np.unique(anno['ann']['labels'], return_counts=True)
+        for idx in range(len(self)):
+            unique, counts = np.unique(self.get_cat_ids(idx), return_counts=True)
             instance_count[unique] += counts
 
-        return '\n'.join(["{}: {}".format(self.CLASSES[cls], count) for cls, count in enumerate(instance_count)])
+        result = ''
+        for cls, count in enumerate(instance_count):
+            result += f"{self.CLASSES[cls]}: {count}\t"
+            if (cls + 1) % 5 == 0:
+                result += '\n'
+        return result
