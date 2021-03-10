@@ -362,7 +362,7 @@ def test_repr():
     fake_pkl_file = osp.join(tmp_dir.name, 'fake_data.pkl')
     _create_dummy_custom_pkl(fake_pkl_file)
 
-    # test single custom dataset repr
+    # test single custom dataset repr__
     custom_dataset = CustomDataset(
         ann_file=fake_pkl_file, classes=('car',), pipeline=[])
 
