@@ -79,4 +79,4 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
     1. This error indicates that your module has parameters that were not used in producing loss. This phenomenon may be caused by running different branches in your code in DDP mode.
-    2. You can set ` find_unused_parameters = True` in the config to solve the above problems or manually check and locate the error code to fix it
+    2. You can set ` find_unused_parameters = True` in the config to solve the above problems or find those unused parameters manually.
