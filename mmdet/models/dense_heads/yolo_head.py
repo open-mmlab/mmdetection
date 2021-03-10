@@ -314,7 +314,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds, :]
             batch_mlvl_conf_scores = batch_mlvl_conf_scores[batch_inds,
                                                             topk_inds]
-        # TODO
+
         if with_nms and (batch_mlvl_conf_scores.size(0) == 0):
             return torch.zeros((0, 5)), torch.zeros((0, ))
 
