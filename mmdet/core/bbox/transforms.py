@@ -123,11 +123,14 @@ def distance2bbox(points, distance, max_shape=None):
         points (Tensor): Shape (B, N, 2) or (N, 2).
         distance (Tensor): Distance from the given point to 4
             boundaries (left, top, right, bottom). Shape (B, N, 4) or (N, 4)
-        max_shape (list[tuple[int]] or tuple[int]): Maximum bounds for boxes.
-            specifies (H, W, C)
+        max_shape (Sequence[int] or torch.Tensor or Sequence[
+            Sequence[int]],optional): Maximum bounds for boxes, specifies
+            (H, W, C) or (H, W). If priors shape is (B, N, 4), then
+            the max_shape should be a Sequence[Sequence[int]]
+            and the length of max_shape should also be B.
 
     Returns:
-        Tensor: Decoded bboxes.
+        Tensor: Boxes with shape (N, 4) or (B, N, 4)
     """
     x1 = points[..., 0] - distance[..., 0]
     y1 = points[..., 1] - distance[..., 1]
@@ -137,12 +140,16 @@ def distance2bbox(points, distance, max_shape=None):
     bboxes = torch.stack([x1, y1, x2, y2], -1)
 
     if max_shape is not None:
-        if isinstance(max_shape, list):
-            assert len(max_shape) == x1.shape[0]
-        max_shape = x1.new_tensor(max_shape)[..., :2]
+        if not isinstance(max_shape, torch.Tensor):
+            max_shape = x1.new_tensor(max_shape)
+        max_shape = max_shape[..., :2].type_as(x1)
+        if max_shape.ndim == 2:
+            assert bboxes.ndim == 3
+            assert max_shape.size(0) == bboxes.size(0)
+
         min_xy = x1.new_tensor(0)
         max_xy = torch.cat([max_shape, max_shape],
-                           dim=-1).flip(dims=[-1]).unsqueeze(-2)
+                           dim=-1).flip(-1).unsqueeze(-2)
         bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
         bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 
