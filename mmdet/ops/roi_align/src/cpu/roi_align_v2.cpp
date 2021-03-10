@@ -130,8 +130,8 @@ void ROIAlignForward(const int nthreads, const T* input, const T& spatial_scale,
     T roi_width = roi_end_w - roi_start_w;
     T roi_height = roi_end_h - roi_start_h;
     if (aligned) {
-      AT_ASSERTM(roi_width >= 0 && roi_height >= 0,
-                 "ROIs in ROIAlign cannot have non-negative size!");
+      // AT_ASSERTM(roi_width >= 0 && roi_height >= 0,
+      //            "ROIs in ROIAlign cannot have non-negative size!");
     } else {  // for backward-compatibility only
       roi_width = std::max(roi_width, (T)1.);
       roi_height = std::max(roi_height, (T)1.);
