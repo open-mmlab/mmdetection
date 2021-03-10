@@ -150,8 +150,8 @@ class RPNHead(RPNTestMixin, AnchorHead):
                     # sort op will be converted to TopK in onnx
                     # and k<=3480 in TensorRT
                     scores_shape = torch._shape_as_tensor(scores)
-                    nms_pre = torch.where(scores_shape[0] < nms_pre_tensor,
-                                          scores_shape[0], nms_pre_tensor)
+                    nms_pre = torch.where(scores_shape[1] < nms_pre_tensor,
+                                          scores_shape[1], nms_pre_tensor)
                     _, topk_inds = scores.topk(nms_pre)
                     batch_inds = torch.arange(batch_size).view(
                         -1, 1).expand_as(topk_inds)
@@ -213,30 +213,24 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 f' respectively. Please delete the nms_thr ' \
                 f'which will be deprecated.'
 
-        # Skip nonzero op while exporting to ONNX
-        if torch.onnx.is_in_onnx_export():
-            # TODO
-            dets, keep = batched_nms(batch_mlvl_proposals, batch_mlvl_scores,
-                                     batch_mlvl_ids, cfg.nms)
-            return dets[:cfg.max_per_img]
-        else:
-            result_list = []
-            for (mlvl_proposals, mlvl_scores,
-                 mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
-                                  batch_mlvl_ids):
-                if cfg.min_bbox_size > 0:
-                    w = mlvl_proposals[:, 2] - mlvl_proposals[:, 0]
-                    h = mlvl_proposals[:, 3] - mlvl_proposals[:, 1]
-                    valid_ind = torch.nonzero(
-                        (w >= cfg.min_bbox_size)
-                        & (h >= cfg.min_bbox_size),
-                        as_tuple=False).squeeze()
-                    if valid_ind.sum().item() != len(mlvl_proposals):
-                        mlvl_proposals = mlvl_proposals[valid_ind, :]
-                        mlvl_scores = mlvl_scores[valid_ind]
-                        mlvl_ids = mlvl_ids[valid_ind]
+        result_list = []
+        for (mlvl_proposals, mlvl_scores,
+             mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
+                              batch_mlvl_ids):
+            # Skip nonzero op while exporting to ONNX
+            if cfg.min_bbox_size > 0 and (not torch.onnx.is_in_onnx_export()):
+                w = mlvl_proposals[:, 2] - mlvl_proposals[:, 0]
+                h = mlvl_proposals[:, 3] - mlvl_proposals[:, 1]
+                valid_ind = torch.nonzero(
+                    (w >= cfg.min_bbox_size)
+                    & (h >= cfg.min_bbox_size),
+                    as_tuple=False).squeeze()
+                if valid_ind.sum().item() != len(mlvl_proposals):
+                    mlvl_proposals = mlvl_proposals[valid_ind, :]
+                    mlvl_scores = mlvl_scores[valid_ind]
+                    mlvl_ids = mlvl_ids[valid_ind]
 
-                dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
-                                         cfg.nms)
-                result_list.append(dets[:cfg.max_per_img])
+            dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
+                                     cfg.nms)
+            result_list.append(dets[:cfg.max_per_img])
             return result_list
