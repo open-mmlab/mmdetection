@@ -1,11 +1,12 @@
+import warnings
+
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import (build_conv_layer, build_norm_layer, build_plugin_layer,
                       constant_init, kaiming_init)
-from mmcv.runner import load_checkpoint
+from mmcv.runner import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 from ..utils import ResLayer
 
@@ -300,7 +301,7 @@ class Bottleneck(nn.Module):
 
 
 @BACKBONES.register_module()
-class ResNet(nn.Module):
+class ResNet(BaseModule):
     """ResNet backbone.
 
     Args:
@@ -380,8 +381,9 @@ class ResNet(nn.Module):
                  stage_with_dcn=(False, False, False, False),
                  plugins=None,
                  with_cp=False,
-                 zero_init_residual=True):
-        super(ResNet, self).__init__()
+                 zero_init_residual=True,
+                 init_cfg=None):
+        super(ResNet, self).__init__(init_cfg)
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for resnet')
         self.depth = depth
@@ -595,9 +597,12 @@ class ResNet(nn.Module):
                 Defaults to None.
         """
         if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
+            warnings.warn('DeprecationWarning: pretrained is a deprecated \
+                    key, please consider using init_cfg')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+            super(ResNet, self).init_weight()
         elif pretrained is None:
+            # TODO
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
                     kaiming_init(m)
