@@ -191,11 +191,11 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of the
-                corresponding box.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
         """
         num_levels = len(pred_maps)
         pred_maps_list = [pred_maps[i].detach() for i in range(num_levels)]
@@ -229,11 +229,11 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of the
-                corresponding box.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(pred_maps_list) == self.num_levels

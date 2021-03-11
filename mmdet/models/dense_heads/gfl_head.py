@@ -381,9 +381,9 @@ class GFLHead(AnchorHead):
 
         Args:
             cls_scores (list[Tensor]): Box scores for a single scale level
-                has shape (num_classes, H, W).
+                has shape (N, num_classes, H, W).
             bbox_preds (list[Tensor]): Box distribution logits for a single
-                scale level with shape (4*(n+1), H, W), n is max value of
+                scale level with shape (N, 4*(n+1), H, W), n is max value of
                 integral set.
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
@@ -400,11 +400,11 @@ class GFLHead(AnchorHead):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class labelof the
-                corresponding box.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)

@@ -566,9 +566,10 @@ class StageCascadeRPNHead(RPNHead):
             rescale (bool): If True, return boxes in original image space.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1.
+            Tensor: Labeled boxes have the shape of (n,5), where the
+                first 4 columns are bounding box positions
+                (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                between 0 and 1.
         """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)

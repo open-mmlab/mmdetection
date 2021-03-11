@@ -91,9 +91,9 @@ class RPNHead(RPNTestMixin, AnchorHead):
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (num_anchors * num_classes, H, W).
+                Has shape (N, num_anchors * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (num_anchors * 4, H, W).
+                level with shape (N, num_anchors * 4, H, W).
             mlvl_anchors (list[Tensor]): Box reference for each scale level
                 with shape (num_total_anchors, 4).
             img_shapes (list[tuple[int]]): Shape of the input image,

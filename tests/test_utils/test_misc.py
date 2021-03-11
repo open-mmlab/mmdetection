@@ -85,3 +85,8 @@ def test_distance2bbox():
     deltas = torch.zeros((0, 4))
     out = distance2bbox(rois, deltas, max_shape=(120, 100))
     assert rois.shape == out.shape
+
+    rois = torch.zeros((2, 0, 4))
+    deltas = torch.zeros((2, 0, 4))
+    out = distance2bbox(rois, deltas, max_shape=(120, 100))
+    assert rois.shape == out.shape

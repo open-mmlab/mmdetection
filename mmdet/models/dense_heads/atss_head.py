@@ -342,11 +342,11 @@ class ATSSHead(AnchorHead):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of the
-                corresponding box.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds)
@@ -387,11 +387,11 @@ class ATSSHead(AnchorHead):
 
         Args:
             cls_scores (list[Tensor]): Box scores for a single scale level
-                with shape (num_anchors * num_classes, H, W).
+                with shape (N, num_anchors * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for a single
-                scale level with shape (num_anchors * 4, H, W).
+                scale level with shape (N, num_anchors * 4, H, W).
             centernesses (list[Tensor]): Centerness for a single scale level
-                with shape (num_anchors * 1, H, W).
+                with shape (N, num_anchors * 1, H, W).
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
             img_shapes (list[tuple[int]]): Shape of the input image,
@@ -407,11 +407,11 @@ class ATSSHead(AnchorHead):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of the
-                corresponding box.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
         """
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         device = cls_scores[0].device

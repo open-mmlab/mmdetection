@@ -519,11 +519,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class labelof the
-                corresponding box.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
 
         Example:
             >>> import mmcv
@@ -601,9 +601,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         Args:
             cls_score_list (list[Tensor]): Box scores for a single scale level
-                Has shape (num_anchors * num_classes, H, W).
+                Has shape (N, num_anchors * num_classes, H, W).
             bbox_pred_list (list[Tensor]): Box energies / deltas for a single
-                scale level with shape (num_anchors * 4, H, W).
+                scale level with shape (N, num_anchors * 4, H, W).
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
             img_shapes (list[tuple[int]]): Shape of the batch input image,
@@ -619,11 +619,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class labelof the
-                corresponding box.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
