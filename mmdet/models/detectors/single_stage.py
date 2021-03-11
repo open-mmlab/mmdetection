@@ -32,9 +32,8 @@ class SingleStageDetector(BaseDetector):
         self.bbox_head = build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self._init_weights()
 
-    def _init_weights(self):
+    def init_weight(self):
         """Initialize the weights in detector.
         """
         self.backbone.init_weight()

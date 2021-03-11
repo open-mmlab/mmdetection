@@ -389,6 +389,11 @@ class ResNet(BaseModule):
         super(ResNet, self).__init__(init_cfg)
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for resnet')
+
+        assert not (init_cfg and pretrained), 'init_cfg and pretrained cannot be setting at the same time'
+        self.pretrained = pretrained
+        self.init_cfg = init_cfg
+
         self.depth = depth
         if stem_channels is None:
             stem_channels = base_channels
@@ -454,9 +459,6 @@ class ResNet(BaseModule):
 
         self.feat_dim = self.block.expansion * base_channels * 2 ** (
                 len(self.stage_blocks) - 1)
-
-        assert not (init_cfg and pretrained), 'init_cfg and pretrained cannot be setting at the same time'
-        self._init_weight(pretrained, init_cfg)
 
     def make_stage_plugins(self, plugins, stage_idx):
         """Make plugins for ResNet ``stage_idx`` th stage.
@@ -595,19 +597,15 @@ class ResNet(BaseModule):
             for param in m.parameters():
                 param.requires_grad = False
 
-    def _init_weight(self, pretrained, init_cfg):
+    def init_weight(self):
         """Initialize the weights in backbone.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
         """
-        if isinstance(pretrained, str):
+        if isinstance(self.pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is a deprecated '
                           'key, please consider using init_cfg')
-            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
-        elif pretrained is None:
-            if init_cfg is None:
+            self.init_cfg = dict(type='Pretrained', checkpoint=self.pretrained)
+        elif self.pretrained is None:
+            if self.init_cfg is None:
                 self.init_cfg = [dict(type='Kaiming', layer='Conv2d'),
                                  dict(type='Constant', val=1, layer=['_BatchNorm', 'GroupNorm'])]
                 super(ResNet, self).init_weight()
@@ -622,6 +620,7 @@ class ResNet(BaseModule):
             if self.zero_init_residual:
                 self.init_cfg += [dict(type='Constant', layer='BatchNorm2', val=0),
                                   dict(type='Constant', layer='BatchNorm3', val=0)]
+        super(ResNet, self).init_weight()
 
     def forward(self, x):
         """Forward function."""
