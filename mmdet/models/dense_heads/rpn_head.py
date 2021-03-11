@@ -233,4 +233,4 @@ class RPNHead(RPNTestMixin, AnchorHead):
             dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
                                      cfg.nms)
             result_list.append(dets[:cfg.max_per_img])
-            return result_list
+        return result_list
