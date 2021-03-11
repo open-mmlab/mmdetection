@@ -55,7 +55,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
                  train_cfg=None,
                  test_cfg=None,
-                 init_cfg=None):
+                 init_cfg=dict(type='Normal', layers='Conv2d', std=0.01)):
         super(AnchorHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -100,11 +100,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.conv_cls = nn.Conv2d(self.in_channels,
                                   self.num_anchors * self.cls_out_channels, 1)
         self.conv_reg = nn.Conv2d(self.in_channels, self.num_anchors * 4, 1)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        self.init_cfg = dict(type='Normal', layers='Conv2d', std=0.01)
-        super(AnchorHead, self).init_weight()
 
     def forward_single(self, x):
         """Forward feature of a single scale level.

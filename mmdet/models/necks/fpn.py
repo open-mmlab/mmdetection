@@ -77,7 +77,8 @@ class FPN(BaseModule):
                  norm_cfg=None,
                  act_cfg=None,
                  upsample_cfg=dict(mode='nearest'),
-                 init_cfg=None):
+                 init_cfg=dict(
+                    type='Xavier', layer='Conv2d', distribution='uniform')):
         super(FPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -159,13 +160,6 @@ class FPN(BaseModule):
                     act_cfg=act_cfg,
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)
-
-    # default init_weights for conv(msra) and norm in ConvModule
-    def init_weights(self):
-        """Initialize the weights of FPN module."""
-        self.init_cfg = dict(
-            type='Xavier', layer='Conv2d', distribution='uniform')
-        super(FPN, self).init_weight()
 
     @auto_fp16()
     def forward(self, inputs):

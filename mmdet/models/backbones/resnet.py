@@ -11,7 +11,7 @@ from ..builder import BACKBONES
 from ..utils import ResLayer
 
 
-class BasicBlock(nn.Module):
+class BasicBlock(BaseModule):
     expansion = 1
 
     def __init__(self,
@@ -25,8 +25,9 @@ class BasicBlock(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 plugins=None):
-        super(BasicBlock, self).__init__()
+                 plugins=None,
+                 init_cfg=None):
+        super(BasicBlock, self).__init__(init_cfg)
         assert dcn is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
 
@@ -93,7 +94,7 @@ class BasicBlock(nn.Module):
         return out
 
 
-class Bottleneck(nn.Module):
+class Bottleneck(BaseModule):
     expansion = 4
 
     def __init__(self,
@@ -107,13 +108,14 @@ class Bottleneck(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 plugins=None):
+                 plugins=None,
+                 init_cfg=None):
         """Bottleneck block for ResNet.
 
         If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
         it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
-        super(Bottleneck, self).__init__()
+        super(Bottleneck, self).__init__(init_cfg)
         assert style in ['pytorch', 'caffe']
         assert dcn is None or isinstance(dcn, dict)
         assert plugins is None or isinstance(plugins, list)
@@ -382,6 +384,7 @@ class ResNet(BaseModule):
                  plugins=None,
                  with_cp=False,
                  zero_init_residual=True,
+                 pretrained=None,
                  init_cfg=None):
         super(ResNet, self).__init__(init_cfg)
         if depth not in self.arch_settings:
@@ -449,8 +452,11 @@ class ResNet(BaseModule):
 
         self._freeze_stages()
 
-        self.feat_dim = self.block.expansion * base_channels * 2**(
-            len(self.stage_blocks) - 1)
+        self.feat_dim = self.block.expansion * base_channels * 2 ** (
+                len(self.stage_blocks) - 1)
+
+        assert not (init_cfg and pretrained), 'init_cfg and pretrained cannot be setting at the same time'
+        self._init_weight(pretrained, init_cfg)
 
     def make_stage_plugins(self, plugins, stage_idx):
         """Make plugins for ResNet ``stage_idx`` th stage.
@@ -589,7 +595,7 @@ class ResNet(BaseModule):
             for param in m.parameters():
                 param.requires_grad = False
 
-    def init_weights(self, pretrained=None):
+    def _init_weight(self, pretrained, init_cfg):
         """Initialize the weights in backbone.
 
         Args:
@@ -597,18 +603,16 @@ class ResNet(BaseModule):
                 Defaults to None.
         """
         if isinstance(pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is a deprecated \
-                    key, please consider using init_cfg')
+            warnings.warn('DeprecationWarning: pretrained is a deprecated '
+                          'key, please consider using init_cfg')
             self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
-            super(ResNet, self).init_weight()
         elif pretrained is None:
-            # TODO
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
+            if init_cfg is None:
+                self.init_cfg = [dict(type='Kaiming', layer='Conv2d'),
+                                 dict(type='Constant', val=1, layer=['_BatchNorm', 'GroupNorm'])]
+                super(ResNet, self).init_weight()
 
+            # dcn does not support init_cfg mode
             if self.dcn is not None:
                 for m in self.modules():
                     if isinstance(m, Bottleneck) and hasattr(
@@ -616,13 +620,8 @@ class ResNet(BaseModule):
                         constant_init(m.conv2.conv_offset, 0)
 
             if self.zero_init_residual:
-                for m in self.modules():
-                    if isinstance(m, Bottleneck):
-                        constant_init(m.norm3, 0)
-                    elif isinstance(m, BasicBlock):
-                        constant_init(m.norm2, 0)
-        else:
-            raise TypeError('pretrained must be a str or None')
+                self.init_cfg += [dict(type='Constant', layer='BatchNorm2', val=0),
+                                  dict(type='Constant', layer='BatchNorm3', val=0)]
 
     def forward(self, x):
         """Forward function."""
