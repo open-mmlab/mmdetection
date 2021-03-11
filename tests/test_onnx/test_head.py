@@ -6,13 +6,11 @@ import mmcv
 import numpy as np
 import pytest
 import torch
-import torch.nn as nn
 
 from mmdet import digit_version
 from mmdet.models.dense_heads import RetinaHead, YOLOV3Head
-from .utils import convert_result_list, verify_model
-
-onnx_io = 'tmp.onnx'
+from .utils import (WrapFunction, convert_result_list, ort_validate,
+                    verify_model)
 
 data_path = osp.join(osp.dirname(__file__), 'data')
 
@@ -20,16 +18,6 @@ if digit_version(torch.__version__) <= digit_version('1.5.0'):
     pytest.skip(
         'ort backend does not support version below 1.5.0',
         allow_module_level=True)
-
-
-class WrapFunction(nn.Module):
-
-    def __init__(self, wrapped_function):
-        super(WrapFunction, self).__init__()
-        self.wrapped_function = wrapped_function
-
-    def forward(self, *args, **kwargs):
-        return self.wrapped_function(*args, **kwargs)
 
 
 def retinanet_config():
@@ -67,35 +55,12 @@ def retinanet_config():
 
 def test_retina_head_forward_single():
     """Test RetinaNet Head single forward in torch and onnxruntime env."""
-
     retina_model = retinanet_config()
 
     feat = torch.rand(1, retina_model.in_channels, 32, 32)
     wrap_model = WrapFunction(retina_model.forward_single)
     wrap_model.cpu().eval()
-    with torch.no_grad():
-        torch.onnx.export(
-            wrap_model,
-            feat,
-            onnx_io,
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
-
-    onnx_outputs = verify_model(feat)
-
-    torch_outputs = wrap_model.forward(feat)
-    torch_outputs = convert_result_list(torch_outputs)
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
-
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+    ort_validate(wrap_model, feat)
 
 
 def test_retina_head_forward():
@@ -103,6 +68,7 @@ def test_retina_head_forward():
 
     retina_model = retinanet_config()
     s = 128
+
     # RetinaNet head expects a multiple levels of features per image
     feats = [
         torch.rand(1, retina_model.in_channels, s // (2**(i + 2)),
@@ -112,28 +78,7 @@ def test_retina_head_forward():
 
     wrap_model = WrapFunction(retina_model.forward)
     wrap_model.cpu().eval()
-    with torch.no_grad():
-        torch.onnx.export(
-            wrap_model,
-            feats,
-            onnx_io,
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
-
-    onnx_outputs = verify_model(feats)
-
-    torch_outputs = convert_result_list(wrap_model.forward(feats))
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
-
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+    ort_validate(wrap_model, feats)
 
 
 def test_retinanet_head_get_bboxes_single():
@@ -175,7 +120,7 @@ def test_retinanet_head_get_bboxes_single():
     with torch.no_grad():
         torch.onnx.export(
             wrap_model, (cls_score, bboxes, anchors),
-            onnx_io,
+            'tmp.onnx',
             export_params=True,
             keep_initializers_as_inputs=True,
             do_constant_folding=True,
@@ -228,7 +173,7 @@ def test_retinanet_head_get_bboxes():
     with torch.no_grad():
         torch.onnx.export(
             wrap_model, (cls_score, bboxes),
-            onnx_io,
+            'tmp.onnx',
             export_params=True,
             keep_initializers_as_inputs=True,
             do_constant_folding=True,
@@ -295,28 +240,7 @@ def test_yolov3_head_forward():
 
     wrap_model = WrapFunction(yolo_model.forward)
     wrap_model.cpu().eval()
-    with torch.no_grad():
-        torch.onnx.export(
-            wrap_model,
-            feats,
-            onnx_io,
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
-
-    onnx_outputs = verify_model(feats)
-
-    torch_outputs = convert_result_list(wrap_model.forward(feats))
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
-
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+    ort_validate(wrap_model, feats)
 
 
 def test_yolov3_head_get_bboxes_single():
@@ -325,8 +249,9 @@ def test_yolov3_head_get_bboxes_single():
     yolo_model = yolo_config()
 
     # The data of yolov3_head_get_bboxes.pkl contains a list of
-    # torch.Tensor, where each torch.Tensor is generated by torch.rand and
-    # each tensor size is: (1, 27, 32, 32), (1, 27, 16, 16), (1, 27, 8, 8).
+    # torch.Tensor, where each torch.Tensor is generated by
+    # torch.rand and each tensor size is:
+    # (1, 27, 32, 32), (1, 27, 16, 16), (1, 27, 8, 8).
     yolo_head_data = 'yolov3_head_get_bboxes.pkl'
     with open(osp.join(data_path, yolo_head_data), 'rb') as f:
         pred_maps = pickle.load(f)
@@ -336,12 +261,11 @@ def test_yolov3_head_get_bboxes_single():
         yolo_model._get_bboxes_single, scale_factor=1, cfg=None)
     wrap_model = WrapFunction(yolo_model._get_bboxes_single)
     wrap_model.cpu().eval()
-
     with torch.no_grad():
         torch.onnx.export(
             wrap_model,
             pred_map,
-            onnx_io,
+            'tmp.onnx',
             export_params=True,
             keep_initializers_as_inputs=True,
             do_constant_folding=True,
@@ -374,8 +298,9 @@ def test_yolov3_head_get_bboxes():
     }]
 
     # The data of yolov3_head_get_bboxes.pkl contains a list of
-    # torch.Tensor, where each torch.Tensor is generated by torch.rand and
-    # each tensor size is: (1, 27, 32, 32), (1, 27, 16, 16), (1, 27, 8, 8).
+    # torch.Tensor, where each torch.Tensor is generated by
+    # torch.rand and each tensor size is:
+    # (1, 27, 32, 32), (1, 27, 16, 16), (1, 27, 8, 8).
     yolo_head_data = 'yolov3_head_get_bboxes.pkl'
     with open(osp.join(data_path, yolo_head_data), 'rb') as f:
         pred_maps = pickle.load(f)
@@ -383,12 +308,11 @@ def test_yolov3_head_get_bboxes():
     yolo_model.get_bboxes = partial(yolo_model.get_bboxes, img_metas=img_metas)
     wrap_model = WrapFunction(yolo_model.get_bboxes)
     wrap_model.cpu().eval()
-
     with torch.no_grad():
         torch.onnx.export(
             wrap_model,
             pred_maps,
-            onnx_io,
+            'tmp.onnx',
             export_params=True,
             keep_initializers_as_inputs=True,
             do_constant_folding=True,
@@ -397,8 +321,7 @@ def test_yolov3_head_get_bboxes():
 
     onnx_outputs = verify_model(pred_maps)
 
-    torch_outputs = wrap_model.forward(pred_maps)
-    torch_outputs = convert_result_list(torch_outputs)
+    torch_outputs = convert_result_list(wrap_model.forward(pred_maps))
     torch_outputs = [
         torch_output.detach().numpy() for torch_output in torch_outputs
     ]

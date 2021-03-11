@@ -1,20 +1,17 @@
 import os.path as osp
 import pickle
 
-import numpy as np
 import pytest
 import torch
 
 from mmdet import digit_version
 from mmdet.models.necks import FPN, YOLOV3Neck
-from .utils import convert_result_list, verify_model
+from .utils import ort_validate
 
 if digit_version(torch.__version__) <= digit_version('1.5.0'):
     pytest.skip(
         'ort backend does not support version below 1.5.0',
         allow_module_level=True)
-
-onnx_io = 'tmp.onnx'
 
 # Control the returned model of neck_config()
 test_step_names = {
@@ -31,35 +28,10 @@ test_step_names = {
 data_path = osp.join(osp.dirname(__file__), 'data')
 
 
-def ort_validate(fpn_model, feats):
-    with torch.no_grad():
-        torch.onnx.export(
-            fpn_model,
-            feats,
-            onnx_io,
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
-
-    onnx_outputs = verify_model(feats)
-
-    torch_outputs = fpn_model.forward(feats)
-    torch_outputs = convert_result_list(torch_outputs)
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
-
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
-
-
 def fpn_config(test_step_name):
-    """Return the corresponding class containing the attributes according to
+    """Return the class containing the corresponding attributes according to
     the test_step_names."""
+
     s = 64
     in_channels = [8, 16, 32, 64]
     feat_sizes = [s // 2**i for i in range(4)]  # [64, 32, 16, 8]
