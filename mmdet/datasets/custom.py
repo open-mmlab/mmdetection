@@ -330,17 +330,22 @@ class CustomDataset(Dataset):
         if self.CLASSES is None:
             return "Dataset is empty"
 
-        instance_count = np.zeros(len(self.CLASSES)).astype(np.int)
+        instance_count = np.zeros(len(self.CLASSES)).astype(int)
 
         # count the instance number in each image
         for idx in range(len(self)):
             unique, counts = np.unique(self.get_cat_ids(idx),
                                        return_counts=True)
+            assert unique[0] == 0, counts[0] == 4
             instance_count[unique] += counts
 
         result = ''
         for cls, count in enumerate(instance_count):
-            result += f"{self.CLASSES[cls]}: {count}\t"
+            result += f"{self.CLASSES[cls]}: {count}"
             if (cls + 1) % 5 == 0:
                 result += '\n'
+            elif cls + 1 != len(self.CLASSES):
+                result += '\t'
+            else:
+                pass
         return result
