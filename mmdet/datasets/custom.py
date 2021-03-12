@@ -324,7 +324,7 @@ class CustomDataset(Dataset):
         return eval_results
 
     def __repr__(self):
-        ''' Print the number of instance number for each class in the dataset '''
+        """Print the number of instance number for each class in the dataset."""
         if self.CLASSES is None:
             return "Dataset is empty"
 
