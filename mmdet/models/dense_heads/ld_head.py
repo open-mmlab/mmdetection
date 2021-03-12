@@ -1,20 +1,17 @@
+import mmcv
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
-from mmcv.runner import force_fp32
+from mmcv.runner import force_fp32, load_checkpoint
 
 from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
                         build_assigner, build_sampler, distance2bbox,
-                        images_to_levels, multi_apply, multiclass_nms,
-                        reduce_mean, unmap)
+                        get_classes, images_to_levels, multi_apply,
+                        multiclass_nms, reduce_mean, unmap)
+from mmdet.models import build_detector
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
-
-import mmcv
-from mmcv.runner import load_checkpoint
-from mmdet.core import get_classes
-from mmdet.models import build_detector
 
 
 def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
@@ -92,9 +89,7 @@ class Integral(nn.Module):
 
 @HEADS.register_module()
 class LDHead(AnchorHead):
-    """
-
-    """
+    """https://arxiv.org/abs/2102.12252."""
 
     def __init__(self,
                  num_classes,
