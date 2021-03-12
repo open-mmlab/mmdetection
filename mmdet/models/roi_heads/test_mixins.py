@@ -56,8 +56,36 @@ class BBoxTestMixin(object):
                            rcnn_test_cfg,
                            rescale=False):
         """Test only det bboxes without augmentation."""
-        rois = bbox2roi(proposals)
+        if isinstance(proposals, list):
+            rois = bbox2roi(proposals)
+        else:
+            rois = proposals
+            batch_index = rois.new_tensor(range(rois.size(0))).view(
+                -1, 1, 1).expand(rois.size(0), rois.size(1), 1)
+            rois = torch.cat([batch_index, rois[..., :4]], dim=-1)
+
+        # Eliminate batch
+        batch_size = proposals.size(0)
+        num_proposals_per_img = proposals.size(1)
+        rois = rois.view(-1, 5)
+
         bbox_results = self._bbox_forward(x, rois)
+
+        # Recover batch
+        rois = rois.reshape(batch_size, num_proposals_per_img, -1)
+        supplement_mask = rois[..., -1] == 0
+
+        cls_score = bbox_results['cls_score']
+        bbox_pred = bbox_results['bbox_pred']
+        cls_score = cls_score.reshape(batch_size, num_proposals_per_img, -1)
+        cls_score[supplement_mask, :] = 0
+        if bbox_pred is not None:
+            bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img,
+                                          -1)
+            bbox_pred[supplement_mask, :] = 0
+        else:
+            bbox_pred = (None, ) * len(proposals)
+
         # get origin input shape to support onnx dynamic input shape
         if torch.onnx.is_in_onnx_export():
             img_shapes = tuple(meta['img_shape_for_onnx']
@@ -66,39 +94,14 @@ class BBoxTestMixin(object):
             img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
-        # split batch bbox prediction back to each image
-        cls_score = bbox_results['cls_score']
-        bbox_pred = bbox_results['bbox_pred']
-        # use shape[] to keep tracing
-        num_proposals_per_img = tuple(p.shape[0] for p in proposals)
-        rois = rois.split(num_proposals_per_img, 0)
-        cls_score = cls_score.split(num_proposals_per_img, 0)
-
-        # some detector with_reg is False, bbox_pred will be None
-        if bbox_pred is not None:
-            # the bbox prediction of some detectors like SABL is not Tensor
-            if isinstance(bbox_pred, torch.Tensor):
-                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
-            else:
-                bbox_pred = self.bbox_head.bbox_pred_split(
-                    bbox_pred, num_proposals_per_img)
-        else:
-            bbox_pred = (None, ) * len(proposals)
-
-        # apply bbox post-processing to each image individually
-        det_bboxes = []
-        det_labels = []
-        for i in range(len(proposals)):
-            det_bbox, det_label = self.bbox_head.get_bboxes(
-                rois[i],
-                cls_score[i],
-                bbox_pred[i],
-                img_shapes[i],
-                scale_factors[i],
-                rescale=rescale,
-                cfg=rcnn_test_cfg)
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
+        det_bboxes, det_labels = self.bbox_head.get_bboxes(
+            rois,
+            cls_score,
+            bbox_pred,
+            img_shapes,
+            scale_factors,
+            rescale=rescale,
+            cfg=rcnn_test_cfg)
         return det_bboxes, det_labels
 
     def aug_test_bboxes(self, feats, img_metas, proposal_list, rcnn_test_cfg):
@@ -137,7 +140,6 @@ class BBoxTestMixin(object):
 
 
 class MaskTestMixin(object):
-
     if sys.version_info >= (3, 7):
 
         async def async_test_mask(self,
