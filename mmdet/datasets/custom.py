@@ -336,7 +336,6 @@ class CustomDataset(Dataset):
         for idx in range(len(self)):
             unique, counts = np.unique(self.get_cat_ids(idx),
                                        return_counts=True)
-            assert unique[0] == 0, counts[0] == 4
             instance_count[unique] += counts
 
         result = ''
@@ -348,4 +347,4 @@ class CustomDataset(Dataset):
                 result += '\t'
             else:
                 pass
-        return result
+        return ' '.join(instance_count)
