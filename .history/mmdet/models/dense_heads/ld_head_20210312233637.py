@@ -11,11 +11,12 @@ from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
+
 import mmcv
 from mmcv.runner import load_checkpoint
 from mmdet.core import get_classes
 from mmdet.models import build_detector
-
+# from mmdet.apis import init_detector
 
 def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     """Initialize a detector from config file.
@@ -47,12 +48,14 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
         if 'CLASSES' in checkpoint.get('meta', {}):
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
+            warnings.simplefilter('once')
+            warnings.warn('Class names are not saved in the checkpoint\'s '
+                          'meta data, use COCO classes by default.')
             model.CLASSES = get_classes('coco')
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
     model.eval()
     return model
-
 
 class Integral(nn.Module):
     """A fixed layer for calculating integral result from distribution.
@@ -257,8 +260,8 @@ class LDHead(AnchorHead):
         bbox_pred = bbox_pred.permute(0, 2, 3,
                                       1).reshape(-1, 4 * (self.reg_max + 1))
         soft_targets = soft_targets.permute(0, 2, 3,
-                                            1).reshape(-1,
-                                                       4 * (self.reg_max + 1))
+            1).reshape(-1,
+                        4 * (self.reg_max + 1))
 
         bbox_targets = bbox_targets.reshape(-1, 4)
         labels = labels.reshape(-1)
@@ -321,16 +324,15 @@ class LDHead(AnchorHead):
             avg_factor=num_total_samples)
 
         return loss_cls, loss_bbox, loss_dfl, loss_ld, weight_targets.sum()
-
     def forward_train(self,
-                      x,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels=None,
-                      gt_bboxes_ignore=None,
-                      img=None,
-                      proposal_cfg=None,
-                      **kwargs):
+                x,
+                img_metas,
+                gt_bboxes,
+                gt_labels=None,
+                gt_bboxes_ignore=None,
+                img=None,
+                proposal_cfg=None,
+                **kwargs):
         """
         Args:
             x (list[Tensor]): Features from FPN.
@@ -439,10 +441,7 @@ class LDHead(AnchorHead):
         losses_bbox = list(map(lambda x: x / avg_factor, losses_bbox))
         losses_dfl = list(map(lambda x: x / avg_factor, losses_dfl))
         return dict(
-            loss_cls=losses_cls,
-            loss_bbox=losses_bbox,
-            loss_dfl=losses_dfl,
-            loss_kd=losses_ld)
+            loss_cls=losses_cls, loss_bbox=losses_bbox, loss_dfl=losses_dfl, loss_kd=losses_ld)
 
     def _get_bboxes(self,
                     cls_scores,

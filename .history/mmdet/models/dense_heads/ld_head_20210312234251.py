@@ -11,12 +11,11 @@ from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
-
 import mmcv
 from mmcv.runner import load_checkpoint
 from mmdet.core import get_classes
 from mmdet.models import build_detector
-# from mmdet.apis import init_detector
+
 
 def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     """Initialize a detector from config file.
@@ -48,14 +47,13 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
         if 'CLASSES' in checkpoint.get('meta', {}):
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
-            warnings.simplefilter('once')
-            warnings.warn('Class names are not saved in the checkpoint\'s '
-                          'meta data, use COCO classes by default.')
+
             model.CLASSES = get_classes('coco')
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
     model.eval()
     return model
+
 
 class Integral(nn.Module):
     """A fixed layer for calculating integral result from distribution.
@@ -260,8 +258,8 @@ class LDHead(AnchorHead):
         bbox_pred = bbox_pred.permute(0, 2, 3,
                                       1).reshape(-1, 4 * (self.reg_max + 1))
         soft_targets = soft_targets.permute(0, 2, 3,
-            1).reshape(-1,
-                        4 * (self.reg_max + 1))
+                                            1).reshape(-1,
+                                                       4 * (self.reg_max + 1))
 
         bbox_targets = bbox_targets.reshape(-1, 4)
         labels = labels.reshape(-1)
@@ -305,14 +303,14 @@ class LDHead(AnchorHead):
                 avg_factor=1.0)
 
             # dfl loss
-            loss_dfl = self.loss_dfl(
+            loss_dfl, loss_ld = self.loss_dfl(
                 pred_corners,
                 target_corners,
                 soft_corners,
-
                 weight=weight_targets[:, None].expand(-1, 4).reshape(-1),
                 avg_factor=4.0)
         else:
+            loss_ld = bbox_pred.sum() * 0
             loss_bbox = bbox_pred.sum() * 0
             loss_dfl = bbox_pred.sum() * 0
             weight_targets = bbox_pred.new_tensor(0)
@@ -324,7 +322,8 @@ class LDHead(AnchorHead):
             avg_factor=num_total_samples)
 
         return loss_cls, loss_bbox, loss_dfl, loss_ld, weight_targets.sum()
-           def forward_train(self,
+
+    def forward_train(self,
                       x,
                       img_metas,
                       gt_bboxes,
@@ -400,8 +399,9 @@ class LDHead(AnchorHead):
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        teacher_x = self.teacher_model.extract_feat(img)
-        soft_target = self.teacher_model.bbox_head(teacher_x)
+        with torch.no_grad():
+            teacher_x = self.teacher_model.extract_feat(img)
+            soft_target = self.teacher_model.bbox_head(teacher_x)[1]
 
         cls_reg_targets = self.get_targets(
             anchor_list,
@@ -422,7 +422,7 @@ class LDHead(AnchorHead):
                          device=device)).item()
         num_total_samples = max(num_total_samples, 1.0)
 
-        losses_cls, losses_bbox, losses_dfl, losses_ld\
+        losses_cls, losses_bbox, losses_dfl, losses_ld, \
             avg_factor = multi_apply(
                 self.loss_single,
                 anchor_list,
@@ -440,7 +440,10 @@ class LDHead(AnchorHead):
         losses_bbox = list(map(lambda x: x / avg_factor, losses_bbox))
         losses_dfl = list(map(lambda x: x / avg_factor, losses_dfl))
         return dict(
-            loss_cls=losses_cls, loss_bbox=losses_bbox, loss_dfl=losses_d, loss_kd=losses_ld)
+            loss_cls=losses_cls,
+            loss_bbox=losses_bbox,
+            loss_dfl=losses_dfl,
+            loss_kd=losses_ld)
 
     def _get_bboxes(self,
                     cls_scores,

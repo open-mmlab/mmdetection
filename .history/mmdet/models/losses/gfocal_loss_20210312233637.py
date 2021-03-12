@@ -80,11 +80,9 @@ def distribution_focal_loss(pred, label):
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def ld_loss(pred, label, soft_label, T):
-    ld_loss = F.kl_div(
-        F.log_softmax(pred / T, dim=1),
-        F.softmax(soft_label / T, dim=1).detach(),
-        reduction='none').mean(1) * (
-            T * T)
+    ld_loss = F.kl_div(F.log_softmax(pred / T, dim=1),
+                       F.softmax(soft_label / T, dim=1).detach(),
+                       reduction='none').mean(1) * (T * T)
 
     return ld_loss
 
@@ -103,7 +101,6 @@ class QualityFocalLoss(nn.Module):
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Loss weight of current loss.
     """
-
     def __init__(self,
                  use_sigmoid=True,
                  beta=2.0,
@@ -139,8 +136,8 @@ class QualityFocalLoss(nn.Module):
                 Defaults to None.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
-        reduction = (
-            reduction_override if reduction_override else self.reduction)
+        reduction = (reduction_override
+                     if reduction_override else self.reduction)
         if self.use_sigmoid:
             loss_cls = self.loss_weight * quality_focal_loss(
                 pred,
@@ -164,7 +161,6 @@ class DistributionFocalLoss(nn.Module):
         reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
         loss_weight (float): Loss weight of current loss.
     """
-
     def __init__(self, reduction='mean', loss_weight=1.0):
         super(DistributionFocalLoss, self).__init__()
         self.reduction = reduction
@@ -193,8 +189,8 @@ class DistributionFocalLoss(nn.Module):
                 Defaults to None.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
-        reduction = (
-            reduction_override if reduction_override else self.reduction)
+        reduction = (reduction_override
+                     if reduction_override else self.reduction)
         loss_cls = self.loss_weight * distribution_focal_loss(
             pred, target, weight, reduction=reduction, avg_factor=avg_factor)
         return loss_cls
@@ -210,7 +206,6 @@ class LDLoss(nn.Module):
         reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
         loss_weight (float): Loss weight of current loss.
     """
-
     def __init__(self,
                  reduction='mean',
                  loss_weight=1.0,
@@ -251,17 +246,16 @@ class LDLoss(nn.Module):
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
 
-        reduction = (
-            reduction_override if reduction_override else self.reduction)
+        reduction = (reduction_override
+                     if reduction_override else self.reduction)
 
-        loss_ld = self.loss_weight * ld_loss(
-            pred,
-            target,
-            weight,
-            reduction=reduction,
-            avg_factor=avg_factor,
-            soft_label=soft_corners,
-            T=self.T)
+        loss_ld = self.loss_weight * ld_loss(pred,
+                                             target,
+                                             weight,
+                                             reduction=reduction,
+                                             avg_factor=avg_factor,
+                                             soft_label=soft_corners,
+                                             T=self.T)
         loss_cls = self.loss_weight * distribution_focal_loss(
             pred, target, weight, reduction=reduction, avg_factor=avg_factor)
         return self.beta * loss_cls, self.alpha * loss_ld
