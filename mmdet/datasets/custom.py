@@ -324,27 +324,25 @@ class CustomDataset(Dataset):
         return eval_results
 
     def __repr__(self):
-        """
-        Print the number of instance number for each class in the dataset.
-        """
+        """Print the number of instance number."""
+
         if self.CLASSES is None:
             return "Dataset is empty"
-
         instance_count = np.zeros(len(self.CLASSES)).astype(int)
-
         # count the instance number in each image
         for idx in range(len(self)):
             unique, counts = np.unique(self.get_cat_ids(idx),
                                        return_counts=True)
-            instance_count[unique] += counts
+            if len(unique) > 0:
+                instance_count[unique] += counts
 
         result = ''
         for cls, count in enumerate(instance_count):
             result += f"{self.CLASSES[cls]}: {count}"
+            if cls + 1 != len(self.CLASSES):
+                result += '\t'
+
             if (cls + 1) % 5 == 0:
                 result += '\n'
-            elif cls + 1 != len(self.CLASSES):
-                result += '\t'
-            else:
-                pass
-        return ' '.join(instance_count)
+
+        return result
