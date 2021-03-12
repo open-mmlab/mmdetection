@@ -138,17 +138,17 @@ class RPN(BaseDetector):
                                                 flip_direction)
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
-    def show_result(self, data, result, dataset=None, top_k=20):
+    def show_result(self, data, result, top_k=20, **kwargs):
         """Show RPN proposals on the image.
 
-        Although we assume batch size is 1, this method supports arbitrary
-        batch size.
+        Args:
+            data (str or np.ndarray): Image filename or loaded image.
+            result (Tensor or tuple): The results to draw over `img`
+                bbox_result or (bbox_result, segm_result).
+            top_k (int): Plot the first k bboxes only
+               if set positive. Default: 20
+
+        Returns:
+            np.ndarray: The image with bboxes drawn on it.
         """
-        img_tensor = data['img'][0]
-        img_metas = data['img_metas'][0].data[0]
-        imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
-        assert len(imgs) == len(img_metas)
-        for img, img_meta in zip(imgs, img_metas):
-            h, w, _ = img_meta['img_shape']
-            img_show = img[:h, :w, :]
-            mmcv.imshow_bboxes(img_show, result, top_k=top_k)
+        mmcv.imshow_bboxes(data, result, top_k=top_k)

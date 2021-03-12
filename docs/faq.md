@@ -76,3 +76,7 @@ We list some common troubles faced by many users and their corresponding solutio
     1. There are some scenarios when there are large amount of ground truth boxes, which may cause OOM during target assignment. You can set `gpu_assign_thr=N` in the config of assigner thus the assigner will calculate box overlaps through CPU when there are more than N GT boxes.
     2. Set `with_cp=True` in the backbone. This uses the sublinear strategy in PyTorch to reduce GPU memory cost in the backbone.
     3. Try mixed precision training using following the examples in `config/fp16`. The `loss_scale` might need further tuning for different models.
+
+- "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
+    1. This error indicates that your module has parameters that were not used in producing loss. This phenomenon may be caused by running different branches in your code in DDP mode.
+    2. You can set ` find_unused_parameters = True` in the config to solve the above problems or find those unused parameters manually.

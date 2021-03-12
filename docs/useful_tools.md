@@ -8,7 +8,7 @@ Apart from training/testing scripts, We provide lots of useful tools under the
 
  ```shell
 python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
-```
+ ```
 
 ![loss curve image](../resources/loss_curve.png)
 
@@ -138,11 +138,42 @@ If you need a lightweight GUI for visualizing the detection results, you can ref
 ## Error Analysis
 
 `tools/analysis_tools/coco_error_analysis.py` analyzes COCO results per category and by
- different criterion. It can also make a plot to provide useful
-  information.
+ different criterion. It can also make a plot to provide useful information.
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--ann ${ANN}] [--types ${TYPES[TYPES...]}]
+```
+
+Example:
+
+Assume that you have got [Mask R-CNN checkpoint file](http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) in the path 'checkpoint'. For other checkpoints, please refer to our [model zoo](./model_zoo.md). You can use the following command to get the results bbox and segmentation json file.
+
+```shell
+# out: results.bbox.json and results.segm.json
+python tools/test.py \
+       configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoint/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
+       --format-only \
+       --options "jsonfile_prefix=./results"
+```
+
+1. Get COCO bbox error results per category , save analyze result images to the directory `results/`
+
+```shell
+python tools/analysis_tools/coco_error_analysis.py \
+       results.bbox.json \
+       results \
+       --ann=data/coco/annotations/instances_val2017.json \
+```
+
+2. Get COCO segmentation error results per category , save analyze result images to the directory `results/`
+
+```shell
+python tools/analysis_tools/coco_error_analysis.py \
+       results.segm.json \
+       results \
+       --ann=data/coco/annotations/instances_val2017.json \
+       --types='segm'
 ```
 
 ## Model Complexity
