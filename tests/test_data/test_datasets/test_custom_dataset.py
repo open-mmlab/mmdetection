@@ -91,7 +91,7 @@ def test_custom_classes_override_default(dataset):
         result = "Dataset is empty"
     else:
         instance_count = np.zeros(len(original_classes))
-        instance_count [0] = 4
+        instance_count[0] = 4
         result = ''
         for cls, count in enumerate(instance_count):
             result += f"{original_classes[cls]}: {count}\t"
@@ -116,5 +116,3 @@ def test_custom_classes_override_default(dataset):
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ['bus', 'car']
     assert repr(custom_dataset) == "bus: 4\tcar: 0"
-
-

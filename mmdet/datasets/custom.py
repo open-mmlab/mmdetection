@@ -344,4 +344,3 @@ class CustomDataset(Dataset):
             if (cls + 1) % 5 == 0:
                 result += '\n'
         return result
-
