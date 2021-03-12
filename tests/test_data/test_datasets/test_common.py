@@ -355,4 +355,3 @@ def test_allow_empty_images(classes, expected_length):
     assert len(full_dataset.img_ids) == 3
     assert filtered_dataset.CLASSES == classes
     assert full_dataset.CLASSES == classes
-
