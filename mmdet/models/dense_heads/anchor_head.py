@@ -539,7 +539,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             >>> img_metas = [{'img_shape': (32, 32, 3), 'scale_factor': 1}]
             >>> cfg = mmcv.Config(dict(
             >>>     score_thr=0.00,
-            >>>     nms=dict(type='nms', iou_thr=1.0),
+            >>>     nms=dict(type='nms', iou_threshold=1.0),
             >>>     max_per_img=10))
             >>> feat = torch.rand(1, 1, 3, 3)
             >>> cls_score, bbox_pred = self.forward_single(feat)
