@@ -36,6 +36,7 @@ def ort_validate(model, feats, onnx_io='tmp.onnx'):
         feats (list(torch.Tensor) | torch.Tensor): the input of model
         onnx_io (str): the name of onnx output file
     """
+    model.cpu().eval()
     with torch.no_grad():
         torch.onnx.export(
             model,
