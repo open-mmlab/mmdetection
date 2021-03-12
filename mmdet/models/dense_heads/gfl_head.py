@@ -207,14 +207,14 @@ class GFLHead(AnchorHead):
         return torch.stack([anchors_cx, anchors_cy], dim=-1)
 
     def forward_train(self,
-                x,
-                img_metas,
-                gt_bboxes,
-                gt_labels=None,
-                gt_bboxes_ignore=None,
-                img=None,
-                proposal_cfg=None,
-                **kwargs):
+                      x,
+                      img_metas,
+                      gt_bboxes,
+                      gt_labels=None,
+                      gt_bboxes_ignore=None,
+                      img=None,
+                      proposal_cfg=None,
+                      **kwargs):
         """
         Args:
             x (list[Tensor]): Features from FPN.
@@ -245,6 +245,7 @@ class GFLHead(AnchorHead):
         else:
             proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
             return losses, proposal_list
+
     def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, stride, num_total_samples):
         """Compute loss of a single scale level.

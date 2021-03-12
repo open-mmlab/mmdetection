@@ -77,8 +77,7 @@ model = dict(
         stacked_convs=4,
         feat_channels=256,
         teacher_config='configs/gfl/gfl_r101_fpn_mstrain_2x_coco.py',
-        teacher_model=
-        'gfl_r101_fpn_mstrain_2x_coco_20200629_200126-dd12f847.pth',
+        teacher_model='gfl_r101_fpn_mstrain_2x_coco.pth',
         anchor_generator=dict(
             type='AnchorGenerator',
             ratios=[1.0],
