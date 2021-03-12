@@ -18,9 +18,6 @@ from mmdet.datasets import DATASETS
 @patch('mmdet.datasets.CustomDataset._filter_imgs', MagicMock)
 @patch('mmdet.datasets.XMLDataset._filter_imgs', MagicMock)
 @patch('mmdet.datasets.CityscapesDataset._filter_imgs', MagicMock)
-
-
-
 @pytest.mark.parametrize('dataset',
                          ['CocoDataset', 'VOCDataset', 'CityscapesDataset'])
 def test_custom_classes_override_default(dataset):
@@ -89,7 +86,6 @@ def test_custom_classes_override_default(dataset):
         classes=None,
         test_mode=True,
         img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
-
 
     if original_classes is None:
         result = "Dataset is empty"

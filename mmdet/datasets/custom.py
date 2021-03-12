@@ -334,7 +334,8 @@ class CustomDataset(Dataset):
 
         # count the instance number in each image
         for idx in range(len(self)):
-            unique, counts = np.unique(self.get_cat_ids(idx), return_counts=True)
+            unique, counts = np.unique(self.get_cat_ids(idx),
+                                       return_counts=True)
             instance_count[unique] += counts
 
         result = ''
@@ -343,3 +344,4 @@ class CustomDataset(Dataset):
             if (cls + 1) % 5 == 0:
                 result += '\n'
         return result
+
