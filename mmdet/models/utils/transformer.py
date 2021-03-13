@@ -1,11 +1,14 @@
+import copy
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import (Linear, build_activation_layer, build_norm_layer,
                       xavier_init)
 
-from .builder import TRANSFORMER
+from .builder import ATTENTION, TRANSFORMER, build_attention
 
 
+@ATTENTION.register_module()
 class MultiheadAttention(nn.Module):
     """A warpper for torch.nn.MultiheadAttention.
 
@@ -30,7 +33,7 @@ class MultiheadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self,
-                x,
+                query,
                 key=None,
                 value=None,
                 residual=None,
@@ -41,7 +44,7 @@ class MultiheadAttention(nn.Module):
         """Forward function for `MultiheadAttention`.
 
         Args:
-            x (Tensor): The input query with shape [num_query, bs,
+            query (Tensor): The input query with shape [num_query, bs,
                 embed_dims]. Same in `nn.MultiheadAttention.forward`.
             key (Tensor): The key tensor with shape [num_key, bs,
                 embed_dims]. Same in `nn.MultiheadAttention.forward`.
@@ -68,13 +71,13 @@ class MultiheadAttention(nn.Module):
         Returns:
             Tensor: forwarded results with shape [num_query, bs, embed_dims].
         """
-        query = x
+
         if key is None:
             key = query
         if value is None:
             value = key
         if residual is None:
-            residual = x
+            residual = query
         if key_pos is None:
             if query_pos is not None and key is not None:
                 if query_pos.shape == key.shape:
@@ -168,238 +171,261 @@ class FFN(nn.Module):
         return repr_str
 
 
-class TransformerEncoderLayer(nn.Module):
-    """Implements one encoder layer in DETR transformer.
+class BaseTransformerLayer(nn.Module):
+    """Base class for vision transformer.
 
     Args:
-        embed_dims (int): The feature dimension. Same as `FFN`.
-        num_heads (int): Parallel attention heads.
+        attn_cfgs (list[`mmcv.Config`])) : Configs for self_attention
+            or cross_attention, the order should be consistent with
+            it in `operation_order`.
         feedforward_channels (int): The hidden dimension for FFNs.
-        dropout (float): Probability of an element to be zeroed. Default 0.0.
-        order (tuple[str]): The order for encoder layer. Valid examples are
-            ('selfattn', 'norm', 'ffn', 'norm') and ('norm', 'selfattn',
-            'norm', 'ffn'). Default ('selfattn', 'norm', 'ffn', 'norm').
+        dropout (float): Probability of an element to be zeroed.
+            Default 0.0.
+        operation_order (tuple[str]): The execution order of operation
+            in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
+            Default：None
         act_cfg (dict): The activation config for FFNs. Defalut ReLU.
-        norm_cfg (dict): Config dict for normalization layer. Default
+        norm_cfg (dict): Config dict for normalization layer. Default：
             layer normalization.
-        num_fcs (int): The number of fully-connected layers for FFNs.
-            Default 2.
+        ffn_num_fcs (int): The number of fully-connected layers for FFNs.
+            Default：2.
     """
 
-    def __init__(self,
-                 embed_dims,
-                 num_heads,
-                 feedforward_channels,
-                 dropout=0.0,
-                 order=('selfattn', 'norm', 'ffn', 'norm'),
-                 act_cfg=dict(type='ReLU', inplace=True),
-                 norm_cfg=dict(type='LN'),
-                 num_fcs=2):
-        super(TransformerEncoderLayer, self).__init__()
-        assert isinstance(order, tuple) and len(order) == 4
-        assert set(order) == set(['selfattn', 'norm', 'ffn'])
-        self.embed_dims = embed_dims
-        self.num_heads = num_heads
+    def __init__(
+            self,
+            attn_cfgs,
+            feedforward_channels,
+            dropout=0.0,
+            operation_order=None,
+            act_cfg=dict(type='ReLU', inplace=True),
+            norm_cfg=dict(type='LN'),
+            ffn_num_fcs=2,
+    ):
+
+        super(BaseTransformerLayer, self).__init__()
+        assert set(operation_order) == set(
+            ['selfattn', 'norm', 'ffn', 'crossattn'])
+        assert 'embed_dims' in attn_cfgs[0]
+        attn_cfgs = copy.deepcopy(attn_cfgs)
+        self.embed_dims = attn_cfgs[0].get('embed_dims')
         self.feedforward_channels = feedforward_channels
         self.dropout = dropout
-        self.order = order
+        self.operation_order = operation_order
         self.act_cfg = act_cfg
         self.norm_cfg = norm_cfg
-        self.num_fcs = num_fcs
-        self.pre_norm = order[0] == 'norm'
-        self.self_attn = MultiheadAttention(embed_dims, num_heads, dropout)
-        self.ffn = FFN(embed_dims, feedforward_channels, num_fcs, act_cfg,
-                       dropout)
+        self.ffn_num_fcs = ffn_num_fcs
+        self.pre_norm = operation_order[0] == 'norm'
+        self.attentions = nn.ModuleList()
+
+        num_attn = operation_order.count('selfattn') + operation_order.count(
+            'crossattn')
+        assert num_attn == len(attn_cfgs), f'The length ' \
+            f'of attn_cfg {num_attn} is ' \
+            f'not consistent with the number of attention' \
+            f'in operation_order {self.operation_order}.'
+
+        index = 0
+        for operation in operation_order:
+            if operation in set('selfattn', 'crossattn'):
+                attention = build_attention(attn_cfgs[index])
+                self.attentions.append(attention)
+
+        self.num_ffns = nn.ModuleList()
+        num_ffns = operation_order.count('ffn')
+        for _ in range(num_ffns):
+            self.ffns.append(
+                FFN(self.embed_dims, feedforward_channels, ffn_num_fcs,
+                    act_cfg, dropout))
+
         self.norms = nn.ModuleList()
-        self.norms.append(build_norm_layer(norm_cfg, embed_dims)[1])
-        self.norms.append(build_norm_layer(norm_cfg, embed_dims)[1])
-
-    def forward(self, x, pos=None, attn_mask=None, key_padding_mask=None):
-        """Forward function for `TransformerEncoderLayer`.
-
-        Args:
-            x (Tensor): The input query with shape [num_key, bs,
-                embed_dims]. Same in `MultiheadAttention.forward`.
-            pos (Tensor): The positional encoding for query. Default None.
-                Same as `query_pos` in `MultiheadAttention.forward`.
-            attn_mask (Tensor): ByteTensor mask with shape [num_key,
-                num_key]. Same in `MultiheadAttention.forward`. Default None.
-            key_padding_mask (Tensor): ByteTensor with shape [bs, num_key].
-                Same in `MultiheadAttention.forward`. Default None.
-
-        Returns:
-            Tensor: forwarded results with shape [num_key, bs, embed_dims].
-        """
-        norm_cnt = 0
-        inp_residual = x
-        for layer in self.order:
-            if layer == 'selfattn':
-                # self attention
-                query = key = value = x
-                x = self.self_attn(
-                    query,
-                    key,
-                    value,
-                    inp_residual if self.pre_norm else None,
-                    query_pos=pos,
-                    key_pos=pos,
-                    attn_mask=attn_mask,
-                    key_padding_mask=key_padding_mask)
-                inp_residual = x
-            elif layer == 'norm':
-                x = self.norms[norm_cnt](x)
-                norm_cnt += 1
-            elif layer == 'ffn':
-                x = self.ffn(x, inp_residual if self.pre_norm else None)
-        return x
-
-    def __repr__(self):
-        """str: a string that describes the module"""
-        repr_str = self.__class__.__name__
-        repr_str += f'(embed_dims={self.embed_dims}, '
-        repr_str += f'num_heads={self.num_heads}, '
-        repr_str += f'feedforward_channels={self.feedforward_channels}, '
-        repr_str += f'dropout={self.dropout}, '
-        repr_str += f'order={self.order}, '
-        repr_str += f'act_cfg={self.act_cfg}, '
-        repr_str += f'norm_cfg={self.norm_cfg}, '
-        repr_str += f'num_fcs={self.num_fcs})'
-        return repr_str
-
-
-class TransformerDecoderLayer(nn.Module):
-    """Implements one decoder layer in DETR transformer.
-
-    Args:
-        embed_dims (int): The feature dimension. Same as
-            `TransformerEncoderLayer`.
-        num_heads (int): Parallel attention heads.
-        feedforward_channels (int): Same as `TransformerEncoderLayer`.
-        dropout (float): Same as `TransformerEncoderLayer`. Default 0.0.
-        order (tuple[str]): The order for decoder layer. Valid examples are
-            ('selfattn', 'norm', 'multiheadattn', 'norm', 'ffn', 'norm') and
-            ('norm', 'selfattn', 'norm', 'multiheadattn', 'norm', 'ffn').
-            Default the former.
-        act_cfg (dict): Same as `TransformerEncoderLayer`. Defalut ReLU.
-        norm_cfg (dict): Config dict for normalization layer. Default
-            layer normalization.
-        num_fcs (int): The number of fully-connected layers in FFNs.
-    """
-
-    def __init__(self,
-                 embed_dims,
-                 num_heads,
-                 feedforward_channels,
-                 dropout=0.0,
-                 order=('selfattn', 'norm', 'multiheadattn', 'norm', 'ffn',
-                        'norm'),
-                 act_cfg=dict(type='ReLU', inplace=True),
-                 norm_cfg=dict(type='LN'),
-                 num_fcs=2):
-        super(TransformerDecoderLayer, self).__init__()
-        assert isinstance(order, tuple) and len(order) == 6
-        assert set(order) == set(['selfattn', 'norm', 'multiheadattn', 'ffn'])
-        self.embed_dims = embed_dims
-        self.num_heads = num_heads
-        self.feedforward_channels = feedforward_channels
-        self.dropout = dropout
-        self.order = order
-        self.act_cfg = act_cfg
-        self.norm_cfg = norm_cfg
-        self.num_fcs = num_fcs
-        self.pre_norm = order[0] == 'norm'
-        self.self_attn = MultiheadAttention(embed_dims, num_heads, dropout)
-        self.multihead_attn = MultiheadAttention(embed_dims, num_heads,
-                                                 dropout)
-        self.ffn = FFN(embed_dims, feedforward_channels, num_fcs, act_cfg,
-                       dropout)
-        self.norms = nn.ModuleList()
-        # 3 norm layers in official DETR's TransformerDecoderLayer
-        for _ in range(3):
-            self.norms.append(build_norm_layer(norm_cfg, embed_dims)[1])
+        num_norms = operation_order.count('norm')
+        for _ in range(num_norms):
+            self.norms.append(build_norm_layer(norm_cfg, self.sembed_dims)[1])
 
     def forward(self,
-                x,
-                memory,
-                memory_pos=None,
+                query,
+                key,
+                value,
                 query_pos=None,
-                memory_attn_mask=None,
-                target_attn_mask=None,
-                memory_key_padding_mask=None,
-                target_key_padding_mask=None):
+                key_pos=None,
+                attn_masks=None,
+                query_padding_mask=None,
+                key_padding_mask=None,
+                **kwargs):
         """Forward function for `TransformerDecoderLayer`.
 
         Args:
-            x (Tensor): Input query with shape [num_query, bs, embed_dims].
-            memory (Tensor): Tensor got from `TransformerEncoder`, with shape
-                [num_key, bs, embed_dims].
-            memory_pos (Tensor): The positional encoding for `memory`. Default
-                None. Same as `key_pos` in `MultiheadAttention.forward`.
-            query_pos (Tensor): The positional encoding for `query`. Default
-                None. Same as `query_pos` in `MultiheadAttention.forward`.
-            memory_attn_mask (Tensor): ByteTensor mask for `memory`, with
-                shape [num_key, num_key]. Same as `attn_mask` in
-                `MultiheadAttention.forward`. Default None.
-            target_attn_mask (Tensor): ByteTensor mask for `x`, with shape
-                [num_query, num_query]. Same as `attn_mask` in
-                `MultiheadAttention.forward`. Default None.
-            memory_key_padding_mask (Tensor): ByteTensor for `memory`, with
-                shape [bs, num_key]. Same as `key_padding_mask` in
-                `MultiheadAttention.forward`. Default None.
-            target_key_padding_mask (Tensor): ByteTensor for `x`, with shape
-                [bs, num_query]. Same as `key_padding_mask` in
-                `MultiheadAttention.forward`. Default None.
+            query (Tensor): Input query with shape
+                `(num_query, bs, embed_dims)`.
+            key (Tensor): The key tensor with shape
+                `(num_key, bs, embed_dims)`.
+            value (Tensor): The value tensor with shape
+                `(num_key, bs, embed_dims)`.
+            query_pos (Tensor): The positional encoding for `query`.
+                Default: None.
+            key_pos (Tensor): The positional encoding for `key`. Default
+                None.
+            attn_masks (List(Tensor), optional): Each element is 2D
+                Tensor used in calculation of corresponding attention.
+                 Defaults: None.
+            query_padding_mask (Tensor): ByteTensor for `query`, with
+                shape [bs, num_query].
+            key_padding_mask (Tensor): ByteTensor for `query`, with
+                shape [bs, num_key].
 
         Returns:
             Tensor: forwarded results with shape [num_query, bs, embed_dims].
         """
-        norm_cnt = 0
-        inp_residual = x
+        norm_index = 0
+        attn_index = 0
+        ffn_index = 0
+        inp_residual = query
+
+        if attn_masks is not None:
+            assert len(attn_masks) == len(self.attentions)
+        else:
+            attn_masks = [None for _ in range(len(self.attentions))]
+
         for layer in self.order:
             if layer == 'selfattn':
-                query = key = value = x
-                x = self.self_attn(
+                temp_key = temp_value = query
+                query = self.attentions[attn_index](
                     query,
-                    key,
-                    value,
+                    temp_key,
+                    temp_value,
                     inp_residual if self.pre_norm else None,
                     query_pos,
                     key_pos=query_pos,
-                    attn_mask=target_attn_mask,
-                    key_padding_mask=target_key_padding_mask)
-                inp_residual = x
+                    attn_mask=attn_masks[attn_index],
+                    key_padding_mask=query_padding_mask,
+                    **kwargs)
+                attn_index += 1
+                inp_residual = query
+
             elif layer == 'norm':
-                x = self.norms[norm_cnt](x)
-                norm_cnt += 1
-            elif layer == 'multiheadattn':
-                query = x
-                key = value = memory
-                x = self.multihead_attn(
+                query = self.norms[norm_index](query)
+                norm_index += 1
+
+            elif layer == 'crossattn':
+                query = self.attentions[attn_index](
                     query,
                     key,
                     value,
                     inp_residual if self.pre_norm else None,
                     query_pos,
-                    key_pos=memory_pos,
-                    attn_mask=memory_attn_mask,
-                    key_padding_mask=memory_key_padding_mask)
-                inp_residual = x
+                    key_pos=key_pos,
+                    attn_mask=attn_masks[attn_index],
+                    key_padding_mask=key_padding_mask,
+                    **kwargs)
+                attn_index += 1
+                inp_residual = query
+
             elif layer == 'ffn':
-                x = self.ffn(x, inp_residual if self.pre_norm else None)
-        return x
+                ffn_index += 1
+                query = self.ffn(query,
+                                 inp_residual if self.pre_norm else None)
+
+        return query
 
     def __repr__(self):
         """str: a string that describes the module"""
         repr_str = self.__class__.__name__
-        repr_str += f'(embed_dims={self.embed_dims}, '
-        repr_str += f'num_heads={self.num_heads}, '
+        repr_str += f'(ffn_embed_dims={self.embed_dims}, '
         repr_str += f'feedforward_channels={self.feedforward_channels}, '
         repr_str += f'dropout={self.dropout}, '
-        repr_str += f'order={self.order}, '
         repr_str += f'act_cfg={self.act_cfg}, '
         repr_str += f'norm_cfg={self.norm_cfg}, '
-        repr_str += f'num_fcs={self.num_fcs})'
+        repr_str += f'ffn_num_fcs={self.ffn_num_fcs})'
+        repr_str += f'operation_order={self.operation_order}'
+        for attn in self.attentions:
+            repr_str += repr(attn)
         return repr_str
+
+
+class TransformerEncoderLayer(BaseTransformerLayer):
+    """Implements one encoder layer in DETR transformer.
+
+    Args:
+        attn_cfgs (list[`mmcv.Config`])) : Configs for self_attention
+            or cross_attention, the order should be consistent with
+            it in `operation_order`.
+        feedforward_channels (int): The hidden dimension for FFNs.
+        dropout (float): Probability of an element to be zeroed.
+            Default 0.0.
+        operation_order (tuple[str]): The execution order of operation
+            in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
+            Default：None
+        act_cfg (dict): The activation config for FFNs. Defalut ReLU.
+        norm_cfg (dict): Config dict for normalization layer. Default：
+            layer normalization.
+        ffn_num_fcs (int): The number of fully-connected layers for FFNs.
+            Default：2.
+    """
+
+    def __init__(
+            self,
+            attn_cfgs,
+            feedforward_channels,
+            dropout=0.0,
+            operation_order=None,
+            act_cfg=dict(type='ReLU', inplace=True),
+            norm_cfg=dict(type='LN'),
+            ffn_num_fcs=2,
+    ):
+        super(TransformerDecoderLayer, self).__init__(
+            attn_cfgs=attn_cfgs,
+            feedforward_channels=feedforward_channels,
+            dropout=dropout,
+            operation_order=operation_order,
+            act_cfg=act_cfg,
+            norm_cfg=norm_cfg,
+            ffn_num_fcs=ffn_num_fcs,
+        )
+        assert len(self.operation_order) == 4
+        assert set(self.operation_order) == set(['selfattn', 'norm', 'ffn'])
+
+
+class TransformerDecoderLayer(BaseTransformerLayer):
+    """Implements one decoder layer in DETR transformer.
+
+    Args:
+        attn_cfgs (list[`mmcv.Config`])) : Configs for self_attention
+            or cross_attention, the order should be consistent with
+            it in `operation_order`.
+        feedforward_channels (int): The hidden dimension for FFNs.
+        dropout (float): Probability of an element to be zeroed.
+            Default 0.0.
+        operation_order (tuple[str]): The execution order of operation
+            in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
+            Default：None
+        act_cfg (dict): The activation config for FFNs. Defalut ReLU.
+        norm_cfg (dict): Config dict for normalization layer. Default：
+            layer normalization.
+        ffn_num_fcs (int): The number of fully-connected layers for FFNs.
+            Default：2.
+    """
+
+    def __init__(self,
+                 attn_cfgs,
+                 feedforward_channels,
+                 dropout=0.0,
+                 operation_order=None,
+                 act_cfg=dict(type='ReLU', inplace=True),
+                 norm_cfg=dict(type='LN'),
+                 ffn_num_fcs=2,
+                 num_norms=3):
+        super(TransformerDecoderLayer, self).__init__(
+            attn_cfgs=attn_cfgs,
+            feedforward_channels=feedforward_channels,
+            dropout=dropout,
+            operation_order=operation_order,
+            act_cfg=act_cfg,
+            norm_cfg=norm_cfg,
+            ffn_num_fcs=ffn_num_fcs,
+            num_norms=num_norms)
+        assert len(operation_order) == 6
+        assert set(operation_order) == set(
+            ['selfattn', 'norm', 'crossattn', 'ffn'])
 
 
 class TransformerEncoder(nn.Module):
