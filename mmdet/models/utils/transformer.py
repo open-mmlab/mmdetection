@@ -474,7 +474,7 @@ class BaseTransformerCoder(nn.Module):
             Tensor: forwarded results with shape [num_query, bs, embed_dims].
         """
         for layer in self.layers:
-            x = layer(
+            query = layer(
                 query,
                 key,
                 value,
@@ -484,7 +484,7 @@ class BaseTransformerCoder(nn.Module):
                 query_key_padding_mask=query_key_padding_mask,
                 key_padding_mask=key_padding_mask,
                 **kwargs)
-        return x
+        return query
 
 
 class DetrTransformerEncoder(BaseTransformerCoder):
@@ -672,8 +672,8 @@ class Transformer(nn.Module):
         mask = mask.flatten(1)  # [bs, h, w] -> [bs, h*w]
         memory = self.encoder(
             query=x,
-            key=x,
-            value=x,
+            key=None,
+            value=None,
             query_pos=pos_embed,
             attn_mask=None,
             query_key_padding_mask=mask)
