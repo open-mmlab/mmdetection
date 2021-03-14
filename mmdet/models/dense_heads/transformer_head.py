@@ -23,18 +23,24 @@ class TransformerHead(AnchorFreeHead):
     Args:
         num_classes (int): Number of categories excluding the background.
         in_channels (int): Number of channels in the input feature map.
-        num_fcs (int, optional): Number of fully-connected layers used in
+        num_query (int): Number of query in Transformer.
+        embed_dims (int): Embedding dimensions of Transformer.
+        reg_num_fcs (int, optional): Number of fully-connected layers used in
             `FFN`, which is then used for the regression head. Default 2.
-        transformer (dict, optional): Config for transformer.
-        positional_encoding (dict, optional): Config for position encoding.
-        loss_cls (dict, optional): Config of the classification loss.
-            Default `CrossEntropyLoss`.
-        loss_bbox (dict, optional): Config of the regression loss.
-            Default `L1Loss`.
-        loss_iou (dict, optional): Config of the regression iou loss.
-            Default `GIoULoss`.
-        tran_cfg (dict, optional): Training config of transformer head.
-        test_cfg (dict, optional): Testing config of transformer head.
+        transformer (obj:`mmcv.ConfigDict`|dict): Config for transformer.
+            Default: None
+        positional_encoding (obj:`mmcv.ConfigDict`|dict):
+            Config for position encoding.
+        loss_cls (obj:`mmcv.ConfigDict`|dict): Config of the
+            classification loss. Default `CrossEntropyLoss`.
+        loss_bbox (obj:`mmcv.ConfigDict`|dict): Config of the
+            regression loss. Default `L1Loss`.
+        loss_iou (obj:`mmcv.ConfigDict`|dict): Config of the
+            regression iou loss. Default `GIoULoss`.
+        tran_cfg (obj:`mmcv.ConfigDict`|dict): Training config of
+            transformer head.
+        test_cfg (obj:`mmcv.ConfigDict`|dict): Testing config of
+            transformer head.
 
     Example:
         >>> import torch
@@ -48,6 +54,7 @@ class TransformerHead(AnchorFreeHead):
     def __init__(self,
                  num_classes,
                  in_channels,
+                 num_query=100,
                  embed_dims=256,
                  reg_num_fcs=2,
                  transformer=None,
@@ -124,6 +131,7 @@ class TransformerHead(AnchorFreeHead):
             # DETR sampling=False, so use PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
+        self.num_query = num_query
         self.num_classes = num_classes
         self.cls_out_channels = num_classes + 1
         self.in_channels = in_channels

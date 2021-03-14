@@ -34,15 +34,17 @@ class MultiheadAttention(nn.Module):
         self.attn = nn.MultiheadAttention(embed_dims, num_heads, dropout)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self,
-                query,
-                key=None,
-                value=None,
-                residual=None,
-                query_pos=None,
-                key_pos=None,
-                attn_mask=None,
-                key_padding_mask=None):
+    def forward(
+        self,
+        query,
+        key=None,
+        value=None,
+        residual=None,
+        query_pos=None,
+        key_pos=None,
+        attn_mask=None,
+        key_padding_mask=None,
+    ):
         """Forward function for `MultiheadAttention`.
 
         Args:
@@ -159,19 +161,21 @@ class BaseTransformerLayer(nn.Module):
     """Base class for vision transformer.
 
     Args:
-        attn_cfgs (list[dict] | dict)) : Configs for self_attention
-            or cross_attention, the order should be consistent with
-            it in `operation_order`.
+        attn_cfgs (list[`mmcv.ConfigDict`] | list[dict] | dict )):
+            Configs for self_attention or cross_attention, the order
+            should be consistent with it in `operation_order`. If it is
+            a dict, it would be expand to the number of attention in
+            `operation_order`.
         feedforward_channels (int): The hidden dimension for FFNs.
+        embed_dims (int): Embedding dimension of Transformerlayer.
         ffn_dropout (float): Probability of an element to be zeroed
             in ffn. Default 0.0.
         operation_order (tuple[str]): The execution order of operation
             in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
             Default：None
-        act_cfg (dict): The activation config for FFNs. Defalut ReLU.
-        norm_cfg (dict): Config dict for normalization layer. Default：
-            layer normalization.
-        ffn_num_fcs (int): The number of fully-connected layers for FFNs.
+        act_cfg (dict): The activation config for FFNs.
+        norm_cfg (dict): Config dict for normalization layer.
+        ffn_num_fcs (int): The number of fully-connected layers in FFNs.
             Default：2.
     """
 
@@ -236,8 +240,8 @@ class BaseTransformerLayer(nn.Module):
                 value,
                 query_pos=None,
                 key_pos=None,
-                attn_masks=None,
-                query_padding_mask=None,
+                attn_mask=None,
+                query_key_padding_mask=None,
                 key_padding_mask=None,
                 **kwargs):
         """Forward function for `TransformerDecoderLayer`.
@@ -253,11 +257,11 @@ class BaseTransformerLayer(nn.Module):
                 Default: None.
             key_pos (Tensor): The positional encoding for `key`. Default
                 None.
-            attn_masks (List(Tensor), optional): Each element is 2D
-                Tensor used in calculation of corresponding attention.
-                 Defaults: None.
-            query_padding_mask (Tensor): ByteTensor for `query`, with
-                shape [bs, num_query].
+            attn_mask (Tensor, optional): 2D Tensor used in
+                calculation of corresponding attention.
+                Defaults: None.
+            query_key_padding_mask (Tensor): ByteTensor for `query`, with
+                shape [bs, num_query]. Only used in `selfattn` layer.
             key_padding_mask (Tensor): ByteTensor for `query`, with
                 shape [bs, num_key].
 
@@ -269,11 +273,6 @@ class BaseTransformerLayer(nn.Module):
         ffn_index = 0
         inp_residual = query
 
-        if attn_masks is not None:
-            assert len(attn_masks) == len(self.attentions)
-        else:
-            attn_masks = [None for _ in range(len(self.attentions))]
-
         for layer in self.operation_order:
             if layer == 'selfattn':
                 temp_key = temp_value = query
@@ -282,10 +281,10 @@ class BaseTransformerLayer(nn.Module):
                     temp_key,
                     temp_value,
                     inp_residual if self.pre_norm else None,
-                    query_pos,
+                    query_pos=query_pos,
                     key_pos=query_pos,
-                    attn_mask=attn_masks[attn_index],
-                    key_padding_mask=query_padding_mask,
+                    attn_mask=attn_mask,
+                    key_padding_mask=query_key_padding_mask,
                     **kwargs)
                 attn_index += 1
                 inp_residual = query
@@ -300,9 +299,9 @@ class BaseTransformerLayer(nn.Module):
                     key,
                     value,
                     inp_residual if self.pre_norm else None,
-                    query_pos,
+                    query_pos=query_pos,
                     key_pos=key_pos,
-                    attn_mask=attn_masks[attn_index],
+                    attn_mask=attn_mask,
                     key_padding_mask=key_padding_mask,
                     **kwargs)
                 attn_index += 1
@@ -318,22 +317,24 @@ class BaseTransformerLayer(nn.Module):
 
 @TRANSFORMERLAYER.register_module()
 class DetrTransformerEncoderLayer(BaseTransformerLayer):
-    """Implements one encoder layer in DETR transformer.
+    """Implements encoder layer in DETR transformer.
 
     Args:
-        attn_cfgs (list[`mmcv.Config`])) : Configs for self_attention
-            or cross_attention, the order should be consistent with
-            it in `operation_order`.
+        attn_cfgs (list[`mmcv.ConfigDict`] | list[dict] | dict )):
+            Configs for self_attention or cross_attention, the order
+            should be consistent with it in `operation_order`. If it is
+            a dict, it would be expand to the number of attention in
+            `operation_order`.
         feedforward_channels (int): The hidden dimension for FFNs.
-        dropout (float): Probability of an element to be zeroed.
-            Default 0.0.
+        embed_dims (int): Embedding dimension of Transformerlayer.
+        ffn_dropout (float): Probability of an element to be zeroed
+            in ffn. Default 0.0.
         operation_order (tuple[str]): The execution order of operation
             in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
             Default：None
-        act_cfg (dict): The activation config for FFNs. Defalut ReLU.
-        norm_cfg (dict): Config dict for normalization layer. Default：
-            layer normalization.
-        ffn_num_fcs (int): The number of fully-connected layers for FFNs.
+        act_cfg (dict): The activation config for FFNs.
+        norm_cfg (dict): Config dict for normalization layer.
+        ffn_num_fcs (int): The number of fully-connected layers in FFNs.
             Default：2.
     """
 
@@ -367,19 +368,21 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
     """Implements one decoder layer in DETR transformer.
 
     Args:
-        attn_cfgs (list[`mmcv.Config`])) : Configs for self_attention
-            or cross_attention, the order should be consistent with
-            it in `operation_order`.
+        attn_cfgs (list[`mmcv.ConfigDict`] | list[dict] | dict )):
+            Configs for self_attention or cross_attention, the order
+            should be consistent with it in `operation_order`. If it is
+            a dict, it would be expand to the number of attention in
+            `operation_order`.
         feedforward_channels (int): The hidden dimension for FFNs.
-        dropout (float): Probability of an element to be zeroed.
-            Default 0.0.
+        embed_dims (int): Embedding dimension of Transformerlayer.
+        ffn_dropout (float): Probability of an element to be zeroed
+            in ffn. Default 0.0.
         operation_order (tuple[str]): The execution order of operation
             in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
             Default：None
-        act_cfg (dict): The activation config for FFNs. Defalut ReLU.
-        norm_cfg (dict): Config dict for normalization layer. Default：
-            layer normalization.
-        ffn_num_fcs (int): The number of fully-connected layers for FFNs.
+        act_cfg (dict): The activation config for FFNs.
+        norm_cfg (dict): Config dict for normalization layer.
+        ffn_num_fcs (int): The number of fully-connected layers in FFNs.
             Default：2.
     """
 
@@ -395,7 +398,7 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             ffn_num_fcs=2,
     ):
         super(DetrTransformerDecoderLayer, self).__init__(
-            embed_dims=256,
+            embed_dims=embed_dims,
             attn_cfgs=attn_cfgs,
             feedforward_channels=feedforward_channels,
             ffn_dropout=ffn_dropout,
@@ -415,30 +418,26 @@ class BaseTransformerCoder(nn.Module):
     Args:
         transformerlayer (list[obj:`mmcv.ConfigDict`] |
             obj:`mmcv.ConfigDict`): Config of transformerlayer
-            in TransformerCoder. Default: None.
+            in TransformerCoder. If it is obj:`mmcv.ConfigDict`,
+             it would be repeated `num_layer` times to a
+             list[`mmcv.ConfigDict`]. Default: None.
         num_layers (int): The number of `TransformerLayer`. Default: None.
-        coder_norm_cfg (dict): Config of last normalization layer. Default：
-            `LN`.
     """
 
-    def __init__(self,
-                 transformerlayers=None,
-                 num_layers=None,
-                 coder_norm_cfg=dict(type='LN')):
+    def __init__(self, transformerlayers=None, num_layers=None):
         super(BaseTransformerCoder, self).__init__()
         if isinstance(transformerlayers, ConfigDict):
             transformerlayers = [
                 copy.deepcopy(transformerlayers) for _ in range(num_layers)
             ]
         self.num_layers = num_layers
-        self.embed_dims = transformerlayers[0].get('embed_dims', 256)
+        assert 'embed_dims' in transformerlayers[0]
+        self.embed_dims = transformerlayers[0].get('embed_dims')
         operation_order = transformerlayers[0]['operation_order']
         self.pre_norm = operation_order[0] == 'norm'
         self.layers = nn.ModuleList()
         for i in range(num_layers):
             self.layers.append(build_transformerlayer(transformerlayers[i]))
-        self.coder_norm = build_norm_layer(
-            coder_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
 
     def forward(self,
                 query,
@@ -446,8 +445,8 @@ class BaseTransformerCoder(nn.Module):
                 value,
                 query_pos=None,
                 key_pos=None,
-                attn_masks=None,
-                query_padding_mask=None,
+                attn_mask=None,
+                query_key_padding_mask=None,
                 key_padding_mask=None,
                 **kwargs):
         """Forward function for `TransformerCoder`.
@@ -463,10 +462,10 @@ class BaseTransformerCoder(nn.Module):
                 Default: None.
             key_pos (Tensor): The positional encoding for `key`. Default
                 None.
-            attn_masks (List(Tensor), optional): Each element is 2D
-                Tensor used in calculation of corresponding attention.
-                 Defaults: None.
-            query_padding_mask (Tensor): ByteTensor for `query`, with
+            attn_mask (Tensor, optional):  2D Tensor used in
+                calculation of corresponding attention.
+                Defaults: None.
+            query_key_padding_mask (Tensor): ByteTensor for `query`, with
                 shape [bs, num_query].
             key_padding_mask (Tensor): ByteTensor for `query`, with
                 shape [bs, num_key].
@@ -481,10 +480,38 @@ class BaseTransformerCoder(nn.Module):
                 value,
                 query_pos=query_pos,
                 key_pos=key_pos,
-                attn_masks=attn_masks,
-                query_padding_mask=query_padding_mask,
+                attn_mask=attn_mask,
+                query_key_padding_mask=query_key_padding_mask,
                 key_padding_mask=key_padding_mask,
                 **kwargs)
+        return x
+
+
+class DetrTransformerEncoder(BaseTransformerCoder):
+    """Encoder in vision transformer.
+
+    Args:
+        coder_norm_cfg (dict): Config of last normalization layer. Default：
+            `LN`. Only used when `self.pre_norm` is `True`
+    """
+
+    def __init__(
+            self,
+            *args,
+            coder_norm_cfg=dict(type='LN'),
+            **kwargs,
+    ):
+        super(DetrTransformerEncoder, self).__init__(*args, **kwargs)
+        self.coder_norm = build_norm_layer(
+            coder_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
+
+    def forward(self, *args, **kwargs):
+        """Forward function for `TransformerCoder`.
+
+        Returns:
+            Tensor: forwarded results with shape [num_query, bs, embed_dims].
+        """
+        x = super(DetrTransformerEncoder, self).forward(*args, **kwargs)
         if self.coder_norm is not None:
             x = self.coder_norm(x)
         return x
@@ -495,12 +522,19 @@ class DetrTransformerDecoder(BaseTransformerCoder):
 
     Args:
         return_intermediate (bool): Whether to return intermediate outputs.
+        coder_norm_cfg (dict): Config of last normalization layer. Default：
+            `LN`.
     """
 
-    def __init__(self, *args, return_intermediate=False, **kwargs):
+    def __init__(self,
+                 *args,
+                 coder_norm_cfg=dict(type='LN'),
+                 return_intermediate=False,
+                 **kwargs):
 
         super(DetrTransformerDecoder, self).__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
+        self.coder_norm = build_norm_layer(coder_norm_cfg, self.embed_dims)[1]
 
     def forward(self, query, *args, **kwargs):
         """Forward function for `TransformerDecoder`.
@@ -515,7 +549,10 @@ class DetrTransformerDecoder(BaseTransformerCoder):
                 [num_layers, num_query, bs, embed_dims].
         """
         if not self.return_intermediate:
-            return super().forward(query, *args, **kwargs)[None]
+            x = super().forward(query, *args, **kwargs)
+            if self.coder_norm:
+                x = self.coder_norm(x)[None]
+            return x
 
         intermediate = []
         for layer in self.layers:
@@ -525,14 +562,7 @@ class DetrTransformerDecoder(BaseTransformerCoder):
                     intermediate.append(self.coder_norm(query))
                 else:
                     intermediate.append(query)
-        if self.coder_norm is not None:
-            x = self.coder_norm(query)
-            if self.return_intermediate:
-                intermediate.pop()
-                intermediate.append(x)
-        if self.return_intermediate:
-            return torch.stack(intermediate)
-        return x[None]
+        return torch.stack(intermediate)
 
 
 @TRANSFORMER.register_module()
@@ -593,7 +623,7 @@ class Transformer(nn.Module):
                 copy.deepcopy(dncodelayers) for _ in range(num_encoder_layers)
             ]
 
-        self.encoder = BaseTransformerCoder(
+        self.encoder = DetrTransformerEncoder(
             transformerlayers=encodelayers,
             num_layers=num_encoder_layers,
             coder_norm_cfg=norm_cfg,
@@ -645,8 +675,8 @@ class Transformer(nn.Module):
             key=x,
             value=x,
             query_pos=pos_embed,
-            attn_masks=None,
-            query_padding_mask=mask)
+            attn_mask=None,
+            query_key_padding_mask=mask)
         target = torch.zeros_like(query_embed)
         # out_dec: [num_layers, num_query, bs, dim]
         out_dec = self.decoder(
