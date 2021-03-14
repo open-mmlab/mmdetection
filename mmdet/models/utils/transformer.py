@@ -488,7 +488,7 @@ class BaseTransformerCoder(nn.Module):
 
 
 class DetrTransformerEncoder(BaseTransformerCoder):
-    """Encoder in vision transformer.
+    """TransformerEncoder of DETR.
 
     Args:
         coder_norm_cfg (dict): Config of last normalization layer. Default：
