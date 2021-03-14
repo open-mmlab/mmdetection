@@ -1,7 +1,7 @@
 _base_ = ['./ld_gflv1_r101_r18_fpn_coco_1x.py']
 model = dict(
     type='GFL',
-    pretrained='torchvision://resnet34',
+    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -13,7 +13,7 @@ model = dict(
         style='pytorch'),
     neck=dict(
         type='FPN',
-        in_channels=[64, 128, 256, 512],
+        in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         start_level=1,
         add_extra_convs='on_output',
