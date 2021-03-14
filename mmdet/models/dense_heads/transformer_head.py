@@ -48,20 +48,9 @@ class TransformerHead(AnchorFreeHead):
     def __init__(self,
                  num_classes,
                  in_channels,
-                 num_fcs=2,
-                 transformer=dict(
-                     type='Transformer',
-                     embed_dims=256,
-                     num_heads=8,
-                     num_encoder_layers=6,
-                     num_decoder_layers=6,
-                     feedforward_channels=2048,
-                     dropout=0.1,
-                     act_cfg=dict(type='ReLU', inplace=True),
-                     norm_cfg=dict(type='LN'),
-                     num_fcs=2,
-                     pre_norm=False,
-                     return_intermediate_dec=True),
+                 embed_dims=256,
+                 reg_num_fcs=2,
+                 transformer=None,
                  positional_encoding=dict(
                      type='SinePositionalEncoding',
                      num_feats=128,
@@ -91,10 +80,9 @@ class TransformerHead(AnchorFreeHead):
         assert not use_sigmoid_cls, 'setting use_sigmoid_cls as True is ' \
             'not supported in DETR, since background is needed for the ' \
             'matching process.'
-        assert 'embed_dims' in transformer \
-            and 'num_feats' in positional_encoding
+        assert 'num_feats' in positional_encoding
         num_feats = positional_encoding['num_feats']
-        embed_dims = transformer['embed_dims']
+        embed_dims = embed_dims
         assert num_feats * 2 == embed_dims, 'embed_dims should' \
             f' be exactly 2 times of num_feats. Found {embed_dims}' \
             f' and {num_feats}.'
@@ -139,7 +127,7 @@ class TransformerHead(AnchorFreeHead):
         self.num_classes = num_classes
         self.cls_out_channels = num_classes + 1
         self.in_channels = in_channels
-        self.num_fcs = num_fcs
+        self.reg_num_fcs = reg_num_fcs
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.use_sigmoid_cls = use_sigmoid_cls
@@ -165,7 +153,7 @@ class TransformerHead(AnchorFreeHead):
         self.reg_ffn = FFN(
             self.embed_dims,
             self.embed_dims,
-            self.num_fcs,
+            self.reg_num_fcs,
             self.act_cfg,
             dropout=0.0,
             add_residual=False)
