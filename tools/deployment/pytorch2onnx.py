@@ -24,7 +24,8 @@ def pytorch2onnx(config_path,
                  dataset='coco',
                  test_img=None,
                  do_simplify=False,
-                 cfg_options=None):
+                 cfg_options=None,
+                 dynamic_export=None):
 
     input_config = {
         'input_shape': input_shape,
@@ -38,11 +39,26 @@ def pytorch2onnx(config_path,
     one_img, one_meta = preprocess_example_input(input_config)
     model, tensor_data = generate_inputs_and_wrap_model(
         config_path, checkpoint_path, input_config, cfg_options=cfg_options)
-    output_names = ['boxes']
-    if model.with_bbox:
-        output_names.append('labels')
-    if model.with_mask:
-        output_names.append('masks')
+    output_names = ['dets', 'batch_indices', 'labels']
+    dynamic_axes = None
+    if dynamic_export:
+        dynamic_axes = {
+            'input': {
+                0: 'batch',
+                2: 'width',
+                3: 'height'
+            },
+            'dets': {
+                0: 'batch',
+                1: 'num_dets'
+            },
+            'batch_indices': {
+                0: 'num_dets'
+            },
+            'labels': {
+                0: 'num_dets'
+            },
+        }
 
     torch.onnx.export(
         model,
@@ -54,7 +70,8 @@ def pytorch2onnx(config_path,
         keep_initializers_as_inputs=True,
         do_constant_folding=True,
         verbose=show,
-        opset_version=opset_version)
+        opset_version=opset_version,
+        dynamic_axes=dynamic_axes)
 
     model.forward = orig_model.forward
 
@@ -114,22 +131,11 @@ def pytorch2onnx(config_path,
         output_shapes = [_.shape for _ in onnx_outputs]
         print(f'onnxruntime output names: {output_names}, \
             output shapes: {output_shapes}')
-        nrof_out = len(onnx_outputs)
-        assert nrof_out > 0, 'Must have output'
-        with_mask = nrof_out == 3
-        if nrof_out == 1:
-            onnx_results = onnx_outputs[0]
-        else:
-            det_bboxes, det_labels = onnx_outputs[:2]
-            onnx_results = bbox2result(det_bboxes, det_labels, num_classes)
-            if with_mask:
-                segm_results = onnx_outputs[2].squeeze(1)
-                cls_segms = [[] for _ in range(num_classes)]
-                for i in range(det_bboxes.shape[0]):
-                    cls_segms[det_labels[i]].append(segm_results[i])
-                onnx_results = (onnx_results, cls_segms)
+        onnx_outputs = convert_onnx_outputs(
+            onnx_outputs, batch_size=one_img.shape[0])[0]
+        det_bboxes, det_labels = onnx_outputs[:2]
+        onnx_results = bbox2result(det_bboxes, det_labels, num_classes)
         # visualize predictions
-
         if show:
             show_result_pyplot(
                 model, one_meta['show_img'], pytorch_results, title='Pytorch')
@@ -137,8 +143,7 @@ def pytorch2onnx(config_path,
                 model, one_meta['show_img'], onnx_results, title='ONNX')
 
         # compare a part of result
-
-        if with_mask:
+        if model.with_mask:
             compare_pairs = list(zip(onnx_results, pytorch_results))
         else:
             compare_pairs = [(onnx_results, pytorch_results)]
@@ -151,6 +156,17 @@ def pytorch2onnx(config_path,
                     atol=1e-05,
                 )
         print('The numerical values are the same between Pytorch and ONNX')
+
+
+def convert_onnx_outputs(onnx_outputs, batch_size):
+    batch_dets, batch_indices, batch_labels = onnx_outputs
+    batch_results = []
+    for bid in range(batch_size):
+        inds = batch_indices == bid
+        dets = batch_dets[inds, :]
+        labels = batch_labels[inds]
+        batch_results.append((dets, labels))
+    return batch_results
 
 
 def parse_args():
@@ -202,6 +218,10 @@ def parse_args():
         'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
+    parser.add_argument(
+        '--dynamic-export',
+        action='store_true',
+        help='Wether to export onnx with dynamic axis.')
     args = parser.parse_args()
     return args
 
@@ -241,4 +261,5 @@ if __name__ == '__main__':
         dataset=args.dataset,
         test_img=args.test_img,
         do_simplify=args.simplify,
-        cfg_options=args.cfg_options)
+        cfg_options=args.cfg_options,
+        dynamic_export=args.dynamic_export)
