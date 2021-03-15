@@ -414,18 +414,31 @@ class FCOSHead(AnchorFreeHead):
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            batch_mlvl_scores, _ = (
+            max_scores, _ = (
                 batch_mlvl_scores *
                 batch_mlvl_centerness.unsqueeze(2).expand_as(batch_mlvl_scores)
             ).max(-1)
-            _, topk_inds = batch_mlvl_scores.topk(deploy_nms_pre)
+            _, topk_inds = max_scores.topk(deploy_nms_pre)
             batch_inds = torch.arange(batch_mlvl_scores.shape[0]).view(
                 -1, 1).expand_as(topk_inds)
             batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds, :]
             batch_mlvl_bboxes = batch_mlvl_bboxes[batch_inds, topk_inds, :]
             batch_mlvl_centerness = batch_mlvl_centerness[batch_inds,
                                                           topk_inds]
-
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export():
+            from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            batch_mlvl_centerness = batch_mlvl_centerness.unsqueeze(
+                2).expand_as(batch_mlvl_scores)
+            batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_centerness
+            batch_mlvl_scores = batch_mlvl_scores.permute(0, 2, 1)
+            max_output_boxes_per_class = cfg.nms.get(
+                'max_output_boxes_per_class', 1000)
+            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+            score_threshold = cfg.score_thr
+            return add_dummy_nms_for_onnx(batch_mlvl_bboxes, batch_mlvl_scores,
+                                          max_output_boxes_per_class,
+                                          iou_threshold, score_threshold)
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         padding = batch_mlvl_scores.new_zeros(batch_size,

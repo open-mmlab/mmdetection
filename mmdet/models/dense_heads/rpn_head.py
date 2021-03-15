@@ -220,7 +220,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
             det_indices = add_dummy_nms_for_onnx(
                 batch_mlvl_proposals,
                 batch_mlvl_scores.unsqueeze(1),
-                cfg.nms.max_per_img,
+                cfg.max_per_img,
                 cfg.nms.iou_threshold,
                 score_threshold,
                 only_return_indices=True)
