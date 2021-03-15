@@ -5,7 +5,7 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
@@ -16,6 +16,7 @@ from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
 
+# TODO：Check
 @HEADS.register_module()
 class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
     """YOLOV3Head Paper link: https://arxiv.org/abs/1804.02767.
@@ -74,8 +75,9 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                      loss_weight=1.0),
                  loss_wh=dict(type='MSELoss', loss_weight=1.0),
                  train_cfg=None,
-                 test_cfg=None):
-        super(YOLOV3Head, self).__init__()
+                 test_cfg=None,
+                 init_cfg=dict(type='Normal', name='convs_pred', std=0.01)):
+        super(YOLOV3Head, self).__init__(init_cfg)
         # Check params
         assert (len(in_channels) == len(out_channels) == len(featmap_strides))
 
@@ -141,11 +143,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
             self.convs_bridge.append(conv_bridge)
             self.convs_pred.append(conv_pred)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.convs_pred:
-            normal_init(m, std=0.01)
 
     def forward(self, feats):
         """Forward features from the upstream network.

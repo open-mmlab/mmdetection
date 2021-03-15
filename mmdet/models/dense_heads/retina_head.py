@@ -38,11 +38,14 @@ class RetinaHead(AnchorHead):
                      ratios=[0.5, 1.0, 2.0],
                      strides=[8, 16, 32, 64, 128]),
                  init_cfg=dict(
-                    type='Normal',
-                    layer='Conv2d',
-                    std=0.01,
-                    override=dict(
-                        type='Normal', name='retina_cls', std=0.01, bias_prob=0.01)),
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='retina_cls',
+                         std=0.01,
+                         bias_prob=0.01)),
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg

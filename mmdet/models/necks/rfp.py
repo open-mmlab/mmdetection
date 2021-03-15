@@ -1,13 +1,14 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import constant_init, kaiming_init, xavier_init
+from mmcv.cnn import constant_init, xavier_init
+from mmcv.runner import BaseModule
 
 from ..builder import NECKS, build_backbone
 from .fpn import FPN
 
 
-class ASPP(nn.Module):
+class ASPP(BaseModule):
     """ASPP (Atrous Spatial Pyramid Pooling)
 
     This is an implementation of the ASPP module used in DetectoRS
@@ -20,8 +21,12 @@ class ASPP(nn.Module):
             Default: (1, 3, 6, 1)
     """
 
-    def __init__(self, in_channels, out_channels, dilations=(1, 3, 6, 1)):
-        super().__init__()
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 dilations=(1, 3, 6, 1),
+                 init_cfg=dict(type='Kaiming', layer='Conv2d')):
+        super().__init__(init_cfg)
         assert dilations[-1] == 1
         self.aspp = nn.ModuleList()
         for dilation in dilations:
@@ -37,12 +42,6 @@ class ASPP(nn.Module):
                 bias=True)
             self.aspp.append(conv)
         self.gap = nn.AdaptiveAvgPool2d(1)
-        self.init_weights()
-
-    def init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                kaiming_init(m)
 
     def forward(self, x):
         avg_x = self.gap(x)
@@ -94,7 +93,8 @@ class RFP(FPN):
             padding=0,
             bias=True)
 
-    def init_weights(self):
+    # TODO: How to convert to init_cfg
+    def init_weight(self):
         # Avoid using super().init_weights(), which may alter the default
         # initialization of the modules in self.rfp_modules that have missing
         # keys in the pretrained checkpoint.

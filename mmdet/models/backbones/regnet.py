@@ -100,7 +100,9 @@ class RegNet(ResNet):
                  stage_with_dcn=(False, False, False, False),
                  plugins=None,
                  with_cp=False,
-                 zero_init_residual=True):
+                 zero_init_residual=True,
+                 pretrained=None,
+                 init_cfg=None):
         super(ResNet, self).__init__()
 
         # Generate RegNet parameters first

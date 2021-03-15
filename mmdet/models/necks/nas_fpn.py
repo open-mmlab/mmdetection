@@ -1,12 +1,13 @@
 import torch.nn as nn
-from mmcv.cnn import ConvModule, caffe2_xavier_init
+from mmcv.cnn import ConvModule
 from mmcv.ops.merge_cells import GlobalPoolingCell, SumCell
+from mmcv.runner import BaseModule
 
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class NASFPN(nn.Module):
+class NASFPN(BaseModule):
     """NAS-FPN.
 
     Implementation of `NAS-FPN: Learning Scalable Feature Pyramid Architecture
@@ -35,8 +36,16 @@ class NASFPN(nn.Module):
                  start_level=0,
                  end_level=-1,
                  add_extra_convs=False,
-                 norm_cfg=None):
-        super(NASFPN, self).__init__()
+                 norm_cfg=None,
+                 init_cfg=dict(
+                     type='Kaiming',
+                     layer='Conv2d',
+                     a=1,
+                     mode='fan_in',
+                     nonlinearity='leaky_relu',
+                     bias=0,
+                     distribution='uniform')):
+        super(NASFPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -119,12 +128,6 @@ class NASFPN(nn.Module):
                 out_channels=out_channels,
                 out_norm_cfg=norm_cfg)
             self.fpn_stages.append(stage)
-
-    def init_weights(self):
-        """Initialize the weights of module."""
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                caffe2_xavier_init(m)
 
     def forward(self, inputs):
         """Forward function."""

@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import build_conv_layer, build_norm_layer, constant_init
+from mmcv.cnn import build_conv_layer, build_norm_layer
 
 from ..builder import BACKBONES
 from .resnet import Bottleneck as _Bottleneck
@@ -56,12 +56,8 @@ class Bottleneck(_Bottleneck):
                 1,
                 stride=1,
                 bias=True)
-        self.init_weights()
-
-    def init_weights(self):
-        """Initialize the weights."""
-        if self.rfp_inplanes:
-            constant_init(self.rfp_conv, 0)
+            self.init_cfg = dict(
+                override=dict(type='Constant', val=0, name='rfp_conv'))
 
     def rfp_forward(self, x, rfp_feat):
         """The forward function that also takes the RFP features as input."""
@@ -110,6 +106,7 @@ class Bottleneck(_Bottleneck):
         return out
 
 
+# TODO: is it right？
 class ResLayer(nn.Sequential):
     """ResLayer to build ResNet style backbone for RPF in detectoRS.
 
@@ -230,13 +227,11 @@ class DetectoRS_ResNet(ResNet):
                  stage_with_sac=(False, False, False, False),
                  rfp_inplanes=None,
                  output_img=False,
-                 pretrained=None,
                  **kwargs):
         self.sac = sac
         self.stage_with_sac = stage_with_sac
         self.rfp_inplanes = rfp_inplanes
         self.output_img = output_img
-        self.pretrained = pretrained
         super(DetectoRS_ResNet, self).__init__(**kwargs)
 
         self.inplanes = self.stem_channels

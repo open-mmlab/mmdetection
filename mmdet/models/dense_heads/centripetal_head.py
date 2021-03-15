@@ -130,6 +130,7 @@ class CentripetalHead(CornerHead):
         super()._init_layers()  # using _init_layers in CornerHead
         self._init_centripetal_layers()
 
+    # TODO: How to convert to init_cfg
     def init_weights(self):
         """Initialize weights of the head."""
         super().init_weights()

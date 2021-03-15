@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 from mmcv.ops import DeformConv2d
+from mmcv.runner import BaseModule
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
@@ -12,7 +13,7 @@ from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
 
 
-class AdaptiveConv(nn.Module):
+class AdaptiveConv(BaseModule):
     """AdaptiveConv used to adapt the sampling location with the anchors.
 
     Args:
@@ -42,8 +43,9 @@ class AdaptiveConv(nn.Module):
                  dilation=3,
                  groups=1,
                  bias=False,
-                 type='dilation'):
-        super(AdaptiveConv, self).__init__()
+                 type='dilation',
+                 init_cfg=None):
+        super(AdaptiveConv, self).__init__(init_cfg)
         assert type in ['offset', 'dilation']
         self.adapt_type = type
 
@@ -68,7 +70,8 @@ class AdaptiveConv(nn.Module):
                 padding=dilation,
                 dilation=dilation)
 
-    def init_weights(self):
+    # TODO: How to convert to init_cfg about DeformConv2d
+    def init_weight(self):
         """Init weights."""
         normal_init(self.conv, std=0.01)
 
@@ -114,6 +117,7 @@ class StageCascadeRPNHead(RPNHead):
                  bridged_feature=False,
                  with_cls=True,
                  sampling=True,
+                 init_cfg=None,
                  **kwargs):
         self.with_cls = with_cls
         self.anchor_strides = anchor_generator['strides']
@@ -121,7 +125,10 @@ class StageCascadeRPNHead(RPNHead):
         self.bridged_feature = bridged_feature
         self.adapt_cfg = adapt_cfg
         super(StageCascadeRPNHead, self).__init__(
-            in_channels, anchor_generator=anchor_generator, **kwargs)
+            in_channels,
+            anchor_generator=anchor_generator,
+            init_cfg=init_cfg,
+            **kwargs)
 
         # override sampling and sampler
         self.sampling = sampling
@@ -145,6 +152,7 @@ class StageCascadeRPNHead(RPNHead):
         self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
         self.relu = nn.ReLU(inplace=True)
 
+    # TODO: How to convert to init_cfg
     def init_weights(self):
         """Init weights of a CascadeRPN stage."""
         self.rpn_conv.init_weights()

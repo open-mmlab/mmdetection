@@ -1,12 +1,13 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, build_upsample_layer, xavier_init
 from mmcv.ops.carafe import CARAFEPack
+from mmcv.runner import BaseModule
 
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class FPN_CARAFE(nn.Module):
+class FPN_CARAFE(BaseModule):
     """FPN_CARAFE is a more flexible implementation of FPN. It allows more
     choice for upsample methods during the top-down pathway.
 
@@ -44,8 +45,9 @@ class FPN_CARAFE(nn.Module):
                      up_kernel=5,
                      up_group=1,
                      encoder_kernel=3,
-                     encoder_dilation=1)):
-        super(FPN_CARAFE, self).__init__()
+                     encoder_dilation=1),
+                 init_cfg=None):
+        super(FPN_CARAFE, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -198,8 +200,9 @@ class FPN_CARAFE(nn.Module):
                 self.fpn_convs.append(extra_fpn_conv)
                 self.lateral_convs.append(extra_l_conv)
 
+    # TODO: How to convert to init_cfg
     # default init_weights for conv(msra) and norm in ConvModule
-    def init_weights(self):
+    def init_weight(self):
         """Initialize the weights of module."""
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):

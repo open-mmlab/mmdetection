@@ -1,14 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, caffe2_xavier_init
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 from torch.utils.checkpoint import checkpoint
 
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class HRFPN(nn.Module):
+class HRFPN(BaseModule):
     """HRFPN (High Resolution Feature Pyrmamids)
 
     paper: `High-Resolution Representations for Labeling Pixels and Regions
@@ -35,8 +36,16 @@ class HRFPN(nn.Module):
                  conv_cfg=None,
                  norm_cfg=None,
                  with_cp=False,
-                 stride=1):
-        super(HRFPN, self).__init__()
+                 stride=1,
+                 init_cfg=dict(
+                     type='Kaiming',
+                     layer='Conv2d',
+                     a=1,
+                     mode='fan_in',
+                     nonlinearity='leaky_relu',
+                     bias=0,
+                     distribution='uniform')):
+        super(HRFPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -69,12 +78,6 @@ class HRFPN(nn.Module):
             self.pooling = F.max_pool2d
         else:
             self.pooling = F.avg_pool2d
-
-    def init_weights(self):
-        """Initialize the weights of module."""
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                caffe2_xavier_init(m)
 
     def forward(self, inputs):
         """Forward function."""

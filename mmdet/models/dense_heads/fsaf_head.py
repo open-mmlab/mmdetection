@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from mmcv.cnn import normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, images_to_levels, multi_apply,
@@ -38,8 +37,29 @@ class FSAFHead(RetinaHead):
         >>> assert box_per_anchor == 4
     """
 
-    def __init__(self, *args, score_threshold=None, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self,
+                 *args,
+                 score_threshold=None,
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=[
+                         dict(
+                             type='Normal',
+                             name='retina_cls',
+                             std=0.01,
+                             bias_prob=0.01),
+                         dict(
+                             type='Normal',
+                             name='retina_reg',
+                             std=0.01,
+                             bias=0.25)
+                     ]),
+                 **kwargs):
+        # The positive bias in self.retina_reg conv is to prevent predicted \
+        #  bbox with 0 area
+        super().__init__(*args, init_cfg=init_cfg, **kwargs)
         self.score_threshold = score_threshold
 
     def forward_single(self, x):
@@ -58,13 +78,6 @@ class FSAFHead(RetinaHead):
         cls_score, bbox_pred = super().forward_single(x)
         # relu: TBLR encoder only accepts positive bbox_pred
         return cls_score, self.relu(bbox_pred)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        super(FSAFHead, self).init_weights()
-        # The positive bias in self.retina_reg conv is to prevent predicted \
-        #  bbox with 0 area
-        normal_init(self.retina_reg, std=0.01, bias=0.25)
 
     def _get_targets_single(self,
                             flat_anchors,

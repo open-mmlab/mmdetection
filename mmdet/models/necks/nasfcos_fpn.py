@@ -2,12 +2,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, caffe2_xavier_init
 from mmcv.ops.merge_cells import ConcatCell
+from mmcv.runner import BaseModule
 
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class NASFCOS_FPN(nn.Module):
+class NASFCOS_FPN(BaseModule):
     """FPN structure in NASFPN.
 
     Implementation of paper `NAS-FCOS: Fast Neural Architecture Search for
@@ -36,8 +37,9 @@ class NASFCOS_FPN(nn.Module):
                  end_level=-1,
                  add_extra_convs=False,
                  conv_cfg=None,
-                 norm_cfg=None):
-        super(NASFCOS_FPN, self).__init__()
+                 norm_cfg=None,
+                 init_cfg=None):
+        super(NASFCOS_FPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -146,7 +148,8 @@ class NASFCOS_FPN(nn.Module):
 
         return tuple(ret)
 
-    def init_weights(self):
+    # TODO: How to convert to init_cfg
+    def init_weight(self):
         """Initialize the weights of module."""
         for module in self.fpn.values():
             if hasattr(module, 'conv_out'):

@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
@@ -49,8 +48,13 @@ class SSDHead(AnchorHead):
                  ),
                  reg_decoded_bbox=False,
                  train_cfg=None,
-                 test_cfg=None):
-        super(AnchorHead, self).__init__()
+                 test_cfg=None,
+                 init_cfg=dict(
+                     type='Xavier',
+                     layer='Conv2d',
+                     distribution='uniform',
+                     bias=0)):
+        super(AnchorHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.cls_out_channels = num_classes + 1  # add background class
@@ -89,12 +93,6 @@ class SSDHead(AnchorHead):
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform', bias=0)
 
     def forward(self, feats):
         """Forward features from the upstream network.

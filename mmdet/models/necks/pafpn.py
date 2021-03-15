@@ -48,12 +48,23 @@ class PAFPN(FPN):
                  no_norm_on_lateral=False,
                  conv_cfg=None,
                  norm_cfg=None,
-                 act_cfg=None):
-        super(PAFPN,
-              self).__init__(in_channels, out_channels, num_outs, start_level,
-                             end_level, add_extra_convs, extra_convs_on_inputs,
-                             relu_before_extra_convs, no_norm_on_lateral,
-                             conv_cfg, norm_cfg, act_cfg)
+                 act_cfg=None,
+                 init_cfg=dict(
+                     type='Xavier', layer='Conv2d', distribution='uniform')):
+        super(PAFPN, self).__init__(
+            in_channels,
+            out_channels,
+            num_outs,
+            start_level,
+            end_level,
+            add_extra_convs,
+            extra_convs_on_inputs,
+            relu_before_extra_convs,
+            no_norm_on_lateral,
+            conv_cfg,
+            norm_cfg,
+            act_cfg,
+            init_cfg=init_cfg)
         # add extra bottom up pathway
         self.downsample_convs = nn.ModuleList()
         self.pafpn_convs = nn.ModuleList()

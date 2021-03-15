@@ -1,10 +1,10 @@
+import warnings
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import VGG, constant_init, kaiming_init, normal_init, xavier_init
-from mmcv.runner import load_checkpoint
+from mmcv.cnn import VGG
 
-from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 
 
@@ -42,7 +42,9 @@ class SSDVGG(VGG):
                  ceil_mode=True,
                  out_indices=(3, 4),
                  out_feature_indices=(22, 34),
-                 l2_norm_scale=20.):
+                 l2_norm_scale=20.,
+                 pretrained=None,
+                 init_cfg=None):
         # TODO: in_channels for mmcv.VGG
         super(SSDVGG, self).__init__(
             depth,
@@ -51,6 +53,10 @@ class SSDVGG(VGG):
             out_indices=out_indices)
         assert input_size in (300, 512)
         self.input_size = input_size
+
+        assert not (
+            init_cfg and pretrained
+        ), 'init_cfg and pretrained cannot be setting at the same time'
 
         self.features.add_module(
             str(len(self.features)),
@@ -72,32 +78,31 @@ class SSDVGG(VGG):
             self.features[out_feature_indices[0] - 1].out_channels,
             l2_norm_scale)
 
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in backbone.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
+        # TODO: Check
         if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
+            warnings.warn('DeprecationWarning: pretrained is a deprecated '
+                          'key, please consider using init_cfg')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
         elif pretrained is None:
-            for m in self.features.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, nn.BatchNorm2d):
-                    constant_init(m, 1)
-                elif isinstance(m, nn.Linear):
-                    normal_init(m, std=0.01)
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(type='Constant', val=1, layer='BatchNorm2d'),
+                    dict(type='Normal', std=0.01, layer='Linear'),
+                    dict(
+                        override=dict(
+                            type='Xavier',
+                            name='extra',
+                            layer='Conv2d',
+                            distribution='uniform')),
+                    dict(
+                        override=dict(
+                            type='Constant',
+                            name='l2_norm',
+                            val=self.l2_norm.scale))
+                ]
         else:
             raise TypeError('pretrained must be a str or None')
-
-        for m in self.extra.modules():
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
-
-        constant_init(self.l2_norm, self.l2_norm.scale)
 
     def forward(self, x):
         """Forward function."""

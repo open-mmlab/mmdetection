@@ -2,13 +2,14 @@ import mmcv
 import torch
 import torch.nn as nn
 from mmcv import tensor2imgs
+from mmcv.runner import BaseModule
 
 from mmdet.models.builder import HEADS
 from ...core import bbox_cxcywh_to_xyxy
 
 
 @HEADS.register_module()
-class EmbeddingRPNHead(nn.Module):
+class EmbeddingRPNHead(BaseModule):
     """RPNHead in the `Sparse R-CNN <https://arxiv.org/abs/2011.12450>`_ .
 
     Unlike traditional RPNHead, this module does not need FPN input, but just
@@ -24,8 +25,9 @@ class EmbeddingRPNHead(nn.Module):
     def __init__(self,
                  num_proposals=100,
                  proposal_feature_channel=256,
+                 init_cfg=None,
                  **kwargs):
-        super(EmbeddingRPNHead, self).__init__()
+        super(EmbeddingRPNHead, self).__init__(init_cfg)
         self.num_proposals = num_proposals
         self.proposal_feature_channel = proposal_feature_channel
         self._init_layers()
@@ -36,6 +38,7 @@ class EmbeddingRPNHead(nn.Module):
         self.init_proposal_features = nn.Embedding(
             self.num_proposals, self.proposal_feature_channel)
 
+    # TODO: How to convert to init_cfg
     def init_weights(self):
         """Initialize the init_proposal_bboxes as normalized.
 

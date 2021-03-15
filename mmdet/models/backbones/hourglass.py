@@ -1,12 +1,13 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 
 from ..builder import BACKBONES
 from ..utils import ResLayer
 from .resnet import BasicBlock
 
 
-class HourglassModule(nn.Module):
+class HourglassModule(BaseModule):
     """Hourglass Module for HourglassNet backbone.
 
     Generate module recursively and use BasicBlock as the base unit.
@@ -24,8 +25,9 @@ class HourglassModule(nn.Module):
                  depth,
                  stage_channels,
                  stage_blocks,
-                 norm_cfg=dict(type='BN', requires_grad=True)):
-        super(HourglassModule, self).__init__()
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 init_cfg=None):
+        super(HourglassModule, self).__init__(init_cfg)
 
         self.depth = depth
 
@@ -78,7 +80,7 @@ class HourglassModule(nn.Module):
 
 
 @BACKBONES.register_module()
-class HourglassNet(nn.Module):
+class HourglassNet(BaseModule):
     """HourglassNet backbone.
 
     Stacked Hourglass Networks for Human Pose Estimation.
@@ -115,8 +117,9 @@ class HourglassNet(nn.Module):
                  stage_channels=(256, 256, 384, 384, 384, 512),
                  stage_blocks=(2, 2, 2, 2, 2, 4),
                  feat_channel=256,
-                 norm_cfg=dict(type='BN', requires_grad=True)):
-        super(HourglassNet, self).__init__()
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 init_cfg=None):
+        super(HourglassNet, self).__init__(init_cfg)
 
         self.num_stacks = num_stacks
         assert self.num_stacks >= 1
@@ -161,7 +164,8 @@ class HourglassNet(nn.Module):
 
         self.relu = nn.ReLU(inplace=True)
 
-    def init_weights(self, pretrained=None):
+    # TODO: How to convert to init_cfg
+    def init_weight(self):
         """Init module weights.
 
         We do nothing in this function because all modules we used

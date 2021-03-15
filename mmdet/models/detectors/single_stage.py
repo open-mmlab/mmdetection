@@ -34,8 +34,7 @@ class SingleStageDetector(BaseDetector):
         self.test_cfg = test_cfg
 
     def init_weight(self):
-        """Initialize the weights in detector.
-        """
+        """Initialize the weights in detector."""
         self.backbone.init_weight()
         if self.with_neck:
             if isinstance(self.neck, nn.Sequential):

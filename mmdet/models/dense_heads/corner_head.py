@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, bias_init_with_prob
 from mmcv.ops import CornerPool, batched_nms
+from mmcv.runner import BaseModule
 
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
@@ -13,7 +14,7 @@ from ..utils import gaussian_radius, gen_gaussian_target
 from .base_dense_head import BaseDenseHead
 
 
-class BiCornerPool(nn.Module):
+class BiCornerPool(BaseModule):
     """Bidirectional Corner Pooling Module (TopLeft, BottomRight, etc.)
 
     Args:
@@ -29,8 +30,9 @@ class BiCornerPool(nn.Module):
                  directions,
                  feat_channels=128,
                  out_channels=128,
-                 norm_cfg=dict(type='BN', requires_grad=True)):
-        super(BiCornerPool, self).__init__()
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 init_cfg=None):
+        super(BiCornerPool, self).__init__(init_cfg)
         self.direction1_conv = ConvModule(
             in_channels, feat_channels, 3, padding=1, norm_cfg=norm_cfg)
         self.direction2_conv = ConvModule(
@@ -122,8 +124,9 @@ class CornerHead(BaseDenseHead):
                      pull_weight=0.25,
                      push_weight=0.25),
                  loss_offset=dict(
-                     type='SmoothL1Loss', beta=1.0, loss_weight=1)):
-        super(CornerHead, self).__init__()
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1),
+                 init_cfg=None):
+        super(CornerHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.corner_emb_channels = corner_emb_channels
@@ -213,6 +216,7 @@ class CornerHead(BaseDenseHead):
         if self.with_corner_emb:
             self._init_corner_emb_layers()
 
+    # TODO: How to convert to init_cfg
     def init_weights(self):
         """Initialize weights of the head."""
         bias_init = bias_init_with_prob(0.1)

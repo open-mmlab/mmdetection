@@ -172,11 +172,6 @@ class TransformerHead(AnchorFreeHead):
         self.fc_reg = Linear(self.embed_dims, 4)
         self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
 
-    def init_weights(self, distribution='uniform'):
-        """Initialize weights of the transformer head."""
-        # The initialization for transformer is important
-        self.transformer.init_weights()
-
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
         """load checkpoints."""

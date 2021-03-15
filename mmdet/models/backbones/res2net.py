@@ -1,14 +1,11 @@
 import math
+import warnings
 
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
-                      kaiming_init)
-from mmcv.runner import load_checkpoint
-from torch.nn.modules.batchnorm import _BatchNorm
+from mmcv.cnn import build_conv_layer, build_norm_layer, constant_init
 
-from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
@@ -162,6 +159,7 @@ class Bottle2neck(_Bottleneck):
         return out
 
 
+# TODO: Check
 class Res2Layer(nn.Sequential):
     """Res2Layer to build Res2Net style backbone.
 
@@ -305,11 +303,18 @@ class Res2Net(ResNet):
                  style='pytorch',
                  deep_stem=True,
                  avg_down=True,
+                 pretrained=None,
+                 init_cfg=None,
                  **kwargs):
         self.scales = scales
         self.base_width = base_width
         super(Res2Net, self).__init__(
-            style='pytorch', deep_stem=True, avg_down=True, **kwargs)
+            style='pytorch',
+            deep_stem=True,
+            avg_down=True,
+            pretrained=pretrained,
+            init_cfg=init_cfg,
+            **kwargs)
 
     def make_res_layer(self, **kwargs):
         return Res2Layer(
@@ -318,34 +323,37 @@ class Res2Net(ResNet):
             base_channels=self.base_channels,
             **kwargs)
 
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in backbone.
+    def init_weight(self):
+        """Initialize the weights in backbone."""
+        if isinstance(self.pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is a deprecated '
+                          'key, please consider using init_cfg')
+            self.init_cfg = dict(type='Pretrained', checkpoint=self.pretrained)
+        elif self.pretrained is None:
+            if self.init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(
+                        type='Constant',
+                        val=1,
+                        layer=['_BatchNorm', 'GroupNorm'])
+                ]
+            elif not isinstance(self.init_cfg, list):
+                self.init_cfg = [self.init_cfg]
+            super(ResNet, self).init_weight()
 
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-
+            # dcn does not support init_cfg mode
             if self.dcn is not None:
                 for m in self.modules():
-                    if isinstance(m, Bottle2neck):
-                        # dcn in Res2Net bottle2neck is in ModuleList
-                        for n in m.convs:
-                            if hasattr(n, 'conv_offset'):
-                                constant_init(n.conv_offset, 0)
+                    if isinstance(m, Bottle2neck) and hasattr(
+                            m.conv2, 'conv_offset'):
+                        constant_init(m.conv2.conv_offset, 0)
 
             if self.zero_init_residual:
-                for m in self.modules():
-                    if isinstance(m, Bottle2neck):
-                        constant_init(m.norm3, 0)
+                self.init_cfg += [
+                    dict(type='Constant', layer='BatchNorm3', val=0)
+                ]
         else:
             raise TypeError('pretrained must be a str or None')
+
+        super(Res2Net, self).init_weight()

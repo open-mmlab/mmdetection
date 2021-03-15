@@ -67,7 +67,7 @@ class NASFCOSHead(FCOSHead):
         normal_init(self.conv_reg, std=0.01)
         normal_init(self.conv_centerness, std=0.01)
         normal_init(self.conv_cls, std=0.01, bias=bias_cls)
-
+        # TODO: How to convert to init_cfg
         for branch in [self.cls_convs, self.reg_convs]:
             for module in branch.modules():
                 if isinstance(module, ConvModule) \

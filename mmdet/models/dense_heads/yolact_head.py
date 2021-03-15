@@ -2,8 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, xavier_init
-from mmcv.runner import force_fp32
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule, force_fp32
 
 from mmdet.core import build_sampler, fast_nms, images_to_levels, multi_apply
 from ..builder import HEADS, build_loss
@@ -59,6 +59,7 @@ class YOLACTHead(AnchorHead):
                  use_ohem=True,
                  conv_cfg=None,
                  norm_cfg=None,
+                 init_cfg=dict(type='Xavier', distribution='uniform', bias=0),
                  **kwargs):
         self.num_head_convs = num_head_convs
         self.num_protos = num_protos
@@ -71,6 +72,7 @@ class YOLACTHead(AnchorHead):
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
             anchor_generator=anchor_generator,
+            init_cfg=init_cfg,
             **kwargs)
         if self.use_ohem:
             sampler_cfg = dict(type='PseudoSampler')
@@ -104,14 +106,6 @@ class YOLACTHead(AnchorHead):
             self.num_anchors * self.num_protos,
             3,
             padding=1)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.head_convs:
-            xavier_init(m.conv, distribution='uniform', bias=0)
-        xavier_init(self.conv_cls, distribution='uniform', bias=0)
-        xavier_init(self.conv_reg, distribution='uniform', bias=0)
-        xavier_init(self.conv_coeff, distribution='uniform', bias=0)
 
     def forward_single(self, x):
         """Forward feature of a single scale level.
@@ -457,7 +451,7 @@ class YOLACTHead(AnchorHead):
 
 
 @HEADS.register_module()
-class YOLACTSegmHead(nn.Module):
+class YOLACTSegmHead(BaseModule):
     """YOLACT segmentation head used in https://arxiv.org/abs/1904.02689.
 
     Apply a semantic segmentation loss on feature space using layers that are
@@ -477,8 +471,9 @@ class YOLACTSegmHead(nn.Module):
                  loss_segm=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
-                     loss_weight=1.0)):
-        super(YOLACTSegmHead, self).__init__()
+                     loss_weight=1.0),
+                 init_cfg=dict(type='Xavier', distribution='uniform')):
+        super(YOLACTSegmHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.loss_segm = build_loss(loss_segm)
@@ -489,10 +484,6 @@ class YOLACTSegmHead(nn.Module):
         """Initialize layers of the head."""
         self.segm_conv = nn.Conv2d(
             self.in_channels, self.num_classes, kernel_size=1)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        xavier_init(self.segm_conv, distribution='uniform')
 
     def forward(self, x):
         """Forward feature from the upstream network.
@@ -572,8 +563,9 @@ class YOLACTSegmHead(nn.Module):
             return segm_targets
 
 
+# TODO：Check
 @HEADS.register_module()
-class YOLACTProtonet(nn.Module):
+class YOLACTProtonet(BaseModule):
     """YOLACT mask head used in https://arxiv.org/abs/1904.02689.
 
     This head outputs the mask prototypes for YOLACT.
@@ -599,8 +591,9 @@ class YOLACTProtonet(nn.Module):
                  include_last_relu=True,
                  num_protos=32,
                  loss_mask_weight=1.0,
-                 max_masks_to_train=100):
-        super(YOLACTProtonet, self).__init__()
+                 max_masks_to_train=100,
+                 init_cfg=dict(type='Xavier', distribution='uniform')):
+        super(YOLACTProtonet, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.proto_channels = proto_channels
         self.proto_kernel_sizes = proto_kernel_sizes
@@ -650,12 +643,6 @@ class YOLACTProtonet(nn.Module):
             protonets = protonets[:-1]
         return nn.Sequential(*protonets)
 
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.protonet:
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
-
     def forward(self, x, coeff_pred, bboxes, img_meta, sampling_results=None):
         """Forward feature from the upstream network to get prototypes and
         linearly combine the prototypes, using masks coefficients, into
@@ -687,8 +674,8 @@ class YOLACTProtonet(nn.Module):
             coeff_pred_list = []
             for coeff_pred_per_level in coeff_pred:
                 coeff_pred_per_level = \
-                    coeff_pred_per_level.permute(0, 2, 3, 1)\
-                    .reshape(num_imgs, -1, self.num_protos)
+                    coeff_pred_per_level.permute(
+                        0, 2, 3, 1).reshape(num_imgs, -1, self.num_protos)
                 coeff_pred_list.append(coeff_pred_per_level)
             coeff_pred = torch.cat(coeff_pred_list, dim=1)
 

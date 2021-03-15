@@ -21,8 +21,10 @@ class TwoStageDetector(BaseDetector):
                  roi_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
-        super(TwoStageDetector, self).__init__()
+                 pretrained=None,
+                 init_cfg=None):
+        super(TwoStageDetector, self).__init__(init_cfg)
+        backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
 
         if neck is not None:
@@ -40,12 +42,11 @@ class TwoStageDetector(BaseDetector):
             rcnn_train_cfg = train_cfg.rcnn if train_cfg is not None else None
             roi_head.update(train_cfg=rcnn_train_cfg)
             roi_head.update(test_cfg=test_cfg.rcnn)
+            roi_head.pretrained = pretrained
             self.roi_head = build_head(roi_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-
-        self.init_weights(pretrained=pretrained)
 
     @property
     def with_rpn(self):
@@ -57,25 +58,19 @@ class TwoStageDetector(BaseDetector):
         """bool: whether the detector has a RoI head"""
         return hasattr(self, 'roi_head') and self.roi_head is not None
 
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in detector.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        super(TwoStageDetector, self).init_weights(pretrained)
-        self.backbone.init_weights(pretrained=pretrained)
+    def init_weight(self):
+        """Initialize the weights in detector."""
+        self.backbone.init_weight()
         if self.with_neck:
             if isinstance(self.neck, nn.Sequential):
                 for m in self.neck:
-                    m.init_weights()
+                    m.init_weight()
             else:
-                self.neck.init_weights()
+                self.neck.init_weight()
         if self.with_rpn:
-            self.rpn_head.init_weights()
+            self.rpn_head.init_weight()
         if self.with_roi_head:
-            self.roi_head.init_weights(pretrained)
+            self.roi_head.init_weight()
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""

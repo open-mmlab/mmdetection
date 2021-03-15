@@ -13,6 +13,7 @@ from .guided_anchor_head import GuidedAnchorHead
 from .rpn_test_mixin import RPNTestMixin
 
 
+# TODO: How to convert to init_cfg
 @HEADS.register_module()
 class GARPNHead(RPNTestMixin, GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""

@@ -1,16 +1,16 @@
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
 
-import logging
+import warnings
 
 import torch.nn as nn
-from mmcv.cnn import ConvModule, constant_init, kaiming_init
-from mmcv.runner import load_checkpoint
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..builder import BACKBONES
 
 
-class ResBlock(nn.Module):
+class ResBlock(BaseModule):
     """The basic residual block used in Darknet. Each ResBlock consists of two
     ConvModules and the input is added to the final output. Each ConvModule is
     composed of Conv, BN, and LeakyReLU. In YoloV3 paper, the first convLayer
@@ -31,8 +31,9 @@ class ResBlock(nn.Module):
                  in_channels,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
-        super(ResBlock, self).__init__()
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
+                 init_cfg=None):
+        super(ResBlock, self).__init__(init_cfg)
         assert in_channels % 2 == 0  # ensure the in_channels is even
         half_in_channels = in_channels // 2
 
@@ -53,7 +54,7 @@ class ResBlock(nn.Module):
 
 
 @BACKBONES.register_module()
-class Darknet(nn.Module):
+class Darknet(BaseModule):
     """Darknet backbone.
 
     Args:
@@ -98,10 +99,17 @@ class Darknet(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
-                 norm_eval=True):
-        super(Darknet, self).__init__()
+                 norm_eval=True,
+                 pretrained=None,
+                 init_cfg=None):
+        super(Darknet, self).__init__(init_cfg)
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for darknet')
+
+        assert not (
+            init_cfg and pretrained
+        ), 'init_cfg and pretrained cannot be setting at the same time'
+
         self.depth = depth
         self.out_indices = out_indices
         self.frozen_stages = frozen_stages
@@ -122,6 +130,19 @@ class Darknet(nn.Module):
 
         self.norm_eval = norm_eval
 
+        if isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is a deprecated '
+                          'key, please consider using init_cfg')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            self.init_cfg = [
+                dict(type='Kaiming', layer='Conv2d'),
+                dict(
+                    type='Constant', val=1, layer=['_BatchNorm', 'GroupNorm'])
+            ]
+        else:
+            raise TypeError('pretrained must be a str or None')
+
     def forward(self, x):
         outs = []
         for i, layer_name in enumerate(self.cr_blocks):
@@ -131,20 +152,6 @@ class Darknet(nn.Module):
                 outs.append(x)
 
         return tuple(outs)
-
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str):
-            logger = logging.getLogger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-
-        else:
-            raise TypeError('pretrained must be a str or None')
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
