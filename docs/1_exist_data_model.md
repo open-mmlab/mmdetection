@@ -91,7 +91,7 @@ asyncio.run(main())
 
 ### Demos
 
-We also provide two demo scripts, implemented with high-level APIs and supporting functionality codes.
+We also provide three demo scripts, implemented with high-level APIs and supporting functionality codes.
 Source codes are available [here](https://github.com/open-mmlab/mmdetection/tree/master/demo).
 
 #### Image demo
@@ -111,7 +111,7 @@ Examples:
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
@@ -133,8 +133,33 @@ Examples:
 
 ```shell
 python demo/webcam_demo.py \
-    configs/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+```
+
+#### Video demo
+
+This script performs inference on a video.
+
+```shell
+python demo/video_demo.py \
+    ${VIDEO_FILE} \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--score-thr ${SCORE_THR}] \
+    [--out ${OUT_FILE}] \
+    [--show] \
+    [--wait-time ${WAIT_TIME}]
+```
+
+Examples:
+
+```shell
+python demo/video_demo.py demo/demo.mp4 \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --out result.mp4
 ```
 
 ## Test existing models on standard datasets
@@ -145,7 +170,7 @@ This section will show how to test existing models on supported datasets.
 
 ### Prepare datasets
 
-Public datasets like Pascal VOC and COCO are available from official websites or mirrors.
+Public datasets like [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/index.html) or mirror and [COCO](https://cocodataset.org/#download) are available from official websites or mirrors. Note: In the detection task, Pascal VOC 2012 is an extension of Pascal VOC 2007 without overlap, and we usually use them together.
 It is recommended to download and extract the dataset somewhere outside the project directory and symlink the dataset root to `$MMDETECTION/data` as below.
 If your folder structure is different, you may need to change the corresponding paths in config files.
 
@@ -171,15 +196,27 @@ mmdetection
 │   ├── VOCdevkit
 │   │   ├── VOC2007
 │   │   ├── VOC2012
-
 ```
 
-The cityscapes annotations need to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
+Some models require additional [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) datasets, such as HTC, DetectoRS and SCNet, you can download and unzip then move to the coco folder. The directory should be like this.
+
+```plain
+mmdetection
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
+│   │   ├── stuffthingmaps
+```
+
+The [cityscapes](https://www.cityscapes-dataset.com/) annotations need to be converted into the coco format using `tools/dataset_converters/cityscapes.py`:
 
 ```shell
 pip install cityscapesscripts
 
-python tools/convert_datasets/cityscapes.py \
+python tools/dataset_converters/cityscapes.py \
     ./data/cityscapes \
     --nproc 8 \
     --out-dir ./data/cityscapes/annotations

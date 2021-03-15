@@ -77,6 +77,6 @@ model-level compatibility but slightly improves the performance. The major ones 
 
 ## Upgrade Models from 1.x to 2.0
 
-To convert the models trained by MMDetection V1.x to MMDetection V2.0, the users can use the script `tools/upgrade_model_version.py` to convert
+To convert the models trained by MMDetection V1.x to MMDetection V2.0, the users can use the script `tools/model_converters/upgrade_model_version.py` to convert
 their models. The converted models can be run in MMDetection V2.0 with slightly dropped performance (less than 1% AP absolute).
 Details can be found in `configs/legacy`.

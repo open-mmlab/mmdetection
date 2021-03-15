@@ -109,8 +109,8 @@ class HungarianAssigner(BaseAssigner):
             return AssignResult(
                 num_gts, assigned_gt_inds, None, labels=assigned_labels)
         img_h, img_w, _ = img_meta['img_shape']
-        factor = torch.Tensor([img_w, img_h, img_w,
-                               img_h]).unsqueeze(0).to(gt_bboxes.device)
+        factor = gt_bboxes.new_tensor([img_w, img_h, img_w,
+                                       img_h]).unsqueeze(0)
 
         # 2. compute the weighted costs
         # classification and bboxcost.

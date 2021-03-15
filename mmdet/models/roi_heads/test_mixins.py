@@ -58,13 +58,19 @@ class BBoxTestMixin(object):
         """Test only det bboxes without augmentation."""
         rois = bbox2roi(proposals)
         bbox_results = self._bbox_forward(x, rois)
-        img_shapes = tuple(meta['img_shape'] for meta in img_metas)
+        # get origin input shape to support onnx dynamic input shape
+        if torch.onnx.is_in_onnx_export():
+            img_shapes = tuple(meta['img_shape_for_onnx']
+                               for meta in img_metas)
+        else:
+            img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         # split batch bbox prediction back to each image
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
-        num_proposals_per_img = tuple(len(p) for p in proposals)
+        # use shape[] to keep tracing
+        num_proposals_per_img = tuple(p.shape[0] for p in proposals)
         rois = rois.split(num_proposals_per_img, 0)
         cls_score = cls_score.split(num_proposals_per_img, 0)
 

@@ -25,7 +25,16 @@ model = dict(
         loss_guiding_shift=dict(
             type='SmoothL1Loss', beta=1.0, loss_weight=0.05),
         loss_centripetal_shift=dict(
-            type='SmoothL1Loss', beta=1.0, loss_weight=1)))
+            type='SmoothL1Loss', beta=1.0, loss_weight=1)),
+    # training and testing settings
+    train_cfg=None,
+    test_cfg=dict(
+        corner_topk=100,
+        local_maximum_kernel=3,
+        distance_threshold=0.5,
+        score_thr=0.05,
+        max_per_img=100,
+        nms=dict(type='soft_nms', iou_threshold=0.5, method='gaussian')))
 # data settings
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -83,15 +92,6 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-# training and testing settings
-train_cfg = None
-test_cfg = dict(
-    corner_topk=100,
-    local_maximum_kernel=3,
-    distance_threshold=0.5,
-    score_thr=0.05,
-    max_per_img=100,
-    nms_cfg=dict(type='soft_nms', iou_threshold=0.5, method='gaussian'))
 # optimizer
 optimizer = dict(type='Adam', lr=0.0005)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
@@ -102,4 +102,4 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
     step=[190])
-total_epochs = 210
+runner = dict(type='EpochBasedRunner', max_epochs=210)
