@@ -36,8 +36,8 @@ class BaseRoIExtractor(nn.Module, metaclass=ABCMeta):
             layer_cfg (dict): Dictionary to construct and config RoI layer
                 operation. Options are modules under ``mmcv/ops`` such as
                 ``RoIAlign``.
-            featmap_strides (List[int]): The stride of input feature map w.r.t to the
-                original image size, which would be used to scale RoI
+            featmap_strides (List[int]): The stride of input feature map w.r.t
+                to the original image size, which would be used to scale RoI
                 coordinate (original image coordinate system) to feature
                 coordinate system.
 
