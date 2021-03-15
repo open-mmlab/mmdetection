@@ -296,6 +296,37 @@ class BBoxHead(nn.Module):
                 bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
                           scale_factor).view(bboxes.size()[0], -1)
 
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export():
+            from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            num_classes = scores.shape[2] - 1
+            batch_size = scores.shape[0]
+            # ignore background class
+            scores = scores[..., :-1]
+            labels = torch.arange(
+                num_classes, dtype=torch.long).to(scores.device)
+            max_size = torch.max(img_shape)
+            labels = labels.view(1, 1, -1).expand_as(scores)
+            labels = labels.reshape(batch_size, -1)
+            offsets = labels * max_size + 1
+            scores = scores.reshape(batch_size, 1, -1)
+            bboxes = bboxes.reshape(batch_size, -1, 4)
+            bboxes_for_nms = bboxes + offsets[..., None]
+            det_indices = add_dummy_nms_for_onnx(
+                bboxes_for_nms,
+                scores,
+                cfg.max_per_img,
+                cfg.nms.iou_threshold,
+                cfg.score_thr,
+                only_return_indices=True)
+            batch_inds, box_inds = det_indices[:, 0], det_indices[:, 2]
+            scores = scores.squeeze(1)
+            bboxes = bboxes[batch_inds, box_inds, :]
+            scores = scores[batch_inds, box_inds].unsqueeze(1)
+            labels = labels[batch_inds, box_inds]
+            dets = torch.cat([bboxes, scores], dim=1)
+            return dets, batch_inds, labels
+
         if cfg is None:
             return bboxes, scores
         else:
