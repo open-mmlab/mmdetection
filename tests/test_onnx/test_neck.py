@@ -1,6 +1,6 @@
 import os.path as osp
-import pickle
 
+import mmcv
 import pytest
 import torch
 
@@ -116,8 +116,7 @@ def yolo_config(test_step_name):
     # torch.rand and each tensor size is:
     # (1, 4, 64, 64), (1, 8, 32, 32), (1, 16, 16, 16).
     yolov3_neck_data = 'yolov3_neck.pkl'
-    with open(osp.join(data_path, yolov3_neck_data), 'rb') as f:
-        feats = pickle.load(f)
+    feats = mmcv.load(osp.join(data_path, yolov3_neck_data))
 
     if (test_step_names[test_step_name] == 0):
         yolo_model = YOLOV3Neck(
