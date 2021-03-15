@@ -325,24 +325,30 @@ class CustomDataset(Dataset):
 
     def __repr__(self):
         """Print the number of instance number."""
-
+        dataset_type = 'Test' if self.test_mode else 'Train'
+        result = f'\n{dataset_type} dataset, number of instances: {len(self)}'
         if self.CLASSES is None:
-            return "Dataset is empty"
-        instance_count = np.zeros(len(self.CLASSES)).astype(int)
+            return result
+        instance_count = np.zeros(len(self.CLASSES) + 1).astype(int)
         # count the instance number in each image
         for idx in range(len(self)):
-            unique, counts = np.unique(self.get_cat_ids(idx),
+            label = self.get_cat_ids(idx)
+            unique, counts = np.unique(label,
                                        return_counts=True)
             if len(unique) > 0:
+                # add the occurrence number to each class
                 instance_count[unique] += counts
+            else:
+                # background is the last index
+                instance_count[-1] += 1
 
-        result = ''
         for cls, count in enumerate(instance_count):
-            result += f"{self.CLASSES[cls]}: {count}"
-            if cls + 1 != len(self.CLASSES):
+            if cls < len(self.CLASSES):
+                result += f"[{self.CLASSES[cls]}]: {count}"
                 result += '\t'
-
+            else:
+                # add the background number
+                result += f"[background]: {count}"
             if (cls + 1) % 5 == 0:
                 result += '\n'
-
         return result
