@@ -213,6 +213,26 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 f' respectively. Please delete the nms_thr ' \
                 f'which will be deprecated.'
 
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export():
+            from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            score_threshold = cfg.nms.get('score_thr', 0.0)
+            det_indices = add_dummy_nms_for_onnx(
+                batch_mlvl_proposals,
+                batch_mlvl_scores.unsqueeze(1),
+                cfg.nms.max_per_img,
+                cfg.nms.iou_threshold,
+                score_threshold,
+                only_return_indices=True)
+            batch_inds, proposal_inds = det_indices[:, 0], det_indices[:, 2]
+            # set score value to zero for unselected boxes
+            mask = batch_mlvl_scores.new_zeros(batch_mlvl_scores.shape)
+            mask[batch_inds, proposal_inds] += 1
+            batch_mlvl_scores = (batch_mlvl_scores * mask).unsqueeze(2)
+            batch_dets = torch.cat([batch_mlvl_proposals, batch_mlvl_scores],
+                                   dim=-1)
+            return batch_dets
+
         result_list = []
         for (mlvl_proposals, mlvl_scores,
              mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
