@@ -58,43 +58,42 @@ class BBoxTestMixin(object):
         """Test only det bboxes without augmentation."""
         if isinstance(proposals, list):
             rois = bbox2roi(proposals)
+            batch_size = 1
+            num_proposals_per_img = proposals[0].shape[0]
         else:
             rois = proposals
-            batch_index = rois.new_tensor(range(rois.size(0))).view(
+            batch_index = rois.new_tensor(torch.arange(rois.size(0))).view(
                 -1, 1, 1).expand(rois.size(0), rois.size(1), 1)
             rois = torch.cat([batch_index, rois[..., :4]], dim=-1)
-
+            batch_size = proposals.shape[0]
+            num_proposals_per_img = proposals.shape[1]
         # Eliminate batch
-        batch_size = proposals.size(0)
-        num_proposals_per_img = proposals.size(1)
         rois = rois.view(-1, 5)
-
         bbox_results = self._bbox_forward(x, rois)
+        cls_score = bbox_results['cls_score']
+        bbox_pred = bbox_results['bbox_pred']
 
         # Recover batch
         rois = rois.reshape(batch_size, num_proposals_per_img, -1)
-        supplement_mask = rois[..., -1] == 0
-
-        cls_score = bbox_results['cls_score']
-        bbox_pred = bbox_results['bbox_pred']
         cls_score = cls_score.reshape(batch_size, num_proposals_per_img, -1)
-        cls_score[supplement_mask, :] = 0
+
         if bbox_pred is not None:
             bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img,
                                           -1)
-            bbox_pred[supplement_mask, :] = 0
         else:
             bbox_pred = (None, ) * len(proposals)
 
         # get origin input shape to support onnx dynamic input shape
         if torch.onnx.is_in_onnx_export():
-            img_shapes = tuple(meta['img_shape_for_onnx']
-                               for meta in img_metas)
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+            img_shapes = img_metas[0]['img_shape_for_onnx']
         else:
             img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
-        det_bboxes, det_labels = self.bbox_head.get_bboxes(
+        return self.bbox_head.get_bboxes(
             rois,
             cls_score,
             bbox_pred,
@@ -102,7 +101,6 @@ class BBoxTestMixin(object):
             scale_factors,
             rescale=rescale,
             cfg=rcnn_test_cfg)
-        return det_bboxes, det_labels
 
     def aug_test_bboxes(self, feats, img_metas, proposal_list, rcnn_test_cfg):
         """Test det bboxes with test time augmentation."""
