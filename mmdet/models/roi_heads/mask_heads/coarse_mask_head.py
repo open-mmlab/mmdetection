@@ -28,7 +28,7 @@ class CoarseMaskHead(FCNMaskHead):
                  fc_out_channels=1024,
                  downsample_factor=2,
                  init_cfg=dict(
-                     'Xavier',
+                     type='Xavier',
                      override=[
                          dict(type='Xavier', layer='Linear', name='fcs'),
                          dict(type='Constant', val=0.001, name='fc_logits')

@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-
 from mmcv.runner import BaseModule
 
 from mmdet.models.builder import HEADS
