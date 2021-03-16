@@ -333,8 +333,7 @@ class CustomDataset(Dataset):
         # count the instance number in each image
         for idx in range(len(self)):
             label = self.get_cat_ids(idx)
-            unique, counts = np.unique(label,
-                                       return_counts=True)
+            unique, counts = np.unique(label, return_counts=True)
             if len(unique) > 0:
                 # add the occurrence number to each class
                 instance_count[unique] += counts
