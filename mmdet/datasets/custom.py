@@ -326,7 +326,7 @@ class CustomDataset(Dataset):
     def __repr__(self):
         """Print the number of instance number."""
         dataset_type = 'Test' if self.test_mode else 'Train'
-        result = f'\n{dataset_type} dataset'
+        result = f'\n{dataset_type} dataset, number of sample {len(self)}\n'
         if self.CLASSES is None:
             return result
         instance_count = np.zeros(len(self.CLASSES) + 1).astype(int)

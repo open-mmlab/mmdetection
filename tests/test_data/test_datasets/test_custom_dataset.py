@@ -5,10 +5,10 @@ import pytest
 from mmdet.datasets import DATASETS
 
 
-@patch('mmdet.datasets.CocoDataset.load_annotations', MagicMock)
-@patch('mmdet.datasets.CustomDataset.load_annotations', MagicMock)
-@patch('mmdet.datasets.XMLDataset.load_annotations', MagicMock)
-@patch('mmdet.datasets.CityscapesDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.CocoDataset.load_annotations', MagicMock())
+@patch('mmdet.datasets.CustomDataset.load_annotations', MagicMock())
+@patch('mmdet.datasets.XMLDataset.load_annotations', MagicMock())
+@patch('mmdet.datasets.CityscapesDataset.load_annotations', MagicMock())
 @patch('mmdet.datasets.CocoDataset._filter_imgs', MagicMock)
 @patch('mmdet.datasets.CustomDataset._filter_imgs', MagicMock)
 @patch('mmdet.datasets.XMLDataset._filter_imgs', MagicMock)
