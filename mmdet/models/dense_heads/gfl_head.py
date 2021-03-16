@@ -206,46 +206,6 @@ class GFLHead(AnchorHead):
         anchors_cy = (anchors[..., 3] + anchors[..., 1]) / 2
         return torch.stack([anchors_cx, anchors_cy], dim=-1)
 
-    def forward_train(self,
-                      x,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels=None,
-                      gt_bboxes_ignore=None,
-                      img=None,
-                      proposal_cfg=None,
-                      **kwargs):
-        """
-        Args:
-            x (list[Tensor]): Features from FPN.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            proposal_cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
-
-        Returns:
-            tuple:
-                losses: (dict[str, Tensor]): A dictionary of loss components.
-                proposal_list (list[Tensor]): Proposals of each image.
-        """
-        outs = self(x)
-        if gt_labels is None:
-            loss_inputs = outs + (gt_bboxes, img_metas, img)
-        else:
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, img)
-        losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-        if proposal_cfg is None:
-            return losses
-        else:
-            proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
-            return losses, proposal_list
-
     def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, stride, num_total_samples):
         """Compute loss of a single scale level.

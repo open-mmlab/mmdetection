@@ -1,94 +1,14 @@
-import mmcv
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
-from mmcv.runner import force_fp32, load_checkpoint
+from mmcv.runner import force_fp32
 
-from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
-                        build_assigner, build_sampler, distance2bbox,
-                        get_classes, images_to_levels, multi_apply,
-                        multiclass_nms, reduce_mean, unmap)
-from mmdet.models import build_detector
+from mmdet.core import (bbox2distance, bbox_overlaps, distance2bbox,
+                        multi_apply, reduce_mean)
 from ..builder import HEADS, build_loss
-from .anchor_head import AnchorHead
-
-
-def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
-    """Initialize a detector from config file.
-
-    Args:
-        config (str or :obj:`mmcv.Config`): Config file path or the config
-            object.
-        checkpoint (str, optional): Checkpoint path. If left as None, the model
-            will not load any weights.
-        cfg_options (dict): Options to override some settings in the used
-            config.
-
-    Returns:
-        nn.Module: The constructed detector.
-    """
-    if isinstance(config, str):
-        config = mmcv.Config.fromfile(config)
-    elif not isinstance(config, mmcv.Config):
-        raise TypeError('config must be a filename or Config object, '
-                        f'but got {type(config)}')
-    if cfg_options is not None:
-        config.merge_from_dict(cfg_options)
-    config.model.pretrained = None
-    config.model.train_cfg = None
-    model = build_detector(config.model, test_cfg=config.get('test_cfg'))
-    if checkpoint is not None:
-        map_loc = 'cpu' if device == 'cpu' else None
-        checkpoint = load_checkpoint(model, checkpoint, map_location=map_loc)
-        if 'CLASSES' in checkpoint.get('meta', {}):
-            model.CLASSES = checkpoint['meta']['CLASSES']
-        else:
-            model.CLASSES = get_classes('coco')
-    model.cfg = config  # save the config in the model for convenience
-    model.to(device)
-    model.eval()
-    return model
-
-
-class Integral(nn.Module):
-    """A fixed layer for calculating integral result from distribution.
-
-    This layer calculates the target location by :math: `sum{P(y_i) * y_i}`,
-    P(y_i) denotes the softmax vector that represents the discrete distribution
-    y_i denotes the discrete set, usually {0, 1, 2, ..., reg_max}
-
-    Args:
-        reg_max (int): The maximal value of the discrete set. Default: 16. You
-            may want to reset it according to your new dataset or related
-            settings.
-    """
-
-    def __init__(self, reg_max=16):
-        super(Integral, self).__init__()
-        self.reg_max = reg_max
-        self.register_buffer('project',
-                             torch.linspace(0, self.reg_max, self.reg_max + 1))
-
-    def forward(self, x):
-        """Forward feature from the regression head to get integral result of
-        bounding box location.
-
-        Args:
-            x (Tensor): Features of the regression head, shape (N, 4*(n+1)),
-                n is self.reg_max.
-
-        Returns:
-            x (Tensor): Integral result of box locations, i.e., distance
-                offsets from the box center in four directions, shape (N, 4).
-        """
-        x = F.softmax(x.reshape(-1, self.reg_max + 1), dim=1)
-        x = F.linear(x, self.project.type_as(x)).reshape(-1, 4)
-        return x
+from .gfl_head import GFLHead
 
 
 @HEADS.register_module()
-class LDHead(AnchorHead):
+class LDHead(GFLHead):
     """https://arxiv.org/abs/2102.12252."""
 
     def __init__(self,
@@ -96,129 +16,13 @@ class LDHead(AnchorHead):
                  in_channels,
                  stacked_convs=4,
                  conv_cfg=None,
-                 teacher_config='',
-                 teacher_model='',
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  loss_dfl=dict(type='DistributionFocalLoss', loss_weight=0.25),
                  reg_max=16,
                  **kwargs):
-        self.stacked_convs = stacked_convs
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.reg_max = reg_max
+
         super(LDHead, self).__init__(num_classes, in_channels, **kwargs)
-
-        self.teacher_model = init_detector(teacher_config, teacher_model)
-
-        self.sampling = False
-        if self.train_cfg:
-            self.assigner = build_assigner(self.train_cfg.assigner)
-            # SSD sampling=False so use PseudoSampler
-            sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
-
-        self.integral = Integral(self.reg_max)
         self.loss_dfl = build_loss(loss_dfl)
-
-    def _init_layers(self):
-        """Initialize layers of the head."""
-        self.relu = nn.ReLU(inplace=True)
-        self.cls_convs = nn.ModuleList()
-        self.reg_convs = nn.ModuleList()
-        for i in range(self.stacked_convs):
-            chn = self.in_channels if i == 0 else self.feat_channels
-            self.cls_convs.append(
-                ConvModule(
-                    chn,
-                    self.feat_channels,
-                    3,
-                    stride=1,
-                    padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg))
-            self.reg_convs.append(
-                ConvModule(
-                    chn,
-                    self.feat_channels,
-                    3,
-                    stride=1,
-                    padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg))
-        assert self.num_anchors == 1, 'anchor free version'
-        self.gfl_cls = nn.Conv2d(
-            self.feat_channels, self.cls_out_channels, 3, padding=1)
-        self.gfl_reg = nn.Conv2d(
-            self.feat_channels, 4 * (self.reg_max + 1), 3, padding=1)
-        self.scales = nn.ModuleList(
-            [Scale(1.0) for _ in self.anchor_generator.strides])
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.gfl_cls, std=0.01, bias=bias_cls)
-        normal_init(self.gfl_reg, std=0.01)
-
-    def forward(self, feats):
-        """Forward features from the upstream network.
-
-        Args:
-            feats (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
-
-        Returns:
-            tuple: Usually a tuple of classification scores and bbox prediction
-                cls_scores (list[Tensor]): Classification and quality (IoU)
-                    joint scores for all scale levels, each is a 4D-tensor,
-                    the channel number is num_classes.
-                bbox_preds (list[Tensor]): Box distribution logits for all
-                    scale levels, each is a 4D-tensor, the channel number is
-                    4*(n+1), n is max value of integral set.
-        """
-        return multi_apply(self.forward_single, feats, self.scales)
-
-    def forward_single(self, x, scale):
-        """Forward feature of a single scale level.
-
-        Args:
-            x (Tensor): Features of a single scale level.
-            scale (:obj: `mmcv.cnn.Scale`): Learnable scale module to resize
-                the bbox prediction.
-
-        Returns:
-            tuple:
-                cls_score (Tensor): Cls and quality joint scores for a single
-                    scale level the channel number is num_classes.
-                bbox_pred (Tensor): Box distribution logits for a single scale
-                    level, the channel number is 4*(n+1), n is max value of
-                    integral set.
-        """
-        cls_feat = x
-        reg_feat = x
-        for cls_conv in self.cls_convs:
-            cls_feat = cls_conv(cls_feat)
-        for reg_conv in self.reg_convs:
-            reg_feat = reg_conv(reg_feat)
-        cls_score = self.gfl_cls(cls_feat)
-        bbox_pred = scale(self.gfl_reg(reg_feat)).float()
-        return cls_score, bbox_pred
-
-    def anchor_center(self, anchors):
-        """Get anchor centers from anchors.
-
-        Args:
-            anchors (Tensor): Anchor list with shape (N, 4), "xyxy" format.
-
-        Returns:
-            Tensor: Anchor centers with shape (N, 2), "xy" format.
-        """
-        anchors_cx = (anchors[..., 2] + anchors[..., 0]) / 2
-        anchors_cy = (anchors[..., 3] + anchors[..., 1]) / 2
-        return torch.stack([anchors_cx, anchors_cy], dim=-1)
 
     def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, stride, soft_targets, num_total_samples):
@@ -321,9 +125,9 @@ class LDHead(AnchorHead):
                       x,
                       img_metas,
                       gt_bboxes,
+                      soft_target,
                       gt_labels=None,
                       gt_bboxes_ignore=None,
-                      img=None,
                       proposal_cfg=None,
                       **kwargs):
         """
@@ -347,9 +151,9 @@ class LDHead(AnchorHead):
         """
         outs = self(x)
         if gt_labels is None:
-            loss_inputs = outs + (gt_bboxes, img_metas, img)
+            loss_inputs = outs + (gt_bboxes, soft_target, img_metas)
         else:
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, img)
+            loss_inputs = outs + (gt_bboxes, gt_labels, soft_target, img_metas)
         losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         if proposal_cfg is None:
             return losses
@@ -363,8 +167,8 @@ class LDHead(AnchorHead):
              bbox_preds,
              gt_bboxes,
              gt_labels,
+             soft_target,
              img_metas,
-             img,
              gt_bboxes_ignore=None):
         """Compute losses of the head.
 
@@ -393,9 +197,6 @@ class LDHead(AnchorHead):
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        with torch.no_grad():
-            teacher_x = self.teacher_model.extract_feat(img)
-            soft_target = self.teacher_model.bbox_head(teacher_x)[1]
 
         cls_reg_targets = self.get_targets(
             anchor_list,
@@ -437,282 +238,4 @@ class LDHead(AnchorHead):
             loss_cls=losses_cls,
             loss_bbox=losses_bbox,
             loss_dfl=losses_dfl,
-            loss_kd=losses_ld)
-
-    def _get_bboxes(self,
-                    cls_scores,
-                    bbox_preds,
-                    mlvl_anchors,
-                    img_shapes,
-                    scale_factors,
-                    cfg,
-                    rescale=False,
-                    with_nms=True):
-        """Transform outputs for a single batch item into labeled boxes.
-
-        Args:
-            cls_scores (list[Tensor]): Box scores for a single scale level
-                has shape (N, num_classes, H, W).
-            bbox_preds (list[Tensor]): Box distribution logits for a single
-                scale level with shape (N, 4*(n+1), H, W), n is max value of
-                integral set.
-            mlvl_anchors (list[Tensor]): Box reference for a single scale level
-                with shape (num_total_anchors, 4).
-            img_shapes (list[tuple[int]]): Shape of the input image,
-                list[(height, width, 3)].
-            scale_factors (list[ndarray]): Scale factor of the image arange as
-                (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
-
-        Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
-        """
-        cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
-        batch_size = cls_scores[0].shape[0]
-
-        mlvl_bboxes = []
-        mlvl_scores = []
-        for cls_score, bbox_pred, stride, anchors in zip(
-                cls_scores, bbox_preds, self.anchor_generator.strides,
-                mlvl_anchors):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            assert stride[0] == stride[1]
-            scores = cls_score.permute(0, 2, 3, 1).reshape(
-                batch_size, -1, self.cls_out_channels).sigmoid()
-            bbox_pred = bbox_pred.permute(0, 2, 3, 1)
-
-            bbox_pred = self.integral(bbox_pred) * stride[0]
-            bbox_pred = bbox_pred.reshape(batch_size, -1, 4)
-
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[1] > nms_pre:
-                max_scores, _ = scores.max(-1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                batch_inds = torch.arange(batch_size).view(
-                    -1, 1).expand_as(topk_inds).long()
-                anchors = anchors[topk_inds, :]
-                bbox_pred = bbox_pred[batch_inds, topk_inds, :]
-                scores = scores[batch_inds, topk_inds, :]
-            else:
-                anchors = anchors.expand_as(bbox_pred)
-
-            bboxes = distance2bbox(
-                self.anchor_center(anchors), bbox_pred, max_shape=img_shapes)
-            mlvl_bboxes.append(bboxes)
-            mlvl_scores.append(scores)
-
-        batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
-        if rescale:
-            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
-                scale_factors).unsqueeze(1)
-
-        batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
-        # Add a dummy background class to the backend when using sigmoid
-        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-        # BG cat_id: num_class
-        padding = batch_mlvl_scores.new_zeros(batch_size,
-                                              batch_mlvl_scores.shape[1], 1)
-        batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
-
-        if with_nms:
-            det_results = []
-            for (mlvl_bboxes, mlvl_scores) in zip(batch_mlvl_bboxes,
-                                                  batch_mlvl_scores):
-                det_bbox, det_label = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                     cfg.score_thr, cfg.nms,
-                                                     cfg.max_per_img)
-                det_results.append(tuple([det_bbox, det_label]))
-        else:
-            det_results = [
-                tuple(mlvl_bs)
-                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores)
-            ]
-        return det_results
-
-    def get_targets(self,
-                    anchor_list,
-                    valid_flag_list,
-                    gt_bboxes_list,
-                    img_metas,
-                    gt_bboxes_ignore_list=None,
-                    gt_labels_list=None,
-                    label_channels=1,
-                    unmap_outputs=True):
-        """Get targets for GFL head.
-
-        This method is almost the same as `AnchorHead.get_targets()`. Besides
-        returning the targets as the parent method does, it also returns the
-        anchors as the first element of the returned tuple.
-        """
-        num_imgs = len(img_metas)
-        assert len(anchor_list) == len(valid_flag_list) == num_imgs
-
-        # anchor number of multi levels
-        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
-        num_level_anchors_list = [num_level_anchors] * num_imgs
-
-        # concat all level anchors and flags to a single tensor
-        for i in range(num_imgs):
-            assert len(anchor_list[i]) == len(valid_flag_list[i])
-            anchor_list[i] = torch.cat(anchor_list[i])
-            valid_flag_list[i] = torch.cat(valid_flag_list[i])
-
-        # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
-        (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self._get_target_single,
-             anchor_list,
-             valid_flag_list,
-             num_level_anchors_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             gt_labels_list,
-             img_metas,
-             label_channels=label_channels,
-             unmap_outputs=unmap_outputs)
-        # no valid anchors
-        if any([labels is None for labels in all_labels]):
-            return None
-        # sampled anchors of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
-        # split targets to a list w.r.t. multiple levels
-        anchors_list = images_to_levels(all_anchors, num_level_anchors)
-        labels_list = images_to_levels(all_labels, num_level_anchors)
-        label_weights_list = images_to_levels(all_label_weights,
-                                              num_level_anchors)
-        bbox_targets_list = images_to_levels(all_bbox_targets,
-                                             num_level_anchors)
-        bbox_weights_list = images_to_levels(all_bbox_weights,
-                                             num_level_anchors)
-        return (anchors_list, labels_list, label_weights_list,
-                bbox_targets_list, bbox_weights_list, num_total_pos,
-                num_total_neg)
-
-    def _get_target_single(self,
-                           flat_anchors,
-                           valid_flags,
-                           num_level_anchors,
-                           gt_bboxes,
-                           gt_bboxes_ignore,
-                           gt_labels,
-                           img_meta,
-                           label_channels=1,
-                           unmap_outputs=True):
-        """Compute regression, classification targets for anchors in a single
-        image.
-
-        Args:
-            flat_anchors (Tensor): Multi-level anchors of the image, which are
-                concatenated into a single tensor of shape (num_anchors, 4)
-            valid_flags (Tensor): Multi level valid flags of the image,
-                which are concatenated into a single tensor of
-                    shape (num_anchors,).
-            num_level_anchors Tensor): Number of anchors of each scale level.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            img_meta (dict): Meta info of the image.
-            label_channels (int): Channel of label.
-            unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors.
-
-        Returns:
-            tuple: N is the number of total anchors in the image.
-                anchors (Tensor): All anchors in the image with shape (N, 4).
-                labels (Tensor): Labels of all anchors in the image with shape
-                    (N,).
-                label_weights (Tensor): Label weights of all anchor in the
-                    image with shape (N,).
-                bbox_targets (Tensor): BBox targets of all anchors in the
-                    image with shape (N, 4).
-                bbox_weights (Tensor): BBox weights of all anchors in the
-                    image with shape (N, 4).
-                pos_inds (Tensor): Indices of postive anchor with shape
-                    (num_pos,).
-                neg_inds (Tensor): Indices of negative anchor with shape
-                    (num_neg,).
-        """
-        inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
-                                           img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
-        if not inside_flags.any():
-            return (None, ) * 7
-        # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags, :]
-
-        num_level_anchors_inside = self.get_num_level_anchors_inside(
-            num_level_anchors, inside_flags)
-        assign_result = self.assigner.assign(anchors, num_level_anchors_inside,
-                                             gt_bboxes, gt_bboxes_ignore,
-                                             gt_labels)
-
-        sampling_result = self.sampler.sample(assign_result, anchors,
-                                              gt_bboxes)
-
-        num_valid_anchors = anchors.shape[0]
-        bbox_targets = torch.zeros_like(anchors)
-        bbox_weights = torch.zeros_like(anchors)
-        labels = anchors.new_full((num_valid_anchors, ),
-                                  self.num_classes,
-                                  dtype=torch.long)
-        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
-
-        pos_inds = sampling_result.pos_inds
-        neg_inds = sampling_result.neg_inds
-        if len(pos_inds) > 0:
-            pos_bbox_targets = sampling_result.pos_gt_bboxes
-            bbox_targets[pos_inds, :] = pos_bbox_targets
-            bbox_weights[pos_inds, :] = 1.0
-            if gt_labels is None:
-                # Only rpn gives gt_labels as None
-                # Foreground is the first class
-                labels[pos_inds] = 0
-            else:
-                labels[pos_inds] = gt_labels[
-                    sampling_result.pos_assigned_gt_inds]
-            if self.train_cfg.pos_weight <= 0:
-                label_weights[pos_inds] = 1.0
-            else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
-        if len(neg_inds) > 0:
-            label_weights[neg_inds] = 1.0
-
-        # map up to original set of anchors
-        if unmap_outputs:
-            num_total_anchors = flat_anchors.size(0)
-            anchors = unmap(anchors, num_total_anchors, inside_flags)
-            labels = unmap(
-                labels, num_total_anchors, inside_flags, fill=self.num_classes)
-            label_weights = unmap(label_weights, num_total_anchors,
-                                  inside_flags)
-            bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
-            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
-
-        return (anchors, labels, label_weights, bbox_targets, bbox_weights,
-                pos_inds, neg_inds)
-
-    def get_num_level_anchors_inside(self, num_level_anchors, inside_flags):
-        split_inside_flags = torch.split(inside_flags, num_level_anchors)
-        num_level_anchors_inside = [
-            int(flags.sum()) for flags in split_inside_flags
-        ]
-        return num_level_anchors_inside
+            loss_ld=losses_ld)

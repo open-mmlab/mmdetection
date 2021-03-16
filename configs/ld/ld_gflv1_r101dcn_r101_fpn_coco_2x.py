@@ -19,5 +19,4 @@ model = dict(
         feat_channels=256,
         teacher_config='configs/gfl/gfl_r101_f\
         pn_dconv_c3-c5_mstrain_2x_coco.py',
-        teacher_model='gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco.pth',
-    ))
+        teacher_model='gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco.pth'))
