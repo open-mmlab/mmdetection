@@ -49,8 +49,7 @@ def pytorch2onnx(config_path,
                 3: 'height'
             },
             'dets': {
-                0: 'batch',
-                1: 'num_dets'
+                0: 'num_dets',
             },
             'batch_indices': {
                 0: 'num_dets'
