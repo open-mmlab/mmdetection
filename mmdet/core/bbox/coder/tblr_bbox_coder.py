@@ -168,9 +168,10 @@ def tblr2bboxes(priors,
     if normalize_by_wh:
         wh = priors[..., 2:4] - priors[..., 0:2]
         w, h = torch.split(wh, 1, dim=-1)
-        loc_decode[..., :2] *= h  # tb
-        loc_decode[..., 2:] *= w  # lr
-
+        # Inplace operation with slice would failed for exporting to ONNX
+        th = h * loc_decode[..., :2]  # tb
+        tw = w * loc_decode[..., 2:]  # lr
+        loc_decode = torch.cat([th, tw], dim=-1)
     # Cannot be exported using onnx when loc_decode.split(1, dim=-1)
     top, bottom, left, right = loc_decode.split((1, 1, 1, 1), dim=-1)
     xmin = prior_centers[..., 0].unsqueeze(-1) - left

@@ -1,7 +1,6 @@
-import mmcv
 import torch
 import torch.nn as nn
-from mmcv import tensor2imgs
+
 from mmcv.runner import BaseModule
 
 from mmdet.models.builder import HEADS
@@ -103,21 +102,3 @@ class EmbeddingRPNHead(BaseModule):
     def simple_test_rpn(self, img, img_metas):
         """Forward function in testing stage."""
         return self._decode_init_proposals(img, img_metas)
-
-    def show_result(self, data):
-        """Show the init proposals in EmbeddingRPN.
-
-        Args:
-            data (dict): Dict contains image and
-                corresponding meta information.
-        """
-        img_tensor = data['img'][0]
-        img_metas = data['img_metas'][0].data[0]
-        imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
-        proposals, _ = self._decode_init_proposals(data['img'],
-                                                   data['img_metas'])
-        assert len(imgs) == len(img_metas)
-        for img, img_meta in zip(imgs, img_metas):
-            h, w, _ = img_meta['img_shape']
-            img_show = img[:h, :w, :]
-            mmcv.imshow_bboxes(img_show, proposals)
