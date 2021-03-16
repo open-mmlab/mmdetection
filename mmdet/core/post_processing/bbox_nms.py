@@ -1,10 +1,6 @@
 import sys
 import torch
-#import torch.onnx.symbolic_helper as sym_help
-#from torch.autograd import Function
 from torch.onnx import is_in_onnx_export
-#from torch.onnx.symbolic_opset9 import reshape
-#from torch.onnx.symbolic_opset10 import _slice
 
 import mmdet.ops.nms  # Replace mmcv.ops.nms by one from mmdet.ops.nms
 from mmdet.integration.nncf import no_nncf_trace
