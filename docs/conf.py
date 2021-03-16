@@ -21,6 +21,13 @@ sys.path.insert(0, os.path.abspath('..'))
 project = 'Object Detection OpenVINO Training Extensions'
 copyright = '2018-2020, OpenMMLab; 2019-2020, Intel'
 author = 'MMDetection Authors, Intel'
+version_file = '../mmdet/version.py'
+
+
+def get_version():
+    with open(version_file, 'r') as f:
+        exec(compile(f.read(), version_file, 'exec'))
+    return locals()['__version__']
 
 # The full version, including alpha/beta/rc tags
 release = get_version()

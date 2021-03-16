@@ -99,7 +99,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             if isinstance(result[0], tuple):
                 result = [(bbox_results, encode_mask_results(mask_results))
                           for bbox_results, mask_results in result]
-            results.extend(result)
+        results.extend(result)
 
         if rank == 0:
             batch_size = len(result)

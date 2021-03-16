@@ -3,8 +3,7 @@ from mmcv.runner.hooks.lr_updater import CosineAnnealingLrUpdaterHook, annealing
 
 
 @HOOKS.register_module()
-class CosineAnealingUntilEpochLrUpdaterHook(CosineAnnealingLrUpdaterHook):
-    # TODO: Fix Anealing -> Annealing when the upgrade of MMCV will be possible
+class CosineAnnealingUntilEpochLrUpdaterHook(CosineAnnealingLrUpdaterHook):
     """The same LR updater as CosineAnealing but with `last epoch` support.
 
     Args:

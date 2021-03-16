@@ -39,4 +39,4 @@ We appreciate all contributions to improve this project. Please refer to [CONTRI
 
 ## Contact
 
-This repo is currently maintained by Ilya Krylov ([@Ilya-Krylov](https://github.com/Ilya-Krylov)), Pavel Druzhkov ([@druzhkov-paul](https://github.com/druzhkov-paul)) and Alexander Dokuchaev ([@AlexanderDokuchaev](https://github.com/AlexanderDokuchaev)).
+This repo is currently maintained by Ilya Krylov ([@Ilya-Krylov](https://github.com/Ilya-Krylov)), Pavel Druzhkov ([@druzhkov-paul](https://github.com/druzhkov-paul)) and Alexander Dokuchaev ([@AlexanderDokuchaev](https://github.com/AlexanderDokuchaev)), Dmitry Sidnev ([@DmitriySidnev](https://github.com/DmitriySidnev)).

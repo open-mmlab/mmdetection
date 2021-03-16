@@ -253,8 +253,6 @@ class AnchorGenerator(object):
         """
         feat_h, feat_w = featmap_size
         # convert Tensor to int, so that we can covert to ONNX correctlly
-        #feat_h = int(feat_h)
-        #feat_w = int(feat_w)
         shift_x = torch.arange(0, feat_w, device=device) * stride[0]
         shift_y = torch.arange(0, feat_h, device=device) * stride[1]
         shift_yy, shift_xx = meshgrid(shift_y, shift_x)

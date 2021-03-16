@@ -1,8 +1,5 @@
 import numpy as np
 import torch
-from torch.onnx import is_in_onnx_export
-
-from ..utils.misc import to_numpy
 
 
 def bbox_flip(bboxes, img_shape, direction='horizontal'):
