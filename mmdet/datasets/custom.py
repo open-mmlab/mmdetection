@@ -345,11 +345,11 @@ class CustomDataset(Dataset):
 
         for cls, count in enumerate(instance_count):
             if cls < len(self.CLASSES):
-                result += f"[{self.CLASSES[cls]}]: {count}"
+                result += f'[{self.CLASSES[cls]}]: {count}'
                 result += '\t'
             else:
                 # add the background number
-                result += f"[background]: {count}"
+                result += f'[background]: {count}'
             if (cls + 1) % 5 == 0:
                 result += '\n'
         return result
