@@ -228,7 +228,15 @@ class RPNHead(RPNTestMixin, AnchorHead):
             # set score value to zero for unselected boxes
             mask = batch_mlvl_scores.new_zeros(batch_mlvl_scores.shape)
             mask[batch_inds, proposal_inds] += 1
-            batch_mlvl_scores = (batch_mlvl_scores * mask).unsqueeze(2)
+            batch_mlvl_scores = (batch_mlvl_scores * mask)
+            # get topk proposals
+            _, topk_inds = batch_mlvl_scores.topk(cfg.max_per_img)
+            batch_inds = torch.arange(batch_size).view(-1,
+                                                       1).expand_as(topk_inds)
+            batch_mlvl_scores = batch_mlvl_scores[batch_inds,
+                                                  topk_inds].unsqueeze(2)
+            batch_mlvl_proposals = batch_mlvl_proposals[batch_inds,
+                                                        topk_inds, :]
             batch_dets = torch.cat([batch_mlvl_proposals, batch_mlvl_scores],
                                    dim=-1)
             return batch_dets
