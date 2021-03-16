@@ -4,6 +4,7 @@ import pytest
 
 from mmdet.datasets import DATASETS
 
+
 @patch('mmdet.datasets.CocoDataset.load_annotations', MagicMock())
 @patch('mmdet.datasets.CustomDataset.load_annotations', MagicMock())
 @patch('mmdet.datasets.XMLDataset.load_annotations', MagicMock())
