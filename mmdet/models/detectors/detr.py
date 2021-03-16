@@ -32,6 +32,7 @@ class DETR(SingleStageDetector):
                 corresponds to each class.
         """
         batch_size = len(img_metas)
+        # TOCO check this assetr
         assert batch_size == 1, 'Currently only batch_size 1 for inference ' \
             f'mode is supported. Found batch_size {batch_size}.'
         x = self.extract_feat(img)

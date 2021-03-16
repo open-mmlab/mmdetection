@@ -21,7 +21,9 @@ class ChannelMapper(nn.Module):
             Default: None.
         act_cfg (dict, optional): Config dict for activation layer in
             ConvModule. Default: dict(type='ReLU').
-
+        num_outs (int, optional): Number of output feature maps. There
+            would be extra_convs when num_outs larger than the lenghth
+            of in_channels.
     Example:
         >>> import torch
         >>> in_channels = [2, 3, 5, 7]
@@ -44,10 +46,13 @@ class ChannelMapper(nn.Module):
                  kernel_size=3,
                  conv_cfg=None,
                  norm_cfg=None,
-                 act_cfg=dict(type='ReLU')):
+                 act_cfg=dict(type='ReLU'),
+                 num_outs=None):
         super(ChannelMapper, self).__init__()
         assert isinstance(in_channels, list)
-
+        self.extra_convs = None
+        if num_outs is None:
+            num_outs = len(in_channels)
         self.convs = nn.ModuleList()
         for in_channel in in_channels:
             self.convs.append(
@@ -59,6 +64,22 @@ class ChannelMapper(nn.Module):
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     act_cfg=act_cfg))
+        if num_outs > len(in_channels):
+            self.extra_convs = nn.ModuleList()
+            for i in range(len(in_channels), num_outs):
+                if i == len(in_channels):
+                    in_channel = in_channels[-1]
+                else:
+                    in_channel = out_channels
+                self.extra_convs.append(
+                    ConvModule(
+                        in_channel,
+                        out_channels,
+                        3,
+                        padding=1,
+                        conv_cfg=conv_cfg,
+                        norm_cfg=norm_cfg,
+                        act_cfg=act_cfg))
 
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
@@ -71,4 +92,10 @@ class ChannelMapper(nn.Module):
         """Forward function."""
         assert len(inputs) == len(self.convs)
         outs = [self.convs[i](inputs[i]) for i in range(len(inputs))]
+        if self.extra_convs:
+            for i in range(len(self.extra_convs)):
+                if i == 0:
+                    outs.append(self.extra_convs[0](inputs[-1]))
+                else:
+                    outs.append(self.extra_convs[i](outs[-1]))
         return tuple(outs)
