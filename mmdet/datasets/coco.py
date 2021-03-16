@@ -542,3 +542,34 @@ class CocoDataset(CustomDataset):
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
+
+    def __repr__(self):
+        """Print the number of instance number."""
+        dataset_type = 'Test' if self.test_mode else 'Train'
+        result = f'\n{dataset_type} dataset ' \
+                 f'with number of images {len(self)}, ' \
+                 f'and instance counts: \n'
+        if self.CLASSES is None:
+            return result
+        instance_count = np.zeros(len(self.CLASSES) + 1).astype(int)
+        # count the instance number in each image
+        for idx in range(len(self)):
+            label = self.cat2label[self.get_cat_ids(idx)]
+            unique, counts = np.unique(label, return_counts=True)
+            if len(unique) > 0:
+                # add the occurrence number to each class
+                instance_count[unique] += counts
+            else:
+                # background is the last index
+                instance_count[-1] += 1
+
+        for cls, count in enumerate(instance_count):
+            if cls < len(self.CLASSES):
+                result += f'[{self.CLASSES[cls]}]: {count}'
+                result += '\t'
+            else:
+                # add the background number
+                result += f'[background]: {count}'
+            if (cls + 1) % 5 == 0:
+                result += '\n'
+        return result
