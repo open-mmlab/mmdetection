@@ -131,7 +131,7 @@ class CentripetalHead(CornerHead):
         self._init_centripetal_layers()
 
     # TODO: How to convert to init_cfg
-    def init_weights(self):
+    def init_weight(self):
         """Initialize weights of the head."""
         super().init_weights()
         for i in range(self.num_feat_levels):

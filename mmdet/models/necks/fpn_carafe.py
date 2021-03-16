@@ -1,5 +1,5 @@
 import torch.nn as nn
-from mmcv.cnn import ConvModule, build_upsample_layer, xavier_init
+from mmcv.cnn import ConvModule, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
 from mmcv.runner import BaseModule
 
@@ -46,7 +46,10 @@ class FPN_CARAFE(BaseModule):
                      up_group=1,
                      encoder_kernel=3,
                      encoder_dilation=1),
-                 init_cfg=None):
+                 init_cfg=dict(
+                     type='Xavier',
+                     layer=['Conv2d', 'ConvTranspose2d'],
+                     distribution='uniform')):
         super(FPN_CARAFE, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -200,13 +203,11 @@ class FPN_CARAFE(BaseModule):
                 self.fpn_convs.append(extra_fpn_conv)
                 self.lateral_convs.append(extra_l_conv)
 
-    # TODO: How to convert to init_cfg
+    # TODO: Check
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weight(self):
         """Initialize the weights of module."""
-        for m in self.modules():
-            if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
-                xavier_init(m, distribution='uniform')
+        super(FPN_CARAFE, self).init_weight()
         for m in self.modules():
             if isinstance(m, CARAFEPack):
                 m.init_weights()

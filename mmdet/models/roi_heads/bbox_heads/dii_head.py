@@ -116,7 +116,8 @@ class DIIHead(BBoxHead):
         assert self.reg_decoded_bbox, 'DIIHead only ' \
             'suppport `reg_decoded_bbox=True`'
 
-    def init_weights(self):
+    # TODO： How to convert init_cfg
+    def init_weight(self):
         """Use xavier initialization for all weight parameter and set
         classification head bias as a specific value when use focal loss."""
         for p in self.parameters():

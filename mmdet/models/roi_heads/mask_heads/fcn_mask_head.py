@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, ConvModule, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
-from mmcv.runner import auto_fp16, force_fp32
+from mmcv.runner import BaseModule, auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import mask_target
@@ -17,7 +17,7 @@ GPU_MEM_LIMIT = 1024**3  # 1 GB memory limit
 
 
 @HEADS.register_module()
-class FCNMaskHead(nn.Module):
+class FCNMaskHead(BaseModule):
 
     def __init__(self,
                  num_convs=4,
@@ -31,8 +31,9 @@ class FCNMaskHead(nn.Module):
                  conv_cfg=None,
                  norm_cfg=None,
                  loss_mask=dict(
-                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
-        super(FCNMaskHead, self).__init__()
+                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0),
+                 init_cfg=None):
+        super(FCNMaskHead, self).__init__(init_cfg)
         self.upsample_cfg = upsample_cfg.copy()
         if self.upsample_cfg['type'] not in [
                 None, 'deconv', 'nearest', 'bilinear', 'carafe'
@@ -103,7 +104,8 @@ class FCNMaskHead(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
-    def init_weights(self):
+    # TODO: HOW
+    def init_weight(self):
         for m in [self.upsample, self.conv_logits]:
             if m is None:
                 continue

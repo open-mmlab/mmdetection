@@ -1,5 +1,5 @@
 import torch.nn as nn
-from mmcv.cnn import ConvModule, Linear, constant_init, xavier_init
+from mmcv.cnn import ConvModule, Linear
 from mmcv.runner import auto_fp16
 
 from mmdet.models.builder import HEADS
@@ -27,10 +27,20 @@ class CoarseMaskHead(FCNMaskHead):
                  num_fcs=2,
                  fc_out_channels=1024,
                  downsample_factor=2,
+                 init_cfg=dict(
+                     'Xavier',
+                     override=[
+                         dict(type='Xavier', layer='Linear', name='fcs'),
+                         dict(type='Constant', val=0.001, name='fc_logits')
+                     ]),
                  *arg,
                  **kwarg):
         super(CoarseMaskHead, self).__init__(
-            *arg, num_convs=num_convs, upsample_cfg=dict(type=None), **kwarg)
+            *arg,
+            num_convs=num_convs,
+            upsample_cfg=dict(type=None),
+            init_cfg=init_cfg,
+            **kwarg)
         self.num_fcs = num_fcs
         assert self.num_fcs > 0
         self.fc_out_channels = fc_out_channels
@@ -68,12 +78,6 @@ class CoarseMaskHead(FCNMaskHead):
         last_layer_dim = self.fc_out_channels
         output_channels = self.num_classes * self.output_area
         self.fc_logits = Linear(last_layer_dim, output_channels)
-
-    def init_weights(self):
-        for m in self.fcs.modules():
-            if isinstance(m, nn.Linear):
-                xavier_init(m)
-        constant_init(self.fc_logits, 0.001)
 
     @auto_fp16()
     def forward(self, x):

@@ -1,12 +1,13 @@
 import torch.nn as nn
-from mmcv.cnn import ConvModule, normal_init, xavier_init
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 
 from mmdet.models.backbones.resnet import Bottleneck
 from mmdet.models.builder import HEADS
 from .bbox_head import BBoxHead
 
 
-class BasicResBlock(nn.Module):
+class BasicResBlock(BaseModule):
     """Basic residual block.
 
     This block is a little different from the block in the ResNet backbone.
@@ -23,8 +24,9 @@ class BasicResBlock(nn.Module):
                  in_channels,
                  out_channels,
                  conv_cfg=None,
-                 norm_cfg=dict(type='BN')):
-        super(BasicResBlock, self).__init__()
+                 norm_cfg=dict(type='BN'),
+                 init_cfg=None):
+        super(BasicResBlock, self).__init__(init_cfg)
 
         # main path
         self.conv1 = ConvModule(
@@ -90,9 +92,20 @@ class DoubleConvFCBBoxHead(BBoxHead):
                  fc_out_channels=1024,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
+                 init_cfg=dict(
+                     type='Normal',
+                     override=[
+                         dict(type='Normal', name='fc_cls', std=0.01),
+                         dict(type='Normal', name='fc_reg', std=0.001),
+                         dict(
+                             type='Xavier',
+                             name='fc_branch',
+                             layer='Linear',
+                             distribution='uniform')
+                     ]),
                  **kwargs):
         kwargs.setdefault('with_avg_pool', True)
-        super(DoubleConvFCBBoxHead, self).__init__(**kwargs)
+        super(DoubleConvFCBBoxHead, self).__init__(init_cfg=init_cfg, **kwargs)
         assert self.with_avg_pool
         assert num_convs > 0
         assert num_fcs > 0
@@ -139,15 +152,6 @@ class DoubleConvFCBBoxHead(BBoxHead):
                 self.roi_feat_area if i == 0 else self.fc_out_channels)
             branch_fcs.append(nn.Linear(fc_in_channels, self.fc_out_channels))
         return branch_fcs
-
-    def init_weights(self):
-        # conv layers are already initialized by ConvModule
-        normal_init(self.fc_cls, std=0.01)
-        normal_init(self.fc_reg, std=0.001)
-
-        for m in self.fc_branch.modules():
-            if isinstance(m, nn.Linear):
-                xavier_init(m, distribution='uniform')
 
     def forward(self, x_cls, x_reg):
         # conv head

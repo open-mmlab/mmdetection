@@ -106,7 +106,6 @@ class Bottleneck(_Bottleneck):
         return out
 
 
-# TODO: is it right？
 class ResLayer(nn.Sequential):
     """ResLayer to build ResNet style backbone for RPF in detectoRS.
 

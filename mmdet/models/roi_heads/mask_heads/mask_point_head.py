@@ -2,14 +2,15 @@
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.ops import point_sample, rel_roi_point_to_rel_img_point
+from mmcv.runner import BaseModule
 
 from mmdet.models.builder import HEADS, build_loss
 
 
 @HEADS.register_module()
-class MaskPointHead(nn.Module):
+class MaskPointHead(BaseModule):
     """A mask point head use in PointRend.
 
     ``MaskPointHead`` use shared multi-layer perceptron (equivalent to
@@ -45,8 +46,12 @@ class MaskPointHead(nn.Module):
                  norm_cfg=None,
                  act_cfg=dict(type='ReLU'),
                  loss_point=dict(
-                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
-        super().__init__()
+                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0),
+                 init_cfg=dict(
+                     type='Normal',
+                     override=dict(type='Normal', name='fc_logits',
+                                   std=0.001))):
+        super().__init__(init_cfg)
         self.num_fcs = num_fcs
         self.in_channels = in_channels
         self.fc_channles = fc_channels
@@ -76,11 +81,6 @@ class MaskPointHead(nn.Module):
         out_channels = 1 if self.class_agnostic else self.num_classes
         self.fc_logits = nn.Conv1d(
             fc_in_channels, out_channels, kernel_size=1, stride=1, padding=0)
-
-    def init_weights(self):
-        """Initialize last classification layer of MaskPointHead, conv layers
-        are already initialized by ConvModule."""
-        normal_init(self.fc_logits, std=0.001)
 
     def forward(self, fine_grained_feats, coarse_feats):
         """Classify each point base on fine grained and coarse feats.

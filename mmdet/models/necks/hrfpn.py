@@ -43,7 +43,6 @@ class HRFPN(BaseModule):
                      a=1,
                      mode='fan_in',
                      nonlinearity='leaky_relu',
-                     bias=0,
                      distribution='uniform')):
         super(HRFPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)

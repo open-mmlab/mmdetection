@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import (Linear, build_activation_layer, build_norm_layer,
                       xavier_init)
+from mmcv.runner import BaseModule
 
 from .builder import TRANSFORMER
 
@@ -598,7 +599,7 @@ class TransformerDecoder(nn.Module):
 
 
 @TRANSFORMER.register_module()
-class Transformer(nn.Module):
+class Transformer(BaseModule):
     """Implements the DETR transformer.
 
     Following the official DETR implementation, this module copy-paste
@@ -647,8 +648,9 @@ class Transformer(nn.Module):
                  norm_cfg=dict(type='LN'),
                  num_fcs=2,
                  pre_norm=False,
-                 return_intermediate_dec=False):
-        super(Transformer, self).__init__()
+                 return_intermediate_dec=False,
+                 init_cfg=None):
+        super(Transformer, self).__init__(init_cfg)
         self.embed_dims = embed_dims
         self.num_heads = num_heads
         self.num_encoder_layers = num_encoder_layers
@@ -678,7 +680,8 @@ class Transformer(nn.Module):
                                           norm_cfg, num_fcs,
                                           return_intermediate_dec)
 
-    def init_weights(self, distribution='uniform'):
+    # TODO： How
+    def init_weight(self, distribution='uniform'):
         """Initialize the transformer weights."""
         # follow the official DETR to init parameters
         for m in self.modules():

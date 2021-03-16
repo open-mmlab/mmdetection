@@ -106,9 +106,8 @@ class Darknet(BaseModule):
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for darknet')
 
-        assert not (
-            init_cfg and pretrained
-        ), 'init_cfg and pretrained cannot be setting at the same time'
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
 
         self.depth = depth
         self.out_indices = out_indices
@@ -135,11 +134,14 @@ class Darknet(BaseModule):
                           'key, please consider using init_cfg')
             self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
         elif pretrained is None:
-            self.init_cfg = [
-                dict(type='Kaiming', layer='Conv2d'),
-                dict(
-                    type='Constant', val=1, layer=['_BatchNorm', 'GroupNorm'])
-            ]
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(
+                        type='Constant',
+                        val=1,
+                        layer=['_BatchNorm', 'GroupNorm'])
+                ]
         else:
             raise TypeError('pretrained must be a str or None')
 

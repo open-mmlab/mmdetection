@@ -16,7 +16,6 @@ from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
 
-# TODO：Check
 @HEADS.register_module()
 class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
     """YOLOV3Head Paper link: https://arxiv.org/abs/1804.02767.
@@ -76,7 +75,10 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                  loss_wh=dict(type='MSELoss', loss_weight=1.0),
                  train_cfg=None,
                  test_cfg=None,
-                 init_cfg=dict(type='Normal', name='convs_pred', std=0.01)):
+                 init_cfg=dict(
+                     type='Normal',
+                     override=dict(type='Normal', name='convs_pred',
+                                   std=0.01))):
         super(YOLOV3Head, self).__init__(init_cfg)
         # Check params
         assert (len(in_channels) == len(out_channels) == len(featmap_strides))

@@ -25,11 +25,15 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                  mask_head=None,
                  shared_head=None,
                  train_cfg=None,
-                 test_cfg=None):
+                 test_cfg=None,
+                 pretrained=None,
+                 init_cfg=None):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
         assert shared_head is None, \
             'Shared head is not supported in Cascade RCNN anymore'
+        shared_head.pretrained = pretrained
+
         self.num_stages = num_stages
         self.stage_loss_weights = stage_loss_weights
         super(CascadeRoIHead, self).__init__(
@@ -39,7 +43,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_head=mask_head,
             shared_head=shared_head,
             train_cfg=train_cfg,
-            test_cfg=test_cfg)
+            test_cfg=test_cfg,
+            init_cfg=init_cfg)
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
         """Initialize box head and box roi extractor.
@@ -101,23 +106,19 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.bbox_sampler.append(
                     build_sampler(rcnn_train_cfg.sampler, context=self))
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
+    # TODO: To support ModuleList
+    def init_weight(self):
+        """Initialize the weights in head."""
         if self.with_shared_head:
-            self.shared_head.init_weights(pretrained=pretrained)
+            self.shared_head.init_weight()
         for i in range(self.num_stages):
             if self.with_bbox:
-                self.bbox_roi_extractor[i].init_weights()
-                self.bbox_head[i].init_weights()
+                self.bbox_roi_extractor[i].init_weight()
+                self.bbox_head[i].init_weight()
             if self.with_mask:
                 if not self.share_roi_extractor:
-                    self.mask_roi_extractor[i].init_weights()
-                self.mask_head[i].init_weights()
+                    self.mask_roi_extractor[i].init_weight()
+                self.mask_head[i].init_weight()
 
     def forward_dummy(self, x, proposals):
         """Dummy forward function."""

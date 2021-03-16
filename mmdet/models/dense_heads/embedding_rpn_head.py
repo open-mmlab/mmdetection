@@ -39,7 +39,7 @@ class EmbeddingRPNHead(BaseModule):
             self.num_proposals, self.proposal_feature_channel)
 
     # TODO: How to convert to init_cfg
-    def init_weights(self):
+    def init_weight(self):
         """Initialize the init_proposal_bboxes as normalized.
 
         [c_x, c_y, w, h], and we initialize it to the size of  the entire

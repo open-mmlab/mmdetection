@@ -145,7 +145,6 @@ class FPG(BaseModule):
         'last_conv': LastConv,
     }
 
-    # TODO：Check
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -173,7 +172,6 @@ class FPG(BaseModule):
                          a=1,
                          mode='fan_in',
                          nonlinearity='leaky_relu',
-                         bias=0,
                          distribution='uniform'),
                      dict(
                          type='Constant',

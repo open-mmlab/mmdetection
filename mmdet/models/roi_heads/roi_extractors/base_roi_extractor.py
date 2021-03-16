@@ -3,9 +3,10 @@ from abc import ABCMeta, abstractmethod
 import torch
 import torch.nn as nn
 from mmcv import ops
+from mmcv.runner import BaseModule
 
 
-class BaseRoIExtractor(nn.Module, metaclass=ABCMeta):
+class BaseRoIExtractor(BaseModule, metaclass=ABCMeta):
     """Base class for RoI extractor.
 
     Args:
@@ -14,8 +15,12 @@ class BaseRoIExtractor(nn.Module, metaclass=ABCMeta):
         featmap_strides (int): Strides of input feature maps.
     """
 
-    def __init__(self, roi_layer, out_channels, featmap_strides):
-        super(BaseRoIExtractor, self).__init__()
+    def __init__(self,
+                 roi_layer,
+                 out_channels,
+                 featmap_strides,
+                 init_cfg=None):
+        super(BaseRoIExtractor, self).__init__(init_cfg)
         self.roi_layers = self.build_roi_layers(roi_layer, featmap_strides)
         self.out_channels = out_channels
         self.featmap_strides = featmap_strides
@@ -25,9 +30,6 @@ class BaseRoIExtractor(nn.Module, metaclass=ABCMeta):
     def num_inputs(self):
         """int: Number of input feature maps."""
         return len(self.featmap_strides)
-
-    def init_weights(self):
-        pass
 
     def build_roi_layers(self, layer_cfg, featmap_strides):
         """Build RoI operator to extract feature from each level feature map.

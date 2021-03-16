@@ -28,7 +28,6 @@ class BFP(BaseModule):
             [None, 'conv', 'non_local'].
     """
 
-    # TODO： NonLocal2d init
     def __init__(self,
                  in_channels,
                  num_levels,

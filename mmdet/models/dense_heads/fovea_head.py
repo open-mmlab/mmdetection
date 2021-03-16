@@ -11,7 +11,6 @@ from .anchor_free_head import AnchorFreeHead
 INF = 1e8
 
 
-# TODO：Check
 class FeatureAlign(BaseModule):
 
     def __init__(self,

@@ -24,9 +24,10 @@ class SingleRoIExtractor(BaseRoIExtractor):
                  roi_layer,
                  out_channels,
                  featmap_strides,
-                 finest_scale=56):
+                 finest_scale=56,
+                 init_cfg=None):
         super(SingleRoIExtractor, self).__init__(roi_layer, out_channels,
-                                                 featmap_strides)
+                                                 featmap_strides, init_cfg)
         self.finest_scale = finest_scale
 
     def map_roi_levels(self, rois, num_levels):

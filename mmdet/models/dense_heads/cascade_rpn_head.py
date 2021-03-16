@@ -44,7 +44,9 @@ class AdaptiveConv(BaseModule):
                  groups=1,
                  bias=False,
                  type='dilation',
-                 init_cfg=None):
+                 init_cfg=dict(
+                     type='Normal',
+                     override=dict(name='conv', type='Normal', std=0.01))):
         super(AdaptiveConv, self).__init__(init_cfg)
         assert type in ['offset', 'dilation']
         self.adapt_type = type
@@ -69,11 +71,6 @@ class AdaptiveConv(BaseModule):
                 kernel_size,
                 padding=dilation,
                 dilation=dilation)
-
-    # TODO: How to convert to init_cfg about DeformConv2d
-    def init_weight(self):
-        """Init weights."""
-        normal_init(self.conv, std=0.01)
 
     def forward(self, x, offset):
         """Forward function."""

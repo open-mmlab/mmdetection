@@ -347,7 +347,6 @@ class HRNet(BaseModule):
         self.stage4, pre_stage_channels = self._make_stage(
             self.stage4_cfg, num_channels)
 
-        # TODO：Check
         if isinstance(self.pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is a deprecated '
                           'key, please consider using init_cfg')
@@ -366,9 +365,13 @@ class HRNet(BaseModule):
 
             if self.zero_init_residual:
                 self.init_cfg += [
-                    dict(type='Constant', layer='BatchNorm2', val=0),
-                    dict(type='Constant', layer='BatchNorm3', val=0)
+                    dict(
+                        type='Constant',
+                        layer=['BatchNorm2', 'BatchNorm3'],
+                        val=0),
                 ]
+        else:
+            raise TypeError('pretrained must be a str or None')
 
     @property
     def norm1(self):

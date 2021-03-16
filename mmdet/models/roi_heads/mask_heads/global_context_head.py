@@ -1,13 +1,13 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule
-from mmcv.runner import auto_fp16, force_fp32
+from mmcv.runner import BaseModule, auto_fp16, force_fp32
 
 from mmdet.models.builder import HEADS
 from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
 
 
 @HEADS.register_module()
-class GlobalContextHead(nn.Module):
+class GlobalContextHead(BaseModule):
     """Global context head used in `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
     Args:
@@ -32,8 +32,11 @@ class GlobalContextHead(nn.Module):
                  loss_weight=1.0,
                  conv_cfg=None,
                  norm_cfg=None,
-                 conv_to_res=False):
-        super(GlobalContextHead, self).__init__()
+                 conv_to_res=False,
+                 init_cfg=dict(
+                     type='Normal',
+                     override=dict(type='Normal', name='fc', std=0.01))):
+        super(GlobalContextHead, self).__init__(init_cfg)
         self.num_convs = num_convs
         self.in_channels = in_channels
         self.conv_out_channels = conv_out_channels
@@ -71,11 +74,6 @@ class GlobalContextHead(nn.Module):
         self.fc = nn.Linear(conv_out_channels, num_classes)
 
         self.criterion = nn.BCEWithLogitsLoss()
-
-    def init_weights(self):
-        """Init weights for the head."""
-        nn.init.normal_(self.fc.weight, 0, 0.01)
-        nn.init.constant_(self.fc.bias, 0)
 
     @auto_fp16()
     def forward(self, feats):

@@ -217,7 +217,7 @@ class CornerHead(BaseDenseHead):
             self._init_corner_emb_layers()
 
     # TODO: How to convert to init_cfg
-    def init_weights(self):
+    def init_weight(self):
         """Initialize weights of the head."""
         bias_init = bias_init_with_prob(0.1)
         for i in range(self.num_feat_levels):

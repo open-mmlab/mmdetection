@@ -1,10 +1,9 @@
 import math
-import warnings
 
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import build_conv_layer, build_norm_layer, constant_init
+from mmcv.cnn import build_conv_layer, build_norm_layer
 
 from ..builder import BACKBONES
 from .resnet import Bottleneck as _Bottleneck
@@ -159,7 +158,6 @@ class Bottle2neck(_Bottleneck):
         return out
 
 
-# TODO: Check
 class Res2Layer(nn.Sequential):
     """Res2Layer to build Res2Net style backbone.
 
@@ -316,21 +314,8 @@ class Res2Net(ResNet):
             init_cfg=init_cfg,
             **kwargs)
 
-    def make_res_layer(self, **kwargs):
-        return Res2Layer(
-            scales=self.scales,
-            base_width=self.base_width,
-            base_channels=self.base_channels,
-            **kwargs)
-
-    def init_weight(self):
-        """Initialize the weights in backbone."""
-        if isinstance(self.pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is a deprecated '
-                          'key, please consider using init_cfg')
-            self.init_cfg = dict(type='Pretrained', checkpoint=self.pretrained)
-        elif self.pretrained is None:
-            if self.init_cfg is None:
+        if pretrained is None:
+            if init_cfg is None:
                 self.init_cfg = [
                     dict(type='Kaiming', layer='Conv2d'),
                     dict(
@@ -338,22 +323,19 @@ class Res2Net(ResNet):
                         val=1,
                         layer=['_BatchNorm', 'GroupNorm'])
                 ]
-            elif not isinstance(self.init_cfg, list):
-                self.init_cfg = [self.init_cfg]
-            super(ResNet, self).init_weight()
+            elif not isinstance(init_cfg, list):
+                self.init_cfg = [init_cfg]
 
-            # dcn does not support init_cfg mode
-            if self.dcn is not None:
-                for m in self.modules():
-                    if isinstance(m, Bottle2neck) and hasattr(
-                            m.conv2, 'conv_offset'):
-                        constant_init(m.conv2.conv_offset, 0)
+            # TODO: dcn does not support init_cfg mode
 
             if self.zero_init_residual:
                 self.init_cfg += [
-                    dict(type='Constant', layer='BatchNorm3', val=0)
+                    dict(type='Constant', layer='BatchNorm3', val=0),
                 ]
-        else:
-            raise TypeError('pretrained must be a str or None')
 
-        super(Res2Net, self).init_weight()
+    def make_res_layer(self, **kwargs):
+        return Res2Layer(
+            scales=self.scales,
+            base_width=self.base_width,
+            base_channels=self.base_channels,
+            **kwargs)

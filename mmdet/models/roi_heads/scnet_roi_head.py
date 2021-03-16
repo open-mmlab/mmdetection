@@ -50,26 +50,22 @@ class SCNetRoIHead(CascadeRoIHead):
             self.mask_roi_extractor = build_roi_extractor(mask_roi_extractor)
             self.mask_head = build_head(mask_head)
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
+    # TODO: To support ModuleList
+    def init_weights(self):
+        """Initialize the weights in head."""
         for i in range(self.num_stages):
             if self.with_bbox:
-                self.bbox_roi_extractor[i].init_weights()
-                self.bbox_head[i].init_weights()
+                self.bbox_roi_extractor[i].init_weight()
+                self.bbox_head[i].init_weight()
         if self.with_mask:
-            self.mask_roi_extractor.init_weights()
-            self.mask_head.init_weights()
+            self.mask_roi_extractor.init_weight()
+            self.mask_head.init_weight()
         if self.with_semantic:
-            self.semantic_head.init_weights()
+            self.semantic_head.init_weight()
         if self.with_glbctx:
-            self.glbctx_head.init_weights()
+            self.glbctx_head.init_weight()
         if self.with_feat_relay:
-            self.feat_relay_head.init_weights()
+            self.feat_relay_head.init_weight()
 
     @property
     def with_semantic(self):

@@ -72,7 +72,7 @@ class RetinaSepBNHead(AnchorHead):
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
 
     # TODO: How to convert to init_cfg
-    def init_weights(self):
+    def init_weight(self):
         """Initialize weights of the head."""
         for m in self.cls_convs[0]:
             normal_init(m.conv, std=0.01)

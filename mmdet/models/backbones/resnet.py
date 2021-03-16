@@ -2,8 +2,7 @@ import warnings
 
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import (build_conv_layer, build_norm_layer, build_plugin_layer,
-                      constant_init)
+from mmcv.cnn import build_conv_layer, build_norm_layer, build_plugin_layer
 from mmcv.runner import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
 
@@ -390,10 +389,8 @@ class ResNet(BaseModule):
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for resnet')
 
-        # TODO: is it right？
-        assert not (
-            init_cfg and pretrained
-        ), 'init_cfg and pretrained cannot be setting at the same time'
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
         self.pretrained = pretrained
         self.init_cfg = init_cfg
 
@@ -462,6 +459,34 @@ class ResNet(BaseModule):
 
         self.feat_dim = self.block.expansion * base_channels * 2**(
             len(self.stage_blocks) - 1)
+
+        if isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is a deprecated '
+                          'key, please consider using init_cfg')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(
+                        type='Constant',
+                        val=1,
+                        layer=['_BatchNorm', 'GroupNorm'])
+                ]
+            elif not isinstance(init_cfg, list):
+                self.init_cfg = [init_cfg]
+
+            # TODO: dcn does not support init_cfg mode
+
+            if self.zero_init_residual:
+                self.init_cfg += [
+                    dict(
+                        type='Constant',
+                        layer=['BatchNorm2', 'BatchNorm3'],
+                        val=0),
+                ]
+        else:
+            raise TypeError('pretrained must be a str or None')
 
     def make_stage_plugins(self, plugins, stage_idx):
         """Make plugins for ResNet ``stage_idx`` th stage.
@@ -599,43 +624,6 @@ class ResNet(BaseModule):
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
-
-    # TODO: is it right？
-    def init_weight(self):
-        """Initialize the weights in backbone."""
-        if isinstance(self.pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is a deprecated '
-                          'key, please consider using init_cfg')
-            self.init_cfg = dict(type='Pretrained', checkpoint=self.pretrained)
-        elif self.pretrained is None:
-            if self.init_cfg is None:
-                self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(
-                        type='Constant',
-                        val=1,
-                        layer=['_BatchNorm', 'GroupNorm'])
-                ]
-            elif not isinstance(self.init_cfg, list):
-                self.init_cfg = [self.init_cfg]
-            super(ResNet, self).init_weight()
-
-            # dcn does not support init_cfg mode
-            if self.dcn is not None:
-                for m in self.modules():
-                    if isinstance(m, Bottleneck) and hasattr(
-                            m.conv2, 'conv_offset'):
-                        constant_init(m.conv2.conv_offset, 0)
-
-            if self.zero_init_residual:
-                self.init_cfg += [
-                    dict(type='Constant', layer='BatchNorm2', val=0),
-                    dict(type='Constant', layer='BatchNorm3', val=0)
-                ]
-        else:
-            raise TypeError('pretrained must be a str or None')
-
-        super(ResNet, self).init_weight()
 
     def forward(self, x):
         """Forward function."""

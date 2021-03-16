@@ -54,9 +54,8 @@ class SSDVGG(VGG):
         assert input_size in (300, 512)
         self.input_size = input_size
 
-        assert not (
-            init_cfg and pretrained
-        ), 'init_cfg and pretrained cannot be setting at the same time'
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
 
         self.features.add_module(
             str(len(self.features)),
@@ -86,20 +85,20 @@ class SSDVGG(VGG):
         elif pretrained is None:
             if init_cfg is None:
                 self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(type='Constant', val=1, layer='BatchNorm2d'),
-                    dict(type='Normal', std=0.01, layer='Linear'),
                     dict(
+                        type='Kaiming',
+                        layer='Conv2d',
                         override=dict(
                             type='Xavier',
                             name='extra',
                             layer='Conv2d',
                             distribution='uniform')),
+                    dict(type='Constant', val=1, layer='BatchNorm2d'),
+                    dict(type='Normal', std=0.01, layer='Linear'),
                     dict(
-                        override=dict(
-                            type='Constant',
-                            name='l2_norm',
-                            val=self.l2_norm.scale))
+                        type='Constant',
+                        layer='L2Norm',
+                        val=self.l2_norm.scale)
                 ]
         else:
             raise TypeError('pretrained must be a str or None')
