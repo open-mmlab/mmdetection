@@ -705,7 +705,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export():
             from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
-            batch_mlvl_scores = batch_mlvl_scores[..., :-1].permute(0, 2, 1)
+            # ignore background class
+            if not self.use_sigmoid_cls:
+                num_classes = batch_mlvl_scores.shape[2] - 1
+                batch_mlvl_scores = batch_mlvl_scores[..., :num_classes]
+            batch_mlvl_scores = batch_mlvl_scores.permute(0, 2, 1)
             max_output_boxes_per_class = cfg.nms.get(
                 'max_output_boxes_per_class', 1000)
             iou_threshold = cfg.nms.get('iou_threshold', 0.5)
