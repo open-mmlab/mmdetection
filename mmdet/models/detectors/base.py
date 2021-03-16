@@ -401,10 +401,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         segms = None
         if segm_result is not None and len(labels) > 0:  # non empty
             segms = mmcv.concat_list(segm_result)
-            #if isinstance(segms[0], torch.Tensor):
-            #    segms = torch.stack(segms, dim=0).detach().cpu().numpy()
-            #else:
-            #    segms = np.stack(segms, axis=0)
             inds = np.where(bboxes[:, -1] > score_thr)[0]
             np.random.seed(42)
             color_masks = [

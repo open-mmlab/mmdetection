@@ -38,7 +38,6 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         self.semantic_fusion = semantic_fusion
         self.interleaved = interleaved
         self.mask_info_flow = mask_info_flow
-        self.avg_pooling = torch.nn.AvgPool2d(kernel_size=2)  # Use during export to ONNX
 
     def init_weights(self, pretrained):
         """Initialize the weights in head.
@@ -176,11 +175,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
-                if torch.onnx.is_in_onnx_export():
-                    bbox_semantic_feat = self.avg_pooling(bbox_semantic_feat)
-                else:
-                    bbox_semantic_feat = F.adaptive_avg_pool2d(
-                        bbox_semantic_feat, bbox_feats.shape[-2:])
+                bbox_semantic_feat = F.adaptive_avg_pool2d(
+                    bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
         cls_score, bbox_pred = bbox_head(bbox_feats)
 

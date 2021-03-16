@@ -392,8 +392,7 @@ class LoadAnnotations(object):
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
         repr_str += f'with_text={self.with_text}, '
-        repr_str += f'poly2mask={self.file_client_args})'
-        #repr_str += f'file_client_args={self.file_client_args})'
+        repr_str += f'file_client_args={self.file_client_args})'
         return repr_str
 
 

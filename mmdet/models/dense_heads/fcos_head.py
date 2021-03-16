@@ -5,7 +5,6 @@ from mmcv.cnn import Scale, normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import distance2bbox, multi_apply, multiclass_nms, reduce_mean
-from mmdet.core.utils.misc import topk, meshgrid
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -369,12 +368,12 @@ class FCOSHead(AnchorFreeHead):
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0:
+            if nms_pre > 0 and scores.shape[0] > nms_pre:
                 max_scores, _ = (scores * centerness[:, None]).max(dim=1)
-                _, topk_inds = topk(max_scores, nms_pre)
-                points = points[topk_inds]
-                bbox_pred = bbox_pred[topk_inds]
-                scores = scores[topk_inds]
+                _, topk_inds = max_scores.topk(nms_pre)
+                points = points[topk_inds, :]
+                bbox_pred = bbox_pred[topk_inds, :]
+                scores = scores[topk_inds, :]
                 centerness = centerness[topk_inds]
             bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
@@ -385,6 +384,19 @@ class FCOSHead(AnchorFreeHead):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
         mlvl_centerness = torch.cat(mlvl_centerness)
+
+        # Set max number of box to be feed into nms in deployment
+        deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
+        if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
+            max_scores, _ = (mlvl_scores * mlvl_centerness[:, None]).max(dim=1)
+            _, topk_inds = max_scores.topk(deploy_nms_pre)
+            mlvl_scores = mlvl_scores[topk_inds, :]
+            mlvl_bboxes = mlvl_bboxes[topk_inds, :]
+            mlvl_centerness = mlvl_centerness[topk_inds]
+        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
+        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
+        # BG cat_id: num_class
+        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
 
         if with_nms:
             det_bboxes, det_labels = multiclass_nms(
@@ -398,7 +410,6 @@ class FCOSHead(AnchorFreeHead):
         else:
             return mlvl_bboxes, mlvl_scores, mlvl_centerness
 
-    '''
     def _get_points_single(self,
                            featmap_size,
                            stride,
@@ -409,34 +420,6 @@ class FCOSHead(AnchorFreeHead):
         y, x = super()._get_points_single(featmap_size, stride, dtype, device)
         points = torch.stack((x.reshape(-1) * stride, y.reshape(-1) * stride),
                              dim=-1) + stride // 2
-        return points
-    '''
-
-    def get_points(self, featmap_sizes, dtype, device):
-        """Get points according to feature map sizes.
-        Args:
-            featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            dtype (torch.dtype): Type of points.
-            device (torch.device): Device of points.
-        Returns:
-            tuple: points of each image.
-        """
-        mlvl_points = []
-        for i in range(len(featmap_sizes)):
-            mlvl_points.append(
-                self._get_points_single(featmap_sizes[i], self.strides[i],
-                                        dtype, device))
-        return mlvl_points
-
-    def _get_points_single(self, featmap_size, stride, dtype, device):
-        h, w = featmap_size
-        x_range = torch.arange(
-            0, w * stride, stride, dtype=dtype, device=device)
-        y_range = torch.arange(
-            0, h * stride, stride, dtype=dtype, device=device)
-        y, x = meshgrid(y_range, x_range)
-        points = torch.stack(
-            (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
         return points
 
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):

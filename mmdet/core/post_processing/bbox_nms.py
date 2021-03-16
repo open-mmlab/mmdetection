@@ -1,10 +1,10 @@
 import sys
 import torch
-import torch.onnx.symbolic_helper as sym_help
-from torch.autograd import Function
+#import torch.onnx.symbolic_helper as sym_help
+#from torch.autograd import Function
 from torch.onnx import is_in_onnx_export
-from torch.onnx.symbolic_opset9 import reshape
-from torch.onnx.symbolic_opset10 import _slice
+#from torch.onnx.symbolic_opset9 import reshape
+#from torch.onnx.symbolic_opset10 import _slice
 
 import mmdet.ops.nms  # Replace mmcv.ops.nms by one from mmdet.ops.nms
 from mmdet.integration.nncf import no_nncf_trace
@@ -29,10 +29,10 @@ def multiclass_nms(multi_bboxes,
         score_thr (float): bbox threshold, bboxes with scores lower than it
             will not be considered.
         nms_cfg (dict): NMS operation config
-        max_num (int): if there are more than max_num bboxes after NMS,
-            only top max_num will be kept.
-        score_factors (Tensor): The factors multiplied to scores before
-            applying NMS
+        max_num (int, optional): if there are more than max_num bboxes after
+            NMS, only top max_num will be kept. Default to -1.
+        score_factors (Tensor, optional): The factors multiplied to scores
+            before applying NMS. Default to None.
         return_inds (bool, optional): Whether return the indices of kept
             bboxes. Default to False.
 

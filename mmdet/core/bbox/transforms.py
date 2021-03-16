@@ -5,35 +5,6 @@ from torch.onnx import is_in_onnx_export
 from ..utils.misc import to_numpy
 
 
-def clamp(x, min, max):
-    if is_in_onnx_export():
-        is_min_tensor = isinstance(min, torch.Tensor)
-        is_max_tensor = isinstance(max, torch.Tensor)
-
-        if is_min_tensor and is_max_tensor:
-            y = x.clamp(min=min, max=max)
-        else:
-            device = x.device
-            dtype = x.dtype
-
-            y = x
-            d = len(y.shape)
-
-            min_val = torch.as_tensor(min, dtype=dtype, device=device)
-            y = torch.stack(
-                [y, min_val.view([1, ] * y.dim()).expand_as(y)], dim=d)
-            y = torch.max(y, dim=d, keepdim=False)[0]
-
-            max_val = torch.as_tensor(max, dtype=dtype, device=device)
-            y = torch.stack(
-                [y, max_val.view([1, ] * y.dim()).expand_as(y)], dim=d)
-            y = torch.min(y, dim=d, keepdim=False)[0]
-    else:
-        y = x.clamp(min=min, max=max)
-
-    return y
-
-
 def bbox_flip(bboxes, img_shape, direction='horizontal'):
     """Flip bboxes horizontally or vertically.
 
@@ -165,10 +136,10 @@ def distance2bbox(points, distance, max_shape=None):
     x2 = points[:, 0] + distance[:, 2]
     y2 = points[:, 1] + distance[:, 3]
     if max_shape is not None:
-        x1 = clamp(x1, min=0, max=max_shape[1])
-        y1 = clamp(y1, min=0, max=max_shape[0])
-        x2 = clamp(x2, min=0, max=max_shape[1])
-        y2 = clamp(y2, min=0, max=max_shape[0])
+        x1 = x1.clamp(min=0, max=max_shape[1])
+        y1 = y1.clamp(min=0, max=max_shape[0])
+        x2 = x2.clamp(min=0, max=max_shape[1])
+        y2 = y2.clamp(min=0, max=max_shape[0])
     return torch.stack([x1, y1, x2, y2], -1)
 
 

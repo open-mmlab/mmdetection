@@ -4,8 +4,6 @@ import torch
 from ..builder import BBOX_CODERS
 from .base_bbox_coder import BaseBBoxCoder
 
-from mmdet.core.bbox.transforms import clamp
-
 
 @BBOX_CODERS.register_module()
 class DeltaXYWHBBoxCoder(BaseBBoxCoder):
