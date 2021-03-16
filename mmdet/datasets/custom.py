@@ -79,8 +79,8 @@ class CustomDataset(Dataset):
                 self.img_prefix = osp.join(self.data_root, self.img_prefix)
             if not (self.seg_prefix is None or osp.isabs(self.seg_prefix)):
                 self.seg_prefix = osp.join(self.data_root, self.seg_prefix)
-            if not (self.proposal_file is None
-                    or osp.isabs(self.proposal_file)):
+            if not (self.proposal_file is None or
+                        osp.isabs(self.proposal_file)):
                 self.proposal_file = osp.join(self.data_root,
                                               self.proposal_file)
         # load annotations (and proposals)
