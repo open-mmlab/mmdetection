@@ -82,11 +82,12 @@ class TransformerHead(AnchorFreeHead):
                          iou_cost=dict(
                              type='IoUCost', iou_mode='giou', weight=2.0))),
                  test_cfg=dict(max_per_img=100),
+                 init_cfg=None,
                  **kwargs):
         # NOTE here use `AnchorFreeHead` instead of `TransformerHead`,
         # since it brings inconvenience when the initialization of
         # `AnchorFreeHead` is called.
-        super(AnchorFreeHead, self).__init__()
+        super(AnchorFreeHead, self).__init__(init_cfg)
         use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         assert not use_sigmoid_cls, 'setting use_sigmoid_cls as True is ' \
             'not supported in DETR, since background is needed for the ' \

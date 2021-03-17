@@ -76,9 +76,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=dict(
-                     type='Normal',
-                     override=dict(type='Normal', name='convs_pred',
-                                   std=0.01))):
+                     type='Normal', std=0.01,
+                     override=dict(name='convs_pred'))):
         super(YOLOV3Head, self).__init__(init_cfg)
         # Check params
         assert (len(in_channels) == len(out_channels) == len(featmap_strides))

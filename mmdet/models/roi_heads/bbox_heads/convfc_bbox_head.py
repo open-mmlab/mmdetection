@@ -89,9 +89,9 @@ class ConvFCBBoxHead(BBoxHead):
                 dict(
                     type='Xavier',
                     override=[
-                        dict(type='Xavier', name='shared_fcs', layer='Linear'),
-                        dict(type='Xavier', name='cls_fcs', layer='Linear'),
-                        dict(type='Xavier', name='reg_fcs', layer='Linear')
+                        dict(name='shared_fcs', layer='Linear'),
+                        dict(name='cls_fcs', layer='Linear'),
+                        dict(name='reg_fcs', layer='Linear')
                     ])
             ]
 

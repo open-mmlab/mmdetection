@@ -106,6 +106,7 @@ class Bottleneck(_Bottleneck):
         return out
 
 
+# TODO： Wait for MMCV PR merge
 class ResLayer(nn.Sequential):
     """ResLayer to build ResNet style backbone for RPF in detectoRS.
 

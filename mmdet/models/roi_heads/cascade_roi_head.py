@@ -106,7 +106,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.bbox_sampler.append(
                     build_sampler(rcnn_train_cfg.sampler, context=self))
 
-    # TODO: To support ModuleList
+    # TODO： Wait for MMCV PR merge
     def init_weight(self):
         """Initialize the weights in head."""
         if self.with_shared_head:

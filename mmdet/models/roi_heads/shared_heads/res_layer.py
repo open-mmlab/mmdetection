@@ -24,8 +24,6 @@ class ResLayer(BaseModule):
                  pretrained=None,
                  init_cfg=None):
         super(ResLayer, self).__init__(init_cfg)
-        assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
 
         self.norm_eval = norm_eval
         self.norm_cfg = norm_cfg
@@ -49,9 +47,11 @@ class ResLayer(BaseModule):
             dcn=dcn)
         self.add_module(f'layer{stage + 1}', res_layer)
 
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
         if isinstance(pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is a deprecated '
-                          'key, please consider using init_cfg')
+            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+                          'please use "init_cfg" instead')
             self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
         elif pretrained is None:
             if init_cfg is None:

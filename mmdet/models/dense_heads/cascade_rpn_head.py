@@ -47,8 +47,7 @@ class AdaptiveConv(BaseModule):
                  bias=False,
                  type='dilation',
                  init_cfg=dict(
-                     type='Normal',
-                     override=dict(name='conv', type='Normal', std=0.01))):
+                     type='Normal', std=0.01, override=dict(name='conv'))):
         super(AdaptiveConv, self).__init__(init_cfg)
         assert type in ['offset', 'dilation']
         self.adapt_type = type
@@ -140,14 +139,11 @@ class StageCascadeRPNHead(RPNHead):
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
 
-        # TODO: Check
         if init_cfg is None:
             self.init_cfg = dict(
-                type='Normal',
-                override=[dict(type='Normal', name='rpn_reg', std=0.01)])
+                type='Normal', std=0.01, override=[dict(name='rpn_reg')])
             if self.with_cls:
-                self.init_cfg['override'].append(
-                    dict(type='Normal', name='rpn_cls', std=0.01))
+                self.init_cfg['override'].append(dict(name='rpn_cls'))
 
     def _init_layers(self):
         """Init layers of a CascadeRPN stage."""
@@ -688,8 +684,8 @@ class CascadeRPNHead(BaseDenseHead):
         test_cfg (dict): config at testing time.
     """
 
-    def __init__(self, num_stages, stages, train_cfg, test_cfg):
-        super(CascadeRPNHead, self).__init__()
+    def __init__(self, num_stages, stages, train_cfg, test_cfg, init_cfg=None):
+        super(CascadeRPNHead, self).__init__(init_cfg)
         assert num_stages == len(stages)
         self.num_stages = num_stages
         self.stages = nn.ModuleList()
@@ -700,11 +696,6 @@ class CascadeRPNHead(BaseDenseHead):
             self.stages.append(build_head(stages[i]))
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-
-    def init_weight(self):
-        """Init weight of CascadeRPN."""
-        for i in range(self.num_stages):
-            self.stages[i].init_weight()
 
     def loss(self):
         """loss() is implemented in StageCascadeRPNHead."""

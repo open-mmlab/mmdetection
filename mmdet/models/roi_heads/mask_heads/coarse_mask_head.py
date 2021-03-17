@@ -30,7 +30,7 @@ class CoarseMaskHead(FCNMaskHead):
                  init_cfg=dict(
                      type='Xavier',
                      override=[
-                         dict(type='Xavier', layer='Linear', name='fcs'),
+                         dict(layer='Linear', name='fcs'),
                          dict(type='Constant', val=0.001, name='fc_logits')
                      ]),
                  *arg,

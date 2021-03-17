@@ -35,8 +35,7 @@ class FusedSemanticHead(BaseModule):
                  conv_cfg=None,
                  norm_cfg=None,
                  init_cfg=dict(
-                     type='Kaiming',
-                     override=dict(type='Kaiming', name='conv_logits'))):
+                     type='Kaiming', override=dict(name='conv_logits'))):
         super(FusedSemanticHead, self).__init__(init_cfg)
         self.num_ins = num_ins
         self.fusion_level = fusion_level

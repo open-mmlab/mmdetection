@@ -62,7 +62,7 @@ class MaskIoUHead(BaseModule):
         self.max_pool = MaxPool2d(2, 2)
         self.loss_iou = build_loss(loss_iou)
 
-    # TODO: How
+    # TODO： Wait for MMCV PR merge
     def init_weight(self):
         if hasattr(self, 'init_cfg'):
             super(MaskIoUHead, self).init_weight()

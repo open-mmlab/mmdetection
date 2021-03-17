@@ -48,9 +48,8 @@ class MaskPointHead(BaseModule):
                  loss_point=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0),
                  init_cfg=dict(
-                     type='Normal',
-                     override=dict(type='Normal', name='fc_logits',
-                                   std=0.001))):
+                     type='Normal', std=0.001,
+                     override=dict(name='fc_logits'))):
         super().__init__(init_cfg)
         self.num_fcs = num_fcs
         self.in_channels = in_channels

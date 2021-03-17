@@ -50,7 +50,7 @@ class SCNetRoIHead(CascadeRoIHead):
             self.mask_roi_extractor = build_roi_extractor(mask_roi_extractor)
             self.mask_head = build_head(mask_head)
 
-    # TODO: To support ModuleList
+    # TODO： Wait for MMCV PR merge
     def init_weights(self):
         """Initialize the weights in head."""
         for i in range(self.num_stages):

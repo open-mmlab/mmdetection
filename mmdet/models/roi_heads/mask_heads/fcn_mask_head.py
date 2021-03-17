@@ -106,7 +106,9 @@ class FCNMaskHead(BaseModule):
 
     # TODO: HOW
     def init_weight(self):
-        if self.init_cfg is None:
+        if hasattr(self, 'init_cfg'):
+            super(FCNMaskHead, self).init_weight()
+        else:
             for m in [self.upsample, self.conv_logits]:
                 if m is None:
                     continue
@@ -116,8 +118,6 @@ class FCNMaskHead(BaseModule):
                     nn.init.kaiming_normal_(
                         m.weight, mode='fan_out', nonlinearity='relu')
                     nn.init.constant_(m.bias, 0)
-        else:
-            super(FCNMaskHead, self).init_weight()
 
     @auto_fp16()
     def forward(self, x):

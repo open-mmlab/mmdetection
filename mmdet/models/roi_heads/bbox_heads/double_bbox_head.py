@@ -95,8 +95,8 @@ class DoubleConvFCBBoxHead(BBoxHead):
                  init_cfg=dict(
                      type='Normal',
                      override=[
-                         dict(type='Normal', name='fc_cls', std=0.01),
-                         dict(type='Normal', name='fc_reg', std=0.001),
+                         dict(name='fc_cls', std=0.01),
+                         dict(name='fc_reg', std=0.001),
                          dict(
                              type='Xavier',
                              name='fc_branch',

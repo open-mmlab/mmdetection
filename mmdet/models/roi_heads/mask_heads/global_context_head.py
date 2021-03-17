@@ -34,8 +34,7 @@ class GlobalContextHead(BaseModule):
                  norm_cfg=None,
                  conv_to_res=False,
                  init_cfg=dict(
-                     type='Normal',
-                     override=dict(type='Normal', name='fc', std=0.01))):
+                     type='Normal', std=0.01, override=dict(name='fc'))):
         super(GlobalContextHead, self).__init__(init_cfg)
         self.num_convs = num_convs
         self.in_channels = in_channels

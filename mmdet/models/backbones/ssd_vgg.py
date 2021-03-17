@@ -54,9 +54,6 @@ class SSDVGG(VGG):
         assert input_size in (300, 512)
         self.input_size = input_size
 
-        assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
-
         self.features.add_module(
             str(len(self.features)),
             nn.MaxPool2d(kernel_size=3, stride=1, padding=1))
@@ -77,10 +74,11 @@ class SSDVGG(VGG):
             self.features[out_feature_indices[0] - 1].out_channels,
             l2_norm_scale)
 
-        # TODO: Check
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
         if isinstance(pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is a deprecated '
-                          'key, please consider using init_cfg')
+            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+                          'please use "init_cfg" instead')
             self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
         elif pretrained is None:
             if init_cfg is None:

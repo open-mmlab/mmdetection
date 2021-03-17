@@ -7,7 +7,7 @@ from mmcv.runner import BaseModule
 from .builder import TRANSFORMER
 
 
-class MultiheadAttention(nn.Module):
+class MultiheadAttention(BaseModule):
     """A warpper for torch.nn.MultiheadAttention.
 
     This module implements MultiheadAttention with residual connection,
@@ -20,8 +20,8 @@ class MultiheadAttention(nn.Module):
         dropout (float): A Dropout layer on attn_output_weights. Default 0.0.
     """
 
-    def __init__(self, embed_dims, num_heads, dropout=0.0):
-        super(MultiheadAttention, self).__init__()
+    def __init__(self, embed_dims, num_heads, dropout=0.0, init_cfg=None):
+        super(MultiheadAttention, self).__init__(init_cfg)
         assert embed_dims % num_heads == 0, 'embed_dims must be ' \
             f'divisible by num_heads. got {embed_dims} and {num_heads}.'
         self.embed_dims = embed_dims
@@ -102,7 +102,7 @@ class MultiheadAttention(nn.Module):
         return repr_str
 
 
-class FFN(nn.Module):
+class FFN(BaseModule):
     """Implements feed-forward networks (FFNs) with residual connection.
 
     Args:
@@ -124,8 +124,9 @@ class FFN(nn.Module):
                  num_fcs=2,
                  act_cfg=dict(type='ReLU', inplace=True),
                  dropout=0.0,
-                 add_residual=True):
-        super(FFN, self).__init__()
+                 add_residual=True,
+                 init_cfg=None):
+        super(FFN, self).__init__(init_cfg)
         assert num_fcs >= 2, 'num_fcs should be no less ' \
             f'than 2. got {num_fcs}.'
         self.embed_dims = embed_dims
@@ -169,7 +170,7 @@ class FFN(nn.Module):
         return repr_str
 
 
-class TransformerEncoderLayer(nn.Module):
+class TransformerEncoderLayer(BaseModule):
     """Implements one encoder layer in DETR transformer.
 
     Args:
@@ -195,8 +196,9 @@ class TransformerEncoderLayer(nn.Module):
                  order=('selfattn', 'norm', 'ffn', 'norm'),
                  act_cfg=dict(type='ReLU', inplace=True),
                  norm_cfg=dict(type='LN'),
-                 num_fcs=2):
-        super(TransformerEncoderLayer, self).__init__()
+                 num_fcs=2,
+                 init_cfg=None):
+        super(TransformerEncoderLayer, self).__init__(init_cfg)
         assert isinstance(order, tuple) and len(order) == 4
         assert set(order) == set(['selfattn', 'norm', 'ffn'])
         self.embed_dims = embed_dims
@@ -268,7 +270,7 @@ class TransformerEncoderLayer(nn.Module):
         return repr_str
 
 
-class TransformerDecoderLayer(nn.Module):
+class TransformerDecoderLayer(BaseModule):
     """Implements one decoder layer in DETR transformer.
 
     Args:
@@ -296,8 +298,9 @@ class TransformerDecoderLayer(nn.Module):
                         'norm'),
                  act_cfg=dict(type='ReLU', inplace=True),
                  norm_cfg=dict(type='LN'),
-                 num_fcs=2):
-        super(TransformerDecoderLayer, self).__init__()
+                 num_fcs=2,
+                 init_cfg=None):
+        super(TransformerDecoderLayer, self).__init__(init_cfg)
         assert isinstance(order, tuple) and len(order) == 6
         assert set(order) == set(['selfattn', 'norm', 'multiheadattn', 'ffn'])
         self.embed_dims = embed_dims
@@ -403,7 +406,7 @@ class TransformerDecoderLayer(nn.Module):
         return repr_str
 
 
-class TransformerEncoder(nn.Module):
+class TransformerEncoder(BaseModule):
     """Implements the encoder in DETR transformer.
 
     Args:
@@ -428,8 +431,9 @@ class TransformerEncoder(nn.Module):
                  order=('selfattn', 'norm', 'ffn', 'norm'),
                  act_cfg=dict(type='ReLU', inplace=True),
                  norm_cfg=dict(type='LN'),
-                 num_fcs=2):
-        super(TransformerEncoder, self).__init__()
+                 num_fcs=2,
+                 init_cfg=None):
+        super(TransformerEncoder, self).__init__(init_cfg)
         assert isinstance(order, tuple) and len(order) == 4
         assert set(order) == set(['selfattn', 'norm', 'ffn'])
         self.num_layers = num_layers
@@ -487,7 +491,7 @@ class TransformerEncoder(nn.Module):
         return repr_str
 
 
-class TransformerDecoder(nn.Module):
+class TransformerDecoder(BaseModule):
     """Implements the decoder in DETR transformer.
 
     Args:
@@ -514,8 +518,9 @@ class TransformerDecoder(nn.Module):
                  act_cfg=dict(type='ReLU', inplace=True),
                  norm_cfg=dict(type='LN'),
                  num_fcs=2,
-                 return_intermediate=False):
-        super(TransformerDecoder, self).__init__()
+                 return_intermediate=False,
+                 init_cfg=None):
+        super(TransformerDecoder, self).__init__(init_cfg)
         assert isinstance(order, tuple) and len(order) == 6
         assert set(order) == set(['selfattn', 'norm', 'multiheadattn', 'ffn'])
         self.num_layers = num_layers
@@ -755,7 +760,7 @@ class Transformer(BaseModule):
 
 
 @TRANSFORMER.register_module()
-class DynamicConv(nn.Module):
+class DynamicConv(BaseModule):
     """Implements Dynamic Convolution.
 
     This module generate parameters for each sample and
@@ -784,8 +789,9 @@ class DynamicConv(nn.Module):
                  out_channels=None,
                  input_feat_shape=7,
                  act_cfg=dict(type='ReLU', inplace=True),
-                 norm_cfg=dict(type='LN')):
-        super(DynamicConv, self).__init__()
+                 norm_cfg=dict(type='LN'),
+                 init_cfg=None):
+        super(DynamicConv, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.out_channels_raw = out_channels

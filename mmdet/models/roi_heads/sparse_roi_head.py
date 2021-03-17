@@ -49,7 +49,8 @@ class SparseRoIHead(CascadeRoIHead):
                      roi_feat_size=7,
                      ffn_act_cfg=dict(type='ReLU', inplace=True)),
                  train_cfg=None,
-                 test_cfg=None):
+                 test_cfg=None,
+                 init_cfg=None):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
         assert len(stage_loss_weights) == num_stages
@@ -62,7 +63,8 @@ class SparseRoIHead(CascadeRoIHead):
             bbox_roi_extractor=bbox_roi_extractor,
             bbox_head=bbox_head,
             train_cfg=train_cfg,
-            test_cfg=test_cfg)
+            test_cfg=test_cfg,
+            init_cfg=init_cfg)
         # train_cfg would be None when run the test.py
         if train_cfg is not None:
             for stage in range(num_stages):

@@ -107,9 +107,6 @@ class Darknet(BaseModule):
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for darknet')
 
-        assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
-
         self.depth = depth
         self.out_indices = out_indices
         self.frozen_stages = frozen_stages
@@ -130,9 +127,11 @@ class Darknet(BaseModule):
 
         self.norm_eval = norm_eval
 
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
         if isinstance(pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is a deprecated '
-                          'key, please consider using init_cfg')
+            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+                          'please use "init_cfg" instead')
             self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
         elif pretrained is None:
             if init_cfg is None:

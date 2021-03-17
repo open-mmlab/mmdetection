@@ -69,14 +69,12 @@ class BBoxHead(BaseModule):
             if self.with_cls:
                 self.init_cfg += [
                     dict(
-                        type='Normal',
-                        override=dict(type='Normal', name='fc_cls', std=0.01))
+                        type='Normal', std=0.01, override=dict(name='fc_cls'))
                 ]
             if self.with_reg:
                 self.init_cfg += [
                     dict(
-                        type='Normal',
-                        override=dict(type='Normal', name='fc_reg', std=0.001))
+                        type='Normal', std=0.001, override=dict(name='fc_reg'))
                 ]
 
     @auto_fp16()
