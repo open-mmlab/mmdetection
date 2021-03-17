@@ -200,16 +200,6 @@ class TwoStageDetector(BaseDetector):
         else:
             proposal_list = proposals
 
-        # Simulation
-        to_tensor = True
-        if to_tensor and isinstance(proposal_list, list):
-            max_size = max([proposal.size(0) for proposal in proposal_list])
-            for i, proposal in enumerate(proposal_list):
-                supplement = proposal.new_full(
-                    (max_size - proposal.size(0), 5), 0)
-                proposal_list[i] = torch.cat((supplement, proposal), dim=0)
-            proposal_list = torch.stack(proposal_list, dim=0)
-
         return self.roi_head.simple_test(
             x, proposal_list, img_metas, rescale=rescale)
 

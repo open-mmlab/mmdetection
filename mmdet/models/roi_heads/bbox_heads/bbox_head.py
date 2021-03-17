@@ -275,7 +275,6 @@ class BBoxHead(nn.Module):
                    scale_factor,
                    rescale=False,
                    cfg=None):
-        # TODO: What scenarios are valid
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
 
@@ -286,24 +285,38 @@ class BBoxHead(nn.Module):
             bboxes = self.bbox_coder.decode(
                 rois[..., 1:], bbox_pred, max_shape=img_shape)
         else:
+            # TODO: Support ONNX
             bboxes = rois[..., 1:].clone()
             if img_shape is not None:
-                # TODO
-                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
-                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
+                bboxes[..., [0, 2]].clamp_(min=0, max=img_shape[1])
+                bboxes[..., [1, 3]].clamp_(min=0, max=img_shape[0])
+
+        if bboxes.ndim == 2:
+            is_batch = False
+        else:
+            is_batch = True
 
         if rescale and bboxes.size(-2) > 0:
             if isinstance(scale_factor, float):
                 bboxes /= scale_factor
             else:
-                scale_factor = bboxes.new_tensor(scale_factor)[:, None].repeat(
-                    1, 1,
-                    bboxes.size(-1) // 4)
+                if is_batch:
+                    scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(
+                        1).repeat(1, 1,
+                                  bboxes.size(-1) // 4)
+                else:
+                    scale_factor = bboxes.new_tensor(scale_factor).view(
+                        1, -1).repeat(1,
+                                      bboxes.size(-1) // 4)
                 bboxes /= scale_factor
 
+        if not is_batch:
+            bboxes = [bboxes]
+            scores = [scores]
+
         if cfg is None:
-            # TODO
-            return bboxes, scores
+            det_bboxes = [bbox for bbox in bboxes]
+            det_labels = [score for score in scores]
         else:
             det_bboxes = []
             det_labels = []
@@ -313,7 +326,11 @@ class BBoxHead(nn.Module):
                                                      cfg.max_per_img)
                 det_bboxes.append(det_bbox)
                 det_labels.append(det_label)
-            return det_bboxes, det_labels
+
+        if not is_batch:
+            det_bboxes = det_bboxes[0]
+            det_labels = det_labels[0]
+        return det_bboxes, det_labels
 
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
