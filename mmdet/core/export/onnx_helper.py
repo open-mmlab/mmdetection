@@ -54,8 +54,17 @@ def add_dummy_nms_for_onnx(boxes,
         return selected_indices
     batch_inds, cls_inds = selected_indices[:, 0], selected_indices[:, 1]
     box_inds = selected_indices[:, 2]
-    boxes = boxes[batch_inds, box_inds, :]
-    scores = scores[batch_inds, cls_inds, box_inds].unsqueeze(1)
+    # get final boxes and scores with 1-d indexing in stead of below style:
+    # boxes = boxes[batch_inds, box_inds, :]
+    # scores = scores[batch_inds, cls_inds, box_inds]
+    num_class = scores.shape[1]
+    num_box = scores.shape[2]
+    boxes = boxes.reshape(-1, 4)
+    scores = scores.reshape(-1, 1)
+    boxes_inds = (num_box * batch_inds + box_inds)
+    scores_inds = (num_class * batch_inds + cls_inds) * num_box + box_inds
+    boxes = boxes[boxes_inds, :]
+    scores = scores[scores_inds, :]
     dets = torch.cat([boxes, scores], dim=1)
     return dets, batch_inds, cls_inds
 
