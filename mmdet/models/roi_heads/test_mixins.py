@@ -99,7 +99,8 @@ class BBoxTestMixin(object):
             supplement_mask = rois[..., -1] == 0
             cls_score[supplement_mask, :] = 0
 
-        # some detector with_reg is False like Grid R-CNN, bbox_pred will be None
+        # some detector with_reg is False like Grid R-CNN,
+        # bbox_pred will be None
         if bbox_pred is not None:
             # the bbox prediction of some detectors like SABL is not Tensor
             if isinstance(bbox_pred, torch.Tensor):
