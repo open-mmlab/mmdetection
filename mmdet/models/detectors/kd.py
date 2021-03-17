@@ -4,7 +4,6 @@ import torch
 from torch import Tensor
 from torch.nn import Module
 
-from mmdet.apis.inference import init_detector
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
@@ -23,6 +22,8 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
                  pretrained=None):
         super().__init__(backbone, neck, bbox_head, train_cfg, test_cfg,
                          pretrained)
+
+        from mmdet.apis.inference import init_detector
 
         self.teacher_model = init_detector(
             teacher_config, teacher_model, device=torch.cuda.current_device())
