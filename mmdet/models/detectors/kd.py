@@ -1,45 +1,7 @@
-import mmcv
 import torch
-from mmcv.runner import load_checkpoint
 
-from mmdet.models import build_detector
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
-
-
-def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
-    """Initialize a detector from config file.
-
-    Args:
-        config (str or :obj:`mmcv.Config`): Config file path or the config
-            object.
-        checkpoint (str, optional): Checkpoint path. If left as None, the model
-            will not load any weights.
-        cfg_options (dict): Options to override some settings in the used
-            config.
-
-    Returns:
-        nn.Module: The constructed detector.
-    """
-    if isinstance(config, str):
-        config = mmcv.Config.fromfile(config)
-    elif not isinstance(config, mmcv.Config):
-        raise TypeError('config must be a filename or Config object, '
-                        f'but got {type(config)}')
-    if cfg_options is not None:
-        config.merge_from_dict(cfg_options)
-    config.model.pretrained = None
-    config.model.train_cfg = None
-    model = build_detector(config.model, test_cfg=config.get('test_cfg'))
-    if checkpoint is not None:
-        map_loc = 'cpu' if device == 'cpu' else None
-        checkpoint = load_checkpoint(model, checkpoint, map_location=map_loc)
-        if 'CLASSES' in checkpoint.get('meta', {}):
-            model.CLASSES = checkpoint['meta']['CLASSES']
-    model.cfg = config  # save the config in the model for convenience
-    model.to(device)
-    model.eval()
-    return model
 
 
 @DETECTORS.register_module()
@@ -54,9 +16,9 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
-        super(KnowledgeDistillationSingleStageDetector,
-              self).__init__(backbone, neck, bbox_head, train_cfg, test_cfg,
-                             pretrained)
+        super().__init__(backbone, neck, bbox_head, train_cfg, test_cfg,
+                         pretrained)
+        from mmdet.apis.inference import init_detector
 
         self.teacher_model = init_detector(
             teacher_config, teacher_model, device=torch.cuda.current_device())

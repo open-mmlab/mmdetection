@@ -41,7 +41,11 @@ model = dict(
             use_sigmoid=True,
             beta=2.0,
             loss_weight=1.0),
-        loss_dfl=dict(type='LDLoss', loss_weight=0.25, T=10, alpha=1),
+        loss_dfl=dict(
+            type='LocalizationDistillationLoss',
+            loss_weight=0.25,
+            T=10,
+            alpha=1),
         reg_max=16,
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0)),
     # training and testing settings

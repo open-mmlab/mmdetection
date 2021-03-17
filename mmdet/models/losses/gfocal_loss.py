@@ -79,7 +79,22 @@ def distribution_focal_loss(pred, label):
 
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def ld_loss(pred, label, soft_label, T):
+def localization_distillation_loss(pred, soft_label, T):
+    r"""LD is the extension of knowledge distillation on localization task,
+    which utilizes the learned bbox distributions to transfer the localization
+    dark knowledge from teacher to student.
+    <https://arxiv.org/abs/2102.12252>`_.
+
+    Args:
+    pred (torch.Tensor): Predicted general distribution of bounding boxes
+        (before softmax) with shape (N, n+1), n is the max value of the
+        integral set `{0, ..., n}` in paper.
+    soft_label (torch.Tensor): Target distance label learned from teacher for
+        bounding boxes with shape (N, n+1).
+
+    Returns:
+        torch.Tensor: Loss tensor with shape (N,).
+    """
     ld_loss = F.kl_div(
         F.log_softmax(pred / T, dim=1),
         F.softmax(soft_label / T, dim=1).detach(),
@@ -201,14 +216,18 @@ class DistributionFocalLoss(nn.Module):
 
 
 @LOSSES.register_module()
-class LDLoss(nn.Module):
-    r"""Distribution Focal Loss (DFL) is a variant of `Generalized Focal Loss:
-    Learning Qualified and Distributed Bounding Boxes for Dense Object
-    Detection <https://arxiv.org/abs/2006.04388>`_.
+class LocalizationDistillationLoss(nn.Module):
+    r"""LD is the extension of knowledge distillation on localization task,
+    which utilizes the learned bbox distributions to transfer the localization
+    dark knowledge from teacher to student.
+    <https://arxiv.org/abs/2102.12252>`_.
 
     Args:
         reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
         loss_weight (float): Loss weight of current loss.
+        T (int): Temperature for distillation.
+        alpha (int): balance factor.
+        beta (int): balance factor.
     """
 
     def __init__(self,
@@ -217,7 +236,7 @@ class LDLoss(nn.Module):
                  T=2,
                  alpha=1,
                  beta=1):
-        super(LDLoss, self).__init__()
+        super(LocalizationDistillationLoss, self).__init__()
         self.reduction = reduction
         self.loss_weight = loss_weight
 
@@ -254,13 +273,12 @@ class LDLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
 
-        loss_ld = self.loss_weight * ld_loss(
+        loss_ld = self.loss_weight * localization_distillation_loss(
             pred,
-            target,
+            soft_corners,
             weight,
             reduction=reduction,
             avg_factor=avg_factor,
-            soft_label=soft_corners,
             T=self.T)
         loss_cls = self.loss_weight * distribution_focal_loss(
             pred, target, weight, reduction=reduction, avg_factor=avg_factor)
