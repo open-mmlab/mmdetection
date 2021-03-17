@@ -62,16 +62,16 @@ class TridentRoIHead(StandardRoIHead):
         for _ in range(len(det_bboxes_list)):
             if det_bboxes_list[_].shape[0] == 0:
                 det_bboxes_list[_] = det_bboxes_list[_].new_empty((0, 5))
-        det_results = [
-            self.merge_trident_bboxes(
+        det_bboxes, det_labels = [], []
+        for i in range(len(img_metas) // num_branch):
+            det_result = self.merge_trident_bboxes(
                 torch.cat(det_bboxes_list[i * num_branch:(i + 1) *
                                           num_branch]),
                 torch.cat(det_labels_list[i * num_branch:(i + 1) *
-                                          num_branch]),
-            ) for i in range(len(img_metas) // num_branch)
-        ]
-        det_bboxes, det_labels = ([item[i] for item in det_results]
-                                  for i in (0, 1))
+                                          num_branch]))
+            det_bboxes.append(det_result[0])
+            det_labels.append(det_result[1])
+
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
                         self.bbox_head.num_classes)
