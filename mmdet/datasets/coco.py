@@ -546,9 +546,9 @@ class CocoDataset(CustomDataset):
     def __repr__(self):
         """Print the number of instance number."""
         dataset_type = 'Test' if self.test_mode else 'Train'
-        result = f'\n{dataset_type} dataset ' \
-                 f'with number of images {len(self)}, ' \
-                 f'and instance counts: \n'
+        result = (f'\n{self.__class__.__name__} {dataset_type} dataset ',
+                  f'with number of images {len(self)}, ',
+                  f'and instance counts: \n')
         if self.CLASSES is None:
             return result
         instance_count = np.zeros(len(self.CLASSES) + 1).astype(int)
