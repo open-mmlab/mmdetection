@@ -32,6 +32,7 @@ class ResBlock(BaseModule):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
+                 pretrained=None,
                  init_cfg=None):
         super(ResBlock, self).__init__(init_cfg)
         assert in_channels % 2 == 0  # ensure the in_channels is even

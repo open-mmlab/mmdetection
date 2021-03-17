@@ -218,21 +218,25 @@ class CornerHead(BaseDenseHead):
 
     # TODO: How to convert to init_cfg
     def init_weight(self):
-        """Initialize weights of the head."""
-        bias_init = bias_init_with_prob(0.1)
-        for i in range(self.num_feat_levels):
-            # The initialization of parameters are different between nn.Conv2d
-            # and ConvModule. Our experiments show that using the original
-            # initialization of nn.Conv2d increases the final mAP by about 0.2%
-            self.tl_heat[i][-1].conv.reset_parameters()
-            self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
-            self.br_heat[i][-1].conv.reset_parameters()
-            self.br_heat[i][-1].conv.bias.data.fill_(bias_init)
-            self.tl_off[i][-1].conv.reset_parameters()
-            self.br_off[i][-1].conv.reset_parameters()
-            if self.with_corner_emb:
-                self.tl_emb[i][-1].conv.reset_parameters()
-                self.br_emb[i][-1].conv.reset_parameters()
+        if hasattr(self, 'init_cfg'):
+            super(CornerHead, self).init_weight()
+        else:
+            """Initialize weights of the head."""
+            bias_init = bias_init_with_prob(0.1)
+            for i in range(self.num_feat_levels):
+                # The initialization of parameters are different between
+                # nn.Conv2d and ConvModule. Our experiments show that
+                # using the original initialization of nn.Conv2d increases
+                # the final mAP by about 0.2%
+                self.tl_heat[i][-1].conv.reset_parameters()
+                self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
+                self.br_heat[i][-1].conv.reset_parameters()
+                self.br_heat[i][-1].conv.bias.data.fill_(bias_init)
+                self.tl_off[i][-1].conv.reset_parameters()
+                self.br_off[i][-1].conv.reset_parameters()
+                if self.with_corner_emb:
+                    self.tl_emb[i][-1].conv.reset_parameters()
+                    self.br_emb[i][-1].conv.reset_parameters()
 
     def forward(self, feats):
         """Forward features from the upstream network.

@@ -50,6 +50,7 @@ class CentripetalHead(CornerHead):
                      type='SmoothL1Loss', beta=1.0, loss_weight=0.05),
                  loss_centripetal_shift=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
+                 init_cfg=None,
                  **kwargs):
         assert centripetal_shift_channels == 2, (
             'CentripetalHead only support centripetal_shift_channels == 2')
@@ -58,7 +59,8 @@ class CentripetalHead(CornerHead):
             'CentripetalHead only support guiding_shift_channels == 2')
         self.guiding_shift_channels = guiding_shift_channels
         self.feat_adaption_conv_kernel = feat_adaption_conv_kernel
-        super(CentripetalHead, self).__init__(*args, **kwargs)
+        super(CentripetalHead, self).__init__(
+            *args, init_cfg=init_cfg, **kwargs)
         self.loss_guiding_shift = build_loss(loss_guiding_shift)
         self.loss_centripetal_shift = build_loss(loss_centripetal_shift)
 
@@ -132,21 +134,29 @@ class CentripetalHead(CornerHead):
 
     # TODO: How to convert to init_cfg
     def init_weight(self):
-        """Initialize weights of the head."""
-        super().init_weights()
-        for i in range(self.num_feat_levels):
-            normal_init(self.tl_feat_adaption[i], std=0.01)
-            normal_init(self.br_feat_adaption[i], std=0.01)
-            normal_init(self.tl_dcn_offset[i].conv, std=0.1)
-            normal_init(self.br_dcn_offset[i].conv, std=0.1)
-            _ = [x.conv.reset_parameters() for x in self.tl_guiding_shift[i]]
-            _ = [x.conv.reset_parameters() for x in self.br_guiding_shift[i]]
-            _ = [
-                x.conv.reset_parameters() for x in self.tl_centripetal_shift[i]
-            ]
-            _ = [
-                x.conv.reset_parameters() for x in self.br_centripetal_shift[i]
-            ]
+        if hasattr(self, 'init_cfg'):
+            super(CentripetalHead, self).init_weight()
+        else:
+            super().init_weight()
+            for i in range(self.num_feat_levels):
+                normal_init(self.tl_feat_adaption[i], std=0.01)
+                normal_init(self.br_feat_adaption[i], std=0.01)
+                normal_init(self.tl_dcn_offset[i].conv, std=0.1)
+                normal_init(self.br_dcn_offset[i].conv, std=0.1)
+                _ = [
+                    x.conv.reset_parameters() for x in self.tl_guiding_shift[i]
+                ]
+                _ = [
+                    x.conv.reset_parameters() for x in self.br_guiding_shift[i]
+                ]
+                _ = [
+                    x.conv.reset_parameters()
+                    for x in self.tl_centripetal_shift[i]
+                ]
+                _ = [
+                    x.conv.reset_parameters()
+                    for x in self.br_centripetal_shift[i]
+                ]
 
     def forward_single(self, x, lvl_ind):
         """Forward feature of a single level.

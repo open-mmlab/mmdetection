@@ -32,7 +32,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         assert bbox_head is not None
         assert shared_head is None, \
             'Shared head is not supported in Cascade RCNN anymore'
-        shared_head.pretrained = pretrained
 
         self.num_stages = num_stages
         self.stage_loss_weights = stage_loss_weights
@@ -44,6 +43,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             shared_head=shared_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
+            pretrained=pretrained,
             init_cfg=init_cfg)
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):

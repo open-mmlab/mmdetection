@@ -42,7 +42,6 @@ class FeatureAlign(BaseModule):
         return x
 
 
-# TODO: is it right？
 @HEADS.register_module()
 class FoveaHead(AnchorFreeHead):
     """FoveaBox: Beyond Anchor-based Object Detector
@@ -114,11 +113,6 @@ class FoveaHead(AnchorFreeHead):
                 self.cls_out_channels,
                 3,
                 padding=1)
-
-    def init_weight(self):
-        super().init_weight()
-        if self.with_deform:
-            self.feature_adaption.init_weight()
 
     def forward_single(self, x):
         cls_feat = x

@@ -43,8 +43,11 @@ class EmbeddingRPNHead(BaseModule):
         [c_x, c_y, w, h], and we initialize it to the size of  the entire
         image.
         """
-        nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
-        nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
+        if hasattr(self, 'init_cfg'):
+            super(EmbeddingRPNHead, self).init_weight()
+        else:
+            nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
+            nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
 
     def _decode_init_proposals(self, imgs, img_metas):
         """Decode init_proposal_bboxes according to the size of images and

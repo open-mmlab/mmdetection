@@ -151,14 +151,17 @@ class NASFCOS_FPN(BaseModule):
     # TODO: How to convert to init_cfg
     def init_weight(self):
         """Initialize the weights of module."""
-        for module in self.fpn.values():
-            if hasattr(module, 'conv_out'):
-                caffe2_xavier_init(module.out_conv.conv)
+        if hasattr(self, 'init_cfg'):
+            super(NASFCOS_FPN, self).init_weight()
+        else:
+            for module in self.fpn.values():
+                if hasattr(module, 'conv_out'):
+                    caffe2_xavier_init(module.out_conv.conv)
 
-        for modules in [
-                self.adapt_convs.modules(),
-                self.extra_downsamples.modules()
-        ]:
-            for module in modules:
-                if isinstance(module, nn.Conv2d):
-                    caffe2_xavier_init(module)
+            for modules in [
+                    self.adapt_convs.modules(),
+                    self.extra_downsamples.modules()
+            ]:
+                for module in modules:
+                    if isinstance(module, nn.Conv2d):
+                        caffe2_xavier_init(module)

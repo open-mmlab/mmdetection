@@ -16,11 +16,13 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
                  shared_head=None,
                  train_cfg=None,
                  test_cfg=None,
+                 pretrained=None,
                  init_cfg=None):
         super(BaseRoIHead, self).__init__(init_cfg)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         if shared_head is not None:
+            shared_head.pretrained = pretrained
             self.shared_head = build_shared_head(shared_head)
 
         if bbox_head is not None:

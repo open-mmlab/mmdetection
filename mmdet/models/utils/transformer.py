@@ -682,11 +682,14 @@ class Transformer(BaseModule):
 
     # TODO： How
     def init_weight(self, distribution='uniform'):
-        """Initialize the transformer weights."""
-        # follow the official DETR to init parameters
-        for m in self.modules():
-            if hasattr(m, 'weight') and m.weight.dim() > 1:
-                xavier_init(m, distribution=distribution)
+        if hasattr(self, 'init_cfg'):
+            super(Transformer, self).init_weight()
+        else:
+            """Initialize the transformer weights."""
+            # follow the official DETR to init parameters
+            for m in self.modules():
+                if hasattr(m, 'weight') and m.weight.dim() > 1:
+                    xavier_init(m, distribution=distribution)
 
     def forward(self, x, mask, query_embed, pos_embed):
         """Forward function for `Transformer`.

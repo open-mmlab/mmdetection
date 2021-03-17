@@ -118,18 +118,22 @@ class DIIHead(BBoxHead):
 
     # TODO： How to convert init_cfg
     def init_weight(self):
-        """Use xavier initialization for all weight parameter and set
-        classification head bias as a specific value when use focal loss."""
-        for p in self.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
-            else:
-                # adopt the default initialization for
-                # the weight and bias of the layer norm
-                pass
-        if self.loss_cls.use_sigmoid:
-            bias_init = bias_init_with_prob(0.01)
-            nn.init.constant_(self.fc_cls.bias, bias_init)
+        if hasattr(self, 'init_cfg'):
+            super(DIIHead, self).init_weight()
+        else:
+            """Use xavier initialization for all weight parameter and set
+            classification head bias as a specific value when use focal
+            loss."""
+            for p in self.parameters():
+                if p.dim() > 1:
+                    nn.init.xavier_uniform_(p)
+                else:
+                    # adopt the default initialization for
+                    # the weight and bias of the layer norm
+                    pass
+            if self.loss_cls.use_sigmoid:
+                bias_init = bias_init_with_prob(0.01)
+                nn.init.constant_(self.fc_cls.bias, bias_init)
 
     @auto_fp16()
     def forward(self, roi_feat, proposal_feat):

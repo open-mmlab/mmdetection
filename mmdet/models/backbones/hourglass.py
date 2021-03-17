@@ -118,6 +118,7 @@ class HourglassNet(BaseModule):
                  stage_blocks=(2, 2, 2, 2, 2, 4),
                  feat_channel=256,
                  norm_cfg=dict(type='BN', requires_grad=True),
+                 pretrained=None,
                  init_cfg=None):
         super(HourglassNet, self).__init__(init_cfg)
 
@@ -175,10 +176,13 @@ class HourglassNet(BaseModule):
         Detector's __init__() will call backbone's init_weights() with
         pretrained as input, so we keep this function.
         """
-        # Training Centripetal Model needs to reset parameters for Conv2d
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                m.reset_parameters()
+        if hasattr(self, 'init_cfg'):
+            super(HourglassNet, self).init_weight()
+        else:
+            # Training Centripetal Model needs to reset parameters for Conv2d
+            for m in self.modules():
+                if isinstance(m, nn.Conv2d):
+                    m.reset_parameters()
 
     def forward(self, x):
         """Forward function."""

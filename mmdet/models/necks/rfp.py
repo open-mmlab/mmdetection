@@ -76,8 +76,9 @@ class RFP(FPN):
                  rfp_backbone,
                  aspp_out_channels,
                  aspp_dilations=(1, 3, 6, 1),
+                 init_cfg=None,
                  **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(init_cfg=init_cfg, **kwargs)
         self.rfp_steps = rfp_steps
         self.rfp_modules = nn.ModuleList()
         for rfp_idx in range(1, rfp_steps):
@@ -95,17 +96,19 @@ class RFP(FPN):
 
     # TODO: How to convert to init_cfg
     def init_weight(self):
-        # Avoid using super().init_weights(), which may alter the default
-        # initialization of the modules in self.rfp_modules that have missing
-        # keys in the pretrained checkpoint.
-        for convs in [self.lateral_convs, self.fpn_convs]:
-            for m in convs.modules():
-                if isinstance(m, nn.Conv2d):
-                    xavier_init(m, distribution='uniform')
-        for rfp_idx in range(self.rfp_steps - 1):
-            self.rfp_modules[rfp_idx].init_weights(
-                self.rfp_modules[rfp_idx].pretrained)
-        constant_init(self.rfp_weight, 0)
+        if hasattr(self, 'init_cfg'):
+            super(RFP, self).init_weight()
+        else:
+            # Avoid using super().init_weights(), which may alter the
+            # default initialization of the modules in self.rfp_modules
+            # that have missing keys in the pretrained checkpoint.
+            for convs in [self.lateral_convs, self.fpn_convs]:
+                for m in convs.modules():
+                    if isinstance(m, nn.Conv2d):
+                        xavier_init(m, distribution='uniform')
+            for rfp_idx in range(self.rfp_steps - 1):
+                self.rfp_modules[rfp_idx].init_weight()
+            constant_init(self.rfp_weight, 0)
 
     def forward(self, inputs):
         inputs = list(inputs)

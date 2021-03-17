@@ -64,16 +64,19 @@ class MaskIoUHead(BaseModule):
 
     # TODO: How
     def init_weight(self):
-        for conv in self.convs:
-            kaiming_init(conv)
-        for fc in self.fcs:
-            kaiming_init(
-                fc,
-                a=1,
-                mode='fan_in',
-                nonlinearity='leaky_relu',
-                distribution='uniform')
-        normal_init(self.fc_mask_iou, std=0.01)
+        if hasattr(self, 'init_cfg'):
+            super(MaskIoUHead, self).init_weight()
+        else:
+            for conv in self.convs:
+                kaiming_init(conv)
+            for fc in self.fcs:
+                kaiming_init(
+                    fc,
+                    a=1,
+                    mode='fan_in',
+                    nonlinearity='leaky_relu',
+                    distribution='uniform')
+            normal_init(self.fc_mask_iou, std=0.01)
 
     def forward(self, mask_feat, mask_pred):
         mask_pred = mask_pred.sigmoid()

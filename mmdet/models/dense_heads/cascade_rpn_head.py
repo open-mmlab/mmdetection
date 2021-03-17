@@ -5,7 +5,6 @@ import warnings
 import torch
 import torch.nn as nn
 from mmcv import ConfigDict
-from mmcv.cnn import normal_init
 from mmcv.ops import DeformConv2d, batched_nms
 from mmcv.runner import BaseModule
 
@@ -141,6 +140,15 @@ class StageCascadeRPNHead(RPNHead):
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
 
+        # TODO: Check
+        if init_cfg is None:
+            self.init_cfg = dict(
+                type='Normal',
+                override=[dict(type='Normal', name='rpn_reg', std=0.01)])
+            if self.with_cls:
+                self.init_cfg['override'].append(
+                    dict(type='Normal', name='rpn_cls', std=0.01))
+
     def _init_layers(self):
         """Init layers of a CascadeRPN stage."""
         self.rpn_conv = AdaptiveConv(self.in_channels, self.feat_channels,
@@ -151,14 +159,6 @@ class StageCascadeRPNHead(RPNHead):
                                      1)
         self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
         self.relu = nn.ReLU(inplace=True)
-
-    # TODO: How to convert to init_cfg
-    def init_weights(self):
-        """Init weights of a CascadeRPN stage."""
-        self.rpn_conv.init_weights()
-        normal_init(self.rpn_reg, std=0.01)
-        if self.with_cls:
-            normal_init(self.rpn_cls, std=0.01)
 
     def forward_single(self, x, offset):
         """Forward function of single scale."""
@@ -701,10 +701,10 @@ class CascadeRPNHead(BaseDenseHead):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    def init_weights(self):
+    def init_weight(self):
         """Init weight of CascadeRPN."""
         for i in range(self.num_stages):
-            self.stages[i].init_weights()
+            self.stages[i].init_weight()
 
     def loss(self):
         """loss() is implemented in StageCascadeRPNHead."""

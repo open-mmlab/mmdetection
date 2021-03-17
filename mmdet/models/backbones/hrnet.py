@@ -347,7 +347,7 @@ class HRNet(BaseModule):
         self.stage4, pre_stage_channels = self._make_stage(
             self.stage4_cfg, num_channels)
 
-        if isinstance(self.pretrained, str):
+        if isinstance(pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is a deprecated '
                           'key, please consider using init_cfg')
             self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
