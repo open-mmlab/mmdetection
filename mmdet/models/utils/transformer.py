@@ -6,8 +6,9 @@ from mmcv import ConfigDict
 from mmcv.cnn import (Linear, build_activation_layer, build_norm_layer,
                       xavier_init)
 
-from .builder import (ATTENTION, TRANSFORMER, TRANSFORMERLAYER,
-                      build_attention, build_transformerlayer)
+from .builder import (ATTENTION, TRANSFORMER, TRANSFORMERCODER,
+                      TRANSFORMERLAYER, build_attention,
+                      build_transformercoder, build_transformerlayer)
 
 
 @ATTENTION.register_module()
@@ -34,17 +35,16 @@ class MultiheadAttention(nn.Module):
         self.attn = nn.MultiheadAttention(embed_dims, num_heads, dropout)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(
-        self,
-        query,
-        key=None,
-        value=None,
-        residual=None,
-        query_pos=None,
-        key_pos=None,
-        attn_mask=None,
-        key_padding_mask=None,
-    ):
+    def forward(self,
+                query,
+                key=None,
+                value=None,
+                residual=None,
+                query_pos=None,
+                key_pos=None,
+                attn_mask=None,
+                key_padding_mask=None,
+                **kwargs):
         """Forward function for `MultiheadAttention`.
 
         Args:
@@ -177,12 +177,10 @@ class BaseTransformerLayer(nn.Module):
             `operation_order`. Default: None.
         feedforward_channels (int): The hidden dimension for FFNs.
             Default: None.
-        embed_dims (int): Embedding dimension of Transformerlayer.
-            Default: 256.
         ffn_dropout (float): Probability of an element to be zeroed
             in ffn. Default 0.0.
         operation_order (tuple[str]): The execution order of operation
-            in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
+            in transformer. Such as ('self_attn', 'norm', 'ffn', 'norm').
             Support prenorm when you specifying first element as `norm`.
             Default：None.
         act_cfg (dict): The activation config for FFNs. Default: `LN`
@@ -196,7 +194,6 @@ class BaseTransformerLayer(nn.Module):
             self,
             attn_cfgs=None,
             feedforward_channels=None,
-            embed_dims=256,
             ffn_dropout=0.0,
             operation_order=None,
             act_cfg=dict(type='ReLU', inplace=True),
@@ -206,12 +203,11 @@ class BaseTransformerLayer(nn.Module):
 
         super(BaseTransformerLayer, self).__init__()
         assert set(operation_order) & set(
-            ['selfattn', 'norm', 'ffn', 'crossattn']) == set(operation_order)
-        num_attn = operation_order.count('selfattn') + operation_order.count(
-            'crossattn')
-        attn_cfgs = copy.deepcopy(attn_cfgs)
+            ['self_attn', 'norm', 'ffn', 'cross_attn']) == set(operation_order)
+        num_attn = operation_order.count('self_attn') + operation_order.count(
+            'cross_attn')
         if isinstance(attn_cfgs, ConfigDict):
-            attn_cfgs = [attn_cfgs for _ in range(num_attn)]
+            attn_cfgs = [copy.deepcopy(attn_cfgs) for _ in range(num_attn)]
         else:
             assert num_attn == len(attn_cfgs), f'The length ' \
                 f'of attn_cfg {num_attn} is ' \
@@ -220,7 +216,6 @@ class BaseTransformerLayer(nn.Module):
         assert 'embed_dims' in attn_cfgs[0]
 
         self.num_attn = num_attn
-        self.embed_dims = embed_dims
         self.feedforward_channels = feedforward_channels
         self.ffn_dropout = ffn_dropout
         self.operation_order = operation_order
@@ -232,10 +227,12 @@ class BaseTransformerLayer(nn.Module):
 
         index = 0
         for operation in operation_order:
-            if operation in ['selfattn', 'crossattn']:
+            if operation in ['self_attn', 'cross_attn']:
                 attention = build_attention(attn_cfgs[index])
                 self.attentions.append(attention)
+                index += 1
 
+        self.embed_dims = self.attentions[0].embed_dims
         self.ffns = nn.ModuleList()
         num_ffns = operation_order.count('ffn')
         for _ in range(num_ffns):
@@ -276,7 +273,7 @@ class BaseTransformerLayer(nn.Module):
                 it should equal to the number of `attention` in
                 `operation_order`. Defaults: None.
             query_key_padding_mask (Tensor): ByteTensor for `query`, with
-                shape [bs, num_query]. Only used in `selfattn` layer.
+                shape [bs, num_query]. Only used in `self_attn` layer.
             key_padding_mask (Tensor): ByteTensor for `query`, with
                 shape [bs, num_key].
 
@@ -297,7 +294,7 @@ class BaseTransformerLayer(nn.Module):
                         f'operation_order {self.num_attn}'
 
         for layer in self.operation_order:
-            if layer == 'selfattn':
+            if layer == 'self_attn':
                 temp_key = temp_value = query
                 query = self.attentions[attn_index](
                     query,
@@ -316,7 +313,7 @@ class BaseTransformerLayer(nn.Module):
                 query = self.norms[norm_index](query)
                 norm_index += 1
 
-            elif layer == 'crossattn':
+            elif layer == 'cross_attn':
                 query = self.attentions[attn_index](
                     query,
                     key,
@@ -349,12 +346,10 @@ class DetrTransformerEncoderLayer(BaseTransformerLayer):
             a dict, it would be expand to the number of attention in
             `operation_order`.
         feedforward_channels (int): The hidden dimension for FFNs.
-        embed_dims (int): Embedding dimension of Transformerlayer.
-            Default: 256.
         ffn_dropout (float): Probability of an element to be zeroed
             in ffn. Default 0.0.
         operation_order (tuple[str]): The execution order of operation
-            in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
+            in transformer. Such as ('self_attn', 'norm', 'ffn', 'norm').
             Default：None
         act_cfg (dict): The activation config for FFNs.
         norm_cfg (dict): Config dict for normalization layer.
@@ -366,7 +361,6 @@ class DetrTransformerEncoderLayer(BaseTransformerLayer):
             self,
             attn_cfgs,
             feedforward_channels,
-            embed_dims=256,
             ffn_dropout=0.0,
             operation_order=None,
             act_cfg=dict(type='ReLU', inplace=True),
@@ -374,7 +368,6 @@ class DetrTransformerEncoderLayer(BaseTransformerLayer):
             ffn_num_fcs=2,
     ):
         super(DetrTransformerEncoderLayer, self).__init__(
-            embed_dims=embed_dims,
             attn_cfgs=attn_cfgs,
             feedforward_channels=feedforward_channels,
             operation_order=operation_order,
@@ -384,7 +377,7 @@ class DetrTransformerEncoderLayer(BaseTransformerLayer):
             ffn_num_fcs=ffn_num_fcs,
         )
         assert len(self.operation_order) == 4
-        assert set(self.operation_order) == set(['selfattn', 'norm', 'ffn'])
+        assert set(self.operation_order) == set(['self_attn', 'norm', 'ffn'])
 
 
 @TRANSFORMERLAYER.register_module()
@@ -398,12 +391,10 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             a dict, it would be expand to the number of attention in
             `operation_order`.
         feedforward_channels (int): The hidden dimension for FFNs.
-        embed_dims (int): Embedding dimension of Transformerlayer.
-            Default: 256
         ffn_dropout (float): Probability of an element to be zeroed
             in ffn. Default 0.0.
         operation_order (tuple[str]): The execution order of operation
-            in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
+            in transformer. Such as ('self_attn', 'norm', 'ffn', 'norm').
             Default：None
         act_cfg (dict): The activation config for FFNs. Default: `LN`
         norm_cfg (dict): Config dict for normalization layer.
@@ -416,7 +407,6 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             self,
             attn_cfgs,
             feedforward_channels,
-            embed_dims=256,
             ffn_dropout=0.0,
             operation_order=None,
             act_cfg=dict(type='ReLU', inplace=True),
@@ -424,7 +414,6 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             ffn_num_fcs=2,
     ):
         super(DetrTransformerDecoderLayer, self).__init__(
-            embed_dims=embed_dims,
             attn_cfgs=attn_cfgs,
             feedforward_channels=feedforward_channels,
             ffn_dropout=ffn_dropout,
@@ -435,9 +424,10 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
         )
         assert len(operation_order) == 6
         assert set(operation_order) == set(
-            ['selfattn', 'norm', 'crossattn', 'ffn'])
+            ['self_attn', 'norm', 'cross_attn', 'ffn'])
 
 
+@TRANSFORMERCODER.register_module()
 class BaseTransformerCoder(nn.Module):
     """Base coder in vision transformer.
 
@@ -460,14 +450,17 @@ class BaseTransformerCoder(nn.Module):
             transformerlayers = [
                 copy.deepcopy(transformerlayers) for _ in range(num_layers)
             ]
+        else:
+            assert isinstance(transformerlayers, list) and \
+                   len(transformerlayers) == num_layers
         self.num_layers = num_layers
-        assert 'embed_dims' in transformerlayers[0]
-        self.embed_dims = transformerlayers[0].get('embed_dims')
         operation_order = transformerlayers[0]['operation_order']
         self.pre_norm = operation_order[0] == 'norm'
         self.layers = nn.ModuleList()
         for i in range(num_layers):
             self.layers.append(build_transformerlayer(transformerlayers[i]))
+        self.embed_dims = self.layers[0].embed_dims
+        self.pre_norm = self.layers[0].operation_order[0] == 'norm'
 
     def forward(self,
                 query,
@@ -517,6 +510,7 @@ class BaseTransformerCoder(nn.Module):
         return query
 
 
+@TRANSFORMERCODER.register_module()
 class DetrTransformerEncoder(BaseTransformerCoder):
     """TransformerEncoder of DETR.
 
@@ -532,8 +526,14 @@ class DetrTransformerEncoder(BaseTransformerCoder):
             **kwargs,
     ):
         super(DetrTransformerEncoder, self).__init__(*args, **kwargs)
-        self.coder_norm = build_norm_layer(
-            coder_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
+        if coder_norm_cfg is not None:
+            self.coder_norm = build_norm_layer(
+                coder_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
+        else:
+            assert not self.pre_norm, f'Use prenorm in ' \
+                                      f'{self.__class__.__name__},' \
+                                      f'Please specify coder_norm_cfg'
+            self.coder_norm = None
 
     def forward(self, *args, **kwargs):
         """Forward function for `TransformerCoder`.
@@ -547,6 +547,7 @@ class DetrTransformerEncoder(BaseTransformerCoder):
         return x
 
 
+@TRANSFORMERCODER.register_module()
 class DetrTransformerDecoder(BaseTransformerCoder):
     """Implements the decoder in DETR transformer.
 
@@ -610,59 +611,29 @@ class Transformer(nn.Module):
     <https://arxiv.org/pdf/2005.12872>`_ for details.
 
     Args:
-        attn_cfgs (sequence[obj:`mmcv.Config`]) : Config of
-            Attention in Encoder and decoder in Transformer.
-        num_encoder_layers (int): Number of `TransformerEncoderLayer`.
-        num_decoder_layers (int): Number of `TransformerDecoderLayer`.
-        feedforward_channels (int): The hidden dimension for FFNs used in both
-            encoder and decoder.
-        ffn_dropout (float): Probability of an element to
-            be zeroed. Default 0.0.
-        act_cfg (dict): Activation config for FFNs used in both encoder
-            and decoder. Defalut: ReLU.
-        norm_cfg (dict): Config dict for normalization used in both encoder
-            and decoder. Default layer normalization.
-        num_fcs (int): The number of fully-connected layers in FFNs, which is
-            used for both encoder and decoder.
-        pre_norm (bool): Whether the normalization layer is ordered
-            first in the encoder and decoder. Default False.
-        return_intermediate_dec (bool): Whether to return the intermediate
-            output from each TransformerDecoderLayer or only the last
-            TransformerDecoderLayer. Default False. If False, the returned
-            `hs` has shape [num_decoder_layers, bs, num_query, embed_dims].
-            If True, the returned `hs` will have shape [1, bs, num_query,
-            embed_dims].
+        encoder (`mmcv.ConfigDict` | Dict): Config of
+            TransformerEncoder.
+        decoder ((`mmcv.ConfigDict` | Dict)): Config of
+            TransformerDecoder.
     """
 
-    def __init__(self,
-                 encodelayers=None,
-                 dencodelayers=None,
-                 num_encoder_layers=6,
-                 num_decoder_layers=6,
-                 norm_cfg=dict(type='LN'),
-                 return_intermediate=False):
+    def __init__(
+        self,
+        encoder=dict(
+            transformerlayers=None,
+            num_encoder_layers=6,
+            coder_norm_cfg=None,
+        ),
+        decoder=dict(
+            transformerlayers=None,
+            num_decoder_layers=6,
+            coder_norm_cfg=None,
+        ),
+    ):
         super(Transformer, self).__init__()
-        encodelayers = copy.deepcopy(encodelayers)
-        dncodelayers = copy.deepcopy(dencodelayers)
-        if isinstance(encodelayers, ConfigDict):
-            encodelayers = [
-                copy.deepcopy(encodelayers) for _ in range(num_encoder_layers)
-            ]
-        if isinstance(dencodelayers, ConfigDict):
-            dencodelayers = [
-                copy.deepcopy(dncodelayers) for _ in range(num_encoder_layers)
-            ]
-
-        self.encoder = DetrTransformerEncoder(
-            transformerlayers=encodelayers,
-            num_layers=num_encoder_layers,
-            coder_norm_cfg=norm_cfg,
-        )
-        self.decoder = DetrTransformerDecoder(
-            transformerlayers=dencodelayers,
-            num_layers=num_decoder_layers,
-            coder_norm_cfg=norm_cfg,
-            return_intermediate=return_intermediate)
+        self.encoder = build_transformercoder(encoder)
+        self.decoder = build_transformercoder(decoder)
+        self.embed_dims = self.encoder.embed_dims
 
     def init_weights(self, distribution='uniform'):
         """Initialize the transformer weights."""

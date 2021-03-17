@@ -24,7 +24,6 @@ class TransformerHead(AnchorFreeHead):
         num_classes (int): Number of categories excluding the background.
         in_channels (int): Number of channels in the input feature map.
         num_query (int): Number of query in Transformer.
-        embed_dims (int): Embedding dimensions of Transformer.
         reg_num_fcs (int, optional): Number of fully-connected layers used in
             `FFN`, which is then used for the regression head. Default 2.
         transformer (obj:`mmcv.ConfigDict`|dict): Config for transformer.
@@ -55,7 +54,6 @@ class TransformerHead(AnchorFreeHead):
                  num_classes,
                  in_channels,
                  num_query=100,
-                 embed_dims=256,
                  reg_num_fcs=2,
                  transformer=None,
                  positional_encoding=dict(
@@ -87,13 +85,6 @@ class TransformerHead(AnchorFreeHead):
         assert not use_sigmoid_cls, 'setting use_sigmoid_cls as True is ' \
             'not supported in DETR, since background is needed for the ' \
             'matching process.'
-        assert 'num_feats' in positional_encoding
-        num_feats = positional_encoding['num_feats']
-        embed_dims = embed_dims
-        assert num_feats * 2 == embed_dims, 'embed_dims should' \
-            f' be exactly 2 times of num_feats. Found {embed_dims}' \
-            f' and {num_feats}.'
-        assert test_cfg is not None and 'max_per_img' in test_cfg
 
         class_weight = loss_cls.get('class_weight', None)
         if class_weight is not None:
@@ -139,7 +130,7 @@ class TransformerHead(AnchorFreeHead):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.use_sigmoid_cls = use_sigmoid_cls
-        self.embed_dims = embed_dims
+
         self.num_query = test_cfg['max_per_img']
         self.fp16_enabled = False
         self.loss_cls = build_loss(loss_cls)
@@ -151,6 +142,13 @@ class TransformerHead(AnchorFreeHead):
         self.positional_encoding = build_positional_encoding(
             positional_encoding)
         self.transformer = build_transformer(transformer)
+        self.embed_dims = self.transformer.embed_dims
+        assert 'num_feats' in positional_encoding
+        num_feats = positional_encoding['num_feats']
+        assert num_feats * 2 == self.embed_dims, 'embed_dims should' \
+            f' be exactly 2 times of num_feats. Found {self.embed_dims}' \
+            f' and {num_feats}.'
+        assert test_cfg is not None and 'max_per_img' in test_cfg
         self._init_layers()
 
     def _init_layers(self):
