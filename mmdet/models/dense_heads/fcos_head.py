@@ -414,11 +414,11 @@ class FCOSHead(AnchorFreeHead):
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
         if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            batch_mlvl_scores, _ = (
+            max_scores, _ = (
                 batch_mlvl_scores *
                 batch_mlvl_centerness.unsqueeze(2).expand_as(batch_mlvl_scores)
             ).max(-1)
-            _, topk_inds = batch_mlvl_scores.topk(deploy_nms_pre)
+            _, topk_inds = max_scores.topk(deploy_nms_pre)
             batch_inds = torch.arange(batch_mlvl_scores.shape[0]).view(
                 -1, 1).expand_as(topk_inds)
             batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds, :]
