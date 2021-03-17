@@ -79,7 +79,7 @@ def distribution_focal_loss(pred, label):
 
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def localization_distillation_loss(pred, soft_label, T):
+def localization_distillation_loss(pred, soft_label, T, detach=True):
     r"""LD is the extension of knowledge distillation on localization task,
     which utilizes the learned bbox distributions to transfer the localization
     dark knowledge from teacher to student.
@@ -95,10 +95,13 @@ def localization_distillation_loss(pred, soft_label, T):
     Returns:
         torch.Tensor: Loss tensor with shape (N,).
     """
+
+    if detach:
+        target = F.softmax(soft_label / T, dim=1).detach()
+    else:
+        target = F.softmax(soft_label / T, dim=1)
     ld_loss = F.kl_div(
-        F.log_softmax(pred / T, dim=1),
-        F.softmax(soft_label / T, dim=1).detach(),
-        reduction='none').mean(1) * (
+        F.log_softmax(pred / T, dim=1), target, reduction='none').mean(1) * (
             T * T)
 
     return ld_loss

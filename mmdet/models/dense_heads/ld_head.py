@@ -9,7 +9,11 @@ from .gfl_head import GFLHead
 
 @HEADS.register_module()
 class LDHead(GFLHead):
-    """https://arxiv.org/abs/2102.12252."""
+    r"""LD is the extension of knowledge distillation on localization task,
+    which utilizes the learned bbox distributions to transfer the localization
+    dark knowledge from teacher to student.
+    <https://arxiv.org/abs/2102.12252>`_.
+    """
 
     def __init__(self,
                  num_classes,
@@ -125,7 +129,7 @@ class LDHead(GFLHead):
                       x,
                       img_metas,
                       gt_bboxes,
-                      soft_target,
+                      out_teacher,
                       gt_labels=None,
                       gt_bboxes_ignore=None,
                       proposal_cfg=None,
@@ -150,6 +154,7 @@ class LDHead(GFLHead):
                 proposal_list (list[Tensor]): Proposals of each image.
         """
         outs = self(x)
+        soft_target = out_teacher[1]
         if gt_labels is None:
             loss_inputs = outs + (gt_bboxes, soft_target, img_metas)
         else:
