@@ -1,4 +1,3 @@
-from .mobilenetv2 import SSDMobilenetV2
 from .darknet import Darknet
 from .detectors_resnet import DetectoRS_ResNet
 from .detectors_resnext import DetectoRS_ResNeXt
@@ -16,5 +15,5 @@ from .imgclsmob import *
 __all__ = [
     'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet', 'Res2Net',
     'HourglassNet', 'DetectoRS_ResNet', 'DetectoRS_ResNeXt', 'Darknet',
-    'ResNeSt', 'TridentResNet', 'SSDMobilenetV2'
+    'ResNeSt', 'TridentResNet'
 ]
