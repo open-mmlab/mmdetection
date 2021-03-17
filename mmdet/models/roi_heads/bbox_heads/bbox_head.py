@@ -277,33 +277,63 @@ class BBoxHead(nn.Module):
                    cfg=None):
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
-        scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
+
+        scores = F.softmax(
+            cls_score, dim=-1) if cls_score is not None else None
 
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=img_shape)
+                rois[..., 1:], bbox_pred, max_shape=img_shape)
         else:
-            bboxes = rois[:, 1:].clone()
+            bboxes = rois[..., 1:].clone()
             if img_shape is not None:
-                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
-                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
+                max_shape = bboxes.new_tensor(img_shape)[..., :2]
+                min_xy = bboxes.new_tensor(0)
+                max_xy = torch.cat(
+                    [max_shape] * 2, dim=-1).flip(-1).unsqueeze(-2)
+                bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
+                bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 
-        if rescale and bboxes.size(0) > 0:
+        if bboxes.ndim == 2:
+            is_batch = False
+        else:
+            is_batch = True
+
+        if rescale and bboxes.size(-2) > 0:
             if isinstance(scale_factor, float):
                 bboxes /= scale_factor
             else:
-                scale_factor = bboxes.new_tensor(scale_factor)
-                bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
-                          scale_factor).view(bboxes.size()[0], -1)
+                if is_batch:
+                    scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(
+                        1).repeat(1, 1,
+                                  bboxes.size(-1) // 4)
+                else:
+                    scale_factor = bboxes.new_tensor(scale_factor).view(
+                        1, -1).repeat(1,
+                                      bboxes.size(-1) // 4)
+                bboxes /= scale_factor
+
+        if not is_batch:
+            bboxes = [bboxes]
+            scores = [scores]
 
         if cfg is None:
-            return bboxes, scores
+            det_bboxes = [bbox for bbox in bboxes]
+            det_labels = [score for score in scores]
         else:
-            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
+            det_bboxes = []
+            det_labels = []
+            for (bbox, score) in zip(bboxes, scores):
+                det_bbox, det_label = multiclass_nms(bbox, score,
+                                                     cfg.score_thr, cfg.nms,
+                                                     cfg.max_per_img)
+                det_bboxes.append(det_bbox)
+                det_labels.append(det_label)
 
-            return det_bboxes, det_labels
+        if not is_batch:
+            det_bboxes = det_bboxes[0]
+            det_labels = det_labels[0]
+        return det_bboxes, det_labels
 
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
