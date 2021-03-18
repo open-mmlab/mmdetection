@@ -15,17 +15,12 @@ class LDHead(GFLHead):
     <https://arxiv.org/abs/2102.12252>`_.
     """
 
-    def __init__(
-            self,
-            num_classes,
-            in_channels,
-            #  stacked_convs=4,
-            #  conv_cfg=None,
-            #  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-            #  loss_dfl=dict(type='DistributionFocalLoss', loss_weight=0.25),
-            loss_ld=dict(
-                type='LocalizationDistillationLoss', loss_weight=0.25),
-            **kwargs):
+    def __init__(self,
+                 num_classes,
+                 in_channels,
+                 loss_ld=dict(
+                     type='LocalizationDistillationLoss', loss_weight=0.25),
+                 **kwargs):
 
         super(LDHead, self).__init__(num_classes, in_channels, **kwargs)
         self.loss_ld = build_loss(loss_ld)
