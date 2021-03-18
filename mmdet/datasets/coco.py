@@ -67,7 +67,7 @@ class CocoDataset(CustomDataset):
             ann_id = self.coco.get_ann_ids(img_ids=[i])
             ann_ids.extend(ann_id)
         assert len(set(ann_ids)) == len(
-            ann_ids), "Annotation ids in '{}' are not unique!".format(ann_file)
+            ann_ids), f"Annotation ids in '{ann_file}' are not unique!"
         return data_infos
 
     def get_ann_info(self, idx):
