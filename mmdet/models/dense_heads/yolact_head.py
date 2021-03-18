@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule, force_fp32
+from mmcv.runner import BaseModule, ModuleList, force_fp32
 
 from mmdet.core import build_sampler, fast_nms, images_to_levels, multi_apply
 from ..builder import HEADS, build_loss
@@ -614,7 +614,7 @@ class YOLACTProtonet(BaseModule):
         # ( 256,-2) -> deconv
         # (None,-2) -> bilinear interpolate
         in_channels = self.in_channels
-        protonets = nn.ModuleList()
+        protonets = ModuleList()
         for num_channels, kernel_size in zip(self.proto_channels,
                                              self.proto_kernel_sizes):
             if kernel_size > 0:

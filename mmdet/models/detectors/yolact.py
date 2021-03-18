@@ -23,12 +23,6 @@ class YOLACT(SingleStageDetector):
                                      test_cfg, pretrained, init_cfg)
         self.segm_head = build_head(segm_head)
         self.mask_head = build_head(mask_head)
-        self.init_segm_mask_weights()
-
-    def init_segm_mask_weights(self):
-        """Initialize weights of the YOLACT semg head and YOLACT mask head."""
-        self.segm_head.init_weights()
-        self.mask_head.init_weights()
 
     def forward_dummy(self, img):
         """Used for computing network flops.

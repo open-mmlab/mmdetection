@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import force_fp32
+from mmcv.runner import BaseModule, force_fp32
 
 from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
 from mmdet.models.builder import HEADS, build_loss
@@ -11,7 +11,7 @@ from mmdet.models.losses import accuracy
 
 
 @HEADS.register_module()
-class SABLHead(nn.Module):
+class SABLHead(BaseModule):
     """Side-Aware Boundary Localization (SABL) for RoI-Head.
 
     Side-Aware features are extracted by conv layers
@@ -196,12 +196,11 @@ class SABLHead(nn.Module):
                 self.init_cfg += [
                     dict(
                         type='Kaiming',
-                        name='upsample_x',
-                        distribution='normal'),
-                    dict(
-                        type='Kaiming',
-                        name='upsample_y',
-                        distribution='normal')
+                        distribution='normal',
+                        override=[
+                            dict(name='upsample_x'),
+                            dict(name='upsample_y')
+                        ])
                 ]
 
     def _add_fc_branch(self, num_branch_fcs, in_channels, roi_feat_size,

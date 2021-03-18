@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import (Linear, build_activation_layer, build_norm_layer,
                       xavier_init)
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, ModuleList
 
 from .builder import TRANSFORMER
 
@@ -446,7 +446,7 @@ class TransformerEncoder(BaseModule):
         self.norm_cfg = norm_cfg
         self.num_fcs = num_fcs
         self.pre_norm = order[0] == 'norm'
-        self.layers = nn.ModuleList()
+        self.layers = ModuleList()
         for _ in range(num_layers):
             self.layers.append(
                 TransformerEncoderLayer(embed_dims, num_heads,
@@ -533,7 +533,7 @@ class TransformerDecoder(BaseModule):
         self.norm_cfg = norm_cfg
         self.num_fcs = num_fcs
         self.return_intermediate = return_intermediate
-        self.layers = nn.ModuleList()
+        self.layers = ModuleList()
         for _ in range(num_layers):
             self.layers.append(
                 TransformerDecoderLayer(embed_dims, num_heads,

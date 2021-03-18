@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from mmcv.runner import ModuleList
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
                         build_sampler, merge_aug_bboxes, merge_aug_masks,
@@ -53,8 +54,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             bbox_roi_extractor (dict): Config of box roi extractor.
             bbox_head (dict): Config of box in box head.
         """
-        self.bbox_roi_extractor = nn.ModuleList()
-        self.bbox_head = nn.ModuleList()
+        self.bbox_roi_extractor = ModuleList()
+        self.bbox_head = ModuleList()
         if not isinstance(bbox_roi_extractor, list):
             bbox_roi_extractor = [
                 bbox_roi_extractor for _ in range(self.num_stages)
@@ -81,7 +82,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_head.append(build_head(head))
         if mask_roi_extractor is not None:
             self.share_roi_extractor = False
-            self.mask_roi_extractor = nn.ModuleList()
+            self.mask_roi_extractor = ModuleList()
             if not isinstance(mask_roi_extractor, list):
                 mask_roi_extractor = [
                     mask_roi_extractor for _ in range(self.num_stages)

@@ -1,6 +1,6 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.models.backbones.resnet import Bottleneck
 from mmdet.models.builder import HEADS
@@ -133,7 +133,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
 
     def _add_conv_branch(self):
         """Add the fc branch which consists of a sequential of conv layers."""
-        branch_convs = nn.ModuleList()
+        branch_convs = ModuleList()
         for i in range(self.num_convs):
             branch_convs.append(
                 Bottleneck(

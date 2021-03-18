@@ -1,7 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops.merge_cells import GlobalPoolingCell, SumCell
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, ModuleList
 
 from ..builder import NECKS
 
@@ -86,7 +86,7 @@ class NASFPN(BaseModule):
                 nn.Sequential(extra_conv, nn.MaxPool2d(2, 2)))
 
         # add NAS FPN connections
-        self.fpn_stages = nn.ModuleList()
+        self.fpn_stages = ModuleList()
         for _ in range(self.stack_times):
             stage = nn.ModuleDict()
             # gp(p6, p4) -> p4_1

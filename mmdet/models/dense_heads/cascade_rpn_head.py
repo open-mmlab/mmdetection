@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from mmcv import ConfigDict
 from mmcv.ops import DeformConv2d, batched_nms
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
@@ -688,7 +688,9 @@ class CascadeRPNHead(BaseDenseHead):
         super(CascadeRPNHead, self).__init__(init_cfg)
         assert num_stages == len(stages)
         self.num_stages = num_stages
-        self.stages = nn.ModuleList()
+        # Be careful! Pretrained weights cannot be loaded when use
+        # nn.ModuleList
+        self.stages = ModuleList()
         for i in range(len(stages)):
             train_cfg_i = train_cfg[i] if train_cfg is not None else None
             stages[i].update(train_cfg=train_cfg_i)

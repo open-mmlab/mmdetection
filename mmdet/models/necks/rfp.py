@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, ModuleList
 
 from ..builder import NECKS, build_backbone
 from .fpn import FPN
@@ -91,7 +91,9 @@ class RFP(FPN):
                  **kwargs):
         super().__init__(init_cfg=init_cfg, **kwargs)
         self.rfp_steps = rfp_steps
-        self.rfp_modules = nn.ModuleList()
+        # Be careful! Pretrained weights cannot be loaded when use
+        # nn.ModuleList
+        self.rfp_modules = ModuleList()
         for rfp_idx in range(1, rfp_steps):
             rfp_module = build_backbone(rfp_backbone)
             self.rfp_modules.append(rfp_module)

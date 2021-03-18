@@ -58,7 +58,7 @@ class Bottleneck(_Bottleneck):
                 stride=1,
                 bias=True)
             self.init_cfg = dict(
-                override=dict(type='Constant', val=0, name='rfp_conv'))
+                type='Constant', val=0, override=dict(name='rfp_conv'))
 
     def rfp_forward(self, x, rfp_feat):
         """The forward function that also takes the RFP features as input."""

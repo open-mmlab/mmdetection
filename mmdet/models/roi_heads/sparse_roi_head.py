@@ -50,6 +50,7 @@ class SparseRoIHead(CascadeRoIHead):
                      ffn_act_cfg=dict(type='ReLU', inplace=True)),
                  train_cfg=None,
                  test_cfg=None,
+                 pretrained=None,
                  init_cfg=None):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
@@ -64,6 +65,7 @@ class SparseRoIHead(CascadeRoIHead):
             bbox_head=bbox_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
+            pretrained=pretrained,
             init_cfg=init_cfg)
         # train_cfg would be None when run the test.py
         if train_cfg is not None:

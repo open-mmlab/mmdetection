@@ -34,7 +34,9 @@ class MaskIoUHead(BaseModule):
                          distribution='uniform',
                          override=dict(name='fcs')),
                      dict(
-                         'Normal', std=0.01, override=dict(name='fc_mask_iou'))
+                         type='Normal',
+                         std=0.01,
+                         override=dict(name='fc_mask_iou'))
                  ]):
         super(MaskIoUHead, self).__init__(init_cfg)
         self.in_channels = in_channels
