@@ -301,7 +301,6 @@ class GFLHead(AnchorHead):
              gt_bboxes,
              gt_labels,
              img_metas,
-             img,
              gt_bboxes_ignore=None):
         """Compute losses of the head.
 

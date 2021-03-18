@@ -1,6 +1,5 @@
 _base_ = ['./ld_gflv1_r101_r18_fpn_coco_1x.py']
 model = dict(
-    type='GFL',
     pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
