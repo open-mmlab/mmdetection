@@ -1,3 +1,3 @@
-mmcv-full
-torch
-torchvision
+mmcv-full==1.2.7
+torch>=1.5.1,<=1.8.0
+torchvision>=0.6.1,<=0.9.0

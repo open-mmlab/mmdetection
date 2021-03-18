@@ -1,11 +1,11 @@
 matplotlib
-mmcv-full
+mmcv-full==1.2.7
 mmpycocotools
 numpy
 six
 terminaltables
-torch
-torchvision
+torch>=1.5.1,<=1.8.0
+torchvision>=0.6.1,<=0.9.0
 pytorchcv==0.0.55
 tqdm
 onnx>=1.7.0
