@@ -711,7 +711,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 batch_mlvl_scores = batch_mlvl_scores[..., :num_classes]
             batch_mlvl_scores = batch_mlvl_scores.permute(0, 2, 1)
             max_output_boxes_per_class = cfg.nms.get(
-                'max_output_boxes_per_class', 1000)
+                'max_output_boxes_per_class', 200)
             iou_threshold = cfg.nms.get('iou_threshold', 0.5)
             score_threshold = cfg.score_thr
             return add_dummy_nms_for_onnx(batch_mlvl_bboxes, batch_mlvl_scores,
