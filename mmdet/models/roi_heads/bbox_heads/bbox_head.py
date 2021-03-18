@@ -277,12 +277,16 @@ class BBoxHead(nn.Module):
                    cfg=None):
         """Transform network output for a batch into bbox predictions.
 
+        If the input rois has batch dimension, the function would be in
+        ``batch_mode`` and return is a tuple[list[Tensor], list[Tensor]],
+        otherwise, the return is a tuple[Tensor, Tensor].
+
         Args:
-            rois (Tensor): Boxes to be transformed. Has shape (N, 5)
-               or (B, N, 5)
+            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5)
+               or (B, num_boxes, 5)
             cls_score (list[Tensor] or Tensor): Box scores for
-              each scale level, each is a 4D-tensor, the channel number is
-              num_points * num_classes.
+               each scale level, each is a 4D-tensor, the channel number is
+               num_points * num_classes.
             bbox_pred (Tensor, optional): Box energies / deltas for each scale
                 level, each is a 4D-tensor, the channel number is
                 num_classes * 4.
@@ -299,13 +303,19 @@ class BBoxHead(nn.Module):
 
         Returns:
             tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor]: The
-                first list includes batch tensor and the shape is (n, 5)
-                where 5 represent (tl_x, tl_y, br_x, br_y, score) and the
-                score between 0 and 1. The second list also includes tensors
-                of the same length as the first list, and the shape is (n,)
-                where each element represents the class label of the
-                corresponding box.
+                first list contains the boxes of all images in a batch, each
+                tensor has the shape (num_boxes, 5) and last dimension 5
+                represent (tl_x, tl_y, br_x, br_y, score). Each Tensor in the
+                second list is the labels with shape (num_boxes, ). If it is
+                in batch run mode, then the return shape is tuple[list[Tensor],
+                list[Tensor]], else return shape is tuple[Tensor, Tensor].
         """
+        if rois.ndim == 2:
+            # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
+            batch_mode = False
+        else:
+            batch_mode = True
+
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
 
@@ -325,17 +335,11 @@ class BBoxHead(nn.Module):
                 bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
                 bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 
-        if bboxes.ndim == 2:
-            # e.g. Cascade R-CNN.
-            is_batch = False
-        else:
-            is_batch = True
-
         if rescale and bboxes.size(-2) > 0:
             if isinstance(scale_factor, float):
                 bboxes /= scale_factor
             else:
-                if is_batch:
+                if batch_mode:
                     scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(
                         1).repeat(1, 1,
                                   bboxes.size(-1) // 4)
@@ -345,7 +349,7 @@ class BBoxHead(nn.Module):
                                       bboxes.size(-1) // 4)
                 bboxes /= scale_factor
 
-        if not is_batch:
+        if not batch_mode:
             bboxes = [bboxes]
             scores = [scores]
 
@@ -362,7 +366,7 @@ class BBoxHead(nn.Module):
                 det_bboxes.append(det_bbox)
                 det_labels.append(det_label)
 
-        if not is_batch:
+        if not batch_mode:
             det_bboxes = det_bboxes[0]
             det_labels = det_labels[0]
         return det_bboxes, det_labels

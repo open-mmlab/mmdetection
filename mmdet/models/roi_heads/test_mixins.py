@@ -67,12 +67,12 @@ class BBoxTestMixin(object):
 
         Returns:
             tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor]: The
-                first list includes batch tensor and the shape is (n, 5)
-                where 5 represent (tl_x, tl_y, br_x, br_y, score) and the
-                score between 0 and 1. The second list also includes tensors
-                of the same length as the first list, and the shape is (n,)
-                where each element represents the class label of the
-                corresponding box.
+                first list contains the boxes of all images in a batch, each
+                tensor has the shape (num_boxes, 5) and last dimension 5
+                represent (tl_x, tl_y, br_x, br_y, score). Each Tensor in the
+                second list is the labels with shape (num_boxes, ). If it is
+                in batch run mode, then the return shape is tuple[list[Tensor],
+                list[Tensor]], else return shape is tuple[Tensor, Tensor].
         """
         # get origin input shape to support onnx dynamic input shape
         if torch.onnx.is_in_onnx_export():
