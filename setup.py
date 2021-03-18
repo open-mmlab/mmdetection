@@ -163,17 +163,6 @@ if __name__ == '__main__':
                 sources_cuda=[
                     'src/cuda/nms_cuda.cpp', 'src/cuda/nms_kernel.cu'
                 ]),
-            make_cuda_ext(
-                name='roi_align_ext',
-                module='mmdet.ops.roi_align',
-                sources=[
-                    'src/roi_align_ext.cpp',
-                    'src/cpu/roi_align_v2.cpp',
-                ],
-                sources_cuda=[
-                    'src/cuda/roi_align_kernel.cu',
-                    'src/cuda/roi_align_kernel_v2.cu'
-                ]),
         ],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)
