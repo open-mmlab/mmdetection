@@ -41,11 +41,9 @@ model = dict(
             use_sigmoid=True,
             beta=2.0,
             loss_weight=1.0),
-        loss_dfl=dict(
-            type='LocalizationDistillationLoss',
-            loss_weight=0.25,
-            T=10,
-            alpha=1),
+        loss_dfl=dict(type='DistributionFocalLoss', loss_weight=0.25),
+        loss_ld=dict(
+            type='LocalizationDistillationLoss', loss_weight=0.25, T=10),
         reg_max=16,
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0)),
     # training and testing settings
@@ -60,5 +58,3 @@ model = dict(
         score_thr=0.05,
         nms=dict(type='nms', iou_threshold=0.6),
         max_per_img=100))
-
-find_unused_parameters = True

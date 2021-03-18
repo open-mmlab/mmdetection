@@ -1,8 +1,4 @@
-from typing import Union
-
 import torch
-from torch import Tensor
-from torch.nn import Module
 
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
@@ -66,8 +62,15 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
         )
         return losses
 
-    def __setattr__(self, name: str, value: Union[Tensor, 'Module']) -> None:
-        # didn't work, still unused parameters error
+    def __setattr__(self, name, value):
+        """Set attribute, i.e. self.name = value
+
+        This reloading prevent the teacher model from being registered as a
+        nn.Module. The teacher module is registered as a plain object, so that
+        the teacher parameters will not show up when calling
+        ``self.parameters``, ``self.modules``, ``self.children`` methods.
+        """
         if name == 'teacher_model':
             object.__setattr__(self, name, value)
-        SingleStageDetector.__setattr__(self, name, value)
+        else:
+            super().__setattr__(name, value)

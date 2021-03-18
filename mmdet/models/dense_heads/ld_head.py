@@ -15,18 +15,20 @@ class LDHead(GFLHead):
     <https://arxiv.org/abs/2102.12252>`_.
     """
 
-    def __init__(self,
-                 num_classes,
-                 in_channels,
-                 stacked_convs=4,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 loss_dfl=dict(type='DistributionFocalLoss', loss_weight=0.25),
-                 reg_max=16,
-                 **kwargs):
+    def __init__(
+            self,
+            num_classes,
+            in_channels,
+            #  stacked_convs=4,
+            #  conv_cfg=None,
+            #  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+            #  loss_dfl=dict(type='DistributionFocalLoss', loss_weight=0.25),
+            loss_ld=dict(
+                type='LocalizationDistillationLoss', loss_weight=0.25),
+            **kwargs):
 
         super(LDHead, self).__init__(num_classes, in_channels, **kwargs)
-        self.loss_dfl = build_loss(loss_dfl)
+        self.loss_ld = build_loss(loss_ld)
 
     def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, stride, soft_targets, num_total_samples):
@@ -105,12 +107,19 @@ class LDHead(GFLHead):
                 avg_factor=1.0)
 
             # dfl loss
-            loss_dfl, loss_ld = self.loss_dfl(
+            loss_dfl = self.loss_dfl(
                 pred_corners,
                 target_corners,
+                weight=weight_targets[:, None].expand(-1, 4).reshape(-1),
+                avg_factor=4.0)
+
+            # ld loss
+            loss_ld = self.loss_ld(
+                pred_corners,
                 soft_corners,
                 weight=weight_targets[:, None].expand(-1, 4).reshape(-1),
                 avg_factor=4.0)
+
         else:
             loss_ld = bbox_pred.sum() * 0
             loss_bbox = bbox_pred.sum() * 0

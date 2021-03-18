@@ -233,24 +233,14 @@ class LocalizationDistillationLoss(nn.Module):
         beta (int): balance factor.
     """
 
-    def __init__(self,
-                 reduction='mean',
-                 loss_weight=1.0,
-                 T=2,
-                 alpha=1,
-                 beta=1):
+    def __init__(self, reduction='mean', loss_weight=1.0, T=10):
         super(LocalizationDistillationLoss, self).__init__()
         self.reduction = reduction
         self.loss_weight = loss_weight
-
         self.T = T
-        self.alpha = alpha
-        self.adjust = False
-        self.beta = beta
 
     def forward(self,
                 pred,
-                target,
                 soft_corners,
                 weight=None,
                 avg_factor=None,
@@ -261,8 +251,8 @@ class LocalizationDistillationLoss(nn.Module):
             pred (torch.Tensor): Predicted general distribution of bounding
                 boxes (before softmax) with shape (N, n+1), n is the max value
                 of the integral set `{0, ..., n}` in paper.
-            target (torch.Tensor): Target distance label for bounding boxes
-                with shape (N,).
+            soft_corners (torch.Tensor): Target distance label learned from
+            teacher for bounding boxes with shape (N, n+1)
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
@@ -283,6 +273,5 @@ class LocalizationDistillationLoss(nn.Module):
             reduction=reduction,
             avg_factor=avg_factor,
             T=self.T)
-        loss_cls = self.loss_weight * distribution_focal_loss(
-            pred, target, weight, reduction=reduction, avg_factor=avg_factor)
-        return self.beta * loss_cls, self.alpha * loss_ld
+
+        return loss_ld
