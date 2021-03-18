@@ -5,11 +5,11 @@ from .cross_entropy_loss import (CrossEntropyLoss, binary_cross_entropy,
                                  cross_entropy, mask_cross_entropy)
 from .focal_loss import FocalLoss, sigmoid_focal_loss
 from .gaussian_focal_loss import GaussianFocalLoss
-from .gfocal_loss import (DistributionFocalLoss, LocalizationDistillationLoss,
-                          QualityFocalLoss)
+from .gfocal_loss import DistributionFocalLoss, QualityFocalLoss
 from .ghm_loss import GHMC, GHMR
 from .iou_loss import (BoundedIoULoss, CIoULoss, DIoULoss, GIoULoss, IoULoss,
                        bounded_iou_loss, iou_loss)
+from .kd_loss import LocalizationDistillationLoss
 from .mse_loss import MSELoss, mse_loss
 from .pisa_loss import carl_loss, isr_p
 from .smooth_l1_loss import L1Loss, SmoothL1Loss, l1_loss, smooth_l1_loss

@@ -19,7 +19,9 @@ class LDHead(GFLHead):
                  num_classes,
                  in_channels,
                  loss_ld=dict(
-                     type='LocalizationDistillationLoss', loss_weight=0.25),
+                     type='LocalizationDistillationLoss',
+                     loss_weight=0.25,
+                     T=10),
                  **kwargs):
 
         super(LDHead, self).__init__(num_classes, in_channels, **kwargs)
@@ -239,7 +241,7 @@ class LDHead(GFLHead):
                 soft_target,
                 num_total_samples=num_total_samples)
 
-        avg_factor = sum(avg_factor)
+        avg_factor = sum(avg_factor) + 1e-6
         avg_factor = reduce_mean(avg_factor).item()
         losses_bbox = list(map(lambda x: x / avg_factor, losses_bbox))
         losses_dfl = list(map(lambda x: x / avg_factor, losses_dfl))

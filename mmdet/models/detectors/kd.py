@@ -15,23 +15,25 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
                  bbox_head,
                  teacher_config='',
                  teacher_model='',
+                 eval_teacher=True,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
         super().__init__(backbone, neck, bbox_head, train_cfg, test_cfg,
                          pretrained)
 
+        self.eval_teacher = eval_teacher
+        device = next(self.parameters()).device  # model device
+
         from mmdet.apis.inference import init_detector
 
         try:
             self.teacher_model = init_detector(
-                teacher_config,
-                teacher_model,
-                device=torch.cuda.current_device())
-        except (FileNotFoundError, OSError):
-            warnings.warn(
-                'Warning: Teacher model file or config file does not exist!',
-                UserWarning)
+                teacher_config, teacher_model, device=device)
+        except OSError:
+            warnings.warn('Warning: Teacher model file does not exist! ',
+                          UserWarning)
+            self.teacher_model = init_detector(teacher_config)
 
     def forward_train(self,
                       img,
@@ -60,7 +62,6 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
         with torch.no_grad():
             teacher_x = self.teacher_model.extract_feat(img)
             out_teacher = self.teacher_model.bbox_head(teacher_x)
-
         losses = self.bbox_head.forward_train(
             x,
             img_metas,
@@ -70,6 +71,19 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
             gt_bboxes_ignore,
         )
         return losses
+
+    def cuda(self, device=None):
+        """It also puts the teacher model to cuda."""
+        self.teacher_model.cuda(device=device)
+        return super().cuda(device=device)
+
+    def train(self, mode=True):
+        """Set the same train mode for teacher and student model."""
+        if self.eval_teacher:
+            self.teacher_model.train(False)
+        else:
+            self.teacher_model.train(mode)
+        super().train(mode)
 
     def __setattr__(self, name, value):
         """Set attribute, i.e. self.name = value
