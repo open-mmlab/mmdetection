@@ -16,7 +16,6 @@ class NASFCOSHead(FCOSHead):
     "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
     """
 
-    # TODO： Check
     def __init__(self,
                  *args,
                  init_cfg=dict(

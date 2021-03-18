@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import Conv2d, Linear, MaxPool2d, kaiming_init, normal_init
+from mmcv.cnn import Conv2d, Linear, MaxPool2d
 from mmcv.runner import BaseModule, force_fp32
 from torch.nn.modules.utils import _pair
 
@@ -24,7 +24,18 @@ class MaskIoUHead(BaseModule):
                  fc_out_channels=1024,
                  num_classes=80,
                  loss_iou=dict(type='MSELoss', loss_weight=0.5),
-                 init_cfg=None):
+                 init_cfg=[
+                     dict(type='Kaiming', override=dict(name='convs')),
+                     dict(
+                         type='Kaiming',
+                         a=1,
+                         mode='fan_in',
+                         nonlinearity='leaky_relu',
+                         distribution='uniform',
+                         override=dict(name='fcs')),
+                     dict(
+                         'Normal', std=0.01, override=dict(name='fc_mask_iou'))
+                 ]):
         super(MaskIoUHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.conv_out_channels = conv_out_channels
@@ -61,22 +72,6 @@ class MaskIoUHead(BaseModule):
         self.relu = nn.ReLU()
         self.max_pool = MaxPool2d(2, 2)
         self.loss_iou = build_loss(loss_iou)
-
-    # TODO： Wait for MMCV PR merge
-    def init_weight(self):
-        if hasattr(self, 'init_cfg'):
-            super(MaskIoUHead, self).init_weight()
-        else:
-            for conv in self.convs:
-                kaiming_init(conv)
-            for fc in self.fcs:
-                kaiming_init(
-                    fc,
-                    a=1,
-                    mode='fan_in',
-                    nonlinearity='leaky_relu',
-                    distribution='uniform')
-            normal_init(self.fc_mask_iou, std=0.01)
 
     def forward(self, mask_feat, mask_pred):
         mask_pred = mask_pred.sigmoid()

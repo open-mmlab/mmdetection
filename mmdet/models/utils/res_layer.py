@@ -1,10 +1,9 @@
 from mmcv.cnn import build_conv_layer, build_norm_layer
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, Sequential
 from torch import nn as nn
 
 
-# TODO： Wait for MMCV PR merge
-class ResLayer(nn.Sequential):
+class ResLayer(Sequential):
     """ResLayer to build ResNet style backbone.
 
     Args:

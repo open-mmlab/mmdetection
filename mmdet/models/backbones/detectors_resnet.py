@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.runner import Sequential
 
 from ..builder import BACKBONES
 from .resnet import Bottleneck as _Bottleneck
@@ -106,8 +107,7 @@ class Bottleneck(_Bottleneck):
         return out
 
 
-# TODO： Wait for MMCV PR merge
-class ResLayer(nn.Sequential):
+class ResLayer(Sequential):
     """ResLayer to build ResNet style backbone for RPF in detectoRS.
 
     The difference between this module and base class is that we pass

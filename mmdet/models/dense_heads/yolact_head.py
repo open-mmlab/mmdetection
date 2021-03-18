@@ -912,14 +912,14 @@ class YOLACTProtonet(BaseModule):
         return x1, x2
 
 
-class InterpolateModule(nn.Module):
+class InterpolateModule(BaseModule):
     """This is a module version of F.interpolate.
 
     Any arguments you give it just get passed along for the ride.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__()
+    def __init__(self, *args, init_cfg=None, **kwargs):
+        super().__init__(init_cfg)
 
         self.args = args
         self.kwargs = kwargs

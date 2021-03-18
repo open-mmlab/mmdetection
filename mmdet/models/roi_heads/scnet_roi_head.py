@@ -50,23 +50,6 @@ class SCNetRoIHead(CascadeRoIHead):
             self.mask_roi_extractor = build_roi_extractor(mask_roi_extractor)
             self.mask_head = build_head(mask_head)
 
-    # TODO： Wait for MMCV PR merge
-    def init_weights(self):
-        """Initialize the weights in head."""
-        for i in range(self.num_stages):
-            if self.with_bbox:
-                self.bbox_roi_extractor[i].init_weight()
-                self.bbox_head[i].init_weight()
-        if self.with_mask:
-            self.mask_roi_extractor.init_weight()
-            self.mask_head.init_weight()
-        if self.with_semantic:
-            self.semantic_head.init_weight()
-        if self.with_glbctx:
-            self.glbctx_head.init_weight()
-        if self.with_feat_relay:
-            self.feat_relay_head.init_weight()
-
     @property
     def with_semantic(self):
         """bool: whether the head has semantic head"""

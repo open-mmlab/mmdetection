@@ -1,7 +1,5 @@
 import torch
-import torch.nn as nn
 
-# from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -57,20 +55,6 @@ class TwoStageDetector(BaseDetector):
     def with_roi_head(self):
         """bool: whether the detector has a RoI head"""
         return hasattr(self, 'roi_head') and self.roi_head is not None
-
-    def init_weight(self):
-        """Initialize the weights in detector."""
-        self.backbone.init_weight()
-        if self.with_neck:
-            if isinstance(self.neck, nn.Sequential):
-                for m in self.neck:
-                    m.init_weight()
-            else:
-                self.neck.init_weight()
-        if self.with_rpn:
-            self.rpn_head.init_weight()
-        if self.with_roi_head:
-            self.roi_head.init_weight()
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""

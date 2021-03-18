@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 
 from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
@@ -32,17 +31,6 @@ class SingleStageDetector(BaseDetector):
         self.bbox_head = build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-
-    def init_weight(self):
-        """Initialize the weights in detector."""
-        self.backbone.init_weight()
-        if self.with_neck:
-            if isinstance(self.neck, nn.Sequential):
-                for m in self.neck:
-                    m.init_weight()
-            else:
-                self.neck.init_weight()
-        self.bbox_head.init_weight()
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""

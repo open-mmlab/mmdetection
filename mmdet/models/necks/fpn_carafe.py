@@ -200,7 +200,7 @@ class FPN_CARAFE(BaseModule):
                 self.fpn_convs.append(extra_fpn_conv)
                 self.lateral_convs.append(extra_l_conv)
 
-    # TODO: Check
+    # TODO: How to convert to init_cfg
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weight(self):
         if hasattr(self, 'init_cfg'):

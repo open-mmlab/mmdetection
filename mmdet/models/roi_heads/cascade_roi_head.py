@@ -106,20 +106,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.bbox_sampler.append(
                     build_sampler(rcnn_train_cfg.sampler, context=self))
 
-    # TODO： Wait for MMCV PR merge
-    def init_weight(self):
-        """Initialize the weights in head."""
-        if self.with_shared_head:
-            self.shared_head.init_weight()
-        for i in range(self.num_stages):
-            if self.with_bbox:
-                self.bbox_roi_extractor[i].init_weight()
-                self.bbox_head[i].init_weight()
-            if self.with_mask:
-                if not self.share_roi_extractor:
-                    self.mask_roi_extractor[i].init_weight()
-                self.mask_head[i].init_weight()
-
     def forward_dummy(self, x, proposals):
         """Dummy forward function."""
         # bbox head

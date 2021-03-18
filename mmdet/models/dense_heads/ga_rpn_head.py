@@ -12,7 +12,6 @@ from .guided_anchor_head import GuidedAnchorHead
 from .rpn_test_mixin import RPNTestMixin
 
 
-# TODO: Check
 @HEADS.register_module()
 class GARPNHead(RPNTestMixin, GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""

@@ -104,7 +104,7 @@ class FCNMaskHead(BaseModule):
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
-    # TODO: HOW
+    # TODO: How to convert to init_cfg
     def init_weight(self):
         if hasattr(self, 'init_cfg'):
             super(FCNMaskHead, self).init_weight()
