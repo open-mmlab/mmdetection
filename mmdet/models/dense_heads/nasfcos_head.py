@@ -16,36 +16,35 @@ class NASFCOSHead(FCOSHead):
     "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
     """
 
-    def __init__(self,
-                 *args,
-                 init_cfg=dict(
-                     type='Normal',
-                     layer='Conv2d',
-                     std=0.01,
-                     override=[
-                         dict(
-                             type='Normal',
-                             name='conv_cls',
-                             std=0.01,
-                             bias_prob=0.01),
-                         dict(
-                             type='Kaiming',
-                             a=1,
-                             mode='fan_in',
-                             nonlinearity='leaky_relu',
-                             distribution='uniform',
-                             layer=['ConvModule', 'Conv2d'],
-                             name='cls_convs'),
-                         dict(
-                             type='Kaiming',
-                             a=1,
-                             mode='fan_in',
-                             nonlinearity='leaky_relu',
-                             distribution='uniform',
-                             layer=['ConvModule', 'Conv2d'],
-                             name='reg_convs')
-                     ]),
-                 **kwargs):
+    def __init__(self, *args, init_cfg=None, **kwargs):
+        if init_cfg is None:
+            init_cfg = dict(
+                type='Normal',
+                layer='Conv2d',
+                std=0.01,
+                override=[
+                    dict(
+                        type='Normal',
+                        name='conv_cls',
+                        std=0.01,
+                        bias_prob=0.01),
+                    dict(
+                        type='Kaiming',
+                        a=1,
+                        mode='fan_in',
+                        nonlinearity='leaky_relu',
+                        distribution='uniform',
+                        layer=['ConvModule', 'Conv2d'],
+                        name='cls_convs'),
+                    dict(
+                        type='Kaiming',
+                        a=1,
+                        mode='fan_in',
+                        nonlinearity='leaky_relu',
+                        distribution='uniform',
+                        layer=['ConvModule', 'Conv2d'],
+                        name='reg_convs')
+                ])
         super(NASFCOSHead, self).__init__(*args, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):

@@ -473,7 +473,7 @@ class ResNet(BaseModule):
             elif not isinstance(init_cfg, list):
                 self.init_cfg = [init_cfg]
 
-            # TODO: dcn does not support init_cfg mode
+            # TODO: dcn conv_offset cannot initialize with init_cfg
 
             if self.zero_init_residual:
                 self.init_cfg += [

@@ -75,20 +75,19 @@ class RFP(FPN):
                  rfp_backbone,
                  aspp_out_channels,
                  aspp_dilations=(1, 3, 6, 1),
-                 init_cfg=[
-                     dict(
-                         type='Xavier',
-                         distribution='uniform',
-                         override=[
-                             dict(name='lateral_convs', layer='Conv2d'),
-                             dict(name='fpn_convs', layer='Conv2d')
-                         ]),
-                     dict(
-                         type='Constant',
-                         val=0,
-                         override=dict(name='rfp_weight'))
-                 ],
+                 init_cfg=None,
                  **kwargs):
+        if init_cfg is None:
+            init_cfg = [
+                dict(
+                    type='Xavier',
+                    distribution='uniform',
+                    override=[
+                        dict(name='lateral_convs', layer='Conv2d'),
+                        dict(name='fpn_convs', layer='Conv2d')
+                    ]),
+                dict(type='Constant', val=0, override=dict(name='rfp_weight'))
+            ]
         super().__init__(init_cfg=init_cfg, **kwargs)
         self.rfp_steps = rfp_steps
         # Be careful! Pretrained weights cannot be loaded when use

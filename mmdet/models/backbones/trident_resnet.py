@@ -35,8 +35,7 @@ class TridentConv(BaseModule):
                  trident_dilations=(1, 2, 3),
                  test_branch_idx=1,
                  bias=False,
-                 init_cfg=dict(
-                     type='Kaiming', distribution='uniform', mode='fan_in')):
+                 init_cfg=None):
         super(TridentConv, self).__init__(init_cfg)
         self.num_branch = len(trident_dilations)
         self.with_bias = bias
@@ -116,7 +115,12 @@ class TridentBottleneck(Bottleneck):
             stride=self.conv2_stride,
             bias=False,
             trident_dilations=self.trident_dilations,
-            test_branch_idx=test_branch_idx)
+            test_branch_idx=test_branch_idx,
+            init_cfg=dict(
+                type='Kaiming',
+                distribution='uniform',
+                mode='fan_in',
+                override=dict(name='conv2')))
 
     def forward(self, x):
 

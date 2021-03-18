@@ -59,7 +59,11 @@ class YOLACTHead(AnchorHead):
                  use_ohem=True,
                  conv_cfg=None,
                  norm_cfg=None,
-                 init_cfg=dict(type='Xavier', distribution='uniform', bias=0),
+                 init_cfg=dict(
+                     type='Xavier',
+                     distribution='uniform',
+                     bias=0,
+                     layer='Conv2d'),
                  **kwargs):
         self.num_head_convs = num_head_convs
         self.num_protos = num_protos
@@ -82,7 +86,7 @@ class YOLACTHead(AnchorHead):
     def _init_layers(self):
         """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
-        self.head_convs = nn.ModuleList()
+        self.head_convs = ModuleList()
         for i in range(self.num_head_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
             self.head_convs.append(

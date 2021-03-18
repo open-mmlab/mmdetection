@@ -37,13 +37,15 @@ class HRFPN(BaseModule):
                  norm_cfg=None,
                  with_cp=False,
                  stride=1,
-                 init_cfg=dict(
-                     type='Kaiming',
-                     layer='Conv2d',
-                     a=1,
-                     mode='fan_in',
-                     nonlinearity='leaky_relu',
-                     distribution='uniform')):
+                 init_cfg=None):
+        if init_cfg is None:
+            init_cfg = dict(
+                type='Kaiming',
+                layer='Conv2d',
+                a=1,
+                mode='fan_in',
+                nonlinearity='leaky_relu',
+                distribution='uniform')
         super(HRFPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels

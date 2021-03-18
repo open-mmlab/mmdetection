@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.runner import Sequential
 
 from ..builder import BACKBONES
 from .resnet import Bottleneck as _Bottleneck
@@ -158,7 +159,7 @@ class Bottle2neck(_Bottleneck):
         return out
 
 
-class Res2Layer(nn.Sequential):
+class Res2Layer(Sequential):
     """Res2Layer to build Res2Net style backbone.
 
     Args:
@@ -326,7 +327,7 @@ class Res2Net(ResNet):
             elif not isinstance(init_cfg, list):
                 self.init_cfg = [init_cfg]
 
-            # TODO: dcn does not support init_cfg mode
+            # TODO: dcn conv_offset cannot initialize with init_cfg
 
             if self.zero_init_residual:
                 self.init_cfg += [
