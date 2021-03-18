@@ -192,7 +192,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     shape (num_anchors,).
             gt_bboxes (Tensor): Ground truth bboxes of the image,
                 shape (num_gts, 4).
-            img_meta (dict): Meta info of the image.
             gt_bboxes_ignore (Tensor): Ground truth bboxes to be
                 ignored, shape (num_ignored_gts, 4).
             img_meta (dict): Meta info of the image.
