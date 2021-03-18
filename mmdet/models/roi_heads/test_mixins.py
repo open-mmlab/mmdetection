@@ -55,7 +55,24 @@ class BBoxTestMixin(object):
                            proposals,
                            rcnn_test_cfg,
                            rescale=False):
-        """Test only det bboxes without augmentation."""
+        """Test only det bboxes without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            proposals (Tensor or List[Tensor]): Region proposals.
+            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+
+        Returns:
+            tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor] or
+               tuple[[], []]: The first list is an has a length of batch and
+               a shape of (n, 5) tensor where 5 represent (tl_x, tl_y, br_x,
+               br_y, score) and the score between 0 and 1. The second list is
+               an has a length of batch and a shape of (n,) tensor, and each
+               element represents the class label of the corresponding box.
+        """
         # get origin input shape to support onnx dynamic input shape
         if torch.onnx.is_in_onnx_export():
             assert len(
@@ -66,6 +83,8 @@ class BBoxTestMixin(object):
             img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
+        # The length of proposals of different batches may be different.
+        # In order to form a batch, a padding operation is required.
         if isinstance(proposals, list):
             # padding to form a batch
             max_size = max([proposal.size(0) for proposal in proposals])
@@ -84,13 +103,13 @@ class BBoxTestMixin(object):
         batch_size = rois.shape[0]
         num_proposals_per_img = rois.shape[1]
 
-        # Eliminate batch
+        # Eliminate the batch dimension
         rois = rois.view(-1, 5)
         bbox_results = self._bbox_forward(x, rois)
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
 
-        # Recover batch
+        # Recover the batch dimension
         rois = rois.reshape(batch_size, num_proposals_per_img, -1)
         cls_score = cls_score.reshape(batch_size, num_proposals_per_img, -1)
 
@@ -99,8 +118,8 @@ class BBoxTestMixin(object):
             supplement_mask = rois[..., -1] == 0
             cls_score[supplement_mask, :] = 0
 
-        # some detector with_reg is False like Grid R-CNN,
-        # bbox_pred will be None
+        # bbox_pred would be None in some detector when with_reg is False,
+        # e.g. Grid R-CNN.
         if bbox_pred is not None:
             # the bbox prediction of some detectors like SABL is not Tensor
             if isinstance(bbox_pred, torch.Tensor):
