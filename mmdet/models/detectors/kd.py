@@ -1,5 +1,3 @@
-import warnings
-
 import torch
 
 from ..builder import DETECTORS
@@ -27,13 +25,8 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
 
         from mmdet.apis.inference import init_detector
 
-        try:
-            self.teacher_model = init_detector(
-                teacher_config, teacher_model, device=device)
-        except OSError:
-            warnings.warn('Warning: Teacher model file does not exist! ',
-                          UserWarning)
-            self.teacher_model = init_detector(teacher_config)
+        self.teacher_model = init_detector(
+            teacher_config, teacher_model, device=device)
 
     def forward_train(self,
                       img,
