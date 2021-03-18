@@ -57,16 +57,22 @@ class BBoxTestMixin(object):
                            rescale=False):
         """Test only det bboxes without augmentation."""
         if isinstance(proposals, list):
-            rois = bbox2roi(proposals)
-            batch_size = 1
-            num_proposals_per_img = proposals[0].shape[0]
+            max_size = max([proposal.size(0) for proposal in proposals])
+            for i, proposal in enumerate(proposals):
+                supplement = proposal.new_full(
+                    (max_size - proposal.size(0), 5), 0)
+                proposals[i] = torch.cat((supplement, proposal), dim=0)
+            rois = torch.stack(proposals, dim=0)
         else:
             rois = proposals
-            batch_index = rois.new_tensor(torch.arange(rois.size(0))).view(
-                -1, 1, 1).expand(rois.size(0), rois.size(1), 1)
-            rois = torch.cat([batch_index, rois[..., :4]], dim=-1)
-            batch_size = proposals.shape[0]
-            num_proposals_per_img = proposals.shape[1]
+
+        batch_index = torch.arange(
+            rois.size(0), device=rois.device).float().view(-1, 1, 1).expand(
+                rois.size(0), rois.size(1), 1)
+        rois = torch.cat([batch_index, rois[..., :4]], dim=-1)
+        batch_size = rois.shape[0]
+        num_proposals_per_img = rois.shape[1]
+
         # Eliminate batch
         rois = rois.view(-1, 5)
         bbox_results = self._bbox_forward(x, rois)
@@ -77,9 +83,15 @@ class BBoxTestMixin(object):
         rois = rois.reshape(batch_size, num_proposals_per_img, -1)
         cls_score = cls_score.reshape(batch_size, num_proposals_per_img, -1)
 
+        if not torch.onnx.is_in_onnx_export():
+            supplement_mask = rois[..., -1] == 0
+            cls_score[supplement_mask, :] = 0
+
         if bbox_pred is not None:
             bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img,
                                           -1)
+            if not torch.onnx.is_in_onnx_export():
+                bbox_pred[supplement_mask, :] = 0
         else:
             bbox_pred = (None, ) * len(proposals)
 
