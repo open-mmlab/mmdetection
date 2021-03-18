@@ -59,10 +59,15 @@ class CocoDataset(CustomDataset):
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.img_ids = self.coco.get_img_ids()
         data_infos = []
+        ann_ids = []
         for i in self.img_ids:
             info = self.coco.load_imgs([i])[0]
             info['filename'] = info['file_name']
             data_infos.append(info)
+            ann_id = self.coco.get_ann_ids(img_ids=[i])
+            ann_ids.extend(ann_id)
+        assert len(set(ann_ids)) == len(
+            ann_ids), "Annotation ids in '{}' are not unique!".format(ann_file)
         return data_infos
 
     def get_ann_info(self, idx):
