@@ -278,8 +278,8 @@ class BBoxHead(nn.Module):
         """Transform network output for a batch into bbox predictions.
 
         Args:
-            rois (Tensor): Boxes to be transformed. Has shape (N, 4)
-               or (B, N, 4)
+            rois (Tensor): Boxes to be transformed. Has shape (N, 5)
+               or (B, N, 5)
             cls_score (list[Tensor] or Tensor): Box scores for
               each scale level, each is a 4D-tensor, the channel number is
               num_points * num_classes.
@@ -287,7 +287,7 @@ class BBoxHead(nn.Module):
                 level, each is a 4D-tensor, the channel number is
                 num_classes * 4.
             img_shape (Sequence[int] or torch.Tensor or Sequence[
-                Sequence[int]],optional): Maximum bounds for boxes, specifies
+                Sequence[int]], optional): Maximum bounds for boxes, specifies
                 (H, W, C) or (H, W). If rois shape is (B, N, 4), then
                 the max_shape should be a Sequence[Sequence[int]]
                 and the length of max_shape should also be B.
@@ -295,15 +295,16 @@ class BBoxHead(nn.Module):
                 (w_scale, h_scale, w_scale, h_scale).
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
-            cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head.
+            cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
 
         Returns:
-            tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor] or
-               tuple[[], []]: The first list is an has a length of batch and
-               a shape of (n, 5) tensor where 5 represent (tl_x, tl_y, br_x,
-               br_y, score) and the score between 0 and 1. The second list is
-               an has a length of batch and a shape of (n,) tensor, and each
-               element represents the class label of the corresponding box.
+            tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor]: The
+                first list includes batch tensor and the shape is (n, 5)
+                where 5 represent (tl_x, tl_y, br_x, br_y, score) and the
+                score between 0 and 1. The second list also includes tensors
+                of the same length as the first list, and the shape is (n,)
+                where each element represents the class label of the
+                corresponding box.
         """
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
@@ -325,6 +326,7 @@ class BBoxHead(nn.Module):
                 bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 
         if bboxes.ndim == 2:
+            # e.g. Cascade R-CNN.
             is_batch = False
         else:
             is_batch = True
