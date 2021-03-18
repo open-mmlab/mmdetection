@@ -217,10 +217,11 @@ class RPNHead(RPNTestMixin, AnchorHead):
         if torch.onnx.is_in_onnx_export():
             from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
             score_threshold = cfg.nms.get('score_thr', 0.0)
+            deploy_nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
             det_indices = add_dummy_nms_for_onnx(
                 batch_mlvl_proposals,
                 batch_mlvl_scores.unsqueeze(1),
-                cfg.max_per_img,
+                deploy_nms_pre,
                 cfg.nms.iou_threshold,
                 score_threshold,
                 only_return_indices=True)
