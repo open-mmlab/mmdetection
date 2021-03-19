@@ -52,5 +52,6 @@ def test_coco_annotation_ids_unique():
     fake_json_file = osp.join(tmp_dir.name, 'fake_data.json')
     _create_ids_error_coco_json(fake_json_file)
 
+    # test annotation ids not unique error
     with pytest.raises(AssertionError):
         CocoDataset(ann_file=fake_json_file, classes=('car', ), pipeline=[])
