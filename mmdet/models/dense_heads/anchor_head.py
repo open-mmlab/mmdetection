@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
@@ -651,12 +653,20 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             # Always keep topk op for dynamic input in onnx
             if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
                                        or scores.shape[-2] > nms_pre_tensor):
-                from torch import _shape_as_tensor
-                # keep shape as tensor and get k
-                num_anchor = _shape_as_tensor(scores)[-2].to(
-                    nms_pre_tensor.device)
-                nms_pre = torch.where(nms_pre_tensor < num_anchor,
-                                      nms_pre_tensor, num_anchor)
+                is_trt_backend = os.environ.get(
+                    'ONNX_BACKEND') == 'MMCVTensorRT'
+                # TensorRT does not support dynamic K with TopK op
+                if is_trt_backend:
+                    if scores.shape[-2] <= nms_pre_tensor:
+                        continue
+                    nms_pre = nms_pre_tensor
+                else:
+                    from torch import _shape_as_tensor
+                    # keep shape as tensor and get k
+                    num_anchor = _shape_as_tensor(scores)[-2].to(
+                        nms_pre_tensor.device)
+                    nms_pre = torch.where(nms_pre_tensor < num_anchor,
+                                          nms_pre_tensor, num_anchor)
 
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
