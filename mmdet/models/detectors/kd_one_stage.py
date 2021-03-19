@@ -6,9 +6,9 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module()
 class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
-    """Implementation of`Distilling the Knowledge in a Neural Network.
+    """Implementation of `Distilling the Knowledge in a Neural Network.
 
-    <https://arxiv.org/abs/1503.02531>`_.in single-stage detector
+    <https://arxiv.org/abs/1503.02531>`_.
     """
 
     def __init__(self,
