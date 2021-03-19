@@ -2,7 +2,6 @@ import os.path as osp
 from functools import partial
 
 import mmcv
-import numpy as np
 import pytest
 import torch
 from mmcv.cnn import Scale
@@ -10,8 +9,7 @@ from mmcv.cnn import Scale
 from mmdet import digit_version
 from mmdet.models.dense_heads import (FCOSHead, FSAFHead, RetinaHead, SSDHead,
                                       YOLOV3Head)
-from .utils import (WrapFunction, convert_result_list, ort_validate,
-                    verify_model)
+from .utils import ort_validate
 
 data_path = osp.join(osp.dirname(__file__), 'data')
 
@@ -49,7 +47,6 @@ def retinanet_config():
     model = RetinaHead(
         num_classes=4, in_channels=1, test_cfg=test_cfg, **head_cfg)
     model.requires_grad_(False)
-    model.eval()
 
     return model
 
@@ -101,30 +98,7 @@ def test_retinanet_head_get_bboxes():
 
     retina_model.get_bboxes = partial(
         retina_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    wrap_model = WrapFunction(retina_model.get_bboxes)
-    wrap_model.cpu().eval()
-    with torch.no_grad():
-        torch.onnx.export(
-            wrap_model, (cls_score, bboxes),
-            'tmp.onnx',
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
-
-    onnx_outputs = verify_model(cls_score + bboxes)
-
-    torch_outputs = wrap_model.forward(cls_score, bboxes)
-    torch_outputs = convert_result_list(torch_outputs)
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
-
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+    ort_validate(retina_model.get_bboxes, (cls_score, bboxes))
 
 
 def yolo_config():
@@ -154,8 +128,8 @@ def yolo_config():
         test_cfg=test_cfg,
         **head_cfg)
     model.requires_grad_(False)
-    model.eval()
-
+    # yolov3 need eval()
+    model.cpu().eval()
     return model
 
 
@@ -192,30 +166,7 @@ def test_yolov3_head_get_bboxes():
 
     yolo_model.get_bboxes = partial(
         yolo_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    wrap_model = WrapFunction(yolo_model.get_bboxes)
-    wrap_model.cpu().eval()
-    with torch.no_grad():
-        torch.onnx.export(
-            wrap_model,
-            pred_maps,
-            'tmp.onnx',
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
-
-    onnx_outputs = verify_model(pred_maps)
-
-    torch_outputs = convert_result_list(wrap_model.forward(pred_maps))
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
-
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+    ort_validate(yolo_model.get_bboxes, pred_maps)
 
 
 def fcos_config():
@@ -231,7 +182,6 @@ def fcos_config():
     model = FCOSHead(num_classes=4, in_channels=1, test_cfg=test_cfg)
 
     model.requires_grad_(False)
-    model.eval()
     return model
 
 
@@ -261,7 +211,7 @@ def test_fcos_head_forward():
 
 
 def test_fcos_head_get_bboxes():
-    """Test fcos head get_bboxes() in ort and."""
+    """Test fcos head get_bboxes() in ort."""
     fcos_model = fcos_config()
 
     s = 128
@@ -287,30 +237,7 @@ def test_fcos_head_get_bboxes():
 
     fcos_model.get_bboxes = partial(
         fcos_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    wrap_model = WrapFunction(fcos_model.get_bboxes)
-    wrap_model.cpu().eval()
-    with torch.no_grad():
-        torch.onnx.export(
-            wrap_model, (cls_scores, bboxes, centerness),
-            'tmp.onnx',
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
-
-    onnx_outputs = verify_model(cls_scores + bboxes + centerness)
-
-    torch_outputs = wrap_model.forward(cls_scores, bboxes, centerness)
-    torch_outputs = convert_result_list(torch_outputs)
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
-
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+    ort_validate(fcos_model.get_bboxes, (cls_scores, bboxes, centerness))
 
 
 def fsaf_config():
@@ -332,7 +259,6 @@ def fsaf_config():
             max_per_img=100))
 
     model = FSAFHead(num_classes=4, in_channels=1, test_cfg=test_cfg, **cfg)
-    model.eval()
     model.requires_grad_(False)
     return model
 
@@ -383,30 +309,7 @@ def test_fsaf_head_get_bboxes():
 
     fsaf_model.get_bboxes = partial(
         fsaf_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    wrap_model = WrapFunction(fsaf_model.get_bboxes)
-    wrap_model.cpu().eval()
-    with torch.no_grad():
-        torch.onnx.export(
-            wrap_model, (cls_score, bboxes),
-            'tmp.onnx',
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
-
-    onnx_outputs = verify_model(cls_score + bboxes)
-
-    torch_outputs = wrap_model.forward(cls_score, bboxes)
-    torch_outputs = convert_result_list(torch_outputs)
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
-
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+    ort_validate(fsaf_model.get_bboxes, (cls_score, bboxes))
 
 
 def ssd_config():
@@ -439,7 +342,6 @@ def ssd_config():
         **cfg)
 
     model.requires_grad_(False)
-    model.eval()
     return model
 
 
@@ -481,27 +383,4 @@ def test_ssd_head_get_bboxes():
 
     ssd_model.get_bboxes = partial(
         ssd_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    wrap_model = WrapFunction(ssd_model.get_bboxes)
-    wrap_model.cpu().eval()
-    with torch.no_grad():
-        torch.onnx.export(
-            wrap_model, (cls_score, bboxes),
-            'tmp.onnx',
-            export_params=True,
-            keep_initializers_as_inputs=True,
-            do_constant_folding=True,
-            verbose=False,
-            opset_version=11)
-
-    onnx_outputs = verify_model(cls_score + bboxes)
-
-    torch_outputs = wrap_model.forward(cls_score, bboxes)
-    torch_outputs = convert_result_list(torch_outputs)
-    torch_outputs = [
-        torch_output.detach().numpy() for torch_output in torch_outputs
-    ]
-
-    # match torch_outputs and onnx_outputs
-    for i in range(len(onnx_outputs)):
-        np.testing.assert_allclose(
-            torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
+    ort_validate(ssd_model.get_bboxes, (cls_score, bboxes))

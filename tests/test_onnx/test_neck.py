@@ -51,7 +51,6 @@ def fpn_neck_config(test_step_name):
             add_extra_convs=True,
             num_outs=5)
     elif (fpn_test_step_names[test_step_name] == 1):
-        # Tests for fpn with no extra convs (pooling is used instead)
         fpn_model = FPN(
             in_channels=in_channels,
             out_channels=out_channels,
@@ -97,8 +96,6 @@ def fpn_neck_config(test_step_name):
             out_channels=out_channels,
             add_extra_convs='on_output',
             num_outs=5)
-    fpn_model.eval()
-    fpn_model.requires_grad_(False)
     return fpn_model, feats
 
 
@@ -117,51 +114,49 @@ def yolo_neck_config(test_step_name):
     if (yolo_test_step_names[test_step_name] == 0):
         yolo_model = YOLOV3Neck(
             in_channels=in_channels, out_channels=out_channels, num_scales=3)
-    yolo_model.eval()
-    yolo_model.requires_grad_(False)
     return yolo_model, feats
 
 
 def test_fpn_normal():
-    fpn_model, feats = fpn_neck_config('fpn_normal')
-    ort_validate(fpn_model.forward, feats)
+    outs = fpn_neck_config('fpn_normal')
+    ort_validate(*outs)
 
 
 def test_fpn_wo_extra_convs():
-    fpn_model, feats = fpn_neck_config('fpn_wo_extra_convs')
-    ort_validate(fpn_model.forward, feats)
+    outs = fpn_neck_config('fpn_wo_extra_convs')
+    ort_validate(*outs)
 
 
 def test_fpn_lateral_bns():
-    fpn_model, feats = fpn_neck_config('fpn_lateral_bns')
-    ort_validate(fpn_model.forward, feats)
+    outs = fpn_neck_config('fpn_lateral_bns')
+    ort_validate(*outs)
 
 
 def test_fpn_bilinear_upsample():
-    fpn_model, feats = fpn_neck_config('fpn_bilinear_upsample')
-    ort_validate(fpn_model.forward, feats)
+    outs = fpn_neck_config('fpn_bilinear_upsample')
+    ort_validate(*outs)
 
 
 def test_fpn_scale_factor():
-    fpn_model, feats = fpn_neck_config('fpn_scale_factor')
-    ort_validate(fpn_model.forward, feats)
+    outs = fpn_neck_config('fpn_scale_factor')
+    ort_validate(*outs)
 
 
 def test_fpn_extra_convs_inputs():
-    fpn_model, feats = fpn_neck_config('fpn_extra_convs_inputs')
-    ort_validate(fpn_model.forward, feats)
+    outs = fpn_neck_config('fpn_extra_convs_inputs')
+    ort_validate(*outs)
 
 
 def test_fpn_extra_convs_laterals():
-    fpn_model, feats = fpn_neck_config('fpn_extra_convs_laterals')
-    ort_validate(fpn_model.forward, feats)
+    outs = fpn_neck_config('fpn_extra_convs_laterals')
+    ort_validate(*outs)
 
 
 def test_fpn_extra_convs_outputs():
-    fpn_model, feats = fpn_neck_config('fpn_extra_convs_outputs')
-    ort_validate(fpn_model.forward, feats)
+    outs = fpn_neck_config('fpn_extra_convs_outputs')
+    ort_validate(*outs)
 
 
 def test_yolo_normal():
-    yolo_model, feats = yolo_neck_config('yolo_normal')
-    ort_validate(yolo_model.forward, feats)
+    outs = yolo_neck_config('yolo_normal')
+    ort_validate(*outs)
