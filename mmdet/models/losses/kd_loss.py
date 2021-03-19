@@ -9,7 +9,8 @@ from .utils import weighted_loss
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def knowledge_distillation_loss(pred, soft_label, T, detach_target=True):
-    r""" Loss function of`Distilling the Knowledge in a Neural Network
+    """Loss function of `Distilling the Knowledge in a Neural Network.
+
     <https://arxiv.org/abs/1503.02531>`_.
 
     Args:
@@ -37,9 +38,10 @@ def knowledge_distillation_loss(pred, soft_label, T, detach_target=True):
 
 @LOSSES.register_module()
 class LocalizationDistillationLoss(nn.Module):
-    r"""LD is the extension of knowledge distillation on localization task,
+    """LD is the extension of knowledge distillation on localization task,
     which utilizes the learned bbox distributions to transfer the localization
     dark knowledge from teacher to student.
+
     <https://arxiv.org/abs/2102.12252>
 
     Args:

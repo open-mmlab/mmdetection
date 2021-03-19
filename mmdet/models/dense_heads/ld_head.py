@@ -9,9 +9,10 @@ from .gfl_head import GFLHead
 
 @HEADS.register_module()
 class LDHead(GFLHead):
-    r"""LD is the extension of knowledge distillation on localization task,
+    """LD is the extension of knowledge distillation on localization task,
     which utilizes the learned bbox distributions to transfer the localization
     dark knowledge from teacher to student.
+
     <https://arxiv.org/abs/2102.12252>
 
     Args:
