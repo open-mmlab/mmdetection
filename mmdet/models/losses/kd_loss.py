@@ -9,8 +9,7 @@ from .utils import weighted_loss
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def knowledge_distillation_loss(pred, soft_label, T, detach_target=True):
-    """Loss function of `Distilling the Knowledge in a Neural Network.
-
+    r"""Loss function of `Distilling the Knowledge in a Neural Network.
     <https://arxiv.org/abs/1503.02531>`_.
 
     Args:
