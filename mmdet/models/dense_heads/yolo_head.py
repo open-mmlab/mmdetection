@@ -315,7 +315,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             batch_mlvl_conf_scores = batch_mlvl_conf_scores[batch_inds,
                                                             topk_inds]
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
-        if torch.onnx.is_in_onnx_export():
+        if torch.onnx.is_in_onnx_export() and with_nms:
             from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
             batch_mlvl_conf_scores = batch_mlvl_conf_scores.unsqueeze(
                 2).expand_as(batch_mlvl_scores)

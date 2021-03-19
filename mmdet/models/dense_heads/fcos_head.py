@@ -426,7 +426,7 @@ class FCOSHead(AnchorFreeHead):
             batch_mlvl_centerness = batch_mlvl_centerness[batch_inds,
                                                           topk_inds]
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
-        if torch.onnx.is_in_onnx_export():
+        if torch.onnx.is_in_onnx_export() and with_nms:
             from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
             batch_mlvl_centerness = batch_mlvl_centerness.unsqueeze(
                 2).expand_as(batch_mlvl_scores)
