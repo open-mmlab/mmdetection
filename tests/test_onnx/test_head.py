@@ -40,7 +40,7 @@ def retinanet_config():
 
     test_cfg = mmcv.Config(
         dict(
-            deploy_nms_pre=1000,
+            deploy_nms_pre=0,
             min_bbox_size=0,
             score_thr=0.05,
             nms=dict(type='nms', iou_threshold=0.5),
@@ -100,7 +100,7 @@ def test_retinanet_head_get_bboxes():
     bboxes = feats[5:]
 
     retina_model.get_bboxes = partial(
-        retina_model.get_bboxes, img_metas=img_metas)
+        retina_model.get_bboxes, img_metas=img_metas, with_nms=False)
     wrap_model = WrapFunction(retina_model.get_bboxes)
     wrap_model.cpu().eval()
     with torch.no_grad():
@@ -140,7 +140,7 @@ def yolo_config():
 
     test_cfg = mmcv.Config(
         dict(
-            deploy_nms_pre=1000,
+            deploy_nms_pre=0,
             min_bbox_size=0,
             score_thr=0.05,
             conf_thr=0.005,
@@ -190,7 +190,8 @@ def test_yolov3_head_get_bboxes():
     yolo_head_data = 'yolov3_head_get_bboxes.pkl'
     pred_maps = mmcv.load(osp.join(data_path, yolo_head_data))
 
-    yolo_model.get_bboxes = partial(yolo_model.get_bboxes, img_metas=img_metas)
+    yolo_model.get_bboxes = partial(
+        yolo_model.get_bboxes, img_metas=img_metas, with_nms=False)
     wrap_model = WrapFunction(yolo_model.get_bboxes)
     wrap_model.cpu().eval()
     with torch.no_grad():
@@ -221,7 +222,7 @@ def fcos_config():
     """FCOS Head Config."""
     test_cfg = mmcv.Config(
         dict(
-            deploy_nms_pre=1000,
+            deploy_nms_pre=0,
             min_bbox_size=0,
             score_thr=0.05,
             nms=dict(type='nms', iou_threshold=0.5),
@@ -284,7 +285,8 @@ def test_fcos_head_get_bboxes():
         for feat_size in [4, 8, 16, 32, 64]
     ]
 
-    fcos_model.get_bboxes = partial(fcos_model.get_bboxes, img_metas=img_metas)
+    fcos_model.get_bboxes = partial(
+        fcos_model.get_bboxes, img_metas=img_metas, with_nms=False)
     wrap_model = WrapFunction(fcos_model.get_bboxes)
     wrap_model.cpu().eval()
     with torch.no_grad():
@@ -323,7 +325,7 @@ def fsaf_config():
 
     test_cfg = mmcv.Config(
         dict(
-            deploy_nms_pre=1000,
+            deploy_nms_pre=0,
             min_bbox_size=0,
             score_thr=0.05,
             nms=dict(type='nms', iou_threshold=0.5),
@@ -379,7 +381,8 @@ def test_fsaf_head_get_bboxes():
     cls_score = feats[:5]
     bboxes = feats[5:]
 
-    fsaf_model.get_bboxes = partial(fsaf_model.get_bboxes, img_metas=img_metas)
+    fsaf_model.get_bboxes = partial(
+        fsaf_model.get_bboxes, img_metas=img_metas, with_nms=False)
     wrap_model = WrapFunction(fsaf_model.get_bboxes)
     wrap_model.cpu().eval()
     with torch.no_grad():
@@ -423,7 +426,7 @@ def ssd_config():
 
     test_cfg = mmcv.Config(
         dict(
-            deploy_nms_pre=1000,
+            deploy_nms_pre=0,
             nms=dict(type='nms', iou_threshold=0.45),
             min_bbox_size=0,
             score_thr=0.02,
@@ -476,7 +479,8 @@ def test_ssd_head_get_bboxes():
     cls_score = feats[:6]
     bboxes = feats[6:]
 
-    ssd_model.get_bboxes = partial(ssd_model.get_bboxes, img_metas=img_metas)
+    ssd_model.get_bboxes = partial(
+        ssd_model.get_bboxes, img_metas=img_metas, with_nms=False)
     wrap_model = WrapFunction(ssd_model.get_bboxes)
     wrap_model.cpu().eval()
     with torch.no_grad():
