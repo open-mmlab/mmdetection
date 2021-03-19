@@ -340,7 +340,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
 
             texts.append(decoded if confidence >= self.text_recognition_thr else '')
 
-        texts = np.array(texts)
+        texts = np.array([texts])
         output['texts'] = texts
 
         return output
