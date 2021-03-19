@@ -12,7 +12,13 @@ class LDHead(GFLHead):
     r"""LD is the extension of knowledge distillation on localization task,
     which utilizes the learned bbox distributions to transfer the localization
     dark knowledge from teacher to student.
-    <https://arxiv.org/abs/2102.12252>`_.
+    <https://arxiv.org/abs/2102.12252>
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        loss_ld (dict): Config of Localization Distillation Loss (LD).
     """
 
     def __init__(self,
@@ -133,9 +139,9 @@ class LDHead(GFLHead):
 
     def forward_train(self,
                       x,
+                      out_teacher,
                       img_metas,
                       gt_bboxes,
-                      out_teacher,
                       gt_labels=None,
                       gt_bboxes_ignore=None,
                       proposal_cfg=None,

@@ -11,7 +11,7 @@ from .fsaf import FSAF
 from .gfl import GFL
 from .grid_rcnn import GridRCNN
 from .htc import HybridTaskCascade
-from .kd import KnowledgeDistillationSingleStageDetector
+from .kd_one_stage import KnowledgeDistillationSingleStageDetector
 from .mask_rcnn import MaskRCNN
 from .mask_scoring_rcnn import MaskScoringRCNN
 from .nasfcos import NASFCOS

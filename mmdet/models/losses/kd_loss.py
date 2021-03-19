@@ -9,18 +9,16 @@ from .utils import weighted_loss
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def knowledge_distillation_loss(pred, soft_label, T, detach_target=True):
-    r"""Knowledge distillation is a model compression method introduced
-    by Hinto in 2015, which transfer the knowledge from a large model to a
-    small one without loss of validity.
+    r""" Loss function of`Distilling the Knowledge in a Neural Network
     <https://arxiv.org/abs/1503.02531>`_.
 
     Args:
-    pred (torch.Tensor): Predicted general distribution of bounding boxes
-        (before softmax) with shape (N, n+1), n is the max value of the
-        integral set `{0, ..., n}` in paper.
-    soft_label (torch.Tensor): Target soft label learned from teacher
-         with shape (N, n+1).
-    T (int): Temperature for distillation.
+        pred (torch.Tensor): Predicted general distribution of bounding boxes
+            (before softmax) with shape (N, n+1), n is the max value of the
+            integral set `{0, ..., n}` in paper.
+        soft_label (torch.Tensor): Target soft label learned from teacher
+            with shape (N, n+1).
+        T (int): Temperature for distillation.
 
     Returns:
         torch.Tensor: Loss tensor with shape (N,).
@@ -42,7 +40,7 @@ class LocalizationDistillationLoss(nn.Module):
     r"""LD is the extension of knowledge distillation on localization task,
     which utilizes the learned bbox distributions to transfer the localization
     dark knowledge from teacher to student.
-    <https://arxiv.org/abs/2102.12252>`_.
+    <https://arxiv.org/abs/2102.12252>
 
     Args:
         reduction (str): Options are `'none'`, `'mean'` and `'sum'`.

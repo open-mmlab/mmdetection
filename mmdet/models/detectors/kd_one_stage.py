@@ -6,13 +6,16 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module()
 class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
+    r"""Implementation of`Distilling the Knowledge in a Neural Network
+ <https://arxiv.org/abs/1503.02531>`_.in single-stage detector
+    """
 
     def __init__(self,
                  backbone,
                  neck,
                  bbox_head,
-                 teacher_config='',
-                 teacher_model='',
+                 teacher_config,
+                 teacher_ckpt=None,
                  eval_teacher=True,
                  train_cfg=None,
                  test_cfg=None,
@@ -21,12 +24,10 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
                          pretrained)
 
         self.eval_teacher = eval_teacher
-        device = next(self.parameters()).device  # model device
 
         from mmdet.apis.inference import init_detector
 
-        self.teacher_model = init_detector(
-            teacher_config, teacher_model, device=device)
+        self.teacher_model = init_detector(teacher_config, teacher_ckpt)
 
     def forward_train(self,
                       img,
@@ -57,9 +58,9 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
             out_teacher = self.teacher_model.bbox_head(teacher_x)
         losses = self.bbox_head.forward_train(
             x,
+            out_teacher,
             img_metas,
             gt_bboxes,
-            out_teacher,
             gt_labels,
             gt_bboxes_ignore,
         )
