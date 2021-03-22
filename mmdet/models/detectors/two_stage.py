@@ -105,8 +105,9 @@ class TwoStageDetector(BaseDetector):
     def forward_train(self,
                       img,
                       img_metas,
-                      gt_bboxes,
-                      gt_labels,
+                      freeze=False,
+                      gt_bboxes=None,
+                      gt_labels=None,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None,
@@ -139,31 +140,51 @@ class TwoStageDetector(BaseDetector):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        x = self.extract_feat(img)
+        if freeze:
+            with torch.no_grad():
+                x = self.extract_feat(img)
 
-        losses = dict()
+                losses = dict()
 
-        # RPN forward and loss
-        if self.with_rpn:
-            proposal_cfg = self.train_cfg.get('rpn_proposal',
-                                              self.test_cfg.rpn)
-            rpn_losses, proposal_list = self.rpn_head.forward_train(
-                x,
-                img_metas,
-                gt_bboxes,
-                gt_labels=None,
-                gt_bboxes_ignore=gt_bboxes_ignore,
-                proposal_cfg=proposal_cfg)
-            losses.update(rpn_losses)
+                # RPN forward and loss
+                if self.with_rpn:
+                    proposal_cfg = self.train_cfg.get('rpn_proposal',
+                                                      self.test_cfg.rpn)
+                    rpn_losses, proposal_list = self.rpn_head.forward_train(
+                        x,
+                        img_metas,
+                        gt_bboxes,
+                        gt_labels=None,
+                        gt_bboxes_ignore=gt_bboxes_ignore,
+                        proposal_cfg=proposal_cfg)
+                    losses.update(rpn_losses)
+                else:
+                    proposal_list = proposals
         else:
-            proposal_list = proposals
+            x = self.extract_feat(img)
+
+            losses = dict()
+
+            # RPN forward and loss
+            if self.with_rpn:
+                proposal_cfg = self.train_cfg.get('rpn_proposal',
+                                                  self.test_cfg.rpn)
+                rpn_losses, proposal_list = self.rpn_head.forward_train(
+                    x,
+                    img_metas,
+                    gt_bboxes,
+                    gt_labels=None,
+                    gt_bboxes_ignore=gt_bboxes_ignore,
+                    proposal_cfg=proposal_cfg)
+                losses.update(rpn_losses)
+            else:
+                proposal_list = proposals
 
         roi_losses = self.roi_head.forward_train(x, img_metas, proposal_list,
                                                  gt_bboxes, gt_labels,
                                                  gt_bboxes_ignore, gt_masks,
-                                                 **kwargs)
+                                                 freeze)
         losses.update(roi_losses)
-
         return losses
 
     async def async_simple_test(self,
@@ -213,3 +234,4 @@ class TwoStageDetector(BaseDetector):
         proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)
+

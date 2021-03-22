@@ -1,18 +1,20 @@
 import random
 import warnings
-
+from functools import partial
 import numpy as np
 import torch
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import (HOOKS, DistSamplerSeedHook, EpochBasedRunner,
+from CustomDataParallel import MMDataParallel
+from mmcv.parallel import MMDistributedDataParallel
+from mmcv.runner import (HOOKS, DistSamplerSeedHook,
                          Fp16OptimizerHook, OptimizerHook, build_optimizer,
                          build_runner)
+from runner import CustomEpochBasedRunner
 from mmcv.utils import build_from_cfg
-
 from mmdet.core import DistEvalHook, EvalHook
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.utils import get_root_logger
+from mmcv.parallel import collate
 
 
 def set_random_seed(seed, deterministic=False):
@@ -67,6 +69,7 @@ def train_detector(model,
             # cfg.gpus will be ignored if distributed
             len(cfg.gpu_ids),
             dist=distributed,
+            shuffle=False,
             seed=cfg.seed) for ds in dataset
     ]
 
@@ -126,7 +129,7 @@ def train_detector(model,
                                    cfg.checkpoint_config, cfg.log_config,
                                    cfg.get('momentum_config', None))
     if distributed:
-        if isinstance(runner, EpochBasedRunner):
+        if isinstance(runner, CustomEpochBasedRunner):
             runner.register_hook(DistSamplerSeedHook())
 
     # register eval hooks
@@ -167,4 +170,5 @@ def train_detector(model,
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
-    runner.run(data_loaders, cfg.workflow)
+    runner.run(data_loaders, cfg.workflow, fraction=0.1, trainset=dataset, distributed=distributed, cfg=cfg)
+

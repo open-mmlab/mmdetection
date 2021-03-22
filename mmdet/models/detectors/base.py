@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
-
 import mmcv
 import numpy as np
 import torch
@@ -8,7 +7,7 @@ import torch.distributed as dist
 import torch.nn as nn
 from mmcv.runner import auto_fp16
 from mmcv.utils import print_log
-
+from mmcv.parallel.scatter_gather import scatter_kwargs
 from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.utils import get_root_logger
 
@@ -167,7 +166,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             return self.aug_test(imgs, img_metas, **kwargs)
 
     @auto_fp16(apply_to=('img', ))
-    def forward(self, img, img_metas, return_loss=True, **kwargs):
+    def forward(self, img, img_metas, return_loss=True, freeze=False,  **kwargs):
         """Calls either :func:`forward_train` or :func:`forward_test` depending
         on whether ``return_loss`` is ``True``.
 
@@ -178,9 +177,24 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         the outer list indicating test time augmentations.
         """
         if return_loss:
-            return self.forward_train(img, img_metas, **kwargs)
+            return self.forward_train(img, img_metas, freeze, **kwargs)
         else:
-            return self.forward_test(img, img_metas, **kwargs)
+            return self.forward_test(img, img_metas, freeze, **kwargs)
+
+    def compute_gradients(self, data_loader, device_ids):
+
+        for i, data_batch in enumerate(data_loader):
+            inputs, kwargs = scatter_kwargs(data_batch, {}, device_ids, dim=0)
+            losses = self(**inputs[0], freeze=True)
+            loss = losses['loss_cls'] + losses['loss_bbox']
+            grads = torch.autograd.grad(loss, self.roi_head.bbox_head.parameters(), allow_unused=True, retain_graph=True)
+            if i == 0:
+                grads_per_elem = torch.cat((grads[1].view(1, -1), grads[3].view(1, -1)), dim=1)
+            else:
+                tmp_grads = torch.cat((grads[1].view(1, -1), grads[3].view(1, -1)), dim=1)
+                grads_per_elem = torch.cat((grads_per_elem, tmp_grads), dim=0)
+
+        return grads_per_elem
 
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.

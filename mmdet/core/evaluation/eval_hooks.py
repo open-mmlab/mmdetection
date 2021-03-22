@@ -1,7 +1,6 @@
 import os.path as osp
 import warnings
 from math import inf
-
 import mmcv
 import torch.distributed as dist
 from mmcv.runner import Hook

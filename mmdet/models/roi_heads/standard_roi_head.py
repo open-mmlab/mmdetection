@@ -74,7 +74,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None,
-                      gt_masks=None):
+                      gt_masks=None, freeze=False):
         """
         Args:
             x (list[Tensor]): list of multi-level img features.
@@ -118,36 +118,36 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         if self.with_bbox:
             bbox_results = self._bbox_forward_train(x, sampling_results,
                                                     gt_bboxes, gt_labels,
-                                                    img_metas)
+                                                    img_metas, freeze)
             losses.update(bbox_results['loss_bbox'])
 
         # mask head forward and loss
         if self.with_mask:
             mask_results = self._mask_forward_train(x, sampling_results,
                                                     bbox_results['bbox_feats'],
-                                                    gt_masks, img_metas)
+                                                    gt_masks, img_metas, freeze)
             losses.update(mask_results['loss_mask'])
 
         return losses
 
-    def _bbox_forward(self, x, rois):
+    def _bbox_forward(self, x, rois, freeze=False):
         """Box head forward function used in both training and testing."""
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
-        cls_score, bbox_pred = self.bbox_head(bbox_feats)
+        cls_score, bbox_pred = self.bbox_head(bbox_feats, freeze)
 
         bbox_results = dict(
             cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
         return bbox_results
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
-                            img_metas):
+                            img_metas, freeze=False):
         """Run forward function and calculate loss for box head in training."""
         rois = bbox2roi([res.bboxes for res in sampling_results])
-        bbox_results = self._bbox_forward(x, rois)
+        bbox_results = self._bbox_forward(x, rois, freeze)
 
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
                                                   gt_labels, self.train_cfg)

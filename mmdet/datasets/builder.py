@@ -111,6 +111,7 @@ def build_dataloader(dataset,
         else:
             sampler = DistributedSampler(
                 dataset, world_size, rank, shuffle=False, seed=seed)
+
         batch_size = samples_per_gpu
         num_workers = workers_per_gpu
     else:
