@@ -23,7 +23,7 @@ def test_ld_head_loss():
         num_classes=4,
         in_channels=1,
         train_cfg=train_cfg,
-        loss_ld=dict(type='LocalizationDistillationLoss', loss_weight=1.0),
+        loss_ld=dict(type='KnowledgeDistillationKLDivLoss', loss_weight=1.0),
         loss_cls=dict(
             type='QualityFocalLoss',
             use_sigmoid=True,
