@@ -8,6 +8,12 @@ from .single_stage import SingleStageDetector
 class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
     r"""Implementation of `Distilling the Knowledge in a Neural Network.
     <https://arxiv.org/abs/1503.02531>`_.
+
+    Args:
+        teacher_config (str or :obj:`mmcv.Config`): Config file path
+            or the config object of teacher model.
+        teacher_ckpt (str, optional): Checkpoint path of teacher model.
+            If left as None, the model will not load any weights.
     """
 
     def __init__(self,

@@ -8,16 +8,17 @@ from .utils import weighted_loss
 
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def knowledge_distillation_loss(pred, soft_label, T, detach_target=True):
+def knowledge_distillation_kl_div_loss(pred,
+                                       soft_label,
+                                       T,
+                                       detach_target=True):
     r"""Loss function of `Distilling the Knowledge in a Neural Network.
     <https://arxiv.org/abs/1503.02531>`_.
 
     Args:
-        pred (torch.Tensor): Predicted general distribution of bounding boxes
-            (before softmax) with shape (N, n+1), n is the max value of the
-            integral set `{0, ..., n}` in paper.
-        soft_label (torch.Tensor): Target soft label learned from teacher
-            with shape (N, n+1).
+        pred (Tensor): Predicted logits with shape (N, n + 1).
+        soft_label (Tensor): Target logits with shape (N, N + 1).
+        T (float): Temperature for distillation.
         T (int): Temperature for distillation.
 
     Returns:
@@ -36,12 +37,10 @@ def knowledge_distillation_loss(pred, soft_label, T, detach_target=True):
 
 
 @LOSSES.register_module()
-class LocalizationDistillationLoss(nn.Module):
-    """LD is the extension of knowledge distillation on localization task,
-    which utilizes the learned bbox distributions to transfer the localization
-    dark knowledge from teacher to student.
+class KnowledgeDistillationKLDivLoss(nn.Module):
+    """Implementation of `Distilling the Knowledge in a Neural Network.
 
-    <https://arxiv.org/abs/2102.12252>
+    <https://arxiv.org/abs/1503.02531>`_.
 
     Args:
         reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
@@ -50,25 +49,22 @@ class LocalizationDistillationLoss(nn.Module):
     """
 
     def __init__(self, reduction='mean', loss_weight=1.0, T=10):
-        super(LocalizationDistillationLoss, self).__init__()
+        super(KnowledgeDistillationKLDivLoss, self).__init__()
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.T = T
 
     def forward(self,
                 pred,
-                soft_corners,
+                soft_label,
                 weight=None,
                 avg_factor=None,
                 reduction_override=None):
         """Forward function.
 
         Args:
-            pred (torch.Tensor): Predicted general distribution of bounding
-                boxes (before softmax) with shape (N, n+1), n is the max value
-                of the integral set `{0, ..., n}` in paper.
-            soft_corners (torch.Tensor): Target distance label learned from
-                teacher for bounding boxes with shape (N, n+1)
+            pred (Tensor): Predicted logits with shape (N, n + 1).
+            soft_label (Tensor): Target logits with shape (N, N + 1).
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
@@ -82,12 +78,12 @@ class LocalizationDistillationLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
 
-        loss_ld = self.loss_weight * knowledge_distillation_loss(
+        loss_kd = self.loss_weight * knowledge_distillation_kl_div_loss(
             pred,
-            soft_corners,
+            soft_label,
             weight,
             reduction=reduction,
             avg_factor=avg_factor,
             T=self.T)
 
-        return loss_ld
+        return loss_kd
