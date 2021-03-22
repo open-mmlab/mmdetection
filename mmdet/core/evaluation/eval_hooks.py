@@ -54,6 +54,10 @@ class EvalHook(Hook):
                  save_best=None,
                  rule=None,
                  **eval_kwargs):
+        warnings.warn(
+            'DeprecationWarning: EvalHook and DistEvalHook is a deprecated, '
+            'please use "mmcv.runner.EvalHook" or "mmcv.runner.DistEvalHook" '
+            'instead')
         if not isinstance(dataloader, DataLoader):
             raise TypeError('dataloader must be a pytorch DataLoader, but got'
                             f' {type(dataloader)}')
