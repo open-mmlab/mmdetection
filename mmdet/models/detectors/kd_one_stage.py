@@ -33,7 +33,8 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
 
         from mmdet.apis.inference import init_detector
 
-        self.teacher_model = init_detector(teacher_config, teacher_ckpt)
+        self.teacher_model = init_detector(
+            teacher_config, teacher_ckpt, device='cpu')
 
     def forward_train(self,
                       img,
