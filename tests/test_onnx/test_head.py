@@ -78,7 +78,7 @@ def test_retinanet_head_get_bboxes():
     retina_model = retinanet_config()
     s = 128
     img_metas = [{
-        'img_shape_for_onnx': (s, s, 3),
+        'img_shape_for_onnx': torch.Tensor([s, s]),
         'scale_factor': 1,
         'pad_shape': (s, s, 3),
         'img_shape': (s, s, 2)
@@ -151,7 +151,7 @@ def test_yolov3_head_get_bboxes():
 
     s = 128
     img_metas = [{
-        'img_shape_for_onnx': (s, s, 3),
+        'img_shape_for_onnx': torch.Tensor([s, s]),
         'img_shape': (s, s, 3),
         'scale_factor': 1,
         'pad_shape': (s, s, 3)
@@ -216,7 +216,7 @@ def test_fcos_head_get_bboxes():
 
     s = 128
     img_metas = [{
-        'img_shape_for_onnx': (s, s, 3),
+        'img_shape_for_onnx': torch.Tensor([s, s]),
         'img_shape': (s, s, 3),
         'scale_factor': 1,
         'pad_shape': (s, s, 3)
@@ -289,7 +289,7 @@ def test_fsaf_head_get_bboxes():
     fsaf_model = fsaf_config()
     s = 256
     img_metas = [{
-        'img_shape_for_onnx': (s, s, 3),
+        'img_shape_for_onnx': torch.Tensor([s, s]),
         'scale_factor': 1,
         'pad_shape': (s, s, 3),
         'img_shape': (s, s, 2)
@@ -363,7 +363,7 @@ def test_ssd_head_get_bboxes():
     ssd_model = ssd_config()
     s = 300
     img_metas = [{
-        'img_shape_for_onnx': (s, s, 3),
+        'img_shape_for_onnx': torch.Tensor([s, s]),
         'scale_factor': 1,
         'pad_shape': (s, s, 3),
         'img_shape': (s, s, 2)

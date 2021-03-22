@@ -34,12 +34,16 @@ def ort_validate(model, feats, onnx_io='tmp.onnx'):
 
     Args:
         model (nn.Module | function) : the function of model or model
-        to be verified.
-        feats (list(torch.Tensor) | torch.Tensor): the input of model.
+            to be verified.
+        feats (tuple(list(torch.Tensor)) | list(torch.Tensor) | torch.Tensor):
+            the input of model.
         onnx_io (str): the name of onnx output file.
     """
-    # if mdoel is a function, wrapped the function.
-    if (hasattr(model, '__call__')):
+    # if mdoel is not a nn.Module, then it is a function and wrapped
+    # the function.
+    if isinstance(model, nn.Module):
+        wrap_model = model
+    else:
         wrap_model = WrapFunction(model)
     wrap_model.cpu().eval()
     with torch.no_grad():
@@ -59,7 +63,8 @@ def ort_validate(model, feats, onnx_io='tmp.onnx'):
             ort_feats += feat
     else:
         ort_feats = feats
-    onnx_outputs = verify_model(ort_feats)
+    # default model name: tmp.onnx
+    onnx_outputs = get_ort_model_output(ort_feats)
 
     if osp.exists(onnx_io):
         os.remove(onnx_io)
@@ -78,7 +83,7 @@ def ort_validate(model, feats, onnx_io='tmp.onnx'):
             torch_outputs[i], onnx_outputs[i], rtol=1e-03, atol=1e-05)
 
 
-def verify_model(feat, onnx_io='tmp.onnx'):
+def get_ort_model_output(feat, onnx_io='tmp.onnx'):
     """Run the model in onnxruntime env.
 
     Args:
