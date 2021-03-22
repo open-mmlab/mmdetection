@@ -8,12 +8,10 @@ from ts.torch_handler.base_handler import BaseHandler
 from mmdet.apis import inference_detector, init_detector
 
 
-class MMDetHandler(BaseHandler):
+class MMdetHandler(BaseHandler):
     threshold = 0.5
 
     def initialize(self, context):
-        """Init MMDetection model."""
-
         properties = context.system_properties
         self.map_location = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.device = torch.device(self.map_location + ':' +
@@ -46,21 +44,26 @@ class MMDetHandler(BaseHandler):
         return results
 
     def postprocess(self, data):
-        if isinstance(data, tuple):
-            bbox_result, segm_result = data
-            if isinstance(segm_result, tuple):
-                segm_result = segm_result[0]  # ms rcnn
-        else:
-            bbox_result, segm_result = data, None
-
         # Format output following the example ObjectDetectionHandler format
         output = []
-        for class_index, class_result in enumerate(bbox_result):
-            class_name = self.model.CLASSES[class_index]
-            for bbox in class_result:
-                bbox_coords = bbox[:-1]
-                score = bbox[-1]
-                if score > self.threshold:
-                    output.append({class_name: bbox_coords, 'score': score})
+        for image_index, image_result in enumerate(data):
+            output.append([])
+            if isinstance(image_result, tuple):
+                bbox_result, segm_result = image_result
+                if isinstance(segm_result, tuple):
+                    segm_result = segm_result[0]  # ms rcnn
+            else:
+                bbox_result, segm_result = image_result, None
+
+            for class_index, class_result in enumerate(bbox_result):
+                class_name = self.model.CLASSES[class_index]
+                for bbox in class_result:
+                    bbox_coords = bbox[:-1].tolist()
+                    score = float(bbox[-1])
+                    if score >= self.threshold:
+                        output[image_index].append({
+                            class_name: bbox_coords,
+                            'score': score
+                        })
 
         return output
