@@ -53,33 +53,6 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     return model
 
 
-class LoadImage(object):
-    """A simple pipeline to load image."""
-
-    def __call__(self, results):
-        """Call function to load images into results.
-
-        Args:
-            results (dict): A result dict contains the file name
-                of the image to be read.
-
-        Returns:
-            dict: ``results`` will be returned containing loaded image.
-        """
-        if isinstance(results['img'], str):
-            results['filename'] = results['img']
-            results['ori_filename'] = results['img']
-        else:
-            results['filename'] = None
-            results['ori_filename'] = None
-        img = mmcv.imread(results['img'])
-        results['img'] = img
-        results['img_fields'] = ['img']
-        results['img_shape'] = img.shape
-        results['ori_shape'] = img.shape
-        return results
-
-
 def inference_detector(model, imgs):
     """Inference image(s) with the detector.
 
