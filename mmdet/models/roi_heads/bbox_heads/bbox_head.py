@@ -292,7 +292,7 @@ class BBoxHead(nn.Module):
                 num_classes * 4.
             img_shape (Sequence[int] or torch.Tensor or Sequence[
                 Sequence[int]], optional): Maximum bounds for boxes, specifies
-                (H, W, C) or (H, W). If rois shape is (B, N, 4), then
+                (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
                 the max_shape should be a Sequence[Sequence[int]]
                 and the length of max_shape should also be B.
             scale_factor (ndarray): Scale factor of the image arange as
@@ -302,25 +302,35 @@ class BBoxHead(nn.Module):
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
 
         Returns:
-            tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor]: The
-                first list contains the boxes of all images in a batch, each
-                tensor has the shape (num_boxes, 5) and last dimension 5
-                represent (tl_x, tl_y, br_x, br_y, score). Each Tensor in the
-                second list is the labels with shape (num_boxes, ). If it is
-                in batch run mode, then the return shape is tuple[list[Tensor],
-                list[Tensor]], else return shape is tuple[Tensor, Tensor].
+            tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor]:
+                If the input has a batch dimension, the return value is
+                a tuple of the list. The first list contains the boxes of
+                the corresponding image in a batch, each tensor has the
+                shape (num_boxes, 5) and last dimension 5 represent
+                (tl_x, tl_y, br_x, br_y, score). Each Tensor in the second
+                list is the labels with shape (num_boxes, ). The length of
+                both lists should be equal to batch_size. Otherwise return
+                value is a tuple of two tensors, the first tensor is the
+                boxes with scores, the second tensor is the labels, both
+                have the same shape as the first case.
         """
-        if rois.ndim == 2:
-            # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
-            batch_mode = False
-        else:
-            batch_mode = True
-
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
 
         scores = F.softmax(
             cls_score, dim=-1) if cls_score is not None else None
+
+        batch_mode = True
+        if rois.ndim == 2:
+            # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
+            batch_mode = False
+
+            # add batch dimension
+            if scores is not None:
+                scores = scores.unsqueeze(0)
+            if bbox_pred is not None:
+                bbox_pred = bbox_pred.unsqueeze(0)
+            rois = rois.unsqueeze(0)
 
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
@@ -336,35 +346,24 @@ class BBoxHead(nn.Module):
                 bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 
         if rescale and bboxes.size(-2) > 0:
-            if isinstance(scale_factor, float):
-                bboxes /= scale_factor
-            else:
-                if batch_mode:
-                    scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(
-                        1).repeat(1, 1,
-                                  bboxes.size(-1) // 4)
-                else:
-                    scale_factor = bboxes.new_tensor(scale_factor).view(
-                        1, -1).repeat(1,
-                                      bboxes.size(-1) // 4)
-                bboxes /= scale_factor
+            if not isinstance(scale_factor, tuple):
+                scale_factor = tuple([scale_factor])
+            scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(1).repeat(
+                1, 1,
+                bboxes.size(-1) // 4)
+            bboxes /= scale_factor
 
-        if not batch_mode:
-            bboxes = [bboxes]
-            scores = [scores]
-
-        if cfg is None:
-            det_bboxes = [bbox for bbox in bboxes]
-            det_labels = [score for score in scores]
-        else:
-            det_bboxes = []
-            det_labels = []
-            for (bbox, score) in zip(bboxes, scores):
+        det_bboxes = []
+        det_labels = []
+        for (bbox, score) in zip(bboxes, scores):
+            if cfg is not None:
                 det_bbox, det_label = multiclass_nms(bbox, score,
                                                      cfg.score_thr, cfg.nms,
                                                      cfg.max_per_img)
-                det_bboxes.append(det_bbox)
-                det_labels.append(det_label)
+            else:
+                det_bbox, det_label = bbox, score
+            det_bboxes.append(det_bbox)
+            det_labels.append(det_label)
 
         if not batch_mode:
             det_bboxes = det_bboxes[0]
