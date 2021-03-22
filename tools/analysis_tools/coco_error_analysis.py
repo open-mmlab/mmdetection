@@ -131,11 +131,7 @@ def make_gt_area_group_numbers_plot(cocoEval, outDir, verbose=True):
     width = 0.60  # the width of the bars
     figure_title = 'number of annotations per area group'
 
-    rects = ax.bar(
-        x,
-        areaRngLbl2Number.values(),
-        width,
-    )
+    rects = ax.bar(x, areaRngLbl2Number.values(), width)
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Number of annotations')
@@ -315,8 +311,7 @@ def main():
     parser.add_argument(
         '--ann',
         default='data/coco/annotations/instances_val2017.json',
-        help='annotation file path',
-    )
+        help='annotation file path')
     parser.add_argument(
         '--types', type=str, nargs='+', default=['bbox'], help='result types')
     parser.add_argument(
