@@ -34,6 +34,7 @@ class AdaptiveConv(BaseModule):
         type (str, optional): Type of adaptive conv, can be either 'offset'
             (arbitrary anchors) or 'dilation' (uniform anchor).
             Default: 'dilation'.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -102,6 +103,8 @@ class StageCascadeRPNHead(RPNHead):
         with_cls (bool, optional): wheather use classification branch.
             Default: True.
         sampling (bool, optional): wheather use sampling. Default: True.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,

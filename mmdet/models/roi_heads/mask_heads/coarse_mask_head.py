@@ -20,6 +20,7 @@ class CoarseMaskHead(FCNMaskHead):
             Default: 1024.
         downsample_factor (int): The factor that feature map is downsampled by.
             Default: 2.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,

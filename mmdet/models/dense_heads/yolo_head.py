@@ -42,6 +42,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         loss_wh (dict): Config of wh coordinate loss.
         train_cfg (dict): Training config of YOLOV3 head. Default: None.
         test_cfg (dict): Testing config of YOLOV3 head. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,

@@ -13,6 +13,8 @@ class BaseRoIExtractor(BaseModule, metaclass=ABCMeta):
         roi_layer (dict): Specify RoI layer type and arguments.
         out_channels (int): Output channels of RoI layers.
         featmap_strides (int): Strides of input feature maps.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,

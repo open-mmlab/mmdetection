@@ -104,20 +104,17 @@ class FCNMaskHead(BaseModule):
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
-    # TODO: How to convert to init_cfg
     def init_weight(self):
-        if hasattr(self, 'init_cfg'):
-            super(FCNMaskHead, self).init_weight()
-        else:
-            for m in [self.upsample, self.conv_logits]:
-                if m is None:
-                    continue
-                elif isinstance(m, CARAFEPack):
-                    m.init_weights()
-                else:
-                    nn.init.kaiming_normal_(
-                        m.weight, mode='fan_out', nonlinearity='relu')
-                    nn.init.constant_(m.bias, 0)
+        for m in [self.upsample, self.conv_logits]:
+            if m is None:
+                continue
+            elif isinstance(m, CARAFEPack):
+                m.init_weights()
+            else:
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.constant_(m.bias, 0)
+        super(FCNMaskHead, self).init_weight()
 
     @auto_fp16()
     def forward(self, x):

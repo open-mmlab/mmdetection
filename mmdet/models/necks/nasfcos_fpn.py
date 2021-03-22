@@ -27,6 +27,8 @@ class NASFCOS_FPN(BaseModule):
             If True, its actual mode is specified by `extra_convs_on_inputs`.
         conv_cfg (dict): dictionary to construct and config conv layer.
         norm_cfg (dict): dictionary to construct and config norm layer.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -148,20 +150,17 @@ class NASFCOS_FPN(BaseModule):
 
         return tuple(ret)
 
-    # TODO: How to convert to init_cfg
     def init_weight(self):
         """Initialize the weights of module."""
-        if hasattr(self, 'init_cfg'):
-            super(NASFCOS_FPN, self).init_weight()
-        else:
-            for module in self.fpn.values():
-                if hasattr(module, 'conv_out'):
-                    caffe2_xavier_init(module.out_conv.conv)
+        for module in self.fpn.values():
+            if hasattr(module, 'conv_out'):
+                caffe2_xavier_init(module.out_conv.conv)
 
-            for modules in [
-                    self.adapt_convs.modules(),
-                    self.extra_downsamples.modules()
-            ]:
-                for module in modules:
-                    if isinstance(module, nn.Conv2d):
-                        caffe2_xavier_init(module)
+        for modules in [
+                self.adapt_convs.modules(),
+                self.extra_downsamples.modules()
+        ]:
+            for module in modules:
+                if isinstance(module, nn.Conv2d):
+                    caffe2_xavier_init(module)
+        super(NASFCOS_FPN, self).init_weight()

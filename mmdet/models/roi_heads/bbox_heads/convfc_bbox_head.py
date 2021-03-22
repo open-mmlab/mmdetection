@@ -88,10 +88,11 @@ class ConvFCBBoxHead(BBoxHead):
             self.init_cfg += [
                 dict(
                     type='Xavier',
+                    layer='Linear',
                     override=[
-                        dict(name='shared_fcs', layer='Linear'),
-                        dict(name='cls_fcs', layer='Linear'),
-                        dict(name='reg_fcs', layer='Linear')
+                        dict(name='shared_fcs'),
+                        dict(name='cls_fcs'),
+                        dict(name='reg_fcs')
                     ])
             ]
 

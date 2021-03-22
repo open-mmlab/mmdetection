@@ -46,6 +46,7 @@ class FPN(BaseModule):
             Default: None.
         upsample_cfg (dict): Config dict for interpolate layer.
             Default: `dict(mode='nearest')`
+        init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
         >>> import torch

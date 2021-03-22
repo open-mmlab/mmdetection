@@ -22,6 +22,7 @@ class GlobalContextHead(BaseModule):
         norm_cfg (dict, optional): config to init norm layer. Default: None.
         conv_to_res (bool, optional): if True, 2 convs will be grouped into
             1 `SimplifiedBasicBlock` using a skip connection. Default: False.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,

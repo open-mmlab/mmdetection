@@ -72,19 +72,16 @@ class RetinaSepBNHead(AnchorHead):
         self.retina_reg = nn.Conv2d(
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
 
-    # TODO: How to convert to init_cfg
     def init_weight(self):
         """Initialize weights of the head."""
-        if hasattr(self, 'init_cfg'):
-            super(RetinaSepBNHead, self).init_weight()
-        else:
-            for m in self.cls_convs[0]:
-                normal_init(m.conv, std=0.01)
-            for m in self.reg_convs[0]:
-                normal_init(m.conv, std=0.01)
-            bias_cls = bias_init_with_prob(0.01)
-            normal_init(self.retina_cls, std=0.01, bias=bias_cls)
-            normal_init(self.retina_reg, std=0.01)
+        for m in self.cls_convs[0]:
+            normal_init(m.conv, std=0.01)
+        for m in self.reg_convs[0]:
+            normal_init(m.conv, std=0.01)
+        bias_cls = bias_init_with_prob(0.01)
+        normal_init(self.retina_cls, std=0.01, bias=bias_cls)
+        normal_init(self.retina_reg, std=0.01)
+        super(RetinaSepBNHead, self).init_weight()
 
     def forward(self, feats):
         """Forward features from the upstream network.

@@ -23,6 +23,9 @@ class SparseRoIHead(CascadeRoIHead):
             Defaults to None.
         test_cfg (dict, optional): Configuration information in test stage.
             Defaults to None.
+        pretrained (str, optional): model pretrained path. Default: None
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
 
     """
 

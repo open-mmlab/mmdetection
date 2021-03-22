@@ -29,6 +29,8 @@ class FPN_CARAFE(BaseModule):
         order (dict): Order of components in ConvModule.
         upsample (str): Type of upsample layer.
         upsample_cfg (dict): Dictionary to construct and config upsample layer.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -200,19 +202,16 @@ class FPN_CARAFE(BaseModule):
                 self.fpn_convs.append(extra_fpn_conv)
                 self.lateral_convs.append(extra_l_conv)
 
-    # TODO: How to convert to init_cfg
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weight(self):
-        if hasattr(self, 'init_cfg'):
-            super(FPN_CARAFE, self).init_weight()
-        else:
-            """Initialize the weights of module."""
-            for m in self.modules():
-                if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
-                    xavier_init(m, distribution='uniform')
-            for m in self.modules():
-                if isinstance(m, CARAFEPack):
-                    m.init_weights()
+        """Initialize the weights of module."""
+        for m in self.modules():
+            if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
+                xavier_init(m, distribution='uniform')
+        for m in self.modules():
+            if isinstance(m, CARAFEPack):
+                m.init_weights()
+        super(FPN_CARAFE, self).init_weight()
 
     def slice_as(self, src, dst):
         """Slice ``src`` as ``dst``

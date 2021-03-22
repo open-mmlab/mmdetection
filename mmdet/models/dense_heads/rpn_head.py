@@ -18,6 +18,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
 
     Args:
         in_channels (int): Number of channels in the input feature map.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     def __init__(self,

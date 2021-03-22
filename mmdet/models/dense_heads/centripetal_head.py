@@ -39,6 +39,8 @@ class CentripetalHead(CornerHead):
             SmoothL1Loss.
         loss_centripetal_shift (dict): Config of centripetal shift loss.
             Default: SmoothL1Loss.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -132,31 +134,21 @@ class CentripetalHead(CornerHead):
         super()._init_layers()  # using _init_layers in CornerHead
         self._init_centripetal_layers()
 
-    # TODO: How to convert to init_cfg
     def init_weight(self):
-        if hasattr(self, 'init_cfg'):
-            super(CentripetalHead, self).init_weight()
-        else:
-            super().init_weight()
-            for i in range(self.num_feat_levels):
-                normal_init(self.tl_feat_adaption[i], std=0.01)
-                normal_init(self.br_feat_adaption[i], std=0.01)
-                normal_init(self.tl_dcn_offset[i].conv, std=0.1)
-                normal_init(self.br_dcn_offset[i].conv, std=0.1)
-                _ = [
-                    x.conv.reset_parameters() for x in self.tl_guiding_shift[i]
-                ]
-                _ = [
-                    x.conv.reset_parameters() for x in self.br_guiding_shift[i]
-                ]
-                _ = [
-                    x.conv.reset_parameters()
-                    for x in self.tl_centripetal_shift[i]
-                ]
-                _ = [
-                    x.conv.reset_parameters()
-                    for x in self.br_centripetal_shift[i]
-                ]
+        for i in range(self.num_feat_levels):
+            normal_init(self.tl_feat_adaption[i], std=0.01)
+            normal_init(self.br_feat_adaption[i], std=0.01)
+            normal_init(self.tl_dcn_offset[i].conv, std=0.1)
+            normal_init(self.br_dcn_offset[i].conv, std=0.1)
+            _ = [x.conv.reset_parameters() for x in self.tl_guiding_shift[i]]
+            _ = [x.conv.reset_parameters() for x in self.br_guiding_shift[i]]
+            _ = [
+                x.conv.reset_parameters() for x in self.tl_centripetal_shift[i]
+            ]
+            _ = [
+                x.conv.reset_parameters() for x in self.br_centripetal_shift[i]
+            ]
+        super(CentripetalHead, self).init_weight()
 
     def forward_single(self, x, lvl_ind):
         """Forward feature of a single level.

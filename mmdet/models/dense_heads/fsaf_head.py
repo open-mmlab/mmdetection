@@ -23,6 +23,8 @@ class FSAFHead(RetinaHead):
         score_threshold (float, optional): The score_threshold to calculate
             positive recall. If given, prediction scores lower than this value
             is counted as incorrect prediction. Default to None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
         **kwargs: Same as its base class in :class:`RetinaHead`
 
     Example:
@@ -37,28 +39,23 @@ class FSAFHead(RetinaHead):
         >>> assert box_per_anchor == 4
     """
 
-    def __init__(self,
-                 *args,
-                 score_threshold=None,
-                 init_cfg=dict(
-                     type='Normal',
-                     layer='Conv2d',
-                     std=0.01,
-                     override=[
-                         dict(
-                             type='Normal',
-                             name='retina_cls',
-                             std=0.01,
-                             bias_prob=0.01),
-                         dict(
-                             type='Normal',
-                             name='retina_reg',
-                             std=0.01,
-                             bias=0.25)
-                     ]),
-                 **kwargs):
+    def __init__(self, *args, score_threshold=None, init_cfg=None, **kwargs):
         # The positive bias in self.retina_reg conv is to prevent predicted \
         #  bbox with 0 area
+        if init_cfg is None:
+            init_cfg = dict(
+                type='Normal',
+                layer='Conv2d',
+                std=0.01,
+                override=[
+                    dict(
+                        type='Normal',
+                        name='retina_cls',
+                        std=0.01,
+                        bias_prob=0.01),
+                    dict(
+                        type='Normal', name='retina_reg', std=0.01, bias=0.25)
+                ])
         super().__init__(*args, init_cfg=init_cfg, **kwargs)
         self.score_threshold = score_threshold
 

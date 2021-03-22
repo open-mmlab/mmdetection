@@ -18,6 +18,8 @@ class MultiheadAttention(BaseModule):
         num_heads (int): Parallel attention heads. Same as
             `nn.MultiheadAttention`.
         dropout (float): A Dropout layer on attn_output_weights. Default 0.0.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self, embed_dims, num_heads, dropout=0.0, init_cfg=None):
@@ -116,6 +118,8 @@ class FFN(BaseModule):
             zeroed. Default 0.0.
         add_residual (bool, optional): Add resudual connection.
             Defaults to True.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -186,6 +190,8 @@ class TransformerEncoderLayer(BaseModule):
             layer normalization.
         num_fcs (int): The number of fully-connected layers for FFNs.
             Default 2.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -287,6 +293,8 @@ class TransformerDecoderLayer(BaseModule):
         norm_cfg (dict): Config dict for normalization layer. Default
             layer normalization.
         num_fcs (int): The number of fully-connected layers in FFNs.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -420,6 +428,8 @@ class TransformerEncoder(BaseModule):
         norm_cfg (dict): Same as `TransformerEncoderLayer`. Default
             layer normalization.
         num_fcs (int): Same as `TransformerEncoderLayer`. Default 2.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -505,6 +515,8 @@ class TransformerDecoder(BaseModule):
         norm_cfg (dict): Same as `TransformerDecoderLayer`. Default
             layer normalization.
         num_fcs (int): Same as `TransformerDecoderLayer`. Default 2.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -640,6 +652,8 @@ class Transformer(BaseModule):
             `hs` has shape [num_decoder_layers, bs, num_query, embed_dims].
             If True, the returned `hs` will have shape [1, bs, num_query,
             embed_dims].
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -687,14 +701,12 @@ class Transformer(BaseModule):
 
     # TODO： How
     def init_weight(self, distribution='uniform'):
-        if hasattr(self, 'init_cfg'):
-            super(Transformer, self).init_weight()
-        else:
-            """Initialize the transformer weights."""
-            # follow the official DETR to init parameters
-            for m in self.modules():
-                if hasattr(m, 'weight') and m.weight.dim() > 1:
-                    xavier_init(m, distribution=distribution)
+        """Initialize the transformer weights."""
+        # follow the official DETR to init parameters
+        for m in self.modules():
+            if hasattr(m, 'weight') and m.weight.dim() > 1:
+                xavier_init(m, distribution=distribution)
+        super(Transformer, self).init_weight()
 
     def forward(self, x, mask, query_embed, pos_embed):
         """Forward function for `Transformer`.

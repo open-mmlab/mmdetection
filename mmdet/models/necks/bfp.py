@@ -26,6 +26,7 @@ class BFP(BaseModule):
             multi-level features from bottom to top.
         refine_type (str): Type of the refine op, currently support
             [None, 'conv', 'non_local'].
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,

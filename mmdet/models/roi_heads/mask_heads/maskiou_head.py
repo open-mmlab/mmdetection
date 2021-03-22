@@ -26,13 +26,7 @@ class MaskIoUHead(BaseModule):
                  loss_iou=dict(type='MSELoss', loss_weight=0.5),
                  init_cfg=[
                      dict(type='Kaiming', override=dict(name='convs')),
-                     dict(
-                         type='Kaiming',
-                         a=1,
-                         mode='fan_in',
-                         nonlinearity='leaky_relu',
-                         distribution='uniform',
-                         override=dict(name='fcs')),
+                     dict(type='Caffe2Xavier', override=dict(name='fcs')),
                      dict(
                          type='Normal',
                          std=0.01,

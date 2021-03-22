@@ -27,6 +27,8 @@ class SinePositionalEncoding(BaseModule):
             Default 2*pi.
         eps (float, optional): A value added to the denominator for
             numerical stability. Default 1e-6.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -102,6 +104,7 @@ class LearnedPositionalEncoding(BaseModule):
             Default 50.
         col_num_embed (int, optional): The dictionary size of col embeddings.
             Default 50.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,

@@ -25,6 +25,8 @@ class TridentConv(BaseModule):
             index `test_branch_idx` will be used. Default: 1.
         bias (bool, optional): Whether to use bias in convolution or not.
             Default: False.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,

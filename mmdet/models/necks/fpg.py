@@ -137,6 +137,7 @@ class FPG(BaseModule):
             layers on top of the original feature maps. Default to False.
             If True, its actual mode is specified by `extra_convs_on_inputs`.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     transition_types = {
@@ -166,13 +167,7 @@ class FPG(BaseModule):
                  norm_cfg=None,
                  skip_inds=None,
                  init_cfg=[
-                     dict(
-                         type='Kaiming',
-                         layer='Conv2d',
-                         a=1,
-                         mode='fan_in',
-                         nonlinearity='leaky_relu',
-                         distribution='uniform'),
+                     dict(type='Caffe2Xavier', layer='Conv2d'),
                      dict(
                          type='Constant',
                          layer=[

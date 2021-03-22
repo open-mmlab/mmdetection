@@ -23,6 +23,8 @@ class Bottleneck(_Bottleneck):
              added for ``rfp_feat``. Otherwise, the structure is the same as
              base class.
          sac (dict, optional): Dictionary to construct SAC. Default: None.
+         init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
     expansion = 4
 
@@ -31,8 +33,10 @@ class Bottleneck(_Bottleneck):
                  planes,
                  rfp_inplanes=None,
                  sac=None,
+                 init_cfg=None,
                  **kwargs):
-        super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
+        super(Bottleneck, self).__init__(
+            inplanes, planes, init_cfg=init_cfg, **kwargs)
 
         assert sac is None or isinstance(sac, dict)
         self.sac = sac
@@ -57,8 +61,9 @@ class Bottleneck(_Bottleneck):
                 1,
                 stride=1,
                 bias=True)
-            self.init_cfg = dict(
-                type='Constant', val=0, override=dict(name='rfp_conv'))
+            if init_cfg is None:
+                self.init_cfg = dict(
+                    type='Constant', val=0, override=dict(name='rfp_conv'))
 
     def rfp_forward(self, x, rfp_feat):
         """The forward function that also takes the RFP features as input."""
@@ -213,7 +218,6 @@ class DetectoRS_ResNet(ResNet):
             base class.
         output_img (bool): If ``True``, the input image will be inserted into
             the starting position of output. Default: False.
-        pretrained (str, optional): The pretrained model to load.
     """
 
     arch_settings = {

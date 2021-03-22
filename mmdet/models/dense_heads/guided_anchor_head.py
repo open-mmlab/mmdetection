@@ -23,6 +23,7 @@ class FeatureAdaption(BaseModule):
         out_channels (int): Number of channels in the output feature map.
         kernel_size (int): Deformable conv kernel size.
         deform_groups (int): Deformable conv group size.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -88,6 +89,7 @@ class GuidedAnchorHead(AnchorHead):
         loss_shape (dict): Config of anchor shape loss.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of bbox regression loss.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(

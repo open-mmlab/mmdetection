@@ -26,6 +26,7 @@ class HRFPN(BaseModule):
         with_cp  (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
         stride (int): stride of 3x3 convolutional layers
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -37,15 +38,7 @@ class HRFPN(BaseModule):
                  norm_cfg=None,
                  with_cp=False,
                  stride=1,
-                 init_cfg=None):
-        if init_cfg is None:
-            init_cfg = dict(
-                type='Kaiming',
-                layer='Conv2d',
-                a=1,
-                mode='fan_in',
-                nonlinearity='leaky_relu',
-                distribution='uniform')
+                 init_cfg=dict(type='Caffe2Xavier', layer='Conv2d')):
         super(HRFPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels

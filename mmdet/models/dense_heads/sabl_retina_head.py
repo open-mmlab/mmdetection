@@ -43,6 +43,7 @@ class SABLRetinaHead(BaseDenseHead):
         loss_cls (dict): Config of classification loss.
         loss_bbox_cls (dict): Config of classification loss for bbox branch.
         loss_bbox_reg (dict): Config of regression loss for bbox branch.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,

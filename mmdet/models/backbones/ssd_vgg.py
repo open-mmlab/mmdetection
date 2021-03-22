@@ -16,6 +16,9 @@ class SSDVGG(VGG):
         input_size (int): width and height of input, from {300, 512}.
         depth (int): Depth of vgg, from {11, 13, 16, 19}.
         out_indices (Sequence[int]): Output from which stages.
+        pretrained (str, optional): model pretrained path. Default: None
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
 
     Example:
         >>> self = SSDVGG(input_size=300, depth=11)

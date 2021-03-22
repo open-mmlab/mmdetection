@@ -53,6 +53,7 @@ class VFNetHead(ATSSHead, FCOSHead):
         use_atss (bool): If true, use ATSS to define positive/negative
             examples. Default: True.
         anchor_generator (dict): Config of anchor generator for ATSS.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
         >>> self = VFNetHead(11, 7)

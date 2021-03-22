@@ -16,23 +16,25 @@ class GARetinaHead(GuidedAnchorHead):
                  stacked_convs=4,
                  conv_cfg=None,
                  norm_cfg=None,
-                 init_cfg=dict(
-                     type='Normal',
-                     layer='Conv2d',
-                     std=0.01,
-                     override=[
-                         dict(
-                             type='Normal',
-                             name='conv_loc',
-                             std=0.01,
-                             bias_prob=0.01),
-                         dict(
-                             type='Normal',
-                             name='retina_cls',
-                             std=0.01,
-                             bias_prob=0.01)
-                     ]),
+                 init_cfg=None,
                  **kwargs):
+        if init_cfg is None:
+            init_cfg = dict(
+                type='Normal',
+                layer='Conv2d',
+                std=0.01,
+                override=[
+                    dict(
+                        type='Normal',
+                        name='conv_loc',
+                        std=0.01,
+                        bias_prob=0.01),
+                    dict(
+                        type='Normal',
+                        name='retina_cls',
+                        std=0.01,
+                        bias_prob=0.01)
+                ])
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg

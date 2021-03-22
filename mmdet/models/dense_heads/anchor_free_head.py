@@ -33,6 +33,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     _version = 1

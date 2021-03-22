@@ -35,6 +35,8 @@ class TransformerHead(AnchorFreeHead):
             Default `GIoULoss`.
         tran_cfg (dict, optional): Training config of transformer head.
         test_cfg (dict, optional): Testing config of transformer head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
 
     Example:
         >>> import torch

@@ -18,6 +18,8 @@ class EmbeddingRPNHead(BaseModule):
         num_proposals (int): Number of init_proposals. Default 100.
         proposal_feature_channel (int): Channel number of
             init_proposal_feature. Defaults to 256.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -36,18 +38,15 @@ class EmbeddingRPNHead(BaseModule):
         self.init_proposal_features = nn.Embedding(
             self.num_proposals, self.proposal_feature_channel)
 
-    # TODO: How to convert to init_cfg
     def init_weight(self):
         """Initialize the init_proposal_bboxes as normalized.
 
         [c_x, c_y, w, h], and we initialize it to the size of  the entire
         image.
         """
-        if hasattr(self, 'init_cfg'):
-            super(EmbeddingRPNHead, self).init_weight()
-        else:
-            nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
-            nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
+        nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
+        nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
+        super(EmbeddingRPNHead, self).init_weight()
 
     def _decode_init_proposals(self, imgs, img_metas):
         """Decode init_proposal_bboxes according to the size of images and

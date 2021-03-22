@@ -56,6 +56,8 @@ class SplitAttentionConv2d(BaseModule):
             which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         dcn (dict): Config dict for DCN. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,

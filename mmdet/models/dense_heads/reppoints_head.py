@@ -27,6 +27,7 @@ class RepPointsHead(AnchorFreeHead):
         reppoints is represented as grid points on the bounding box.
         center_init (bool): Whether to use center point assignment.
         transform_method (str): The methods to transform RepPoints to bbox.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     def __init__(self,

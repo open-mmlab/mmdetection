@@ -15,6 +15,7 @@ class FeatureRelayHead(BaseModule):
         roi_feat_size (int, optional): roi feat size at box head. Default: 7.
         scale_factor (int, optional): scale factor to match roi feat size
             at mask head. Default: 2.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,

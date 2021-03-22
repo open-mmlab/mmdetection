@@ -18,6 +18,8 @@ class BasicResBlock(BaseModule):
         out_channels (int): Channels of the output feature map.
         conv_cfg (dict): The config dict for convolution layers.
         norm_cfg (dict): The config dict for normalization layers.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,

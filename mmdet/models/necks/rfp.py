@@ -18,6 +18,7 @@ class ASPP(BaseModule):
         out_channels (int): Number of channels produced by this module
         dilations (tuple[int]): Dilations of the four branches.
             Default: (1, 3, 6, 1)
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -68,6 +69,8 @@ class RFP(FPN):
         aspp_out_channels (int): Number of output channels of ASPP module.
         aspp_dilations (tuple[int]): Dilation rates of four branches.
             Default: (1, 3, 6, 1)
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -82,9 +85,10 @@ class RFP(FPN):
                 dict(
                     type='Xavier',
                     distribution='uniform',
+                    layer='Conv2d',
                     override=[
-                        dict(name='lateral_convs', layer='Conv2d'),
-                        dict(name='fpn_convs', layer='Conv2d')
+                        dict(name='lateral_convs'),
+                        dict(name='fpn_convs')
                     ]),
                 dict(type='Constant', val=0, override=dict(name='rfp_weight'))
             ]

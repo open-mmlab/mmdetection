@@ -22,6 +22,7 @@ class ChannelMapper(BaseModule):
             Default: None.
         act_cfg (dict, optional): Config dict for activation layer in
             ConvModule. Default: dict(type='ReLU').
+        init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
         >>> import torch

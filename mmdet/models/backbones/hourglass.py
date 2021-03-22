@@ -19,6 +19,8 @@ class HourglassModule(BaseModule):
         stage_blocks (list[int]): Number of sub-modules stacked in current and
             follow-up HourglassModule.
         norm_cfg (dict): Dictionary to construct and config norm layer.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -97,6 +99,9 @@ class HourglassNet(BaseModule):
             HourglassModule.
         feat_channel (int): Feature channel of conv after a HourglassModule.
         norm_cfg (dict): Dictionary to construct and config norm layer.
+        pretrained (str, optional): model pretrained path. Default: None
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
 
     Example:
         >>> from mmdet.models import HourglassNet
@@ -165,7 +170,6 @@ class HourglassNet(BaseModule):
 
         self.relu = nn.ReLU(inplace=True)
 
-    # TODO: How to convert to init_cfg
     def init_weight(self):
         """Init module weights.
 
@@ -176,13 +180,11 @@ class HourglassNet(BaseModule):
         Detector's __init__() will call backbone's init_weights() with
         pretrained as input, so we keep this function.
         """
-        if hasattr(self, 'init_cfg'):
-            super(HourglassNet, self).init_weight()
-        else:
-            # Training Centripetal Model needs to reset parameters for Conv2d
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    m.reset_parameters()
+        # Training Centripetal Model needs to reset parameters for Conv2d
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                m.reset_parameters()
+        super(HourglassNet, self).init_weight()
 
     def forward(self, x):
         """Forward function."""

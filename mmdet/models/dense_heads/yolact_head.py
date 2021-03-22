@@ -36,6 +36,7 @@ class YOLACTHead(AnchorHead):
             cls loss calculation. If false, ``loss_single`` will be used.
         conv_cfg (dict): Dictionary to construct and config conv layer.
         norm_cfg (dict): Dictionary to construct and config norm layer.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -467,6 +468,7 @@ class YOLACTSegmHead(BaseModule):
         num_classes (int): Number of categories excluding the background
             category.
         loss_segm (dict): Config of semantic segmentation loss.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -476,7 +478,10 @@ class YOLACTSegmHead(BaseModule):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 init_cfg=dict(type='Xavier', distribution='uniform')):
+                 init_cfg=dict(
+                     type='Xavier',
+                     distribution='uniform',
+                     overrdie=dict(name='segm_conv'))):
         super(YOLACTSegmHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -567,7 +572,6 @@ class YOLACTSegmHead(BaseModule):
             return segm_targets
 
 
-# TODO：Check
 @HEADS.register_module()
 class YOLACTProtonet(BaseModule):
     """YOLACT mask head used in https://arxiv.org/abs/1904.02689.
@@ -585,6 +589,7 @@ class YOLACTProtonet(BaseModule):
         loss_mask_weight (float): Reweight the mask loss by this factor.
         max_masks_to_train (int): Maximum number of masks to train for
             each image.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -596,7 +601,10 @@ class YOLACTProtonet(BaseModule):
                  num_protos=32,
                  loss_mask_weight=1.0,
                  max_masks_to_train=100,
-                 init_cfg=dict(type='Xavier', distribution='uniform')):
+                 init_cfg=dict(
+                     type='Xavier',
+                     distribution='uniform',
+                     override=dict(name='protonet'))):
         super(YOLACTProtonet, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.proto_channels = proto_channels

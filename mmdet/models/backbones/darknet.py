@@ -25,6 +25,8 @@ class ResBlock(BaseModule):
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -32,7 +34,6 @@ class ResBlock(BaseModule):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
-                 pretrained=None,
                  init_cfg=None):
         super(ResBlock, self).__init__(init_cfg)
         assert in_channels % 2 == 0  # ensure the in_channels is even
@@ -71,6 +72,9 @@ class Darknet(BaseModule):
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
+        pretrained (str, optional): model pretrained path. Default: None
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
 
     Example:
         >>> from mmdet.models import Darknet

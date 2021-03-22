@@ -29,19 +29,11 @@ class NASFCOSHead(FCOSHead):
                         std=0.01,
                         bias_prob=0.01),
                     dict(
-                        type='Kaiming',
-                        a=1,
-                        mode='fan_in',
-                        nonlinearity='leaky_relu',
-                        distribution='uniform',
+                        type='Caffe2Xavier',
                         layer=['ConvModule', 'Conv2d'],
                         name='cls_convs'),
                     dict(
-                        type='Kaiming',
-                        a=1,
-                        mode='fan_in',
-                        nonlinearity='leaky_relu',
-                        distribution='uniform',
+                        type='Caffe2Xavier',
                         layer=['ConvModule', 'Conv2d'],
                         name='reg_convs')
                 ])

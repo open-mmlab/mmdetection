@@ -23,6 +23,8 @@ class BiCornerPool(BaseModule):
         feat_channels (int): Feature channels of module.
         directions (list[str]): Directions of two CornerPools.
         norm_cfg (dict): Dictionary to construct and config norm layer.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -105,6 +107,8 @@ class CornerHead(BaseDenseHead):
             AssociativeEmbeddingLoss.
         loss_offset (dict | None): Config of corner offset loss. Default:
             SmoothL1Loss.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -216,27 +220,23 @@ class CornerHead(BaseDenseHead):
         if self.with_corner_emb:
             self._init_corner_emb_layers()
 
-    # TODO: How to convert to init_cfg
     def init_weight(self):
-        if hasattr(self, 'init_cfg'):
-            super(CornerHead, self).init_weight()
-        else:
-            """Initialize weights of the head."""
-            bias_init = bias_init_with_prob(0.1)
-            for i in range(self.num_feat_levels):
-                # The initialization of parameters are different between
-                # nn.Conv2d and ConvModule. Our experiments show that
-                # using the original initialization of nn.Conv2d increases
-                # the final mAP by about 0.2%
-                self.tl_heat[i][-1].conv.reset_parameters()
-                self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
-                self.br_heat[i][-1].conv.reset_parameters()
-                self.br_heat[i][-1].conv.bias.data.fill_(bias_init)
-                self.tl_off[i][-1].conv.reset_parameters()
-                self.br_off[i][-1].conv.reset_parameters()
-                if self.with_corner_emb:
-                    self.tl_emb[i][-1].conv.reset_parameters()
-                    self.br_emb[i][-1].conv.reset_parameters()
+        bias_init = bias_init_with_prob(0.1)
+        for i in range(self.num_feat_levels):
+            # The initialization of parameters are different between
+            # nn.Conv2d and ConvModule. Our experiments show that
+            # using the original initialization of nn.Conv2d increases
+            # the final mAP by about 0.2%
+            self.tl_heat[i][-1].conv.reset_parameters()
+            self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
+            self.br_heat[i][-1].conv.reset_parameters()
+            self.br_heat[i][-1].conv.bias.data.fill_(bias_init)
+            self.tl_off[i][-1].conv.reset_parameters()
+            self.br_off[i][-1].conv.reset_parameters()
+            if self.with_corner_emb:
+                self.tl_emb[i][-1].conv.reset_parameters()
+                self.br_emb[i][-1].conv.reset_parameters()
+        super(CornerHead, self).init_weight()
 
     def forward(self, feats):
         """Forward features from the upstream network.

@@ -34,6 +34,7 @@ class PAFPN(FPN):
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         act_cfg (str): Config dict for activation layer in ConvModule.
             Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,

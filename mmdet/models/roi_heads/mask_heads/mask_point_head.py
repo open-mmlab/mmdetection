@@ -33,6 +33,7 @@ class MaskPointHead(BaseModule):
         loss_point (dict): Dictionary to construct and config loss layer of
             point head. Default: dict(type='CrossEntropyLoss', use_mask=True,
             loss_weight=1.0).
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
