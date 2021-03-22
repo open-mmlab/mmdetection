@@ -278,7 +278,7 @@ class BBoxHead(nn.Module):
         """Transform network output for a batch into bbox predictions.
 
         If the input rois has batch dimension, the function would be in
-        ``batch_mode`` and return is a tuple[list[Tensor], list[Tensor]],
+        `batch_mode` and return is a tuple[list[Tensor], list[Tensor]],
         otherwise, the return is a tuple[Tensor, Tensor].
 
         Args:
@@ -295,8 +295,9 @@ class BBoxHead(nn.Module):
                 (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
                 the max_shape should be a Sequence[Sequence[int]]
                 and the length of max_shape should also be B.
-            scale_factor (ndarray): Scale factor of the image arange as
-                (w_scale, h_scale, w_scale, h_scale).
+            scale_factor (tuple[ndarray] or ndarray): Scale factor of the
+               image arange as (w_scale, h_scale, w_scale, h_scale). In
+               `batch_mode`, the scale_factor shape is tuple[ndarray].
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
@@ -348,6 +349,7 @@ class BBoxHead(nn.Module):
         if rescale and bboxes.size(-2) > 0:
             if not isinstance(scale_factor, tuple):
                 scale_factor = tuple([scale_factor])
+            # B, 1, bboxes.size(-1)
             scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(1).repeat(
                 1, 1,
                 bboxes.size(-1) // 4)
