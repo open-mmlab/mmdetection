@@ -191,7 +191,7 @@ python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
 ### 2. Build `mmdet-serve` docker image
 
 ```shell
-DOCKER_BUILDKIT=1 docker build -t mmdet-serve:latest tools/deployment/serve/
+DOCKER_BUILDKIT=1 docker build -t mmdet-serve:latest docker/serve/
 ```
 
 ### 3. Launch `mmdet-serve`
