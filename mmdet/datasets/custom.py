@@ -222,8 +222,8 @@ class CustomDataset(Dataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Testing data after pipeline with new keys intorduced by \
-                piepline.
+            dict: Testing data after pipeline with new keys introduced by \
+                pipeline.
         """
 
         img_info = self.data_infos[idx]

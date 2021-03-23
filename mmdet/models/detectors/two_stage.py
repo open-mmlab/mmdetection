@@ -190,9 +190,8 @@ class TwoStageDetector(BaseDetector):
 
         x = self.extract_feat(img)
 
-        # get origin input shape to support onnx dynamic shape
+        # get origin input shape to onnx dynamic input shape
         if torch.onnx.is_in_onnx_export():
-            # get shape as tensor
             img_shape = torch._shape_as_tensor(img)[2:]
             img_metas[0]['img_shape_for_onnx'] = img_shape
 
