@@ -244,15 +244,17 @@ class FCNMaskHead(nn.Module):
             scale_factor = bboxes.new_tensor(scale_factor)
         bboxes = bboxes / scale_factor
 
-        # if torch.onnx.is_in_onnx_export():
-        #     # TODO: Remove after F.grid_sample is supported.
-        #     from torchvision.models.detection.roi_heads \
-        #         import paste_masks_in_image
-        #     masks = paste_masks_in_image(mask_pred, bboxes, ori_shape[:2])
-        #     thr = rcnn_test_cfg.get('mask_thr_binary', 0)
-        #     if thr > 0:
-        #         masks = masks >= thr
-        #     return masks
+        if torch.onnx.is_in_onnx_export():
+            threshold = rcnn_test_cfg.mask_thr_binary
+            if not self.class_agnostic:
+                mask_pred = mask_pred[range(len(mask_pred)), labels][:, None]
+            masks, _ = _do_paste_mask(
+                mask_pred, bboxes, img_h, img_w, skip_empty=False)
+            if threshold >= 0:
+                masks = (masks >= threshold).to(dtype=torch.bool)
+            else:
+                masks = (masks * 255).to(dtype=torch.uint8)
+            return masks[:, None]
 
         N = len(mask_pred)
         # The actual implementation split the input into chunks,
@@ -299,8 +301,7 @@ class FCNMaskHead(nn.Module):
             im_mask[(inds, ) + spatial_inds] = masks_chunk
 
         for i in range(N):
-            # cls_segms[labels[i]].append(im_mask[i].detach().cpu().numpy())
-            cls_segms[labels[i]].append(im_mask[i].detach())
+            cls_segms[labels[i]].append(im_mask[i].detach().cpu().numpy())
         return cls_segms
 
 
