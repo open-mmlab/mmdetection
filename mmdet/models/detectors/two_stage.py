@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import mmdet.ops.dcn  # Replace mmcv.ops.DeformConv by one from mmdet.ops
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
