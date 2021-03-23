@@ -473,6 +473,61 @@ class RandomFlip(object):
 
 
 @PIPELINES.register_module()
+class RandomShift(object):
+
+    def __init__(self, prob=1.5, max_shift=32):
+        self.prob = prob
+        self.max_shift = max_shift
+
+    def __call__(self, results):
+        if random.random() < self.prob:
+            random_shift_x = random.randint(-self.max_shift, self.max_shift)
+            random_shift_y = random.randint(-self.max_shift, self.max_shift)
+            for key in results.get('img_fields', ['img']):
+                img = results[key]
+                new_img = np.zeros_like(img)
+                if random_shift_x < 0:
+                    new_x = 0
+                    orig_x = -random_shift_x
+                else:
+                    new_x = random_shift_x
+                    orig_x = 0
+                if random_shift_y < 0:
+                    new_y = 0
+                    orig_y = -random_shift_y
+                else:
+                    new_y = random_shift_y
+                    orig_y = 0
+
+                if len(img.shape) <= 3:
+                    img_h, img_w = img.shape[:2]
+                    new_h = img_h - np.abs(random_shift_y)
+                    new_w = img_w - np.abs(random_shift_x)
+                    new_img[new_y:new_y + new_h, new_x:new_x + new_w] \
+                        = img[orig_y:orig_y + new_h, orig_x:orig_x + new_w]
+                    results[key] = new_img
+                else:
+                    img_h, img_w = img.shape[1:3]
+                    new_h = img_h - np.abs(random_shift_y)
+                    new_w = img_w - np.abs(random_shift_x)
+                    new_img[..., new_y:new_y + new_h, new_x:new_x + new_w, :] \
+                        = img[..., orig_y:orig_y + new_h,
+                              orig_x:orig_x + new_w, :]
+                    results[key] = new_img
+            for key in results.get('bbox_fields', []):
+                bbox = results[key]
+                bbox[..., 0::2] += random_shift_x
+                bbox[..., 1::2] += random_shift_y
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(max_shift={self.max_shift}, '
+        return repr_str
+
+
+@PIPELINES.register_module()
 class Pad(object):
     """Pad the image & mask.
 

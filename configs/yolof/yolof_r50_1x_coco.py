@@ -24,6 +24,7 @@ model = dict(
         type='YOLOFHead',
         num_classes=80,
         in_channels=512,
+        reg_decoded_bbox=True,
         anchor_generator=dict(
             type='AnchorGenerator',
             ratios=[1.0],
@@ -39,10 +40,11 @@ model = dict(
             gamma=2.0,
             alpha=0.25,
             loss_weight=1.0),
-        loss_bbox=dict(type='GIoULoss', loss_weight=2.0)),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0)),
     # training and testing settings
     train_cfg=dict(
-        assigner=dict(type='ATSSAssigner', topk=9),
+        assigner=dict(
+            type='UniformAssigner', pos_iou_thr=0.15, neg_iou_thr=0.7),
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
@@ -53,7 +55,7 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.6),
         max_per_img=100))
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.015, momentum=0.9, weight_decay=0.0001)
 
 # use caffe img_norm
 img_norm_cfg = dict(
@@ -63,6 +65,7 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='RandomShift'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
@@ -84,6 +87,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
+    samples_per_gpu=8,
+    workers_per_gpu=8,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
