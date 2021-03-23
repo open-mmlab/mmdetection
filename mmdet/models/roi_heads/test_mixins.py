@@ -297,20 +297,20 @@ class MaskTestMixin(object):
         # TODO
         segm_results = []
         for i in range(batch_size):
-            if det_bboxes[i].shape[0] == 0:
+            mask_pred = mask_preds[i]
+            det_bbox = det_bboxes[i]
+            det_label = det_labels[i]
+
+            supplement_mask = det_bbox[..., -1] != 0
+            mask_pred = mask_pred[supplement_mask]
+            det_bbox = det_bbox[supplement_mask]
+            det_label = det_label[supplement_mask]
+
+            if det_label.shape[0] == 0:
                 segm_results.append([[]
                                      for _ in range(self.mask_head.num_classes)
                                      ])
             else:
-                mask_pred = mask_preds[i]
-                det_bbox = det_bboxes[i]
-                det_label = det_labels[i]
-
-                supplement_mask = det_bbox[..., -1] != 0
-                mask_pred = mask_pred[supplement_mask]
-                det_bbox = det_bbox[supplement_mask]
-                det_label = det_label[supplement_mask]
-
                 segm_result = self.mask_head.get_seg_masks(
                     mask_pred, det_bbox, det_label, self.test_cfg,
                     ori_shapes[i], scale_factors[i], rescale)
