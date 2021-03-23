@@ -9,18 +9,19 @@ from .gfl_head import GFLHead
 
 @HEADS.register_module()
 class LDHead(GFLHead):
-    """LD is the extension of knowledge distillation on localization task,
+    r"""LD is the extension of knowledge distillation on localization task,
     which utilizes the learned bbox distributions to transfer the localization
     dark knowledge from teacher to student. Original paper: `Localization
     Distillation for Object Detection.
-
     <https://arxiv.org/abs/2102.12252>`_
 
     Args:
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
-        loss_ld (dict): Config of Localization Distillation Loss (LD).
+        loss_ld (dict): Config of Localization Distillation Loss (LD),
+            T is the temperature for distillation.
+
     """
 
     def __init__(self,

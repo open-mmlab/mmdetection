@@ -1,5 +1,8 @@
+import mmcv
 import torch
+from mmcv.runner import load_checkpoint
 
+from .. import build_detector
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
@@ -10,7 +13,7 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
     <https://arxiv.org/abs/1503.02531>`_.
 
     Args:
-        teacher_config (str or :obj:`mmcv.Config`): Config file path
+        teacher_config (str | dict): Config file path
             or the config object of teacher model.
         teacher_ckpt (str, optional): Checkpoint path of teacher model.
             If left as None, the model will not load any weights.
@@ -30,11 +33,13 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
                          pretrained)
 
         self.eval_teacher = eval_teacher
-
-        from mmdet.apis.inference import init_detector
-
-        self.teacher_model = init_detector(
-            teacher_config, teacher_ckpt, device='cpu')
+        # Build teacher model
+        if isinstance(teacher_config, str):
+            teacher_config = mmcv.Config.fromfile(teacher_config)
+        self.teacher_model = build_detector(teacher_config.model)
+        if teacher_ckpt is not None:
+            load_checkpoint(
+                self.teacher_model, teacher_ckpt, map_location='cpu')
 
     def forward_train(self,
                       img,
