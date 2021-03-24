@@ -352,6 +352,42 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 
    The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
+### Support no GT test mode
+
+In COCO format, MMDetection supports no GT test mode. If your dataset format is not COCO, you may consider converting to COCO format.
+
+```shell
+# single-gpu testing
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    --format-only \
+    --options ${JSONFILE_PREFIX} \
+    [--show]
+
+# multi-gpu testing
+bash tools/dist_test.sh \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    ${GPU_NUM} \
+    --format-only \
+    --options ${JSONFILE_PREFIX} \
+    [--show]
+```
+
+Assume that you have already downloaded the checkpoints to the directory `checkpoints/`. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate JSON files.
+
+```sh
+./tools/dist_test.sh \
+    configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
+    8 \
+    -format-only \
+    --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+```
+
+This command generates two JSON files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+
 ### Batch Inference
 
 MMDetection supports inference with a single image or batched images in test mode. By default, we use single-image inference and you can use batch inference by modifying `samples_per_gpu` in the config of test data. You can do that either by modifying the config as below.
