@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import bias_init_with_prob
@@ -8,6 +9,26 @@ from mmdet.core import (anchor_inside_flags, images_to_levels, multi_apply,
                         unmap)
 from ..builder import HEADS
 from .anchor_head import AnchorHead
+
+try:
+    from rraitools import VisualHelper
+except ImportError:
+    VisualHelper = None
+
+
+def show_pos_anchor(img_meta, gt_anchors, gt_bboxes, is_show=True):
+    # 显示正样本
+    assert 'img' in img_meta, print('Collect类中的meta_keys需要新增‘img’，用于可视化调试')
+    img = img_meta['img'].data.numpy()
+    mean = img_meta['img_norm_cfg']['mean']
+    std = img_meta['img_norm_cfg']['std']
+    # 默认输入是rgb数据，需要切换为bgr显示
+    img = np.transpose(img.copy(), (1, 2, 0))
+    img = img * std.reshape([1, 1, 3]) + mean.reshape([1, 1, 3])
+    img = img.astype(np.uint8)
+    img = VisualHelper.show_bbox(img, gt_anchors.cpu().numpy(), is_show=False)
+    return VisualHelper.show_bbox(
+        img, gt_bboxes.cpu().numpy(), color=(255, 255, 255), is_show=is_show)
 
 
 def levels_to_images(mlvl_tensor):
@@ -334,6 +355,18 @@ class YOLOFHead(AnchorHead):
         assign_result = self.assigner.assign(
             decoder_bbox_preds, anchors, gt_bboxes, gt_bboxes_ignore,
             None if self.sampling else gt_labels)
+
+        # TODO
+        if False and VisualHelper is not None:
+            # 统计下正样本个数
+            print('----anchor分配正负样本后，正样本anchor可视化，白色bbox是gt----')
+            gt_inds = assign_result.gt_inds  # 0 1 -1 正负忽略样本标志
+            index = gt_inds > 0
+            gt_inds = gt_inds[index]
+            gt_anchors = anchors[index]
+            print('单张图片中正样本anchor个数', len(gt_inds))
+            show_pos_anchor(img_meta, gt_anchors, gt_bboxes)
+
         sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
         num_valid_anchors = anchors.shape[0]
