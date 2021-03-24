@@ -131,10 +131,11 @@ if __name__ == '__main__':
         version=get_version(),
         description='OpenVINO Training Extensions Object Detection toolbox',
         long_description=readme(),
+        long_description_content_type='text/markdown',
         author='OpenMMLab, Intel',
-        author_email='chenkaidev@gmail.com',
+        author_email='icv.algo@intel.com',
         keywords='computer vision, object detection, OpenVINO, OpenVINO training extensions, ONNX',
-        url='https://github.com/opencv/mmdetection',
+        url='https://github.com/openvinotoolkit/mmdetection',
         packages=find_packages(exclude=('configs', 'tools', 'demo')),
         classifiers=[
             'Development Status :: 5 - Production/Stable',

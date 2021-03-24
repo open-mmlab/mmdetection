@@ -29,7 +29,7 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
 
     A symbolic function cannot receive a collection of tensors as arguments.
     If your custom function takes a collection of tensors as arguments,
-    then you need to implement an argument converter (adapter) from the collection 
+    then you need to implement an argument converter (adapter) from the collection
     and pass it to the decorator.
 
     Args:
@@ -40,15 +40,15 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
     Adapter conventions:
         1. The adapter must have the same signature as the wrapped function.
         2. The values, returned by the adapter, must match the called symbolic function.
-        3. Return value order: 
+        3. Return value order:
             tensor values (collections are not supported)
             constant parameters (can be passed using a dictionary)
 
     Usage example:
         1. Implement a custom operation. For example 'custom_op'.
-        2. Implement a symbolic function to represent the custom_op in 
+        2. Implement a symbolic function to represent the custom_op in
             a computation graph. For example 'custom_op_symbolic'.
-        3. Register the operation before export: 
+        3. Register the operation before export:
             register_op('custom_op_name', custom_op_symbolic, namespace, opset)
         4. Decorate the custom operation:
             @py_symbolic(op_name='custom_op_name')
@@ -160,7 +160,7 @@ def nms_core_symbolic(g, dets, iou_thr, score_thr, max_num):
 
 
 def multiclass_nms_core_symbolic(g, multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
-    
+
     from torch.onnx.symbolic_opset9 import reshape, squeeze
     from torch.onnx.symbolic_opset10 import _slice
 
@@ -275,6 +275,22 @@ def roi_feature_extractor_symbolics(g, rois, *feats, output_size=1, featmap_stri
     return roi_feats
 
 
+def patch_dcn_symbolic():
+    from mmcv.ops.deform_conv import DeformConv2dFunction
+
+    def symbolic(g, input, offset, weight, stride, padding, dilation,
+                 groups, deform_groups, bias=False, im2col_step=32):
+        assert not bias
+        assert groups == 1
+        kh, kw = weight.type().sizes()[2:]
+        return g.op(add_domain('DeformableConv2D'), input, offset, weight,
+                    strides_i=stride, pads_i=[p for pair in zip(padding, padding) for p in pair],
+                    dilations_i=dilation, groups_i=groups,
+                    deformable_groups_i=deform_groups,
+                    kernel_shape_i=[kh, kw])
+
+    DeformConv2dFunction.symbolic = staticmethod(symbolic)
+
 
 def register_extra_symbolics(opset=10):
     assert opset >= 10
@@ -287,3 +303,4 @@ def register_extra_symbolics(opset=10):
 def register_extra_symbolics_for_openvino(opset=10):
     assert opset >= 10
     register_op('roi_feature_extractor', roi_feature_extractor_symbolics, 'mmdet_custom', opset)
+    patch_dcn_symbolic()
