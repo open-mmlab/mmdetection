@@ -21,7 +21,6 @@ if digit_version(torch.__version__) <= digit_version('1.5.0'):
 
 def retinanet_config():
     """RetinanNet Head Config."""
-
     head_cfg = dict(
         stacked_convs=6,
         feat_channels=2,
@@ -148,7 +147,6 @@ def test_yolov3_head_forward():
 def test_yolov3_head_get_bboxes():
     """Test yolov3 head get_bboxes() in torch and ort env."""
     yolo_model = yolo_config()
-
     s = 128
     img_metas = [{
         'img_shape_for_onnx': torch.Tensor([s, s]),
@@ -194,14 +192,12 @@ def test_fcos_head_forward_single():
         fcos_model.forward_single,
         scale=Scale(1.0).requires_grad_(False),
         stride=(4, ))
-
     ort_validate(fcos_model.forward_single, feat)
 
 
 def test_fcos_head_forward():
     """Test fcos forward in mutil-level feature map."""
     fcos_model = fcos_config()
-
     s = 128
     feats = [
         torch.rand(1, 1, s // feat_size, s // feat_size)
@@ -213,7 +209,6 @@ def test_fcos_head_forward():
 def test_fcos_head_get_bboxes():
     """Test fcos head get_bboxes() in ort."""
     fcos_model = fcos_config()
-
     s = 128
     img_metas = [{
         'img_shape_for_onnx': torch.Tensor([s, s]),
@@ -274,7 +269,6 @@ def test_fsaf_head_forward_single():
 def test_fsaf_head_forward():
     """Test RetinaNet Head forward in torch and onnxruntime env."""
     fsaf_model = fsaf_config()
-
     s = 128
     feats = [
         torch.rand(1, fsaf_model.in_channels, s // (2**(i + 2)),
