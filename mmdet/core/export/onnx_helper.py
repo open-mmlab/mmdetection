@@ -1,4 +1,27 @@
+import os
+
 import torch
+
+
+def get_k_for_topk(k, size):
+    ret_k = -1
+    if k <= 0 or size <= 0:
+        return ret_k
+    if torch.onnx.is_in_onnx_export():
+        is_trt_backend = os.environ.get('ONNX_BACKEND') == 'MMCVTensorRT'
+        if is_trt_backend:
+            # TensorRT does not support dynamic K with TopK op
+            if 0 < k < size:
+                ret_k = k
+        else:
+            # Always keep topk op for dynamic input in onnx for onnxruntime
+            ret_k = torch.where(k < size, k, size)
+    elif k < size:
+        ret_k = k
+    else:
+        # ret_k is -1
+        pass
+    return ret_k
 
 
 def add_dummy_nms_for_onnx(boxes,

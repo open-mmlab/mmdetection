@@ -1,5 +1,3 @@
-import os
-
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
@@ -651,23 +649,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                           1).reshape(batch_size, -1, 4)
             anchors = anchors.expand_as(bbox_pred)
             # Always keep topk op for dynamic input in onnx
-            if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
-                                       or scores.shape[-2] > nms_pre_tensor):
-                is_trt_backend = os.environ.get(
-                    'ONNX_BACKEND') == 'MMCVTensorRT'
-                # TensorRT does not support dynamic K with TopK op
-                if is_trt_backend:
-                    if scores.shape[-2] <= nms_pre_tensor:
-                        continue
-                    nms_pre = nms_pre_tensor
-                else:
-                    from torch import _shape_as_tensor
-                    # keep shape as tensor and get k
-                    num_anchor = _shape_as_tensor(scores)[-2].to(
-                        nms_pre_tensor.device)
-                    nms_pre = torch.where(nms_pre_tensor < num_anchor,
-                                          nms_pre_tensor, num_anchor)
-
+            from mmdet.core.export.onnx_helper import get_k_for_topk
+            nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
+            if nms_pre > 0:
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(-1)
@@ -697,7 +681,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
-        if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
+        if deploy_nms_pre > 0:
             # Get maximum scores for foreground classes.
             if self.use_sigmoid_cls:
                 max_scores, _ = batch_mlvl_scores.max(-1)

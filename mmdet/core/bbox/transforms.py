@@ -140,6 +140,23 @@ def distance2bbox(points, distance, max_shape=None):
     bboxes = torch.stack([x1, y1, x2, y2], -1)
 
     if max_shape is not None:
+        # clip bboxes with dynamic `min` and `max` for onnx
+        if torch.onnx.is_in_onnx_export():
+            h = x1.new_tensor(max_shape[0])
+            w = x1.new_tensor(max_shape[1])
+            zero = x1.new_tensor(0)
+            # clip by 0
+            x1 = torch.where(x1 < zero, zero, x1)
+            y1 = torch.where(y1 < zero, zero, y1)
+            x2 = torch.where(x2 < zero, zero, x2)
+            y2 = torch.where(y2 < zero, zero, y2)
+            # clip by h and w
+            x1 = torch.where(x1 > w, w, x1)
+            y1 = torch.where(y1 > h, h, y1)
+            x2 = torch.where(x2 > w, w, x2)
+            y2 = torch.where(y2 > h, h, y2)
+            bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
+            return bboxes
         if not isinstance(max_shape, torch.Tensor):
             max_shape = x1.new_tensor(max_shape)
         max_shape = max_shape[..., :2].type_as(x1)
