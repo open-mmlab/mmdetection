@@ -57,7 +57,14 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.6),
         max_per_img=100))
 # optimizer
-optimizer = dict(type='SGD', lr=0.015, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(
+    type='SGD',
+    lr=0.12,
+    momentum=0.9,
+    weight_decay=0.0001,
+    paramwise_cfg=dict(
+        custom_keys={'backbone': dict(lr_mult=0.334, decay_mult=1.0)}))
+lr_config = dict(warmup_iters=1500, warmup_ratio=0.00066667)
 
 # use caffe img_norm
 img_norm_cfg = dict(
