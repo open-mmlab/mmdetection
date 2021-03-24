@@ -33,6 +33,8 @@ class FCNMaskHead(BaseModule):
                  loss_mask=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0),
                  init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(FCNMaskHead, self).__init__(init_cfg)
         self.upsample_cfg = upsample_cfg.copy()
         if self.upsample_cfg['type'] not in [
@@ -105,6 +107,7 @@ class FCNMaskHead(BaseModule):
         self.debug_imgs = None
 
     def init_weight(self):
+        super(FCNMaskHead, self).init_weight()
         for m in [self.upsample, self.conv_logits]:
             if m is None:
                 continue
@@ -114,7 +117,6 @@ class FCNMaskHead(BaseModule):
                 nn.init.kaiming_normal_(
                     m.weight, mode='fan_out', nonlinearity='relu')
                 nn.init.constant_(m.bias, 0)
-        super(FCNMaskHead, self).init_weight()
 
     @auto_fp16()
     def forward(self, x):

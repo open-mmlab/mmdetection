@@ -54,6 +54,8 @@ class CentripetalHead(CornerHead):
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
                  init_cfg=None,
                  **kwargs):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         assert centripetal_shift_channels == 2, (
             'CentripetalHead only support centripetal_shift_channels == 2')
         self.centripetal_shift_channels = centripetal_shift_channels
@@ -135,6 +137,7 @@ class CentripetalHead(CornerHead):
         self._init_centripetal_layers()
 
     def init_weight(self):
+        super(CentripetalHead, self).init_weight()
         for i in range(self.num_feat_levels):
             normal_init(self.tl_feat_adaption[i], std=0.01)
             normal_init(self.br_feat_adaption[i], std=0.01)
@@ -148,7 +151,6 @@ class CentripetalHead(CornerHead):
             _ = [
                 x.conv.reset_parameters() for x in self.br_centripetal_shift[i]
             ]
-        super(CentripetalHead, self).init_weight()
 
     def forward_single(self, x, lvl_ind):
         """Forward feature of a single level.

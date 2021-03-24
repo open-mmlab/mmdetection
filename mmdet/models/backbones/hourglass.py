@@ -125,6 +125,8 @@ class HourglassNet(BaseModule):
                  norm_cfg=dict(type='BN', requires_grad=True),
                  pretrained=None,
                  init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(HourglassNet, self).__init__(init_cfg)
 
         self.num_stacks = num_stacks
@@ -171,20 +173,12 @@ class HourglassNet(BaseModule):
         self.relu = nn.ReLU(inplace=True)
 
     def init_weight(self):
-        """Init module weights.
-
-        We do nothing in this function because all modules we used
-        (ConvModule, BasicBlock and etc.) have default initialization, and
-        currently we don't provide pretrained model of HourglassNet.
-
-        Detector's __init__() will call backbone's init_weights() with
-        pretrained as input, so we keep this function.
-        """
+        """Init module weights."""
         # Training Centripetal Model needs to reset parameters for Conv2d
+        super(HourglassNet, self).init_weight()
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 m.reset_parameters()
-        super(HourglassNet, self).init_weight()
 
     def forward(self, x):
         """Forward function."""

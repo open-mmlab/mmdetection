@@ -23,6 +23,8 @@ class RetinaSepBNHead(AnchorHead):
                  norm_cfg=None,
                  init_cfg=None,
                  **kwargs):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -74,6 +76,7 @@ class RetinaSepBNHead(AnchorHead):
 
     def init_weight(self):
         """Initialize weights of the head."""
+        super(RetinaSepBNHead, self).init_weight()
         for m in self.cls_convs[0]:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs[0]:
@@ -81,7 +84,6 @@ class RetinaSepBNHead(AnchorHead):
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.retina_cls, std=0.01, bias=bias_cls)
         normal_init(self.retina_reg, std=0.01)
-        super(RetinaSepBNHead, self).init_weight()
 
     def forward(self, feats):
         """Forward features from the upstream network.

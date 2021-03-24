@@ -41,6 +41,8 @@ class NASFCOS_FPN(BaseModule):
                  conv_cfg=None,
                  norm_cfg=None,
                  init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(NASFCOS_FPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -152,6 +154,7 @@ class NASFCOS_FPN(BaseModule):
 
     def init_weight(self):
         """Initialize the weights of module."""
+        super(NASFCOS_FPN, self).init_weight()
         for module in self.fpn.values():
             if hasattr(module, 'conv_out'):
                 caffe2_xavier_init(module.out_conv.conv)
@@ -163,4 +166,3 @@ class NASFCOS_FPN(BaseModule):
             for module in modules:
                 if isinstance(module, nn.Conv2d):
                     caffe2_xavier_init(module)
-        super(NASFCOS_FPN, self).init_weight()

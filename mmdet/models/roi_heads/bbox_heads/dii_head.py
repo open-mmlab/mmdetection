@@ -60,11 +60,15 @@ class DIIHead(BBoxHead):
                      act_cfg=dict(type='ReLU', inplace=True),
                      norm_cfg=dict(type='LN')),
                  loss_iou=dict(type='GIoULoss', loss_weight=2.0),
+                 init_cfg=None,
                  **kwargs):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(DIIHead, self).__init__(
             num_classes=num_classes,
             reg_decoded_bbox=True,
             reg_class_agnostic=True,
+            init_cfg=init_cfg,
             **kwargs)
         self.loss_iou = build_loss(loss_iou)
         self.in_channels = in_channels
@@ -119,6 +123,7 @@ class DIIHead(BBoxHead):
     def init_weight(self):
         """Use xavier initialization for all weight parameter and set
         classification head bias as a specific value when use focal loss."""
+        super(DIIHead, self).init_weight()
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
@@ -129,7 +134,6 @@ class DIIHead(BBoxHead):
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
-        super(DIIHead, self).init_weight()
 
     @auto_fp16()
     def forward(self, roi_feat, proposal_feat):

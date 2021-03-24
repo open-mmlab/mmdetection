@@ -27,6 +27,8 @@ class EmbeddingRPNHead(BaseModule):
                  proposal_feature_channel=256,
                  init_cfg=None,
                  **kwargs):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(EmbeddingRPNHead, self).__init__(init_cfg)
         self.num_proposals = num_proposals
         self.proposal_feature_channel = proposal_feature_channel
@@ -44,9 +46,9 @@ class EmbeddingRPNHead(BaseModule):
         [c_x, c_y, w, h], and we initialize it to the size of  the entire
         image.
         """
+        super(EmbeddingRPNHead, self).init_weight()
         nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
         nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
-        super(EmbeddingRPNHead, self).init_weight()
 
     def _decode_init_proposals(self, imgs, img_metas):
         """Decode init_proposal_bboxes according to the size of images and

@@ -669,6 +669,8 @@ class Transformer(BaseModule):
                  pre_norm=False,
                  return_intermediate_dec=False,
                  init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(Transformer, self).__init__(init_cfg)
         self.embed_dims = embed_dims
         self.num_heads = num_heads
@@ -699,14 +701,13 @@ class Transformer(BaseModule):
                                           norm_cfg, num_fcs,
                                           return_intermediate_dec)
 
-    # TODO： How
     def init_weight(self, distribution='uniform'):
         """Initialize the transformer weights."""
         # follow the official DETR to init parameters
+        super(Transformer, self).init_weight()
         for m in self.modules():
             if hasattr(m, 'weight') and m.weight.dim() > 1:
                 xavier_init(m, distribution=distribution)
-        super(Transformer, self).init_weight()
 
     def forward(self, x, mask, query_embed, pos_embed):
         """Forward function for `Transformer`.

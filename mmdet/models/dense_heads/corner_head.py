@@ -130,6 +130,8 @@ class CornerHead(BaseDenseHead):
                  loss_offset=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
                  init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(CornerHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
@@ -221,6 +223,7 @@ class CornerHead(BaseDenseHead):
             self._init_corner_emb_layers()
 
     def init_weight(self):
+        super(CornerHead, self).init_weight()
         bias_init = bias_init_with_prob(0.1)
         for i in range(self.num_feat_levels):
             # The initialization of parameters are different between
@@ -236,7 +239,6 @@ class CornerHead(BaseDenseHead):
             if self.with_corner_emb:
                 self.tl_emb[i][-1].conv.reset_parameters()
                 self.br_emb[i][-1].conv.reset_parameters()
-        super(CornerHead, self).init_weight()
 
     def forward(self, feats):
         """Forward features from the upstream network.

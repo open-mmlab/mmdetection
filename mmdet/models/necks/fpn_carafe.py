@@ -49,6 +49,8 @@ class FPN_CARAFE(BaseModule):
                      encoder_kernel=3,
                      encoder_dilation=1),
                  init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(FPN_CARAFE, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -205,13 +207,13 @@ class FPN_CARAFE(BaseModule):
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weight(self):
         """Initialize the weights of module."""
+        super(FPN_CARAFE, self).init_weight()
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
                 xavier_init(m, distribution='uniform')
         for m in self.modules():
             if isinstance(m, CARAFEPack):
                 m.init_weights()
-        super(FPN_CARAFE, self).init_weight()
 
     def slice_as(self, src, dst):
         """Slice ``src`` as ``dst``
