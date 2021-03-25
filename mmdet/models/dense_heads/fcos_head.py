@@ -449,9 +449,8 @@ class FCOSHead(AnchorFreeHead):
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export() and with_nms:
             from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
-            batch_mlvl_centerness = batch_mlvl_centerness.unsqueeze(
-                2).expand_as(batch_mlvl_scores)
-            batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_centerness
+            batch_mlvl_scores = batch_mlvl_scores * (
+                batch_mlvl_centerness.unsqueeze(2))
             batch_mlvl_scores = batch_mlvl_scores.permute(0, 2, 1)
             max_output_boxes_per_class = cfg.nms.get(
                 'max_output_boxes_per_class', 200)

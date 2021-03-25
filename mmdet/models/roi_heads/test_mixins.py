@@ -55,8 +55,38 @@ class BBoxTestMixin(object):
                            proposals,
                            rcnn_test_cfg,
                            rescale=False):
-        """Test only det bboxes without augmentation."""
+        """Test only det bboxes without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            proposals (Tensor or List[Tensor]): Region proposals.
+            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+
+        Returns:
+            tuple[list[Tensor], list[Tensor]]: The first list contains
+                the boxes of the corresponding image in a batch, each
+                tensor has the shape (num_boxes, 5) and last dimension
+                5 represent (tl_x, tl_y, br_x, br_y, score). Each Tensor
+                in the second list is the labels with shape (num_boxes, ).
+                The length of both lists should be equal to batch_size.
+        """
+        # get origin input shape to support onnx dynamic input shape
+        if torch.onnx.is_in_onnx_export():
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+            img_shapes = img_metas[0]['img_shape_for_onnx']
+        else:
+            img_shapes = tuple(meta['img_shape'] for meta in img_metas)
+        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+
+        # The length of proposals of different batches may be different.
+        # In order to form a batch, a padding operation is required.
         if isinstance(proposals, list):
+            # padding to form a batch
             max_size = max([proposal.size(0) for proposal in proposals])
             for i, proposal in enumerate(proposals):
                 supplement = proposal.new_full(
@@ -73,37 +103,56 @@ class BBoxTestMixin(object):
         batch_size = rois.shape[0]
         num_proposals_per_img = rois.shape[1]
 
-        # Eliminate batch
+        # Eliminate the batch dimension
         rois = rois.view(-1, 5)
         bbox_results = self._bbox_forward(x, rois)
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
 
-        # Recover batch
+        # Recover the batch dimension
         rois = rois.reshape(batch_size, num_proposals_per_img, -1)
         cls_score = cls_score.reshape(batch_size, num_proposals_per_img, -1)
 
         if not torch.onnx.is_in_onnx_export():
+            # remove padding
             supplement_mask = rois[..., -1] == 0
             cls_score[supplement_mask, :] = 0
 
+        # bbox_pred would be None in some detector when with_reg is False,
+        # e.g. Grid R-CNN.
         if bbox_pred is not None:
-            bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img,
-                                          -1)
-            if not torch.onnx.is_in_onnx_export():
-                bbox_pred[supplement_mask, :] = 0
+            # the bbox prediction of some detectors like SABL is not Tensor
+            if isinstance(bbox_pred, torch.Tensor):
+                bbox_pred = bbox_pred.reshape(batch_size,
+                                              num_proposals_per_img, -1)
+                if not torch.onnx.is_in_onnx_export():
+                    bbox_pred[supplement_mask, :] = 0
+            else:
+                # TODO: Looking forward to a better way
+                # For SABL
+                bbox_preds = self.bbox_head.bbox_pred_split(
+                    bbox_pred, num_proposals_per_img)
+                # apply bbox post-processing to each image individually
+                det_bboxes = []
+                det_labels = []
+                for i in range(len(proposals)):
+                    # remove padding
+                    supplement_mask = proposals[i][..., -1] == 0
+                    for bbox in bbox_preds[i]:
+                        bbox[supplement_mask] = 0
+                    det_bbox, det_label = self.bbox_head.get_bboxes(
+                        rois[i],
+                        cls_score[i],
+                        bbox_preds[i],
+                        img_shapes[i],
+                        scale_factors[i],
+                        rescale=rescale,
+                        cfg=rcnn_test_cfg)
+                    det_bboxes.append(det_bbox)
+                    det_labels.append(det_label)
+                return det_bboxes, det_labels
         else:
-            bbox_pred = (None, ) * len(proposals)
-
-        # get origin input shape to support onnx dynamic input shape
-        if torch.onnx.is_in_onnx_export():
-            assert len(
-                img_metas
-            ) == 1, 'Only support one input image while in exporting to ONNX'
-            img_shapes = img_metas[0]['img_shape_for_onnx']
-        else:
-            img_shapes = tuple(meta['img_shape'] for meta in img_metas)
-        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+            bbox_pred = None
 
         return self.bbox_head.get_bboxes(
             rois,
