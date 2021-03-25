@@ -220,25 +220,10 @@ def delta2bbox(rois,
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
 
     if clip_border and max_shape is not None:
-        # torch.clamp cannot perform clipping bboxes with
-        # dynamic `min` and `max` for onnx
+        # clip bboxes with dynamic `min` and `max` for onnx
         if torch.onnx.is_in_onnx_export():
-            assert isinstance(
-                max_shape,
-                torch.Tensor), '`max_shape` should be tensor of (h,w) for onnx'
-            h = max_shape[0].to(x1)
-            w = max_shape[1].to(x1)
-            zero = x1.new_tensor(0)
-            # clip by 0
-            x1 = torch.where(x1 < zero, zero, x1)
-            y1 = torch.where(y1 < zero, zero, y1)
-            x2 = torch.where(x2 < zero, zero, x2)
-            y2 = torch.where(y2 < zero, zero, y2)
-            # clip by h and w
-            x1 = torch.where(x1 > w, w, x1)
-            y1 = torch.where(y1 > h, h, y1)
-            x2 = torch.where(x2 > w, w, x2)
-            y2 = torch.where(y2 > h, h, y2)
+            from mmdet.core.export.onnx_helper import dynamic_clip_for_onnx
+            x1, y1, x2, y2 = dynamic_clip_for_onnx(x1, y1, x2, y2, max_shape)
             bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
             return bboxes
         if not isinstance(max_shape, torch.Tensor):
