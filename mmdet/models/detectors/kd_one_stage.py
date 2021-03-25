@@ -31,7 +31,6 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
                  pretrained=None):
         super().__init__(backbone, neck, bbox_head, train_cfg, test_cfg,
                          pretrained)
-
         self.eval_teacher = eval_teacher
         # Build teacher model
         if isinstance(teacher_config, str):

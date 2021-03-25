@@ -9,11 +9,11 @@ from .gfl_head import GFLHead
 
 @HEADS.register_module()
 class LDHead(GFLHead):
-    r"""LD is the extension of knowledge distillation on localization task,
-    which utilizes the learned bbox distributions to transfer the localization
+    """Localization distillation Head. (Short description)
+
+    It utilizes the learned bbox distributions to transfer the localization
     dark knowledge from teacher to student. Original paper: `Localization
-    Distillation for Object Detection.
-    <https://arxiv.org/abs/2102.12252>`_
+    Distillation for Object Detection. <https://arxiv.org/abs/2102.12252>`_
 
     Args:
         num_classes (int): Number of categories excluding the background
@@ -21,7 +21,6 @@ class LDHead(GFLHead):
         in_channels (int): Number of channels in the input feature map.
         loss_ld (dict): Config of Localization Distillation Loss (LD),
             T is the temperature for distillation.
-
     """
 
     def __init__(self,
@@ -59,7 +58,7 @@ class LDHead(GFLHead):
                 reduced over all GPUs.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict[tuple, Tensor]: Loss components and weight targets.
         """
         assert stride[0] == stride[1], 'h stride is not equal to w stride!'
         anchors = anchors.reshape(-1, 4)
@@ -164,9 +163,10 @@ class LDHead(GFLHead):
                 if None, test_cfg would be used
 
         Returns:
-            tuple:
-                losses: (dict[str, Tensor]): A dictionary of loss components.
-                proposal_list (list[Tensor]): Proposals of each image.
+            tuple[dict, list]: The loss components and proposals of each image.
+
+            - losses (dict[str, Tensor]): A dictionary of loss components.
+            - proposal_list (list[Tensor]): Proposals of each image.
         """
         outs = self(x)
         soft_target = out_teacher[1]
@@ -252,8 +252,8 @@ class LDHead(GFLHead):
 
         avg_factor = sum(avg_factor) + 1e-6
         avg_factor = reduce_mean(avg_factor).item()
-        losses_bbox = list(map(lambda x: x / avg_factor, losses_bbox))
-        losses_dfl = list(map(lambda x: x / avg_factor, losses_dfl))
+        losses_bbox = [x / avg_factor for x in losses_bbox]
+        losses_dfl = [x / avg_factor for x in losses_dfl]
         return dict(
             loss_cls=losses_cls,
             loss_bbox=losses_bbox,

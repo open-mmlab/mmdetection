@@ -2,12 +2,12 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-
+teacher_ckpt = 'http://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r101_fpn_mstrain_2x_coco/gfl_r101_fpn_mstrain_2x_coco_20200629_200126-dd12f847.pth',  # noqa
 model = dict(
     type='KnowledgeDistillationSingleStageDetector',
     pretrained='torchvision://resnet18',
     teacher_config='configs/gfl/gfl_r101_fpn_mstrain_2x_coco.py',
-    teacher_ckpt=None,
+    teacher_ckpt=teacher_ckpt,
     backbone=dict(
         type='ResNet',
         depth=18,

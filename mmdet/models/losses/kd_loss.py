@@ -12,14 +12,13 @@ def knowledge_distillation_kl_div_loss(pred,
                                        soft_label,
                                        T,
                                        detach_target=True):
-    r"""Loss function of `Distilling the Knowledge in a Neural Network.
-    <https://arxiv.org/abs/1503.02531>`_.
+    r"""Loss function for knowledge distilling using KL divergence.
 
     Args:
         pred (Tensor): Predicted logits with shape (N, n + 1).
         soft_label (Tensor): Target logits with shape (N, N + 1).
-        T (float): Temperature for distillation.
         T (int): Temperature for distillation.
+        detach_target (bool): Remove soft_label from automatic differentiation
 
     Returns:
         torch.Tensor: Loss tensor with shape (N,).
@@ -38,9 +37,7 @@ def knowledge_distillation_kl_div_loss(pred,
 
 @LOSSES.register_module()
 class KnowledgeDistillationKLDivLoss(nn.Module):
-    """Implementation of `Distilling the Knowledge in a Neural Network.
-
-    <https://arxiv.org/abs/1503.02531>`_.
+    """Loss function for knowledge distilling using KL divergence.
 
     Args:
         reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
