@@ -69,6 +69,12 @@ def onnx2tensorrt(onnx_file,
         ort_dets, ort_inds, ort_labels = sess.run(None, {
             'input': input_img_cpu,
         })
+        # sort dets by scores to align with nms in ONNX Runtime, since outputs
+        # of nms in TensorRT are filled with -1 and are not sorted
+        sort_inds = np.argsort(trt_dets[:, 4], kind='stable').tolist()
+        sort_inds.reverse()
+        trt_dets = trt_dets[sort_inds, :]
+        trt_labels = trt_labels[sort_inds]
         # slice tensorrt output with num_dets
         num_dets = ort_dets.shape[0]
         trt_dets = trt_dets[:num_dets, :]
