@@ -352,9 +352,9 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 
    The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
-### Support no GT test mode
+### Test without Ground Truth Annotations
 
-In COCO format, MMDetection supports no GT test mode. If your dataset format is not COCO, you may consider converting to COCO format.
+In COCO format, MMDetection test mode supports without Ground Truth Annotations. If your dataset format is not COCO, you may consider converting to COCO format. For example, your dataset format is VOC, then you can convert it to COCO format by [pascal_voc.py](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/pascal_voc.py).
 
 ```shell
 # single-gpu testing
