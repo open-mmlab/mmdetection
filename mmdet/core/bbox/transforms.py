@@ -142,8 +142,11 @@ def distance2bbox(points, distance, max_shape=None):
     if max_shape is not None:
         # clip bboxes with dynamic `min` and `max` for onnx
         if torch.onnx.is_in_onnx_export():
-            h = x1.new_tensor(max_shape[0])
-            w = x1.new_tensor(max_shape[1])
+            assert isinstance(
+                max_shape,
+                torch.Tensor), '`max_shape` should be tensor of (h,w) for onnx'
+            h = max_shape[0].to(x1)
+            w = max_shape[1].to(x1)
             zero = x1.new_tensor(0)
             # clip by 0
             x1 = torch.where(x1 < zero, zero, x1)

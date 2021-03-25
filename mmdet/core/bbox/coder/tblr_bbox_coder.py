@@ -184,8 +184,11 @@ def tblr2bboxes(priors,
     if clip_border and max_shape is not None:
         # clip bboxes with dynamic `min` and `max` for onnx
         if torch.onnx.is_in_onnx_export():
-            h = xmin.new_tensor(max_shape[0])
-            w = xmin.new_tensor(max_shape[1])
+            assert isinstance(
+                max_shape,
+                torch.Tensor), '`max_shape` should be tensor of (h,w) for onnx'
+            h = max_shape[0].to(xmin)
+            w = max_shape[1].to(xmin)
             zero = xmin.new_tensor(0)
             # clip by 0
             xmin = torch.where(xmin < zero, zero, xmin)
