@@ -1,4 +1,4 @@
-_base_ = ['./ld_gflv1_r101_r18_fpn_coco_1x.py']
+_base_ = ['./ld_r18_gflv1_r101_fpn_coco_1x.py']
 model = dict(
     pretrained='torchvision://resnet50',
     backbone=dict(
