@@ -67,14 +67,9 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
         with torch.no_grad():
             teacher_x = self.teacher_model.extract_feat(img)
             out_teacher = self.teacher_model.bbox_head(teacher_x)
-        losses = self.bbox_head.forward_train(
-            x,
-            out_teacher,
-            img_metas,
-            gt_bboxes,
-            gt_labels,
-            gt_bboxes_ignore,
-        )
+        losses = self.bbox_head.forward_train(x, out_teacher, img_metas,
+                                              gt_bboxes, gt_labels,
+                                              gt_bboxes_ignore)
         return losses
 
     def cuda(self, device=None):

@@ -1,5 +1,5 @@
 _base_ = ['./ld_gflv1_r101_r18_fpn_coco_1x.py']
-teacher_ckpt = 'https://github.com/open-mmlab/mmdetection/tree/master/configs/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco.py',  # noqa
+teacher_ckpt = 'https://github.com/open-mmlab/mmdetection/tree/master/configs/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco.py'  # noqa
 model = dict(
     pretrained='torchvision://resnet101',
     teacher_config='configs/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco.py',
