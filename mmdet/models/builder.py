@@ -1,7 +1,7 @@
 import warnings
 
+from mmcv.runner import Sequential
 from mmcv.utils import Registry, build_from_cfg
-from torch import nn
 
 BACKBONES = Registry('backbone')
 NECKS = Registry('neck')
@@ -29,7 +29,7 @@ def build(cfg, registry, default_args=None):
         modules = [
             build_from_cfg(cfg_, registry, default_args) for cfg_ in cfg
         ]
-        return nn.Sequential(*modules)
+        return Sequential(*modules)
     else:
         return build_from_cfg(cfg, registry, default_args)
 
