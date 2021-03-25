@@ -184,22 +184,9 @@ def tblr2bboxes(priors,
     if clip_border and max_shape is not None:
         # clip bboxes with dynamic `min` and `max` for onnx
         if torch.onnx.is_in_onnx_export():
-            assert isinstance(
-                max_shape,
-                torch.Tensor), '`max_shape` should be tensor of (h,w) for onnx'
-            h = max_shape[0].to(xmin)
-            w = max_shape[1].to(xmin)
-            zero = xmin.new_tensor(0)
-            # clip by 0
-            xmin = torch.where(xmin < zero, zero, xmin)
-            ymin = torch.where(ymin < zero, zero, ymin)
-            xmax = torch.where(xmax < zero, zero, xmax)
-            ymax = torch.where(ymax < zero, zero, ymax)
-            # clip by h and w
-            xmin = torch.where(xmin > w, w, xmin)
-            ymin = torch.where(ymin > h, h, ymin)
-            xmax = torch.where(xmax > w, w, xmax)
-            ymax = torch.where(ymax > h, h, ymax)
+            from mmdet.core.export.onnx_helper import dynamic_clip_for_onnx
+            xmin, ymin, xmax, ymax = dynamic_clip_for_onnx(
+                xmin, ymin, xmax, ymax, max_shape)
             bboxes = torch.cat([xmin, ymin, xmax, ymax], dim=-1)
             return bboxes
         if not isinstance(max_shape, torch.Tensor):

@@ -3,7 +3,54 @@ import os
 import torch
 
 
+def dynamic_clip_for_onnx(x1, y1, x2, y2, max_shape):
+    """Clip boxes dynamically for onnx Since torch.clamp cannot have dynamic
+    `min` and `max`, we have to use torch.where to workaround.
+
+    Args:
+        x1 (Tensor): The x1 for bounding boxes.
+        y1 (Tensor): The y1 for bounding boxes.
+        x2 (Tensor): The x2 for bounding boxes.
+        y2 (Tensor): The y2 for bounding boxes.
+        max_shape (Tensor or torch.Size): The (H,W) of original image.
+    Returns:
+        tuple(Tensor): The clipped x1, y1, x2, y2.
+    """
+    assert isinstance(
+        max_shape,
+        torch.Tensor), '`max_shape` should be tensor of (h,w) for onnx'
+    h = max_shape[0].to(x1)
+    w = max_shape[1].to(x1)
+    zero = x1.new_tensor(0)
+    # clip by 0
+    x1 = torch.where(x1 < zero, zero, x1)
+    y1 = torch.where(y1 < zero, zero, y1)
+    x2 = torch.where(x2 < zero, zero, x2)
+    y2 = torch.where(y2 < zero, zero, y2)
+    # clip by h and w
+    x1 = torch.where(x1 > w, w, x1)
+    y1 = torch.where(y1 > h, h, y1)
+    x2 = torch.where(x2 > w, w, x2)
+    y2 = torch.where(y2 > h, h, y2)
+    return x1, y1, x2, y2
+
+
 def get_k_for_topk(k, size):
+    """Get k of TopK for onnx exporting.
+
+    The K of TopK in TensorRT should not be a Tensor, while in ONNX Runtime
+      it could be a Tensor.Due to dynamic shape feature, we have to decide
+      whether to do TopK and what K it should be while exporting to ONNX.
+    If returned K is less than zero, it means we do not have to do
+      TopK operation.
+
+    Args:
+        k (int or Tensor): The set k value for nms from config file.
+        size (Tensor or torch.Size): The number of elements of \
+            TopK's input tensor
+    Returns:
+        tuple: (int or Tensor): The final K for TopK.
+    """
     ret_k = -1
     if k <= 0 or size <= 0:
         return ret_k
@@ -14,7 +61,7 @@ def get_k_for_topk(k, size):
             if 0 < k < size:
                 ret_k = k
         else:
-            # Always keep topk op for dynamic input in onnx for onnxruntime
+            # Always keep topk op for dynamic input in onnx for ONNX Runtime
             ret_k = torch.where(k < size, k, size)
     elif k < size:
         ret_k = k
