@@ -77,6 +77,16 @@ def distribution_focal_loss(pred, label):
     return loss
 
 
+@mmcv.jit(derivate=True, coderize=True)
+@weighted_loss
+def ld_loss(pred, label, soft_label, T):
+    ld_loss = F.kl_div(F.log_softmax(pred / T, dim=1),
+                       F.softmax(soft_label / T, dim=1).detach(),
+                       reduction='none').mean(1) * (T * T)
+
+    return ld_loss
+
+
 @LOSSES.register_module()
 class QualityFocalLoss(nn.Module):
     r"""Quality Focal Loss (QFL) is a variant of `Generalized Focal Loss:
@@ -91,7 +101,6 @@ class QualityFocalLoss(nn.Module):
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Loss weight of current loss.
     """
-
     def __init__(self,
                  use_sigmoid=True,
                  beta=2.0,
@@ -127,8 +136,8 @@ class QualityFocalLoss(nn.Module):
                 Defaults to None.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
-        reduction = (
-            reduction_override if reduction_override else self.reduction)
+        reduction = (reduction_override
+                     if reduction_override else self.reduction)
         if self.use_sigmoid:
             loss_cls = self.loss_weight * quality_focal_loss(
                 pred,
@@ -152,7 +161,6 @@ class DistributionFocalLoss(nn.Module):
         reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
         loss_weight (float): Loss weight of current loss.
     """
-
     def __init__(self, reduction='mean', loss_weight=1.0):
         super(DistributionFocalLoss, self).__init__()
         self.reduction = reduction
@@ -181,8 +189,73 @@ class DistributionFocalLoss(nn.Module):
                 Defaults to None.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
-        reduction = (
-            reduction_override if reduction_override else self.reduction)
+        reduction = (reduction_override
+                     if reduction_override else self.reduction)
         loss_cls = self.loss_weight * distribution_focal_loss(
             pred, target, weight, reduction=reduction, avg_factor=avg_factor)
         return loss_cls
+
+
+@LOSSES.register_module()
+class LDLoss(nn.Module):
+    r"""Distribution Focal Loss (DFL) is a variant of `Generalized Focal Loss:
+    Learning Qualified and Distributed Bounding Boxes for Dense Object
+    Detection <https://arxiv.org/abs/2006.04388>`_.
+
+    Args:
+        reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
+        loss_weight (float): Loss weight of current loss.
+    """
+    def __init__(self,
+                 reduction='mean',
+                 loss_weight=1.0,
+                 T=2,
+                 alpha=1,
+                 beta=1):
+        super(LDLoss, self).__init__()
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+
+        self.T = T
+        self.alpha = alpha
+        self.adjust = False
+        self.beta = beta
+
+    def forward(self,
+                pred,
+                target,
+                soft_corners,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None):
+        """Forward function.
+
+        Args:
+            pred (torch.Tensor): Predicted general distribution of bounding
+                boxes (before softmax) with shape (N, n+1), n is the max value
+                of the integral set `{0, ..., n}` in paper.
+            target (torch.Tensor): Target distance label for bounding boxes
+                with shape (N,).
+            weight (torch.Tensor, optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None.
+        """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+
+        reduction = (reduction_override
+                     if reduction_override else self.reduction)
+
+        loss_ld = self.loss_weight * ld_loss(pred,
+                                             target,
+                                             weight,
+                                             reduction=reduction,
+                                             avg_factor=avg_factor,
+                                             soft_label=soft_corners,
+                                             T=self.T)
+        loss_cls = self.loss_weight * distribution_focal_loss(
+            pred, target, weight, reduction=reduction, avg_factor=avg_factor)
+        return self.beta * loss_cls, self.alpha * loss_ld

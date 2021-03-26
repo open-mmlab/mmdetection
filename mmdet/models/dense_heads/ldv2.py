@@ -12,6 +12,51 @@ from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
 
+import mmcv
+from mmcv.runner import load_checkpoint
+from mmdet.core import get_classes
+from mmdet.models import build_detector
+# from mmdet.apis import init_detector
+
+def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
+    """Initialize a detector from config file.
+
+    Args:
+        config (str or :obj:`mmcv.Config`): Config file path or the config
+            object.
+        checkpoint (str, optional): Checkpoint path. If left as None, the model
+            will not load any weights.
+        cfg_options (dict): Options to override some settings in the used
+            config.
+
+    Returns:
+        nn.Module: The constructed detector.
+    """
+    if isinstance(config, str):
+        config = mmcv.Config.fromfile(config)
+    elif not isinstance(config, mmcv.Config):
+        raise TypeError('config must be a filename or Config object, '
+                        f'but got {type(config)}')
+    if cfg_options is not None:
+        config.merge_from_dict(cfg_options)
+    config.model.pretrained = None
+    config.model.train_cfg = None
+    model = build_detector(config.model, test_cfg=config.get('test_cfg'))
+    if checkpoint is not None:
+        map_loc = 'cpu' if device == 'cpu' else None
+        checkpoint = load_checkpoint(model, checkpoint, map_location=map_loc)
+        if 'CLASSES' in checkpoint.get('meta', {}):
+            model.CLASSES = checkpoint['meta']['CLASSES']
+        else:
+            warnings.simplefilter('once')
+            warnings.warn('Class names are not saved in the checkpoint\'s '
+                          'meta data, use COCO classes by default.')
+            model.CLASSES = get_classes('coco')
+    model.cfg = config  # save the config in the model for convenience
+    model.to(device)
+    model.eval()
+    return model
+
 class Integral(nn.Module):
     """A fixed layer for calculating integral result from distribution.
 
@@ -49,36 +94,9 @@ class Integral(nn.Module):
 
 
 @HEADS.register_module()
-class GFLHead(AnchorHead):
-    """Generalized Focal Loss: Learning Qualified and Distributed Bounding
-    Boxes for Dense Object Detection.
+class LDHead(AnchorHead):
+    """
 
-    GFL head structure is similar with ATSS, however GFL uses
-    1) joint representation for classification and localization quality, and
-    2) flexible General distribution for bounding box locations,
-    which are supervised by
-    Quality Focal Loss (QFL) and Distribution Focal Loss (DFL), respectively
-
-    https://arxiv.org/abs/2006.04388
-
-    Args:
-        num_classes (int): Number of categories excluding the background
-            category.
-        in_channels (int): Number of channels in the input feature map.
-        stacked_convs (int): Number of conv layers in cls and reg tower.
-            Default: 4.
-        conv_cfg (dict): dictionary to construct and config conv layer.
-            Default: None.
-        norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: dict(type='GN', num_groups=32, requires_grad=True).
-        loss_qfl (dict): Config of Quality Focal Loss (QFL).
-        reg_max (int): Max value of integral set :math: `{0, ..., reg_max}`
-            in QFL setting. Default: 16.
-    Example:
-        >>> self = GFLHead(11, 7)
-        >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
-        >>> cls_quality_score, bbox_pred = self.forward(feats)
-        >>> assert len(cls_quality_score) == len(self.scales)
     """
 
     def __init__(self,
@@ -86,6 +104,8 @@ class GFLHead(AnchorHead):
                  in_channels,
                  stacked_convs=4,
                  conv_cfg=None,
+                 teacher_config='',
+                 teacher_model='',
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  loss_dfl=dict(type='DistributionFocalLoss', loss_weight=0.25),
                  reg_max=16,
@@ -94,7 +114,9 @@ class GFLHead(AnchorHead):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.reg_max = reg_max
-        super(GFLHead, self).__init__(num_classes, in_channels, **kwargs)
+        super(LDHead, self).__init__(num_classes, in_channels, **kwargs)
+
+        self.teacher_model = init_detector(teacher_config, teacher_model)
 
         self.sampling = False
         if self.train_cfg:
@@ -206,15 +228,111 @@ class GFLHead(AnchorHead):
         anchors_cy = (anchors[..., 3] + anchors[..., 1]) / 2
         return torch.stack([anchors_cx, anchors_cy], dim=-1)
 
-    def forward_train(self,
-                x,
-                img_metas,
-                gt_bboxes,
-                gt_labels=None,
-                gt_bboxes_ignore=None,
-                img=None,
-                proposal_cfg=None,
-                **kwargs):
+    def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
+                    bbox_targets, stride, soft_targets, num_total_samples):
+        """Compute loss of a single scale level.
+
+        Args:
+            anchors (Tensor): Box reference for each scale level with shape
+                (N, num_total_anchors, 4).
+            cls_score (Tensor): Cls and quality joint scores for each scale
+                level has shape (N, num_classes, H, W).
+            bbox_pred (Tensor): Box distribution logits for each scale
+                level with shape (N, 4*(n+1), H, W), n is max value of integral
+                set.
+            labels (Tensor): Labels of each anchors with shape
+                (N, num_total_anchors).
+            label_weights (Tensor): Label weights of each anchor with shape
+                (N, num_total_anchors)
+            bbox_targets (Tensor): BBox regression targets of each anchor wight
+                shape (N, num_total_anchors, 4).
+            stride (tuple): Stride in this scale level.
+            num_total_samples (int): Number of positive samples that is
+                reduced over all GPUs.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+        assert stride[0] == stride[1], 'h stride is not equal to w stride!'
+        anchors = anchors.reshape(-1, 4)
+        cls_score = cls_score.permute(0, 2, 3,
+                                      1).reshape(-1, self.cls_out_channels)
+        bbox_pred = bbox_pred.permute(0, 2, 3,
+                                      1).reshape(-1, 4 * (self.reg_max + 1))
+        soft_targets = soft_targets.permute(0, 2, 3,
+            1).reshape(-1,
+                        4 * (self.reg_max + 1))
+
+        bbox_targets = bbox_targets.reshape(-1, 4)
+        labels = labels.reshape(-1)
+        label_weights = label_weights.reshape(-1)
+
+        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+        bg_class_ind = self.num_classes
+        pos_inds = ((labels >= 0)
+                    & (labels < bg_class_ind)).nonzero().squeeze(1)
+        score = label_weights.new_zeros(labels.shape)
+
+        if len(pos_inds) > 0:
+            pos_bbox_targets = bbox_targets[pos_inds]
+            pos_bbox_pred = bbox_pred[pos_inds]
+            pos_anchors = anchors[pos_inds]
+            pos_anchor_centers = self.anchor_center(pos_anchors) / stride[0]
+
+            weight_targets = cls_score.detach().sigmoid()
+            weight_targets = weight_targets.max(dim=1)[0][pos_inds]
+            pos_bbox_pred_corners = self.integral(pos_bbox_pred)
+            pos_decode_bbox_pred = distance2bbox(pos_anchor_centers,
+                                                 pos_bbox_pred_corners)
+            pos_decode_bbox_targets = pos_bbox_targets / stride[0]
+            score[pos_inds] = bbox_overlaps(
+                pos_decode_bbox_pred.detach(),
+                pos_decode_bbox_targets,
+                is_aligned=True)
+            pred_corners = pos_bbox_pred.reshape(-1, self.reg_max + 1)
+            pos_soft_targets = soft_targets[pos_inds]
+            soft_corners = pos_soft_targets.reshape(-1, self.reg_max + 1)
+
+            target_corners = bbox2distance(pos_anchor_centers,
+                                           pos_decode_bbox_targets,
+                                           self.reg_max).reshape(-1)
+
+            # regression loss
+            loss_bbox = self.loss_bbox(
+                pos_decode_bbox_pred,
+                pos_decode_bbox_targets,
+                weight=weight_targets,
+                avg_factor=1.0)
+
+            # dfl loss
+            loss_dfl = self.loss_dfl(
+                pred_corners,
+                target_corners,
+                soft_corners,
+
+                weight=weight_targets[:, None].expand(-1, 4).reshape(-1),
+                avg_factor=4.0)
+        else:
+            loss_bbox = bbox_pred.sum() * 0
+            loss_dfl = bbox_pred.sum() * 0
+            weight_targets = bbox_pred.new_tensor(0)
+
+        # cls (qfl) loss
+        loss_cls = self.loss_cls(
+            cls_score, (labels, score),
+            weight=label_weights,
+            avg_factor=num_total_samples)
+
+        return loss_cls, loss_bbox, loss_dfl, loss_ld, weight_targets.sum()
+           def forward_train(self,
+                      x,
+                      img_metas,
+                      gt_bboxes,
+                      gt_labels=None,
+                      gt_bboxes_ignore=None,
+                      img=None,
+                      proposal_cfg=None,
+                      **kwargs):
         """
         Args:
             x (list[Tensor]): Features from FPN.
@@ -245,93 +363,6 @@ class GFLHead(AnchorHead):
         else:
             proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
             return losses, proposal_list
-    def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
-                    bbox_targets, stride, num_total_samples):
-        """Compute loss of a single scale level.
-
-        Args:
-            anchors (Tensor): Box reference for each scale level with shape
-                (N, num_total_anchors, 4).
-            cls_score (Tensor): Cls and quality joint scores for each scale
-                level has shape (N, num_classes, H, W).
-            bbox_pred (Tensor): Box distribution logits for each scale
-                level with shape (N, 4*(n+1), H, W), n is max value of integral
-                set.
-            labels (Tensor): Labels of each anchors with shape
-                (N, num_total_anchors).
-            label_weights (Tensor): Label weights of each anchor with shape
-                (N, num_total_anchors)
-            bbox_targets (Tensor): BBox regression targets of each anchor wight
-                shape (N, num_total_anchors, 4).
-            stride (tuple): Stride in this scale level.
-            num_total_samples (int): Number of positive samples that is
-                reduced over all GPUs.
-
-        Returns:
-            dict[str, Tensor]: A dictionary of loss components.
-        """
-        assert stride[0] == stride[1], 'h stride is not equal to w stride!'
-        anchors = anchors.reshape(-1, 4)
-        cls_score = cls_score.permute(0, 2, 3,
-                                      1).reshape(-1, self.cls_out_channels)
-        bbox_pred = bbox_pred.permute(0, 2, 3,
-                                      1).reshape(-1, 4 * (self.reg_max + 1))
-        bbox_targets = bbox_targets.reshape(-1, 4)
-        labels = labels.reshape(-1)
-        label_weights = label_weights.reshape(-1)
-
-        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        bg_class_ind = self.num_classes
-        pos_inds = ((labels >= 0)
-                    & (labels < bg_class_ind)).nonzero().squeeze(1)
-        score = label_weights.new_zeros(labels.shape)
-
-        if len(pos_inds) > 0:
-            pos_bbox_targets = bbox_targets[pos_inds]
-            pos_bbox_pred = bbox_pred[pos_inds]
-            pos_anchors = anchors[pos_inds]
-            pos_anchor_centers = self.anchor_center(pos_anchors) / stride[0]
-
-            weight_targets = cls_score.detach().sigmoid()
-            weight_targets = weight_targets.max(dim=1)[0][pos_inds]
-            pos_bbox_pred_corners = self.integral(pos_bbox_pred)
-            pos_decode_bbox_pred = distance2bbox(pos_anchor_centers,
-                                                 pos_bbox_pred_corners)
-            pos_decode_bbox_targets = pos_bbox_targets / stride[0]
-            score[pos_inds] = bbox_overlaps(
-                pos_decode_bbox_pred.detach(),
-                pos_decode_bbox_targets,
-                is_aligned=True)
-            pred_corners = pos_bbox_pred.reshape(-1, self.reg_max + 1)
-            target_corners = bbox2distance(pos_anchor_centers,
-                                           pos_decode_bbox_targets,
-                                           self.reg_max).reshape(-1)
-
-            # regression loss
-            loss_bbox = self.loss_bbox(
-                pos_decode_bbox_pred,
-                pos_decode_bbox_targets,
-                weight=weight_targets,
-                avg_factor=1.0)
-
-            # dfl loss
-            loss_dfl = self.loss_dfl(
-                pred_corners,
-                target_corners,
-                weight=weight_targets[:, None].expand(-1, 4).reshape(-1),
-                avg_factor=4.0)
-        else:
-            loss_bbox = bbox_pred.sum() * 0
-            loss_dfl = bbox_pred.sum() * 0
-            weight_targets = bbox_pred.new_tensor(0)
-
-        # cls (qfl) loss
-        loss_cls = self.loss_cls(
-            cls_score, (labels, score),
-            weight=label_weights,
-            avg_factor=num_total_samples)
-
-        return loss_cls, loss_bbox, loss_dfl, weight_targets.sum()
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
@@ -369,6 +400,8 @@ class GFLHead(AnchorHead):
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
+        teacher_x = self.teacher_model.extract_feat(img)
+        soft_target = self.teacher_model.bbox_head(teacher_x)
 
         cls_reg_targets = self.get_targets(
             anchor_list,
@@ -389,7 +422,7 @@ class GFLHead(AnchorHead):
                          device=device)).item()
         num_total_samples = max(num_total_samples, 1.0)
 
-        losses_cls, losses_bbox, losses_dfl,\
+        losses_cls, losses_bbox, losses_dfl, losses_ld\
             avg_factor = multi_apply(
                 self.loss_single,
                 anchor_list,
@@ -399,6 +432,7 @@ class GFLHead(AnchorHead):
                 label_weights_list,
                 bbox_targets_list,
                 self.anchor_generator.strides,
+                soft_target,
                 num_total_samples=num_total_samples)
 
         avg_factor = sum(avg_factor)
@@ -406,7 +440,7 @@ class GFLHead(AnchorHead):
         losses_bbox = list(map(lambda x: x / avg_factor, losses_bbox))
         losses_dfl = list(map(lambda x: x / avg_factor, losses_dfl))
         return dict(
-            loss_cls=losses_cls, loss_bbox=losses_bbox, loss_dfl=losses_dfl)
+            loss_cls=losses_cls, loss_bbox=losses_bbox, loss_dfl=losses_d, loss_kd=losses_ld)
 
     def _get_bboxes(self,
                     cls_scores,
