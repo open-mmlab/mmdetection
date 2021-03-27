@@ -23,7 +23,7 @@ def knowledge_distillation_kl_div_loss(pred,
     Returns:
         torch.Tensor: Loss tensor with shape (N,).
     """
-
+    assert pred.size() == soft_label.size()
     target = F.softmax(soft_label / T, dim=1)
     if detach_target:
         target = target.detach()
@@ -47,6 +47,7 @@ class KnowledgeDistillationKLDivLoss(nn.Module):
 
     def __init__(self, reduction='mean', loss_weight=1.0, T=10):
         super(KnowledgeDistillationKLDivLoss, self).__init__()
+        assert T >= 1
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.T = T
