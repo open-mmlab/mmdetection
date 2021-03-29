@@ -1,7 +1,7 @@
 import mmcv
 import torch
-from autoassign.mmdet.models import AutoAssignHead
 
+from mmdet.models.dense_heads.autoassign_head import AutoAssignHead
 from mmdet.models.dense_heads.paa_head import levels_to_images
 
 
