@@ -284,23 +284,34 @@ class MaskTestMixin(object):
         batch_index = torch.arange(
             det_bboxes.size(0), device=det_bboxes.device).float().view(
                 -1, 1, 1).expand(det_bboxes.size(0), det_bboxes.size(1), 1)
-        mask_rois = torch.cat([batch_index, det_bboxes], dim=-1)
+        mask_rois = torch.cat([batch_index, det_bboxes[..., :4]], dim=-1)
         mask_rois = mask_rois.view(-1, 5)
         mask_results = self._mask_forward(x, mask_rois)
         mask_pred = mask_results['mask_pred']
 
+        # Support get_seg_masks exporting to ONNX
+        if torch.onnx.is_in_onnx_export():
+            max_shape = img_metas[0]['img_shape_for_onnx']
+            num_det = det_bboxes.shape[1]
+            det_bboxes = det_bboxes.reshape(-1, 5)
+            det_labels = det_labels.reshape(-1)
+            segm_results = self.mask_head.get_seg_masks(
+                mask_pred, det_bboxes, det_labels, self.test_cfg, max_shape,
+                scale_factors[0], rescale)
+            segm_results = segm_results.reshape(batch_size, num_det,
+                                                max_shape[0], max_shape[1])
+            return segm_results
         # Recover batch
         mask_preds = mask_pred.reshape(batch_size, num_proposals_per_img,
                                        *mask_pred.shape[1:])
 
         # apply mask post-processing to each image individually
-        # TODO
         segm_results = []
         for i in range(batch_size):
             mask_pred = mask_preds[i]
             det_bbox = det_bboxes[i]
             det_label = det_labels[i]
-
+            # filter out padded boxes
             supplement_mask = det_bbox[..., -1] != 0
             mask_pred = mask_pred[supplement_mask]
             det_bbox = det_bbox[supplement_mask]
