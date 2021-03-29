@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import torch.nn as nn
 from mmcv.cnn import build_conv_layer, build_norm_layer
@@ -208,6 +210,36 @@ class RegNet(ResNet):
 
         self.feat_dim = stage_widths[-1]
         self.block.expansion = expansion_bak
+
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
+        if isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+                          'please use "init_cfg" instead')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(
+                        type='Constant',
+                        val=1,
+                        layer=['_BatchNorm', 'GroupNorm'])
+                ]
+            elif not isinstance(init_cfg, list):
+                self.init_cfg = [init_cfg]
+
+            # TODO: dcn conv_offset cannot initialize with init_cfg
+
+            if self.zero_init_residual:
+                self.init_cfg += [
+                    dict(
+                        type='Constant',
+                        layer=['BatchNorm2', 'BatchNorm3'],
+                        val=0),
+                ]
+        else:
+            raise TypeError('pretrained must be a str or None')
 
     def _make_stem_layer(self, in_channels, base_channels):
         self.conv1 = build_conv_layer(
