@@ -264,9 +264,10 @@ class YOLACTHead(AnchorHead):
         loss_cls_all = self.loss_cls(cls_score, labels, label_weights)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        pos_inds = ((labels >= 0) &
-                    (labels < self.num_classes)).nonzero().reshape(-1)
-        neg_inds = (labels == self.num_classes).nonzero().view(-1)
+        pos_inds = ((labels >= 0) & (labels < self.num_classes)).nonzero(
+            as_tuple=False).reshape(-1)
+        neg_inds = (labels == self.num_classes).nonzero(
+            as_tuple=False).view(-1)
 
         num_pos_samples = pos_inds.size(0)
         if num_pos_samples == 0:
@@ -280,6 +281,9 @@ class YOLACTHead(AnchorHead):
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
         if self.reg_decoded_bbox:
+            # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
+            # is applied directly on the decoded bounding boxes, it
+            # decodes the already encoded coordinates to absolute format.
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
         loss_bbox = self.loss_bbox(
             bbox_pred,

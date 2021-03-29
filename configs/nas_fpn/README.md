@@ -2,6 +2,8 @@
 
 ## Introduction
 
+[ALGORITHM]
+
 ```latex
 @inproceedings{ghiasi2019fpn,
   title={Nas-fpn: Learning scalable feature pyramid architecture for object detection},

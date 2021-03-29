@@ -1,5 +1,87 @@
 ## Changelog
 
+### v2.10.0 (01/03/2021)
+
+#### Highlights
+
+- Support new methods: [FPG](https://arxiv.org/abs/2004.03580)
+- Support ONNX2TensorRT for SSD, FSAF, FCOS, YOLOv3, and Faster R-CNN.
+
+#### New Features
+
+- Support ONNX2TensorRT for SSD, FSAF, FCOS, YOLOv3, and Faster R-CNN (#4569)
+- Support [Feature Pyramid Grids (FPG)](https://arxiv.org/abs/2004.03580) (#4645)
+- Support video demo (#4420)
+- Add seed option for sampler (#4665)
+- Support to customize type of runner (#4570, #4669)
+- Support synchronizing BN buffer in `EvalHook` (#4582)
+- Add script for GIF demo (#4573)
+
+#### Bug Fixes
+
+- Fix ConfigDict AttributeError and add Colab link (#4643)
+- Avoid crash in empty gt training of GFL head (#4631)
+- Fix `iou_thrs` bug in RPN evaluation (#4581)
+- Fix syntax error of config when upgrading model version (#4584)
+
+#### Improvements
+
+- Refactor unit test file structures (#4600)
+- Refactor nms config (#4636)
+- Get loading pipeline by checking the class directly rather than through config strings (#4619)
+- Add doctests for mask target generation and mask structures (#4614)
+- Use deep copy when copying pipeline arguments (#4621)
+- Update documentations (#4642, #4650, #4620, #4630)
+- Remove redundant code calling `import_modules_from_strings` (#4601)
+- Clean deprecated FP16 API (#4571)
+- Check whether `CLASSES` is correctly initialized in the intialization of `XMLDataset` (#4555)
+- Support batch inference in the inference API (#4462, #4526)
+- Clean deprecated warning and fix 'meta' error (#4695)
+
+### v2.9.0 (01/02/2021)
+
+#### Highlights
+
+- Support new methods: [SCNet](https://arxiv.org/abs/2012.10150), [Sparse R-CNN](https://arxiv.org/abs/2011.12450)
+- Move `train_cfg` and `test_cfg` into model in configs
+- Support to visualize results based on prediction quality
+
+#### New Features
+
+- Support [SCNet](https://arxiv.org/abs/2012.10150) (#4356)
+- Support [Sparse R-CNN](https://arxiv.org/abs/2011.12450) (#4219)
+- Support evaluate mAP by multiple IoUs (#4398)
+- Support concatenate dataset for testing (#4452)
+- Support to visualize results based on prediction quality (#4441)
+- Add ONNX simplify option to Pytorch2ONNX script (#4468)
+- Add hook for checking compatibility of class numbers in heads and datasets (#4508)
+
+#### Bug Fixes
+
+- Fix CPU inference bug of Cascade RPN (#4410)
+- Fix NMS error of CornerNet when there is no prediction box (#4409)
+- Fix TypeError in CornerNet inference (#4411)
+- Fix bug of PAA when training with background images (#4391)
+- Fix the error that the window data is not destroyed when `out_file is not None` and `show==False` (#4442)
+- Fix order of NMS `score_factor` that will decrease the performance of YOLOv3 (#4473)
+- Fix bug in HTC TTA when the number of detection boxes is 0 (#4516)
+- Fix resize error in mask data structures (#4520)
+
+#### Improvements
+
+- Allow to customize classes in LVIS dataset (#4382)
+- Add tutorials for building new models with existing datasets (#4396)
+- Add CPU compatibility information in documentation (#4405)
+- Add documentation of deprecated `ImageToTensor` for batch inference (#4408)
+- Add more details in documentation for customizing dataset (#4430)
+- Switch `imshow_det_bboxes` visualization backend from OpenCV to Matplotlib (#4389)
+- Deprecate `ImageToTensor` in `image_demo.py` (#4400)
+- Move train_cfg/test_cfg into model (#4347, #4489)
+- Update docstring for `reg_decoded_bbox` option in bbox heads (#4467)
+- Update dataset information in documentation (#4525)
+- Release pre-trained R50 and R101 PAA detectors with multi-scale 3x training schedules (#4495)
+- Add guidance for speed benchmark (#4537)
+
 ### v2.8.0 (04/01/2021)
 
 #### Highlights
@@ -121,7 +203,7 @@
 #### Backwards Incompatible Changes
 
 **FP16 related methods are imported from mmcv instead of mmdet. (#3766, #3822)**
-Mixed precision training utils in `mmdet.core.fp16` are moved to `mmcv.runner`, including `force_fp32`, `auto_fp16`, `wrap_fp16_model`, and `Fp16OptimizerHook`. A deprecation warning will be raised if users attempt to import those methods from `mmdet.core.fp16`, and will be finally removed in V2.8.0.
+Mixed precision training utils in `mmdet.core.fp16` are moved to `mmcv.runner`, including `force_fp32`, `auto_fp16`, `wrap_fp16_model`, and `Fp16OptimizerHook`. A deprecation warning will be raised if users attempt to import those methods from `mmdet.core.fp16`, and will be finally removed in V2.10.0.
 
 **[0, N-1] represents foreground classes and N indicates background classes for all models. (#3221)**
 Before v2.5.0, the background label for RPN is 0, and N for other heads. Now the behavior is consistent for all models. Thus `self.background_labels` in `dense_heads` is removed and all heads use `self.num_classes` to indicate the class index of background labels.

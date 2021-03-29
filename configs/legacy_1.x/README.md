@@ -1,5 +1,7 @@
 # Legacy Configs in MMDetection V1.x
 
+[OTHERS]
+
 Configs in this directory implement the legacy configs used by MMDetection V1.x and its model zoos.
 
 To help users convert their models from V1.x to MMDetection V2.0, we provide v1.x configs to inference the converted v1.x models.
@@ -18,10 +20,10 @@ There are three main difference in the model weights between V1.x and V2.0 codeb
 3. For two-stage detectors, their wegihts need to be upgraded since MMDetection V2.0 refactors all the two-stage detectors with `RoIHead`.
 
 The users can do the same modification as mentioned above for the self-implemented
-detectors. We provide a scripts `tools/upgrade_model_version.py` to convert the model weights in the V1.x model zoo.
+detectors. We provide a scripts `tools/model_converters/upgrade_model_version.py` to convert the model weights in the V1.x model zoo.
 
 ```bash
-python tools/upgrade_model_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH} --num-classes ${NUM_CLASSES}
+python tools/model_converters/upgrade_model_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH} --num-classes ${NUM_CLASSES}
 
 ```
 

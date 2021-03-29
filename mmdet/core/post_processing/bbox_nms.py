@@ -40,8 +40,6 @@ def multiclass_nms(multi_bboxes,
             multi_scores.size(0), num_classes, 4)
 
     scores = multi_scores[:, :-1]
-    if score_factors is not None:
-        scores = scores * score_factors[:, None]
 
     labels = torch.arange(num_classes, dtype=torch.long)
     labels = labels.view(1, -1).expand_as(scores)
@@ -50,11 +48,31 @@ def multiclass_nms(multi_bboxes,
     scores = scores.reshape(-1)
     labels = labels.reshape(-1)
 
-    # remove low scoring boxes
-    valid_mask = scores > score_thr
-    inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
-    bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
-    if inds.numel() == 0:
+    if not torch.onnx.is_in_onnx_export():
+        # NonZero not supported  in TensorRT
+        # remove low scoring boxes
+        valid_mask = scores > score_thr
+    # multiply score_factor after threshold to preserve more bboxes, improve
+    # mAP by 1% for YOLOv3
+    if score_factors is not None:
+        # expand the shape to match original shape of score
+        score_factors = score_factors.view(-1, 1).expand(
+            multi_scores.size(0), num_classes)
+        score_factors = score_factors.reshape(-1)
+        scores = scores * score_factors
+
+    if not torch.onnx.is_in_onnx_export():
+        # NonZero not supported  in TensorRT
+        inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
+        bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
+    else:
+        # TensorRT NMS plugin has invalid output filled with -1
+        # add dummy data to make detection output correct.
+        bboxes = torch.cat([bboxes, bboxes.new_zeros(1, 4)], dim=0)
+        scores = torch.cat([scores, scores.new_zeros(1)], dim=0)
+        labels = torch.cat([labels, labels.new_zeros(1)], dim=0)
+
+    if bboxes.numel() == 0:
         if torch.onnx.is_in_onnx_export():
             raise RuntimeError('[ONNX Error] Can not record NMS '
                                'as it has not been executed this time')
@@ -63,7 +81,6 @@ def multiclass_nms(multi_bboxes,
         else:
             return bboxes, labels
 
-    # TODO: add size check before feed into batched_nms
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
 
     if max_num > 0:

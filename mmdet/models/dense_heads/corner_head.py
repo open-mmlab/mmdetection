@@ -1,3 +1,4 @@
+from logging import warning
 from math import ceil, log
 
 import torch
@@ -739,7 +740,7 @@ class CornerHead(BaseDenseHead):
             distance_threshold=self.test_cfg.distance_threshold)
 
         if rescale:
-            batch_bboxes /= img_meta['scale_factor']
+            batch_bboxes /= batch_bboxes.new_tensor(img_meta['scale_factor'])
 
         bboxes = batch_bboxes.view([-1, 4])
         scores = batch_scores.view([-1, 1])
@@ -762,8 +763,17 @@ class CornerHead(BaseDenseHead):
         return detections, labels
 
     def _bboxes_nms(self, bboxes, labels, cfg):
+        if labels.numel() == 0:
+            return bboxes, labels
+
+        if 'nms_cfg' in cfg:
+            warning.warn('nms_cfg in test_cfg will be deprecated. '
+                         'Please rename it as nms')
+        if 'nms' not in cfg:
+            cfg.nms = cfg.nms_cfg
+
         out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
-                                       cfg.nms_cfg)
+                                       cfg.nms)
         out_labels = labels[keep]
 
         if len(out_bboxes) > 0:

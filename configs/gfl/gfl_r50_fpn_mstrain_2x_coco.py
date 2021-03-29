@@ -1,7 +1,7 @@
 _base_ = './gfl_r50_fpn_1x_coco.py'
 # learning policy
 lr_config = dict(step=[16, 22])
-total_epochs = 24
+runner = dict(type='EpochBasedRunner', max_epochs=24)
 # multi-scale training
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)

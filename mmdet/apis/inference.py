@@ -1,6 +1,5 @@
 import warnings
 
-import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import torch
@@ -9,6 +8,7 @@ from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import get_classes
+from mmdet.datasets import replace_ImageToTensor
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
 
@@ -35,11 +35,12 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     if cfg_options is not None:
         config.merge_from_dict(cfg_options)
     config.model.pretrained = None
-    model = build_detector(config.model, test_cfg=config.test_cfg)
+    config.model.train_cfg = None
+    model = build_detector(config.model, test_cfg=config.get('test_cfg'))
     if checkpoint is not None:
         map_loc = 'cpu' if device == 'cpu' else None
         checkpoint = load_checkpoint(model, checkpoint, map_location=map_loc)
-        if 'CLASSES' in checkpoint['meta']:
+        if 'CLASSES' in checkpoint.get('meta', {}):
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
             warnings.simplefilter('once')
@@ -53,7 +54,10 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
 
 
 class LoadImage(object):
-    """A simple pipeline to load image."""
+    """Deprecated.
+
+    A simple pipeline to load image.
+    """
 
     def __call__(self, results):
         """Call function to load images into results.
@@ -61,10 +65,13 @@ class LoadImage(object):
         Args:
             results (dict): A result dict contains the file name
                 of the image to be read.
-
         Returns:
             dict: ``results`` will be returned containing loaded image.
         """
+        warnings.simplefilter('once')
+        warnings.warn('`LoadImage` is deprecated and will be removed in '
+                      'future releases. You may use `LoadImageFromWebcam` '
+                      'from `mmdet.datasets.pipelines.` instead.')
         if isinstance(results['img'], str):
             results['filename'] = results['img']
             results['ori_filename'] = results['img']
@@ -79,34 +86,53 @@ class LoadImage(object):
         return results
 
 
-def inference_detector(model, img):
+def inference_detector(model, imgs):
     """Inference image(s) with the detector.
 
     Args:
         model (nn.Module): The loaded detector.
-        imgs (str/ndarray or list[str/ndarray]): Either image files or loaded
-            images.
+        imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
+           Either image files or loaded images.
 
     Returns:
-        If imgs is a str, a generator will be returned, otherwise return the
-        detection results directly.
+        If imgs is a list or tuple, the same length list type results
+        will be returned, otherwise return the detection results directly.
     """
+
+    if isinstance(imgs, (list, tuple)):
+        is_batch = True
+    else:
+        imgs = [imgs]
+        is_batch = False
+
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
-    # prepare data
-    if isinstance(img, np.ndarray):
-        # directly add img
-        data = dict(img=img)
+
+    if isinstance(imgs[0], np.ndarray):
         cfg = cfg.copy()
         # set loading pipeline type
         cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
-    else:
-        # add information into dict
-        data = dict(img_info=dict(filename=img), img_prefix=None)
-    # build the data pipeline
+
+    cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     test_pipeline = Compose(cfg.data.test.pipeline)
-    data = test_pipeline(data)
-    data = collate([data], samples_per_gpu=1)
+
+    datas = []
+    for img in imgs:
+        # prepare data
+        if isinstance(img, np.ndarray):
+            # directly add img
+            data = dict(img=img)
+        else:
+            # add information into dict
+            data = dict(img_info=dict(filename=img), img_prefix=None)
+        # build the data pipeline
+        data = test_pipeline(data)
+        datas.append(data)
+
+    data = collate(datas, samples_per_gpu=len(imgs))
+    # just get the actual data from DataContainer
+    data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
+    data['img'] = [img.data[0] for img in data['img']]
     if next(model.parameters()).is_cuda:
         # scatter to specified GPU
         data = scatter(data, [device])[0]
@@ -115,13 +141,15 @@ def inference_detector(model, img):
             assert not isinstance(
                 m, RoIPool
             ), 'CPU inference with RoIPool is not supported currently.'
-        # just get the actual data from DataContainer
-        data['img_metas'] = data['img_metas'][0].data
 
     # forward the model
     with torch.no_grad():
-        result = model(return_loss=False, rescale=True, **data)[0]
-    return result
+        results = model(return_loss=False, rescale=True, **data)
+
+    if not is_batch:
+        return results[0]
+    else:
+        return results
 
 
 async def async_inference_detector(model, img):
@@ -162,9 +190,8 @@ def show_result_pyplot(model,
                        img,
                        result,
                        score_thr=0.3,
-                       fig_size=(15, 10),
                        title='result',
-                       block=True):
+                       wait_time=0):
     """Visualize the detection results on the image.
 
     Args:
@@ -173,15 +200,18 @@ def show_result_pyplot(model,
         result (tuple[list] or list): The detection result, can be either
             (bbox, segm) or just bbox.
         score_thr (float): The threshold to visualize the bboxes and masks.
-        fig_size (tuple): Figure size of the pyplot figure.
         title (str): Title of the pyplot figure.
-        block (bool): Whether to block GUI.
+        wait_time (float): Value of waitKey param.
+                Default: 0.
     """
     if hasattr(model, 'module'):
         model = model.module
-    img = model.show_result(img, result, score_thr=score_thr, show=False)
-    plt.figure(figsize=fig_size)
-    plt.imshow(mmcv.bgr2rgb(img))
-    plt.title(title)
-    plt.tight_layout()
-    plt.show(block=block)
+    model.show_result(
+        img,
+        result,
+        score_thr=score_thr,
+        show=True,
+        wait_time=wait_time,
+        win_name=title,
+        bbox_color=(72, 101, 241),
+        text_color=(72, 101, 241))

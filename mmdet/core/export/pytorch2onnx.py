@@ -6,7 +6,10 @@ import torch
 from mmcv.runner import load_checkpoint
 
 
-def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
+def generate_inputs_and_wrap_model(config_path,
+                                   checkpoint_path,
+                                   input_config,
+                                   cfg_options=None):
     """Prepare sample input and wrap model for ONNX export.
 
     The ONNX export API only accept args, and all inputs should be
@@ -37,7 +40,8 @@ def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
             the model while exporting.
     """
 
-    model = build_model_from_cfg(config_path, checkpoint_path)
+    model = build_model_from_cfg(
+        config_path, checkpoint_path, cfg_options=cfg_options)
     one_img, one_meta = preprocess_example_input(input_config)
     tensor_data = [one_img]
     model.forward = partial(
@@ -57,7 +61,7 @@ def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
     return model, tensor_data
 
 
-def build_model_from_cfg(config_path, checkpoint_path):
+def build_model_from_cfg(config_path, checkpoint_path, cfg_options=None):
     """Build a model from config and load the given checkpoint.
 
     Args:
@@ -71,15 +75,21 @@ def build_model_from_cfg(config_path, checkpoint_path):
     from mmdet.models import build_detector
 
     cfg = mmcv.Config.fromfile(config_path)
+    if cfg_options is not None:
+        cfg.merge_from_dict(cfg_options)
     # import modules from string list.
     if cfg.get('custom_imports', None):
         from mmcv.utils import import_modules_from_strings
         import_modules_from_strings(**cfg['custom_imports'])
+    # set cudnn_benchmark
+    if cfg.get('cudnn_benchmark', False):
+        torch.backends.cudnn.benchmark = True
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
     # build the model
-    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+    cfg.model.train_cfg = None
+    model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
     load_checkpoint(model, checkpoint_path, map_location='cpu')
     model.cpu().eval()
     return model
@@ -125,7 +135,8 @@ def preprocess_example_input(input_config):
         normalize_cfg = input_config['normalize_cfg']
         mean = np.array(normalize_cfg['mean'], dtype=np.float32)
         std = np.array(normalize_cfg['std'], dtype=np.float32)
-        one_img = mmcv.imnormalize(one_img, mean, std)
+        to_rgb = normalize_cfg.get('to_rgb', True)
+        one_img = mmcv.imnormalize(one_img, mean, std, to_rgb=to_rgb)
     one_img = one_img.transpose(2, 0, 1)
     one_img = torch.from_numpy(one_img).unsqueeze(0).float().requires_grad_(
         True)
