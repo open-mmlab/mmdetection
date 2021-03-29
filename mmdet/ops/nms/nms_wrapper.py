@@ -5,7 +5,7 @@ from torch.onnx import is_in_onnx_export
 
 from mmdet.integration.nncf import no_nncf_trace
 from mmdet.utils.deployment.symbolic import py_symbolic
-from . import nms_ext
+#from . import nms_ext
 
 
 def nms(dets, iou_threshold, score_thr=0.0, max_num=-1, device_id=None):
@@ -216,3 +216,15 @@ def nms_match(dets, thresh):
         return [dets.new_tensor(m, dtype=torch.long) for m in matched]
     else:
         return [np.array(m, dtype=np.int) for m in matched]
+
+
+def batched_nms_test(bboxes, scores, labels, nms_cfg):
+    if 'score_thr' in nms_cfg.keys():
+        score_thr = nms_cfg.pop('score_thr')
+        max_num = nms_cfg.pop('max_num')
+        from ...utils.deployment.symbolic import set_args_for_NMSop
+        set_args_for_NMSop(score_thr, max_num)
+
+    from mmcv.ops import batched_nms
+    return batched_nms(bboxes, scores, labels, nms_cfg)
+

@@ -156,14 +156,6 @@ if __name__ == '__main__':
             'build': parse_requirements('requirements/build.txt'),
             'optional': parse_requirements('requirements/optional.txt'),
         },
-        ext_modules=[
-            make_cuda_ext(
-                name='nms_ext',
-                module='mmdet.ops.nms',
-                sources=['src/nms_ext.cpp', 'src/cpu/nms_cpu.cpp'],
-                sources_cuda=[
-                    'src/cuda/nms_cuda.cpp', 'src/cuda/nms_kernel.cu'
-                ]),
-        ],
+        ext_modules=[],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)

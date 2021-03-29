@@ -164,5 +164,8 @@ class RPNHead(RPNTestMixin, AnchorHead):
 
         # TODO: remove the hard coded nms type
         nms_cfg = dict(type='nms', iou_threshold=cfg.nms_thr)
+        for key in ['max_num', 'type']:  # Remain only 'iou_threshold'
+            if key in nms_cfg.keys():
+                nms_cfg.pop(key)
         dets, keep = batched_nms(proposals, scores, ids, nms_cfg)
         return dets[:cfg.nms_post]

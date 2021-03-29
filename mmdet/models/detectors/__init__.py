@@ -29,7 +29,7 @@ from .vfnet import VFNet
 from .yolact import YOLACT
 from .yolo import YOLOV3
 
-import mmdet.ops.nms
+#import mmdet.ops.nms
 
 
 __all__ = [
