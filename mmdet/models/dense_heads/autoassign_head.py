@@ -34,11 +34,11 @@ class CenterPrior(nn.Module):
                  force_topk=False,
                  topk=9,
                  num_classes=80,
-                 stride=(8, 16, 32, 64, 128)):
+                 strides=(8, 16, 32, 64, 128)):
         super(CenterPrior, self).__init__()
         self.mean = nn.Parameter(torch.zeros(num_classes, 2))
         self.sigma = nn.Parameter(torch.ones(num_classes, 2))
-        self.stride = stride
+        self.strides = strides
         self.force_topk = force_topk
         self.topk = topk
 
@@ -77,7 +77,7 @@ class CenterPrior(nn.Module):
             return gt_bboxes.new_zeros(num_points,
                                        num_gts), inside_gt_bbox_mask
         center_prior_list = []
-        for slvl_points, stride in zip(anchor_points_list, self.stride):
+        for slvl_points, stride in zip(anchor_points_list, self.strides):
             single_level_points = slvl_points[:, None, :].expand(
                 (slvl_points.size(0), len(gt_bboxes), 2))
             gt_center_x = ((gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2)
@@ -151,7 +151,7 @@ class AutoAssignHead(FCOSHead):
             force_topk=force_topk,
             topk=topk,
             num_classes=self.num_classes,
-            stride=self.strides)
+            strides=self.strides)
         self.pos_loss_weight = pos_loss_weight
         self.neg_loss_weight = neg_loss_weight
         self.center_loss_weight = center_loss_weight

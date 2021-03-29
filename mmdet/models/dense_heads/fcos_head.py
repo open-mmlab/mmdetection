@@ -337,7 +337,7 @@ class FCOSHead(AnchorFreeHead):
             bbox_preds (list[Tensor]): Box energies / deltas for a single scale
                 level with shape (N, num_points * 4, H, W).
             centernesses (list[Tensor]): Centerness for a single scale level
-                with shape (N, num_points * 4, H, W).
+                with shape (N, num_points, H, W).
             mlvl_points (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_points, 4).
             img_shapes (list[tuple[int]]): Shape of the input image,
