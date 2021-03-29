@@ -71,6 +71,7 @@ class CenterPrior(nn.Module):
                     within a certain gt or is the topk nearest points for \
                     a specific gt_bbox.
         """
+        inside_gt_bbox_mask = inside_gt_bbox_mask.clone()
         num_gts = len(labels)
         num_points = sum([len(item) for item in anchor_points_list])
         if num_gts == 0:
@@ -105,13 +106,14 @@ class CenterPrior(nn.Module):
                     center_prior_weights[:, gt_inds_no_points_inside].topk(
                                                              self.topk,
                                                              dim=0)[1]
+                temp_mask = inside_gt_bbox_mask[:, gt_inds_no_points_inside]
                 inside_gt_bbox_mask[:, gt_inds_no_points_inside] = \
-                    inside_gt_bbox_mask[:, gt_inds_no_points_inside].scatter_(
-                        dim=0,
-                        index=topk_center_index,
-                        src=torch.ones_like(
-                            topk_center_index,
-                            dtype=torch.bool))
+                    torch.scatter(temp_mask,
+                                  dim=0,
+                                  index=topk_center_index,
+                                  src=torch.ones_like(
+                                    topk_center_index,
+                                    dtype=torch.bool))
 
         center_prior_weights[~inside_gt_bbox_mask] = 0
         return center_prior_weights, inside_gt_bbox_mask
