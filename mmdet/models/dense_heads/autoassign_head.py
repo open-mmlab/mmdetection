@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import bias_init_with_prob, normal_init
+from mmcv.runner import force_fp32
 
-from mmdet.core import distance2bbox, force_fp32, multi_apply
+from mmdet.core import distance2bbox, multi_apply
 from mmdet.core.bbox import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads.atss_head import reduce_mean
