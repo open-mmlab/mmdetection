@@ -300,9 +300,10 @@ def patch_nms():
     if version.parse(torch.__version__) < version.parse('1.7.1'):
         from mmcv.ops.nms import NMSop
         original_forward = NMSop.forward
-        def forward(ctx, bboxes, scores, iou_threshold, score_thr, offset):
+
+        def forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
             with torch.jit._disable_tracing():
-                inds = original_forward(ctx, bboxes, scores, iou_threshold, score_thr, offset)
+                inds = original_forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
             return inds
         NMSop.forward = staticmethod(forward)
 
@@ -310,7 +311,6 @@ def patch_nms():
 # This function adds 'score_threshold' to ONNX::NonMaxSuppression.
 # It should be removed after adding support for 'score_threshold' in MMCV.
 def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
-    #from sys import maxsize
     from mmcv.onnx import is_custom_op_loaded
     has_custom_op = is_custom_op_loaded()
     if has_custom_op:
@@ -346,36 +346,35 @@ def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_
 
 # This function adds 'score_threshold' to NMSop from MMCV.
 # It should be removed after adding support for 'score_threshold' in MMCV.
-def set_args_for_NMSop(score_thr=0, max_num=None):
+def set_args_for_NMSop(score_thr, max_num):
     from mmcv.ops.nms import NMSop
 
     original_forward = NMSop.forward
     def forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold=score_thr, max_num=max_num):
-        with torch.jit._disable_tracing():
-            valid_mask = scores > score_threshold
-            bboxes, scores = bboxes[valid_mask], scores[valid_mask]
-            inds = original_forward(ctx, bboxes, scores, iou_threshold, offset)
-        return inds
+        return original_forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
     NMSop.forward = staticmethod(forward)
 
+    original_symbolic = NMSop.symbolic
     def symbolic(g, bboxes, scores, iou_threshold, offset, score_threshold=score_thr, max_num=max_num):
-        return nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
+        return original_symbolic(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
     NMSop.symbolic = staticmethod(symbolic)
 
 
-# This decorator adds 'score_threshold' to the NMSop from the MMCV.
-# It should be removed after adding support for 'score_threshold' in MMCV.
-def add_score_thr(score_thr=0):
-    def decorator(func):
-        @wraps(func)
-        def wrapped_function(*args, **kwargs):
-            return func(*args, **kwargs)
+def patch_extending_nms_args():
+    from mmcv.ops.nms import NMSop
+    original_forward = NMSop.forward
 
-        from torch.onnx import is_in_onnx_export
-        if is_in_onnx_export():
-            set_score_threshold_for_NMSop(score_thr)
-        return wrapped_function
-    return decorator
+    def forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
+        valid_mask = scores > score_threshold
+        bboxes, scores = bboxes[valid_mask], scores[valid_mask]
+        inds = original_forward(ctx, bboxes, scores, iou_threshold, offset)
+        inds = inds[:max_num]
+        return inds
+    NMSop.forward = staticmethod(forward)
+
+    def symbolic(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
+        return nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
+    NMSop.symbolic = staticmethod(symbolic)
 
 
 def register_extra_symbolics(opset=10):
@@ -384,6 +383,8 @@ def register_extra_symbolics(opset=10):
     register_op('topk', topk_symbolic, '', opset)
     #register_op('nms_core', nms_core_symbolic, 'mmdet_custom', opset)
     # register_op('multiclass_nms_core', multiclass_nms_core_symbolic, 'mmdet_custom', opset)
+    
+    patch_extending_nms_args()
     patch_nms()
 
 

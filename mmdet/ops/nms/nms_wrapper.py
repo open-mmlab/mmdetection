@@ -218,13 +218,18 @@ def nms_match(dets, thresh):
         return [np.array(m, dtype=np.int) for m in matched]
 
 
-def batched_nms_test(bboxes, scores, labels, nms_cfg):
-    if 'score_thr' in nms_cfg.keys():
-        score_thr = nms_cfg.pop('score_thr')
-        max_num = nms_cfg.pop('max_num')
+def batched_nms_with_additional_args(bboxes, scores, labels, nms_cfg):
+    if torch.onnx.is_in_onnx_export():
+        score_thr = nms_cfg.pop('score_thr') if 'score_thr' in nms_cfg.keys() else 0.0
+        from sys import maxsize
+        max_num = nms_cfg.pop('max_num') if 'max_num' in nms_cfg.keys() else maxsize
+    
         from ...utils.deployment.symbolic import set_args_for_NMSop
         set_args_for_NMSop(score_thr, max_num)
+    else:
+        for key in ['score_thr', 'max_num', 'type']:  # Remain only 'iou_threshold'
+            if key in nms_cfg.keys():
+                nms_cfg.pop(key)
 
     from mmcv.ops import batched_nms
     return batched_nms(bboxes, scores, labels, nms_cfg)
-

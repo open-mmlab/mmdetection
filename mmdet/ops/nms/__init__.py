@@ -1,4 +1,4 @@
-from .nms_wrapper import batched_nms, nms_match, soft_nms, batched_nms_test
+from .nms_wrapper import batched_nms, nms_match, soft_nms, batched_nms_with_additional_args
 #from mmcv import ops
 
 
