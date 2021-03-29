@@ -31,8 +31,7 @@ def test_autoassign_head_loss():
         train_cfg=train_cfg,
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        loss_bbox=dict(type='GIoULoss', loss_weight=1.3),
-    )
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.3))
     feat = [
         torch.rand(1, 1, s // feat_size, s // feat_size)
         for feat_size in [4, 8, 16, 32, 64]

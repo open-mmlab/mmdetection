@@ -395,7 +395,7 @@ class AutoAssignHead(FCOSHead):
         in multiple images.
 
         Args:
-            points (list[Tensor]): Points of each fpn level, each has shape
+            points (list[Tensor]): Points of all fpn level, each has shape
                 (num_points, 2).
             gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image,
                 each has shape (num_gt, 4).
@@ -418,10 +418,7 @@ class AutoAssignHead(FCOSHead):
         # the number of points per img, per lvl
         num_points = [center.size(0) for center in points]
         inside_gt_bbox_mask_list, bbox_targets_list = multi_apply(
-            self._get_target_single,
-            gt_bboxes_list,
-            points=concat_points,
-        )
+            self._get_target_single, gt_bboxes_list, points=concat_points)
         bbox_targets_list = [
             list(bbox_targets.split(num_points, 0))
             for bbox_targets in bbox_targets_list
