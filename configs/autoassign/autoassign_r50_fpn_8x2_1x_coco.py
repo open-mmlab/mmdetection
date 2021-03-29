@@ -72,8 +72,6 @@ data = dict(
     test=dict(pipeline=test_pipeline))
 # optimizer
 optimizer = dict(lr=0.01)
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=10, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
