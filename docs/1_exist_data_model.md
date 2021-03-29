@@ -354,7 +354,7 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 
 ### Test without Ground Truth Annotations
 
-MMDetection support to test models without Ground Truth Annotations using `CocoDataset`. If your dataset format is not COCO, please convert them to COCO format. If your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/pascal_voc.py)
+MMDetection supports to test models without ground-truth annotations using `CocoDataset`. If your dataset format is not in COCO format, please convert them to COCO format. For example, if your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/pascal_voc.py)
 
 ```shell
 # single-gpu testing
@@ -375,7 +375,7 @@ bash tools/dist_test.sh \
     [--show]
 ```
 
-Assuming that checkpoints have been downloaded to the directory `checkpoints/`, we can test Mask R-CNN on COCO test-dev with 8 GPUs, and generate JSON files using the following command
+Assuming that the checkpoints in the [model zoo](https://mmdetection.readthedocs.io/en/latest/modelzoo_statistics.html) have been downloaded to the directory `checkpoints/`, we can test Mask R-CNN on COCO test-dev with 8 GPUs, and generate JSON files using the following command.
 
 ```sh
 ./tools/dist_test.sh \
