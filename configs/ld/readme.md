@@ -2,9 +2,7 @@
 
 ## Introduction
 
-LD is the extension of knowledge distillation on localization task, which utilizes the learned bbox distributions to transfer the localization dark knowledge from teacher to student.
-
-- [Localization Distillation for Object Detection](https://arxiv.org/abs/2102.12252)
+[ALGORITHM]
 
 ```latex
 @Article{zheng2021LD,
@@ -28,6 +26,6 @@ LD is the extension of knowledge distillation on localization task, which utiliz
 |    --     |  R-101  |        2x         |        6        |   44.6   |    62.9    |    48.4    |           |
 | R-101-DCN |  R-101  |        2x         |        6        |   45.4   |    63.1    |    49.5    | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/ld/ld_r101_gflv1_r101dcn_fpn_coco_1x.py)           |
 
-## Meaning of Config name
+## Note
 
-ld_r18(student model)_gflv1(based on gflv1)_r101(teacher model)_fpn(neck)_coco(dataset)_1x(12 epoch).py
+- Meaning of Config name: ld_r18(student model)_gflv1(based on gflv1)_r101(teacher model)_fpn(neck)_coco(dataset)_1x(12 epoch).py

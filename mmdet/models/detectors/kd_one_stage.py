@@ -73,7 +73,8 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
         return losses
 
     def cuda(self, device=None):
-        """It also puts the teacher model to cuda."""
+        """Since teacher_model is registered as a plain object, it is necessary
+        to put the teacher model to cuda when calling cuda function."""
         self.teacher_model.cuda(device=device)
         return super().cuda(device=device)
 

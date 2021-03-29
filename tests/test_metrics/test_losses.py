@@ -82,18 +82,12 @@ def test_kd_loss():
     # test that temeprature should be greater than 1
     with pytest.raises(AssertionError):
         loss_cfg = dict(
-            type='KnowledgeDistillationKLDivLoss',
-            loss_weight=1.0,
-            T=0.5,
-        )
+            type='KnowledgeDistillationKLDivLoss', loss_weight=1.0, T=0.5)
         build_loss(loss_cfg)
 
     # test that pred and target should be of the same size
     loss_cls_cfg = dict(
-        type='KnowledgeDistillationKLDivLoss',
-        loss_weight=1.0,
-        T=1,
-    )
+        type='KnowledgeDistillationKLDivLoss', loss_weight=1.0, T=1)
     loss_cls = build_loss(loss_cls_cfg)
     with pytest.raises(AssertionError):
         fake_pred = torch.Tensor([[100, -100]])
