@@ -39,7 +39,9 @@ def pytorch2onnx(config_path,
     one_img, one_meta = preprocess_example_input(input_config)
     model, tensor_data = generate_inputs_and_wrap_model(
         config_path, checkpoint_path, input_config, cfg_options=cfg_options)
-    output_names = ['dets', 'batch_indices', 'labels']
+    output_names = ['dets', 'labels']
+    if model.with_mask:
+        output_names.append('masks')
     dynamic_axes = None
     if dynamic_export:
         dynamic_axes = {
@@ -49,15 +51,16 @@ def pytorch2onnx(config_path,
                 3: 'height'
             },
             'dets': {
-                0: 'num_dets',
-            },
-            'batch_indices': {
-                0: 'num_dets'
+                0: 'batch',
+                1: 'num_dets',
             },
             'labels': {
-                0: 'num_dets'
+                0: 'batch',
+                1: 'num_dets',
             },
         }
+        if model.with_mask:
+            dynamic_axes['masks'] = {0: 'batch', 1: 'num_dets'}
 
     torch.onnx.export(
         model,
@@ -88,6 +91,7 @@ def pytorch2onnx(config_path,
         input_dic = {'input': one_img.detach().cpu().numpy()}
         _ = simplify(output_file, [input_dic], output_file)
     print(f'Successfully exported ONNX model: {output_file}')
+
     if verify:
         from mmdet.core import get_classes, bbox2result
         from mmdet.apis import show_result_pyplot
@@ -128,12 +132,17 @@ def pytorch2onnx(config_path,
                                 {net_feed_input[0]: one_img.detach().numpy()})
         output_names = [_.name for _ in sess.get_outputs()]
         output_shapes = [_.shape for _ in onnx_outputs]
-        print(f'onnxruntime output names: {output_names}, \
+        print(f'ONNX Runtime output names: {output_names}, \
             output shapes: {output_shapes}')
-        onnx_outputs = convert_onnx_outputs(
-            onnx_outputs, batch_size=one_img.shape[0])[0]
-        det_bboxes, det_labels = onnx_outputs[:2]
-        onnx_results = bbox2result(det_bboxes, det_labels, num_classes)
+        onnx_outputs = [_.squeeze(0) for _ in onnx_outputs]
+        ort_dets, ort_labels = onnx_outputs[:2]
+        onnx_results = bbox2result(ort_dets, ort_labels, num_classes)
+        if model.with_mask:
+            segm_results = onnx_outputs[2]
+            cls_segms = [[] for _ in range(num_classes)]
+            for i in range(ort_dets.shape[0]):
+                cls_segms[ort_labels[i]].append(segm_results[i])
+            onnx_results = (onnx_results, cls_segms)
         # visualize predictions
         if show:
             show_result_pyplot(
@@ -155,17 +164,6 @@ def pytorch2onnx(config_path,
                     atol=1e-05,
                 )
         print('The numerical values are the same between Pytorch and ONNX')
-
-
-def convert_onnx_outputs(onnx_outputs, batch_size):
-    batch_dets, batch_indices, batch_labels = onnx_outputs
-    batch_results = []
-    for bid in range(batch_size):
-        inds = batch_indices == bid
-        dets = batch_dets[inds, :]
-        labels = batch_labels[inds]
-        batch_results.append((dets, labels))
-    return batch_results
 
 
 def parse_args():

@@ -311,42 +311,26 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         batch_mlvl_scores = torch.cat(multi_lvl_cls_scores, dim=1)
         batch_mlvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
 
-        # Set max number of box to be feed into nms in deployment
-        deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
-        if deploy_nms_pre > 0:
-            _, topk_inds = batch_mlvl_conf_scores.topk(deploy_nms_pre)
-            batch_inds = torch.arange(batch_size).view(
-                -1, 1).expand_as(topk_inds).long()
-            # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
-            if torch.onnx.is_in_onnx_export():
-                transformed_inds = (
-                    batch_mlvl_bboxes.shape[1] * batch_inds + topk_inds)
-                batch_mlvl_bboxes = batch_mlvl_bboxes.reshape(
-                    -1, 4)[transformed_inds, :].reshape(batch_size, -1, 4)
-                batch_mlvl_scores = batch_mlvl_scores.reshape(
-                    -1, self.num_classes)[transformed_inds, :].reshape(
-                        batch_size, -1, self.num_classes)
-                batch_mlvl_conf_scores = batch_mlvl_conf_scores.reshape(
-                    -1, 1)[transformed_inds].reshape(batch_size, -1)
-            else:
-                batch_mlvl_bboxes = batch_mlvl_bboxes[batch_inds, topk_inds]
-                batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds]
-                batch_mlvl_conf_scores = batch_mlvl_conf_scores[batch_inds,
-                                                                topk_inds]
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export() and with_nms:
             from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
             batch_mlvl_conf_scores = batch_mlvl_conf_scores.unsqueeze(
                 2).expand_as(batch_mlvl_scores)
             batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_conf_scores
-            batch_mlvl_scores = batch_mlvl_scores.permute(0, 2, 1)
             max_output_boxes_per_class = cfg.nms.get(
                 'max_output_boxes_per_class', 200)
             iou_threshold = cfg.nms.get('iou_threshold', 0.5)
             score_threshold = cfg.score_thr
-            return add_dummy_nms_for_onnx(batch_mlvl_bboxes, batch_mlvl_scores,
-                                          max_output_boxes_per_class,
-                                          iou_threshold, score_threshold)
+            nms_pre = cfg.get('deploy_nms_pre', -1)
+            return add_dummy_nms_for_onnx(
+                batch_mlvl_bboxes,
+                batch_mlvl_scores,
+                max_output_boxes_per_class,
+                iou_threshold,
+                score_threshold,
+                nms_pre,
+                cfg.max_per_img,
+            )
 
         if with_nms and (batch_mlvl_conf_scores.size(0) == 0):
             return torch.zeros((0, 5)), torch.zeros((0, ))

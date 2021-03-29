@@ -9,9 +9,9 @@ import torch
 from mmcv.ops import get_onnxruntime_op_path
 from mmcv.tensorrt import (TRTWraper, is_tensorrt_plugin_loaded, onnx2trt,
                            save_trt_engine)
-from mmcv.visualization.image import imshow_det_bboxes
 
 from mmdet.core import get_classes, preprocess_example_input
+from mmdet.core.visualization.image import imshow_det_bboxes
 
 
 def get_GiB(x: int):
@@ -49,37 +49,40 @@ def onnx2tensorrt(onnx_file,
         one_img, one_meta = preprocess_example_input(input_config)
         input_img_cpu = one_img.detach().cpu().numpy()
         input_img_cuda = one_img.cuda()
-
         img = one_meta['show_img']
 
-        # Get results from TensorRT
-        output_names = ['dets', 'batch_indices', 'labels']
-        trt_model = TRTWraper(trt_file, ['input'], output_names)
-        with torch.no_grad():
-            trt_outputs = trt_model({'input': input_img_cuda})
-        trt_dets, trt_inds, trt_labels = [
-            trt_outputs[_].detach().cpu().numpy() for _ in output_names
-        ]
         # Get results from ONNXRuntime
         ort_custom_op_path = get_onnxruntime_op_path()
         session_options = ort.SessionOptions()
         if osp.exists(ort_custom_op_path):
             session_options.register_custom_ops_library(ort_custom_op_path)
         sess = ort.InferenceSession(onnx_file, session_options)
-        ort_dets, ort_inds, ort_labels = sess.run(None, {
+        output_names = [_.name for _ in sess.get_outputs()]
+        ort_outputs = sess.run(None, {
             'input': input_img_cpu,
         })
-        # sort dets by scores to align with nms in ONNX Runtime, since outputs
-        # of nms in TensorRT are filled with -1 and are not sorted
-        sort_inds = np.argsort(trt_dets[:, 4], kind='stable').tolist()
-        sort_inds.reverse()
-        trt_dets = trt_dets[sort_inds, :]
-        trt_labels = trt_labels[sort_inds]
-        # slice tensorrt output with num_dets
-        num_dets = ort_dets.shape[0]
-        trt_dets = trt_dets[:num_dets, :]
-        trt_inds = trt_inds[:num_dets]
-        trt_labels = trt_labels[:num_dets]
+        with_mask = len(output_names) == 3
+        ort_outputs = [_.squeeze(0) for _ in ort_outputs]
+        ort_dets, ort_labels = ort_outputs[:2]
+        ort_masks = ort_outputs[2] if with_mask else None
+        ort_shapes = [_.shape for _ in ort_outputs]
+        print(f'ONNX Runtime output names: {output_names}, \
+            output shapes: {ort_shapes}')
+
+        # Get results from TensorRT
+        trt_model = TRTWraper(trt_file, ['input'], output_names)
+        with torch.no_grad():
+            trt_outputs = trt_model({'input': input_img_cuda})
+        trt_outputs = [
+            trt_outputs[_].detach().cpu().numpy().squeeze(0)
+            for _ in output_names
+        ]
+        trt_dets, trt_labels = trt_outputs[:2]
+        trt_shapes = [_.shape for _ in trt_outputs]
+        print(f'TensorRT output names: {output_names}, \
+            output shapes: {trt_shapes}')
+        trt_masks = trt_outputs[2] if with_mask else None
+
         # Show detection outputs
         if show:
             CLASSES = get_classes(dataset)
@@ -88,20 +91,24 @@ def onnx2tensorrt(onnx_file,
                 img.copy(),
                 trt_dets,
                 trt_labels,
-                CLASSES,
+                segms=trt_masks,
+                class_names=CLASSES,
                 score_thr=score_thr,
                 win_name='TensorRT')
             imshow_det_bboxes(
                 img.copy(),
                 ort_dets,
                 ort_labels,
-                CLASSES,
+                segms=ort_masks,
+                class_names=CLASSES,
                 score_thr=score_thr,
                 win_name='ONNXRuntime')
         # Compare results
         np.testing.assert_allclose(ort_dets, trt_dets, rtol=1e-03, atol=1e-05)
         np.testing.assert_allclose(ort_labels, trt_labels)
-        np.testing.assert_allclose(ort_inds, trt_inds)
+        if with_mask:
+            np.testing.assert_allclose(
+                ort_masks, trt_masks, rtol=1e-03, atol=1e-05)
         print('The numerical values are the same ' +
               'between ONNXRuntime and TensorRT')
 

@@ -218,51 +218,18 @@ class RPNHead(RPNTestMixin, AnchorHead):
         # Replace batched_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export():
             from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
             score_threshold = cfg.nms.get('score_thr', 0.0)
-            deploy_nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
-            if deploy_nms_pre > 0:
-                _, topk_inds = batch_mlvl_scores.topk(deploy_nms_pre)
-                batch_inds = torch.arange(batch_size).view(
-                    -1, 1).expand_as(topk_inds)
-                # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
-                if torch.onnx.is_in_onnx_export():
-                    transformed_inds = batch_mlvl_scores.shape[
-                        1] * batch_inds + topk_inds
-                    batch_mlvl_scores = batch_mlvl_scores.reshape(
-                        -1, 1)[transformed_inds].reshape(batch_size, -1)
-                    batch_mlvl_proposals = batch_mlvl_proposals.reshape(
-                        -1, 4)[transformed_inds, :].reshape(batch_size, -1, 4)
-                else:
-                    batch_mlvl_scores = batch_mlvl_scores[batch_inds,
-                                                          topk_inds]
-                    batch_mlvl_proposals = batch_mlvl_proposals[batch_inds,
-                                                                topk_inds, :]
-
-            det_indices = add_dummy_nms_for_onnx(
+            nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
+            dets, _ = add_dummy_nms_for_onnx(
                 batch_mlvl_proposals,
-                batch_mlvl_scores.unsqueeze(1),
+                batch_mlvl_scores,
                 cfg.max_per_img,
                 cfg.nms.iou_threshold,
                 score_threshold,
-                only_return_indices=True)
-            batch_inds, proposal_inds = det_indices[:, 0], det_indices[:, 2]
-            # set value to zero for unselected boxes and scores
-            mask = batch_mlvl_scores.new_zeros(batch_mlvl_scores.shape)
-            # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
-            # PyTorch style code: mask[batch_inds, proposal_inds] += 1
-            mask = mask.reshape(-1, 1)
-            pos_inds = batch_mlvl_proposals.shape[
-                1] * batch_inds + proposal_inds
-            mask[pos_inds, :] += 1
-            mask = mask.reshape(batch_mlvl_scores.shape)
-
-            batch_mlvl_scores = batch_mlvl_scores * mask
-            batch_mlvl_proposals = batch_mlvl_proposals * mask.unsqueeze(
-                2).expand_as(batch_mlvl_proposals)
-            batch_dets = torch.cat(
-                [batch_mlvl_proposals,
-                 batch_mlvl_scores.unsqueeze(2)], dim=-1)
-            return batch_dets
+                nms_pre,
+            )
+            return dets
 
         result_list = []
         for (mlvl_proposals, mlvl_scores,
