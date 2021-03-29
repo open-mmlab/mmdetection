@@ -352,6 +352,42 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 
    The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
+### Test without Ground Truth Annotations
+
+MMDetection supports to test models without ground-truth annotations using `CocoDataset`. If your dataset format is not in COCO format, please convert them to COCO format. For example, if your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/pascal_voc.py)
+
+```shell
+# single-gpu testing
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    --format-only \
+    --options ${JSONFILE_PREFIX} \
+    [--show]
+
+# multi-gpu testing
+bash tools/dist_test.sh \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    ${GPU_NUM} \
+    --format-only \
+    --options ${JSONFILE_PREFIX} \
+    [--show]
+```
+
+Assuming that the checkpoints in the [model zoo](https://mmdetection.readthedocs.io/en/latest/modelzoo_statistics.html) have been downloaded to the directory `checkpoints/`, we can test Mask R-CNN on COCO test-dev with 8 GPUs, and generate JSON files using the following command.
+
+```sh
+./tools/dist_test.sh \
+    configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
+    8 \
+    -format-only \
+    --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+```
+
+This command generates two JSON files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+
 ### Batch Inference
 
 MMDetection supports inference with a single image or batched images in test mode. By default, we use single-image inference and you can use batch inference by modifying `samples_per_gpu` in the config of test data. You can do that either by modifying the config as below.
