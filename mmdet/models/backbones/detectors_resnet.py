@@ -149,7 +149,7 @@ class ResLayer(nn.Sequential):
                  rfp_inplanes=None,
                  **kwargs):
         self.block = block
-        assert downsample_first, f'downsampel_first={downsample_first} is ' \
+        assert downsample_first, f'downsample_first={downsample_first} is ' \
                                  'not supported in DetectoRS'
 
         downsample = None

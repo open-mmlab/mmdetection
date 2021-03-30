@@ -805,7 +805,7 @@ class CornerHead(BaseDenseHead):
         return feat
 
     def _local_maximum(self, heat, kernel=3):
-        """Extract local maximum pixel with given kernal.
+        """Extract local maximum pixel with given kernel.
 
         Args:
             heat (Tensor): Target heatmap.
