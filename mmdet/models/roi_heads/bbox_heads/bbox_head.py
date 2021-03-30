@@ -355,6 +355,58 @@ class BBoxHead(nn.Module):
                 bboxes.size(-1) // 4)
             bboxes /= scale_factor
 
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export():
+            from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            batch_size = scores.shape[0]
+            # ignore background class
+            scores = scores[..., :self.num_classes]
+            labels = torch.arange(
+                self.num_classes, dtype=torch.long).to(scores.device)
+            labels = labels.view(1, 1, -1).expand_as(scores)
+            labels = labels.reshape(batch_size, -1)
+            scores = scores.reshape(batch_size, -1)
+            bboxes = bboxes.reshape(batch_size, -1, 4)
+            # get topk bboxes if set deploy_nms_pre
+            deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
+            if deploy_nms_pre > 0:
+                _, topk_inds = scores.topk(deploy_nms_pre)
+                batch_inds = torch.arange(batch_size).view(
+                    -1, 1).expand_as(topk_inds)
+                # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
+                transformed_inds = (bboxes.shape[1] * batch_inds + topk_inds)
+                scores = scores.reshape(-1, 1)[transformed_inds].reshape(
+                    batch_size, -1)
+                labels = labels.reshape(-1, 1)[transformed_inds].reshape(
+                    batch_size, -1)
+                bboxes = bboxes.reshape(-1, 4)[transformed_inds, :].reshape(
+                    batch_size, -1, 4)
+
+            max_size = torch.max(img_shape)
+            offsets = (labels * max_size + 1).unsqueeze(2)
+            bboxes_for_nms = bboxes + offsets
+            det_indices = add_dummy_nms_for_onnx(
+                bboxes_for_nms,
+                scores.unsqueeze(2),
+                cfg.max_per_img,
+                cfg.nms.iou_threshold,
+                cfg.score_thr,
+                only_return_indices=True)
+            batch_inds, box_inds = det_indices[:, 0], det_indices[:, 2]
+            # set value to zero for unselected boxes and scores
+            mask = scores.new_zeros(scores.shape)
+            # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
+            # PyTorch style code: mask[batch_inds, box_inds] += 1
+            mask = mask.reshape(-1, 1)
+            pos_inds = bboxes.shape[1] * batch_inds + box_inds
+            mask[pos_inds, :] += 1
+            mask = mask.reshape(scores.shape)
+
+            scores = scores * mask
+            bboxes = bboxes * mask.unsqueeze(2)
+            batch_dets = torch.cat([bboxes, scores.unsqueeze(2)], dim=-1)
+            return batch_dets, labels
+
         det_bboxes = []
         det_labels = []
         for (bbox, score) in zip(bboxes, scores):

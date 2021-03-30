@@ -248,11 +248,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
         if torch.onnx.is_in_onnx_export():
             if self.with_mask:
-                segm_results = self.simple_test_mask(
-                    x, img_metas, det_bboxes, det_labels, rescale=rescale)
-                return det_bboxes, det_labels, segm_results
-            else:
-                return det_bboxes, det_labels
+                pass
+                # TODO add support for mask
+            return det_bboxes, det_labels
 
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],

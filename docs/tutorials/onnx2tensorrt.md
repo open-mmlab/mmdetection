@@ -49,6 +49,7 @@ Description of all arguments:
 - `--show`: Determines whether to show the outputs of the model. If not specified, it will be set to `False`.
 - `--verify`: Determines whether to verify the correctness of models between ONNXRuntime and TensorRT. If not specified, it will be set to `False`.
 - `--to-rgb`: Determines whether to convert the input image to RGB mode. If not specified, it will be set to `True`.
+- `--verbose`: Determines whether to print logging messages. It's useful for debugging. If not specified, it will be set to `False`.
 
 Example:
 
