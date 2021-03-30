@@ -262,7 +262,6 @@ class CustomDataset(Dataset):
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
-        pass
 
     def evaluate(self,
                  results,
