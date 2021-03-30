@@ -136,7 +136,7 @@ class ClassificationCost(object):
         # Following the official DETR repo, contrary to the loss that
         # NLL is used, we approximate it in 1 - cls_score[gt_label].
         # The 1 is a constant that doesn't change the matching,
-        # so it can be ommitted.
+        # so it can be omitted.
         cls_score = cls_pred.softmax(-1)
         cls_cost = -cls_score[:, gt_labels]
         return cls_cost * self.weight
@@ -179,6 +179,6 @@ class IoUCost(object):
         # overlaps: [num_bboxes, num_gt]
         overlaps = bbox_overlaps(
             bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
-        # The 1 is a constant that doesn't change the matching, so ommitted.
+        # The 1 is a constant that doesn't change the matching, so omitted.
         iou_cost = -overlaps
         return iou_cost * self.weight
