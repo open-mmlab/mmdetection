@@ -367,7 +367,7 @@ def main():
                 mmcv.dump(aggregated_results, eval_results_filename)
 
     if rank == 0:
-        # print filan results
+        # print final results
         print('\nAggregated results:')
         prints = args.final_prints
         aggregate = args.final_prints_aggregate

@@ -394,7 +394,7 @@ class FSAFHead(RetinaHead):
                 - cls_loss: Reduced corrected classification loss. Scalar.
                 - reg_loss: Reduced corrected regression loss. Scalar.
                 - pos_flags (Tensor): Corrected bool tensor indicating the
-                  final postive anchors. Shape: (num_anchors, ).
+                  final positive anchors. Shape: (num_anchors, ).
         """
         loc_weight = torch.ones_like(reg_loss)
         cls_weight = torch.ones_like(cls_loss)

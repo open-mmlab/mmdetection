@@ -109,7 +109,7 @@ class FFN(nn.Module):
             `MultiheadAttention`.
         feedforward_channels (int): The hidden dimension of FFNs.
         num_fcs (int, optional): The number of fully-connected layers in
-            FFNs. Defaluts to 2.
+            FFNs. Defaults to 2.
         act_cfg (dict, optional): The activation config for FFNs.
         dropout (float, optional): Probability of an element to be
             zeroed. Default 0.0.
@@ -179,7 +179,7 @@ class TransformerEncoderLayer(nn.Module):
         order (tuple[str]): The order for encoder layer. Valid examples are
             ('selfattn', 'norm', 'ffn', 'norm') and ('norm', 'selfattn',
             'norm', 'ffn'). Default ('selfattn', 'norm', 'ffn', 'norm').
-        act_cfg (dict): The activation config for FFNs. Defalut ReLU.
+        act_cfg (dict): The activation config for FFNs. Default ReLU.
         norm_cfg (dict): Config dict for normalization layer. Default
             layer normalization.
         num_fcs (int): The number of fully-connected layers for FFNs.
@@ -280,7 +280,7 @@ class TransformerDecoderLayer(nn.Module):
             ('selfattn', 'norm', 'multiheadattn', 'norm', 'ffn', 'norm') and
             ('norm', 'selfattn', 'norm', 'multiheadattn', 'norm', 'ffn').
             Default the former.
-        act_cfg (dict): Same as `TransformerEncoderLayer`. Defalut ReLU.
+        act_cfg (dict): Same as `TransformerEncoderLayer`. Default ReLU.
         norm_cfg (dict): Config dict for normalization layer. Default
             layer normalization.
         num_fcs (int): The number of fully-connected layers in FFNs.
@@ -412,7 +412,7 @@ class TransformerEncoder(nn.Module):
         feedforward_channels (int): Same as `TransformerEncoderLayer`.
         dropout (float): Same as `TransformerEncoderLayer`. Default 0.0.
         order (tuple[str]): Same as `TransformerEncoderLayer`.
-        act_cfg (dict): Same as `TransformerEncoderLayer`. Defalut ReLU.
+        act_cfg (dict): Same as `TransformerEncoderLayer`. Default ReLU.
         norm_cfg (dict): Same as `TransformerEncoderLayer`. Default
             layer normalization.
         num_fcs (int): Same as `TransformerEncoderLayer`. Default 2.
@@ -496,7 +496,7 @@ class TransformerDecoder(nn.Module):
         feedforward_channels (int): Same as `TransformerDecoderLayer`.
         dropout (float): Same as `TransformerDecoderLayer`. Default 0.0.
         order (tuple[str]): Same as `TransformerDecoderLayer`.
-        act_cfg (dict): Same as `TransformerDecoderLayer`. Defalut ReLU.
+        act_cfg (dict): Same as `TransformerDecoderLayer`. Default ReLU.
         norm_cfg (dict): Same as `TransformerDecoderLayer`. Default
             layer normalization.
         num_fcs (int): Same as `TransformerDecoderLayer`. Default 2.
@@ -621,7 +621,7 @@ class Transformer(nn.Module):
             encoder and decoder.
         dropout (float): Probability of an element to be zeroed. Default 0.0.
         act_cfg (dict): Activation config for FFNs used in both encoder
-            and decoder. Defalut ReLU.
+            and decoder. Default ReLU.
         norm_cfg (dict): Config dict for normalization used in both encoder
             and decoder. Default layer normalization.
         num_fcs (int): The number of fully-connected layers in FFNs, which is
