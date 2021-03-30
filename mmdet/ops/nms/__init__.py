@@ -1,1 +1,1 @@
-from .nms_wrapper import batched_nms_with_extra_nms_args
+from .nms_wrapper import nms, batched_nms

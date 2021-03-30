@@ -5,10 +5,11 @@ from torch.onnx import is_in_onnx_export
 
 from mmdet.integration.nncf import no_nncf_trace
 from mmdet.utils.deployment.symbolic import py_symbolic
-from . import nms_ext
+
+from mmcv.ops.nms import NMSop
 
 
-def nms(dets, iou_threshold, score_thr=0.0, max_num=-1, device_id=None):
+def nms(dets, iou_threshold, score_thr=0.0, max_num=-1, offset=0, device_id=None):
     """Dispatch to either CPU or GPU NMS implementations.
 
     The input can be either a torch tensor or numpy array. GPU NMS will be used
@@ -17,7 +18,10 @@ def nms(dets, iou_threshold, score_thr=0.0, max_num=-1, device_id=None):
 
     Arguments:
         dets (torch.Tensor or np.ndarray): bboxes with scores.
-        iou_thr (float): IoU threshold for NMS.
+        iou_threshold (float): IoU threshold for NMS.
+        score_thr (float): score threshold for NMS.
+        max_num (int): maximum number of boxes after NMS.
+        offset (int, 0 or 1): boxes width or height is (x2 - x1 + offset).
         device_id (int, optional): when `dets` is a numpy array, if `device_id`
             is None, then cpu nms is used, otherwise gpu_nms will be used.
 
@@ -33,7 +37,7 @@ def nms(dets, iou_threshold, score_thr=0.0, max_num=-1, device_id=None):
         >>>                  [35.6, 11.8, 39.3, 14.2, 0.5],
         >>>                  [35.3, 11.5, 39.9, 14.5, 0.4],
         >>>                  [35.2, 11.7, 39.7, 15.7, 0.3]], dtype=np.float32)
-        >>> iou_thr = 0.6
+        >>> iou_threshold = 0.6
         >>> suppressed, inds = nms(dets, iou_thr)
         >>> assert len(inds) == len(suppressed) == 3
     """
@@ -50,9 +54,9 @@ def nms(dets, iou_threshold, score_thr=0.0, max_num=-1, device_id=None):
                         f'but got {type(dets)}')
 
     if max_num < 0:
-        max_num = int(dets_th.size(0))
+        max_num = sys.maxsize
 
-    inds = nms_core(dets_th, iou_threshold, score_thr, max_num)
+    inds = NMSop.apply(dets[:, 0:4], dets[:, -1], iou_threshold, score_thr, max_num, offset)
 
     if is_numpy:
         inds = inds.cpu().numpy()
@@ -158,6 +162,13 @@ def batched_nms(bboxes, scores, inds, nms_cfg, class_agnostic=False):
     Returns:
         tuple: kept bboxes and indice.
     """
+    if not torch.onnx.is_in_onnx_export():
+        for key in ['score_thr', 'max_num', 'type']:  # Remain only 'iou_threshold'
+                if key in nms_cfg.keys():
+                    nms_cfg.pop(key)
+        from mmcv.ops import batched_nms
+        return batched_nms(bboxes, scores, inds, nms_cfg)
+
     nms_cfg_ = nms_cfg.copy()
     class_agnostic = nms_cfg_.pop('class_agnostic', class_agnostic)
     if class_agnostic:
@@ -216,23 +227,3 @@ def nms_match(dets, thresh):
         return [dets.new_tensor(m, dtype=torch.long) for m in matched]
     else:
         return [np.array(m, dtype=np.int) for m in matched]
-
-
-def batched_nms_with_extra_nms_args(bboxes, scores, labels, nms_cfg):
-    """
-    This function updates 'score_threshold' and 'max_num' in the next 'NMSop' call. 
-    It should be replaces with 'mmcv::batched_nms' after adding support for 'score_threshold' and 'max_num' in MMCV.
-    """
-    if torch.onnx.is_in_onnx_export():
-        score_thr = nms_cfg.pop('score_thr') if 'score_thr' in nms_cfg.keys() else 0.0
-        from sys import maxsize
-        max_num = nms_cfg.pop('max_num') if 'max_num' in nms_cfg.keys() else int(bboxes.size(0))
-
-        from ...utils.deployment.symbolic import set_extra_args_for_NMSop
-        set_extra_args_for_NMSop(score_thr, max_num)
-    else:
-        for key in ['score_thr', 'max_num', 'type']:  # Remain only 'iou_threshold'
-            if key in nms_cfg.keys():
-                nms_cfg.pop(key)
-    from mmcv.ops import batched_nms
-    return batched_nms(bboxes, scores, labels, nms_cfg)

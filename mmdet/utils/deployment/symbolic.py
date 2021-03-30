@@ -312,7 +312,7 @@ def patch_nms_aten_to():
         NMSop.forward = staticmethod(forward)
 
 
-def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
+def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
     """
     This function adds 'score_threshold' and 'max_output_boxes_per_class' to ONNX::NonMaxSuppression.
     It should be removed after adding support for 'score_threshold' and 'max_num' in MMCV::NMSop.
@@ -350,37 +350,15 @@ def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_
                     value_t=torch.tensor([2], dtype=torch.long))), 1)
 
 
-def set_extra_args_for_NMSop(score_thr, max_num):
-    """
-    This function sets new default values for 'score_threshold' and 'max_num' arguments
-    to correctly call the 'nms' operation with 4 arguments inside 'batched_nms'.
-    It should be removed after adding support for 'score_threshold' and 'max_num' in MMCV.
-    """
-    from mmcv.ops.nms import NMSop
-
-    original_forward = NMSop.forward
-    def forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold=score_thr, max_num=max_num):
-        return original_forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
-    NMSop.forward = staticmethod(forward)
-
-    original_symbolic = NMSop.symbolic
-    def symbolic(g, bboxes, scores, iou_threshold, offset, score_threshold=score_thr, max_num=max_num):
-        return original_symbolic(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
-    NMSop.symbolic = staticmethod(symbolic)
-
-
 def patch_extending_nms_args():
     """
     This patch adds filtering by 'score_threshold' and 'max_num'.
     It should be removed after adding support for 'score_threshold' and 'max_num' in MMCV.
     """
     from mmcv.ops.nms import NMSop
-    # The queue is needed to store extra args when using more than one NMS in the graph.
-    setattr(NMSop, 'extra_args_queue', [])
 
     original_forward = NMSop.forward
-    def forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
-        NMSop.extra_args_queue.insert(0, (score_threshold, max_num))
+    def forward(ctx, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
         valid_mask = scores > score_threshold
         bboxes, scores = bboxes[valid_mask], scores[valid_mask]
         inds = original_forward(ctx, bboxes, scores, iou_threshold, offset)
@@ -388,9 +366,8 @@ def patch_extending_nms_args():
         return inds
     NMSop.forward = staticmethod(forward)
 
-    def symbolic(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
-        score_threshold, max_num = NMSop.extra_args_queue.pop()
-        return nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
+    def symbolic(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
+        return nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset)
     NMSop.symbolic = staticmethod(symbolic)
 
 
