@@ -292,10 +292,14 @@ def patch_dcn_symbolic():
     DeformConv2dFunction.symbolic = staticmethod(symbolic)
 
 
-# This patch fixes the following bug:
-# RuntimeError: 0 INTERNAL ASSERT FAILED at /pytorch/torch/csrc/jit/ir/alias_analysis.cpp:318, please report a bug to PyTorch. We don't have an op for aten::to but it isn't a special case.  Argument types: Tensor, None, int, Device, bool, bool, bool, None,
-# In PyTorch version >= 1.7.1 it should be fixed.
-def patch_nms():
+def patch_nms_aten_to():
+    """
+    This patch fixes the following bug:
+        RuntimeError: 0 INTERNAL ASSERT FAILED at /pytorch/torch/csrc/jit/ir/alias_analysis.cpp:318,
+        please report a bug to PyTorch. We don't have an op for aten::to but it isn't a special case.
+        Argument types: Tensor, None, int, Device, bool, bool, bool, None,
+    In PyTorch version >= 1.7.1 it should be fixed.
+    """
     from packaging import version
     if version.parse(torch.__version__) < version.parse('1.7.1'):
         from mmcv.ops.nms import NMSop
@@ -308,9 +312,11 @@ def patch_nms():
         NMSop.forward = staticmethod(forward)
 
 
-# This function adds 'score_threshold' to ONNX::NonMaxSuppression.
-# It should be removed after adding support for 'score_threshold' in MMCV.
 def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
+    """
+    This function adds 'score_threshold' and 'max_output_boxes_per_class' to ONNX::NonMaxSuppression.
+    It should be removed after adding support for 'score_threshold' and 'max_num' in MMCV::NMSop.
+    """
     from mmcv.onnx import is_custom_op_loaded
     has_custom_op = is_custom_op_loaded()
     if has_custom_op:
@@ -344,9 +350,12 @@ def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_
                     value_t=torch.tensor([2], dtype=torch.long))), 1)
 
 
-# This function adds 'score_threshold' to NMSop from MMCV.
-# It should be removed after adding support for 'score_threshold' in MMCV.
-def set_args_for_NMSop(score_thr, max_num):
+def set_extra_args_for_NMSop(score_thr, max_num):
+    """
+    This function sets new default values for 'score_threshold' and 'max_num' arguments
+    to correctly call the 'nms' operation with 4 arguments inside 'batched_nms'.
+    It should be removed after adding support for 'score_threshold' and 'max_num' in MMCV.
+    """
     from mmcv.ops.nms import NMSop
 
     original_forward = NMSop.forward
@@ -361,10 +370,17 @@ def set_args_for_NMSop(score_thr, max_num):
 
 
 def patch_extending_nms_args():
+    """
+    This patch adds filtering by 'score_threshold' and 'max_num'.
+    It should be removed after adding support for 'score_threshold' and 'max_num' in MMCV.
+    """
     from mmcv.ops.nms import NMSop
-    original_forward = NMSop.forward
+    # The queue is needed to store extra args when using more than one NMS in the graph.
+    setattr(NMSop, 'extra_args_queue', [])
 
+    original_forward = NMSop.forward
     def forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
+        NMSop.extra_args_queue.insert(0, (score_threshold, max_num))
         valid_mask = scores > score_threshold
         bboxes, scores = bboxes[valid_mask], scores[valid_mask]
         inds = original_forward(ctx, bboxes, scores, iou_threshold, offset)
@@ -373,6 +389,7 @@ def patch_extending_nms_args():
     NMSop.forward = staticmethod(forward)
 
     def symbolic(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
+        score_threshold, max_num = NMSop.extra_args_queue.pop()
         return nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
     NMSop.symbolic = staticmethod(symbolic)
 
@@ -381,11 +398,11 @@ def register_extra_symbolics(opset=10):
     assert opset >= 10
     register_op('view_as', view_as_symbolic, '', opset)
     register_op('topk', topk_symbolic, '', opset)
-    #register_op('nms_core', nms_core_symbolic, 'mmdet_custom', opset)
+    # register_op('nms_core', nms_core_symbolic, 'mmdet_custom', opset)
     # register_op('multiclass_nms_core', multiclass_nms_core_symbolic, 'mmdet_custom', opset)
     
     patch_extending_nms_args()
-    patch_nms()
+    patch_nms_aten_to()
 
 
 def register_extra_symbolics_for_openvino(opset=10):

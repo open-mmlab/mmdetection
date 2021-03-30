@@ -5,7 +5,7 @@ from mmcv.cnn import normal_init
 from torch.onnx import is_in_onnx_export
 
 #from mmcv.ops import batched_nms
-from mmdet.ops.nms import batched_nms_with_additional_args
+from mmdet.ops.nms import batched_nms_with_extra_nms_args
 from ...core.utils.misc import topk
 
 from ..builder import HEADS
@@ -165,5 +165,5 @@ class RPNHead(RPNTestMixin, AnchorHead):
 
         # TODO: remove the hard coded nms type
         nms_cfg = dict(type='nms', iou_threshold=cfg.nms_thr)
-        dets, keep = batched_nms_with_additional_args(proposals, scores, ids, nms_cfg)
+        dets, keep = batched_nms_with_extra_nms_args(proposals, scores, ids, nms_cfg)
         return dets[:cfg.nms_post]
