@@ -199,6 +199,7 @@ class BBoxTestMixin(object):
 
 
 class MaskTestMixin(object):
+
     if sys.version_info >= (3, 7):
 
         async def async_test_mask(self,

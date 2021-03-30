@@ -244,14 +244,14 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
 
-        det_results = self.simple_test_bboxes(
+        det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
         if torch.onnx.is_in_onnx_export():
             if self.with_mask:
                 pass
                 # TODO add support for mask
-            return det_results
-        det_bboxes, det_labels = det_results
+            return det_bboxes, det_labels
+
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
                         self.bbox_head.num_classes)

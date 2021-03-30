@@ -221,14 +221,11 @@ class RPNHead(RPNTestMixin, AnchorHead):
             batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
             score_threshold = cfg.nms.get('score_thr', 0.0)
             nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
-            dets, _ = add_dummy_nms_for_onnx(
-                batch_mlvl_proposals,
-                batch_mlvl_scores,
-                cfg.max_per_img,
-                cfg.nms.iou_threshold,
-                score_threshold,
-                nms_pre,
-            )
+            dets, _ = add_dummy_nms_for_onnx(batch_mlvl_proposals,
+                                             batch_mlvl_scores,
+                                             cfg.max_per_img,
+                                             cfg.nms.iou_threshold,
+                                             score_threshold, nms_pre)
             return dets
 
         result_list = []
