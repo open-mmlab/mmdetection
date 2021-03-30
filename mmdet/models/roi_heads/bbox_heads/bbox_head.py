@@ -391,8 +391,7 @@ class BBoxHead(nn.Module):
                 cfg.max_per_img,
                 cfg.nms.iou_threshold,
                 cfg.score_thr,
-                only_return_indices=True,
-            )
+                only_return_indices=True)
             batch_inds, box_inds = det_indices[:, 0], det_indices[:, 2]
             # set value to zero for unselected boxes and scores
             mask = scores.new_zeros(scores.shape)

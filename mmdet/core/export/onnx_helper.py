@@ -114,8 +114,10 @@ def add_dummy_nms_for_onnx(boxes,
     score_threshold = torch.tensor([score_threshold], dtype=torch.float32)
     batch_size = scores.shape[0]
     num_class = scores.shape[2]
+
     nms_pre = torch.tensor(pre_top_k, device=scores.device, dtype=torch.long)
     nms_pre = get_k_for_topk(nms_pre, boxes.shape[1])
+
     if nms_pre > 0:
         max_scores, _ = scores.max(-1)
         _, topk_inds = max_scores.topk(nms_pre)
@@ -127,10 +129,10 @@ def add_dummy_nms_for_onnx(boxes,
             batch_size, -1, 4)
         scores = scores.reshape(-1, num_class)[transformed_inds, :].reshape(
             batch_size, -1, num_class)
-    # tranpose axis of scores
+
     scores = scores.permute(0, 2, 1)
     num_box = boxes.shape[1]
-    # turn off tracing
+    # turn off tracing to create a dummy output of nms
     state = torch._C._get_tracing_state()
     # dummy indices of nms's output
     batch_inds = torch.randint(batch_size, (num_box, 1))
@@ -139,6 +141,7 @@ def add_dummy_nms_for_onnx(boxes,
     indices = torch.cat([batch_inds, cls_inds, box_inds], dim=1)
     output = indices
     setattr(DymmyONNXNMSop, 'output', output)
+
     # open tracing
     torch._C._set_tracing_state(state)
     selected_indices = DymmyONNXNMSop.apply(boxes, scores,
@@ -146,6 +149,7 @@ def add_dummy_nms_for_onnx(boxes,
                                             iou_threshold, score_threshold)
     if only_return_indices:
         return selected_indices
+
     batch_inds, cls_inds = selected_indices[:, 0], selected_indices[:, 1]
     box_inds = selected_indices[:, 2]
     labels = torch.arange(num_class, dtype=torch.long).to(scores.device)
@@ -153,19 +157,21 @@ def add_dummy_nms_for_onnx(boxes,
     scores = scores.reshape(-1, 1)
     boxes = boxes.reshape(batch_size, -1).repeat(1, num_class).reshape(-1, 4)
     pos_inds = (num_class * batch_inds + cls_inds) * num_box + box_inds
-    # set value to zero for unselected boxes and scores
     mask = scores.new_zeros(scores.shape)
     # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
     # PyTorch style code: mask[batch_inds, box_inds] += 1
     mask[pos_inds, :] += 1
     scores = scores * mask
     boxes = boxes * mask
-    nms_after = torch.tensor(
-        after_top_k, device=scores.device, dtype=torch.long)
-    nms_after = get_k_for_topk(nms_after, num_box * num_class)
+
     scores = scores.reshape(batch_size, -1)
     boxes = boxes.reshape(batch_size, -1, 4)
     labels = labels.reshape(batch_size, -1)
+
+    nms_after = torch.tensor(
+        after_top_k, device=scores.device, dtype=torch.long)
+    nms_after = get_k_for_topk(nms_after, num_box * num_class)
+
     if nms_after > 0:
         _, topk_inds = scores.topk(nms_after)
         batch_inds = torch.arange(batch_size).view(-1, 1).expand_as(topk_inds)
@@ -177,6 +183,7 @@ def add_dummy_nms_for_onnx(boxes,
             batch_size, -1, 4)
         labels = labels.reshape(-1, 1)[transformed_inds, :].reshape(
             batch_size, -1)
+
     scores = scores.unsqueeze(2)
     dets = torch.cat([boxes, scores], dim=2)
     return dets, labels

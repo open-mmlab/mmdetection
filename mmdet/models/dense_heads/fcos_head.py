@@ -432,15 +432,10 @@ class FCOSHead(AnchorFreeHead):
             iou_threshold = cfg.nms.get('iou_threshold', 0.5)
             score_threshold = cfg.score_thr
             nms_pre = cfg.get('deploy_nms_pre', -1)
-            return add_dummy_nms_for_onnx(
-                batch_mlvl_bboxes,
-                batch_mlvl_scores,
-                max_output_boxes_per_class,
-                iou_threshold,
-                score_threshold,
-                nms_pre,
-                cfg.max_per_img,
-            )
+            return add_dummy_nms_for_onnx(batch_mlvl_bboxes, batch_mlvl_scores,
+                                          max_output_boxes_per_class,
+                                          iou_threshold, score_threshold,
+                                          nms_pre, cfg.max_per_img)
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         padding = batch_mlvl_scores.new_zeros(batch_size,
