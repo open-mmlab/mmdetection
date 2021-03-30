@@ -90,7 +90,7 @@ class BBoxTestMixin(object):
             max_size = max([proposal.size(0) for proposal in proposals])
             for i, proposal in enumerate(proposals):
                 supplement = proposal.new_full(
-                    (max_size - proposal.size(0), 5), 0)
+                    (max_size - proposal.size(0), proposal.size(1)), 0)
                 proposals[i] = torch.cat((supplement, proposal), dim=0)
             rois = torch.stack(proposals, dim=0)
         else:
