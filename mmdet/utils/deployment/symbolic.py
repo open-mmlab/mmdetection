@@ -128,37 +128,6 @@ def topk_symbolic(g, self, k, dim, largest, sorted, out=None):
     return top_values, top_indices
 
 
-def nms_core_symbolic(g, dets, iou_thr, score_thr, max_num):
-
-    from torch.onnx.symbolic_opset9 import reshape, unsqueeze, squeeze
-    from torch.onnx.symbolic_opset10 import _slice
-
-    assert 0 <= iou_thr <= 1
-    multi_bboxes = _slice(g, dets, axes=[1], starts=[0], ends=[4])
-    # multi_bboxes = unsqueeze(g, multi_bboxes, 0)
-    multi_bboxes = reshape(g, multi_bboxes, [1, -1, 4])
-    multi_scores = _slice(g, dets, axes=[1], starts=[4], ends=[5])
-    multi_scores = reshape(g, multi_scores, [1, 1, -1])
-
-    assert max_num > 0
-
-    indices = g.op(
-        'NonMaxSuppression', multi_bboxes, multi_scores,
-        g.op('Constant', value_t=torch.LongTensor([max_num])),
-        g.op('Constant', value_t=torch.FloatTensor([iou_thr])),
-        g.op('Constant', value_t=torch.FloatTensor([score_thr])))
-    indices = squeeze(g, _slice(g, indices, axes=[1], starts=[2], ends=[3]), 1)
-
-    # Sort indices by score.
-    scores = reshape(g, multi_scores, [-1, ])
-    keeped_scores = g.op('Gather', scores, indices, axis_i=0)
-    elements_num = sym_help._size_helper(g, keeped_scores, dim=g.op('Constant', value_t=torch.LongTensor([0])))
-    _, order = sym_help._topk_helper(g, keeped_scores, elements_num, dim=0)
-    indices = g.op('Gather', indices, order, axis_i=0)
-
-    return indices
-
-
 def multiclass_nms_core_symbolic(g, multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
 
     from torch.onnx.symbolic_opset9 import reshape, squeeze
@@ -398,7 +367,6 @@ def register_extra_symbolics(opset=10):
     assert opset >= 10
     register_op('view_as', view_as_symbolic, '', opset)
     register_op('topk', topk_symbolic, '', opset)
-    # register_op('nms_core', nms_core_symbolic, 'mmdet_custom', opset)
     # register_op('multiclass_nms_core', multiclass_nms_core_symbolic, 'mmdet_custom', opset)
     
     patch_extending_nms_args()
