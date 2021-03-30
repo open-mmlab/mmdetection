@@ -6,6 +6,7 @@ import mmcv
 import numpy as np
 from mmcv.utils import print_log
 from torch.utils.data import Dataset
+from terminaltables import AsciiTable
 
 from mmdet.core import eval_map, eval_recalls
 from .builder import DATASETS
@@ -330,11 +331,12 @@ class CustomDataset(Dataset):
                   f'with number of images {len(self)}, '
                   f'and instance counts: \n')
         if self.CLASSES is None:
+            result += 'Category names are not provided. \n'
             return result
         instance_count = np.zeros(len(self.CLASSES) + 1).astype(int)
         # count the instance number in each image
         for idx in range(len(self)):
-            label = self.get_cat_ids(idx)
+            label = self.get_ann_info(idx)['labels']
             unique, counts = np.unique(label, return_counts=True)
             if len(unique) > 0:
                 # add the occurrence number to each class
@@ -342,14 +344,19 @@ class CustomDataset(Dataset):
             else:
                 # background is the last index
                 instance_count[-1] += 1
-
+        # create a table with category count
+        table_data = [['category', 'cnt'] * 3]
+        row_data = []
         for cls, count in enumerate(instance_count):
             if cls < len(self.CLASSES):
-                result += f'[{self.CLASSES[cls]}]: {count}'
-                result += '\t'
+                row_data += [f'{self.CLASSES[cls]}', f'{count}']
             else:
                 # add the background number
-                result += f'[background]: {count}'
-            if (cls + 1) % 5 == 0:
-                result += '\n'
+                row_data += ['background', f'{count}']
+            if len(row_data) == 6:
+                table_data.append(row_data)
+                row_data = []
+
+            table = AsciiTable(table_data)
+            result += table.table
         return result
