@@ -5,8 +5,8 @@ from collections import OrderedDict
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
-from torch.utils.data import Dataset
 from terminaltables import AsciiTable
+from torch.utils.data import Dataset
 
 from mmdet.core import eval_map, eval_recalls
 from .builder import DATASETS
