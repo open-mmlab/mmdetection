@@ -1,4 +1,5 @@
 import mmcv
+import torch
 from mmcv.image import tensor2imgs
 
 from mmdet.core import bbox_mapping
@@ -107,7 +108,6 @@ class RPN(BaseDetector):
         """
         x = self.extract_feat(img)
         # get origin input shape to onnx dynamic input shape
-        import torch
         if torch.onnx.is_in_onnx_export():
             img_shape = torch._shape_as_tensor(img)[2:]
             img_metas[0]['img_shape_for_onnx'] = img_shape
