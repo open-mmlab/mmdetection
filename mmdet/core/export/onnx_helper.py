@@ -153,27 +153,31 @@ def add_dummy_nms_for_onnx(boxes,
     scores = scores.reshape(-1, 1)
     boxes = boxes.reshape(batch_size, -1).repeat(1, num_class).reshape(-1, 4)
     pos_inds = (num_class * batch_inds + cls_inds) * num_box + box_inds
-    mask = scores.new_zeros(scores.shape)
     # set value to zero for unselected boxes and scores
+    mask = scores.new_zeros(scores.shape)
     # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
     # PyTorch style code: mask[batch_inds, box_inds] += 1
     mask[pos_inds, :] += 1
-    scores = (scores * mask)
+    scores = scores * mask
     boxes = boxes * mask
     nms_after = torch.tensor(
         after_top_k, device=scores.device, dtype=torch.long)
     nms_after = get_k_for_topk(nms_after, num_box * num_class)
-    if nms_after > 0:
-        _, topk_inds = scores.reshape(batch_size, -1).topk(nms_after)
-        batch_inds = torch.arange(batch_size).view(-1, 1).expand_as(topk_inds)
-        # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
-        transformed_inds = (boxes.shape[1] * batch_inds + topk_inds)
-        scores = scores.reshape(-1, 1)[transformed_inds, :]
-        boxes = boxes[transformed_inds, :]
-        labels = labels[transformed_inds, :]
-    scores = scores.reshape(batch_size, -1, 1)
+    scores = scores.reshape(batch_size, -1)
     boxes = boxes.reshape(batch_size, -1, 4)
     labels = labels.reshape(batch_size, -1)
+    if nms_after > 0:
+        _, topk_inds = scores.topk(nms_after)
+        batch_inds = torch.arange(batch_size).view(-1, 1).expand_as(topk_inds)
+        # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
+        transformed_inds = scores.shape[1] * batch_inds + topk_inds
+        scores = scores.reshape(-1, 1)[transformed_inds, :].reshape(
+            batch_size, -1)
+        boxes = boxes.reshape(-1, 4)[transformed_inds, :].reshape(
+            batch_size, -1, 4)
+        labels = labels.reshape(-1, 1)[transformed_inds, :].reshape(
+            batch_size, -1)
+    scores = scores.unsqueeze(2)
     dets = torch.cat([boxes, scores], dim=2)
     return dets, labels
 
