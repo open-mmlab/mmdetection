@@ -1,5 +1,35 @@
 ## Changelog
 
+### v2.11. (31/3/2021)
+
+**Highlights**
+
+- support new methods: Localization Distillation for Object Detection
+- support pytorch2onnx with batch and dynamic shape
+
+**New Features**
+
+- localization distillation #4758
+- Support pytorch2onnx with batch and dynamic shape for Faster-RCNN and mainsteam one-stage detectors.
+- Add Deformable Conv2d TensorRT Plugin #858
+
+**Improvements**
+
+- Support batch infer in RetinaNet #4699
+- Support batch infer in Faster R-CNN #4785
+- Support batch infer in bbox coder #4721
+- Add check for ann_ids not unique #4789
+- Show FPN results #4716
+- support grid_anchor dynamic shape #4684
+- Support automatic statistics metrics to excel and fix total_epochs #4693
+
+**Bug Fixes**
+
+- Fix custom.py docstr error #4807
+- Fix TridentNet batch inference bug #4717
+- Fix FASF onnx export support #4735
+- Fix float image show error #4732
+
 ### v2.10.0 (01/03/2021)
 
 #### Highlights
