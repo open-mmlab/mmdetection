@@ -4,12 +4,12 @@
 
 **Highlights**
 
-- support new methods: Localization Distillation for Object Detection
-- support pytorch2onnx with batch and dynamic shape
+- Support new methods: Localization Distillation for Object Detection
+- Support pytorch2onnx with batch and dynamic shape
 
 **New Features**
 
-- localization distillation #4758
+- Localization distillation #4758
 - Support pytorch2onnx with batch and dynamic shape for Faster-RCNN and mainsteam one-stage detectors.
 - Add Deformable Conv2d TensorRT Plugin #858
 
