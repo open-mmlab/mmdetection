@@ -386,7 +386,7 @@ def test_resnet_backbone():
 
     with pytest.raises(TypeError):
         # pretrained must be a string path
-        model = ResNet(50)
+        model = ResNet(50, pretrained=0)
         model.init_weight()
 
     with pytest.raises(AssertionError):
