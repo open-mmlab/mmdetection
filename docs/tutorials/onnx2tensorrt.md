@@ -69,18 +69,19 @@ python tools/deployment/onnx2tensorrt.py \
 
 The table below lists the models that are guaranteed to be convertable to TensorRT.
 
-|    Model    |                        Config                        | Status |
-| :---------: | :--------------------------------------------------: | :----: |
-|     SSD     |             `configs/ssd/ssd300_coco.py`             |   Y    |
-|    FSAF     |        `configs/fsaf/fsaf_r50_fpn_1x_coco.py`        |   Y    |
-|    FCOS     |   `configs/fcos/fcos_r50_caffe_fpn_4x4_1x_coco.py`   |   Y    |
-|   YOLOv3    |  `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`  |   Y    |
-|  RetinaNet  |   `configs/retinanet/retinanet_r50_fpn_1x_coco.py`   |   Y    |
-| Faster-RCNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |   Y    |
+|    Model    |                        Config                        | Dynamic Shape | batch inference | Note |
+| :---------: | :--------------------------------------------------: | :-----------: | :-------------: | :--: |
+|     SSD     |             `configs/ssd/ssd300_coco.py`             |       Y       |        Y        |      |
+|    FSAF     |        `configs/fsaf/fsaf_r50_fpn_1x_coco.py`        |       Y       |        Y        |      |
+|    FCOS     |   `configs/fcos/fcos_r50_caffe_fpn_4x4_1x_coco.py`   |       Y       |        Y        |      |
+|   YOLOv3    |  `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`  |       Y       |        Y        |      |
+|  RetinaNet  |   `configs/retinanet/retinanet_r50_fpn_1x_coco.py`   |       Y       |        Y        |      |
+| Faster_RCNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |       Y       |        Y        |      |
 
 Notes:
 
 - *All models above are tested with Pytorch==1.6.0 and TensorRT-7.2.1.6.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn8.0*
+- *If the deployed model is Faster_RCNN*, please add `max_shape = None` in the line 221 in `mmdet/core/bbox/coder/delta_xywh_bbox_coder.py`, and re-export the .onnx.
 
 ## Reminders
 
