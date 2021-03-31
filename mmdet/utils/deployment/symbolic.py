@@ -302,7 +302,7 @@ def patch_nms_aten_to():
     """
     from packaging import version
     if version.parse(torch.__version__) < version.parse('1.7.1'):
-        from mmcv.ops.nms import NMSop
+        from mmdet.ops.nms import NMSop
         original_forward = NMSop.forward
 
         def forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
@@ -350,27 +350,6 @@ def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshol
                     value_t=torch.tensor([2], dtype=torch.long))), 1)
 
 
-def patch_extending_nms_args():
-    """
-    This patch adds filtering by 'score_threshold' and 'max_num'.
-    It should be removed after adding support for 'score_threshold' and 'max_num' in MMCV.
-    """
-    from mmcv.ops.nms import NMSop
-
-    original_forward = NMSop.forward
-    def forward(ctx, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
-        valid_mask = scores > score_threshold
-        bboxes, scores = bboxes[valid_mask], scores[valid_mask]
-        inds = original_forward(ctx, bboxes, scores, iou_threshold, offset)
-        inds = inds[:max_num]
-        return inds
-    NMSop.forward = staticmethod(forward)
-
-    def symbolic(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
-        return nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset)
-    NMSop.symbolic = staticmethod(symbolic)
-
-
 def register_extra_symbolics(opset=10):
     assert opset >= 10
     register_op('view_as', view_as_symbolic, '', opset)
@@ -378,7 +357,6 @@ def register_extra_symbolics(opset=10):
     # register_op('nms_core', nms_core_symbolic, 'mmdet_custom', opset)
     # register_op('multiclass_nms_core', multiclass_nms_core_symbolic, 'mmdet_custom', opset)
     
-    patch_extending_nms_args()
     patch_nms_aten_to()
 
 
