@@ -58,7 +58,7 @@ def test_paa_head_loss():
         torch.rand(1, 1, s // feat_size, s // feat_size)
         for feat_size in [4, 8, 16, 32, 64]
     ]
-    self.init_weights()
+    self.init_weight()
     cls_scores, bbox_preds, iou_preds = self(feat)
     # Test that empty ground truth encourages the network to predict background
     gt_bboxes = [torch.empty((0, 4))]

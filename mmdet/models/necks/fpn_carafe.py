@@ -204,7 +204,7 @@ class FPN_CARAFE(BaseModule):
                 self.fpn_convs.append(extra_fpn_conv)
                 self.lateral_convs.append(extra_l_conv)
 
-    # default init_weights for conv(msra) and norm in ConvModule
+    # default init_weight for conv(msra) and norm in ConvModule
     def init_weight(self):
         """Initialize the weights of module."""
         super(FPN_CARAFE, self).init_weight()

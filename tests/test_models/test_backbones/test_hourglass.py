@@ -24,7 +24,7 @@ def test_hourglass_backbone():
 
     # Test HourglassNet-52
     model = HourglassNet(num_stacks=1)
-    model.init_weights()
+    model.init_weight()
     model.train()
 
     imgs = torch.randn(1, 3, 256, 256)
@@ -34,7 +34,7 @@ def test_hourglass_backbone():
 
     # Test HourglassNet-104
     model = HourglassNet(num_stacks=2)
-    model.init_weights()
+    model.init_weight()
     model.train()
 
     imgs = torch.randn(1, 3, 256, 256)
