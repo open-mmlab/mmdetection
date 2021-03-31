@@ -195,7 +195,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         return multi_apply(self.forward_single, feats)[:2]
 
     def forward_single(self, x):
-        """Forward features of a single scale levle.
+        """Forward features of a single scale level.
 
         Args:
             x (Tensor): FPN feature maps of the specified stride.
@@ -272,7 +272,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
 
     @abstractmethod
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
-        """Compute regression, classification and centerss targets for points
+        """Compute regression, classification and centerness targets for points
         in multiple images.
 
         Args:

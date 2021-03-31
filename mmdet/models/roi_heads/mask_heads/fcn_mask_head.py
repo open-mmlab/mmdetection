@@ -308,7 +308,7 @@ class FCNMaskHead(BaseModule):
 
 
 def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
-    """Paste instance masks acoording to boxes.
+    """Paste instance masks according to boxes.
 
     This implementation is modified from
     https://github.com/facebookresearch/detectron2/

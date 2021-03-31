@@ -385,7 +385,7 @@ class PAAHead(ATSSHead):
                 - pos_inds_temp (Tensor): Indices of positive samples.
                 - ignore_inds_temp (Tensor): Indices of ignore samples.
         """
-        # The implementation is (c) in Fig.3 in origin paper intead of (b).
+        # The implementation is (c) in Fig.3 in origin paper instead of (b).
         # You can refer to issues such as
         # https://github.com/kkhoot/PAA/issues/8 and
         # https://github.com/kkhoot/PAA/issues/9.
@@ -632,9 +632,9 @@ class PAAHead(ATSSHead):
                     after voting, with shape (num_anchors,).
         """
         candidate_mask = mlvl_nms_scores > score_thr
-        candidate_mask_nozeros = candidate_mask.nonzero()
-        candidate_inds = candidate_mask_nozeros[:, 0]
-        candidate_labels = candidate_mask_nozeros[:, 1]
+        candidate_mask_nonzeros = candidate_mask.nonzero()
+        candidate_inds = candidate_mask_nonzeros[:, 0]
+        candidate_labels = candidate_mask_nonzeros[:, 1]
         candidate_bboxes = mlvl_bboxes[candidate_inds]
         candidate_scores = mlvl_nms_scores[candidate_mask]
         det_bboxes_voted = []

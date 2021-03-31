@@ -55,51 +55,113 @@ class BBoxTestMixin(object):
                            proposals,
                            rcnn_test_cfg,
                            rescale=False):
-        """Test only det bboxes without augmentation."""
-        rois = bbox2roi(proposals)
-        bbox_results = self._bbox_forward(x, rois)
+        """Test only det bboxes without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            proposals (Tensor or List[Tensor]): Region proposals.
+            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+
+        Returns:
+            tuple[list[Tensor], list[Tensor]]: The first list contains
+                the boxes of the corresponding image in a batch, each
+                tensor has the shape (num_boxes, 5) and last dimension
+                5 represent (tl_x, tl_y, br_x, br_y, score). Each Tensor
+                in the second list is the labels with shape (num_boxes, ).
+                The length of both lists should be equal to batch_size.
+        """
         # get origin input shape to support onnx dynamic input shape
         if torch.onnx.is_in_onnx_export():
-            img_shapes = tuple(meta['img_shape_for_onnx']
-                               for meta in img_metas)
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+            img_shapes = img_metas[0]['img_shape_for_onnx']
         else:
             img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
-        # split batch bbox prediction back to each image
+        # The length of proposals of different batches may be different.
+        # In order to form a batch, a padding operation is required.
+        if isinstance(proposals, list):
+            # padding to form a batch
+            max_size = max([proposal.size(0) for proposal in proposals])
+            for i, proposal in enumerate(proposals):
+                supplement = proposal.new_full(
+                    (max_size - proposal.size(0), 5), 0)
+                proposals[i] = torch.cat((supplement, proposal), dim=0)
+            rois = torch.stack(proposals, dim=0)
+        else:
+            rois = proposals
+
+        batch_index = torch.arange(
+            rois.size(0), device=rois.device).float().view(-1, 1, 1).expand(
+                rois.size(0), rois.size(1), 1)
+        rois = torch.cat([batch_index, rois[..., :4]], dim=-1)
+        batch_size = rois.shape[0]
+        num_proposals_per_img = rois.shape[1]
+
+        # Eliminate the batch dimension
+        rois = rois.view(-1, 5)
+        bbox_results = self._bbox_forward(x, rois)
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
-        # use shape[] to keep tracing
-        num_proposals_per_img = tuple(p.shape[0] for p in proposals)
-        rois = rois.split(num_proposals_per_img, 0)
-        cls_score = cls_score.split(num_proposals_per_img, 0)
 
-        # some detector with_reg is False, bbox_pred will be None
+        # Recover the batch dimension
+        rois = rois.reshape(batch_size, num_proposals_per_img, -1)
+        cls_score = cls_score.reshape(batch_size, num_proposals_per_img, -1)
+
+        if not torch.onnx.is_in_onnx_export():
+            # remove padding
+            supplement_mask = rois[..., -1] == 0
+            cls_score[supplement_mask, :] = 0
+
+        # bbox_pred would be None in some detector when with_reg is False,
+        # e.g. Grid R-CNN.
         if bbox_pred is not None:
             # the bbox prediction of some detectors like SABL is not Tensor
             if isinstance(bbox_pred, torch.Tensor):
-                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+                bbox_pred = bbox_pred.reshape(batch_size,
+                                              num_proposals_per_img, -1)
+                if not torch.onnx.is_in_onnx_export():
+                    bbox_pred[supplement_mask, :] = 0
             else:
-                bbox_pred = self.bbox_head.bbox_pred_split(
+                # TODO: Looking forward to a better way
+                # For SABL
+                bbox_preds = self.bbox_head.bbox_pred_split(
                     bbox_pred, num_proposals_per_img)
+                # apply bbox post-processing to each image individually
+                det_bboxes = []
+                det_labels = []
+                for i in range(len(proposals)):
+                    # remove padding
+                    supplement_mask = proposals[i][..., -1] == 0
+                    for bbox in bbox_preds[i]:
+                        bbox[supplement_mask] = 0
+                    det_bbox, det_label = self.bbox_head.get_bboxes(
+                        rois[i],
+                        cls_score[i],
+                        bbox_preds[i],
+                        img_shapes[i],
+                        scale_factors[i],
+                        rescale=rescale,
+                        cfg=rcnn_test_cfg)
+                    det_bboxes.append(det_bbox)
+                    det_labels.append(det_label)
+                return det_bboxes, det_labels
         else:
-            bbox_pred = (None, ) * len(proposals)
+            bbox_pred = None
 
-        # apply bbox post-processing to each image individually
-        det_bboxes = []
-        det_labels = []
-        for i in range(len(proposals)):
-            det_bbox, det_label = self.bbox_head.get_bboxes(
-                rois[i],
-                cls_score[i],
-                bbox_pred[i],
-                img_shapes[i],
-                scale_factors[i],
-                rescale=rescale,
-                cfg=rcnn_test_cfg)
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
-        return det_bboxes, det_labels
+        return self.bbox_head.get_bboxes(
+            rois,
+            cls_score,
+            bbox_pred,
+            img_shapes,
+            scale_factors,
+            rescale=rescale,
+            cfg=rcnn_test_cfg)
 
     def aug_test_bboxes(self, feats, img_metas, proposal_list, rcnn_test_cfg):
         """Test det bboxes with test time augmentation."""

@@ -124,7 +124,7 @@ def tpfp_imagenet(det_bboxes,
             # find best overlapped available gt
             for j in range(num_gts):
                 # different from PASCAL VOC: allow finding other gts if the
-                # best overlaped ones are already matched by other det bboxes
+                # best overlapped ones are already matched by other det bboxes
                 if gt_covered[j]:
                     continue
                 elif ious[i, j] >= iou_thrs[j] and ious[i, j] > max_iou:
