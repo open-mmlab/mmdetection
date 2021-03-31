@@ -392,6 +392,37 @@ class ResNet(BaseModule):
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for resnet')
 
+        block_init_cfg = None
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
+        if isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+                          'please use "init_cfg" instead')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(
+                        type='Constant',
+                        val=1,
+                        layer=['_BatchNorm', 'GroupNorm'])
+                ]
+                block = self.arch_settings[depth][0]
+                if self.zero_init_residual:
+                    if block is BasicBlock:
+                        block_init_cfg = dict(
+                            type='Constant',
+                            val=0,
+                            override=dict(name='norm2_name'))
+                    elif block is Bottleneck:
+                        block_init_cfg = dict(
+                            type='Constant',
+                            val=0,
+                            override=dict(name='norm3_name'))
+        else:
+            raise TypeError('pretrained must be a str or None')
+
         self.depth = depth
         if stem_channels is None:
             stem_channels = base_channels
@@ -447,7 +478,8 @@ class ResNet(BaseModule):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
-                plugins=stage_plugins)
+                plugins=stage_plugins,
+                init_cfg=block_init_cfg)
             self.inplanes = planes * self.block.expansion
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, res_layer)
@@ -457,36 +489,6 @@ class ResNet(BaseModule):
 
         self.feat_dim = self.block.expansion * base_channels * 2**(
             len(self.stage_blocks) - 1)
-
-        assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
-        if isinstance(pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
-                          'please use "init_cfg" instead')
-            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
-        elif pretrained is None:
-            if init_cfg is None:
-                self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(
-                        type='Constant',
-                        val=1,
-                        layer=['_BatchNorm', 'GroupNorm'])
-                ]
-            elif not isinstance(init_cfg, list):
-                self.init_cfg = [init_cfg]
-
-            # TODO: dcn conv_offset cannot initialize with init_cfg
-
-            if self.zero_init_residual:
-                self.init_cfg += [
-                    dict(
-                        type='Constant',
-                        layer=['BatchNorm2', 'BatchNorm3'],
-                        val=0),
-                ]
-        else:
-            raise TypeError('pretrained must be a str or None')
 
     def make_stage_plugins(self, plugins, stage_idx):
         """Make plugins for ResNet ``stage_idx`` th stage.

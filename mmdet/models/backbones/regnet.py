@@ -169,6 +169,30 @@ class RegNet(ResNet):
 
         self._make_stem_layer(in_channels, stem_channels)
 
+        block_init_cfg = None
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
+        if isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+                          'please use "init_cfg" instead')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(
+                        type='Constant',
+                        val=1,
+                        layer=['_BatchNorm', 'GroupNorm'])
+                ]
+                if self.zero_init_residual:
+                    block_init_cfg = dict(
+                        type='Constant',
+                        val=0,
+                        override=dict(name='norm3_name'))
+        else:
+            raise TypeError('pretrained must be a str or None')
+
         self.inplanes = stem_channels
         self.res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
@@ -200,7 +224,8 @@ class RegNet(ResNet):
                 plugins=stage_plugins,
                 groups=stage_groups,
                 base_width=group_width,
-                base_channels=self.stage_widths[i])
+                base_channels=self.stage_widths[i],
+                init_cfg=block_init_cfg)
             self.inplanes = self.stage_widths[i]
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, res_layer)
@@ -210,36 +235,6 @@ class RegNet(ResNet):
 
         self.feat_dim = stage_widths[-1]
         self.block.expansion = expansion_bak
-
-        assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
-        if isinstance(pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
-                          'please use "init_cfg" instead')
-            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
-        elif pretrained is None:
-            if init_cfg is None:
-                self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(
-                        type='Constant',
-                        val=1,
-                        layer=['_BatchNorm', 'GroupNorm'])
-                ]
-            elif not isinstance(init_cfg, list):
-                self.init_cfg = [init_cfg]
-
-            # TODO: dcn conv_offset cannot initialize with init_cfg
-
-            if self.zero_init_residual:
-                self.init_cfg += [
-                    dict(
-                        type='Constant',
-                        layer=['BatchNorm2', 'BatchNorm3'],
-                        val=0),
-                ]
-        else:
-            raise TypeError('pretrained must be a str or None')
 
     def _make_stem_layer(self, in_channels, base_channels):
         self.conv1 = build_conv_layer(

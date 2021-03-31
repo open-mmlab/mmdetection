@@ -318,25 +318,6 @@ class Res2Net(ResNet):
             init_cfg=init_cfg,
             **kwargs)
 
-        if pretrained is None:
-            if init_cfg is None:
-                self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(
-                        type='Constant',
-                        val=1,
-                        layer=['_BatchNorm', 'GroupNorm'])
-                ]
-            elif not isinstance(init_cfg, list):
-                self.init_cfg = [init_cfg]
-
-            # TODO: dcn conv_offset cannot initialize with init_cfg
-
-            if self.zero_init_residual:
-                self.init_cfg += [
-                    dict(type='Constant', layer='BatchNorm3', val=0),
-                ]
-
     def make_res_layer(self, **kwargs):
         return Res2Layer(
             scales=self.scales,
