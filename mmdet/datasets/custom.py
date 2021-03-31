@@ -357,6 +357,6 @@ class CustomDataset(Dataset):
                 table_data.append(row_data)
                 row_data = []
 
-            table = AsciiTable(table_data)
-            result += table.table
+        table = AsciiTable(table_data)
+        result += table.table
         return result
