@@ -389,6 +389,7 @@ class ResNet(BaseModule):
                  pretrained=None,
                  init_cfg=None):
         super(ResNet, self).__init__(init_cfg)
+        self.zero_init_residual = zero_init_residual
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for resnet')
 
@@ -448,7 +449,6 @@ class ResNet(BaseModule):
         if dcn is not None:
             assert len(stage_with_dcn) == num_stages
         self.plugins = plugins
-        self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
         self.inplanes = stem_channels
