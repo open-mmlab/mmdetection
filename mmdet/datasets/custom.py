@@ -345,7 +345,7 @@ class CustomDataset(Dataset):
                 # background is the last index
                 instance_count[-1] += 1
         # create a table with category count
-        table_data = [['category', 'count'] * 3]
+        table_data = [['category', 'count'] * 5]
         row_data = []
         for cls, count in enumerate(instance_count):
             if cls < len(self.CLASSES):
@@ -353,7 +353,7 @@ class CustomDataset(Dataset):
             else:
                 # add the background number
                 row_data += ['-1 background', f'{count}']
-            if len(row_data) == 6:
+            if len(row_data) == 10:
                 table_data.append(row_data)
                 row_data = []
 
