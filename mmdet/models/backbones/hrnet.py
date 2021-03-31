@@ -449,10 +449,10 @@ class HRNet(BaseModule):
                 self, 'init_cfg') and self.zero_init_residual:
             if block is BasicBlock:
                 block_init_cfg = dict(
-                    type='Constant', val=0, override=dict(name='norm2_name'))
+                    type='Constant', val=0, override=dict(name='norm2'))
             elif block is Bottleneck:
                 block_init_cfg = dict(
-                    type='Constant', val=0, override=dict(name='norm3_name'))
+                    type='Constant', val=0, override=dict(name='norm3'))
         layers.append(
             block(
                 inplanes,
@@ -490,10 +490,10 @@ class HRNet(BaseModule):
                 self, 'init_cfg') and self.zero_init_residual:
             if block is BasicBlock:
                 block_init_cfg = dict(
-                    type='Constant', val=0, override=dict(name='norm2_name'))
+                    type='Constant', val=0, override=dict(name='norm2'))
             elif block is Bottleneck:
                 block_init_cfg = dict(
-                    type='Constant', val=0, override=dict(name='norm3_name'))
+                    type='Constant', val=0, override=dict(name='norm3'))
 
         for i in range(num_modules):
             # multi_scale_output is only used for the last module

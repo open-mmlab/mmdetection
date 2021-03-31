@@ -415,12 +415,12 @@ class ResNet(BaseModule):
                         block_init_cfg = dict(
                             type='Constant',
                             val=0,
-                            override=dict(name='norm2_name'))
+                            override=dict(name='norm2'))
                     elif block is Bottleneck:
                         block_init_cfg = dict(
                             type='Constant',
                             val=0,
-                            override=dict(name='norm3_name'))
+                            override=dict(name='norm3'))
         else:
             raise TypeError('pretrained must be a str or None')
 

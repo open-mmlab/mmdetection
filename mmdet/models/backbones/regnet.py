@@ -187,9 +187,7 @@ class RegNet(ResNet):
                 ]
                 if self.zero_init_residual:
                     block_init_cfg = dict(
-                        type='Constant',
-                        val=0,
-                        override=dict(name='norm3_name'))
+                        type='Constant', val=0, override=dict(name='norm3'))
         else:
             raise TypeError('pretrained must be a str or None')
 
