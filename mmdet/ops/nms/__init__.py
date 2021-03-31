@@ -1,7 +1,1 @@
-from .nms_wrapper import batched_nms, nms_match, soft_nms
-from mmcv import ops
-
-
-ops.batched_nms = batched_nms
-ops.nms_match = nms_match
-ops.soft_nms = soft_nms
+from .nms_wrapper import nms, batched_nms, NMSop

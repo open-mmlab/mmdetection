@@ -1,10 +1,10 @@
-import sys
 import torch
 from torch.onnx import is_in_onnx_export
 
-import mmdet.ops.nms  # Replace mmcv.ops.nms by one from mmdet.ops.nms
 from mmdet.integration.nncf import no_nncf_trace
-from mmcv.ops import batched_nms
+
+from mmdet.ops.nms import batched_nms
+
 from ...utils.deployment.symbolic import py_symbolic
 from ..utils.misc import dummy_pad, topk
 from mmdet.core.bbox.iou_calculators import bbox_overlaps

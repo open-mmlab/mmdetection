@@ -128,37 +128,6 @@ def topk_symbolic(g, self, k, dim, largest, sorted, out=None):
     return top_values, top_indices
 
 
-def nms_core_symbolic(g, dets, iou_thr, score_thr, max_num):
-
-    from torch.onnx.symbolic_opset9 import reshape, unsqueeze, squeeze
-    from torch.onnx.symbolic_opset10 import _slice
-
-    assert 0 <= iou_thr <= 1
-    multi_bboxes = _slice(g, dets, axes=[1], starts=[0], ends=[4])
-    # multi_bboxes = unsqueeze(g, multi_bboxes, 0)
-    multi_bboxes = reshape(g, multi_bboxes, [1, -1, 4])
-    multi_scores = _slice(g, dets, axes=[1], starts=[4], ends=[5])
-    multi_scores = reshape(g, multi_scores, [1, 1, -1])
-
-    assert max_num > 0
-
-    indices = g.op(
-        'NonMaxSuppression', multi_bboxes, multi_scores,
-        g.op('Constant', value_t=torch.LongTensor([max_num])),
-        g.op('Constant', value_t=torch.FloatTensor([iou_thr])),
-        g.op('Constant', value_t=torch.FloatTensor([score_thr])))
-    indices = squeeze(g, _slice(g, indices, axes=[1], starts=[2], ends=[3]), 1)
-
-    # Sort indices by score.
-    scores = reshape(g, multi_scores, [-1, ])
-    keeped_scores = g.op('Gather', scores, indices, axis_i=0)
-    elements_num = sym_help._size_helper(g, keeped_scores, dim=g.op('Constant', value_t=torch.LongTensor([0])))
-    _, order = sym_help._topk_helper(g, keeped_scores, elements_num, dim=0)
-    indices = g.op('Gather', indices, order, axis_i=0)
-
-    return indices
-
-
 def multiclass_nms_core_symbolic(g, multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
 
     from torch.onnx.symbolic_opset9 import reshape, squeeze
@@ -292,12 +261,71 @@ def patch_dcn_symbolic():
     DeformConv2dFunction.symbolic = staticmethod(symbolic)
 
 
+def patch_nms_aten_to():
+    """
+    This patch fixes the following bug:
+        RuntimeError: 0 INTERNAL ASSERT FAILED at /pytorch/torch/csrc/jit/ir/alias_analysis.cpp:318,
+        please report a bug to PyTorch. We don't have an op for aten::to but it isn't a special case.
+        Argument types: Tensor, None, int, Device, bool, bool, bool, None,
+    In PyTorch version >= 1.7.1 it should be fixed.
+    """
+    from packaging import version
+    if version.parse(torch.__version__) < version.parse('1.7.1'):
+        from mmdet.ops.nms import NMSop
+        original_forward = NMSop.forward
+
+        def forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
+            with torch.jit._disable_tracing():
+                inds = original_forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
+            return inds
+        NMSop.forward = staticmethod(forward)
+
+
+def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
+    """
+    This function adds 'score_threshold' and 'max_output_boxes_per_class' to ONNX::NonMaxSuppression.
+    It should be removed after adding support for 'score_threshold' and 'max_num' in MMCV::NMSop.
+    """
+    from mmcv.onnx import is_custom_op_loaded
+    has_custom_op = is_custom_op_loaded()
+    if has_custom_op:
+        return g.op(
+            'mmcv::NonMaxSuppression',
+            bboxes,
+            scores,
+            iou_threshold_f=float(iou_threshold),
+            offset_i=int(offset))
+    else:
+        from torch.onnx.symbolic_opset9 import select, squeeze, unsqueeze
+        boxes = unsqueeze(g, bboxes, 0)
+        scores = unsqueeze(g, unsqueeze(g, scores, 0), 0)
+        max_output_per_class = g.op(
+            'Constant',
+            value_t=torch.tensor([max_num], dtype=torch.long))
+        iou_threshold = g.op(
+            'Constant',
+            value_t=torch.tensor([iou_threshold], dtype=torch.float))
+        score_threshold = g.op(
+            'Constant',
+            value_t=torch.tensor([score_threshold], dtype=torch.float))
+        nms_out = g.op('NonMaxSuppression', boxes, scores,
+                       max_output_per_class, iou_threshold, score_threshold)
+        return squeeze(
+            g,
+            select(
+                g, nms_out, 1,
+                g.op(
+                    'Constant',
+                    value_t=torch.tensor([2], dtype=torch.long))), 1)
+
+
 def register_extra_symbolics(opset=10):
     assert opset >= 10
     register_op('view_as', view_as_symbolic, '', opset)
     register_op('topk', topk_symbolic, '', opset)
-    register_op('nms_core', nms_core_symbolic, 'mmdet_custom', opset)
     # register_op('multiclass_nms_core', multiclass_nms_core_symbolic, 'mmdet_custom', opset)
+    
+    patch_nms_aten_to()
 
 
 def register_extra_symbolics_for_openvino(opset=10):

@@ -29,8 +29,6 @@ from .vfnet import VFNet
 from .yolact import YOLACT
 from .yolo import YOLOV3
 
-import mmdet.ops.nms
-
 
 __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
