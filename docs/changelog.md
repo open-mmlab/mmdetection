@@ -4,31 +4,30 @@
 
 **Highlights**
 
-- Support new method: Localization Distillation for Object Detection
-- Support pytorch2onnx with batch and dynamic shape
+- Support new method: [Localization Distillation for Object Detection](https://arxiv.org/pdf/2102.12252.pdf)
+- Support Pytorch2ONNX with batch inference and dynamic shape
 
 **New Features**
 
-- Localization distillation #4758
-- Support pytorch2onnx with batch and dynamic shape for Faster-RCNN and mainstream one-stage detectors.
-- Add Deformable Conv2d TensorRT Plugin #858
+- Support localization distillation for object detection (#4758)
+- Support Pytorch2ONNX with batch inference and dynamic shape for Faster-RCNN and mainstream one-stage detectors (#4796)
+- Add Deformable Conv2d TensorRT plugin (#858)
 
 **Improvements**
 
-- Support batch infer in RetinaNet #4699
-- Support batch infer in Faster R-CNN #4785
-- Support batch infer in bbox coder #4721
-- Add check for ann_ids not unique #4789
-- Show FPN results #4716
-- support grid_anchor dynamic shape #4684
-- Support automatic statistics metrics to excel and fix total_epochs #4693
+- Support batch inference in head of RetinaNet (#4699)
+- Add batch dimension in second stage of Faster-RCNN (#4785)
+- Support batch inference in bbox coder (#4721)
+- Add check for `ann_ids` in `COCODataset` to ensure it is unique (#4789)
+- support for showing the FPN results (#4716)
+- support dynamic shape for grid_anchor (#4684)
+- Support automatic statistical evaluation results and export them to EXCEL (#4693)
 
 **Bug Fixes**
 
-- Fix custom.py docstr error #4807
-- Fix TridentNet batch inference bug #4717
-- Fix FASF onnx export support #4735
-- Fix float image show error #4732
+- Fix a bug of TridentNet when doing the batch inference (#4717)
+- Fix a bug of Pytorch2ONNX in FASF (#4735)
+- Fix a bug when show the image with float type (#4732)
 
 ### v2.10.0 (01/03/2021)
 
