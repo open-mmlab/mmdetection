@@ -81,7 +81,7 @@ The table below lists the models that are guaranteed to be convertable to Tensor
 Notes:
 
 - *All models above are tested with Pytorch==1.6.0 and TensorRT-7.2.1.6.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn8.0*
-- *If the deployed model is Faster_RCNN*, please add `max_shape = None` in the line 221 in `mmdet/core/bbox/coder/delta_xywh_bbox_coder.py`, and re-export the .onnx.
+- *If the deployed model is Faster_RCNN*, please pass `max_shape = None` for the function [delta2bbox](https://github.com/open-mmlab/mmdetection/blob/ff38f207826859e7a89255b31978809717d4f096/mmdet/core/bbox/coder/delta_xywh_bbox_coder.py#L134) as a workaround.
 
 ## Reminders
 

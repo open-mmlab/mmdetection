@@ -98,15 +98,17 @@ Notes:
 - The parameters of Non Max Suppression in the above onnx model:
 
   - `nms_pre`: The number of boxes before NMS when pytorch forward inference. In all the above models, `nms_pre` is `1000`.
-  - `deploy_nums`: The number of boxes before NMS when exporting onnx files in torch. This parameter is `0` in all of the above models.
+  - `deploy_nums_pre`: The number of boxes before NMS when exporting onnx files in torch. This parameter is `0` in all of the above models.
   - `max_pre_img`: The number of boxes to be kept after NMS. Among the above models, only the `max_pre_img` parameter of faster_rcnn is `1000`, and the other models are all `200`.
-  - `max_output_boxes_pre`: Maximum number of output  boxes per class of NMS. The `max_output_boxes_pre` is `200` in the SSD model; and the parameter is `100` in other models.
+  - `max_output_boxes_pre_class`: Maximum number of output  boxes per class of NMS. The `max_output_boxes_pre` is `200` in the SSD model and is `100` in other models.
 
-- If the deployed backend platform is TensorRT, you need to add environment variables before running the file:
+- If the deployed backend platform is TensorRT, please add environment variables before running the file:
 
   ```bash
   export ONNX_BACKEND=MMCVTensorRT
   ```
+
+- If you want to use the `--dynamic-shape` parameter in the TensorRT backend to export onnx, please delete the `--simplify` parameter, and vice versa.
 
 ## Reminders
 
