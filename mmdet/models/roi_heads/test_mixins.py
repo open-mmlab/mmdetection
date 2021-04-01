@@ -90,7 +90,7 @@ class BBoxTestMixin(object):
             max_size = max([proposal.size(0) for proposal in proposals])
             for i, proposal in enumerate(proposals):
                 supplement = proposal.new_full(
-                    (max_size - proposal.size(0), 5), 0)
+                    (max_size - proposal.size(0), proposal.size(1)), 0)
                 proposals[i] = torch.cat((supplement, proposal), dim=0)
             rois = torch.stack(proposals, dim=0)
         else:
@@ -260,8 +260,8 @@ class MaskTestMixin(object):
             # padding to form a batch
             max_size = max([bboxes.size(0) for bboxes in det_bboxes])
             for i, (bbox, label) in enumerate(zip(det_bboxes, det_labels)):
-                supplement_bbox = bbox.new_full((max_size - bbox.size(0), 5),
-                                                0)
+                supplement_bbox = bbox.new_full(
+                    (max_size - bbox.size(0), bbox.size(1)), 0)
                 supplement_label = label.new_full((max_size - label.size(0), ),
                                                   0)
                 det_bboxes[i] = torch.cat((supplement_bbox, bbox), dim=0)
@@ -277,14 +277,14 @@ class MaskTestMixin(object):
         if rescale and not isinstance(scale_factors[0], float):
             scale_factors = det_bboxes.new_tensor(scale_factors)
 
+        det_bboxes = det_bboxes[..., :4]
         if rescale:
-            det_bboxes = det_bboxes[..., :4]
             det_bboxes *= scale_factors.unsqueeze(1)
 
         batch_index = torch.arange(
             det_bboxes.size(0), device=det_bboxes.device).float().view(
                 -1, 1, 1).expand(det_bboxes.size(0), det_bboxes.size(1), 1)
-        mask_rois = torch.cat([batch_index, det_bboxes[..., :4]], dim=-1)
+        mask_rois = torch.cat([batch_index, det_bboxes], dim=-1)
         mask_rois = mask_rois.view(-1, 5)
         mask_results = self._mask_forward(x, mask_rois)
         mask_pred = mask_results['mask_pred']
@@ -293,7 +293,7 @@ class MaskTestMixin(object):
         if torch.onnx.is_in_onnx_export():
             max_shape = img_metas[0]['img_shape_for_onnx']
             num_det = det_bboxes.shape[1]
-            det_bboxes = det_bboxes.reshape(-1, 5)
+            det_bboxes = det_bboxes.reshape(-1, 4)
             det_labels = det_labels.reshape(-1)
             segm_results = self.mask_head.get_seg_masks(
                 mask_pred, det_bboxes, det_labels, self.test_cfg, max_shape,
@@ -301,7 +301,7 @@ class MaskTestMixin(object):
             segm_results = segm_results.reshape(batch_size, num_det,
                                                 max_shape[0], max_shape[1])
             return segm_results
-        # Recover batch
+        # Recover the batch dimension
         mask_preds = mask_pred.reshape(batch_size, num_proposals_per_img,
                                        *mask_pred.shape[1:])
 
@@ -311,7 +311,8 @@ class MaskTestMixin(object):
             mask_pred = mask_preds[i]
             det_bbox = det_bboxes[i]
             det_label = det_labels[i]
-            # filter out padded boxes
+
+            # remove padding
             supplement_mask = det_bbox[..., -1] != 0
             mask_pred = mask_pred[supplement_mask]
             det_bbox = det_bbox[supplement_mask]
