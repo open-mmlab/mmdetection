@@ -76,7 +76,7 @@ The table below lists the models that are guaranteed to be convertable to Tensor
 |    FCOS     |   `configs/fcos/fcos_r50_caffe_fpn_4x4_1x_coco.py`   |   Y    |
 |   YOLOv3    |  `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`  |   Y    |
 |  RetinaNet  |   `configs/retinanet/retinanet_r50_fpn_1x_coco.py`   |   Y    |
-| Faster_RCNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |   Y    |
+| Faster R-CNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |   Y    |
 
 Notes:
 
