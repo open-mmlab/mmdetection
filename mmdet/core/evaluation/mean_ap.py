@@ -47,7 +47,7 @@ def average_precision(recalls, precisions, mode='area'):
                 precs = precisions[i, recalls[i, :] >= thr]
                 prec = precs.max() if precs.size > 0 else 0
                 ap[i] += prec
-            ap /= 11
+        ap /= 11
     else:
         raise ValueError(
             'Unrecognized mode, only "area" and "11points" are supported')
