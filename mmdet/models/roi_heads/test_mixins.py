@@ -277,8 +277,8 @@ class MaskTestMixin(object):
         if rescale and not isinstance(scale_factors[0], float):
             scale_factors = det_bboxes.new_tensor(scale_factors)
 
+        det_bboxes = det_bboxes[..., :4]
         if rescale:
-            det_bboxes = det_bboxes[..., :4]
             det_bboxes *= scale_factors.unsqueeze(1)
 
         batch_index = torch.arange(
@@ -289,7 +289,7 @@ class MaskTestMixin(object):
         mask_results = self._mask_forward(x, mask_rois)
         mask_pred = mask_results['mask_pred']
 
-        # Recover batch
+        # Recover the batch dimension
         mask_preds = mask_pred.reshape(batch_size, num_proposals_per_img,
                                        *mask_pred.shape[1:])
 
@@ -300,6 +300,7 @@ class MaskTestMixin(object):
             det_bbox = det_bboxes[i]
             det_label = det_labels[i]
 
+            # remove padding
             supplement_mask = det_bbox[..., -1] != 0
             mask_pred = mask_pred[supplement_mask]
             det_bbox = det_bbox[supplement_mask]
