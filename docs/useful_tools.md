@@ -176,6 +176,84 @@ python tools/analysis_tools/coco_error_analysis.py \
        --types='segm'
 ```
 
+## Model Serving
+
+In order to serve an `MMDetection` model with [`TorchServe`](https://pytorch.org/serve/), you can follow the steps:
+
+### 1. Convert model from MMDetection to TorchServe
+
+```shell
+python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
+--output_folder ${MODEL_STORE} \
+--model-name ${MODEL_NAME}
+```
+
+### 2. Build `mmdet-serve` docker image
+
+```shell
+DOCKER_BUILDKIT=1 docker build -t mmdet-serve:latest docker/serve/
+```
+
+### 3. Launch `mmdet-serve`
+
+Check the official docs for [running TorchServe with docker](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment).
+
+Example:
+
+```shell
+docker run --rm \
+--cpus 8 \
+--gpus device=0 \
+-p8080:8080 -p8081:8081 -p8082:8082 \
+--mount type=bind,source=$MODEL_STORE,target=/home/model-server/model-store \
+mmdet-serve:latest
+```
+
+***Note**: ${MODEL_STORE} needs to be an absolute path.
+
+[Read the docs](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md) about the Inference (8080), Management (8081) and Metrics (8082) APis
+
+### 4. Test deployment
+
+```shell
+curl -O curl -O https://raw.githubusercontent.com/pytorch/serve/master/docs/images/3dogs.jpg
+curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
+```
+
+You should obtain a respose similar to:
+
+```json
+[
+  {
+    "dog": [
+      402.9117736816406,
+      124.19664001464844,
+      571.7910766601562,
+      292.6463623046875
+    ],
+    "score": 0.9561963081359863
+  },
+  {
+    "dog": [
+      293.90057373046875,
+      196.2908477783203,
+      417.4869079589844,
+      286.2522277832031
+    ],
+    "score": 0.9179860353469849
+  },
+  {
+    "dog": [
+      202.178466796875,
+      86.3709487915039,
+      311.9863586425781,
+      276.28411865234375
+    ],
+    "score": 0.8933767080307007
+  }
+]
+```
+
 ## Model Complexity
 
 `tools/analysis_tools/get_flops.py` is a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.

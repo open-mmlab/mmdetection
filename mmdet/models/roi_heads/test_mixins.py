@@ -90,7 +90,7 @@ class BBoxTestMixin(object):
             max_size = max([proposal.size(0) for proposal in proposals])
             for i, proposal in enumerate(proposals):
                 supplement = proposal.new_full(
-                    (max_size - proposal.size(0), 5), 0)
+                    (max_size - proposal.size(0), proposal.size(1)), 0)
                 proposals[i] = torch.cat((supplement, proposal), dim=0)
             rois = torch.stack(proposals, dim=0)
         else:
@@ -260,8 +260,8 @@ class MaskTestMixin(object):
             # padding to form a batch
             max_size = max([bboxes.size(0) for bboxes in det_bboxes])
             for i, (bbox, label) in enumerate(zip(det_bboxes, det_labels)):
-                supplement_bbox = bbox.new_full((max_size - bbox.size(0), 5),
-                                                0)
+                supplement_bbox = bbox.new_full(
+                    (max_size - bbox.size(0), bbox.size(1)), 0)
                 supplement_label = label.new_full((max_size - label.size(0), ),
                                                   0)
                 det_bboxes[i] = torch.cat((supplement_bbox, bbox), dim=0)

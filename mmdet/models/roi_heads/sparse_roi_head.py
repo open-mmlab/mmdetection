@@ -190,10 +190,10 @@ class SparseRoIHead(CascadeRoIHead):
             cls_pred_list = bbox_results['detach_cls_score_list']
             proposal_list = bbox_results['detach_proposal_list']
             for i in range(num_imgs):
-                normolize_bbox_ccwh = bbox_xyxy_to_cxcywh(proposal_list[i] /
+                normalize_bbox_ccwh = bbox_xyxy_to_cxcywh(proposal_list[i] /
                                                           imgs_whwh[i])
                 assign_result = self.bbox_assigner[stage].assign(
-                    normolize_bbox_ccwh, cls_pred_list[i], gt_bboxes[i],
+                    normalize_bbox_ccwh, cls_pred_list[i], gt_bboxes[i],
                     gt_labels[i], img_metas[i])
                 sampling_result = self.bbox_sampler[stage].sample(
                     assign_result, proposal_list[i], gt_bboxes[i])
