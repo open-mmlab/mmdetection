@@ -294,7 +294,6 @@ class MaskTestMixin(object):
                                        *mask_pred.shape[1:])
 
         # apply mask post-processing to each image individually
-        # TODO
         segm_results = []
         for i in range(batch_size):
             mask_pred = mask_preds[i]
