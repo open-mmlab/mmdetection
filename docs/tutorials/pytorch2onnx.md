@@ -76,6 +76,10 @@ python tools/deployment/pytorch2onnx.py \
     --std 255 255 255 \
     --show \
     --verify \
+    --cfg-options \
+      model.test_cfg.nms_pre=200  \
+      model.test_cfg.max_per_img=200  \
+      model.test_cfg.deploy_nms_pre=300 \
 ```
 
 ## List of supported models exportable to ONNX
@@ -107,13 +111,13 @@ Notes:
 
 In the process of exporting the onnx model, we set some parameters for the NMS op to control the number of output bounding boxes. The following will introduce the parameters settings of the NMS op in the supported models:
 
-- `nms_pre`: The number of boxes before NMS when pytorch forward inference. In all the supported models, `nms_pre` is `1000`.
+- `nms_pre`: The number of boxes before NMS when pytorch forward inference. The default setting is `1000`, and you can set these parameters through `--cfg-options`.
 
-- `deploy_nms_pre`: The number of boxes before NMS when exporting onnx files in torch. This parameter is `0` in all of the supported models.
+- `deploy_nms_pre`: The number of boxes before NMS when exporting onnx files in torch. The default setting is `0`, and you can set these parameters through `--cfg-options`.
 
-- `max_per_img`: The number of boxes to be kept after NMS. Among the supported models, only the `max_pre_img` parameter of faster_rcnn is `1000`, and the other supported models are all `200`.
+- `max_per_img`: The number of boxes to be kept after NMS. The default setting is `100`, and you can set these parameters through `--cfg-options`.
 
-- `max_output_boxes_per_class`: Maximum number of output  boxes per class of NMS. The `max_output_boxes_pre` is `200` in the SSD model and is `100` in other supported models.
+- `max_output_boxes_per_class`: Maximum number of output boxes per class of NMS. The default setting is `200`.
 
 ## Reminders
 
