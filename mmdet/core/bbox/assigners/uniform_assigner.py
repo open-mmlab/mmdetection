@@ -50,39 +50,55 @@ class UniformAssigner(BaseAssigner):
         cost_bbox_anchors = torch.cdist(
             box_xyxy_to_cxcywh(anchor), box_xyxy_to_cxcywh(gt_bboxes), p=1)
 
-        # Final cost matrix
-        C = cost_bbox
-        C1 = cost_bbox_anchors
+        # TODO: TOPK function has different results in cpu and cuda mode
+        C = cost_bbox.cpu()
+        C1 = cost_bbox_anchors.cpu()
 
         # self.match_times x n
-        indices = torch.topk(
+        index = torch.topk(
             C,  # c=b,n,x c[i]=n,x
             k=self.match_times,
             dim=0,
             largest=False)[1]
 
         # self.match_times x n
-        indices1 = torch.topk(C1, k=self.match_times, dim=0, largest=False)[1]
+        index1 = torch.topk(C1, k=self.match_times, dim=0, largest=False)[1]
         # (self.match_times*2) x n
-        indeices = torch.cat((indices, indices1), dim=0)
+        indexes = torch.cat((index, index1),
+                            dim=1).reshape(-1).to(bbox_pred.device)
 
         pred_overlaps = self.iou_calculator(bbox_pred, gt_bboxes)
         anchor_overlaps = self.iou_calculator(anchor, gt_bboxes)
-
-        pred_max_overlaps, pred_argmax_overlaps = pred_overlaps.max(dim=1)
+        pred_max_overlaps, _ = pred_overlaps.max(dim=1)
         anchor_max_overlaps, _ = anchor_overlaps.max(dim=0)
+
+        assigned_gt_inds = bbox_pred.new_full((num_bboxes, ),
+                                              0,
+                                              dtype=torch.long)
+
         ignore_idx = pred_max_overlaps > self.neg_ignore_thresh
         assigned_gt_inds[ignore_idx] = -1
 
-        pos_ious = torch.gather(anchor_overlaps, 0, indeices)
         pos_gt_index = torch.arange(
-            0, pos_ious.size(1), device=pos_ious.device).expand_as(pos_ious)
-        pos_ious = pos_ious.view(-1)
-        indeices = indeices.view(-1)
-        pos_gt_index = pos_gt_index.reshape(-1)
-        pos_idx = pos_ious >= self.pos_ignore_thresh
-        assigned_gt_inds[indeices[pos_idx]] = pos_gt_index[pos_idx] + 1
-        assigned_gt_inds[indeices[~pos_idx]] = -1
+            0, C1.size(1),
+            device=bbox_pred.device).repeat(self.match_times * 2)
+        pos_ious = anchor_overlaps[indexes, pos_gt_index]
+        pos_ignore_idx = pos_ious < self.pos_ignore_thresh
+
+        target_classes_o = pos_gt_index + 1
+        target_classes_o[pos_ignore_idx] = -1
+        target_classes_o = target_classes_o.to(assigned_gt_inds.device)
+
+        # TODO
+        unique_src_idx = torch.unique(indexes)
+        target_classes = torch.zeros_like(
+            unique_src_idx, device=indexes.device)
+        for i, idx in enumerate(unique_src_idx):
+            index = indexes == idx
+            max_index = torch.argmax(pos_ious[index])
+            target_classes[i] = target_classes_o[index][max_index]
+        assigned_gt_inds[unique_src_idx] = target_classes.to(
+            assigned_gt_inds.device)
 
         if gt_labels is not None:
             assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
