@@ -196,6 +196,25 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
         return grads_per_elem
 
+    def compute_gradients_reppoints(self, data_loader, device_ids):
+
+        for i, data_batch in enumerate(data_loader):
+            inputs, kwargs = scatter_kwargs(data_batch, {}, device_ids, dim=0)
+            losses = self(**inputs[0], freeze=True)
+            loss = losses['loss_cls'] + losses['loss_pts_init']+losses['loss_pts_refine']
+
+            grads = torch.autograd.grad(loss, self.bbox_head.parameters(), allow_unused=True, retain_graph=True)
+            
+            if i == 0:
+                grads_per_elem = torch.cat((grads[0].view(1, -1),grads[1].view(1, -1),\
+                     grads[2].view(1, -1)), dim=1)
+            else:
+                tmp_grads = torch.cat((grads[0].view(1, -1),grads[1].view(1, -1),\
+                     grads[2].view(1, -1)), dim=1)
+                grads_per_elem = torch.cat((grads_per_elem, tmp_grads), dim=0)
+
+        return grads_per_elem
+
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.
 

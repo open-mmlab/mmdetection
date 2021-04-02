@@ -248,9 +248,10 @@ class RepPointsHead(AnchorFreeHead):
         return grid_yx, regressed_bbox
 
     def forward(self, feats):
+        #retutns a tuple after applying on each feats
         return multi_apply(self.forward_single, feats)
 
-    def forward_single(self, x):
+    def forward_single(self, x, freeze=False):
         """Forward feature map of a single FPN level."""
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
@@ -263,12 +264,24 @@ class RepPointsHead(AnchorFreeHead):
                                       scale]).view(1, 4, 1, 1)
         else:
             points_init = 0
-        cls_feat = x
-        pts_feat = x
-        for cls_conv in self.cls_convs:
-            cls_feat = cls_conv(cls_feat)
-        for reg_conv in self.reg_convs:
-            pts_feat = reg_conv(pts_feat)
+
+        if freeze:
+            with torch.no_grad():
+                cls_feat = x
+                pts_feat = x
+                for cls_conv in self.cls_convs:
+                    cls_feat = cls_conv(cls_feat)
+                for reg_conv in self.reg_convs:
+                    pts_feat = reg_conv(pts_feat)
+                    
+        else:
+            cls_feat = x
+            pts_feat = x
+            for cls_conv in self.cls_convs:
+                cls_feat = cls_conv(cls_feat)
+            for reg_conv in self.reg_convs:
+                pts_feat = reg_conv(pts_feat)
+
         # initialize reppoints
         pts_out_init = self.reppoints_pts_init_out(
             self.relu(self.reppoints_pts_init_conv(pts_feat)))
@@ -285,6 +298,7 @@ class RepPointsHead(AnchorFreeHead):
             self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset)))
         pts_out_refine = self.reppoints_pts_refine_out(
             self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset)))
+
         if self.use_grid_points:
             pts_out_refine, bbox_out_refine = self.gen_grid_from_reg(
                 pts_out_refine, bbox_out_init.detach())

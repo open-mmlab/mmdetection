@@ -67,9 +67,9 @@ class SingleStageDetector(BaseDetector):
 
     def forward_train(self,
                       img,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels,
+                      img_metas,freeze=False,
+                      gt_bboxes =None,
+                      gt_labels=None,
                       gt_bboxes_ignore=None):
         """
         Args:
@@ -90,9 +90,15 @@ class SingleStageDetector(BaseDetector):
             dict[str, Tensor]: A dictionary of loss components.
         """
         super(SingleStageDetector, self).forward_train(img, img_metas)
-        x = self.extract_feat(img)
+        
+        if freeze:
+            with torch.no_grad():
+                x = self.extract_feat(img)
+        else:
+            x = self.extract_feat(img)
+        
         losses = self.bbox_head.forward_train(x, img_metas, gt_bboxes,
-                                              gt_labels, gt_bboxes_ignore)
+                                                gt_labels, gt_bboxes_ignore,freeze)
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
