@@ -22,7 +22,7 @@
 - support for showing the FPN results (#4716)
 - support dynamic shape for grid_anchor (#4684)
 - Support automatic statistical evaluation results and export them to EXCEL (#4693)
-- Move pycocotools version check to when it is used (#4880) 
+- Move pycocotools version check to when it is used (#4880)
 
 **Bug Fixes**
 
