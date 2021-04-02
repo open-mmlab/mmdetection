@@ -109,7 +109,7 @@ Notes:
 
 ## The Parameters of Non-Maximum Suppression in ONNX Export
 
-In the process of exporting the onnx model, we set some parameters for the NMS op to control the number of output bounding boxes. The following will introduce the parameters settings of the NMS op in the supported models, you can set these parameters through `--cfg-options`.
+In the process of exporting the onnx model, we set some parameters for the NMS op to control the number of output bounding boxes. The following will introduce the parameters settings of the NMS op in the supported models. You can set these parameters through `--cfg-options`.
 
 - `nms_pre`: The number of boxes before NMS when pytorch forward inference. The default setting is `1000`.
 
