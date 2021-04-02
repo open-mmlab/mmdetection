@@ -6,7 +6,7 @@ from mmcv.runner import force_fp32
 from torch.nn import BatchNorm2d, ReLU
 
 from mmdet.core import (anchor_inside_flags, images_to_levels, multi_apply,
-                        unmap)
+                        reduce_mean, unmap)
 from ..builder import HEADS
 from .anchor_head import AnchorHead
 
@@ -200,8 +200,14 @@ class YOLOFHead(AnchorHead):
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
-        num_total_samples = (
-            num_total_pos + num_total_neg if self.sampling else num_total_pos)
+
+        flatten_labels = torch.cat(labels_list).reshape(-1)
+        pos_inds = ((flatten_labels >= 0)
+                    &
+                    (flatten_labels < self.num_classes)).nonzero().reshape(-1)
+        num_pos = torch.tensor(
+            len(pos_inds), dtype=torch.float, device=bbox_preds[0].device)
+        num_total_samples = max(reduce_mean(num_pos), 1.0)
 
         # anchor number of multi levels
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
