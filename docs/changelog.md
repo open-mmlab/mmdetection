@@ -1,5 +1,35 @@
 ## Changelog
 
+### v2.11. (01/4/2021)
+
+**Highlights**
+
+- Support new method: [Localization Distillation for Object Detection](https://arxiv.org/pdf/2102.12252.pdf)
+- Support Pytorch2ONNX with batch inference and dynamic shape
+
+**New Features**
+
+- Support localization distillation for object detection (#4758)
+- Support Pytorch2ONNX with batch inference and dynamic shape for Faster-RCNN and mainstream one-stage detectors (#4796)
+- Add Deformable Conv2d TensorRT plugin (#858)
+
+**Improvements**
+
+- Support batch inference in head of RetinaNet (#4699)
+- Add batch dimension in second stage of Faster-RCNN (#4785)
+- Support batch inference in bbox coder (#4721)
+- Add check for `ann_ids` in `COCODataset` to ensure it is unique (#4789)
+- support for showing the FPN results (#4716)
+- support dynamic shape for grid_anchor (#4684)
+- Support automatic statistical evaluation results and export them to EXCEL (#4693)
+- Move pycocotools version check to when it is used (#4880) 
+
+**Bug Fixes**
+
+- Fix a bug of TridentNet when doing the batch inference (#4717)
+- Fix a bug of Pytorch2ONNX in FASF (#4735)
+- Fix a bug when show the image with float type (#4732)
+
 ### v2.10.0 (01/03/2021)
 
 #### Highlights
