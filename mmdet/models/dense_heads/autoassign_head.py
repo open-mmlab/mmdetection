@@ -84,17 +84,16 @@ class CenterPrior(nn.Module):
             gt_center_x = ((gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2)
             gt_center_y = ((gt_bboxes[:, 1] + gt_bboxes[:, 3]) / 2)
             gt_center = torch.stack((gt_center_x, gt_center_y), dim=1)
-            gt_center = gt_center[None, :, :]
+            gt_center = gt_center[None]
             # instance_center has shape (1, num_gt, 2)
-            instance_center = self.mean[labels][None, :]
+            instance_center = self.mean[labels][None]
             # instance_sigma has shape (1, num_gt, 2)
-            instance_sigma = self.sigma[labels][None, :]
+            instance_sigma = self.sigma[labels][None]
             # distance has shape (num_points, num_gt, 2)
             distance = (((single_level_points - gt_center) / float(stride) -
                          instance_center)**2)
-            center_prior = torch.exp(
-                -distance /
-                (2 * instance_sigma**2).clamp(min=EPS)).prod(dim=-1)
+            center_prior = torch.exp(-distance /
+                                     (2 * instance_sigma**2)).prod(dim=-1)
             center_prior_list.append(center_prior)
         center_prior_weights = torch.cat(center_prior_list, dim=0)
 
@@ -254,16 +253,25 @@ class AutoAssignHead(FCOSHead):
         joint_conf = (cls_score * objectness)
         p_neg_weight = torch.ones_like(joint_conf)
         if num_gts > 0:
-            temp_weight = (1 / (1 - ious))
-            iou_function_min = temp_weight.min(0)[0][None, :]
-            iou_function_max = temp_weight.max(0)[0][None, :]
-            neg_weight = 1 - (temp_weight - iou_function_min) / (
-                iou_function_max - iou_function_min).clamp(min=EPS)
+            # the order of dinmension would affect the value of
+            # p_neg_weight, we strictly follow the original
+            # implementation.
+            inside_gt_bbox_mask = inside_gt_bbox_mask.permute(1, 0)
+            ious = ious.permute(1, 0)
 
             foreground_idxs = torch.nonzero(inside_gt_bbox_mask, as_tuple=True)
-            neg_weight = neg_weight[inside_gt_bbox_mask]
-            p_neg_weight[foreground_idxs[0],
-                         gt_labels[foreground_idxs[1]]] = neg_weight
+            temp_weight = (1 / (1 - ious[foreground_idxs]).clamp_(EPS))
+
+            def normalize(x):
+                return (x - x.min() + EPS) / (x.max() - x.min() + EPS)
+
+            for instance_idx in range(num_gts):
+                idxs = foreground_idxs[0] == instance_idx
+                if idxs.any():
+                    temp_weight[idxs] = normalize(temp_weight[idxs])
+
+            p_neg_weight[foreground_idxs[1],
+                         gt_labels[foreground_idxs[0]]] = 1 - temp_weight
 
         logits = (joint_conf * p_neg_weight)
         neg_loss = (
@@ -368,10 +376,10 @@ class AutoAssignHead(FCOSHead):
                                      center_prior_weight_list)
         pos_avg_factor = reduce_mean(bbox_pred.new_tensor(all_num_gt))
         pos_loss = sum(pos_loss_list) / pos_avg_factor
+
         neg_loss_list, = multi_apply(self.get_neg_loss_single, cls_scores,
                                      objectnesses, gt_labels, ious_list,
                                      inside_gt_bbox_mask_list)
-
         neg_avg_factor = sum(item.data.sum()
                              for item in center_prior_weight_list)
         neg_avg_factor = reduce_mean(neg_avg_factor)
@@ -384,14 +392,17 @@ class AutoAssignHead(FCOSHead):
                 center_prior_weight_list[i].sum().clamp_(min=EPS))
         center_loss = torch.stack(center_loss).mean() * self.center_loss_weight
 
+        # avoid dead lock in DDP
         if all_num_gt == 0:
             pos_loss = bbox_preds[0].sum() * 0
             dummy_center_prior_loss = self.center_prior.mean.sum(
             ) * 0 + self.center_prior.sigma.sum() * 0
             center_loss = objectnesses[0].sum() * 0 + dummy_center_prior_loss
 
-        return dict(
+        loss = dict(
             loss_pos=pos_loss, loss_neg=neg_loss, loss_center=center_loss)
+
+        return loss
 
     def get_targets(self, points, gt_bboxes_list):
         """Compute regression targets and each point inside or outside gt_bbox
@@ -459,8 +470,8 @@ class AutoAssignHead(FCOSHead):
         num_gts = gt_bboxes.size(0)
         gt_bboxes = gt_bboxes[None].expand(num_points, num_gts, 4)
         xs, ys = points[:, 0], points[:, 1]
-        xs = xs[:, None].expand(num_points, num_gts)
-        ys = ys[:, None].expand(num_points, num_gts)
+        xs = xs[:, None]
+        ys = ys[:, None]
         left = xs - gt_bboxes[..., 0]
         right = gt_bboxes[..., 2] - xs
         top = ys - gt_bboxes[..., 1]
