@@ -447,6 +447,16 @@ class CocoDataset(CustomDataset):
                 break
 
             iou_type = 'bbox' if metric == 'proposal' else metric
+            if iou_type == 'segm':
+                # Refer to https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py#L331  # noqa
+                # When evaluating mask AP, if the results contain bbox,
+                # cocoapi will use the box area instead of the mask area
+                # for calculating the instance area. Though the overall AP
+                # is not affected, this leads to different small/medium/large
+                # mask AP results.
+                for x in cocoDt['annotations']:
+                    x.pop('bbox', None)
+
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
