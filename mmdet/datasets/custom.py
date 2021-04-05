@@ -48,6 +48,10 @@ class CustomDataset(Dataset):
             boxes of the dataset's classes will be filtered out. This option
             only works when `test_mode=False`, i.e., we never filter images
             during tests.
+        filter_only_ignore (bool, optional): If set true, images with
+            only ignored/crowned bounding boxes of the dataset's classes
+            will be filtered out. This option only works when
+            `test_mode=False`, i.e., we never filter images during tests.
     """
 
     CLASSES = None
@@ -61,7 +65,8 @@ class CustomDataset(Dataset):
                  seg_prefix=None,
                  proposal_file=None,
                  test_mode=False,
-                 filter_empty_gt=True):
+                 filter_empty_gt=True,
+                 filter_only_ignore=False):
         self.ann_file = ann_file
         self.data_root = data_root
         self.img_prefix = img_prefix
@@ -69,6 +74,7 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
+        self.filter_only_ignore = filter_only_ignore
         self.CLASSES = self.get_classes(classes)
 
         # join paths if data_root is specified
@@ -153,6 +159,11 @@ class CustomDataset(Dataset):
         if self.filter_empty_gt:
             warnings.warn(
                 'CustomDataset does not support filtering empty gt images.')
+        if self.filter_only_ignore:
+            warnings.warn(
+                'CustomDataset does not support filtering the images with'
+                'only ignore label.')
+
         valid_inds = []
         for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) >= min_size:
@@ -186,7 +197,8 @@ class CustomDataset(Dataset):
             dict: Training/test data (with annotation if `test_mode` is set \
                 True).
         """
-
+        idx = 0
+        'data/coco/train2017/000000397133.jpg'
         if self.test_mode:
             return self.prepare_test_img(idx)
         while True:

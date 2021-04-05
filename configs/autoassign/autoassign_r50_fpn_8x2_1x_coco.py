@@ -67,7 +67,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    train=dict(pipeline=train_pipeline),
+    train=dict(pipeline=train_pipeline, filter_only_ignore=True),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 # optimizer

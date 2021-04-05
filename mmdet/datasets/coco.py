@@ -113,15 +113,27 @@ class CocoDataset(CustomDataset):
         # to filter out images if self.filter_empty_gt=True
         ids_in_cat &= ids_with_ann
 
+        def only_ignore(img_id):
+            ann_ids = self.coco.getAnnIds(imgIds=img_id, catIds=self.cat_ids)
+            anns = self.coco.load_anns(ann_ids)
+            for ann in anns:
+                if ann.get('iscrowd', 0) == 0:
+                    return False
+            return True
+
         valid_img_ids = []
         for i, img_info in enumerate(self.data_infos):
             img_id = self.img_ids[i]
             if self.filter_empty_gt and img_id not in ids_in_cat:
                 continue
+            if self.filter_only_ignore and only_ignore(img_id):
+                continue
+
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
                 valid_img_ids.append(img_id)
         self.img_ids = valid_img_ids
+
         return valid_inds
 
     def _parse_ann_info(self, img_info, ann_info):
