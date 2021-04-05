@@ -134,6 +134,12 @@ class CocoDataset(CustomDataset):
                 valid_img_ids.append(img_id)
         self.img_ids = valid_img_ids
 
+        print_log(
+            f'Removed {len(self.data_infos) - len(valid_img_ids)} images. '
+            f'{len(valid_img_ids)} images left',
+            logger=None,
+            level=logging.INFO)
+
         return valid_inds
 
     def _parse_ann_info(self, img_info, ann_info):
