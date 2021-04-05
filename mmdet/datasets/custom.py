@@ -197,8 +197,6 @@ class CustomDataset(Dataset):
             dict: Training/test data (with annotation if `test_mode` is set \
                 True).
         """
-        idx = 0
-        'data/coco/train2017/000000397133.jpg'
         if self.test_mode:
             return self.prepare_test_img(idx)
         while True:
