@@ -21,19 +21,19 @@ def dynamic_clip_for_onnx(x1, y1, x2, y2, max_shape):
     assert isinstance(
         max_shape,
         torch.Tensor), '`max_shape` should be tensor of (h,w) for onnx'
-    h = max_shape[0].to(x1)
-    w = max_shape[1].to(x1)
-    zero = x1.new_tensor(0)
-    # clip by 0
-    x1 = torch.where(x1 < zero, zero, x1)
-    y1 = torch.where(y1 < zero, zero, y1)
-    x2 = torch.where(x2 < zero, zero, x2)
-    y2 = torch.where(y2 < zero, zero, y2)
-    # clip by h and w
-    x1 = torch.where(x1 > w, w, x1)
-    y1 = torch.where(y1 > h, h, y1)
-    x2 = torch.where(x2 > w, w, x2)
-    y2 = torch.where(y2 > h, h, y2)
+
+    x1 = x1 / max_shape[1]
+    y1 = y1 / max_shape[0]
+    x2 = x2 / max_shape[1]
+    y2 = y2 / max_shape[0]
+    x1 = torch.clamp(x1, 0, 1)
+    y1 = torch.clamp(y1, 0, 1)
+    x2 = torch.clamp(x2, 0, 1)
+    y2 = torch.clamp(y2, 0, 1)
+    x1 = x1 * max_shape[1]
+    y1 = y1 * max_shape[0]
+    x2 = x2 * max_shape[1]
+    y2 = y2 * max_shape[0]
     return x1, y1, x2, y2
 
 
