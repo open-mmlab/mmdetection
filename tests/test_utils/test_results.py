@@ -17,7 +17,10 @@ def test_results():
     assert results.a == 2000
     assert results.get('a') == results['a'] == results.a
     results._meta = 1000
-    results.bbox = torch.ones(2, 3, 4, 5).cuda()
+    if torch.cuda.is_available():
+        results.bbox = torch.ones(2, 3, 4, 5).cuda()
+    else:
+        results.bbox = torch.ones(2, 3, 4, 5)
     results.bbox.sum()
     with pytest.raises(AttributeError):
         results.img_size = 100
@@ -29,7 +32,7 @@ def test_results():
     results.remove('a')
     assert not results.has('a')
 
-    new_results = results.cuda()
+    new_results = copy.deepcopy(results)
     new_results.bbox[0] = 100
     assert new_results.bbox.sum() != results.bbox.sum()
     cpu_results = new_results.cpu()
