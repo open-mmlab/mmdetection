@@ -274,12 +274,11 @@ class MaskTestMixin(object):
 
         # if det_bboxes is rescaled to the original image size, we need to
         # rescale it back to the testing scale to obtain RoIs.
-        if rescale and not isinstance(scale_factors[0], float):
-            scale_factors = det_bboxes.new_tensor(scale_factors)
-
         det_bboxes = det_bboxes[..., :4]
         if rescale:
-            det_bboxes *= scale_factors.unsqueeze(1)
+            if not isinstance(scale_factors[0], float):
+                scale_factors = det_bboxes.new_tensor(scale_factors)
+            det_bboxes = det_bboxes * scale_factors.unsqueeze(1)
 
         batch_index = torch.arange(
             det_bboxes.size(0), device=det_bboxes.device).float().view(
