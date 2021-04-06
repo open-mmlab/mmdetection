@@ -367,7 +367,6 @@ class BBoxHead(nn.Module):
             labels = labels.reshape(batch_size, -1)
             scores = scores.reshape(batch_size, -1)
             bboxes = bboxes.reshape(batch_size, -1, 4)
-            # get topk bboxes if set deploy_nms_pre
 
             max_size = torch.max(img_shape)
             # Offset bboxes of each class so that bboxes of different labels
