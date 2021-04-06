@@ -1,4 +1,5 @@
 import copy
+import itertools
 
 import numpy as np
 import torch
@@ -81,8 +82,13 @@ class Results(object):
         else:
             raise AttributeError(f'Can not find {name}')
 
+    __getitem__ = __getattr__
+
     def set(self, name, value):
         self._results_field[name] = value
+
+    def get(self, name):
+        return self._results_field[name]
 
     def has(self, name):
         return name in self._results_field or name in self._meta_info_field
@@ -169,3 +175,99 @@ class Results(object):
         return new_instance
 
     __repr__ = __str__
+
+
+class InstanceResults(Results):
+
+    def __len__(self):
+        for v in self._results_field.values():
+            return v.__len__()
+        raise NotImplementedError('This is an empty instance.')
+
+    def set(self, name, value):
+        assert isinstance(value, (torch.Tensor, np.ndarray, list)), \
+            f'Can set {type(value)}, only support' \
+            f' {(torch.Tensor, np.ndarray, list)}'
+        for v in self._results_field.values():
+            assert len(v) == len(value), f'the length of ' \
+                                         f'values {len(value)} is ' \
+                                         f'not consistent with the length ' \
+                                         f'of this instancne {len(self)}'
+        self._results_field[name] = value
+
+    def __getitem__(self, item):
+        """
+        Args:
+            item (str:`torch.LongTensor`, obj:`torch.BoolTensor`):
+                get the corresponding values according to item.
+
+        Returns:
+            obj:`InstanceResults`: Corresponding values.
+        """
+
+        if isinstance(item, str):
+            super().__getitem__(item)
+
+        if type(item) == int:
+            if item >= len(self) or item < -len(self):
+                raise IndexError('Instances index out of range!')
+            else:
+                # keep the dimension
+                item = slice(item, None, len(self))
+
+        r_results = self.__deepcopy__()
+        r_results._results_field = dict()
+        if isinstance(item, (torch.LongTensor, torch.BoolTensor)):
+            assert item.dim() == 1, 'Only support to get the' \
+                                 ' values along the first dimension.'
+            for k, v in self._results_field.items():
+                if isinstance(v, torch.Tensor):
+                    r_results[k] = v[item]
+                elif isinstance(v, np.ndarray):
+                    r_results[k] = v[item.cpu().numpy()]
+                elif isinstance(v, list):
+                    r_list = []
+                    if isinstance(item, torch.BoolTensor):
+                        indexs = torch.nonzero(item).view(-1)
+                    else:
+                        indexs = item
+                    for index in indexs:
+                        r_list.append(v[index])
+                    r_results[k] = r_list
+        else:
+            for k, v in self._results_field.items():
+                r_results[k] = v[item]
+        return r_results
+
+    @staticmethod
+    def cat(instance_lists):
+        """Concat the predictions of all InstanceResults in the list.
+
+        Args:
+            instance_lists(list[InstanceResults]): A list of InstanceResults.
+
+        Returns:
+            obj:`InstanceResults`
+        """
+        assert all(isinstance(i, InstanceResults) for i in instance_lists)
+        assert len(instance_lists) > 0
+        if len(instance_lists) == 1:
+            return instance_lists[0]
+
+        cat_results = instance_lists[0].__class__()
+        for k in instance_lists[0]._results_field.keys():
+            values = [i.get(k) for i in instance_lists]
+            v0 = values[0]
+            if isinstance(v0, torch.Tensor):
+                values = torch.cat(values, dim=0)
+            elif isinstance(v0, np.ndarray):
+                values = np.concatenate(values, axis=0)
+            elif isinstance(v0, list):
+                values = list(itertools.chain(*values))
+            elif hasattr(type(v0), 'cat'):
+                values = type(v0).cat(values)
+            else:
+                raise ValueError(
+                    f'Can not concat the {k} which is a {type(k)}')
+            cat_results[k] = values
+        return cat_results
