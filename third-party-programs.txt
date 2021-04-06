@@ -14,7 +14,7 @@ terms are listed below.
 
 -------------------------------------------------------------
 
-1. flops_counter.py
+1. Flops counter
    Copyright (c) 2018 Vladislav Sovrasov
 
 MIT License
@@ -44,7 +44,7 @@ SOFTWARE.
 
 -------------------------------------------------------------
 
-3. deformable_psroi_pooling
+3. deform_pool_cuda_kernel
    Copyright (c) 2017 Microsoft
    Licensed under The MIT License [see LICENSE for details]
 
@@ -87,6 +87,15 @@ SOFTWARE.
    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+   CONTRIBUTION AGREEMENT
+
+   By contributing to the BVLC/caffe repository through pull-request, comment,
+   or otherwise, the contributor releases their content to the
+   license and copyright terms herein.
+
+   Copyright (c) 2018 Microsoft
+   Licensed under The MIT License [see LICENSE for details]
 
 -------------------------------------------------------------
 
