@@ -101,7 +101,7 @@ class Results(object):
         new_instance = copy.deepcopy(self)
         for k, v in new_instance.items():
             if isinstance(v, torch.Tensor):
-                v.to(*args, **kwargs)
+                new_instance[k] = v.to(*args, **kwargs)
         return new_instance
 
     # Tensor-like methods

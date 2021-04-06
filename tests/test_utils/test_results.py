@@ -42,3 +42,7 @@ def test_results():
     assert copy_results.bbox is results.bbox
     deep_copy = copy.deepcopy(results)
     assert deep_copy.bbox is not results.bbox
+    double_results = results.to(torch.double)
+    for k, v in double_results.items():
+        if isinstance(v, torch.Tensor):
+            assert v.dtype is torch.double
