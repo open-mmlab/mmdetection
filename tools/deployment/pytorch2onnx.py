@@ -93,7 +93,7 @@ def pytorch2onnx(config_path,
         min_required_version = '0.3.0'
         assert digit_version(onnxsim.__version__) >= digit_version(
             min_required_version
-        ), f'Requires to install onnxsim>={min_required_version}'
+        ), f'Requires to install onnx-simplify>={min_required_version}'
 
         input_dic = {'input': one_img.detach().cpu().numpy()}
         onnxsim.simplify(
