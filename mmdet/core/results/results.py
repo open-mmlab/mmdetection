@@ -43,9 +43,26 @@ class Results(object):
         for k, v in kwargs.items():
             self.__setattr__(k, v)
 
+    def new_results(self):
+        new_results = self.__class__()
+        for k, v in self.__dict__.items():
+            if k != '_results_field':
+                new_results[k] = copy.deepcopy(v)
+            else:
+                new_results[k] = dict()
+        return new_results
+
     def export_results(self):
-        """Export the predictions of the model."""
-        return copy.deepcopy(self._results_field)
+        # convert all tensor to numpy
+        # then export the results to a dict
+        r_results = dict()
+        for k, v in self._results_field.items():
+            if isinstance(v, torch.Tensor):
+                v = v.cpu().numpy()
+                r_results[k] = v
+            else:
+                r_results[k] = copy.deepcopy(v)
+        return r_results
 
     def keys(self):
         return list(self._results_field.keys()) + \
@@ -85,7 +102,10 @@ class Results(object):
     __getitem__ = __getattr__
 
     def set(self, name, value):
-        self._results_field[name] = value
+        if isinstance(value, torch.Tensor) and self.device:
+            self._results_field[name] = value.to(self.device)
+        else:
+            self._results_field[name] = value
 
     def get(self, name):
         return self._results_field[name]
@@ -102,47 +122,57 @@ class Results(object):
     def meta_info(self):
         return copy.deepcopy(self._meta_info_field)
 
+    @property
+    def device(self):
+        device = None
+        for v in self._results_field.values():
+            if isinstance(v, torch.Tensor):
+                return v.device
+        return device
+
+    def __delattr__(self, item):
+        if item in ('_meta_info_field', '_results_field'):
+            raise AssertionError(f'You can not delete {item}')
+            super().__delattr__(item)
+
     # Tensor-like methods
     def to(self, *args, **kwargs):
-        new_instance = copy.deepcopy(self)
-        for k, v in new_instance.items():
+        new_instance = self.new_results()
+        for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
                 new_instance[k] = v.to(*args, **kwargs)
         return new_instance
 
     # Tensor-like methods
     def cpu(self):
-        new_instance = self.__deepcopy__()
-        for k, v in new_instance.items():
+        new_instance = self.new_results()
+        for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
                 new_instance[k] = v.cpu()
         return new_instance
 
     # Tensor-like methods
     def cuda(self):
-        new_instance = self.__deepcopy__()
-        for k, v in self.__dict__.items():
-            if isinstance(v, dict):
-                new_instance[k] = copy.deepcopy(v)
-        for k, v in new_instance.items():
+        new_instance = self.new_results()
+        for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
                 new_instance[k] = v.cuda()
         return new_instance
 
     # Tensor-like methods
     def detach(self):
-        new_instance = self.__deepcopy__()
-        for k, v in new_instance.items():
+        new_instance = self.new_results()
+        for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
-                v.requires_grad_(False)
+                new_instance[k] = v.detach()
         return new_instance
 
     # Tensor-like methods
     def numpy(self):
-        new_instance = self.__deepcopy__()
-        for k, v in new_instance.items():
+        new_instance = self.new_results()
+        for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
-                new_instance[k] = v.numpy()
+                new_instance[k] = v.cpu().numpy()
         return new_instance
 
     def __str__(self):
@@ -215,8 +245,7 @@ class InstanceResults(Results):
                 # keep the dimension
                 item = slice(item, None, len(self))
 
-        r_results = self.__deepcopy__()
-        r_results._results_field = dict()
+        r_results = self.new_results()
         if isinstance(item, (torch.LongTensor, torch.BoolTensor)):
             assert item.dim() == 1, 'Only support to get the' \
                                  ' values along the first dimension.'
@@ -254,7 +283,7 @@ class InstanceResults(Results):
         if len(instance_lists) == 1:
             return instance_lists[0]
 
-        cat_results = instance_lists[0].__class__()
+        cat_results = instance_lists[0].new_results()
         for k in instance_lists[0]._results_field.keys():
             values = [i.get(k) for i in instance_lists]
             v0 = values[0]

@@ -10,17 +10,35 @@ from mmdet.core.results.results import InstanceResults, Results
 def test_results():
     meta_info = dict(
         img_size=(256, 256), path='dadfaff', scale_factor=np.array([1.5, 1.5]))
+
     results = Results(meta_info)
+
+    with pytest.raises(AssertionError):
+        delattr(results, '_meta_info_field')
+
+    with pytest.raises(AssertionError):
+        delattr(results, '_results_field')
+
+    assert results.device is None
     results.a = 1000
     results['a'] = 2000
     assert results['a'] == 2000
     assert results.a == 2000
     assert results.get('a') == results['a'] == results.a
     results._meta = 1000
+    assert '_meta' not in results.keys()
     if torch.cuda.is_available():
         results.bbox = torch.ones(2, 3, 4, 5).cuda()
+        results.score = torch.ones(2, 3, 4, 4)
+        assert results.score.device == \
+               results.bbox.device == results.device
+        assert torch.ones(1).to(results.device).device ==\
+               results.device
     else:
         results.bbox = torch.ones(2, 3, 4, 5)
+
+    assert results.device == results.bbox.device
+    assert len(results.new_results().results()) == 0
     results.bbox.sum()
     with pytest.raises(AttributeError):
         results.img_size = 100
@@ -43,6 +61,10 @@ def test_results():
     assert isinstance(cpu_results.numpy().bbox, np.ndarray)
     dump_results = results.export_results()
     assert 'img_size' not in dump_results
+
+    for v in dump_results.values():
+        assert not isinstance(v, torch.Tensor)
+
     copy_results = copy.copy(results)
     assert copy_results.bbox is results.bbox
     deep_copy = copy.deepcopy(results)
