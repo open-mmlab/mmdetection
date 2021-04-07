@@ -44,6 +44,8 @@ class Results(object):
             self.__setattr__(k, v)
 
     def new_results(self):
+        """Return a new results with same image meta information and empty
+        results_field."""
         new_results = self.__class__()
         for k, v in self.__dict__.items():
             if k != '_results_field':
@@ -53,8 +55,8 @@ class Results(object):
         return new_results
 
     def export_results(self):
-        # convert all tensor to numpy
-        # then export the results to a dict
+        """Export results field to a dict, all tensor in results field would be
+        converted to numpy."""
         r_results = dict()
         for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
@@ -124,6 +126,8 @@ class Results(object):
 
     @property
     def device(self):
+        """Return the device of all tensor in results field, return None when
+        results field is empty."""
         device = None
         for v in self._results_field.values():
             if isinstance(v, torch.Tensor):
@@ -137,6 +141,7 @@ class Results(object):
 
     # Tensor-like methods
     def to(self, *args, **kwargs):
+        """Apply same name function to all tensors in results field."""
         new_instance = self.new_results()
         for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
@@ -145,6 +150,7 @@ class Results(object):
 
     # Tensor-like methods
     def cpu(self):
+        """Apply same name function to all tensors in results field."""
         new_instance = self.new_results()
         for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
@@ -153,6 +159,7 @@ class Results(object):
 
     # Tensor-like methods
     def cuda(self):
+        """Apply same name function to all tensors in results field."""
         new_instance = self.new_results()
         for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
@@ -161,6 +168,7 @@ class Results(object):
 
     # Tensor-like methods
     def detach(self):
+        """Apply same name function to all tensors in results field."""
         new_instance = self.new_results()
         for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
@@ -169,6 +177,7 @@ class Results(object):
 
     # Tensor-like methods
     def numpy(self):
+        """Apply same name function to all tensors in results field."""
         new_instance = self.new_results()
         for k, v in self._results_field.items():
             if isinstance(v, torch.Tensor):
