@@ -482,7 +482,7 @@ class YOLACTSegmHead(BaseModule):
                  init_cfg=dict(
                      type='Xavier',
                      distribution='uniform',
-                     overrdie=dict(name='segm_conv'))):
+                     override=dict(name='segm_conv'))):
         super(YOLACTSegmHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes

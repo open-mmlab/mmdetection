@@ -4,12 +4,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import VGG
+from mmcv.runner import BaseModule
 
 from ..builder import BACKBONES
 
 
 @BACKBONES.register_module()
-class SSDVGG(VGG):
+class SSDVGG(VGG, BaseModule):
     """VGG Backbone network for single-shot-detection.
 
     Args:
