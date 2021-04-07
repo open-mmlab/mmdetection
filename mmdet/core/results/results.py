@@ -227,6 +227,10 @@ class InstanceResults(Results):
         assert isinstance(value, (torch.Tensor, np.ndarray, list)), \
             f'Can set {type(value)}, only support' \
             f' {(torch.Tensor, np.ndarray, list)}'
+
+        if isinstance(value, torch.Tensor) and self.device:
+            value = value.to(self.device)
+
         for v in self._results_field.values():
             assert len(v) == len(value), f'the length of ' \
                                          f'values {len(value)} is ' \

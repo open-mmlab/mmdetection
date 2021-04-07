@@ -88,6 +88,12 @@ def test_instanceresults():
         results['mask'] = torch.rand(num_instance, 224, 224)
         results['instances_infos'] = [1] * num_instance
         results['cpu_bbox'] = np.random.random((num_instance, 4))
+        if torch.cuda.is_available():
+            results.cuda_tensor = torch.rand(num_instance).cuda()
+            assert not results.cuda_tensor.is_cuda
+            cuda_results = results.cuda()
+            assert cuda_results.cuda_tensor.is_cuda
+
         assert len(results[0]) == 1
         with pytest.raises(IndexError):
             return results[num_instance + 1]
