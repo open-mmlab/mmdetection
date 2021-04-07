@@ -527,7 +527,7 @@ class HRNet(nn.Module):
         return y_list
 
     def train(self, mode=True):
-        """Convert the model into training mode whill keeping the normalization
+        """Convert the model into training mode will keeping the normalization
         layer freezed."""
         super(HRNet, self).train(mode)
         if mode and self.norm_eval:
