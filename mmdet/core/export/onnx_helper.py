@@ -6,8 +6,8 @@ import torch
 def dynamic_clip_for_onnx(x1, y1, x2, y2, max_shape):
     """Clip boxes dynamically for onnx.
 
-    Since torch.clamp cannot have dynamic
-    `min` and `max`, we have to use torch.where to workaround.
+    Since torch.clamp cannot have dynamic `min` and `max`, we scale the
+      boxes by 1/max_shape and clamp in the range [0, 1].
 
     Args:
         x1 (Tensor): The x1 for bounding boxes.
@@ -22,14 +22,19 @@ def dynamic_clip_for_onnx(x1, y1, x2, y2, max_shape):
         max_shape,
         torch.Tensor), '`max_shape` should be tensor of (h,w) for onnx'
 
+    # scale by 1/max_shape
     x1 = x1 / max_shape[1]
     y1 = y1 / max_shape[0]
     x2 = x2 / max_shape[1]
     y2 = y2 / max_shape[0]
+
+    # clamp [0, 1]
     x1 = torch.clamp(x1, 0, 1)
     y1 = torch.clamp(y1, 0, 1)
     x2 = torch.clamp(x2, 0, 1)
     y2 = torch.clamp(y2, 0, 1)
+
+    # scale back
     x1 = x1 * max_shape[1]
     y1 = y1 * max_shape[0]
     x2 = x2 * max_shape[1]
