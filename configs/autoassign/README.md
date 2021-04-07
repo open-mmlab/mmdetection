@@ -8,4 +8,4 @@
 
 **Note**:
 
-1. We find that the performance is unstable with 1x setting and may fluctuate by about 0.3 mAP. We report the best results.
+1. We find that the performance is unstable with 1x setting and may fluctuate by about 0.3 mAP. mAP 40.3 ~ 40.6 is acceptable.
