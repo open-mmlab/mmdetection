@@ -389,7 +389,11 @@ class BBoxHead(nn.Module):
                 labels=labels)
             # Offset the bboxes back after dummy nms.
             offsets = (labels * max_size + 1).unsqueeze(2)
-            batch_dets[..., :4] -= offsets
+            # Indexing + inplace operation fails with dynamic shape in ONNX
+            # original style: batch_dets[..., :4] -= offsets
+            bboxes, scores = batch_dets[..., 0:4], batch_dets[..., 4:5]
+            bboxes -= offsets
+            batch_dets = torch.cat([bboxes, scores], dim=2)
             return batch_dets, labels
         det_bboxes = []
         det_labels = []
