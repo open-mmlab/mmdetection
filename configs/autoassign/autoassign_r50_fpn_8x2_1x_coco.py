@@ -1,10 +1,12 @@
+# We follow the original implementation which
+# adopts the Caffe pre-trained backbone.
 _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 model = dict(
     type='AutoAssign',
-    pretrained='open-mmlab://detectron/resnet50_caffe',
+    pretrained='open-mmlab://detectron2/resnet50_caffe',
     backbone=dict(
         type='ResNet',
         depth=50,
