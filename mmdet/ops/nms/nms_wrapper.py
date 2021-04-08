@@ -96,7 +96,7 @@ def nms(boxes, scores, iou_threshold, score_thr=0.0, max_num=-1, offset=0):
         inds = order.masked_select(select)
     else:
         if max_num < 0:
-            max_num = boxes.size()[0] #sys.maxsize
+            max_num = boxes.size()[0]
         inds = NMSop.apply(boxes, scores, iou_threshold, score_thr, max_num, offset)
     dets = torch.cat((boxes[inds], scores[inds].reshape(-1, 1)), dim=1)
     if is_numpy:

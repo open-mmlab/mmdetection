@@ -299,9 +299,9 @@ def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshol
         from torch.onnx.symbolic_opset9 import select, squeeze, unsqueeze
         boxes = unsqueeze(g, bboxes, 0)
         scores = unsqueeze(g, unsqueeze(g, scores, 0), 0)
-        max_output_per_class = g.op(
-            'Constant',
-            value_t=torch.tensor([max_num], dtype=torch.long))
+        if not sym_help._is_value(max_num):
+            max_num = g.op("Constant", value_t=torch.tensor(max_num, dtype=torch.long))
+        max_output_per_class = max_num
         iou_threshold = g.op(
             'Constant',
             value_t=torch.tensor([iou_threshold], dtype=torch.float))
