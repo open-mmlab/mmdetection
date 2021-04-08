@@ -27,7 +27,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.7]
-        torch: [1.5.1, 1.6.0]
+        torch: [1.5.1, 1.6.0, 1.7.1, 1.8.1]
         include:
           - torch: 1.5.1
             torchvision: 0.6.1
@@ -35,6 +35,12 @@ jobs:
           - torch: 1.6.0
             torchvision: 0.7.0
             mmcv: "latest+torch1.6.0+cpu"
+          - torch: 1.7.1
+            torchvision: 0.8.2
+            mmcv: "latest+torch1.7.0+cpu"
+          - torch: 1.8.1
+            torchvision: 0.9.1
+            mmcv: "latest+torch1.8.0+cpu"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -70,7 +76,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.7]
-        torch: [1.5.1+cu101, 1.6.0+cu101]
+        torch: [1.5.1+cu101, 1.6.0+cu101, 1.7.1+cu101, 1.8.1+cu101]
         include:
           - torch: 1.5.1+cu101
             torchvision: 0.6.1+cu101
@@ -78,6 +84,12 @@ jobs:
           - torch: 1.6.0+cu101
             torchvision: 0.7.0+cu101
             mmcv: "latest+torch1.6.0+cu101"
+          - torch: 1.7.1+cu101
+            torchvision: 0.8.2+cu101
+            mmcv: "latest+torch1.7.0+cu101"
+          - torch: 1.8.1+cu101
+            torchvision: 0.9.1+cu101
+            mmcv: "latest+torch1.8.0+cu101"
           - torch: 1.6.0+cu101
             torchvision: 0.7.0+cu101
             mmcv: "latest+torch1.6.0+cu101"

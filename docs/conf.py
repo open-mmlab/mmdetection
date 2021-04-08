@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'Object Detection OpenVINO Training Extensions'
-copyright = '2018-2020, OpenMMLab; 2019-2020, Intel'
+copyright = '2018-2020, OpenMMLab; 2019-2021, Intel'
 author = 'MMDetection Authors, Intel'
 version_file = '../mmdet/version.py'
 
