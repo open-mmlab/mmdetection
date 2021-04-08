@@ -35,6 +35,7 @@ class Results(object):
 
         self._meta_info_field = dict()
         self._results_field = dict()
+
         if img_meta is not None:
             img_meta = copy.deepcopy(img_meta)
             for k, v in img_meta.items():
@@ -98,8 +99,10 @@ class Results(object):
             return self._meta_info_field[name]
         elif name in self._results_field:
             return self._results_field[name]
+        elif name in dir(self):
+            return super(Results, self).__getattr__(name)
         else:
-            raise AttributeError(f'Can not find {name}')
+            raise AttributeError(name)
 
     __getitem__ = __getattr__
 
@@ -109,14 +112,26 @@ class Results(object):
         else:
             self._results_field[name] = value
 
-    def get(self, name):
-        return self._results_field[name]
+    def get(self, *args):
+        assert len(args) < 3, '`get` get more than 2 arguments'
+        name = args[0]
+        if name in self._results_field:
+            return self._results_field.get(name)
+        elif name in self._meta_info_field:
+            return self._meta_info_field.get(name)
+        elif name.startswith('_'):
+            return self.__dict__.get(*args)
 
-    def has(self, name):
-        return name in self._results_field or name in self._meta_info_field
-
-    def remove(self, name):
-        del self._results_field[name]
+    def pop(self, *args):
+        assert len(args) < 3, '`pop` get more than 2 arguments'
+        name = args[0]
+        if name in self._results_field:
+            return self._results_field.pop(name)
+        elif name in self._meta_info_field:
+            raise KeyError(f'{name} is a key in meta information, '
+                           f'which is unmodifiable')
+        elif name.startswith('_'):
+            return self.__dict__.pop(*args)
 
     def results(self):
         return copy.deepcopy(self._results_field)
@@ -134,10 +149,22 @@ class Results(object):
                 return v.device
         return device
 
+    def __contains__(self, item):
+        return item in self._results_field or \
+                    item in self._meta_info_field
+
     def __delattr__(self, item):
-        if item in ('_meta_info_field', '_results_field'):
+        if not item.startswith('_'):
+            if item in self._meta_info_field:
+                raise KeyError(f'{item} is used in meta information, '
+                               f'which is unmodifiable.')
+            del self._results_field[item]
+        elif item in ('_meta_info_field', '_results_field'):
             raise AssertionError(f'You can not delete {item}')
+        else:
             super().__delattr__(item)
+
+    __delitem__ = __delattr__
 
     # Tensor-like methods
     def to(self, *args, **kwargs):
