@@ -274,9 +274,9 @@ def patch_nms_aten_to():
         from mmdet.ops.nms import NMSop
         original_forward = NMSop.forward
 
-        def forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num):
+        def forward(ctx, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
             with torch.jit._disable_tracing():
-                inds = original_forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
+                inds = original_forward(ctx, bboxes, scores, iou_threshold, score_threshold, max_num, offset)
             return inds
         NMSop.forward = staticmethod(forward)
 

@@ -5,6 +5,8 @@ from torch.onnx import is_in_onnx_export
 
 from mmdet.integration.nncf import no_nncf_trace
 
+from mmcv.utils import deprecated_api_warning
+
 
 class NMSop(torch.autograd.Function):
     @staticmethod
@@ -23,6 +25,7 @@ class NMSop(torch.autograd.Function):
         return nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset)
 
 
+@deprecated_api_warning({'iou_thr': 'iou_threshold'})
 def nms(boxes, scores, iou_threshold, score_thr=0.0, max_num=-1, offset=0):
     """Dispatch to either CPU or GPU NMS implementations.
 
@@ -93,7 +96,7 @@ def nms(boxes, scores, iou_threshold, score_thr=0.0, max_num=-1, offset=0):
         inds = order.masked_select(select)
     else:
         if max_num < 0:
-            max_num = sys.maxsize
+            max_num = boxes.size()[0] #sys.maxsize
         inds = NMSop.apply(boxes, scores, iou_threshold, score_thr, max_num, offset)
     dets = torch.cat((boxes[inds], scores[inds].reshape(-1, 1)), dim=1)
     if is_numpy:
