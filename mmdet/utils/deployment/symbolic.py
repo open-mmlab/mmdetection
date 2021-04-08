@@ -300,7 +300,7 @@ def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshol
         boxes = unsqueeze(g, bboxes, 0)
         scores = unsqueeze(g, unsqueeze(g, scores, 0), 0)
         if not sym_help._is_value(max_num):
-            max_num = g.op("Constant", value_t=torch.tensor(max_num, dtype=torch.long))
+            max_num = g.op('Constant', value_t=torch.tensor(max_num, dtype=torch.long))
         max_output_per_class = max_num
         iou_threshold = g.op(
             'Constant',
