@@ -4,8 +4,10 @@ import itertools
 import numpy as np
 import torch
 
+from mmdet.utils.util_mixins import NiceRepr
 
-class Results(object):
+
+class Results(NiceRepr):
     """Base class of the model's results.
 
     The model predictions and meta information are stored in this class.
@@ -35,6 +37,7 @@ class Results(object):
 
         self._meta_info_field = dict()
         self._results_field = dict()
+
         if img_meta is not None:
             img_meta = copy.deepcopy(img_meta)
             for k, v in img_meta.items():
@@ -98,8 +101,10 @@ class Results(object):
             return self._meta_info_field[name]
         elif name in self._results_field:
             return self._results_field[name]
+        elif name in dir(self):
+            return super(Results, self).__getattr__(name)
         else:
-            raise AttributeError(f'Can not find {name}')
+            raise AttributeError(name)
 
     __getitem__ = __getattr__
 
@@ -109,14 +114,26 @@ class Results(object):
         else:
             self._results_field[name] = value
 
-    def get(self, name):
-        return self._results_field[name]
+    def get(self, *args):
+        assert len(args) < 3, '`get` get more than 2 arguments'
+        name = args[0]
+        if name in self._results_field:
+            return self._results_field.get(name)
+        elif name in self._meta_info_field:
+            return self._meta_info_field.get(name)
+        elif name.startswith('_'):
+            return self.__dict__.get(*args)
 
-    def has(self, name):
-        return name in self._results_field or name in self._meta_info_field
-
-    def remove(self, name):
-        del self._results_field[name]
+    def pop(self, *args):
+        assert len(args) < 3, '`pop` get more than 2 arguments'
+        name = args[0]
+        if name in self._results_field:
+            return self._results_field.pop(name)
+        elif name in self._meta_info_field:
+            raise KeyError(f'{name} is a key in meta information, '
+                           f'which is unmodifiable')
+        elif name.startswith('_'):
+            return self.__dict__.pop(*args)
 
     def results(self):
         return copy.deepcopy(self._results_field)
@@ -134,10 +151,22 @@ class Results(object):
                 return v.device
         return device
 
+    def __contains__(self, item):
+        return item in self._results_field or \
+                    item in self._meta_info_field
+
     def __delattr__(self, item):
-        if item in ('_meta_info_field', '_results_field'):
+        if not item.startswith('_'):
+            if item in self._meta_info_field:
+                raise KeyError(f'{item} is used in meta information, '
+                               f'which is unmodifiable.')
+            del self._results_field[item]
+        elif item in ('_meta_info_field', '_results_field'):
             raise AssertionError(f'You can not delete {item}')
+        else:
             super().__delattr__(item)
+
+    __delitem__ = __delattr__
 
     # Tensor-like methods
     def to(self, *args, **kwargs):
@@ -184,9 +213,8 @@ class Results(object):
                 new_instance[k] = v.cpu().numpy()
         return new_instance
 
-    def __str__(self):
-        repr = f'{self.__class__.__name__}: \n'
-        repr += '\n   META INFORMATION \n'
+    def __nice__(self):
+        repr = '\n   META INFORMATION \n'
         for k, v in self._meta_info_field.items():
             repr += f'{k}: {v} \n'
         repr += '\n   PREDICTIONS \n'
@@ -212,8 +240,6 @@ class Results(object):
             if isinstance(v, dict):
                 new_instance[k] = copy.deepcopy(v)
         return new_instance
-
-    __repr__ = __str__
 
 
 class InstanceResults(Results):
@@ -313,3 +339,8 @@ class InstanceResults(Results):
                     f'Can not concat the {k} which is a {type(k)}')
             cat_results[k] = values
         return cat_results
+
+
+if __name__ == '__main__':
+    r = Results(img_meta=dict(name='123'))
+    print(r)

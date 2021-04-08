@@ -19,6 +19,12 @@ def test_results():
     with pytest.raises(AssertionError):
         delattr(results, '_results_field')
 
+    results['_c'] = 10000
+    results.get('dad', None) is None
+    assert hasattr(results, '_c')
+    del results['_c']
+    assert not hasattr(results, '_c')
+
     assert results.device is None
     results.a = 1000
     results['a'] = 2000
@@ -46,9 +52,9 @@ def test_results():
     for k, v in results.items():
         if k == 'bbox':
             assert isinstance(v, torch.Tensor)
-    assert results.has('a')
-    results.remove('a')
-    assert not results.has('a')
+    assert 'a' in results
+    results.pop('a')
+    assert 'a' not in results
 
     new_results = copy.deepcopy(results)
     new_results.bbox[0] = 100
