@@ -1,6 +1,5 @@
-import torch.nn as nn
 from mmcv.cnn import ConvModule, Linear
-from mmcv.runner import BaseModule, auto_fp16
+from mmcv.runner import ModuleList, auto_fp16
 
 from mmdet.models.builder import HEADS
 from .fcn_mask_head import FCNMaskHead
@@ -31,7 +30,7 @@ class CoarseMaskHead(FCNMaskHead):
                  init_cfg=dict(
                      type='Xavier',
                      override=[
-                         dict(layer='Linear', name='fcs'),
+                         dict(name='fcs'),
                          dict(type='Constant', val=0.001, name='fc_logits')
                      ]),
                  *arg,
@@ -72,7 +71,7 @@ class CoarseMaskHead(FCNMaskHead):
 
         last_layer_dim = self.conv_out_channels * self.output_area
 
-        self.fcs = nn.ModuleList()
+        self.fcs = ModuleList()
         for i in range(num_fcs):
             fc_in_channels = (
                 last_layer_dim if i == 0 else self.fc_out_channels)
@@ -82,7 +81,7 @@ class CoarseMaskHead(FCNMaskHead):
         self.fc_logits = Linear(last_layer_dim, output_channels)
 
     def init_weight(self):
-        super(BaseModule, self).init_weight()
+        super(FCNMaskHead, self).init_weight()
 
     @auto_fp16()
     def forward(self, x):
