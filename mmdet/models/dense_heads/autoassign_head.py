@@ -387,13 +387,14 @@ class AutoAssignHead(FCOSHead):
 
         center_loss = []
         for i in range(len(img_metas)):
+
             if inside_gt_bbox_mask_list[i].any():
                 center_loss.append(
                     len(gt_bboxes[i]) /
                     center_prior_weight_list[i].sum().clamp_(min=EPS))
+            # when width or height of gt_bbox is smaller than stride of p3
             else:
-                center_loss.append(
-                    len(gt_bboxes[i]) / center_prior_weight_list[i].sum() * 0)
+                center_loss.append(center_prior_weight_list[i].sum() * 0)
 
         center_loss = torch.stack(center_loss).mean() * self.center_loss_weight
 
