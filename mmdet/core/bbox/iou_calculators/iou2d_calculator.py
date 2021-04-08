@@ -92,10 +92,12 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
 
             Total memory:
                 S = (9 x N x M + N + M) * 4 Byte,
-                9 x N x M large than N + M is always true when N and M >= 1.
 
             When using FP16, we can reduce:
                 R = (9 x N x M + N + M) * 4 / 2 Byte
+                R large than (N + M) * 4 * 2 is always true when N and M >= 1.
+                Obviously, N + M <= N * M < 3 * N * M, when N >=2 and M >=2,
+                           N + 1 < 3 * N, when N or M is 1.
 
             Given M = 40 (ground truth), N = 400000 (three anchor boxes
             in per grid, FPN, R-CNNs),
