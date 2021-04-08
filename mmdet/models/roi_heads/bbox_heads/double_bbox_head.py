@@ -102,7 +102,6 @@ class DoubleConvFCBBoxHead(BBoxHead):
                          dict(
                              type='Xavier',
                              name='fc_branch',
-                             layer='Linear',
                              distribution='uniform')
                      ]),
                  **kwargs):
@@ -147,7 +146,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
 
     def _add_fc_branch(self):
         """Add the fc branch which consists of a sequential of fc layers."""
-        branch_fcs = nn.ModuleList()
+        branch_fcs = ModuleList()
         for i in range(self.num_fcs):
             fc_in_channels = (
                 self.in_channels *

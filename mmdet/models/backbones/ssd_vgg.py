@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import VGG
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, Sequential
 
 from ..builder import BACKBONES
 
@@ -83,27 +83,28 @@ class SSDVGG(VGG, BaseModule):
         if isinstance(pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is a deprecated, '
                           'please use "init_cfg" instead')
-            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+            self.init_cfg = [dict(type='Pretrained', checkpoint=pretrained)]
         elif pretrained is None:
             if init_cfg is None:
                 self.init_cfg = [
-                    dict(
-                        type='Kaiming',
-                        layer='Conv2d',
-                        override=dict(
-                            type='Xavier',
-                            name='extra',
-                            layer='Conv2d',
-                            distribution='uniform')),
+                    dict(type='Kaiming', layer='Conv2d'),
                     dict(type='Constant', val=1, layer='BatchNorm2d'),
                     dict(type='Normal', std=0.01, layer='Linear'),
-                    dict(
-                        type='Constant',
-                        layer='L2Norm',
-                        val=self.l2_norm.scale)
                 ]
         else:
             raise TypeError('pretrained must be a str or None')
+
+        if init_cfg is None:
+            self.init_cfg += [
+                dict(
+                    type='Xavier',
+                    distribution='uniform',
+                    override=dict(name='extra')),
+                dict(
+                    type='Constant',
+                    val=self.l2_norm.scale,
+                    override=dict(name='l2_norm'))
+            ]
 
     def forward(self, x):
         """Forward function."""
@@ -146,7 +147,7 @@ class SSDVGG(VGG, BaseModule):
         if self.input_size == 512:
             layers.append(nn.Conv2d(self.inplanes, 256, 4, padding=1))
 
-        return nn.Sequential(*layers)
+        return Sequential(*layers)
 
 
 class L2Norm(nn.Module):

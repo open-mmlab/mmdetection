@@ -18,25 +18,17 @@ class NASFCOSHead(FCOSHead):
 
     def __init__(self, *args, init_cfg=None, **kwargs):
         if init_cfg is None:
-            init_cfg = dict(
-                type='Normal',
-                layer='Conv2d',
-                std=0.01,
-                override=[
-                    dict(
-                        type='Normal',
-                        name='conv_cls',
-                        std=0.01,
-                        bias_prob=0.01),
-                    dict(
-                        type='Caffe2Xavier',
-                        layer=['ConvModule', 'Conv2d'],
-                        name='cls_convs'),
-                    dict(
-                        type='Caffe2Xavier',
-                        layer=['ConvModule', 'Conv2d'],
-                        name='reg_convs')
-                ])
+            init_cfg = [
+                dict(type='Caffe2Xavier', layer=['ConvModule', 'Conv2d']),
+                dict(
+                    type='Normal',
+                    std=0.01,
+                    override=[
+                        dict(name='conv_reg'),
+                        dict(name='conv_centerness'),
+                        dict(name='conv_cls', bias_prob=0.01)
+                    ]),
+            ]
         super(NASFCOSHead, self).__init__(*args, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):

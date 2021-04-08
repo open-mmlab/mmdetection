@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.runner import force_fp32
+from mmcv.runner import ModuleList, force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, multi_apply)
@@ -77,8 +77,8 @@ class SSDHead(AnchorHead):
                     num_anchors[i] * (num_classes + 1),
                     kernel_size=3,
                     padding=1))
-        self.reg_convs = nn.ModuleList(reg_convs)
-        self.cls_convs = nn.ModuleList(cls_convs)
+        self.reg_convs = ModuleList(reg_convs)
+        self.cls_convs = ModuleList(cls_convs)
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.reg_decoded_bbox = reg_decoded_bbox
