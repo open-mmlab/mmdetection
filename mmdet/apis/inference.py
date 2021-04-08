@@ -54,7 +54,10 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
 
 
 class LoadImage(object):
-    """A simple pipeline to load image."""
+    """Deprecated.
+
+    A simple pipeline to load image.
+    """
 
     def __call__(self, results):
         """Call function to load images into results.
@@ -62,10 +65,13 @@ class LoadImage(object):
         Args:
             results (dict): A result dict contains the file name
                 of the image to be read.
-
         Returns:
             dict: ``results`` will be returned containing loaded image.
         """
+        warnings.simplefilter('once')
+        warnings.warn('`LoadImage` is deprecated and will be removed in '
+                      'future releases. You may use `LoadImageFromWebcam` '
+                      'from `mmdet.datasets.pipelines.` instead.')
         if isinstance(results['img'], str):
             results['filename'] = results['img']
             results['ori_filename'] = results['img']

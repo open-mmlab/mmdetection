@@ -80,34 +80,34 @@ def add_dummy_nms_for_onnx(boxes,
                            score_threshold=0.05,
                            pre_top_k=-1,
                            after_top_k=-1,
-                           only_return_indices=False):
+                           labels=None):
     """Create a dummy onnx::NonMaxSuppression op while exporting to ONNX.
 
-    This function helps exporting to onnx with batch and multiclass NMS op
+    This function helps exporting to onnx with batch and multiclass NMS op.
+    It only supports class-agnostic detection results. That is, the scores
+    is of shape (N, num_bboxes, num_classes) and the boxes is of shape
+    (N, num_boxes, 4).
 
     Args:
         boxes (Tensor): The bounding boxes of shape [N, num_boxes, 4]
-        scores (Tensor): The detection scores of shape \
+        scores (Tensor): The detection scores of shape
             [N, num_boxes, num_classes]
-        max_output_boxes_per_class (int): Maximum number of output \
-            boxes per class of nms. Defaults to 1000
+        max_output_boxes_per_class (int): Maximum number of output
+            boxes per class of nms. Defaults to 1000.
         iou_threshold (float): IOU threshold of nms. Defaults to 0.5
-        score_threshold (float): score threshold of nms. \
-            Defaults to 0.05
-        pre_top_k (bool): Number of top K boxes to keep before nms \
-            Defaults to -1
-        after_top_k (int): Number of top K boxes to keep after nms \
-            Defaults to -1
-        only_return_indices (bool): whether to only return selected \
-            indices from nms. Defaults to False.
+        score_threshold (float): score threshold of nms.
+            Defaults to 0.05.
+        pre_top_k (bool): Number of top K boxes to keep before nms.
+            Defaults to -1.
+        after_top_k (int): Number of top K boxes to keep after nms.
+            Defaults to -1.
+        labels (Tensor, optional): It not None, explicit labels would be used.
+            Otherwise, labels would be automatically generated using
+            num_classed. Defaults to None.
 
     Returns:
-        tuple: (indices) or (dets, batch_inds, cls_inds) :
-            If only_return_indices is True, this function returns
-            the output of nms with shape of [N, 3], and each row's
-            format is [batch_index, class_index, box_index].
-            Otherwise, it would return dets of shape[N, 5], batch \
-            indices of shape [N,] and class labels of shape [N,].
+        tuple[Tensor, Tensor]: dets of shape [N, num_det, 5] and class labels
+            of shape [N, num_det].
     """
     max_output_boxes_per_class = torch.LongTensor([max_output_boxes_per_class])
     iou_threshold = torch.tensor([iou_threshold], dtype=torch.float32)
@@ -129,6 +129,9 @@ def add_dummy_nms_for_onnx(boxes,
             batch_size, -1, 4)
         scores = scores.reshape(-1, num_class)[transformed_inds, :].reshape(
             batch_size, -1, num_class)
+        if labels is not None:
+            labels = labels.reshape(-1, 1)[transformed_inds].reshape(
+                batch_size, -1)
 
     scores = scores.permute(0, 2, 1)
     num_box = boxes.shape[1]
@@ -147,13 +150,12 @@ def add_dummy_nms_for_onnx(boxes,
     selected_indices = DymmyONNXNMSop.apply(boxes, scores,
                                             max_output_boxes_per_class,
                                             iou_threshold, score_threshold)
-    if only_return_indices:
-        return selected_indices
 
     batch_inds, cls_inds = selected_indices[:, 0], selected_indices[:, 1]
     box_inds = selected_indices[:, 2]
-    labels = torch.arange(num_class, dtype=torch.long).to(scores.device)
-    labels = labels.view(1, num_class, 1).expand_as(scores).reshape(-1, 1)
+    if labels is None:
+        labels = torch.arange(num_class, dtype=torch.long).to(scores.device)
+        labels = labels.view(1, num_class, 1).expand_as(scores)
     scores = scores.reshape(-1, 1)
     boxes = boxes.reshape(batch_size, -1).repeat(1, num_class).reshape(-1, 4)
     pos_inds = (num_class * batch_inds + cls_inds) * num_box + box_inds
