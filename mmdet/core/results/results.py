@@ -4,8 +4,10 @@ import itertools
 import numpy as np
 import torch
 
+from mmdet.utils.util_mixins import NiceRepr
 
-class Results(object):
+
+class Results(NiceRepr):
     """Base class of the model's results.
 
     The model predictions and meta information are stored in this class.
@@ -211,9 +213,8 @@ class Results(object):
                 new_instance[k] = v.cpu().numpy()
         return new_instance
 
-    def __str__(self):
-        repr = f'{self.__class__.__name__}: \n'
-        repr += '\n   META INFORMATION \n'
+    def __nice__(self):
+        repr = '\n   META INFORMATION \n'
         for k, v in self._meta_info_field.items():
             repr += f'{k}: {v} \n'
         repr += '\n   PREDICTIONS \n'
@@ -239,8 +240,6 @@ class Results(object):
             if isinstance(v, dict):
                 new_instance[k] = copy.deepcopy(v)
         return new_instance
-
-    __repr__ = __str__
 
 
 class InstanceResults(Results):
@@ -340,3 +339,8 @@ class InstanceResults(Results):
                     f'Can not concat the {k} which is a {type(k)}')
             cat_results[k] = values
         return cat_results
+
+
+if __name__ == '__main__':
+    r = Results(img_meta=dict(name='123'))
+    print(r)
