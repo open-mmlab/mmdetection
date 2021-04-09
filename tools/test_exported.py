@@ -109,8 +109,10 @@ def main(args):
         raise ValueError('Unknown model type.')
 
     cfg = mmcv.Config.fromfile(args.config)
-    if args.update_config:
+    if args.update_config is not None:
         cfg.merge_from_dict(args.update_config)
+    if args.cfg_options is not None:
+        cfg.merge_from_dict(args.cfg_options)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
@@ -146,7 +148,7 @@ def main(args):
             extra_args['text_recognition_thr'] = cfg['model'].get('roi_head', {}).get('text_thr', 0.0)
         else:
             from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO as Model
-        
+
         model = Model(args.model,
                       args.model[:-3] + 'bin',
                       mapping_file_path=args.model[:-3] + 'mapping',
@@ -220,6 +222,16 @@ def parse_args():
     parser.add_argument('--show', action='store_true', help='visualize results')
     parser.add_argument('--score_thr', type=float, default=0.3,
                         help='show only detections with confidence larger than the threshold')
+    parser.add_argument(
+        '--cfg-options',
+        nargs='+',
+        action=mmcv.DictAction,
+        help='Override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file. If the value to '
+        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
+        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
+        'Note that the quotation marks are necessary and that no white space '
+        'is allowed.')
     parser.add_argument('--update_config', nargs='+', action=ExtendedDictAction,
                         help='Update configuration file by parameters specified here.')
     args = parser.parse_args()
