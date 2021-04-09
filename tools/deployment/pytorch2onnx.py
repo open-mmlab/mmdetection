@@ -77,32 +77,33 @@ def pytorch2onnx(config_path,
 
     model.forward = orig_model.forward
 
-    # simplify onnx model
+    # get the custom op path
+    ort_custom_op_path = ''
+    try:
+        from mmcv.ops import get_onnxruntime_op_path
+        ort_custom_op_path = get_onnxruntime_op_path()
+    except (ImportError, ModuleNotFoundError):
+        warnings.warn('If input model has custom op from mmcv, \
+            you may have to build mmcv with ONNXRuntime from source.')
+
     if do_simplify:
         from mmdet import digit_version
-        import mmcv
+        import onnxsim
 
-        min_required_version = '1.2.5'
-        assert digit_version(mmcv.__version__) >= digit_version(
+        min_required_version = '0.3.0'
+        assert digit_version(onnxsim.__version__) >= digit_version(
             min_required_version
-        ), f'Requires to install mmcv>={min_required_version}'
-        from mmcv.onnx.simplify import simplify
+        ), f'Requires to install onnx-simplify>={min_required_version}'
 
         input_dic = {'input': one_img.detach().cpu().numpy()}
-        _ = simplify(output_file, [input_dic], output_file)
+        onnxsim.simplify(
+            output_file, input_data=input_dic, custom_lib=ort_custom_op_path)
     print(f'Successfully exported ONNX model: {output_file}')
 
     if verify:
         from mmdet.core import get_classes, bbox2result
         from mmdet.apis import show_result_pyplot
 
-        ort_custom_op_path = ''
-        try:
-            from mmcv.ops import get_onnxruntime_op_path
-            ort_custom_op_path = get_onnxruntime_op_path()
-        except (ImportError, ModuleNotFoundError):
-            warnings.warn('If input model has custom op from mmcv, \
-                you may have to build mmcv with ONNXRuntime from source.')
         model.CLASSES = get_classes(dataset)
         num_classes = len(model.CLASSES)
         # check by onnx
