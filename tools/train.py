@@ -191,6 +191,8 @@ def main():
     cfg_samples_per_gpu = cfg.data.samples_per_gpu
     if args.update_config is not None:
         cfg.merge_from_dict(args.update_config)
+    if args.cfg_options is not None:
+        cfg.merge_from_dict(args.cfg_options)
     if cfg.get('custom_imports', None):
         from mmcv.utils import import_modules_from_strings
         import_modules_from_strings(**cfg['custom_imports'])

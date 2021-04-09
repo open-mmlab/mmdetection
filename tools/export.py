@@ -90,7 +90,7 @@ def export_to_onnx(model,
                 if getattr(model.roi_head, 'with_text', False):
                     output_names.append('text_features')
                     dynamic_axes['text_features'] = {0: 'objects_num'}
-        
+
         with torch.no_grad():
             model.export(
                 **data,
@@ -206,8 +206,10 @@ def main(args):
     torch.set_default_tensor_type(torch.FloatTensor)
 
     config = mmcv.Config.fromfile(args.config)
-    if args.update_config:
+    if args.update_config is not None:
         config.merge_from_dict(args.update_config)
+    if args.cfg_options is not None:
+        config.merge_from_dict(args.cfg_options)
 
     model = init_detector(config, args.checkpoint, device='cpu')
     model.eval()
@@ -260,7 +262,7 @@ def main(args):
         if hasattr(model, 'roi_head'):
             if getattr(model.roi_head, 'with_text', False):
                 with_text = True
-    
+
     if args.target == 'openvino':
         input_shape = list(fake_data['img'][0].shape)
         if args.input_shape:
@@ -280,6 +282,16 @@ def parse_args():
     parser.add_argument('checkpoint', help="path to file with model's weights")
     parser.add_argument('output_dir', help='path to directory to save exported models in')
     parser.add_argument('--opset', type=int, default=get_min_opset_version(), help='ONNX opset')
+    parser.add_argument(
+        '--cfg-options',
+        nargs='+',
+        action=mmcv.DictAction,
+        help='Override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file. If the value to '
+        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
+        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
+        'Note that the quotation marks are necessary and that no white space '
+        'is allowed.')
     parser.add_argument('--update_config', nargs='+', action=ExtendedDictAction,
                         help='Update configuration file by parameters specified here.')
     subparsers = parser.add_subparsers(title='target', dest='target', help='target model format')
@@ -292,7 +304,7 @@ def parse_args():
                                  help='use alternative ONNX representation of SSD net')
     parser_openvino.add_argument('--input_format', choices=['BGR', 'RGB'], default='BGR',
                                  help='Input image format for exported model.')
-    
+
     args = parser.parse_args()
     return args
 
