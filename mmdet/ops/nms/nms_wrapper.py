@@ -163,7 +163,7 @@ def batched_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
     if boxes_for_nms.shape[0] < split_thr or torch.onnx.is_in_onnx_export():
         dets, keep = nms_op(boxes_for_nms, scores, **nms_cfg_)
         boxes = boxes[keep]
-        scores = dets[:, -1]
+        scores = dets[:, 4]
     else:
         total_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
         for id in torch.unique(idxs):
