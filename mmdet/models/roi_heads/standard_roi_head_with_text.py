@@ -162,8 +162,8 @@ class StandardRoIHeadWithText(StandardRoIHead):
                          det_masks,
                          rescale=False):
         # image shape of the first image in the batch (only one)
-        ori_shape = img_metas[0]['ori_shape']
-        scale_factor = img_metas[0]['scale_factor']
+        ori_shape = img_metas['ori_shape']
+        scale_factor = img_metas['scale_factor']
         if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
             # If there are no detection there is nothing to do for a mask head.
             # But during ONNX export we should run mask head
@@ -231,19 +231,21 @@ class StandardRoIHeadWithText(StandardRoIHead):
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=False)
 
-        det_masks = None
+        det_masks = [None for _ in det_bboxes]
         if self.with_mask:
             det_masks = self.simple_test_mask(
                 x, img_metas, det_bboxes, det_labels, rescale=False)
 
-        det_texts = self.simple_test_text(x, img_metas, det_bboxes, det_masks)
+        det_texts = [self.simple_test_text(x, img_metas[0], det_bboxes[0], det_masks[0])]
 
         if postprocess:
-            bbox_results, segm_results = self.postprocess(
-                det_bboxes, det_labels, det_masks, img_metas, rescale=rescale)
-            return bbox_results, segm_results, det_texts
+            results = []
+            for i in range(len(det_bboxes)):
+                bbox_results, segm_results = self.postprocess(det_bboxes[i], det_labels[i], det_masks[i], img_metas[i], rescale=rescale)
+                results.append((bbox_results, segm_results, det_texts[i]))
+            return results
         else:
-            if det_masks is None:
+            if det_masks is None or None in det_masks:
                 return det_bboxes, det_labels
             else:
                 return det_bboxes, det_labels, det_masks, det_texts
