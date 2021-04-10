@@ -101,12 +101,29 @@ class RegionAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
-        # TODO support gt_bboxes_ignore
         if gt_bboxes_ignore is not None:
             raise NotImplementedError
-        if gt_bboxes.shape[0] == 0:
-            raise ValueError('No gt bboxes')
+
         num_gts = gt_bboxes.shape[0]
+        num_bboxes = sum(x.shape[0] for x in mlvl_anchors)
+
+        if num_gts == 0 or num_bboxes == 0:
+            # No ground truth or boxes, return empty assignment
+            max_overlaps = gt_bboxes.new_zeros((num_bboxes, ))
+            assigned_gt_inds = gt_bboxes.new_zeros((num_bboxes, ),
+                                                   dtype=torch.long)
+            if gt_labels is None:
+                assigned_labels = None
+            else:
+                assigned_labels = gt_bboxes.new_full((num_bboxes, ),
+                                                     -1,
+                                                     dtype=torch.long)
+            return AssignResult(
+                num_gts,
+                assigned_gt_inds,
+                max_overlaps,
+                labels=assigned_labels)
+
         num_lvls = len(mlvl_anchors)
         r1 = (1 - self.center_ratio) / 2
         r2 = (1 - self.ignore_ratio) / 2
