@@ -1,7 +1,9 @@
+_base_ = '../_base_/default_runtime.py'
+
 # model settings
 model = dict(
     type='RetinaNet',
-    pretrained='open-mmlab://resnet101_caffe',
+    pretrained='open-mmlab://detectron2/resnet101_caffe',
     backbone=dict(
         type='ResNet',
         depth=101,
@@ -20,19 +22,29 @@ model = dict(
         num_outs=5),
     bbox_head=dict(
         type='GARetinaHead',
-        num_classes=81,
+        num_classes=80,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
-        octave_base_scale=4,
-        scales_per_octave=3,
-        octave_ratios=[0.5, 1.0, 2.0],
-        anchor_strides=[8, 16, 32, 64, 128],
-        anchor_base_sizes=None,
-        anchoring_means=[.0, .0, .0, .0],
-        anchoring_stds=[1.0, 1.0, 1.0, 1.0],
-        target_means=(.0, .0, .0, .0),
-        target_stds=[1.0, 1.0, 1.0, 1.0],
+        approx_anchor_generator=dict(
+            type='AnchorGenerator',
+            octave_base_scale=4,
+            scales_per_octave=3,
+            ratios=[0.5, 1.0, 2.0],
+            strides=[8, 16, 32, 64, 128]),
+        square_anchor_generator=dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            scales=[4],
+            strides=[8, 16, 32, 64, 128]),
+        anchor_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
         loc_filter_thr=0.01,
         loss_loc=dict(
             type='FocalLoss',
@@ -77,13 +89,13 @@ test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
     score_thr=0.05,
-    nms=dict(type='nms', iou_thr=0.5),
+    nms=dict(type='nms', iou_threshold=0.5),
     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -114,7 +126,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=2,
+    samples_per_gpu=2,
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
@@ -152,10 +164,4 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 24
-dist_params = dict(backend='nccl')
-log_level = 'INFO'
-work_dir = './work_dirs/ga_retinanet_r101_caffe_fpn_mstrain_2x'
-load_from = None
-resume_from = None
-workflow = [('train', 1)]
+runner = dict(type='EpochBasedRunner', max_epochs=24)

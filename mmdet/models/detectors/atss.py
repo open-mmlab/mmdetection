@@ -1,9 +1,10 @@
-from ..registry import DETECTORS
+from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class ATSS(SingleStageDetector):
+    """Implementation of `ATSS <https://arxiv.org/abs/1912.02424>`_."""
 
     def __init__(self,
                  backbone,

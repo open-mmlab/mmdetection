@@ -1,9 +1,10 @@
-from ..registry import DETECTORS
+from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class FOVEA(SingleStageDetector):
+    """Implementation of `FoveaBox <https://arxiv.org/abs/1904.03797>`_"""
 
     def __init__(self,
                  backbone,

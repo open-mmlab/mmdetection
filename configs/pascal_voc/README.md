@@ -1,6 +1,23 @@
-### SSD
+# PASCAL VOC Dataset
 
-| Backbone | Size  | Style | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP |                                                             Download                                                             |
-| :------: | :---: | :---: | :-----: | :------: | :-----------------: | :------------: | :----: | :------------------------------------------------------------------------------------------------------------------------------: |
-|  VGG16   |  300  | caffe |  240e   |   2.5    |        0.159        |  35.7 / 53.6   |  77.5  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd300_voc_vgg16_caffe_240e_20190501-7160d09a.pth) |
-|  VGG16   |  512  | caffe |  240e   |   4.3    |        0.214        |  27.5 / 35.9   |  80.0  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd512_voc_vgg16_caffe_240e_20190501-ff194be1.pth) |
+[DATASET]
+
+```
+@Article{Everingham10,
+   author = "Everingham, M. and Van~Gool, L. and Williams, C. K. I. and Winn, J. and Zisserman, A.",
+   title = "The Pascal Visual Object Classes (VOC) Challenge",
+   journal = "International Journal of Computer Vision",
+   volume = "88",
+   year = "2010",
+   number = "2",
+   month = jun,
+   pages = "303--338",
+}
+```
+
+## Results and Models
+
+| Architecture | Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
+|:------------:|:---------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
+| Faster R-CNN | R-50      | pytorch | 1x      | 2.6   | -          | 79.5  |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc0712.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/pascal_voc/faster_rcnn_r50_fpn_1x_voc0712/faster_rcnn_r50_fpn_1x_voc0712_20200624-c9895d40.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/pascal_voc/faster_rcnn_r50_fpn_1x_voc0712/20200623_015208.log.json) |
+| Retinanet    | R-50      | pytorch | 1x      | 2.1   | -          | 77.3  |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/pascal_voc/retinanet_r50_fpn_1x_voc0712.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/pascal_voc/retinanet_r50_fpn_1x_voc0712/retinanet_r50_fpn_1x_voc0712_20200617-47cbdd0e.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/pascal_voc/retinanet_r50_fpn_1x_voc0712/retinanet_r50_fpn_1x_voc0712_20200616_014642.log.json) |

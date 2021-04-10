@@ -14,9 +14,8 @@ if sys.version_info >= (3, 7):
                      end_stream=None):
         """Print time spent by CPU and GPU.
 
-        Useful as a temporary context manager to find sweet spots of
-        code suitable for async implementation.
-
+        Useful as a temporary context manager to find sweet spots of code
+        suitable for async implementation.
         """
         if (not enabled) or not torch.cuda.is_available():
             yield
@@ -35,7 +34,6 @@ if sys.version_info >= (3, 7):
             end.synchronize()
             cpu_time = (cpu_end - cpu_start) * 1000
             gpu_time = start.elapsed_time(end)
-            msg = '{} {} cpu_time {:.2f} ms '.format(trace_name, name,
-                                                     cpu_time)
-            msg += 'gpu_time {:.2f} ms stream {}'.format(gpu_time, stream)
+            msg = f'{trace_name} {name} cpu_time {cpu_time:.2f} ms '
+            msg += f'gpu_time {gpu_time:.2f} ms stream {stream}'
             print(msg, end_stream)

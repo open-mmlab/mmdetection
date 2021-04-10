@@ -1,9 +1,9 @@
 from collections.abc import Sequence
 
 import numpy as np
+from mmcv.utils import print_log
 from terminaltables import AsciiTable
 
-from mmdet.utils import print_log
 from .bbox_overlaps import bbox_overlaps
 
 
@@ -41,8 +41,7 @@ def _recalls(all_ious, proposal_nums, thrs):
 
 
 def set_recall_param(proposal_nums, iou_thrs):
-    """Check proposal_nums and iou_thrs and set correct format.
-    """
+    """Check proposal_nums and iou_thrs and set correct format."""
     if isinstance(proposal_nums, Sequence):
         _proposal_nums = np.array(proposal_nums)
     elif isinstance(proposal_nums, int):
@@ -75,7 +74,7 @@ def eval_recalls(gts,
         proposal_nums (int | Sequence[int]): Top N proposals to be evaluated.
         iou_thrs (float | Sequence[float]): IoU thresholds. Default: 0.5.
         logger (logging.Logger | str | None): The way to print the recall
-            summary. See `mmdet.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details. Default: None.
 
     Returns:
         ndarray: recalls of different ious and proposal nums
@@ -122,7 +121,7 @@ def print_recall_summary(recalls,
         row_idxs (ndarray): which rows(proposal nums) to print
         col_idxs (ndarray): which cols(iou thresholds) to print
         logger (logging.Logger | str | None): The way to print the recall
-            summary. See `mmdet.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details. Default: None.
     """
     proposal_nums = np.array(proposal_nums, dtype=np.int32)
     iou_thrs = np.array(iou_thrs)
@@ -133,10 +132,7 @@ def print_recall_summary(recalls,
     row_header = [''] + iou_thrs[col_idxs].tolist()
     table_data = [row_header]
     for i, num in enumerate(proposal_nums[row_idxs]):
-        row = [
-            '{:.3f}'.format(val)
-            for val in recalls[row_idxs[i], col_idxs].tolist()
-        ]
+        row = [f'{val:.3f}' for val in recalls[row_idxs[i], col_idxs].tolist()]
         row.insert(0, num)
         table_data.append(row)
     table = AsciiTable(table_data)
