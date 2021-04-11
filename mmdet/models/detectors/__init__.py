@@ -1,8 +1,8 @@
 from .atss import ATSS
 from .base import BaseDetector
 from .cascade_rcnn import CascadeRCNN
+from .centernet import CenterNet
 from .cornernet import CornerNet
-from .ctdetnet import CTDetNet
 from .detr import DETR
 from .fast_rcnn import FastRCNN
 from .faster_rcnn import FasterRCNN
@@ -35,5 +35,5 @@ __all__ = [
     'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector',
     'FOVEA', 'FSAF', 'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA',
     'YOLOV3', 'YOLACT', 'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN',
-    'CTDetNet', 'SCNet'
+    'CenterNet', 'SCNet'
 ]

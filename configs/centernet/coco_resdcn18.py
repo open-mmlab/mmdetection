@@ -1,6 +1,7 @@
 _base_ = [
     '../_base_/default_runtime.py', '../_base_/datasets/coco_detection.py'
 ]
+find_unused_parameters = True
 optimizer = dict(type='Adam', lr=5e-4)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
@@ -29,19 +30,29 @@ dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 evaluation = dict(interval=1, metric='bbox')
 img_norm_cfg = dict(
-    mean=[104.04, 113.985, 119.85], std=[73.695, 69.87, 70.89], to_rgb=False)
+    mean=[104.01362025, 114.03422265, 119.9165958],
+    std=[73.6027665, 69.89082075, 70.9150767],
+    to_rgb=False)
 norm_cfg = dict(type='BN')
 
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True, color_type='color'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
+        type='PhotoMetricDistortion',
+        brightness_delta=32,
+        contrast_range=(0.8, 1.2),
+        saturation_range=(0.8, 1.2),
+        hue_delta=18),
+    dict(
         type='RandomCenterCropPad',
         crop_size=(512, 512),
         ratios=(0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4),
         test_mode=False,
         test_pad_mode=None,
-        **img_norm_cfg),
+        mean=[0, 0, 0],
+        std=[1, 1, 1],
+        to_rgb=img_norm_cfg['to_rgb']),
     dict(type='Resize', img_scale=(512, 512), keep_ratio=False),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
@@ -53,8 +64,9 @@ test_pipeline = [
     dict(
         type='MultiScaleFlipAug',
         # scale_factor=[0.5, 0.75, 1., 1.25, 1.5],
-        # flip=True,
-        img_scale=(512, 512),
+        flip=True,
+        # img_scale=(512, 512),
+        scale_factor=1.0,
         transforms=[
             dict(type='Resize', keep_ratio=True),
             dict(
@@ -63,8 +75,10 @@ test_pipeline = [
                 ratios=None,
                 border=None,
                 test_mode=True,
-                test_pad_mode=['size_divisor', 32],
-                **img_norm_cfg),
+                mean=[0, 0, 0],
+                std=[1, 1, 1],
+                to_rgb=img_norm_cfg['to_rgb'],
+                test_pad_mode=['logical_or', 31]),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
@@ -76,13 +90,13 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=8,
-    workers_per_gpu=4,
+    samples_per_gpu=14,
+    workers_per_gpu=6,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 model = dict(
-    type='CTDetNet',
+    type='CenterNet',
     pretrained='resnet18-5c106cde.pth',
     backbone=dict(type='ResNet', depth=18, norm_cfg=norm_cfg),
     neck=dict(
@@ -92,7 +106,7 @@ model = dict(
         num_kernels=[4, 4, 4],
     ),
     bbox_head=dict(
-        type='CTDetHead',
+        type='CenterHead',
         num_classes=80,
         feat_channels=64,
         in_channels=64,
@@ -103,8 +117,5 @@ model = dict(
 train_cfg = None
 test_cfg = dict(
     topK=100,
-    nms_pre=100,
-    min_bbox_size=0,
-    score_thr=0.05,
-    nms_cfg=dict(type='nms', iou_threshold=0.5),
+    nms_cfg=dict(type='soft_nms', iou_threshold=0.5),
     max_per_img=100)

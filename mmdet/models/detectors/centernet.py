@@ -6,7 +6,7 @@ from .single_stage import SingleStageDetector
 
 
 @DETECTORS.register_module()
-class CTDetNet(SingleStageDetector):
+class CenterNet(SingleStageDetector):
     """Implementation of RetinaNetMultiHead."""
 
     def __init__(self,
@@ -16,15 +16,10 @@ class CTDetNet(SingleStageDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
-        super(CTDetNet, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                       test_cfg, pretrained)
+        super(CenterNet, self).__init__(backbone, neck, bbox_head, train_cfg,
+                                        test_cfg, pretrained)
 
     def extract_feat(self, img):
-        # import cv2
-        # image = img[0].permute(1, 2, 0).cpu().numpy()
-        # print(image.shape)
-        # cv2.imshow('img', image)
-        # cv2.waitKey()
         """Directly extract features from the backbone+neck."""
         x = self.backbone(img)
         if self.with_neck:
@@ -51,6 +46,8 @@ class CTDetNet(SingleStageDetector):
         bboxes = torch.cat(recovered_bboxes, dim=0).contiguous()
         labels = torch.cat(aug_labels).contiguous()
 
+        import pdb
+        pdb.set_trace()
         if bboxes.shape[0] > 0:
             out_bboxes, out_labels = self.bbox_head._bboxes_nms(
                 bboxes, labels, self.bbox_head.test_cfg)
@@ -114,7 +111,8 @@ class CTDetNet(SingleStageDetector):
         for img, img_meta in zip(imgs, img_metas):
             x = self.extract_feat(img)
             outs = self.bbox_head(x)
-            bbox_list = self.bbox_head.get_bboxes(*outs, img_meta, rescale)
+            bbox_list = self.bbox_head.get_bboxes(
+                *outs, img_meta, rescale, with_nms=False)
             aug_results.append(bbox_list)
         bbox_list = [self.merge_aug_results(aug_results)]
         # import pdb
