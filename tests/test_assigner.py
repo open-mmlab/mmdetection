@@ -404,8 +404,8 @@ def test_hungarian_match_assigner():
 
     # test iou mode
     self = HungarianAssigner(
-        iou_cost=dict(type='IoUCost', iou_mode='iou', weight=1.0))
-    assert self.iou_cost.iou_mode == 'iou'
+        iou_cost=dict(type='IoUBasedCost', iou_mode='iou', weight=1.0))
+    assert self.iou_cost_func.iou_mode == 'iou'
     assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
                                 img_meta)
     assert torch.all(assign_result.gt_inds > -1)
@@ -414,9 +414,9 @@ def test_hungarian_match_assigner():
 
     # test focal loss mode
     self = HungarianAssigner(
-        iou_cost=dict(type='IoUCost', iou_mode='giou', weight=1.0),
-        cls_cost=dict(type='FocalLossCost', weight=1.))
-    assert self.iou_cost.iou_mode == 'giou'
+        iou_cost=dict(type='IoUBasedCost', iou_mode='giou', weight=1.0),
+        cls_cost=dict(type='ClsFocalCost', weight=1.))
+    assert self.iou_cost_func.iou_mode == 'giou'
     assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
                                 img_meta)
     assert torch.all(assign_result.gt_inds > -1)
