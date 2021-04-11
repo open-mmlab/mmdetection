@@ -14,5 +14,5 @@ lr_config = dict(
     warmup_ratio=0.001,
     step=[16, 20])
 # runtime settings
-total_epochs = 24
+runner = dict(type='EpochBasedRunner', max_epochs=24)
 log_config = dict(interval=1)

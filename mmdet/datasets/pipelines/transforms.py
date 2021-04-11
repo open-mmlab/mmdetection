@@ -1,3 +1,4 @@
+import copy
 import inspect
 
 import mmcv
@@ -119,7 +120,7 @@ class Resize(object):
         Args:
             img_scales (list[tuple]): Images scale range for sampling.
                 There must be two tuples in img_scales, which specify the lower
-                and uper bound of image scales.
+                and upper bound of image scales.
 
         Returns:
             (tuple, None): Returns a tuple ``(img_scale, None)``, where \
@@ -1239,6 +1240,12 @@ class Albu(object):
         if Compose is None:
             raise RuntimeError('albumentations is not installed')
 
+        # Args will be modified later, copying it will be safer
+        transforms = copy.deepcopy(transforms)
+        if bbox_params is not None:
+            bbox_params = copy.deepcopy(bbox_params)
+        if keymap is not None:
+            keymap = copy.deepcopy(keymap)
         self.transforms = transforms
         self.filter_lost_elements = False
         self.update_pad_shape = update_pad_shape

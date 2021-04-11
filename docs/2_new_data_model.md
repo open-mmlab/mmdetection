@@ -1,6 +1,6 @@
 # 2: Train with customized datasets
 
-In this note, you will know how to inference, test, and train predefined models with customized datasets. We use the [ballon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) as an example to describe the whole process.
+In this note, you will know how to inference, test, and train predefined models with customized datasets. We use the [balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) as an example to describe the whole process.
 
 The basic steps are as below:
 
@@ -59,7 +59,7 @@ categories = [{
 }]
 ```
 
-Assume we use the ballon dataset.
+Assume we use the balloon dataset.
 After downloading the data, we need to implement a function to convert the annotation format into the COCO format. Then we can use implemented COCODataset to load the data and perform training and evaluation.
 
 If you take a look at the dataset, you will find the dataset format is as below:
@@ -149,7 +149,7 @@ If you take a look at the dataset, you will find the dataset format is as below:
 ```
 
 The annotation is a JSON file where each key indicates an image's all annotations.
-The code to convert the ballon dataset into coco format is as below.
+The code to convert the balloon dataset into coco format is as below.
 
 ```python
 import os.path as osp
@@ -209,7 +209,7 @@ Using the function above, users can successfully convert the annotation file int
 
 ## Prepare a config
 
-The second step is to prepare a config thus the dataset could be successfully loaded. Assume that we want to use Mask R-CNN with FPN, the config to train the detector on ballon dataset is as below. Assume the config is under directory `configs/ballon/` and named as `mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py`, the config is as below.
+The second step is to prepare a config thus the dataset could be successfully loaded. Assume that we want to use Mask R-CNN with FPN, the config to train the detector on balloon dataset is as below. Assume the config is under directory `configs/balloon/` and named as `mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py`, the config is as below.
 
 ```python
 # The new config inherits a base config to highlight the necessary modification
@@ -247,7 +247,7 @@ load_from = 'checkpoints/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0
 To train a model with the new config, you can simply run
 
 ```shell
-python tools/train.py configs/ballon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py
+python tools/train.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py
 ```
 
 For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
@@ -257,7 +257,7 @@ For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
 To test the trained model, you can simply run
 
 ```shell
-python tools/test.py configs/ballon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py/latest.pth --eval bbox segm
+python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py/latest.pth --eval bbox segm
 ```
 
 For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).

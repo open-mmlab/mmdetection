@@ -69,11 +69,9 @@ model = dict(
     ]),
     test_cfg=dict(
         rpn=dict(
-            nms_across_levels=False,
             nms_pre=2000,
-            nms_post=2000,
-            max_num=2000,
-            nms_thr=0.8,
+            max_per_img=2000,
+            nms=dict(type='nms', iou_threshold=0.8),
             min_bbox_size=0)))
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

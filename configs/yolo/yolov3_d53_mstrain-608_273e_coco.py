@@ -120,5 +120,5 @@ lr_config = dict(
     warmup_ratio=0.1,
     step=[218, 246])
 # runtime settings
-total_epochs = 273
+runner = dict(type='EpochBasedRunner', max_epochs=273)
 evaluation = dict(interval=1, metric=['bbox'])

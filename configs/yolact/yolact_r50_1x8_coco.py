@@ -155,6 +155,6 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.1,
     step=[20, 42, 49, 52])
-total_epochs = 55
+runner = dict(type='EpochBasedRunner', max_epochs=55)
 cudnn_benchmark = True
 evaluation = dict(metric=['bbox', 'segm'])

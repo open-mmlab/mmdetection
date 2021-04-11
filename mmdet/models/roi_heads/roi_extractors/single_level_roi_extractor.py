@@ -16,7 +16,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
     Args:
         roi_layer (dict): Specify RoI layer type and arguments.
         out_channels (int): Output channels of RoI layers.
-        featmap_strides (int): Strides of input feature maps.
+        featmap_strides (List[int]): Strides of input feature maps.
         finest_scale (int): Scale threshold of mapping to level 0. Default: 56.
     """
 
@@ -55,11 +55,11 @@ class SingleRoIExtractor(BaseRoIExtractor):
         """Forward function."""
         out_size = self.roi_layers[0].output_size
         num_levels = len(feats)
+        expand_dims = (-1, self.out_channels * out_size[0] * out_size[1])
         if torch.onnx.is_in_onnx_export():
             # Work around to export mask-rcnn to onnx
             roi_feats = rois[:, :1].clone().detach()
-            roi_feats = roi_feats.expand(
-                -1, self.out_channels * out_size[0] * out_size[1])
+            roi_feats = roi_feats.expand(*expand_dims)
             roi_feats = roi_feats.reshape(-1, self.out_channels, *out_size)
             roi_feats = roi_feats * 0
         else:
@@ -75,24 +75,33 @@ class SingleRoIExtractor(BaseRoIExtractor):
             return self.roi_layers[0](feats[0], rois)
 
         target_lvls = self.map_roi_levels(rois, num_levels)
+
         if roi_scale_factor is not None:
             rois = self.roi_rescale(rois, roi_scale_factor)
 
         for i in range(num_levels):
             mask = target_lvls == i
-            inds = mask.nonzero(as_tuple=False).squeeze(1)
-            # TODO: make it nicer when exporting to onnx
             if torch.onnx.is_in_onnx_export():
                 # To keep all roi_align nodes exported to onnx
-                rois_ = rois[inds]
-                roi_feats_t = self.roi_layers[i](feats[i], rois_)
-                roi_feats[inds] = roi_feats_t
+                # and skip nonzero op
+                mask = mask.float().unsqueeze(-1).expand(*expand_dims).reshape(
+                    roi_feats.shape)
+                roi_feats_t = self.roi_layers[i](feats[i], rois)
+                roi_feats_t *= mask
+                roi_feats += roi_feats_t
                 continue
+            inds = mask.nonzero(as_tuple=False).squeeze(1)
             if inds.numel() > 0:
                 rois_ = rois[inds]
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
                 roi_feats[inds] = roi_feats_t
             else:
+                # Sometimes some pyramid levels will not be used for RoI
+                # feature extraction and this will cause an incomplete
+                # computation graph in one GPU, which is different from those
+                # in other GPUs and will cause a hanging error.
+                # Therefore, we add it to ensure each feature pyramid is
+                # included in the computation graph to avoid runtime bugs.
                 roi_feats += sum(
                     x.view(-1)[0]
                     for x in self.parameters()) * 0. + feats[i].sum() * 0.

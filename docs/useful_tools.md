@@ -8,7 +8,7 @@ Apart from training/testing scripts, We provide lots of useful tools under the
 
  ```shell
 python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
-```
+ ```
 
 ![loss curve image](../resources/loss_curve.png)
 
@@ -48,6 +48,69 @@ Examples:
     average iter time: 1.1959 s/iter
     ```
 
+## Result Analysis
+
+`tools/analysis_tools/analyze_results.py` calculates single image mAP and saves or shows the topk images with the highest and lowest scores based on prediction results.
+
+**Usage**
+
+```shell
+python tools/analysis_tools/analyze_results.py \
+      ${CONFIG} \
+      ${PREDICTION_PATH} \
+      ${SHOW_DIR} \
+      [--show] \
+      [--wait-time ${WAIT_TIME}] \
+      [--topk ${TOPK}] \
+      [--show-score-thr ${SHOW_SCORE_THR}] \
+      [--cfg-options ${CFG_OPTIONS}]
+```
+
+Description of all arguments:
+
+- `config` : The path of a model config file.
+- `prediction_path`:  Output result file in pickle format from `tools/test.py`
+- `show_dir`: Directory where painted GT and detection images will be saved
+- `--show`：Determines whether to show painted images, If not specified, it will be set to `False`
+- `--wait-time`: The interval of show (s), 0 is block
+- `--topk`: The number of saved images that have the highest and lowest `topk` scores after sorting. If not specified, it will be set to `20`.
+- `--show-score-thr`:  Show score threshold. If not specified, it will be set to `0`.
+- `--cfg-options`: If specified, the key-value pair optional cfg will be merged into config file
+
+**Examples**:
+
+Assume that you have got result file in pickle format from `tools/test.py`  in the path './result.pkl'.
+
+1. Test Faster R-CNN and visualize the results, save images to the directory `results/`
+
+```shell
+python tools/analysis_tools/analyze_results.py \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       result.pkl \
+       results \
+       --show
+```
+
+2. Test Faster R-CNN and specified topk to 50, save images to the directory `results/`
+
+```shell
+python tools/analysis_tools/analyze_results.py \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       result.pkl \
+       results \
+       --topk 50
+```
+
+3. If you want to filter the low score prediction results, you can specify the `show-score-thr` parameter
+
+```shell
+python tools/analysis_tools/analyze_results.py \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       result.pkl \
+       results \
+       --show-score-thr 0.3
+```
+
 ## Visualization
 
 ### Visualize Datasets
@@ -75,11 +138,120 @@ If you need a lightweight GUI for visualizing the detection results, you can ref
 ## Error Analysis
 
 `tools/analysis_tools/coco_error_analysis.py` analyzes COCO results per category and by
- different criterion. It can also make a plot to provide useful
-  information.
+ different criterion. It can also make a plot to provide useful information.
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--ann ${ANN}] [--types ${TYPES[TYPES...]}]
+```
+
+Example:
+
+Assume that you have got [Mask R-CNN checkpoint file](http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) in the path 'checkpoint'. For other checkpoints, please refer to our [model zoo](./model_zoo.md). You can use the following command to get the results bbox and segmentation json file.
+
+```shell
+# out: results.bbox.json and results.segm.json
+python tools/test.py \
+       configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoint/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
+       --format-only \
+       --options "jsonfile_prefix=./results"
+```
+
+1. Get COCO bbox error results per category , save analyze result images to the directory `results/`
+
+```shell
+python tools/analysis_tools/coco_error_analysis.py \
+       results.bbox.json \
+       results \
+       --ann=data/coco/annotations/instances_val2017.json \
+```
+
+2. Get COCO segmentation error results per category , save analyze result images to the directory `results/`
+
+```shell
+python tools/analysis_tools/coco_error_analysis.py \
+       results.segm.json \
+       results \
+       --ann=data/coco/annotations/instances_val2017.json \
+       --types='segm'
+```
+
+## Model Serving
+
+In order to serve an `MMDetection` model with [`TorchServe`](https://pytorch.org/serve/), you can follow the steps:
+
+### 1. Convert model from MMDetection to TorchServe
+
+```shell
+python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
+--output_folder ${MODEL_STORE} \
+--model-name ${MODEL_NAME}
+```
+
+### 2. Build `mmdet-serve` docker image
+
+```shell
+DOCKER_BUILDKIT=1 docker build -t mmdet-serve:latest docker/serve/
+```
+
+### 3. Launch `mmdet-serve`
+
+Check the official docs for [running TorchServe with docker](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment).
+
+Example:
+
+```shell
+docker run --rm \
+--cpus 8 \
+--gpus device=0 \
+-p8080:8080 -p8081:8081 -p8082:8082 \
+--mount type=bind,source=$MODEL_STORE,target=/home/model-server/model-store \
+mmdet-serve:latest
+```
+
+***Note**: ${MODEL_STORE} needs to be an absolute path.
+
+[Read the docs](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md) about the Inference (8080), Management (8081) and Metrics (8082) APis
+
+### 4. Test deployment
+
+```shell
+curl -O curl -O https://raw.githubusercontent.com/pytorch/serve/master/docs/images/3dogs.jpg
+curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
+```
+
+You should obtain a respose similar to:
+
+```json
+[
+  {
+    "dog": [
+      402.9117736816406,
+      124.19664001464844,
+      571.7910766601562,
+      292.6463623046875
+    ],
+    "score": 0.9561963081359863
+  },
+  {
+    "dog": [
+      293.90057373046875,
+      196.2908477783203,
+      417.4869079589844,
+      286.2522277832031
+    ],
+    "score": 0.9179860353469849
+  },
+  {
+    "dog": [
+      202.178466796875,
+      86.3709487915039,
+      311.9863586425781,
+      276.28411865234375
+    ],
+    "score": 0.8933767080307007
+  }
+]
 ```
 
 ## Model Complexity

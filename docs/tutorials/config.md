@@ -202,11 +202,14 @@ model = dict(
             pos_weight=-1,  # The weight of positive samples during training.
             debug=False),  # Whether to set the debug mode
         rpn_proposal=dict(  # The config to generate proposals during training
-            nms_across_levels=False,  # Whether to do NMS for boxes across levels
+            nms_across_levels=False,  # Whether to do NMS for boxes across levels. Only work in `GARPNHead`, naive rpn does not support do nms cross levels.
             nms_pre=2000,  # The number of boxes before NMS
-            nms_post=1000,  # The number of boxes to be kept by NMS
-            max_num=1000,  # The number of boxes to be used after NMS
-            nms_thr=0.7,  # The threshold to be used during NMS
+            nms_post=1000,  # The number of boxes to be kept by NMS, Only work in `GARPNHead`.
+            max_per_img=1000,  # The number of boxes to be kept after NMS.
+            nms=dict( # Config of nms
+                type='nms',  #Type of nms
+                iou_threshold=0.7 # NMS threshold
+                ),
             min_bbox_size=0),  # The allowed minimal box size
         rcnn=dict(  # The config for the roi heads.
             assigner=dict(  # Config of assigner for second stage, this is different for that in rpn
@@ -228,11 +231,14 @@ model = dict(
             debug=False))  # Whether to set the debug mode
     test_cfg = dict(  # Config for testing hyperparameters for rpn and rcnn
         rpn=dict(  # The config to generate proposals during testing
-            nms_across_levels=False,  # Whether to do NMS for boxes across levels
+            nms_across_levels=False,  # Whether to do NMS for boxes across levels. Only work in `GARPNHead`, naive rpn does not support do nms cross levels.
             nms_pre=1000,  # The number of boxes before NMS
-            nms_post=1000,  # The number of boxes to be kept by NMS
-            max_num=1000,  # The number of boxes to be used after NMS
-            nms_thr=0.7,  # The threshold to be used during NMS
+            nms_post=1000,  # The number of boxes to be kept by NMS, Only work in `GARPNHead`.
+            max_per_img=1000,  # The number of boxes to be kept after NMS.
+            nms=dict( # Config of nms
+                type='nms',  #Type of nms
+                iou_threshold=0.7 # NMS threshold
+                ),
             min_bbox_size=0),  # The allowed minimal box size
         rcnn=dict(  # The config for the roi heads.
             score_thr=0.05,  # Threshold to filter out boxes
@@ -284,7 +290,7 @@ test_pipeline = [
         flip=False,  # Whether to flip images during testing
         transforms=[
             dict(type='Resize',  # Use resize augmentation
-                 keep_ratio=True),  # Whether to keep the ratio between height and width, the img_scale set here will be supressed by the img_scale set above.
+                 keep_ratio=True),  # Whether to keep the ratio between height and width, the img_scale set here will be suppressed by the img_scale set above.
             dict(type='RandomFlip'),  # Thought RandomFlip is added in pipeline, it is not used because flip=False
             dict(
                 type='Normalize',  # Normalization config, the values are from img_norm_cfg
@@ -394,7 +400,7 @@ lr_config = dict(  # Learning rate scheduler config used to register LrUpdater h
     warmup_ratio=
     0.001,  # The ratio of the starting learning rate used for warmup
     step=[8, 11])  # Steps to decay the learning rate
-total_epochs = 12  # Total epochs to train the model
+runner = dict(type='EpochBasedRunner', max_epochs=12) # Runner that runs the workflow in total max_epochs
 checkpoint_config = dict(  # Config to set the checkpoint hook, Refer to https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/checkpoint.py for implementation.
     interval=1)  # The save interval is 1
 log_config = dict(  # config to register logger hook
@@ -409,7 +415,6 @@ load_from = None  # load models as a pre-trained model from a given path. This w
 resume_from = None  # Resume checkpoints from a given path, the training will be resumed from the epoch when the checkpoint's is saved.
 workflow = [('train', 1)]  # Workflow for runner. [('train', 1)] means there is only one workflow and the workflow named 'train' is executed once. The workflow trains the model by 12 epochs according to the total_epochs.
 work_dir = 'work_dir'  # Directory to save the model checkpoints and logs for the current experiments.
-
 ```
 
 ## FAQ

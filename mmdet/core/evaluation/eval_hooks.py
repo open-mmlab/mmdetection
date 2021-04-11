@@ -50,6 +50,7 @@ class EvalHook(Hook):
                  dataloader,
                  start=None,
                  interval=1,
+                 by_epoch=True,
                  save_best=None,
                  rule=None,
                  **eval_kwargs):
@@ -65,6 +66,7 @@ class EvalHook(Hook):
             start = 0
         self.dataloader = dataloader
         self.interval = interval
+        self.by_epoch = by_epoch
         self.start = start
         assert isinstance(save_best, str) or save_best is None
         self.save_best = save_best
@@ -138,26 +140,37 @@ class EvalHook(Hook):
         return True
 
     def after_train_epoch(self, runner):
-        if not self.evaluation_flag(runner):
+        if not self.by_epoch or not self.evaluation_flag(runner):
             return
         from mmdet.apis import single_gpu_test
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         key_score = self.evaluate(runner, results)
         if self.save_best:
-            best_score = runner.meta['hook_msgs'].get(
-                'best_score', self.init_value_map[self.rule])
-            if self.compare_func(key_score, best_score):
-                best_score = key_score
-                runner.meta['hook_msgs']['best_score'] = best_score
-                last_ckpt = runner.meta['hook_msgs']['last_ckpt']
-                runner.meta['hook_msgs']['best_ckpt'] = last_ckpt
-                mmcv.symlink(
-                    last_ckpt,
-                    osp.join(runner.work_dir,
-                             f'best_{self.key_indicator}.pth'))
-                self.logger.info(
-                    f'Now best checkpoint is epoch_{runner.epoch + 1}.pth.'
-                    f'Best {self.key_indicator} is {best_score:0.4f}')
+            self.save_best_checkpoint(runner, key_score)
+
+    def after_train_iter(self, runner):
+        if self.by_epoch or not self.every_n_iters(runner, self.interval):
+            return
+        from mmdet.apis import single_gpu_test
+        results = single_gpu_test(runner.model, self.dataloader, show=False)
+        key_score = self.evaluate(runner, results)
+        if self.save_best:
+            self.save_best_checkpoint(runner, key_score)
+
+    def save_best_checkpoint(self, runner, key_score):
+        best_score = runner.meta['hook_msgs'].get(
+            'best_score', self.init_value_map[self.rule])
+        if self.compare_func(key_score, best_score):
+            best_score = key_score
+            runner.meta['hook_msgs']['best_score'] = best_score
+            last_ckpt = runner.meta['hook_msgs']['last_ckpt']
+            runner.meta['hook_msgs']['best_ckpt'] = last_ckpt
+            mmcv.symlink(
+                last_ckpt,
+                osp.join(runner.work_dir, f'best_{self.key_indicator}.pth'))
+            time_stamp = runner.epoch + 1 if self.by_epoch else runner.iter + 1
+            self.logger.info(f'Now best checkpoint is epoch_{time_stamp}.pth.'
+                             f'Best {self.key_indicator} is {best_score:0.4f}')
 
     def evaluate(self, runner, results):
         eval_res = self.dataloader.dataset.evaluate(
@@ -212,6 +225,7 @@ class DistEvalHook(EvalHook):
                  dataloader,
                  start=None,
                  interval=1,
+                 by_epoch=True,
                  tmpdir=None,
                  gpu_collect=False,
                  save_best=None,
@@ -222,6 +236,7 @@ class DistEvalHook(EvalHook):
             dataloader,
             start=start,
             interval=interval,
+            by_epoch=by_epoch,
             save_best=save_best,
             rule=rule,
             **eval_kwargs)
@@ -229,7 +244,7 @@ class DistEvalHook(EvalHook):
         self.tmpdir = tmpdir
         self.gpu_collect = gpu_collect
 
-    def after_train_epoch(self, runner):
+    def _broadcast_bn_buffer(self, runner):
         # Synchronization of BatchNorm's buffer (running_mean
         # and running_var) is not supported in the DDP of pytorch,
         # which may cause the inconsistent performance of models in
@@ -243,8 +258,12 @@ class DistEvalHook(EvalHook):
                     dist.broadcast(module.running_var, 0)
                     dist.broadcast(module.running_mean, 0)
 
-        if not self.evaluation_flag(runner):
+    def after_train_epoch(self, runner):
+        if not self.by_epoch or not self.evaluation_flag(runner):
             return
+
+        if self.broadcast_bn_buffer:
+            self._broadcast_bn_buffer(runner)
 
         from mmdet.apis import multi_gpu_test
         tmpdir = self.tmpdir
@@ -259,17 +278,26 @@ class DistEvalHook(EvalHook):
             print('\n')
             key_score = self.evaluate(runner, results)
             if self.save_best:
-                best_score = runner.meta['hook_msgs'].get(
-                    'best_score', self.init_value_map[self.rule])
-                if self.compare_func(key_score, best_score):
-                    best_score = key_score
-                    runner.meta['hook_msgs']['best_score'] = best_score
-                    last_ckpt = runner.meta['hook_msgs']['last_ckpt']
-                    runner.meta['hook_msgs']['best_ckpt'] = last_ckpt
-                    mmcv.symlink(
-                        last_ckpt,
-                        osp.join(runner.work_dir,
-                                 f'best_{self.key_indicator}.pth'))
-                    self.logger.info(
-                        f'Now best checkpoint is {last_ckpt}.'
-                        f'Best {self.key_indicator} is {best_score:0.4f}')
+                self.save_best_checkpoint(runner, key_score)
+
+    def after_train_iter(self, runner):
+        if self.by_epoch or not self.every_n_iters(runner, self.interval):
+            return
+
+        if self.broadcast_bn_buffer:
+            self._broadcast_bn_buffer(runner)
+
+        from mmdet.apis import multi_gpu_test
+        tmpdir = self.tmpdir
+        if tmpdir is None:
+            tmpdir = osp.join(runner.work_dir, '.eval_hook')
+        results = multi_gpu_test(
+            runner.model,
+            self.dataloader,
+            tmpdir=tmpdir,
+            gpu_collect=self.gpu_collect)
+        if runner.rank == 0:
+            print('\n')
+            key_score = self.evaluate(runner, results)
+            if self.save_best:
+                self.save_best_checkpoint(runner, key_score)

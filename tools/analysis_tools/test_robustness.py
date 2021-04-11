@@ -5,6 +5,7 @@ import os.path as osp
 
 import mmcv
 import torch
+from mmcv import DictAction
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
@@ -160,6 +161,16 @@ def parse_args():
         choices=['all', 'benchmark'],
         default='benchmark',
         help='aggregate all results or only those for benchmark corruptions')
+    parser.add_argument(
+        '--cfg-options',
+        nargs='+',
+        action=DictAction,
+        help='override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file. If the value to '
+        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
+        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
+        'Note that the quotation marks are necessary and that no white space '
+        'is allowed.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -177,6 +188,8 @@ def main():
         raise ValueError('The output file must be a pkl file.')
 
     cfg = mmcv.Config.fromfile(args.config)
+    if args.cfg_options is not None:
+        cfg.merge_from_dict(args.cfg_options)
     # import modules from string list.
     if cfg.get('custom_imports', None):
         from mmcv.utils import import_modules_from_strings
@@ -354,7 +367,7 @@ def main():
                 mmcv.dump(aggregated_results, eval_results_filename)
 
     if rank == 0:
-        # print filan results
+        # print final results
         print('\nAggregated results:')
         prints = args.final_prints
         aggregate = args.final_prints_aggregate

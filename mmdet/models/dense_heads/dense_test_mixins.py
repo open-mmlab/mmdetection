@@ -54,7 +54,10 @@ class BBoxTestMixin(object):
         # check with_nms argument
         gb_sig = signature(self.get_bboxes)
         gb_args = [p.name for p in gb_sig.parameters.values()]
-        gbs_sig = signature(self._get_bboxes_single)
+        if hasattr(self, '_get_bboxes'):
+            gbs_sig = signature(self._get_bboxes)
+        else:
+            gbs_sig = signature(self._get_bboxes_single)
         gbs_args = [p.name for p in gbs_sig.parameters.values()]
         assert ('with_nms' in gb_args) and ('with_nms' in gbs_args), \
             f'{self.__class__.__name__}' \
