@@ -4,15 +4,15 @@ from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .transformer import (FFN, BaseTransformerCoder, BaseTransformerLayer,
-                          DetrTransformerDecoder, DetrTransformerDecoderLayer,
+                          DetrTransformerDecoderLayer,
                           DetrTransformerEncoderLayer, DynamicConv,
                           MultiheadAttention, Transformer)
 
 __all__ = [
     'ResLayer', 'gaussian_radius', 'gen_gaussian_target', 'MultiheadAttention',
     'FFN', 'BaseTransformerLayer', 'DetrTransformerEncoderLayer',
-    'DetrTransformerDecoderLayer', 'DetrTransformerDecoder', 'Transformer',
-    'build_transformer', 'build_positional_encoding', 'SinePositionalEncoding',
+    'DetrTransformerDecoderLayer', 'Transformer', 'build_transformer',
+    'build_positional_encoding', 'SinePositionalEncoding',
     'LearnedPositionalEncoding', 'DynamicConv', 'SimplifiedBasicBlock',
     'BaseTransformerCoder'
 ]
