@@ -91,6 +91,8 @@ def imshow_det_bboxes(img,
         bboxes = bboxes[inds, :]
         labels = labels[inds]
         if segms is not None:
+            if isinstance(segms, list):
+                segms = np.array(segms)
             segms = segms[inds, ...]
 
     mask_colors = []

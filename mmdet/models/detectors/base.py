@@ -12,9 +12,9 @@ from contextlib import contextmanager
 from functools import partial
 from mmcv.runner import auto_fp16
 from mmcv.utils import print_log
-from mmdet.integration.nncf import no_nncf_trace
 
 from mmdet.core.visualization import imshow_det_bboxes
+from mmdet.integration.nncf import no_nncf_trace
 from mmdet.utils import get_root_logger
 
 
@@ -412,19 +412,22 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 color_mask = color_masks[labels[i]]
                 mask = segms[i].astype(np.bool)
                 img[mask] = img[mask] * 0.5 + color_mask * 0.5
-                if text_results is not None:
-                    p0 = int(bboxes[i][0]), int(bboxes[i][3])
-                    cv2.putText(img, text_results[i], p0, cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255))
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
         # draw bounding boxes
+
+        if text_results is not None:
+            labels = np.arange(len(text_results))
+            class_names = text_results
+        else:
+            class_names = self.CLASSES
         img = imshow_det_bboxes(
             img,
             bboxes,
             labels,
             segms,
-            class_names=['' for _ in self.CLASSES] if text_results is not None else self.CLASSES,
+            class_names=class_names,
             score_thr=score_thr,
             bbox_color=bbox_color,
             text_color=text_color,
