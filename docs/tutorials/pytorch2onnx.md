@@ -87,7 +87,7 @@ python tools/deployment/pytorch2onnx.py \
 
 The table below lists the models that are guaranteed to be exportable to ONNX and runnable in ONNX Runtime.
 
-|    Model    |                          Config                          | Dynamic Shape | batch inference | Note  |
+|    Model    |                          Config                          | Dynamic Shape | Batch Inference | Note  |
 | :---------: | :------------------------------------------------------: | :-----------: | :-------------: | :---: |
 |    FCOS     | `configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py` |       Y       |        Y        |       |
 |     SSD     |               `configs/ssd/ssd300_coco.py`               |       Y       |        Y        |       |
