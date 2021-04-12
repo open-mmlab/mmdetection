@@ -82,7 +82,13 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
                       **kwargs):
         """Forward function during training."""
 
-    async def async_simple_test(self, x, img_meta, **kwargs):
+    async def async_simple_test(self,
+                                x,
+                                proposal_list,
+                                img_metas,
+                                proposals=None,
+                                rescale=False,
+                                **kwargs):
         """Asynchronized test function."""
         raise NotImplementedError
 
