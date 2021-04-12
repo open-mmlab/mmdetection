@@ -84,9 +84,7 @@ class TransformerHead(AnchorFreeHead):
         # `AnchorFreeHead` is called.
         super(AnchorFreeHead, self).__init__()
         use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        assert not use_sigmoid_cls, 'setting use_sigmoid_cls as True is ' \
-            'not supported in DETR, since background is needed for the ' \
-            'matching process.'
+
         assert 'num_feats' in positional_encoding
         num_feats = positional_encoding['num_feats']
         embed_dims = embed_dims
@@ -96,7 +94,8 @@ class TransformerHead(AnchorFreeHead):
         assert test_cfg is not None and 'max_per_img' in test_cfg
 
         class_weight = loss_cls.get('class_weight', None)
-        if class_weight is not None:
+        self.bg_cls_weight = 0
+        if class_weight is not None and (self.__class__ is TransformerHead):
             assert isinstance(class_weight, float), 'Expected ' \
                 'class_weight to have type float. Found ' \
                 f'{type(class_weight)}.'
@@ -133,14 +132,16 @@ class TransformerHead(AnchorFreeHead):
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.num_query = num_query
         self.num_classes = num_classes
-        self.cls_out_channels = num_classes + 1
+        if use_sigmoid_cls:
+            self.cls_out_channels = num_classes
+        else:
+            self.cls_out_channels = num_classes + 1
         self.in_channels = in_channels
         self.reg_num_fcs = reg_num_fcs
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.use_sigmoid_cls = use_sigmoid_cls
         self.embed_dims = embed_dims
-        self.num_query = test_cfg['max_per_img']
         self.fp16_enabled = False
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
@@ -638,7 +639,12 @@ class TransformerHead(AnchorFreeHead):
         """
         assert len(cls_score) == len(bbox_pred)
         # exclude background
-        scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
+        # scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
+        cls_score = cls_score.sigmoid()
+        scores, indexs = cls_score.view(-1).topk(100)
+        det_labels = indexs % self.num_classes
+        bbox_index = indexs // self.num_classes
+        bbox_pred = bbox_pred[bbox_index]
         det_bboxes = bbox_cxcywh_to_xyxy(bbox_pred)
         det_bboxes[:, 0::2] = det_bboxes[:, 0::2] * img_shape[1]
         det_bboxes[:, 1::2] = det_bboxes[:, 1::2] * img_shape[0]

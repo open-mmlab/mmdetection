@@ -7,7 +7,6 @@ from mmcv.cnn import Linear
 from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply
-from mmdet.models.utils import FFN
 from ..builder import HEADS
 from .transformer_head import TransformerHead
 
@@ -36,16 +35,14 @@ class DeformableDetrHead(TransformerHead):
         """Initialize layers of the transformer head."""
 
         fc_cls = Linear(self.embed_dims, self.cls_out_channels)
-        reg_ffn = FFN(
-            self.embed_dims,
-            self.embed_dims,
-            self.reg_num_fcs,
-            self.act_cfg,
-            dropout=0.0,
-            add_residual=False)
-        fc_reg = Linear(self.embed_dims, 4)
-        # TODO check this reg branch
-        reg_branch = nn.Sequential(reg_ffn, fc_reg)
+
+        reg_branch = []
+        for _ in range(self.reg_num_fcs):
+            reg_branch.append(Linear(self.embed_dims, self.embed_dims))
+            reg_branch.append(nn.ReLU())
+        reg_branch.append(Linear(self.embed_dims, 4))
+
+        reg_branch = nn.Sequential(*reg_branch)
 
         def _get_clones(module, N):
             return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
@@ -60,7 +57,7 @@ class DeformableDetrHead(TransformerHead):
         else:
             # TODO check this
             # nn.init.constant_(self.bbox_embed.layers[-1].bias.data[2:], -2.0)
-            self.cls_brach = nn.ModuleList([fc_cls for _ in range(num_pred)])
+            self.cls_branch = nn.ModuleList([fc_cls for _ in range(num_pred)])
             self.reg_branch = nn.ModuleList(
                 [reg_branch for _ in range(num_pred)])
             self.transformer.decoder.bbox_embed = None
@@ -140,7 +137,7 @@ class DeformableDetrHead(TransformerHead):
                 reference = inter_references[lvl - 1]
             reference = inverse_sigmoid(reference)
             # TODO check brach
-            outputs_class = self.cls_brach[lvl](hs[lvl])
+            outputs_class = self.cls_branch[lvl](hs[lvl])
             tmp = self.reg_branch[lvl](hs[lvl])
             if reference.shape[-1] == 4:
                 tmp += reference
@@ -232,7 +229,6 @@ class DeformableDetrHead(TransformerHead):
         losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
-    # TODO remove this
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
     def get_bboxes(self,
                    all_cls_scores_list,
