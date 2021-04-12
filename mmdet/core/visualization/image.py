@@ -1,8 +1,9 @@
+import warnings
+
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import pycocotools.mask as mask_util
-import warnings
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
