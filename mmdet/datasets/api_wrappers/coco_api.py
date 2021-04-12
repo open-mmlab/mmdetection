@@ -1,10 +1,15 @@
-# This file add snack case alias for coco api
+# This file add snake case alias for coco api
 
 from pycocotools.coco import COCO as _COCO
 from pycocotools.cocoeval import COCOeval as _COCOeval
 
 
 class COCO(_COCO):
+    """This class is almost the same as official pycocotools package.
+
+    It implements some snake case function aliases. So that the COCO class has
+    the same interface as LVIS class.
+    """
 
     def __init__(self, annotation_file=None):
         super().__init__(annotation_file=annotation_file)
@@ -30,4 +35,5 @@ class COCO(_COCO):
         return self.loadImgs(ids)
 
 
+# just for the ease of import
 COCOeval = _COCOeval
