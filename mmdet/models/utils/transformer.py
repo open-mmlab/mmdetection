@@ -7,7 +7,7 @@ import torch.nn as nn
 from mmcv import ConfigDict
 from mmcv.cnn import (Linear, build_activation_layer, build_norm_layer,
                       constant_init, xavier_init)
-from mmcv.ops.deformable_attention import MultiScaleDeformAttnFunction
+from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttnFunction
 
 from .builder import (ATTENTION, TRANSFORMER, TRANSFORMERLAYER,
                       build_attention, build_transformerlayer)
@@ -106,6 +106,7 @@ class MultiheadAttention(nn.Module):
 class MultiScaleDeformableAttention(nn.Module):
 
     def __init__(self,
+                 dropout=0.1,
                  embed_dims=256,
                  num_heads=8,
                  num_levels=4,
@@ -139,7 +140,7 @@ class MultiScaleDeformableAttention(nn.Module):
         self.num_levels = num_levels
         self.num_heads = num_heads
         self.num_points = num_points
-
+        self.dropout = nn.Dropout(dropout)
         self.sampling_offsets = nn.Linear(
             embed_dims, num_heads * num_levels * num_points * 2)
         self.attention_weights = nn.Linear(embed_dims,
@@ -181,7 +182,6 @@ class MultiScaleDeformableAttention(nn.Module):
                 value,
                 residual=None,
                 query_pos=None,
-                key_pos=None,
                 key_padding_mask=None,
                 reference_points=None,
                 spatial_shapes=None,
@@ -226,8 +226,8 @@ class MultiScaleDeformableAttention(nn.Module):
             key = query
         if value is None:
             value = key
-        assert residual is None, 'MultiScaleDeformableAttention dose not' \
-                                 'support add residual'
+        if residual is None:
+            inp_residual = key
 
         if query_pos is not None:
             query = query + query_pos
@@ -249,8 +249,11 @@ class MultiScaleDeformableAttention(nn.Module):
         sampling_offsets = self.sampling_offsets(query).view(
             N, Len_q, self.num_heads, self.num_levels, self.num_points, 2)
         attention_weights = self.attention_weights(query).view(
-            N, Len_q, self.num_heads, self.num_levels, self.num_points)
+            N, Len_q, self.num_heads, self.num_levels * self.num_points)
         attention_weights = attention_weights.softmax(-1)
+        attention_weights = attention_weights.view(N, Len_q, self.num_heads,
+                                                   self.num_levels,
+                                                   self.num_points)
         # N, Len_q, num_heads, num_levels, num_points, 2
         if reference_points.shape[-1] == 2:
             offset_normalizer = torch.stack(
@@ -267,14 +270,12 @@ class MultiScaleDeformableAttention(nn.Module):
             raise ValueError(
                 f'Last dim of reference_points must be'
                 f' 2 or 4, but get {reference_points.shape[-1]} instead.')
-        output = MultiScaleDeformAttnFunction.apply(value, spatial_shapes,
-                                                    level_start_index,
-                                                    sampling_locations,
-                                                    attention_weights,
-                                                    self.im2col_step)
+        output = MultiScaleDeformableAttnFunction.apply(
+            value, spatial_shapes, level_start_index, sampling_locations,
+            attention_weights, self.im2col_step)
         output = self.output_proj(output).permute(1, 0, 2)
         # (num_query, bs ,embed_dims)
-        return output
+        return output + self.dropout(inp_residual)
 
 
 class FFN(nn.Module):
@@ -328,7 +329,7 @@ class FFN(nn.Module):
         """Forward function for `FFN`."""
         out = self.layers(x)
         if not self.add_residual:
-            return out
+            return self.dropout(out)
         if residual is None:
             residual = x
         return residual + self.dropout(out)
@@ -725,10 +726,6 @@ class DetrTransformerEncoder(BaseTransformerCoder):
         return x
 
 
-class DetrTransformerDecoder():
-    pass
-
-
 class DeformableDetrTransformerDecoder(BaseTransformerCoder):
     """Implements the decoder in DETR transformer.
 
@@ -819,6 +816,10 @@ class DeformableDetrTransformerDecoder(BaseTransformerCoder):
                 intermediate_reference_points)
 
         return output, reference_points
+
+
+class DetrTransformerDecoder(nn.Module):
+    pass
 
 
 @TRANSFORMER.register_module()
@@ -1192,7 +1193,7 @@ class DeformableDetrTransformer(nn.Module):
             query=tgt,
             key=None,
             value=memory,
-            pos_query=query_embeds,
+            query_pos=query_embeds,
             key_padding_mask=mask_flatten,
             reference_points=reference_points,
             spatial_shapes=spatial_shapes,
