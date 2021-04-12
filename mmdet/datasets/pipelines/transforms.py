@@ -1809,3 +1809,271 @@ class CutOut(object):
                      else f'cutout_shape={self.candidates}, ')
         repr_str += f'fill_in={self.fill_in})'
         return repr_str
+
+@PIPELINES.register_module()
+class Mosaic(object):
+    """Mosaic augmentation.
+    (0:cut_y, 0:cut_x)                        -- image 0
+    (0:cut_y, cut_x:self.size[1])             -- image 1
+    (cut_y:self.size[0], 0:cut_x)             -- image 2
+    (cut_y:self.size[0], cut_x:self.size[1])  -- image 3
+    The output image is composed of the parts from each sub-image.
+    Args:
+        size (tuple): Output size of the image. Default: (640, 640).
+        jitter (float): It decides the size of the cropping window.
+        min_offset (float): Volume of the offset of the cropping window.
+        load_pipeline (list): Pipeline for loading images and annotations.
+        letter_box(bool): Whether to maintain the aspect ratio of the
+            subimages.
+    """
+
+    def __init__(self,
+                 size=(640, 640),
+                 min_offset=0.2,
+                 dataset=None,
+                 allow_negative_crop=False,
+                 bbox_clip_border=True):
+        assert isinstance(size, tuple)
+        assert size[0] > 0 and size[1] > 0, (
+            'size must > 0 in train mode')
+        assert isinstance(size[0], int) and isinstance(
+            size[1], int)
+
+        if min_offset is None:
+            self.min_offset = (0, 0)
+        else:
+            if isinstance(min_offset, float):
+                assert 0 <= min_offset <= 1
+                self.min_offset = (min_offset, min_offset)
+            elif isinstance(min_offset, tuple):
+                assert isinstance(min_offset[0], float) \
+                       and isinstance(min_offset[1], float)
+                assert 0 <= min_offset[0] <= 1 and \
+                       0 <= min_offset[1] <= 1
+                self.min_offset = min_offset
+
+        self.size = size
+
+        self.allow_negative_crop = allow_negative_crop
+        self.dataset = dataset
+        self.bbox_clip_border = bbox_clip_border
+        self.bbox2label = {
+            'gt_bboxes': 'gt_labels',
+            'gt_bboxes_ignore': 'gt_labels_ignore'
+        }
+
+    def __call__(self, results):
+        """Call the function to mix 4 images
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with images and bounding boxes cropped.
+        """
+        # Generate the Mosaic coordinate
+        cut_y = random.randint(
+            int(self.size[0] * self.min_offset[0]),
+            int(self.size[0] * (1 - self.min_offset[0]))
+        )
+        cut_x = random.randint(
+            int(self.size[1] * self.min_offset[1]),
+            int(self.size[1] * (1 - self.min_offset[1]))
+        )
+
+        tmp_img = np.zeros((self.size[0], self.size[1], 3), dtype=np.float32)
+
+        out_bboxes = []
+        out_labels = []
+        out_ignores = []
+
+        for i in range(4):
+            if i == 0:
+                # use the current image
+                results_i = results
+            else:
+                # randomly sample a new image from the dataset
+                results_i = next(self.dataset)
+
+            tmp_img, bboxes, labels, ignores = self._mosiac_combine(i, results_i, tmp_img, cut_x, cut_y)
+            out_bboxes.append(bboxes)
+            out_labels.append(labels)
+            out_ignores.append(ignores)
+
+        out_bboxes = np.concatenate(out_bboxes, axis=0)
+        out_labels = np.concatenate(out_labels, axis=0)
+        out_ignores = np.concatenate(out_ignores, axis=0)
+
+        results['img'] = tmp_img
+        results['img_shape'] = tmp_img.shape
+        results['gt_bboxes'] = out_bboxes
+        results['gt_labels'] = out_labels
+        results['gt_bboxes_ignore'] = out_ignores
+        return results
+
+    def _mosiac_combine(self, i, results_i, tmp_img, cut_x, cut_y):
+        """
+        Args:
+            i (int): Index for the subimage, i = 0,1,2,3
+            results_i (dict): Result dict from loading pipeline.
+            tmp_img (numpy array, (H x W x 3)): buffer for mosiac image
+            cut_x (int): dividing coordinate x
+            cut_y (int): dividing coordinate y
+        Returns:
+            bboxes: Result dict with images and bounding boxes cropped.
+        """
+        if i == 0:
+            # Image 0: top right
+            results_i = self._crop_data(results_i, (cut_y, cut_x), self.allow_negative_crop)
+            bboxes, labels = self.filter_truth(results_i['gt_bboxes'],
+                                               results_i['gt_labels'],
+                                               crop_w=cut_x,
+                                               crop_h=cut_y,
+                                               mix_x=0,
+                                               mix_y=0)
+
+            ignores, _ = self.filter_truth(results_i['gt_bboxes_ignore'],
+                                           None,
+                                           crop_w=cut_x,
+                                           crop_h=cut_y,
+                                           mix_x=0,
+                                           mix_y=0)
+            tmp_img[:cut_y, :cut_x] = results_i['img'].copy()
+        elif i == 1:
+            # Image 1: top right
+            results_i = self._crop_data(results_i, (cut_y, self.size[1] - cut_x), self.allow_negative_crop)
+            bboxes, labels = self.filter_truth(results_i['gt_bboxes'],
+                                               results_i['gt_labels'],
+                                               crop_w=self.size[1] - cut_x,
+                                               crop_h=cut_y,
+                                               mix_x=cut_x,
+                                               mix_y=0)
+
+            ignores, _ = self.filter_truth(results_i['gt_bboxes_ignore'],
+                                           None,
+                                           crop_w=self.size[1] - cut_x,
+                                           crop_h=cut_y,
+                                           mix_x=cut_x,
+                                           mix_y=0)
+            tmp_img[:cut_y, cut_x:] = results_i['img'].copy()
+        elif i == 2:
+            # Image 2: bottom left
+            results_i = self._crop_data(results_i, (self.size[0] - cut_y, cut_x), self.allow_negative_crop)
+            bboxes, labels = self.filter_truth(results_i['gt_bboxes'],
+                                               results_i['gt_labels'],
+                                               crop_w=cut_x,
+                                               crop_h=self.size[0] - cut_y,
+                                               mix_x=0,
+                                               mix_y=cut_y)
+            ignores, _ = self.filter_truth(results_i['gt_bboxes_ignore'],
+                                           None,
+                                           crop_w=cut_x,
+                                           crop_h=self.size[0] - cut_y,
+                                           mix_x=0,
+                                           mix_y=cut_y)
+            tmp_img[cut_y:, :cut_x] = results_i['img'].copy()
+        elif i == 3:
+            results_i = self._crop_data(results_i, (self.size[0] - cut_y, self.size[1] - cut_x),
+                                        self.allow_negative_crop)
+            # Image 3: bottom right
+            bboxes, labels = self.filter_truth(results_i['gt_bboxes'],
+                                               results_i['gt_labels'],
+                                               crop_w=self.size[1] - cut_x,
+                                               crop_h=self.size[0] - cut_y,
+                                               mix_x=cut_x,
+                                               mix_y=cut_y)
+            ignores, _ = self.filter_truth(results_i['gt_bboxes_ignore'],
+                                           None,
+                                           crop_w=self.size[1] - cut_x,
+                                           crop_h=self.size[0] - cut_y,
+                                           mix_x=cut_x,
+                                           mix_y=cut_y)
+            tmp_img[cut_y:, cut_x:] = results_i['img'].copy()
+
+        return tmp_img, bboxes, labels, ignores
+
+    def _crop_data(self, results, crop_size, allow_negative_crop):
+        """Function to randomly crop images, bounding boxes, masks, semantic
+        segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+            crop_size (tuple): Expected absolute size after cropping, (h, w).
+            allow_negative_crop (bool): Whether to allow a crop that does not
+                contain any bbox area. Default to False.
+
+        Returns:
+            dict: Randomly cropped results, 'img_shape' key in result dict is
+                updated according to crop size.
+        """
+        assert crop_size[0] > 0 and crop_size[1] > 0
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+            margin_h = max(img.shape[0] - crop_size[0], 0)
+            margin_w = max(img.shape[1] - crop_size[1], 0)
+            offset_h = np.random.randint(0, margin_h + 1)
+            offset_w = np.random.randint(0, margin_w + 1)
+            crop_y1, crop_y2 = offset_h, offset_h + crop_size[0]
+            crop_x1, crop_x2 = offset_w, offset_w + crop_size[1]
+
+            # crop the image
+            img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
+            img_shape = img.shape
+            results[key] = img
+        results['img_shape'] = img_shape
+
+        # crop bboxes accordingly and clip to the image boundary
+        for key in results.get('bbox_fields', []):
+            # e.g. gt_bboxes and gt_bboxes_ignore
+            bbox_offset = np.array([offset_w, offset_h, offset_w, offset_h],
+                                   dtype=np.float32)
+            bboxes = results[key] - bbox_offset
+            if self.bbox_clip_border:
+                bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
+                bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
+            valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
+                bboxes[:, 3] > bboxes[:, 1])
+            # If the crop does not contain any gt-bbox area and
+            # allow_negative_crop is False, skip this image.
+            if (key == 'gt_bboxes' and not valid_inds.any()
+                and not allow_negative_crop):
+                return None
+            results[key] = bboxes[valid_inds, :]
+            # label fields. e.g. gt_labels and gt_labels_ignore
+            label_key = self.bbox2label.get(key)
+            if label_key in results:
+                results[label_key] = results[label_key][valid_inds]
+
+        return results
+
+    def _filter_truth(self, bboxes, labels, crop_w, crop_h, mix_x, mix_y):
+        """Filter the reasonable bboxes and convert to mosaic image coordinate.
+         Args:
+            bboxes (list): bounding boxes in (x1, y1, x2, y2).
+            labels (list): label for each bbox.
+            crop_w (int): width of the subimage.
+            crop_h (int): height of the subimage.
+            mix_x (int): up-left corner x coordinate in mosiac image.
+            mix_y (int): up-left corner x coordinate in mosiac image.
+        Returns:
+            bboxes (list): bounding boxes in (x1, y1, x2, y2).
+            labels (list): label for each bbox.
+        """
+        if bboxes.shape[0] == 0:
+            return bboxes, labels
+
+        # filter the large coordinate that exceed the subimage size
+        bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, crop_w)
+        bboxes[:, 1::3] = np.clip(bboxes[:, 1::3], 0, crop_h)
+
+        # keep the reasonable sized bboxes and labels
+        reserved_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
+            bboxes[:, 3] > bboxes[:, 1])
+
+        bboxes = bboxes[reserved_inds]
+        if labels is not None:
+            labels = labels[reserved_inds]
+
+        bboxes[:, 0::2] += mix_x
+        bboxes[:, 1::3] += mix_y
+
+        return bboxes, labels

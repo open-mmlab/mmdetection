@@ -78,6 +78,52 @@ def test_resize():
     assert np.equal(results['img'], results['img2']).all()
     assert results['img_shape'] == (800, 1280, 3)
 
+def test_mosaic():
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
+    results['img'] = img
+
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    # TODO: add img_fields test
+    results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
+    # Set initial values for default meta_keys
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+
+    def create_random_bboxes(num_bboxes, img_w, img_h):
+        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
+        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
+        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
+        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
+            np.int)
+        return bboxes
+
+    h, w, _ = img.shape
+    gt_bboxes = create_random_bboxes(8, w, h)
+    gt_bboxes_ignore = create_random_bboxes(2, w, h)
+    results['gt_bboxes'] = gt_bboxes
+    results['gt_bboxes_ignore'] = gt_bboxes_ignore
+    transform = dict(type='Mosaic', size=(640, 640), min_offset=0.2)
+
+    mosaic_module = build_from_cfg(transform, PIPELINES)
+
+    results = mosaic_module(results)
+    # data_root = 'data/coco/'
+    # datasets = build_dataset({
+    #     'type': 'CocoDataset',
+    #     'ann_file': data_root + 'annotations/instances_train2017.json',
+    #     'img_prefix': data_root + 'train2017/',
+    #     'pipeline': pipeline,
+    #     'num_samples_per_iter': 4
+    # })
+    #
+    # data = datasets.__getitem__(2)
+    # img = data['img']
+    # bboxes = data['gt_bboxes']
+    # mmcv.imshow_bboxes(img, bboxes, show=False)
+    # mmcv.imwrite(img, "img.png")
 
 def test_flip():
     # test assertion for invalid flip_ratio
