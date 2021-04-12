@@ -357,7 +357,7 @@ python tools/dataset_converters/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}
 
 ## Robust Detection Benchmark
 
-`tools/analysis_tools/test_robustness.py` and`tools/analysis_tools/robustness_eval.py`  helps users to evaluate model robustness. The core idea comes from [Benchmarking Robustness in Object Detection: Autonomous Driving when Winter is Coming](https://arxiv.org/abs/1907.07484). For more information how to evaluate models on corrupted images and results for a set of standard models please refer to [robustness_benchmarking.md](https://github.com/open-mmlab/mmdetection/blob/master/docs/robustness_benchmarking.md).
+`tools/analysis_tools/test_robustness.py` and`tools/analysis_tools/robustness_eval.py`  helps users to evaluate model robustness. The core idea comes from [Benchmarking Robustness in Object Detection: Autonomous Driving when Winter is Coming](https://arxiv.org/abs/1907.07484). For more information how to evaluate models on corrupted images and results for a set of standard models please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
 
 ## Miscellaneous
 
