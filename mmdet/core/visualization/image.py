@@ -1,9 +1,8 @@
-import warnings
-
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import pycocotools.mask as mask_util
+import warnings
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
@@ -91,8 +90,6 @@ def imshow_det_bboxes(img,
         bboxes = bboxes[inds, :]
         labels = labels[inds]
         if segms is not None:
-            if isinstance(segms, list):
-                segms = np.array(segms)
             segms = segms[inds, ...]
 
     mask_colors = []
