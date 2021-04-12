@@ -184,14 +184,14 @@ In order to serve an `MMDetection` model with [`TorchServe`](https://pytorch.org
 
 ```shell
 python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
---output_folder ${MODEL_STORE} \
+--output-folder ${MODEL_STORE} \
 --model-name ${MODEL_NAME}
 ```
 
 ### 2. Build `mmdet-serve` docker image
 
 ```shell
-DOCKER_BUILDKIT=1 docker build -t mmdet-serve:latest docker/serve/
+docker build -t mmdet-serve:latest docker/serve/
 ```
 
 ### 3. Launch `mmdet-serve`
