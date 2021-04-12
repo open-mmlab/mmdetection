@@ -33,6 +33,7 @@ class SinePositionalEncoding(nn.Module):
                  num_feats,
                  temperature=10000,
                  normalize=False,
+                 offset=0,
                  scale=2 * math.pi,
                  eps=1e-6):
         super(SinePositionalEncoding, self).__init__()
@@ -40,6 +41,7 @@ class SinePositionalEncoding(nn.Module):
             assert isinstance(scale, (float, int)), 'when normalize is set,' \
                 'scale should be provided and in float or int type, ' \
                 f'found {type(scale)}'
+        self.offset = offset
         self.num_feats = num_feats
         self.temperature = temperature
         self.normalize = normalize
@@ -62,8 +64,10 @@ class SinePositionalEncoding(nn.Module):
         y_embed = not_mask.cumsum(1, dtype=torch.float32)
         x_embed = not_mask.cumsum(2, dtype=torch.float32)
         if self.normalize:
-            y_embed = y_embed / (y_embed[:, -1:, :] + self.eps) * self.scale
-            x_embed = x_embed / (x_embed[:, :, -1:] + self.eps) * self.scale
+            y_embed = (y_embed + self.offset) / (y_embed[:, -1:, :] +
+                                                 self.eps) * self.scale
+            x_embed = (x_embed + self.offset) / (x_embed[:, :, -1:] +
+                                                 self.eps) * self.scale
         dim_t = torch.arange(
             self.num_feats, dtype=torch.float32, device=mask.device)
         dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
