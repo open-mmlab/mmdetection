@@ -76,6 +76,7 @@ class ChannelMapper(nn.Module):
                         in_channel,
                         out_channels,
                         3,
+                        stride=2,
                         padding=1,
                         conv_cfg=conv_cfg,
                         norm_cfg=norm_cfg,
