@@ -118,7 +118,6 @@ def pytorch2onnx(config_path,
         one_img, one_meta = preprocess_example_input(input_config)
         tensor_data = [one_img]
 
-        # check the numerical value
         # get pytorch output
         pytorch_results = model(tensor_data, [[one_meta]], return_loss=False)
         pytorch_results = pytorch_results[0]
@@ -130,7 +129,7 @@ def pytorch2onnx(config_path,
         net_feed_input = list(set(input_all) - set(input_initializer))
         assert (len(net_feed_input) == 1)
         session_options = rt.SessionOptions()
-        # register custom op for onnxruntime
+        # register custom op for ONNX Runtime
         if osp.exists(ort_custom_op_path):
             session_options.register_custom_ops_library(ort_custom_op_path)
         feed_input_img = one_img.detach().numpy()
@@ -168,6 +167,7 @@ def pytorch2onnx(config_path,
         err_msg = 'The numerical values are different between Pytorch' + \
                   ' and ONNX, but it does not necessarily mean the' + \
                   ' exported ONNX model is problematic.'
+        # check the numerical value
         for onnx_res, pytorch_res in compare_pairs:
             for o_res, p_res in zip(onnx_res, pytorch_res):
                 np.testing.assert_allclose(
