@@ -12,7 +12,7 @@ def cast_tensor_type(x, scale=1., dtype=None):
 
 def fp16_clamp(x, min=None, max=None):
     if not x.is_cuda and x.dtype == torch.float16:
-        # clamp for cpu float16
+        # clamp for cpu float16, tensor fp16 has no clamp implementation
         return x.float().clamp(min, max).half()
 
     return x.clamp(min, max)
@@ -74,8 +74,8 @@ class BboxOverlaps2D(object):
 def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     """Calculate overlap between two set of bboxes.
 
-    FP16 Contributed by: https://github.com/li-phone
-    Prove:
+    FP16 Contributed by https://github.com/open-mmlab/mmdetection/pull/4889
+    Note:
         Assume bboxes1 is M x 4, bboxes2 is N x 4, when mode is 'iou',
         there are some new generated variable when calculating IOU
         using bbox_overlaps function:
@@ -218,7 +218,6 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         lt = torch.max(bboxes1[..., :2], bboxes2[..., :2])  # [B, rows, 2]
         rb = torch.min(bboxes1[..., 2:], bboxes2[..., 2:])  # [B, rows, 2]
 
-        # wh = (rb - lt).clamp(min=0)  # [B, rows, 2]
         wh = fp16_clamp(rb - lt, min=0)
         overlap = wh[..., 0] * wh[..., 1]
 
@@ -235,7 +234,6 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         rb = torch.min(bboxes1[..., :, None, 2:],
                        bboxes2[..., None, :, 2:])  # [B, rows, cols, 2]
 
-        # wh = (rb - lt).clamp(min=0)  # [B, rows, cols, 2]
         wh = fp16_clamp(rb - lt, min=0)
         overlap = wh[..., 0] * wh[..., 1]
 
@@ -255,7 +253,6 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     if mode in ['iou', 'iof']:
         return ious
     # calculate gious
-    # enclose_wh = (enclosed_rb - enclosed_lt).clamp(min=0)
     enclose_wh = fp16_clamp(enclosed_rb - enclosed_lt, min=0)
     enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
     enclose_area = torch.max(enclose_area, eps)
