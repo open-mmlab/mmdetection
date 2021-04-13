@@ -49,10 +49,7 @@ model = dict(
                         type='MultiheadAttention',
                         embed_dims=256,
                         num_heads=8,
-                        # dropout=0.0
-                        dropout=0.0
-                        # TODO fix this only for debug
-                    ),
+                        dropout=0.1),
                     dict(type='MultiScaleDeformableAttention', embed_dims=256),
                 ],
                 feedforward_channels=1024,
