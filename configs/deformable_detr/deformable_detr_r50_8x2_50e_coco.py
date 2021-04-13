@@ -91,18 +91,41 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='RandomFlip', flip_ratio=0.),
+    dict(type='RandomFlip', flip_ratio=0.5),
     dict(
         type='AutoAugment',
         policies=[[
             dict(
                 type='Resize',
-                img_scale=(200, 1333),
+                img_scale=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
+                           (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                           (736, 1333), (768, 1333), (800, 1333)],
                 multiscale_mode='value',
                 keep_ratio=True)
-        ]]),
+        ],
+                  [
+                      dict(
+                          type='Resize',
+                          img_scale=[(400, 1333), (500, 1333), (600, 1333)],
+                          multiscale_mode='value',
+                          keep_ratio=True),
+                      dict(
+                          type='RandomCrop',
+                          crop_type='absolute_range',
+                          crop_size=(384, 600),
+                          allow_negative_crop=True),
+                      dict(
+                          type='Resize',
+                          img_scale=[(480, 1333), (512, 1333), (544, 1333),
+                                     (576, 1333), (608, 1333), (640, 1333),
+                                     (672, 1333), (704, 1333), (736, 1333),
+                                     (768, 1333), (800, 1333)],
+                          multiscale_mode='value',
+                          override=True,
+                          keep_ratio=True)
+                  ]]),
     dict(type='Normalize', **img_norm_cfg),
-    #   dict(type='Pad', size_divisor=1),
+    dict(type='Pad', size_divisor=1),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
@@ -125,19 +148,23 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=0,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 # optimizer
 optimizer = dict(
     type='AdamW',
-    lr=0.0001,
+    lr=2e-4,
     weight_decay=0.0001,
     paramwise_cfg=dict(
-        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+        custom_keys={
+            'backbone': dict(lr_mult=0.1),
+            'sampling_offsets': dict(lr_mult=0.1),
+            'reference_points': dict(lr_mult=0.1),
+        }))
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 # learning policy
-lr_config = dict(policy='step', step=[100])
-runner = dict(type='EpochBasedRunner', max_epochs=150)
+lr_config = dict(policy='step', step=[40])
+runner = dict(type='EpochBasedRunner', max_epochs=50)
