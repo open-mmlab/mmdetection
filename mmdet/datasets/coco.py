@@ -448,7 +448,7 @@ class CocoDataset(CustomDataset):
                     # is not affected, this leads to different small/medium/large
                     # mask AP results.
                     for x in predictions:
-                        x.pop('bbox', None)
+                        x.pop('bbox')
                 cocoDt = cocoGt.loadRes(predictions)
             except IndexError:
                 print_log(
