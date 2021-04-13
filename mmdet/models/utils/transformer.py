@@ -735,15 +735,10 @@ class DeformableDetrTransformerDecoder(BaseTransformerCoder):
             `LN`.
     """
 
-    def __init__(self,
-                 *args,
-                 coder_norm_cfg=dict(type='LN'),
-                 return_intermediate=False,
-                 **kwargs):
+    def __init__(self, *args, return_intermediate=False, **kwargs):
 
         super(DeformableDetrTransformerDecoder, self).__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
-        self.coder_norm = build_norm_layer(coder_norm_cfg, self.embed_dims)[1]
         # TODO make this when as two stage
         self.bbox_embed = None
 
