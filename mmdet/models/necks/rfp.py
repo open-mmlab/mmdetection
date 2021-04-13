@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import constant_init, xavier_init
 from mmcv.runner import BaseModule, ModuleList
 
 from ..builder import NECKS, build_backbone
@@ -80,18 +81,8 @@ class RFP(FPN):
                  aspp_dilations=(1, 3, 6, 1),
                  init_cfg=None,
                  **kwargs):
-        if init_cfg is None:
-            init_cfg = [
-                dict(
-                    type='Xavier',
-                    distribution='uniform',
-                    layer='Conv2d',
-                    override=[
-                        dict(name='lateral_convs'),
-                        dict(name='fpn_convs')
-                    ]),
-                dict(type='Constant', val=0, override=dict(name='rfp_weight'))
-            ]
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super().__init__(init_cfg=init_cfg, **kwargs)
         self.rfp_steps = rfp_steps
         # Be careful! Pretrained weights cannot be loaded when use
@@ -109,6 +100,18 @@ class RFP(FPN):
             stride=1,
             padding=0,
             bias=True)
+
+    def init_weight(self):
+        # Avoid using super().init_weights(), which may alter the default
+        # initialization of the modules in self.rfp_modules that have missing
+        # keys in the pretrained checkpoint.
+        for convs in [self.lateral_convs, self.fpn_convs]:
+            for m in convs.modules():
+                if isinstance(m, nn.Conv2d):
+                    xavier_init(m, distribution='uniform')
+        for rfp_idx in range(self.rfp_steps - 1):
+            self.rfp_modules[rfp_idx].init_weight()
+        constant_init(self.rfp_weight, 0)
 
     def forward(self, inputs):
         inputs = list(inputs)
