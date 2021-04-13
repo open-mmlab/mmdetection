@@ -1012,7 +1012,6 @@ class DeformableDetrTransformer(nn.Module):
         self.decoder = DeformableDetrTransformerDecoder(
             transformerlayers=dencodelayers,
             num_layers=num_decoder_layers,
-            coder_norm_cfg=norm_cfg,
             return_intermediate=return_intermediate)
 
         self.init_layers()
