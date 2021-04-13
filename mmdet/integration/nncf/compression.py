@@ -10,35 +10,6 @@ from mmdet.utils import get_root_logger
 from .utils import (check_nncf_is_enabled, get_nncf_version, is_nncf_enabled,
                     load_checkpoint, no_nncf_trace)
 
-if is_nncf_enabled():
-    try:
-        from nncf import (NNCFConfig, create_compressed_model,
-                          register_default_init_args)
-        from nncf.dynamic_graph.input_wrapping import nncf_model_input
-        from nncf.initialization import InitializingDataLoader
-        from nncf.nncf_network import NNCFNetwork
-
-        class_InitializingDataLoader = InitializingDataLoader
-    except ImportError:
-        raise RuntimeError(
-            'Cannot import the standard functions of NNCF library '
-            '-- most probably, incompatible version of NNCF. '
-            'Please, use NNCF version pointed in the documentation.')
-else:
-    class DummyInitializingDataLoader:
-        pass
-
-
-    class_InitializingDataLoader = DummyInitializingDataLoader
-
-
-class MMInitializeDataLoader(class_InitializingDataLoader):
-    def get_inputs(self, dataloader_output):
-        # redefined InitializingDataLoader because
-        # of DataContainer format in mmdet
-        kwargs = {k: v.data[0] for k, v in dataloader_output.items()}
-        return (), kwargs
-
 
 def get_nncf_metadata():
     """
@@ -114,7 +85,21 @@ def wrap_nncf_model(model,
     Note that the parameter `get_fake_input_func` should be the function `get_fake_input`
     -- cannot import this function here explicitly
     """
+
     check_nncf_is_enabled()
+
+    from nncf import (NNCFConfig, create_compressed_model,
+                      register_default_init_args)
+    from nncf.dynamic_graph.input_wrapping import nncf_model_input
+    from nncf.initialization import InitializingDataLoader
+
+    class MMInitializeDataLoader(InitializingDataLoader):
+        def get_inputs(self, dataloader_output):
+            # redefined InitializingDataLoader because
+            # of DataContainer format in mmdet
+            kwargs = {k: v.data[0] for k, v in dataloader_output.items()}
+            return (), kwargs
+
     pathlib.Path(cfg.work_dir).mkdir(parents=True, exist_ok=True)
     nncf_config = NNCFConfig(cfg.nncf_config)
     logger = get_root_logger(cfg.log_level)
@@ -274,6 +259,7 @@ def change_export_func_first_conv(model):
 def get_uncompressed_model(module):
     if not is_nncf_enabled():
         return module
+    from nncf.nncf_network import NNCFNetwork
     if isinstance(module, NNCFNetwork):
         return module.get_nncf_wrapped_model()
     return module

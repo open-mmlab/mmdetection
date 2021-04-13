@@ -1,19 +1,11 @@
-import torch
+import importlib
 from collections import OrderedDict
 from contextlib import contextmanager
 
-try:
-    import nncf
-    _is_nncf_enabled = True
-except ImportError:
-    _is_nncf_enabled = False
-except RuntimeError as _e:
-    _is_nncf_enabled = False
-    print('Attention: RuntimeError happened when tried to import nncf')
-    print('           The reason may be in absent CUDA devices')
-    print('           RuntimeError:')
-    print('           ' + str(_e), flush=True)
+import torch
 
+
+_is_nncf_enabled = importlib.util.find_spec('nncf') is not None
 
 
 def is_nncf_enabled():
@@ -28,20 +20,8 @@ def check_nncf_is_enabled():
 def get_nncf_version():
     if not is_nncf_enabled():
         return None
+    import nncf
     return nncf.__version__
-
-
-if is_nncf_enabled():
-    try:
-        from nncf import load_state
-        from nncf.dynamic_graph.context import get_current_context
-        from nncf.dynamic_graph.context import \
-            no_nncf_trace as original_no_nncf_trace
-    except ImportError:
-        raise RuntimeError(
-            'Cannot import the standard functions of NNCF library '
-            '-- most probably, incompatible version of NNCF. '
-            'Please, use NNCF version pointed in the documentation.')
 
 
 def load_checkpoint(model, filename, map_location=None, strict=False):
@@ -57,6 +37,8 @@ def load_checkpoint(model, filename, map_location=None, strict=False):
     Returns:
         dict or OrderedDict: The loaded checkpoint.
     """
+    from nncf import load_state
+
     checkpoint = torch.load(filename, map_location=map_location)
     # get state_dict from checkpoint
     if isinstance(checkpoint, OrderedDict):
@@ -84,6 +66,7 @@ def no_nncf_trace():
     """
 
     if is_nncf_enabled():
+        from nncf.dynamic_graph.context import no_nncf_trace as original_no_nncf_trace
         return original_no_nncf_trace()
     return nullcontext()
 
@@ -91,6 +74,8 @@ def no_nncf_trace():
 def is_in_nncf_tracing():
     if not is_nncf_enabled():
         return False
+
+    from nncf.dynamic_graph.context import get_current_context
 
     ctx = get_current_context()
 
