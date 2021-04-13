@@ -12,9 +12,9 @@ from contextlib import contextmanager
 from functools import partial
 from mmcv.runner import auto_fp16
 from mmcv.utils import print_log
-from mmdet.integration.nncf import no_nncf_trace
 
 from mmdet.core.visualization import imshow_det_bboxes
+from mmdet.integration.nncf import no_nncf_trace
 from mmdet.utils import get_root_logger
 
 
@@ -346,7 +346,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     text_color=(72, 101, 241),
                     mask_color=None,
                     thickness=2,
-                    font_scale=0.5,
                     font_size=13,
                     win_name='',
                     show=False,
@@ -368,7 +367,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                Color of masks. The tuple of color should be in BGR order.
                Default: None
             thickness (int): Thickness of lines. Default: 2
-            font_scale (float): Font scales of texts. Default: 0.5
             font_size (int): Font size of texts. Default: 13
             win_name (str): The window name. Default: ''
             wait_time (float): Value of waitKey param.
@@ -401,36 +399,31 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         segms = None
         if segm_result is not None and len(labels) > 0:  # non empty
             segms = mmcv.concat_list(segm_result)
-            inds = np.where(bboxes[:, -1] > score_thr)[0]
-            np.random.seed(42)
-            color_masks = [
-                np.random.randint(0, 256, (1, 3), dtype=np.uint8)
-                for _ in range(max(labels) + 1)
-            ]
-            for i in inds:
-                i = int(i)
-                color_mask = color_masks[labels[i]]
-                mask = segms[i].astype(np.bool)
-                img[mask] = img[mask] * 0.5 + color_mask * 0.5
-                if text_results is not None:
-                    p0 = int(bboxes[i][0]), int(bboxes[i][3])
-                    cv2.putText(img, text_results[i], p0, cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255))
+            if isinstance(segms[0], torch.Tensor):
+                segms = torch.stack(segms, dim=0).detach().cpu().numpy()
+            else:
+                segms = np.stack(segms, axis=0)
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
         # draw bounding boxes
+
+        if text_results is not None:
+            labels = np.arange(len(text_results))
+            class_names = text_results
+        else:
+            class_names = self.CLASSES
         img = imshow_det_bboxes(
             img,
             bboxes,
             labels,
             segms,
-            class_names=['' for _ in self.CLASSES] if text_results is not None else self.CLASSES,
+            class_names=class_names,
             score_thr=score_thr,
             bbox_color=bbox_color,
             text_color=text_color,
             mask_color=mask_color,
             thickness=thickness,
-            font_scale=font_scale,
             font_size=font_size,
             win_name=win_name,
             show=show,
