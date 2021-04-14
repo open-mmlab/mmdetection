@@ -2,14 +2,9 @@ import torch
 
 from ..builder import BBOX_ASSIGNERS
 from ..iou_calculators import build_iou_calculator
+from ..transforms import bbox_xyxy_to_cxcywh
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
-
-
-def box_xyxy_to_cxcywh(x):
-    x0, y0, x1, y1 = x.unbind(-1)
-    b = [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0), (y1 - y0)]
-    return torch.stack(b, dim=-1)
 
 
 @BBOX_ASSIGNERS.register_module()
@@ -46,9 +41,11 @@ class UniformAssigner(BaseAssigner):
         # Compute the L1 cost between boxes
         # Note that we use anchors and predict boxes both
         cost_bbox = torch.cdist(
-            box_xyxy_to_cxcywh(bbox_pred), box_xyxy_to_cxcywh(gt_bboxes), p=1)
+            bbox_xyxy_to_cxcywh(bbox_pred),
+            bbox_xyxy_to_cxcywh(gt_bboxes),
+            p=1)
         cost_bbox_anchors = torch.cdist(
-            box_xyxy_to_cxcywh(anchor), box_xyxy_to_cxcywh(gt_bboxes), p=1)
+            bbox_xyxy_to_cxcywh(anchor), bbox_xyxy_to_cxcywh(gt_bboxes), p=1)
 
         # TODO: TOPK function has different results in cpu and cuda mode
         C = cost_bbox.cpu()

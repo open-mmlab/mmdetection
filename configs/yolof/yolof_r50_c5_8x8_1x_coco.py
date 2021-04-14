@@ -64,7 +64,7 @@ optimizer = dict(
     weight_decay=0.0001,
     paramwise_cfg=dict(
         norm_decay_mult=0.,
-        custom_keys={'backbone': dict(lr_mult=0.334, decay_mult=1.0)}))
+        custom_keys={'backbone': dict(lr_mult=1. / 3, decay_mult=1.0)}))
 lr_config = dict(warmup_iters=1500, warmup_ratio=0.00066667)
 
 # use caffe img_norm
@@ -97,8 +97,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=0,
+    samples_per_gpu=8,
+    workers_per_gpu=8,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))

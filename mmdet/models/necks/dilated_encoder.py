@@ -7,6 +7,15 @@ from ..builder import NECKS
 
 
 class Bottleneck(nn.Module):
+    """Bottleneck block for DilatedEncoder.
+
+    The Bottleneck contains three ConvLayers and one residual connection.
+
+    Args:
+        in_channels (int): The number of input channels.
+        mid_channels (int): The number of middle output channels.
+        dilation (int): Dilation rate.
+    """
 
     def __init__(self,
                  in_channels: int = 512,
@@ -38,6 +47,19 @@ class Bottleneck(nn.Module):
 
 @NECKS.register_module()
 class DilatedEncoder(nn.Module):
+    """Dilated Encoder for YOLOF.
+
+    This module contains two types of components:
+        - the original FPN lateral convolution layer and fpn convolution layer,
+              which are 1x1 conv + 3x3 conv
+        - the dilated residual block
+
+    Args:
+        in_channels (int): The number of input channels.
+        out_channels (int): The number of output channels.
+        block_mid_channels (int): The number of middle block output channels
+        num_residual_blocks (int): The number of residual blocks.
+    """
 
     def __init__(self, in_channels, out_channels, block_mid_channels,
                  num_residual_blocks):
