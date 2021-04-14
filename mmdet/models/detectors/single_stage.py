@@ -36,6 +36,12 @@ class SingleStageDetector(BaseDetector):
         self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in detector.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(SingleStageDetector, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:
@@ -47,8 +53,7 @@ class SingleStageDetector(BaseDetector):
         self.bbox_head.init_weights()
 
     def extract_feat(self, img):
-        """Directly extract features from the backbone+neck
-        """
+        """Directly extract features from the backbone+neck."""
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
@@ -57,7 +62,7 @@ class SingleStageDetector(BaseDetector):
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
@@ -87,6 +92,7 @@ class SingleStageDetector(BaseDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+        super(SingleStageDetector, self).forward_train(img, img_metas)
         x = self.extract_feat(img)
         losses = self.bbox_head.forward_train(x, img_metas, gt_bboxes,
                                               gt_labels, gt_bboxes_ignore)
@@ -96,13 +102,17 @@ class SingleStageDetector(BaseDetector):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
         with no_nncf_trace():
-            det_bboxes, det_labels = \
-                self.bbox_head.get_bboxes(*outs, img_metas, self.test_cfg, False)[0]
+            bbox_results = \
+                self.bbox_head.get_bboxes(*outs, img_metas, self.test_cfg, False)
+        if torch.onnx.is_in_onnx_export():
+            return bbox_results[0]
 
         if postprocess:
-            return self.postprocess(det_bboxes, det_labels, None, img_metas,
-                                    rescale=rescale)
-        return det_bboxes, det_labels
+            bbox_results = [
+                self.postprocess(det_bboxes, det_labels, None, img_metas, rescale=rescale)
+                for det_bboxes, det_labels in bbox_results
+            ]
+        return bbox_results
 
     def postprocess(self,
                     det_bboxes,
@@ -123,4 +133,26 @@ class SingleStageDetector(BaseDetector):
         return bbox_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        raise NotImplementedError
+        """Test function with test time augmentation.
+
+        Args:
+            imgs (list[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            img_metas (list[list[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. each dict has image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
+        """
+        assert hasattr(self.bbox_head, 'aug_test'), \
+            f'{self.bbox_head.__class__.__name__}' \
+            ' does not support test-time augmentation'
+
+        feats = self.extract_feats(imgs)
+        return [self.bbox_head.aug_test(feats, img_metas, rescale=rescale)]

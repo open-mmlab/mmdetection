@@ -1,13 +1,11 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule, normal_init
+from mmcv.ops import DeformConv2d
 
 from mmdet.core import multi_apply, multiclass_nms
-from mmdet.core.utils.misc import arange, meshgrid, topk
-from mmdet.core.bbox.transforms import clamp
-from mmdet.ops import DeformConv
-from ..builder import HEADS, build_loss
-from .base_dense_head import BaseDenseHead
+from ..builder import HEADS
+from .anchor_free_head import AnchorFreeHead
 
 INF = 1e8
 
@@ -18,17 +16,17 @@ class FeatureAlign(nn.Module):
                  in_channels,
                  out_channels,
                  kernel_size=3,
-                 deformable_groups=4):
+                 deform_groups=4):
         super(FeatureAlign, self).__init__()
         offset_channels = kernel_size * kernel_size * 2
         self.conv_offset = nn.Conv2d(
-            4, deformable_groups * offset_channels, 1, bias=False)
-        self.conv_adaption = DeformConv(
+            4, deform_groups * offset_channels, 1, bias=False)
+        self.conv_adaption = DeformConv2d(
             in_channels,
             out_channels,
             kernel_size=kernel_size,
             padding=(kernel_size - 1) // 2,
-            deformable_groups=deformable_groups)
+            deform_groups=deform_groups)
         self.relu = nn.ReLU(inplace=True)
 
     def init_weights(self):
@@ -42,7 +40,7 @@ class FeatureAlign(nn.Module):
 
 
 @HEADS.register_module()
-class FoveaHead(BaseDenseHead):
+class FoveaHead(AnchorFreeHead):
     """FoveaBox: Beyond Anchor-based Object Detector
     https://arxiv.org/abs/1904.03797
     """
@@ -50,81 +48,32 @@ class FoveaHead(BaseDenseHead):
     def __init__(self,
                  num_classes,
                  in_channels,
-                 feat_channels=256,
-                 stacked_convs=4,
-                 strides=(4, 8, 16, 32, 64),
                  base_edge_list=(16, 32, 64, 128, 256),
                  scale_ranges=((8, 32), (16, 64), (32, 128), (64, 256), (128,
                                                                          512)),
                  sigma=0.4,
                  with_deform=False,
-                 deformable_groups=4,
-                 background_label=None,
-                 loss_cls=None,
-                 loss_bbox=None,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 train_cfg=None,
-                 test_cfg=None):
-        super(FoveaHead, self).__init__()
-        self.num_classes = num_classes
-        self.cls_out_channels = num_classes
-        self.in_channels = in_channels
-        self.feat_channels = feat_channels
-        self.stacked_convs = stacked_convs
-        self.strides = strides
+                 deform_groups=4,
+                 **kwargs):
         self.base_edge_list = base_edge_list
         self.scale_ranges = scale_ranges
         self.sigma = sigma
         self.with_deform = with_deform
-        self.deformable_groups = deformable_groups
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox = build_loss(loss_bbox)
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-        self._init_layers()
+        self.deform_groups = deform_groups
+        super().__init__(num_classes, in_channels, **kwargs)
 
     def _init_layers(self):
-        self.cls_convs = nn.ModuleList()
-        self.reg_convs = nn.ModuleList()
         # box branch
-        for i in range(self.stacked_convs):
-            chn = self.in_channels if i == 0 else self.feat_channels
-            self.reg_convs.append(
-                ConvModule(
-                    chn,
-                    self.feat_channels,
-                    3,
-                    stride=1,
-                    padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
-        self.fovea_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
+        super()._init_reg_convs()
+        self.conv_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
+
         # cls branch
         if not self.with_deform:
-            for i in range(self.stacked_convs):
-                chn = self.in_channels if i == 0 else self.feat_channels
-                self.cls_convs.append(
-                    ConvModule(
-                        chn,
-                        self.feat_channels,
-                        3,
-                        stride=1,
-                        padding=1,
-                        conv_cfg=self.conv_cfg,
-                        norm_cfg=self.norm_cfg,
-                        bias=self.norm_cfg is None))
-            self.fovea_cls = nn.Conv2d(
+            super()._init_cls_convs()
+            self.conv_cls = nn.Conv2d(
                 self.feat_channels, self.cls_out_channels, 3, padding=1)
         else:
+            self.cls_convs = nn.ModuleList()
             self.cls_convs.append(
                 ConvModule(
                     self.feat_channels, (self.feat_channels * 4),
@@ -146,51 +95,34 @@ class FoveaHead(BaseDenseHead):
                 self.feat_channels,
                 self.feat_channels,
                 kernel_size=3,
-                deformable_groups=self.deformable_groups)
-            self.fovea_cls = nn.Conv2d(
+                deform_groups=self.deform_groups)
+            self.conv_cls = nn.Conv2d(
                 int(self.feat_channels * 4),
                 self.cls_out_channels,
                 3,
                 padding=1)
 
     def init_weights(self):
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.fovea_cls, std=0.01, bias=bias_cls)
-        normal_init(self.fovea_reg, std=0.01)
+        super().init_weights()
         if self.with_deform:
             self.feature_adaption.init_weights()
-
-    def forward(self, feats):
-        return multi_apply(self.forward_single, feats)
 
     def forward_single(self, x):
         cls_feat = x
         reg_feat = x
         for reg_layer in self.reg_convs:
             reg_feat = reg_layer(reg_feat)
-        bbox_pred = self.fovea_reg(reg_feat)
+        bbox_pred = self.conv_reg(reg_feat)
         if self.with_deform:
             cls_feat = self.feature_adaption(cls_feat, bbox_pred.exp())
         for cls_layer in self.cls_convs:
             cls_feat = cls_layer(cls_feat)
-        cls_score = self.fovea_cls(cls_feat)
+        cls_score = self.conv_cls(cls_feat)
         return cls_score, bbox_pred
 
-    def get_points(self, featmap_sizes, dtype, device, flatten=False):
-        points = []
-        for featmap_size in featmap_sizes:
-            x_range = arange(0, featmap_size[1], dtype=dtype, device=device) + 0.5
-            y_range = arange(0, featmap_size[0], dtype=dtype, device=device) + 0.5
-            y, x = meshgrid(y_range, x_range)
-            if flatten:
-                y = y.reshape(-1)
-                x = x.reshape(-1)
-            points.append((y, x))
-        return points
+    def _get_points_single(self, *args, **kwargs):
+        y, x = super()._get_points_single(*args, **kwargs)
+        return y + 0.5, x + 0.5
 
     def loss(self,
              cls_scores,
@@ -219,9 +151,8 @@ class FoveaHead(BaseDenseHead):
             gt_bbox_list, gt_label_list, featmap_sizes, points)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        pos_inds = (
-            (flatten_labels >= 0)
-            & (flatten_labels < self.background_label)).nonzero().view(-1)
+        pos_inds = ((flatten_labels >= 0)
+                    & (flatten_labels < self.num_classes)).nonzero().view(-1)
         num_pos = len(pos_inds)
 
         loss_cls = self.loss_cls(
@@ -378,24 +309,32 @@ class FoveaHead(BaseDenseHead):
                 -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).exp()
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0:
+            if (nms_pre > 0) and (scores.shape[0] > nms_pre):
                 max_scores, _ = scores.max(dim=1)
-                _, topk_inds = topk(max_scores, nms_pre)
-                bbox_pred = bbox_pred[topk_inds]
-                scores = scores[topk_inds]
+                _, topk_inds = max_scores.topk(nms_pre)
+                bbox_pred = bbox_pred[topk_inds, :]
+                scores = scores[topk_inds, :]
                 y = y[topk_inds]
                 x = x[topk_inds]
-            x1 = clamp(stride * x - base_len * bbox_pred[:, 0], 0, img_shape[1] - 1)
-            y1 = clamp(stride * y - base_len * bbox_pred[:, 1], 0, img_shape[0] - 1)
-            x2 = clamp(stride * x + base_len * bbox_pred[:, 2], 0, img_shape[1] - 1)
-            y2 = clamp(stride * y + base_len * bbox_pred[:, 3], 0, img_shape[0] - 1)
-            bboxes = torch.stack([x1, y1, x2, y2], 1)
+            x1 = (stride * x - base_len * bbox_pred[:, 0]).\
+                clamp(min=0, max=img_shape[1] - 1)
+            y1 = (stride * y - base_len * bbox_pred[:, 1]).\
+                clamp(min=0, max=img_shape[0] - 1)
+            x2 = (stride * x + base_len * bbox_pred[:, 2]).\
+                clamp(min=0, max=img_shape[1] - 1)
+            y2 = (stride * y + base_len * bbox_pred[:, 3]).\
+                clamp(min=0, max=img_shape[0] - 1)
+            bboxes = torch.stack([x1, y1, x2, y2], -1)
             det_bboxes.append(bboxes)
             det_scores.append(scores)
         det_bboxes = torch.cat(det_bboxes)
         if rescale:
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_scores = torch.cat(det_scores)
+        padding = det_scores.new_zeros(det_scores.shape[0], 1)
+        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
+        # BG cat_id: num_class
+        det_scores = torch.cat([det_scores, padding], dim=1)
         det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

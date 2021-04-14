@@ -11,6 +11,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.abspath('..'))
@@ -20,10 +21,16 @@ sys.path.insert(0, os.path.abspath('..'))
 project = 'Object Detection OpenVINO Training Extensions'
 copyright = '2018-2020, OpenMMLab; 2019-2021, Intel'
 author = 'MMDetection Authors, Intel'
+version_file = '../mmdet/version.py'
+
+
+def get_version():
+    with open(version_file, 'r') as f:
+        exec(compile(f.read(), version_file, 'exec'))
+    return locals()['__version__']
 
 # The full version, including alpha/beta/rc tags
-with open('../mmdet/VERSION', 'r') as f:
-    release = f.read().strip()
+release = get_version()
 
 # -- General configuration ---------------------------------------------------
 
@@ -39,10 +46,7 @@ extensions = [
 ]
 
 autodoc_mock_imports = [
-    'matplotlib', 'pycocotools', 'terminaltables', 'mmdet.version',
-    'mmdet.ops.corner_pool', 'mmdet.ops.dcn', 'mmdet.ops.masked_conv',
-    'mmdet.ops.nms', 'mmdet.ops.roi_align', 'mmdet.ops.roi_pool',
-    'mmdet.ops.sigmoid_focal_loss', 'mmdet.ops.carafe', 'mmdet.ops.utils'
+    'matplotlib', 'pycocotools', 'terminaltables', 'mmdet.version', 'mmcv.ops'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -75,3 +79,11 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+
+def builder_inited_handler(app):
+    subprocess.run(['./stat.py'])
+
+
+def setup(app):
+    app.connect('builder-inited', builder_inited_handler)

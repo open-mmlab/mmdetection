@@ -46,6 +46,12 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             test_cfg=test_cfg)
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
+        """Initialize box head and box roi extractor.
+
+        Args:
+            bbox_roi_extractor (dict): Config of box roi extractor.
+            bbox_head (dict): Config of box in box head.
+        """
         self.bbox_roi_extractor = nn.ModuleList()
         self.bbox_head = nn.ModuleList()
         if not isinstance(bbox_roi_extractor, list):
@@ -60,6 +66,12 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.bbox_head.append(build_head(head))
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
+        """Initialize mask head and mask roi extractor.
+
+        Args:
+            mask_roi_extractor (dict): Config of mask roi extractor.
+            mask_head (dict): Config of mask in mask head.
+        """
         self.mask_head = nn.ModuleList()
         if not isinstance(mask_head, list):
             mask_head = [mask_head for _ in range(self.num_stages)]
@@ -82,16 +94,24 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_roi_extractor = self.bbox_roi_extractor
 
     def init_assigner_sampler(self):
-        # build assigner and smapler for each stage
+        """Initialize assigner and sampler for each stage."""
         self.bbox_assigner = []
         self.bbox_sampler = []
         if self.train_cfg is not None:
-            for rcnn_train_cfg in self.train_cfg:
+            for idx, rcnn_train_cfg in enumerate(self.train_cfg):
                 self.bbox_assigner.append(
                     build_assigner(rcnn_train_cfg.assigner))
-                self.bbox_sampler.append(build_sampler(rcnn_train_cfg.sampler))
+                self.current_stage = idx
+                self.bbox_sampler.append(
+                    build_sampler(rcnn_train_cfg.sampler, context=self))
 
     def init_weights(self, pretrained):
+        """Initialize the weights in head.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if self.with_shared_head:
             self.shared_head.init_weights(pretrained=pretrained)
         for i in range(self.num_stages):
@@ -104,6 +124,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.mask_head[i].init_weights()
 
     def forward_dummy(self, x, proposals):
+        """Dummy forward function."""
         # bbox head
         outs = ()
         rois = bbox2roi([proposals])
@@ -121,6 +142,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return outs
 
     def _bbox_forward(self, stage, x, rois):
+        """Box head forward function used in both training and testing."""
         bbox_roi_extractor = self.bbox_roi_extractor[stage]
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
@@ -134,6 +156,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def _bbox_forward_train(self, stage, x, sampling_results, gt_bboxes,
                             gt_labels, rcnn_train_cfg):
+        """Run forward function and calculate loss for box head in training."""
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(stage, x, rois)
         bbox_targets = self.bbox_head[stage].get_targets(
@@ -147,6 +170,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return bbox_results
 
     def _mask_forward(self, stage, x, rois):
+        """Mask head forward function used in both training and testing."""
         mask_roi_extractor = self.mask_roi_extractor[stage]
         mask_head = self.mask_head[stage]
         mask_feats = mask_roi_extractor(x[:mask_roi_extractor.num_inputs],
@@ -164,11 +188,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                             gt_masks,
                             rcnn_train_cfg,
                             bbox_feats=None):
+        """Run forward function and calculate loss for mask head in
+        training."""
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-        if len(pos_rois) == 0:
-            # If there are no predicted and/or truth boxes, then we cannot
-            # compute head / mask losses
-            return dict(loss_mask=None)
         mask_results = self._mask_forward(stage, x, pos_rois)
 
         mask_targets = self.mask_head[stage].get_targets(
@@ -191,23 +213,17 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         """
         Args:
             x (list[Tensor]): list of multi-level img features.
-
             img_metas (list[dict]): list of image info dict where each dict
                 has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-
             proposals (list[Tensors]): list of region proposals.
-
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
-
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
-
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
-
             gt_masks (None | Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
 
@@ -255,11 +271,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 mask_results = self._mask_forward_train(
                     i, x, sampling_results, gt_masks, rcnn_train_cfg,
                     bbox_results['bbox_feats'])
-                # TODO: Support empty tensor input. #2280
-                if mask_results['loss_mask'] is not None:
-                    for name, value in mask_results['loss_mask'].items():
-                        losses[f's{i}.{name}'] = (
-                            value * lw if 'loss' in name else value)
+                for name, value in mask_results['loss_mask'].items():
+                    losses[f's{i}.{name}'] = (
+                        value * lw if 'loss' in name else value)
 
             # refine bboxes
             if i < self.num_stages - 1:
@@ -267,6 +281,10 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 # bbox_targets is a tuple
                 roi_labels = bbox_results['bbox_targets'][0]
                 with torch.no_grad():
+                    roi_labels = torch.where(
+                        roi_labels == self.bbox_head[i].num_classes,
+                        bbox_results['cls_score'][:, :-1].argmax(1),
+                        roi_labels)
                     proposal_list = self.bbox_head[i].refine_bboxes(
                         bbox_results['rois'], roi_labels,
                         bbox_results['bbox_pred'], pos_is_gts, img_metas)
@@ -276,9 +294,10 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def simple_test(self, x, proposal_list, img_metas, rescale=False, postprocess=True):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
-        img_shape = img_metas[0]['img_shape']
-        ori_shape = img_metas[0]['ori_shape']
-        scale_factor = img_metas[0]['scale_factor']
+        num_imgs = len(proposal_list)
+        img_shapes = tuple(meta['img_shape'] for meta in img_metas)
+        ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
+        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         # "ms" in variable names means multi-stage
         ms_bbox_result = {}
@@ -289,61 +308,119 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = bbox2roi(proposal_list)
         for i in range(self.num_stages):
             bbox_results = self._bbox_forward(i, x, rois)
-            ms_scores.append(bbox_results['cls_score'])
+
+            # split batch bbox prediction back to each image
+            cls_score = bbox_results['cls_score']
+            bbox_pred = bbox_results['bbox_pred']
+            num_proposals_per_img = tuple(
+                len(proposals) for proposals in proposal_list)
+            if torch.onnx.is_in_onnx_export():
+                # Avoid split operation during exporting to ONNX
+                rois = [rois]
+                cls_score = [cls_score]
+            else:
+                rois = rois.split(num_proposals_per_img, 0)
+                cls_score = cls_score.split(num_proposals_per_img, 0)
+            if isinstance(bbox_pred, torch.Tensor):
+                if torch.onnx.is_in_onnx_export():
+                    # Avoid split operation during exporting to ONNX
+                    bbox_pred = [bbox_pred]
+                else:
+                    bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+            else:
+                bbox_pred = self.bbox_head[i].bbox_pred_split(
+                    bbox_pred, num_proposals_per_img)
+            ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
-                bbox_label = bbox_results['cls_score'].argmax(dim=1)
-                rois = self.bbox_head[i].regress_by_class(
-                    rois, bbox_label, bbox_results['bbox_pred'], img_metas[0])
+                bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
+                rois = torch.cat([
+                    self.bbox_head[i].regress_by_class(rois[j], bbox_label[j],
+                                                       bbox_pred[j],
+                                                       img_metas[j])
+                    for j in range(num_imgs)
+                ])
 
-        cls_score = sum(ms_scores) / self.num_stages
-        det_bboxes, det_labels = self.bbox_head[-1].get_bboxes(
-            rois,
-            cls_score,
-            bbox_results['bbox_pred'],
-            img_shape,
-            scale_factor,
-            rescale=False,
-            cfg=rcnn_test_cfg)
+        # average scores of each image by stages
+        cls_score = [
+            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+            for i in range(num_imgs)
+        ]
+        # apply bbox post-processing to each image individually
+        det_bboxes = []
+        det_labels = []
+        for i in range(num_imgs):
+            det_bbox, det_label = self.bbox_head[-1].get_bboxes(
+                rois[i],
+                cls_score[i],
+                bbox_pred[i],
+                img_shapes[i],
+                scale_factors[i],
+                rescale=False,
+                cfg=rcnn_test_cfg)
+            det_bboxes.append(det_bbox)
+            det_labels.append(det_label)
 
         ms_bbox_result['ensemble'] = (det_bboxes, det_labels)
 
         if self.with_mask:
-            if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
+            if torch.onnx.is_in_onnx_export() and det_bboxes[0].shape[0] == 0:
                 # If there are no detection there is nothing to do for a mask head.
                 # But during ONNX export we should run mask head
                 # for it to appear in the graph.
                 # So add one zero / dummy ROI that will be mapped
                 # to an Identity op in the graph.
-                det_bboxes = dummy_pad(det_bboxes, (0, 0, 0, 1))
-                det_labels = dummy_pad(det_labels, (0, 1))
+                det_bboxes = [dummy_pad(det_bboxes[0], (0, 0, 0, 1))]
+                det_labels = [dummy_pad(det_labels[0], (0, 1))]
 
-            if det_bboxes.shape[0] == 0:
-                segm_result = torch.empty([0, 0, 0],
-                                          dtype=det_bboxes.dtype,
-                                          device=det_bboxes.device)
+            if det_bboxes[0].shape[0] == 0:
+                segm_results = [torch.empty([0, 0, 0],
+                                           dtype=det_bboxes[0].dtype,
+                                           device=det_bboxes[0].device)]
             else:
-                mask_rois = bbox2roi([det_bboxes])
+                if rescale and not isinstance(scale_factors[0], float):
+                    scale_factors = [
+                        torch.from_numpy(scale_factor).to(det_bboxes[0].device)
+                        for scale_factor in scale_factors
+                    ]
+                _bboxes = [
+                    det_bboxes[i][:, :4] *
+                    scale_factors[i] if rescale else det_bboxes[i][:, :4]
+                    for i in range(len(det_bboxes))
+                ]
+
+                mask_rois = bbox2roi(det_bboxes)
+                num_mask_rois_per_img = tuple(
+                    _bbox.size(0) for _bbox in _bboxes)
                 aug_masks = []
                 for i in range(self.num_stages):
-                    mask_roi_extractor = self.mask_roi_extractor[i]
-                    mask_feats = mask_roi_extractor(
-                        x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
-                    if self.with_shared_head:
-                        mask_feats = self.shared_head(mask_feats)
-                    mask_pred = self.mask_head[i](mask_feats)
-                    mask_pred = self.mask_head[i].get_seg_masks(mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
-                      ori_shape, scale_factor, rescale)
+                    mask_results = self._mask_forward(i, x, mask_rois)
+                    mask_pred = mask_results['mask_pred']
+                    # split batch mask prediction back to each image
+                    if torch.onnx.is_in_onnx_export():
+                        mask_pred = [mask_pred]
+                    else:
+                        mask_pred = mask_pred.split(num_mask_rois_per_img, 0)
                     aug_masks.append(mask_pred)
-                segm_result = merge_aug_masks(aug_masks,
-                                              [img_metas] * self.num_stages,
-                                              self.test_cfg)
-            ms_segm_result['ensemble'] = segm_result
+
+                # apply mask post-processing to each image individually
+                segm_results = []
+                for i in range(num_imgs):
+                    aug_mask = [mask[i] for mask in aug_masks]
+                    merged_masks = merge_aug_masks(
+                        aug_mask, [[img_metas[i]]] * self.num_stages,
+                        rcnn_test_cfg)
+                    segm_result = self.mask_head[-1].get_seg_masks(
+                        merged_masks, _bboxes[i], det_labels[i],
+                        rcnn_test_cfg, ori_shapes[i], scale_factors[i],
+                        rescale)
+                    segm_results.append(segm_result)
+            ms_segm_result['ensemble'] = segm_results
 
         if postprocess:
-            det_masks = ms_segm_result['ensemble'] if self.with_mask else None
-            results = self.postprocess(det_bboxes, det_labels, det_masks,
-                                       img_metas, rescale=rescale)
+            det_masks = ms_segm_result['ensemble'] if self.with_mask else [None for _ in det_bboxes]
+            results = [self.postprocess(det_bboxes[i], det_labels[i], det_masks[i], img_metas[i], rescale=rescale)
+                       for i in range(len(det_bboxes))]
         else:
             if self.with_mask:
                 results = (*ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
@@ -357,9 +434,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     det_masks,
                     img_meta,
                     rescale=False):
-        img_h, img_w = img_meta[0]['ori_shape'][:2]
+        img_h, img_w = img_meta['ori_shape'][:2]
         num_classes = self.bbox_head[-1].num_classes
-        scale_factor = img_meta[0]['scale_factor']
+        scale_factor = img_meta['scale_factor']
         if isinstance(scale_factor, float):
             scale_factor = np.asarray((scale_factor, ) * 4)
 
@@ -415,7 +492,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 ms_scores.append(bbox_results['cls_score'])
 
                 if i < self.num_stages - 1:
-                    bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                    bbox_label = bbox_results['cls_score'][:, :-1].argmax(
+                        dim=1)
                     rois = self.bbox_head[i].regress_by_class(
                         rois, bbox_label, bbox_results['bbox_pred'],
                         img_meta[0])
@@ -445,8 +523,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [[]
-                               for _ in range(self.mask_head[-1].num_classes)]
+                segm_result = [[[]
+                                for _ in range(self.mask_head[-1].num_classes)]
+                               ]
             else:
                 aug_masks = []
                 aug_img_metas = []
@@ -475,6 +554,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     ori_shape,
                     scale_factor=1.0,
                     rescale=False)
-            return bbox_result, segm_result
+            return [(bbox_result, segm_result)]
         else:
-            return bbox_result
+            return [bbox_result]

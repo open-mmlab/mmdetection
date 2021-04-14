@@ -1,7 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.ops import MaskedConv2d
 
-from mmdet.ops import MaskedConv2d
 from ..builder import HEADS
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 
@@ -23,6 +23,7 @@ class GARetinaHead(GuidedAnchorHead):
         super(GARetinaHead, self).__init__(num_classes, in_channels, **kwargs)
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -54,12 +55,12 @@ class GARetinaHead(GuidedAnchorHead):
             self.feat_channels,
             self.feat_channels,
             kernel_size=3,
-            deformable_groups=self.deformable_groups)
+            deform_groups=self.deform_groups)
         self.feature_adaption_reg = FeatureAdaption(
             self.feat_channels,
             self.feat_channels,
             kernel_size=3,
-            deformable_groups=self.deformable_groups)
+            deform_groups=self.deform_groups)
         self.retina_cls = MaskedConv2d(
             self.feat_channels,
             self.num_anchors * self.cls_out_channels,
@@ -69,6 +70,7 @@ class GARetinaHead(GuidedAnchorHead):
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
 
     def init_weights(self):
+        """Initialize weights of the layer."""
         for m in self.cls_convs:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
@@ -84,6 +86,7 @@ class GARetinaHead(GuidedAnchorHead):
         normal_init(self.retina_reg, std=0.01)
 
     def forward_single(self, x):
+        """Forward feature map of a single scale level."""
         cls_feat = x
         reg_feat = x
         for cls_conv in self.cls_convs:

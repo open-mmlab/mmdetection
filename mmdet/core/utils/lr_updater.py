@@ -1,10 +1,10 @@
 from mmcv.runner import HOOKS
-from mmcv.runner.hooks.lr_updater import CosineAnealingLrUpdaterHook, annealing_cos
+from mmcv.runner.hooks.lr_updater import CosineAnnealingLrUpdaterHook, annealing_cos
+
 
 @HOOKS.register_module()
-class CosineAnealingUntilEpochLrUpdaterHook(CosineAnealingLrUpdaterHook):
-    # TODO: Fix Anealing -> Annealing when the upgrade of MMCV will be possible
-    """The same LR updater as CosineAnealing but with `last epoch` support.
+class CosineAnnealingUntilEpochLrUpdaterHook(CosineAnnealingLrUpdaterHook):
+    """The same LR updater as CosineAnnealing but with `last epoch` support.
 
     Args:
         last_epoch (int, optional): The number of the last epoch where LR
@@ -16,7 +16,7 @@ class CosineAnealingUntilEpochLrUpdaterHook(CosineAnealingLrUpdaterHook):
     def __init__(self, last_epoch=-1, **kwargs):
         assert last_epoch != 0
         self.last_epoch = int(last_epoch)
-        super(CosineAnealingUntilEpochLrUpdaterHook, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if last_epoch > 0:
             assert self.by_epoch, '"last_epoch" requires "by_epoch" LR updating'
 

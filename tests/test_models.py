@@ -248,7 +248,7 @@ class PublicModelsTestCase(unittest.TestCase):
         self.run_pytorch_test(origin_config, self.download_if_not_yet(url))
 
     def test_pytorch_fcos__fcos_x101_64x4d_fpn_gn_head_mstrain_640_800_4x2_2x_coco(self):
-        origin_config = 'configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco.py'
+        origin_config = 'configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco.py'
         url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
               'fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco/' \
               'fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco_20200229-11f8c079.pth'
@@ -341,7 +341,7 @@ class PublicModelsTestCase(unittest.TestCase):
         self.run_openvino_export_test(origin_config, self.download_if_not_yet(url))
 
     def test_openvino_fcos__fcos_x101_64x4d_fpn_gn_head_mstrain_640_800_4x2_2x_coco(self):
-        origin_config = 'configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco.py'
+        origin_config = 'configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco.py'
         url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
               'fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco/' \
               'fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco_20200229-11f8c079.pth'
@@ -432,7 +432,7 @@ class PublicModelsTestCase(unittest.TestCase):
         self.run_onnx_export_test(origin_config, self.download_if_not_yet(url))
 
     def test_onnx_fcos__fcos_x101_64x4d_fpn_gn_head_mstrain_640_800_4x2_2x_coco(self):
-        origin_config = 'configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco.py'
+        origin_config = 'configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco.py'
         url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
               'fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco/' \
               'fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco_20200229-11f8c079.pth'

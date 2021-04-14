@@ -7,16 +7,16 @@ from .base_bbox_coder import BaseBBoxCoder
 
 @BBOX_CODERS.register_module()
 class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
-    """Legacy Delta XYWH BBox coder used in MMDet V1.x
+    """Legacy Delta XYWH BBox coder used in MMDet V1.x.
 
     Following the practice in R-CNN [1]_, this coder encodes bbox (x1, y1, x2,
     y2) into delta (dx, dy, dw, dh) and decodes delta (dx, dy, dw, dh)
     back to original bbox (x1, y1, x2, y2).
 
     Note:
-        The main difference between `LegacyDeltaXYWHBBoxCoder` and
-        `DeltaXYWHBBoxCoder` is whether ``+ 1`` is used during width and height
-        calculation. We suggest to only use this coder when testing with
+        The main difference between :class`LegacyDeltaXYWHBBoxCoder` and
+        :class:`DeltaXYWHBBoxCoder` is whether ``+ 1`` is used during width and
+        height calculation. We suggest to only use this coder when testing with
         MMDet V1.x models.
 
     References:
@@ -37,6 +37,17 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         self.stds = target_stds
 
     def encode(self, bboxes, gt_bboxes):
+        """Get box regression transformation deltas that can be used to
+        transform the ``bboxes`` into the ``gt_bboxes``.
+
+        Args:
+            bboxes (torch.Tensor): source boxes, e.g., object proposals.
+            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
+                ground-truth boxes.
+
+        Returns:
+            torch.Tensor: Box transformation deltas
+        """
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = legacy_bbox2delta(bboxes, gt_bboxes, self.means,
@@ -48,6 +59,19 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
                pred_bboxes,
                max_shape=None,
                wh_ratio_clip=16 / 1000):
+        """Apply transformation `pred_bboxes` to `boxes`.
+
+        Args:
+            boxes (torch.Tensor): Basic boxes.
+            pred_bboxes (torch.Tensor): Encoded boxes with shape
+            max_shape (tuple[int], optional): Maximum shape of boxes.
+                Defaults to None.
+            wh_ratio_clip (float, optional): The allowed ratio between
+                width and height.
+
+        Returns:
+            torch.Tensor: Decoded boxes.
+        """
         assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = legacy_delta2bbox(bboxes, pred_bboxes, self.means,
                                            self.stds, max_shape, wh_ratio_clip)
@@ -75,7 +99,6 @@ def legacy_bbox2delta(proposals,
     Returns:
         Tensor: deltas with shape (N, 4), where columns represent dx, dy,
             dw, dh.
-
     """
     assert proposals.size() == gt.size()
 
