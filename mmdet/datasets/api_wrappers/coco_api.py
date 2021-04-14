@@ -1,5 +1,8 @@
 # This file add snake case alias for coco api
 
+import warnings
+
+import pycocotools
 from pycocotools.coco import COCO as _COCO
 from pycocotools.cocoeval import COCOeval as _COCOeval
 
@@ -12,6 +15,10 @@ class COCO(_COCO):
     """
 
     def __init__(self, annotation_file=None):
+        if not getattr(pycocotools, '__version__', '0') >= '12.0.2':
+            warnings.warn(
+                'mmpycocotools is deprecated. Please install official pycocotools by "pip install pycocotools"',  # noqa: E501
+                UserWarning)
         super().__init__(annotation_file=annotation_file)
         self.img_ann_map = self.imgToAnns
         self.cat_img_map = self.catToImgs

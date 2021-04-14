@@ -2,6 +2,7 @@ import itertools
 import logging
 import os.path as osp
 import tempfile
+import warnings
 from collections import OrderedDict
 
 import numpy as np
@@ -276,6 +277,11 @@ class LVISV05Dataset(CocoDataset):
         """
 
         try:
+            import lvis
+            if lvis.__version__ >= '10.5.3':
+                warnings.warn(
+                    'mmlvis is deprecated, please install official lvis-api by "pip install git+https://github.com/lvis-dataset/lvis-api.git"',  # noqa: E501
+                    UserWarning)
             from lvis import LVIS
         except ImportError:
             raise ImportError(
@@ -329,6 +335,11 @@ class LVISV05Dataset(CocoDataset):
         """
 
         try:
+            import lvis
+            if lvis.__version__ >= '10.5.3':
+                warnings.warn(
+                    'mmlvis is deprecated, please install official lvis-api by "pip install git+https://github.com/lvis-dataset/lvis-api.git"',  # noqa: E501
+                    UserWarning)
             from lvis import LVISResults, LVISEval
         except ImportError:
             raise ImportError(
