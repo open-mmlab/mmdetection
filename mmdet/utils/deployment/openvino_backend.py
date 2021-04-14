@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2021 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,28 +26,122 @@ import torch
 from ...models import build_detector
 
 
-class PerformanceCounters:
-    def __init__(self):
-        self.pc = {}
+class Model:
+    def __init__(self, model_path, ie=None, device='CPU', cfg=None, classes=None):
+        self.logger = logging.getLogger()
+        self.logger.info('Reading network from IR...')
 
-    def update(self, pc):
-        for layer, stats in pc.items():
-            if layer not in self.pc:
-                self.pc[layer] = dict(layer_type=stats['layer_type'],
-                                      exec_type=stats['exec_type'],
-                                      status=stats['status'],
-                                      real_time=stats['real_time'],
-                                      calls=1)
-            else:
-                self.pc[layer]['real_time'] += stats['real_time']
-                self.pc[layer]['calls'] += 1
+        self.ie = IECore() if ie is None else ie
+        bin_path = osp.splitext(model_path)[0] + '.bin'
+        self.net = self.ie.read_network(model_path, bin_path)
 
-    def print(self):
-        print('Performance counters:')
-        print(' '.join(['name', 'layer_type', 'exec_type', 'status', 'real_time(us)']))
-        for layer, stats in self.pc.items():
-            print('{} {} {} {} {}'.format(layer, stats['layer_type'], stats['exec_type'],
-                                          stats['status'], stats['real_time'] / stats['calls']))
+        self.device = None
+        self.exec_net = None
+        self.to(device)
+
+        self.pt_model = None
+        if cfg is not None:
+            self.pt_model = build_detector(
+                cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+            if classes is not None:
+                self.pt_model.CLASSES = classes
+
+    def to(self, device):
+        if self.device != device:
+            self.device = device
+            self.exec_net = self.ie.load_network(network=self.net, device_name=self.device, num_requests=1)
+        return self
+
+    def unify_inputs(self, inputs):
+        if not isinstance(inputs, dict):
+            inputs_dict = {next(iter(self.net.input_info)): inputs}
+        else:
+            inputs_dict = inputs
+        return inputs_dict
+
+    def reshape(self, inputs=None, input_shapes=None):
+        assert (inputs is None) != (input_shapes is None)
+        if input_shapes is None:
+            input_shapes = {name: data.shape for name, data in inputs.items()}
+        reshape_needed = False
+        for input_name, input_shape in input_shapes.items():
+            blob_shape = self.net.input_info[input_name].input_data.shape
+            if not np.array_equal(input_shape, blob_shape):
+                reshape_needed = True
+                break
+        if reshape_needed:
+            self.logger.info(f'reshape net to {input_shapes}')
+            print(f'reshape net to {input_shapes}')
+            self.net.reshape(input_shapes)
+            self.exec_net = self.ie.load_network(network=self.net, device_name=self.device, num_requests=1)
+
+    def get(self, outputs, name):
+        try:
+            key = self.net.get_ov_name_for_tensor(name)
+            assert key in outputs, f'"{key}" is not a valid output identifier'
+        except KeyError:
+            if name not in outputs:
+                raise KeyError(f'Failed to identify output "{name}"')
+            key = name
+        print(f'get {name} {key}')
+        return outputs[key]
+
+    def preprocess(self, inputs):
+        return inputs
+
+    def postprocess(self, outputs):
+        return outputs
+
+    def __call__(self, inputs):
+        inputs = self.unify_inputs(inputs)
+        inputs = self.preprocess(inputs)
+        self.reshape(inputs=inputs)
+        outputs = self.exec_net.infer(inputs)
+        outputs = self.postprocess(outputs)
+        return outputs
+
+    def show(self, data, result, dataset=None, score_thr=0.3, wait_time=0):
+        if self.pt_model is not None:
+            self.pt_model.show_result(
+                data, result, show=True, score_thr=score_thr, wait_time=wait_time)
+
+
+class Detector(Model):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        batch_size = self.net.input_info['image'].input_data.shape[0]
+        assert batch_size == 1, 'Only batch 1 is supported.'
+
+    def __call__(self, inputs):
+        inputs = self.unify_inputs(inputs)
+        output = super().__call__(inputs)
+
+        print(list(output.keys()))
+
+        if 'detection_out' in output:
+            detection_out = output['detection_out']
+            output['labels'] = detection_out[0, 0, :, 1].astype(np.int32)
+            output['boxes'] = detection_out[0, 0, :, 3:] * np.tile(inputs['image'].shape[:1:-1], 2)
+            output['boxes'] = np.concatenate((output['boxes'], detection_out[0, 0, :, 2:3]), axis=1)
+            del output['detection_out']
+            return output
+
+        outs = output
+        output = {}
+        output = {
+            'labels': self.get(outs, 'labels'),
+            'boxes': self.get(outs, 'boxes')
+        }
+        valid_detections_mask = output['labels'] >= 0
+        output['labels'] = output['labels'][valid_detections_mask]
+        output['boxes'] = output['boxes'][valid_detections_mask]
+        try:
+            output['masks'] = self.get(outs, 'masks')
+            output['masks'] = output['masks'][valid_detections_mask]
+        except RuntimeError:
+            pass
+
+        return output
 
 
 class ModelOpenVINO:
@@ -181,69 +275,6 @@ class ModelOpenVINO:
         if self.pt_model is not None:
             self.pt_model.show_result(
                 data, result, show=True, score_thr=score_thr, wait_time=wait_time)
-
-
-class DetectorOpenVINO(ModelOpenVINO):
-    def __init__(self, *args, **kwargs):
-        self.with_detection_output = False
-        self.with_mask = False
-        super().__init__(*args,
-                         required_inputs=('image',),
-                         required_outputs=None,
-                         **kwargs)
-        self.n, self.c, self.h, self.w = self.net.input_info['image'].input_data.shape
-        assert self.n == 1, 'Only batch 1 is supported.'
-
-    def configure_outputs(self, required):
-        extra_outputs = ['boxes', 'labels', 'masks', 'detection_out']
-
-        for output in extra_outputs:
-            if output not in self.orig_ir_mapping and output in self.net.outputs:
-                self.orig_ir_mapping[output] = output
-
-        self.try_add_extra_outputs(extra_outputs)
-        outputs = []
-
-        try:
-            self.check_required(self.orig_ir_mapping.keys(), ['detection_out'])
-            self.with_detection_output = True
-            outputs.append('detection_out')
-        except ValueError:
-            self.check_required(self.orig_ir_mapping.keys(), ['boxes', 'labels'])
-            self.with_detection_output = False
-            outputs.extend(['boxes', 'labels'])
-
-        try:
-            self.check_required(self.orig_ir_mapping.keys(), ['masks'])
-            self.with_mask = True
-            outputs.append('masks')
-        except ValueError:
-            self.with_mask = False
-
-        self.set_outputs(outputs)
-
-    def __call__(self, inputs, **kwargs):
-        inputs = self.unify_inputs(inputs)
-        data_h, data_w = inputs['image'].shape[-2:]
-        inputs['image'] = np.pad(inputs['image'],
-                                 ((0, 0), (0, 0), (0, self.h - data_h), (0, self.w - data_w)),
-                                 mode='constant')
-
-        output = super().__call__(inputs)
-        if self.with_detection_output:
-            detection_out = output['detection_out']
-            output['labels'] = detection_out[0, 0, :, 1].astype(np.int32)
-            output['boxes'] = detection_out[0, 0, :, 3:] * np.tile(inputs['image'].shape[2:][::-1], 2)
-            output['boxes'] = np.concatenate((output['boxes'], detection_out[0, 0, :, 2:3]), axis=1)
-            del output['detection_out']
-
-        valid_detections_mask = output['labels'] >= 0
-        output['labels'] = output['labels'][valid_detections_mask]
-        output['boxes'] = output['boxes'][valid_detections_mask]
-        if 'masks' in output:
-            output['masks'] = output['masks'][valid_detections_mask]
-
-        return output
 
 
 class MaskTextSpotterOpenVINO(ModelOpenVINO):
