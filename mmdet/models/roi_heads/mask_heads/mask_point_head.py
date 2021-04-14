@@ -49,7 +49,7 @@ class MaskPointHead(nn.Module):
         super().__init__()
         self.num_fcs = num_fcs
         self.in_channels = in_channels
-        self.fc_channles = fc_channels
+        self.fc_channels = fc_channels
         self.num_classes = num_classes
         self.class_agnostic = class_agnostic
         self.coarse_pred_each_layer = coarse_pred_each_layer

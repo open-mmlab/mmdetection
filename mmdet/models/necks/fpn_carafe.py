@@ -10,7 +10,7 @@ class FPN_CARAFE(nn.Module):
     """FPN_CARAFE is a more flexible implementation of FPN. It allows more
     choice for upsample methods during the top-down pathway.
 
-    It can reproduce the preformance of ICCV 2019 paper
+    It can reproduce the performance of ICCV 2019 paper
     CARAFE: Content-Aware ReAssembly of FEatures
     Please refer to https://arxiv.org/abs/1905.02188 for more details.
 
