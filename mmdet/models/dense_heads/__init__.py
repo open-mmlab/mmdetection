@@ -4,7 +4,8 @@ from .atss_head import ATSSHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
 from .centripetal_head import CentripetalHead
 from .corner_head import CornerHead
-from .deformable_detr_head import DeformableDetrHead
+from .detr_head import DETRHead
+from .deformable_detr_head import DeformableDETRHead
 from .embedding_rpn_head import EmbeddingRPNHead
 from .fcos_head import FCOSHead
 from .fovea_head import FoveaHead
@@ -36,7 +37,7 @@ __all__ = [
     'FreeAnchorRetinaHead', 'ATSSHead', 'FSAFHead', 'NASFCOSHead',
     'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead', 'YOLACTHead',
     'YOLACTSegmHead', 'YOLACTProtonet', 'YOLOV3Head', 'PAAHead',
-    'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'TransformerHead',
+    'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'DETRHead',
     'StageCascadeRPNHead', 'CascadeRPNHead', 'EmbeddingRPNHead',
-    'DeformableDetrHead'
+    'DeformableDETRHead'
 ]

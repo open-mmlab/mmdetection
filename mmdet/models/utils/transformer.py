@@ -1,523 +1,17 @@
-import copy
-import math
-import warnings
-
 import torch
 import torch.nn as nn
-from mmcv import ConfigDict
-from mmcv.cnn import (Linear, build_activation_layer, build_norm_layer,
-                      constant_init, xavier_init)
-from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttnFunction
+from mmcv.cnn import build_activation_layer, build_norm_layer, xavier_init
+from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
+                                      TRANSFORMER_LAYER_SEQUENCE)
+from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
+                                         TransformerLayerSequence,
+                                         build_transformer_layer_sequence)
+from mmcv.runner.base_module import BaseModule
 
-from .builder import (ATTENTION, TRANSFORMER, TRANSFORMERLAYER,
-                      build_attention, build_transformerlayer)
-
-
-@ATTENTION.register_module()
-class MultiheadAttention(nn.Module):
-    """A warpper for torch.nn.MultiheadAttention.
-
-    This module implements MultiheadAttention with residual connection,
-    and positional encoding used in DETR is also passed as input.
-
-    Args:
-        embed_dims (int): The embedding dimension.
-        num_heads (int): Parallel attention heads. Same as
-            `nn.MultiheadAttention`.
-        dropout (float): A Dropout layer on attn_output_weights. Default: 0.0.
-    """
-
-    def __init__(self, embed_dims, num_heads, dropout=0.0):
-        super(MultiheadAttention, self).__init__()
-        assert embed_dims % num_heads == 0, 'embed_dims must be ' \
-            f'divisible by num_heads. got {embed_dims} and {num_heads}.'
-        self.embed_dims = embed_dims
-        self.num_heads = num_heads
-        self.dropout = dropout
-        self.attn = nn.MultiheadAttention(embed_dims, num_heads, dropout)
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self,
-                query,
-                key=None,
-                value=None,
-                residual=None,
-                query_pos=None,
-                key_pos=None,
-                attn_mask=None,
-                key_padding_mask=None,
-                **kwargs):
-        """Forward function for `MultiheadAttention`.
-
-        Args:
-            query (Tensor): The input query with shape [num_query, bs,
-                embed_dims]. Same in `nn.MultiheadAttention.forward`.
-            key (Tensor): The key tensor with shape [num_key, bs,
-                embed_dims]. Same in `nn.MultiheadAttention.forward`.
-                Default None. If None, the `query` will be used.
-            value (Tensor): The value tensor with same shape as `key`.
-                Same in `nn.MultiheadAttention.forward`. Default None.
-                If None, the `key` will be used.
-            residual (Tensor): The tensor used for addition, with the
-                same shape as `x`. Default None. If None, `x` will be used.
-            query_pos (Tensor): The positional encoding for query, with
-                the same shape as `x`. Default None. If not None, it will
-                be added to `x` before forward function.
-            key_pos (Tensor): The positional encoding for `key`, with the
-                same shape as `key`. Default None. If not None, it will
-                be added to `key` before forward function. If None, and
-                `query_pos` has the same shape as `key`, then `query_pos`
-                will be used for `key_pos`.
-            attn_mask (Tensor): ByteTensor mask with shape [num_query,
-                num_key]. Same in `nn.MultiheadAttention.forward`.
-                Default None.
-            key_padding_mask (Tensor): ByteTensor with shape [bs, num_key].
-                Same in `nn.MultiheadAttention.forward`. Default None.
-
-        Returns:
-            Tensor: forwarded results with shape [num_query, bs, embed_dims].
-        """
-
-        if key is None:
-            key = query
-        if value is None:
-            value = key
-        if residual is None:
-            residual = query
-        if key_pos is None:
-            if query_pos is not None and key is not None:
-                if query_pos.shape == key.shape:
-                    key_pos = query_pos
-        if query_pos is not None:
-            query = query + query_pos
-        if key_pos is not None:
-            key = key + key_pos
-        out = self.attn(
-            query,
-            key,
-            value=value,
-            attn_mask=attn_mask,
-            key_padding_mask=key_padding_mask)[0]
-
-        return residual + self.dropout(out)
+from mmdet.models.utils.builder import TRANSFORMER
 
 
-@ATTENTION.register_module()
-class MultiScaleDeformableAttention(nn.Module):
-
-    def __init__(self,
-                 dropout=0.1,
-                 embed_dims=256,
-                 num_heads=8,
-                 num_levels=4,
-                 num_points=4,
-                 im2col_step=64):
-
-        super().__init__()
-        if embed_dims % num_heads != 0:
-            raise ValueError(f'embed_dims must be divisible by num_heads, '
-                             f'but got {embed_dims} and {num_heads}')
-        dim_per_head = embed_dims // num_heads
-
-        # you'd better set dim_per_head to a power of 2
-        # which is more efficient in the CUDA implementation
-        def _is_power_of_2(n):
-            if (not isinstance(n, int)) or (n < 0):
-                raise ValueError(
-                    'invalid input for _is_power_of_2: {} (type: {})'.format(
-                        n, type(n)))
-            return (n & (n - 1) == 0) and n != 0
-
-        if not _is_power_of_2(dim_per_head):
-            warnings.warn(
-                "You'd better set embed_dims in "
-                'MultiScaleDeformAttention to make '
-                'the dimension of each attention head a power of 2 '
-                'which is more efficient in our CUDA implementation.')
-
-        self.im2col_step = im2col_step
-        self.embed_dims = embed_dims
-        self.num_levels = num_levels
-        self.num_heads = num_heads
-        self.num_points = num_points
-        self.dropout = nn.Dropout(dropout)
-        self.sampling_offsets = nn.Linear(
-            embed_dims, num_heads * num_levels * num_points * 2)
-        self.attention_weights = nn.Linear(embed_dims,
-                                           num_heads * num_levels * num_points)
-
-        self.value_proj = nn.Linear(embed_dims, embed_dims)
-        self.output_proj = nn.Linear(embed_dims, embed_dims)
-
-    # TODO change to init_weight
-    def init_weight(self):
-        constant_init(self.sampling_offsets, 0.)
-        # constant_(self.sampling_offsets.weight.data, 0.)
-        thetas = torch.arange(
-            self.num_heads,
-            dtype=torch.float32) * (2.0 * math.pi / self.num_heads)
-        grid_init = torch.stack([thetas.cos(), thetas.sin()], -1)
-        grid_init = (grid_init /
-                     grid_init.abs().max(-1, keepdim=True)[0]).view(
-                         self.num_heads, 1, 1,
-                         2).repeat(1, self.num_levels, self.num_points, 1)
-        for i in range(self.num_points):
-            grid_init[:, :, i, :] *= i + 1
-        with torch.no_grad():
-            self.sampling_offsets.bias = nn.Parameter(grid_init.view(-1))
-        constant_init(self.attention_weights, val=0., bias=0.)
-        # constant_(self.attention_weights.weight.data, 0.)
-        # constant_(self.attention_weights.bias.data, 0.)
-        xavier_init(self.value_proj, distribution='uniform', bias=0.)
-        xavier_init(self.output_proj, distribution='uniform', bias=0.)
-        # xavier_uniform_(self.value_proj.weight.data)
-        # constant_(self.value_proj.bias.data, 0.)
-        # xavier_uniform_(self.output_proj.weight.data)
-        # constant_(self.output_proj.bias.data, 0.)
-
-    # TODO check the shape of KQV
-    def forward(self,
-                query,
-                key,
-                value,
-                residual=None,
-                query_pos=None,
-                key_padding_mask=None,
-                reference_points=None,
-                spatial_shapes=None,
-                level_start_index=None,
-                **kwargs):
-        """Forward Function of MultiScaleDeformAttention.
-
-        Args:
-            query (Tensor): Query of Transformer with shape
-                (num_query, bs, embed_dims).
-            key (Tensor): The key tensor with shape
-                `(num_key, bs, embed_dims)`.
-            value (Tensor): The value tensor with shape
-                `(num_key, bs, embed_dims)`.
-            residual (Tensor): The tensor used for addition, with the
-                same shape as `x`. Default None. If None, `x` will be used.
-            query_pos (Tensor): The positional encoding for `query`.
-                Default: None.
-            key_pos (Tensor): The positional encoding for `key`. Default
-                None.
-            reference_points (Tensor):  The normalized reference
-                points with shape (bs, num_query, num_levels, 2),
-                all elements is range in [0, 1], top-left (0,0),
-                bottom-right (1, 1), including padding area.
-                or (N, Length_{query}, num_levels, 4), add
-                additional two dimensions is (w, h) to
-                form reference boxes.
-            key_padding_mask (Tensor): ByteTensor for `query`, with
-                shape [bs, num_key].
-            spatial_shapes (Tensor): Spatial shape of features in
-                different level. With shape  (num_levels, 2),
-                last dimension represent (h, w).
-            level_start_index (Tensor): The start index of each level.
-                A tensor has shape (num_levels) and can be represented
-                as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
-
-        Returns:
-             Tensor: forwarded results with shape [num_query, bs, embed_dims].
-        """
-
-        if key is None:
-            key = query
-        if value is None:
-            value = key
-        if residual is None:
-            inp_residual = key
-
-        if query_pos is not None:
-            query = query + query_pos
-
-        # change to (bs, num_query ,embed_dims)
-        query = query.permute(1, 0, 2)
-        value = value.permute(1, 0, 2)
-
-        # TODO: check value why so many zeros
-        N, Len_q, _ = query.shape
-        N, Len_in, _ = value.shape
-        assert (spatial_shapes[:, 0] * spatial_shapes[:, 1]).sum() == Len_in
-
-        value = self.value_proj(value)
-        if key_padding_mask is not None:
-            value = value.masked_fill(key_padding_mask[..., None], float(0))
-        value = value.view(N, Len_in, self.num_heads,
-                           self.embed_dims // self.num_heads)
-        sampling_offsets = self.sampling_offsets(query).view(
-            N, Len_q, self.num_heads, self.num_levels, self.num_points, 2)
-        attention_weights = self.attention_weights(query).view(
-            N, Len_q, self.num_heads, self.num_levels * self.num_points)
-        attention_weights = attention_weights.softmax(-1)
-        attention_weights = attention_weights.view(N, Len_q, self.num_heads,
-                                                   self.num_levels,
-                                                   self.num_points)
-        # N, Len_q, num_heads, num_levels, num_points, 2
-        if reference_points.shape[-1] == 2:
-            offset_normalizer = torch.stack(
-                [spatial_shapes[..., 1], spatial_shapes[..., 0]], -1)
-            sampling_locations = reference_points[:, :, None, :, None, :] + \
-                sampling_offsets / \
-                offset_normalizer[None, None, None, :, None, :]
-        elif reference_points.shape[-1] == 4:
-            sampling_locations = reference_points[:, :, None, :, None, :2] \
-                + sampling_offsets / self.num_points * \
-                reference_points[:, :, None, :, None, 2:] \
-                * 0.5
-        else:
-            raise ValueError(
-                f'Last dim of reference_points must be'
-                f' 2 or 4, but get {reference_points.shape[-1]} instead.')
-        output = MultiScaleDeformableAttnFunction.apply(
-            value, spatial_shapes, level_start_index, sampling_locations,
-            attention_weights, self.im2col_step)
-        output = self.output_proj(output).permute(1, 0, 2)
-        # (num_query, bs ,embed_dims)
-        return output + self.dropout(inp_residual)
-
-
-class FFN(nn.Module):
-    """Implements feed-forward networks (FFNs) with residual connection.
-
-    Args:
-        embed_dims (int): The feature dimension. Same as
-            `MultiheadAttention`.
-        feedforward_channels (int): The hidden dimension of FFNs.
-        num_fcs (int, optional): The number of fully-connected layers in
-            FFNs. Default: 2.
-        act_cfg (dict, optional): The activation config for FFNs.
-            Default: `ReLU`
-        dropout (float, optional): Probability of an element to be
-            zeroed. Default 0.0.
-        add_residual (bool, optional): Add residual connection.
-            Default: `True`.
-    """
-
-    def __init__(self,
-                 embed_dims,
-                 feedforward_channels,
-                 num_fcs=2,
-                 act_cfg=dict(type='ReLU', inplace=True),
-                 dropout=0.0,
-                 add_residual=True):
-        super(FFN, self).__init__()
-        assert num_fcs >= 2, 'num_fcs should be no less ' \
-            f'than 2. got {num_fcs}.'
-        self.embed_dims = embed_dims
-        self.feedforward_channels = feedforward_channels
-        self.num_fcs = num_fcs
-        self.act_cfg = act_cfg
-        self.dropout = dropout
-        self.activate = build_activation_layer(act_cfg)
-
-        layers = nn.ModuleList()
-        in_channels = embed_dims
-        for _ in range(num_fcs - 1):
-            layers.append(
-                nn.Sequential(
-                    Linear(in_channels, feedforward_channels), self.activate,
-                    nn.Dropout(dropout)))
-            in_channels = feedforward_channels
-        layers.append(Linear(feedforward_channels, embed_dims))
-        self.layers = nn.Sequential(*layers)
-        self.dropout = nn.Dropout(dropout)
-        self.add_residual = add_residual
-
-    def forward(self, x, residual=None):
-        """Forward function for `FFN`."""
-        out = self.layers(x)
-        if not self.add_residual:
-            return self.dropout(out)
-        if residual is None:
-            residual = x
-        return residual + self.dropout(out)
-
-
-@TRANSFORMERLAYER.register_module()
-class BaseTransformerLayer(nn.Module):
-    """Base `TransformerLayer` for vision transformer.
-
-    It can be built from `mmcv.ConfigDict` and support more customization,
-    for example, using any number of `FFN or LN ` and use different kinds
-    of `attention` by specifying a list of `ConfigDict` named `attn_cfgs`.
-    It is worth mentioning that it supports `prenorm` when you specifying
-    `norm` as the first element of `operation_order`. More details about
-    the `prenorm`: `On Layer Normalization in the Transformer Architecture
-    <https://arxiv.org/abs/2007.08103>`_ .
-
-    Args:
-        attn_cfgs (list[`mmcv.ConfigDict`] | obj:`mmcv.ConfigDict` | None )):
-            Configs for self_attention or cross_attention, the order
-            should be consistent with it in `operation_order`. If it is
-            a dict, it would be expand to the number of attention in
-            `operation_order`. Default: None.
-        feedforward_channels (int): The hidden dimension for FFNs.
-            Default: None.
-        embed_dims (int): Embedding dimension of Transformerlayer.
-            Default: 256.
-        ffn_dropout (float): Probability of an element to be zeroed
-            in ffn. Default 0.0.
-        operation_order (tuple[str]): The execution order of operation
-            in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
-            Support prenorm when you specifying first element as `norm`.
-            Default：None.
-        act_cfg (dict): The activation config for FFNs. Default: `LN`
-        norm_cfg (dict): Config dict for normalization layer.
-            Default: `LN`.
-        ffn_num_fcs (int): The number of fully-connected layers in FFNs.
-            Default：2.
-    """
-
-    def __init__(
-            self,
-            attn_cfgs=None,
-            feedforward_channels=None,
-            embed_dims=256,
-            ffn_dropout=0.0,
-            operation_order=None,
-            act_cfg=dict(type='ReLU', inplace=True),
-            norm_cfg=dict(type='LN'),
-            ffn_num_fcs=2,
-    ):
-
-        super(BaseTransformerLayer, self).__init__()
-        assert set(operation_order) & set(
-            ['selfattn', 'norm', 'ffn', 'crossattn']) == set(operation_order)
-        num_attn = operation_order.count('selfattn') + operation_order.count(
-            'crossattn')
-        attn_cfgs = copy.deepcopy(attn_cfgs)
-        if isinstance(attn_cfgs, ConfigDict):
-            attn_cfgs = [attn_cfgs for _ in range(num_attn)]
-        else:
-            assert num_attn == len(attn_cfgs), f'The length ' \
-                f'of attn_cfg {num_attn} is ' \
-                f'not consistent with the number of attention' \
-                f'in operation_order {operation_order}.'
-        assert 'embed_dims' in attn_cfgs[0]
-
-        self.num_attn = num_attn
-        self.embed_dims = embed_dims
-        self.feedforward_channels = feedforward_channels
-        self.ffn_dropout = ffn_dropout
-        self.operation_order = operation_order
-        self.act_cfg = act_cfg
-        self.norm_cfg = norm_cfg
-        self.ffn_num_fcs = ffn_num_fcs
-        self.pre_norm = operation_order[0] == 'norm'
-        self.attentions = nn.ModuleList()
-
-        index = 0
-        for operation in operation_order:
-            if operation in ['selfattn', 'crossattn']:
-                attention = build_attention(attn_cfgs[index])
-                self.attentions.append(attention)
-                index += 1
-
-        self.ffns = nn.ModuleList()
-        num_ffns = operation_order.count('ffn')
-        for _ in range(num_ffns):
-            self.ffns.append(
-                FFN(self.embed_dims, feedforward_channels, ffn_num_fcs,
-                    act_cfg, ffn_dropout))
-
-        self.norms = nn.ModuleList()
-        num_norms = operation_order.count('norm')
-        for _ in range(num_norms):
-            self.norms.append(build_norm_layer(norm_cfg, self.embed_dims)[1])
-
-    def forward(self,
-                query,
-                key,
-                value,
-                query_pos=None,
-                key_pos=None,
-                attn_masks=None,
-                query_key_padding_mask=None,
-                key_padding_mask=None,
-                **kwargs):
-        """Forward function for `TransformerDecoderLayer`.
-
-        Args:
-            query (Tensor): Input query with the shape
-                `(num_query, bs, embed_dims)`.
-            key (Tensor): The key tensor with shape
-                `(num_key, bs, embed_dims)`.
-            value (Tensor): The value tensor with shape
-                `(num_key, bs, embed_dims)`.
-            query_pos (Tensor): The positional encoding for `query`.
-                Default: None.
-            key_pos (Tensor): The positional encoding for `key`. Default
-                None.
-            attn_masks (List[Tensor] | None): 2D Tensor used in
-                calculation of corresponding attention. The length of
-                it should equal to the number of `attention` in
-                `operation_order`. Defaults: None.
-            query_key_padding_mask (Tensor): ByteTensor for `query`, with
-                shape [bs, num_query]. Only used in `selfattn` layer.
-            key_padding_mask (Tensor): ByteTensor for `query`, with
-                shape [bs, num_key].
-
-        Returns:
-            Tensor: forwarded results with shape [num_query, bs, embed_dims].
-        """
-
-        norm_index = 0
-        attn_index = 0
-        ffn_index = 0
-        inp_residual = query
-        if attn_masks is None:
-            attn_masks = [None for _ in range(self.num_attn)]
-        else:
-            assert len(attn_masks) == self.num_attn, f'The length of ' \
-                        f'attn_masks {len(attn_masks)} must be equal ' \
-                        f'to the number of attention in ' \
-                        f'operation_order {self.num_attn}'
-
-        for layer in self.operation_order:
-            if layer == 'selfattn':
-                temp_key = temp_value = query
-                query = self.attentions[attn_index](
-                    query,
-                    temp_key,
-                    temp_value,
-                    inp_residual if self.pre_norm else None,
-                    query_pos=query_pos,
-                    key_pos=query_pos,
-                    attn_mask=attn_masks[attn_index],
-                    key_padding_mask=query_key_padding_mask,
-                    **kwargs)
-                attn_index += 1
-                inp_residual = query
-
-            elif layer == 'norm':
-                query = self.norms[norm_index](query)
-                norm_index += 1
-
-            elif layer == 'crossattn':
-                query = self.attentions[attn_index](
-                    query,
-                    key,
-                    value,
-                    inp_residual if self.pre_norm else None,
-                    query_pos=query_pos,
-                    key_pos=key_pos,
-                    attn_mask=attn_masks[attn_index],
-                    key_padding_mask=key_padding_mask,
-                    **kwargs)
-                attn_index += 1
-                inp_residual = query
-
-            elif layer == 'ffn':
-                query = self.ffns[ffn_index](
-                    query, inp_residual if self.pre_norm else None)
-                ffn_index += 1
-
-        return query
-
-
-@TRANSFORMERLAYER.register_module()
+@TRANSFORMER_LAYER.register_module()
 class DetrTransformerEncoderLayer(BaseTransformerLayer):
     """Implements encoder layer in DETR transformer.
 
@@ -528,12 +22,10 @@ class DetrTransformerEncoderLayer(BaseTransformerLayer):
             a dict, it would be expand to the number of attention in
             `operation_order`.
         feedforward_channels (int): The hidden dimension for FFNs.
-        embed_dims (int): Embedding dimension of Transformerlayer.
-            Default: 256.
         ffn_dropout (float): Probability of an element to be zeroed
             in ffn. Default 0.0.
         operation_order (tuple[str]): The execution order of operation
-            in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
+            in transformer. Such as ('self_attn', 'norm', 'ffn', 'norm').
             Default：None
         act_cfg (dict): The activation config for FFNs.
         norm_cfg (dict): Config dict for normalization layer.
@@ -541,19 +33,16 @@ class DetrTransformerEncoderLayer(BaseTransformerLayer):
             Default：2.
     """
 
-    def __init__(
-            self,
-            attn_cfgs,
-            feedforward_channels,
-            embed_dims=256,
-            ffn_dropout=0.0,
-            operation_order=None,
-            act_cfg=dict(type='ReLU', inplace=True),
-            norm_cfg=dict(type='LN'),
-            ffn_num_fcs=2,
-    ):
+    def __init__(self,
+                 attn_cfgs,
+                 feedforward_channels,
+                 ffn_dropout=0.0,
+                 operation_order=None,
+                 act_cfg=dict(type='ReLU', inplace=True),
+                 norm_cfg=dict(type='LN'),
+                 ffn_num_fcs=2,
+                 **kwargs):
         super(DetrTransformerEncoderLayer, self).__init__(
-            embed_dims=embed_dims,
             attn_cfgs=attn_cfgs,
             feedforward_channels=feedforward_channels,
             operation_order=operation_order,
@@ -561,12 +50,12 @@ class DetrTransformerEncoderLayer(BaseTransformerLayer):
             act_cfg=act_cfg,
             norm_cfg=norm_cfg,
             ffn_num_fcs=ffn_num_fcs,
-        )
+            **kwargs)
         assert len(self.operation_order) == 4
-        assert set(self.operation_order) == set(['selfattn', 'norm', 'ffn'])
+        assert set(self.operation_order) == set(['self_attn', 'norm', 'ffn'])
 
 
-@TRANSFORMERLAYER.register_module()
+@TRANSFORMER_LAYER.register_module()
 class DetrTransformerDecoderLayer(BaseTransformerLayer):
     """Implements decoder layer in DETR transformer.
 
@@ -577,12 +66,10 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             a dict, it would be expand to the number of attention in
             `operation_order`.
         feedforward_channels (int): The hidden dimension for FFNs.
-        embed_dims (int): Embedding dimension of Transformerlayer.
-            Default: 256
         ffn_dropout (float): Probability of an element to be zeroed
             in ffn. Default 0.0.
         operation_order (tuple[str]): The execution order of operation
-            in transformer. Such as ('selfattn', 'norm', 'ffn', 'norm').
+            in transformer. Such as ('self_attn', 'norm', 'ffn', 'norm').
             Default：None
         act_cfg (dict): The activation config for FFNs. Default: `LN`
         norm_cfg (dict): Config dict for normalization layer.
@@ -591,19 +78,16 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             Default：2.
     """
 
-    def __init__(
-            self,
-            attn_cfgs,
-            feedforward_channels,
-            embed_dims=256,
-            ffn_dropout=0.0,
-            operation_order=None,
-            act_cfg=dict(type='ReLU', inplace=True),
-            norm_cfg=dict(type='LN'),
-            ffn_num_fcs=2,
-    ):
+    def __init__(self,
+                 attn_cfgs,
+                 feedforward_channels,
+                 ffn_dropout=0.0,
+                 operation_order=None,
+                 act_cfg=dict(type='ReLU', inplace=True),
+                 norm_cfg=dict(type='LN'),
+                 ffn_num_fcs=2,
+                 **kwargs):
         super(DetrTransformerDecoderLayer, self).__init__(
-            embed_dims=embed_dims,
             attn_cfgs=attn_cfgs,
             feedforward_channels=feedforward_channels,
             ffn_dropout=ffn_dropout,
@@ -611,92 +95,14 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             act_cfg=act_cfg,
             norm_cfg=norm_cfg,
             ffn_num_fcs=ffn_num_fcs,
-        )
+            **kwargs)
         assert len(operation_order) == 6
         assert set(operation_order) == set(
-            ['selfattn', 'norm', 'crossattn', 'ffn'])
+            ['self_attn', 'norm', 'cross_attn', 'ffn'])
 
 
-class BaseTransformerCoder(nn.Module):
-    """Base coder in vision transformer.
-
-    As base-class of Encoder and Decoder in vision transformer.
-    Support customization such as specifying different kind
-    of `transformer_layer` in `tranformer_coder`.
-
-    Args:
-        transformerlayer (list[obj:`mmcv.ConfigDict`] |
-            obj:`mmcv.ConfigDict`): Config of transformerlayer
-            in TransformerCoder. If it is obj:`mmcv.ConfigDict`,
-             it would be repeated `num_layer` times to a
-             list[`mmcv.ConfigDict`]. Default: None.
-        num_layers (int): The number of `TransformerLayer`. Default: None.
-    """
-
-    def __init__(self, transformerlayers=None, num_layers=None):
-        super(BaseTransformerCoder, self).__init__()
-        if isinstance(transformerlayers, ConfigDict):
-            transformerlayers = [
-                copy.deepcopy(transformerlayers) for _ in range(num_layers)
-            ]
-        self.num_layers = num_layers
-        assert 'embed_dims' in transformerlayers[0]
-        self.embed_dims = transformerlayers[0].get('embed_dims')
-        operation_order = transformerlayers[0]['operation_order']
-        self.pre_norm = operation_order[0] == 'norm'
-        self.layers = nn.ModuleList()
-        for i in range(num_layers):
-            self.layers.append(build_transformerlayer(transformerlayers[i]))
-
-    def forward(self,
-                query,
-                key,
-                value,
-                query_pos=None,
-                key_pos=None,
-                attn_masks=None,
-                query_key_padding_mask=None,
-                key_padding_mask=None,
-                **kwargs):
-        """Forward function for `TransformerCoder`.
-
-        Args:
-            query (Tensor): Input query with shape
-                `(num_query, bs, embed_dims)`.
-            key (Tensor): The key tensor with shape
-                `(num_key, bs, embed_dims)`.
-            value (Tensor): The value tensor with shape
-                `(num_key, bs, embed_dims)`.
-            query_pos (Tensor): The positional encoding for `query`.
-                Default: None.
-            key_pos (Tensor): The positional encoding for `key`. Default
-                None.
-            attn_masks (List[Tensor], optional): Each element is 2D Tensor
-                which is used in calculation of corresponding attention in
-                operation_order. Defaults: None.
-            query_key_padding_mask (Tensor): ByteTensor for `query`, with
-                shape [bs, num_query]. Only used in self-attention
-            key_padding_mask (Tensor): ByteTensor for `query`, with
-                shape [bs, num_key].
-
-        Returns:
-            Tensor: forwarded results with shape [num_query, bs, embed_dims].
-        """
-        for layer in self.layers:
-            query = layer(
-                query,
-                key,
-                value,
-                query_pos=query_pos,
-                key_pos=key_pos,
-                attn_masks=attn_masks,
-                query_key_padding_mask=query_key_padding_mask,
-                key_padding_mask=key_padding_mask,
-                **kwargs)
-        return query
-
-
-class DetrTransformerEncoder(BaseTransformerCoder):
+@TRANSFORMER_LAYER_SEQUENCE.register_module()
+class DetrTransformerEncoder(TransformerLayerSequence):
     """TransformerEncoder of DETR.
 
     Args:
@@ -711,8 +117,14 @@ class DetrTransformerEncoder(BaseTransformerCoder):
             **kwargs,
     ):
         super(DetrTransformerEncoder, self).__init__(*args, **kwargs)
-        self.coder_norm = build_norm_layer(
-            coder_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
+        if coder_norm_cfg is not None:
+            self.coder_norm = build_norm_layer(
+                coder_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
+        else:
+            assert not self.pre_norm, f'Use prenorm in ' \
+                                      f'{self.__class__.__name__},' \
+                                      f'Please specify coder_norm_cfg'
+            self.coder_norm = None
 
     def forward(self, *args, **kwargs):
         """Forward function for `TransformerCoder`.
@@ -724,7 +136,6 @@ class DetrTransformerEncoder(BaseTransformerCoder):
         if self.coder_norm is not None:
             x = self.coder_norm(x)
         return x
-
 
 class DeformableDetrTransformerDecoder(BaseTransformerCoder):
     """Implements the decoder in DETR transformer.
@@ -813,12 +224,61 @@ class DeformableDetrTransformerDecoder(BaseTransformerCoder):
         return output, reference_points
 
 
-class DetrTransformerDecoder(nn.Module):
-    pass
+@TRANSFORMER_LAYER_SEQUENCE.register_module()
+class DetrTransformerDecoder(TransformerLayerSequence):
+    """Implements the decoder in DETR transformer.
+
+    Args:
+        return_intermediate (bool): Whether to return intermediate outputs.
+        coder_norm_cfg (dict): Config of last normalization layer. Default：
+            `LN`.
+    """
+
+    def __init__(self,
+                 *args,
+                 coder_norm_cfg=dict(type='LN'),
+                 return_intermediate=False,
+                 **kwargs):
+
+        super(DetrTransformerDecoder, self).__init__(*args, **kwargs)
+        self.return_intermediate = return_intermediate
+        if coder_norm_cfg is not None:
+            self.coder_norm = build_norm_layer(coder_norm_cfg,
+                                               self.embed_dims)[1]
+        else:
+            self.coder_norm = None
+
+    def forward(self, query, *args, **kwargs):
+        """Forward function for `TransformerDecoder`.
+
+        Args:
+            query (Tensor): Input query with shape
+                `(num_query, bs, embed_dims)`.
+
+        Returns:
+            Tensor: Results with shape [1, num_query, bs, embed_dims] when
+                return_intermediate is `False`, otherwise it has shape
+                [num_layers, num_query, bs, embed_dims].
+        """
+        if not self.return_intermediate:
+            x = super().forward(query, *args, **kwargs)
+            if self.coder_norm:
+                x = self.coder_norm(x)[None]
+            return x
+
+        intermediate = []
+        for layer in self.layers:
+            query = layer(query, *args, **kwargs)
+            if self.return_intermediate:
+                if self.coder_norm is not None:
+                    intermediate.append(self.coder_norm(query))
+                else:
+                    intermediate.append(query)
+        return torch.stack(intermediate)
 
 
 @TRANSFORMER.register_module()
-class Transformer(nn.Module):
+class Transformer(BaseModule):
     """Implements the DETR transformer.
 
     Following the official DETR implementation, this module copy-paste
@@ -832,66 +292,36 @@ class Transformer(nn.Module):
     <https://arxiv.org/pdf/2005.12872>`_ for details.
 
     Args:
-        attn_cfgs (sequence[obj:`mmcv.Config`]) : Config of
-            Attention in Encoder and decoder in Transformer.
-        num_encoder_layers (int): Number of `TransformerEncoderLayer`.
-        num_decoder_layers (int): Number of `TransformerDecoderLayer`.
-        feedforward_channels (int): The hidden dimension for FFNs used in both
-            encoder and decoder.
-        ffn_dropout (float): Probability of an element to
-            be zeroed. Default 0.0.
-        act_cfg (dict): Activation config for FFNs used in both encoder
-            and decoder. Defalut: ReLU.
-        norm_cfg (dict): Config dict for normalization used in both encoder
-            and decoder. Default layer normalization.
-        num_fcs (int): The number of fully-connected layers in FFNs, which is
-            used for both encoder and decoder.
-        pre_norm (bool): Whether the normalization layer is ordered
-            first in the encoder and decoder. Default False.
-        return_intermediate_dec (bool): Whether to return the intermediate
-            output from each TransformerDecoderLayer or only the last
-            TransformerDecoderLayer. Default False. If False, the returned
-            `hs` has shape [num_decoder_layers, bs, num_query, embed_dims].
-            If True, the returned `hs` will have shape [1, bs, num_query,
-            embed_dims].
+        encoder (`mmcv.ConfigDict` | Dict): Config of
+            TransformerEncoder.
+        decoder ((`mmcv.ConfigDict` | Dict)): Config of
+            TransformerDecoder.
+        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+            Default: None.
     """
 
     def __init__(self,
-                 encodelayers=None,
-                 dencodelayers=None,
-                 num_encoder_layers=6,
-                 num_decoder_layers=6,
-                 norm_cfg=dict(type='LN'),
-                 return_intermediate=False):
-        super(Transformer, self).__init__()
-        encodelayers = copy.deepcopy(encodelayers)
-        dncodelayers = copy.deepcopy(dencodelayers)
-        if isinstance(encodelayers, ConfigDict):
-            encodelayers = [
-                copy.deepcopy(encodelayers) for _ in range(num_encoder_layers)
-            ]
-        if isinstance(dencodelayers, ConfigDict):
-            dencodelayers = [
-                copy.deepcopy(dncodelayers) for _ in range(num_encoder_layers)
-            ]
+                 encoder=dict(
+                     transformerlayers=None,
+                     num_encoder_layers=6,
+                     coder_norm_cfg=None,
+                 ),
+                 decoder=dict(
+                     transformerlayers=None,
+                     num_decoder_layers=6,
+                     coder_norm_cfg=None,
+                 ),
+                 init_cfg=None):
+        super(Transformer, self).__init__(init_cfg=init_cfg)
+        self.encoder = build_transformer_layer_sequence(encoder)
+        self.decoder = build_transformer_layer_sequence(decoder)
+        self.embed_dims = self.encoder.embed_dims
 
-        self.encoder = DetrTransformerEncoder(
-            transformerlayers=encodelayers,
-            num_layers=num_encoder_layers,
-            coder_norm_cfg=norm_cfg,
-        )
-        self.decoder = DetrTransformerDecoder(
-            transformerlayers=dencodelayers,
-            num_layers=num_decoder_layers,
-            coder_norm_cfg=norm_cfg,
-            return_intermediate=return_intermediate)
-
-    def init_weights(self, distribution='uniform'):
-        """Initialize the transformer weights."""
+    def init_weights(self):
         # follow the official DETR to init parameters
         for m in self.modules():
             if hasattr(m, 'weight') and m.weight.dim() > 1:
-                xavier_init(m, distribution=distribution)
+                xavier_init(m, distribution='uniform')
 
     def forward(self, x, mask, query_embed, pos_embed):
         """Forward function for `Transformer`.
@@ -1205,7 +635,7 @@ class DeformableDetrTransformer(nn.Module):
 
 
 @TRANSFORMER.register_module()
-class DynamicConv(nn.Module):
+class DynamicConv(BaseModule):
     """Implements Dynamic Convolution.
 
     This module generate parameters for each sample and
@@ -1226,6 +656,8 @@ class DynamicConv(nn.Module):
         act_cfg (dict): The activation config for DynamicConv.
         norm_cfg (dict): Config dict for normalization layer. Default
             layer normalization.
+        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+            Default: None.
     """
 
     def __init__(self,
@@ -1234,8 +666,9 @@ class DynamicConv(nn.Module):
                  out_channels=None,
                  input_feat_shape=7,
                  act_cfg=dict(type='ReLU', inplace=True),
-                 norm_cfg=dict(type='LN')):
-        super(DynamicConv, self).__init__()
+                 norm_cfg=dict(type='LN'),
+                 init_cfg=None):
+        super(DynamicConv, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.out_channels_raw = out_channels
