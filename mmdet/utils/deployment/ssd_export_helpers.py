@@ -143,7 +143,7 @@ class DetectionOutput(torch.autograd.Function):
                     top_k_i=cfg['max_per_img'],
                     keep_top_k_i=cfg['max_per_img'],
                     confidence_threshold_f=cfg['score_thr'],
-                    nms_threshold_f=cfg['nms']['iou_thr'],
+                    nms_threshold_f=cfg['nms']['iou_threshold'],
                     eta_f=1, share_location_i=1,
                     code_type_s="CENTER_SIZE", variance_encoded_in_target_i=0)
 

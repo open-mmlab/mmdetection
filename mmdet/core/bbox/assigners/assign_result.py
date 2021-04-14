@@ -4,8 +4,7 @@ from mmdet.utils import util_mixins
 
 
 class AssignResult(util_mixins.NiceRepr):
-    """
-    Stores assignments between predicted and truth boxes.
+    """Stores assignments between predicted and truth boxes.
 
     Attributes:
         num_gts (int): the number of truth boxes considered when computing this
@@ -50,25 +49,21 @@ class AssignResult(util_mixins.NiceRepr):
 
     @property
     def num_preds(self):
-        """
-        Return the number of predictions in this assignment
-        """
+        """int: the number of predictions in this assignment"""
         return len(self.gt_inds)
 
     def set_extra_property(self, key, value):
-        """Set user-defined new property"""
+        """Set user-defined new property."""
         assert key not in self.info
         self._extra_properties[key] = value
 
     def get_extra_property(self, key):
-        """Get user-defined property"""
+        """Get user-defined property."""
         return self._extra_properties.get(key, None)
 
     @property
     def info(self):
-        """
-        Returns a dictionary of info about the object
-        """
+        """dict: a dictionary of info about the object"""
         basic_info = {
             'num_gts': self.num_gts,
             'num_preds': self.num_preds,
@@ -80,9 +75,7 @@ class AssignResult(util_mixins.NiceRepr):
         return basic_info
 
     def __nice__(self):
-        """
-        Create a "nice" summary string describing this assign result
-        """
+        """str: a "nice" summary string describing this assign result"""
         parts = []
         parts.append(f'num_gts={self.num_gts!r}')
         if self.gt_inds is None:
@@ -195,6 +188,11 @@ class AssignResult(util_mixins.NiceRepr):
         return self
 
     def add_gt_(self, gt_labels):
+        """Add ground truth as assigned results.
+
+        Args:
+            gt_labels (torch.Tensor): Labels of gt boxes
+        """
         self_inds = torch.arange(
             1, len(gt_labels) + 1, dtype=torch.long, device=gt_labels.device)
         self.gt_inds = torch.cat([self_inds, self.gt_inds])

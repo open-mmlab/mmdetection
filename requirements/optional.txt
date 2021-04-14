@@ -1,9 +1,11 @@
 albumentations==0.4.6
 cityscapesscripts
 imagecorruptions
-scikit-learn
 ninja
 tensorboard
 imagesize==1.2.0
 PyYAML==5.3.1
 sty==1.0.0b12
+mmlvis
+scipy
+sklearn

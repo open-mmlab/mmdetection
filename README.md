@@ -1,4 +1,3 @@
-
 # OTEDetection
 
 ![](https://img.shields.io/badge/python-3.6%2B-green)
@@ -7,7 +6,7 @@
 ![](https://img.shields.io/badge/onnxruntime-1.1.2%2B-yellow)
 
 
-This is an Object Detection and Instance Segmentation toolbox, that is a part of [OpenVINO Training Extensions](https://github.com/opencv/openvino_training_extensions).
+This is an Object Detection and Instance Segmentation toolbox, that is a part of [OpenVINO™ Training Extensions](https://github.com/opencv/openvino_training_extensions).
 
 Project is based on open-mmlab's [MMDetection](https://github.com/open-mmlab/mmdetection).
 
@@ -40,4 +39,4 @@ We appreciate all contributions to improve this project. Please refer to [CONTRI
 
 ## Contact
 
-This repo is currently maintained by Ilya Krylov ([@Ilya-Krylov](https://github.com/Ilya-Krylov)), Pavel Druzhkov ([@druzhkov-paul](https://github.com/druzhkov-paul)) and Alexander Dokuchaev ([@AlexanderDokuchaev](https://github.com/AlexanderDokuchaev)).
+This repo is currently maintained by Ilya Krylov ([@Ilya-Krylov](https://github.com/Ilya-Krylov)), Pavel Druzhkov ([@druzhkov-paul](https://github.com/druzhkov-paul)) and Alexander Dokuchaev ([@AlexanderDokuchaev](https://github.com/AlexanderDokuchaev)), Dmitry Sidnev ([@DmitriySidnev](https://github.com/DmitriySidnev)).

@@ -14,7 +14,7 @@
 
 import torch
 import torch.nn as nn
-from mmdet.core import auto_fp16
+from mmcv.runner import auto_fp16
 
 from .fpn import FPN
 from ..builder import NECKS

@@ -1,8 +1,5 @@
-import numpy as np
 import torch
 import torch.nn as nn
-
-# from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -50,13 +47,21 @@ class TwoStageDetector(BaseDetector):
 
     @property
     def with_rpn(self):
+        """bool: whether the detector has RPN"""
         return hasattr(self, 'rpn_head') and self.rpn_head is not None
 
     @property
     def with_roi_head(self):
+        """bool: whether the detector has a RoI head"""
         return hasattr(self, 'roi_head') and self.roi_head is not None
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in detector.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(TwoStageDetector, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:
@@ -71,8 +76,7 @@ class TwoStageDetector(BaseDetector):
             self.roi_head.init_weights(pretrained)
 
     def extract_feat(self, img):
-        """Directly extract features from the backbone+neck
-        """
+        """Directly extract features from the backbone+neck."""
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
@@ -81,7 +85,7 @@ class TwoStageDetector(BaseDetector):
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         outs = ()
         # backbone
@@ -116,8 +120,8 @@ class TwoStageDetector(BaseDetector):
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
 
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
 
             gt_labels (list[Tensor]): class indices corresponding to each box
 
@@ -203,7 +207,6 @@ class TwoStageDetector(BaseDetector):
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
-        # recompute feats to save memory
         x = self.extract_feats(imgs)
         proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
         return self.roi_head.aug_test(

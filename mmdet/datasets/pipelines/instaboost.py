@@ -5,10 +5,11 @@ from ..builder import PIPELINES
 
 @PIPELINES.register_module()
 class InstaBoost(object):
-    """
-    Data augmentation method in paper "InstaBoost: Boosting Instance
-    Segmentation Via Probability Map Guided Copy-Pasting"
-    Implementation details can refer to https://github.com/GothicAi/Instaboost.
+    r"""Data augmentation method in `InstaBoost: Boosting Instance
+    Segmentation Via Probability Map Guided Copy-Pasting
+    <https://arxiv.org/abs/1908.07801>`_.
+
+    Refer to https://github.com/GothicAi/Instaboost for implementation details.
     """
 
     def __init__(self,

@@ -7,12 +7,12 @@ if sys.version_info >= (3, 7):
 
 
 class RPNTestMixin(object):
+    """Test methods of RPN."""
 
     if sys.version_info >= (3, 7):
 
         async def async_simple_test_rpn(self, x, img_metas):
-            sleep_interval = self.rpn_head.test_cfg.pop(
-                'async_sleep_interval', 0.025)
+            sleep_interval = self.test_cfg.pop('async_sleep_interval', 0.025)
             async with completed(
                     __name__, 'rpn_head_forward',
                     sleep_interval=sleep_interval):
@@ -22,6 +22,16 @@ class RPNTestMixin(object):
             return proposal_list
 
     def simple_test_rpn(self, x, img_metas):
+        """Test without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+            img_metas (list[dict]): Meta info of each image.
+
+        Returns:
+            list[Tensor]: Proposals of each image.
+        """
         rpn_outs = self(x)
         proposal_list = self.get_bboxes(*rpn_outs, img_metas)
         return proposal_list

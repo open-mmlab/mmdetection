@@ -70,7 +70,7 @@ test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
     score_thr=0.05,
-    nms=dict(type='nms', iou_thr=0.5),
+    nms=dict(type='nms', iou_threshold=0.5),
     max_per_img=100)
 cudnn_benchmark = True
 # model training and testing settings
@@ -139,7 +139,7 @@ optimizer = dict(type='SGD', lr=0.08, momentum=0.9, weight_decay=4e-5)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
-    policy='CosineAnealing',
+    policy='CosineAnnealing',
     min_lr=0,
     warmup='linear',
     warmup_iters=1,

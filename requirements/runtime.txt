@@ -1,17 +1,15 @@
 matplotlib
-mmcv==0.6.2
+mmcv-full==1.3.0
+mmpycocotools
 numpy
-# need older pillow until torchvision is fixed
-Pillow<=6.2.2
 six
 terminaltables
-torch==1.5.1
-torchvision==0.6.1
+torch>=1.5.1,<=1.8.1
+torchvision>=0.6.1,<=0.9.1
 pytorchcv==0.0.55
 tqdm
-onnx>=1.6.0
+onnx>=1.7.0
 onnxruntime>=1.1.2
 lxml
-mmpycocotools
 Polygon3==3.0.8
 editdistance

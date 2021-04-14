@@ -31,7 +31,7 @@ albu_train_transforms = [
                 p=1.0)
         ],
         p=0.1),
-    dict(type='JpegCompression', quality_lower=85, quality_upper=95, p=0.2),
+    dict(type='ImageCompression', quality_lower=85, quality_upper=95, p=0.2),
     dict(type='ChannelShuffle', p=0.1),
     dict(
         type='OneOf',

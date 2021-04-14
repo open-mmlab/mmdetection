@@ -1,7 +1,7 @@
 import numpy as np
 import torch
+from mmcv.ops import nms
 
-from mmdet.ops import nms
 from ..bbox import bbox_mapping_back
 
 
@@ -14,7 +14,7 @@ def merge_aug_proposals(aug_proposals, img_metas, rpn_test_cfg):
             original image size.
 
         img_metas (list[dict]): list of image info dict where each dict has:
-            'img_shape', 'scale_factor', 'flip', and my also contain
+            'img_shape', 'scale_factor', 'flip', and may also contain
             'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
             For details on the values of these keys see
             `mmdet/datasets/pipelines/formatting.py:Collect`.
@@ -36,7 +36,9 @@ def merge_aug_proposals(aug_proposals, img_metas, rpn_test_cfg):
                                               flip_direction)
         recovered_proposals.append(_proposals)
     aug_proposals = torch.cat(recovered_proposals, dim=0)
-    merged_proposals, _ = nms(aug_proposals, rpn_test_cfg.nms_thr)
+    merged_proposals, _ = nms(aug_proposals[:, :4].contiguous(),
+                              aug_proposals[:, -1].contiguous(),
+                              rpn_test_cfg.nms_thr)
     scores = merged_proposals[:, 4]
     _, order = scores.sort(0, descending=True)
     num = min(rpn_test_cfg.max_num, merged_proposals.shape[0])
@@ -99,9 +101,15 @@ def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
         flip_direction = img_info[0]['flip_direction']
         if flip:
             if flip_direction == 'horizontal':
-                mask = mask[:, :, :, ::-1]
+                if isinstance(mask, torch.Tensor):
+                    mask = mask.flip([3])
+                else:
+                    mask = mask[:, :, :, ::-1]
             elif flip_direction == 'vertical':
-                mask = mask[:, :, ::-1, :]
+                if isinstance(mask, torch.Tensor):
+                    mask = mask.flip([2])
+                else:
+                    mask = mask[:, :, ::-1, :]
             else:
                 raise ValueError(
                     f"Invalid flipping direction '{flip_direction}'")
