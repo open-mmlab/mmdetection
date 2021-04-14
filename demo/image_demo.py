@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='bbox score threshold')
     parser.add_argument(
-        '--async-infer',
+        '--async-test',
         action='store_true',
         help='whether to set async options for async inference.')
     args = parser.parse_args()
@@ -43,7 +43,7 @@ async def async_main(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    if args.async_infer:
+    if args.async_test:
         asyncio.run(async_main(args))
     else:
         main(args)
