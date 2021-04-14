@@ -5,6 +5,7 @@ from collections import OrderedDict
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
+from terminaltables import AsciiTable
 from torch.utils.data import Dataset
 
 from mmdet.core import eval_map, eval_recalls
@@ -48,10 +49,6 @@ class CustomDataset(Dataset):
             boxes of the dataset's classes will be filtered out. This option
             only works when `test_mode=False`, i.e., we never filter images
             during tests.
-        filter_only_ignore (bool, optional): If set true, images with
-            only ignored/crowned bounding boxes of the dataset's classes
-            will be filtered out. This option only works when
-            `test_mode=False`, i.e., we never filter images during tests.
     """
 
     CLASSES = None
@@ -65,8 +62,7 @@ class CustomDataset(Dataset):
                  seg_prefix=None,
                  proposal_file=None,
                  test_mode=False,
-                 filter_empty_gt=True,
-                 filter_only_ignore=False):
+                 filter_empty_gt=True):
         self.ann_file = ann_file
         self.data_root = data_root
         self.img_prefix = img_prefix
@@ -74,7 +70,6 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
-        self.filter_only_ignore = filter_only_ignore
         self.CLASSES = self.get_classes(classes)
 
         # join paths if data_root is specified
@@ -159,11 +154,6 @@ class CustomDataset(Dataset):
         if self.filter_empty_gt:
             warnings.warn(
                 'CustomDataset does not support filtering empty gt images.')
-        if self.filter_only_ignore:
-            warnings.warn(
-                'CustomDataset does not support filtering the images with'
-                'only ignore label.')
-
         valid_inds = []
         for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) >= min_size:
@@ -197,6 +187,7 @@ class CustomDataset(Dataset):
             dict: Training/test data (with annotation if `test_mode` is set \
                 True).
         """
+
         if self.test_mode:
             return self.prepare_test_img(idx)
         while True:
@@ -272,7 +263,6 @@ class CustomDataset(Dataset):
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
-        pass
 
     def evaluate(self,
                  results,
@@ -332,3 +322,40 @@ class CustomDataset(Dataset):
                 for i, num in enumerate(proposal_nums):
                     eval_results[f'AR@{num}'] = ar[i]
         return eval_results
+
+    def __repr__(self):
+        """Print the number of instance number."""
+        dataset_type = 'Test' if self.test_mode else 'Train'
+        result = (f'\n{self.__class__.__name__} {dataset_type} dataset '
+                  f'with number of images {len(self)}, '
+                  f'and instance counts: \n')
+        if self.CLASSES is None:
+            result += 'Category names are not provided. \n'
+            return result
+        instance_count = np.zeros(len(self.CLASSES) + 1).astype(int)
+        # count the instance number in each image
+        for idx in range(len(self)):
+            label = self.get_ann_info(idx)['labels']
+            unique, counts = np.unique(label, return_counts=True)
+            if len(unique) > 0:
+                # add the occurrence number to each class
+                instance_count[unique] += counts
+            else:
+                # background is the last index
+                instance_count[-1] += 1
+        # create a table with category count
+        table_data = [['category', 'count'] * 5]
+        row_data = []
+        for cls, count in enumerate(instance_count):
+            if cls < len(self.CLASSES):
+                row_data += [f'{cls} [{self.CLASSES[cls]}]', f'{count}']
+            else:
+                # add the background number
+                row_data += ['-1 background', f'{count}']
+            if len(row_data) == 10:
+                table_data.append(row_data)
+                row_data = []
+
+        table = AsciiTable(table_data)
+        result += table.table
+        return result

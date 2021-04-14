@@ -6,6 +6,7 @@ from collections import OrderedDict
 
 import mmcv
 import numpy as np
+import pycocotools
 from mmcv.utils import print_log
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
@@ -14,16 +15,6 @@ from terminaltables import AsciiTable
 from mmdet.core import eval_recalls
 from .builder import DATASETS
 from .custom import CustomDataset
-
-try:
-    import pycocotools
-    if not hasattr(pycocotools, '__sphinx_mock__'):  # for doc generation
-        assert pycocotools.__version__ >= '12.0.2'
-except AssertionError:
-    raise AssertionError('Incompatible version of pycocotools is installed. '
-                         'Run pip uninstall pycocotools first. Then run pip '
-                         'install mmpycocotools to install open-mmlab forked '
-                         'pycocotools.')
 
 
 @DATASETS.register_module()
@@ -53,6 +44,12 @@ class CocoDataset(CustomDataset):
         Returns:
             list[dict]: Annotation info from COCO api.
         """
+        if not getattr(pycocotools, '__version__', '0') >= '12.0.2':
+            raise AssertionError(
+                'Incompatible version of pycocotools is installed. '
+                'Run pip uninstall pycocotools first. Then run pip '
+                'install mmpycocotools to install open-mmlab forked '
+                'pycocotools.')
 
         self.coco = COCO(ann_file)
         self.cat_ids = self.coco.get_cat_ids(cat_names=self.CLASSES)
@@ -113,33 +110,15 @@ class CocoDataset(CustomDataset):
         # to filter out images if self.filter_empty_gt=True
         ids_in_cat &= ids_with_ann
 
-        def only_ignore(img_id):
-            ann_ids = self.coco.getAnnIds(imgIds=img_id, catIds=self.cat_ids)
-            anns = self.coco.load_anns(ann_ids)
-            for ann in anns:
-                if ann.get('iscrowd', 0) == 0:
-                    return False
-            return True
-
         valid_img_ids = []
         for i, img_info in enumerate(self.data_infos):
             img_id = self.img_ids[i]
             if self.filter_empty_gt and img_id not in ids_in_cat:
                 continue
-            if self.filter_only_ignore and only_ignore(img_id):
-                continue
-
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
                 valid_img_ids.append(img_id)
         self.img_ids = valid_img_ids
-
-        print_log(
-            f'Removed {len(self.data_infos) - len(valid_img_ids)} images. '
-            f'{len(valid_img_ids)} images left',
-            logger=None,
-            level=logging.INFO)
-
         return valid_inds
 
     def _parse_ann_info(self, img_info, ann_info):
