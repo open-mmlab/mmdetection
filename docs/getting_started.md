@@ -100,7 +100,7 @@ To opt for this model representation use `--alt_ssd_export` option.
   To do this run the following command:
 
   ```shell
-  source /opt/intel/openvino/bin/setupvars.sh
+  source /opt/intel/openvino_2021/bin/setupvars.sh
   ```
 
 ## Inference with pretrained models

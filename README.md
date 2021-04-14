@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/python-3.6%2B-green)
 ![](https://img.shields.io/badge/pytorch-1.3%2B-orange)
-![](https://img.shields.io/badge/openvino-2020.4-blue)
+![](https://img.shields.io/badge/openvino-2021.3-blue)
 ![](https://img.shields.io/badge/onnxruntime-1.1.2%2B-yellow)
 
 

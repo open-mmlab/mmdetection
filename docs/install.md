@@ -9,7 +9,7 @@ Make sure that all of the listed below system-level requirements are installed:
 - PyTorch 1.3+
 - CUDA 9.2+ (If you build PyTorch from source, CUDA 9.0 is also compatible)
 - GCC 5+
-- [Intel® Distribution of OpenVINO™ Toolkit](https://software.intel.com/en-us/openvino-toolkit) 2020.4
+- [Intel® Distribution of OpenVINO™ Toolkit](https://software.intel.com/en-us/openvino-toolkit) 2021.3
 
 ### Install OTEDetection
 
