@@ -294,7 +294,7 @@ def main():
                 model, args.checkpoint, map_location='cpu')
             # old versions did not save class info in checkpoints,
             # this walkaround is for backward compatibility
-            if 'CLASSES' in checkpoint['meta']:
+            if 'CLASSES' in checkpoint.get('meta', {}):
                 model.CLASSES = checkpoint['meta']['CLASSES']
             else:
                 model.CLASSES = dataset.CLASSES
@@ -367,7 +367,7 @@ def main():
                 mmcv.dump(aggregated_results, eval_results_filename)
 
     if rank == 0:
-        # print filan results
+        # print final results
         print('\nAggregated results:')
         prints = args.final_prints
         aggregate = args.final_prints_aggregate

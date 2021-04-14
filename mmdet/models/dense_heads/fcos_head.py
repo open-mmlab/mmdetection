@@ -16,7 +16,7 @@ class FCOSHead(AnchorFreeHead):
     """Anchor-free head used in `FCOS <https://arxiv.org/abs/1904.01355>`_.
 
     The FCOS head does not use anchor boxes. Instead bounding boxes are
-    predicted at each pixel and a centerness measure is used to supress
+    predicted at each pixel and a centerness measure is used to suppress
     low-quality predictions.
     Here norm_on_bbox, centerness_on_reg, dcn_on_last_conv are training
     tricks used in official repo, which will bring remarkable mAP gains
@@ -116,14 +116,14 @@ class FCOSHead(AnchorFreeHead):
                 bbox_preds (list[Tensor]): Box energies / deltas for each \
                     scale level, each is a 4D-tensor, the channel number is \
                     num_points * 4.
-                centernesses (list[Tensor]): Centerss for each scale level, \
+                centernesses (list[Tensor]): centerness for each scale level, \
                     each is a 4D-tensor, the channel number is num_points * 1.
         """
         return multi_apply(self.forward_single, feats, self.scales,
                            self.strides)
 
     def forward_single(self, x, scale, stride):
-        """Forward features of a single scale levle.
+        """Forward features of a single scale level.
 
         Args:
             x (Tensor): FPN feature maps of the specified stride.
@@ -171,7 +171,7 @@ class FCOSHead(AnchorFreeHead):
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level, each is a 4D-tensor, the channel number is
                 num_points * 4.
-            centernesses (list[Tensor]): Centerss for each scale level, each
+            centernesses (list[Tensor]): centerness for each scale level, each
                 is a 4D-tensor, the channel number is num_points * 1.
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
@@ -226,17 +226,17 @@ class FCOSHead(AnchorFreeHead):
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_centerness = flatten_centerness[pos_inds]
+        pos_bbox_targets = flatten_bbox_targets[pos_inds]
+        pos_centerness_targets = self.centerness_target(pos_bbox_targets)
+        # centerness weighted iou loss
+        centerness_denorm = max(
+            reduce_mean(pos_centerness_targets.sum().detach()), 1e-6)
 
         if len(pos_inds) > 0:
-            pos_bbox_targets = flatten_bbox_targets[pos_inds]
-            pos_centerness_targets = self.centerness_target(pos_bbox_targets)
             pos_points = flatten_points[pos_inds]
             pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
             pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
-            # centerness weighted iou loss
-            centerness_denorm = max(
-                reduce_mean(pos_centerness_targets.sum().detach()), 1e-6)
             loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
@@ -466,7 +466,7 @@ class FCOSHead(AnchorFreeHead):
         return points
 
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
-        """Compute regression, classification and centerss targets for points
+        """Compute regression, classification and centerness targets for points
         in multiple images.
 
         Args:
@@ -623,7 +623,10 @@ class FCOSHead(AnchorFreeHead):
         # only calculate pos centerness targets, otherwise there may be nan
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
-        centerness_targets = (
-            left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
-                top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
+        if len(left_right) == 0:
+            centerness_targets = left_right[..., 0]
+        else:
+            centerness_targets = (
+                left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
+                    top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
         return torch.sqrt(centerness_targets)
