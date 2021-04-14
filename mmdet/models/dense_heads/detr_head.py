@@ -627,8 +627,19 @@ class DETRHead(AnchorFreeHead):
                     shape [num_query].
         """
         assert len(cls_score) == len(bbox_pred)
+        max_per_img = self.test_cfg.get('max_per_img', self.num_query)
         # exclude background
-        scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
+        if self.loss_cls.use_sigmoid:
+            cls_score = cls_score.sigmoid()
+            scores, indexs = cls_score.view(-1).topk(max_per_img)
+            det_labels = indexs % self.num_classes
+            bbox_index = indexs // self.num_classes
+            bbox_pred = bbox_pred[bbox_index]
+        else:
+            scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
+            _, bbox_index = scores.topk(max_per_img)
+            bbox_pred = bbox_pred[bbox_index]
+
         det_bboxes = bbox_cxcywh_to_xyxy(bbox_pred)
         det_bboxes[:, 0::2] = det_bboxes[:, 0::2] * img_shape[1]
         det_bboxes[:, 1::2] = det_bboxes[:, 1::2] * img_shape[0]
@@ -637,7 +648,5 @@ class DETRHead(AnchorFreeHead):
         if rescale:
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(1)), -1)
-        _, index = torch.sort(scores, descending=True)
-        number = self.test_cfg.get('max_per_img', self.num_query)
-        index = index[:number]
-        return det_bboxes[index], det_labels[index]
+
+        return det_bboxes, det_labels
