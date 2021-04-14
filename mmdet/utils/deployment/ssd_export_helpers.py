@@ -14,6 +14,8 @@
 
 # pylint: disable=all
 
+from functools import partial
+
 import torch
 
 from ...core import multiclass_nms
@@ -205,7 +207,7 @@ def export_forward_ssd_head(self, cls_scores, bbox_preds, cfg, rescale,
     for i in range(num_levels):
         if isinstance(self.anchor_generator, SSDAnchorGeneratorClustered):
             anchors.append(PriorBoxClustered.apply(
-                self.anchor_generator.single_level_grid_anchors,
+                partial(self.anchor_generator.single_level_grid_anchors, device=feats[i].device),
                 self.anchor_generator.base_anchors[i],
                 self.anchor_generator.heights[i],
                 self.anchor_generator.widths[i],
@@ -213,7 +215,7 @@ def export_forward_ssd_head(self, cls_scores, bbox_preds, cfg, rescale,
                 feats[i], img_tensor, self.bbox_coder.stds))
         else:
             anchors.append(PriorBox.apply(
-                self.anchor_generator.single_level_grid_anchors,
+                partial(self.anchor_generator.single_level_grid_anchors, device=feats[i].device),
                 self.anchor_generator.base_anchors[i],
                 self.anchor_generator.base_sizes[i],
                 self.anchor_generator.scales[i].tolist(),
