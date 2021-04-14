@@ -278,7 +278,7 @@ class LVISV05Dataset(CocoDataset):
 
         try:
             import lvis
-            if lvis.__version__ >= '10.5.3':
+            if getattr(lvis, '__version__', '0') >= '10.5.3':
                 warnings.warn(
                     'mmlvis is deprecated, please install official lvis-api by "pip install git+https://github.com/lvis-dataset/lvis-api.git"',  # noqa: E501
                     UserWarning)
@@ -336,7 +336,7 @@ class LVISV05Dataset(CocoDataset):
 
         try:
             import lvis
-            if lvis.__version__ >= '10.5.3':
+            if getattr(lvis, '__version__', '0') >= '10.5.3':
                 warnings.warn(
                     'mmlvis is deprecated, please install official lvis-api by "pip install git+https://github.com/lvis-dataset/lvis-api.git"',  # noqa: E501
                     UserWarning)
@@ -711,6 +711,11 @@ class LVISV1Dataset(LVISDataset):
 
     def load_annotations(self, ann_file):
         try:
+            import lvis
+            if getattr(lvis, '__version__', '0') >= '10.5.3':
+                warnings.warn(
+                    'mmlvis is deprecated, please install official lvis-api by "pip install git+https://github.com/lvis-dataset/lvis-api.git"',  # noqa: E501
+                    UserWarning)
             from lvis import LVIS
         except ImportError:
             raise ImportError(
