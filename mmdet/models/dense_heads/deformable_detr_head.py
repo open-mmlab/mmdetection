@@ -8,11 +8,11 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply
 from ..builder import HEADS
-from .transformer_head import TransformerHead
+from .detr_head import DETRHead
 
 
 @HEADS.register_module()
-class DeformableDetrHead(TransformerHead):
+class DeformableDETRHead(DETRHead):
 
     def __init__(self,
                  *args,
@@ -28,7 +28,7 @@ class DeformableDetrHead(TransformerHead):
             assert 'as_two_stage' in transformer and \
                    transformer['as_two_stage'] == self.as_two_stage
 
-        super(DeformableDetrHead, self).__init__(
+        super(DeformableDETRHead, self).__init__(
             *args, transformer=transformer, **kwargs)
 
     def _init_layers(self):

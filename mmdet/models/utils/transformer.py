@@ -1,5 +1,8 @@
+import copy
+
 import torch
 import torch.nn as nn
+from mmcv import ConfigDict
 from mmcv.cnn import build_activation_layer, build_norm_layer, xavier_init
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
                                       TRANSFORMER_LAYER_SEQUENCE)
@@ -137,7 +140,8 @@ class DetrTransformerEncoder(TransformerLayerSequence):
             x = self.coder_norm(x)
         return x
 
-class DeformableDetrTransformerDecoder(BaseTransformerCoder):
+
+class DeformableDetrTransformerDecoder(TransformerLayerSequence):
     """Implements the decoder in DETR transformer.
 
     Args:
@@ -374,7 +378,7 @@ class Transformer(BaseModule):
 
 
 @TRANSFORMER.register_module()
-class DeformableDetrTransformer(nn.Module):
+class DeformableDetrTransformer(BaseModule):
     """Implements the Deformable Detr  transformer.
 
     Args:
@@ -404,6 +408,8 @@ class DeformableDetrTransformer(nn.Module):
             embed_dims].
         two_stage_num_proposals (int): Number of proposals when set
             `as_two_stage` as True. Default: 300.
+        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+            Default: None.
     """
 
     def __init__(self,
@@ -416,8 +422,9 @@ class DeformableDetrTransformer(nn.Module):
                  num_feature_levels=4,
                  norm_cfg=dict(type='LN'),
                  return_intermediate=False,
-                 two_stage_num_proposals=300):
-        super(DeformableDetrTransformer, self).__init__()
+                 two_stage_num_proposals=300,
+                 init_cfg=None):
+        super(DeformableDetrTransformer, self).__init__(init_cfg)
         self.as_two_stage = as_two_stage
         self.num_feature_levels = num_feature_levels
 

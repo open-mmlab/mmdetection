@@ -22,7 +22,7 @@ model = dict(
         norm_cfg=dict(type='GN', num_groups=32),
         num_outs=4),
     bbox_head=dict(
-        type='DeformableDetrHead',
+        type='DeformableDETRHead',
         num_query=300,
         num_classes=80,
         in_channels=2048,
@@ -34,16 +34,14 @@ model = dict(
             as_two_stage=False,
             encodelayers=dict(
                 type='BaseTransformerLayer',
-                embed_dims=256,
                 attn_cfgs=dict(
                     type='MultiScaleDeformableAttention', embed_dims=256),
                 feedforward_channels=1024,
                 ffn_dropout=0.1,
-                operation_order=('selfattn', 'norm', 'ffn', 'norm'),
+                operation_order=('self_attn', 'norm', 'ffn', 'norm'),
             ),
             dencodelayers=dict(
                 type='DetrTransformerDecoderLayer',
-                embed_dims=256,
                 attn_cfgs=[
                     dict(
                         type='MultiheadAttention',
@@ -54,7 +52,7 @@ model = dict(
                 ],
                 feedforward_channels=1024,
                 ffn_dropout=0.1,
-                operation_order=('selfattn', 'norm', 'crossattn', 'norm',
+                operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                  'ffn', 'norm')),
             num_encoder_layers=6,
             num_decoder_layers=6,
