@@ -57,8 +57,8 @@ def single_gpu_test(model,
 
         # encode mask results
         if isinstance(result[0], tuple):
-            result = [(bbox_results, encode_mask_results(mask_results))
-                      for bbox_results, mask_results in result]
+            result = [(bbox_results, encode_mask_results(mask_results), *other)
+                      for bbox_results, mask_results, *other in result]
         results.extend(result)
 
         for _ in range(batch_size):
@@ -97,8 +97,8 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             result = model(return_loss=False, rescale=True, **data)
             # encode mask results
             if isinstance(result[0], tuple):
-                result = [(bbox_results, encode_mask_results(mask_results))
-                          for bbox_results, mask_results in result]
+                result = [(bbox_results, encode_mask_results(mask_results), *other)
+                          for bbox_results, mask_results, *other in result]
         results.extend(result)
 
         if rank == 0:
