@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import bias_init_with_prob
@@ -9,26 +8,6 @@ from mmdet.core import (anchor_inside_flags, images_to_levels, multi_apply,
                         reduce_mean, unmap)
 from ..builder import HEADS
 from .anchor_head import AnchorHead
-
-try:
-    from rraitools import VisualHelper
-except ImportError:
-    VisualHelper = None
-
-
-def show_pos_anchor(img_meta, gt_anchors, gt_bboxes, is_show=True):
-    # 显示正样本
-    assert 'img' in img_meta, print('Collect类中的meta_keys需要新增‘img’，用于可视化调试')
-    img = img_meta['img'].data.numpy()
-    mean = img_meta['img_norm_cfg']['mean']
-    std = img_meta['img_norm_cfg']['std']
-    # 默认输入是rgb数据，需要切换为bgr显示
-    img = np.transpose(img.copy(), (1, 2, 0))
-    img = img * std.reshape([1, 1, 3]) + mean.reshape([1, 1, 3])
-    img = img.astype(np.uint8)
-    img = VisualHelper.show_bbox(img, gt_anchors.cpu().numpy(), is_show=False)
-    return VisualHelper.show_bbox(
-        img, gt_bboxes.cpu().numpy(), color=(255, 255, 255), is_show=is_show)
 
 
 def levels_to_images(mlvl_tensor):
@@ -199,12 +178,13 @@ class YOLOFHead(AnchorHead):
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_pos, num_total_neg) = cls_reg_targets
+         num_total_pos, num_total_neg, pos_idx_list, pos_predicted_boxes_list,
+         target_boxes_list) = cls_reg_targets
 
         flatten_labels = torch.cat(labels_list).reshape(-1)
         pos_inds = ((flatten_labels >= 0)
-                    &
-                    (flatten_labels < self.num_classes)).nonzero().reshape(-1)
+                    & (flatten_labels < self.num_classes)).nonzero(
+                        as_tuple=False).reshape(-1)
         num_pos = torch.tensor(
             len(pos_inds), dtype=torch.float, device=bbox_preds[0].device)
         num_total_samples = max(reduce_mean(num_pos), 1.0)
@@ -227,6 +207,9 @@ class YOLOFHead(AnchorHead):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
+            pos_idx_list,
+            pos_predicted_boxes_list,
+            target_boxes_list,
             num_total_samples=num_total_samples)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
@@ -330,8 +313,9 @@ class YOLOFHead(AnchorHead):
                bbox_weights_list, num_total_pos, num_total_neg)
         if return_sampling_results:
             res = res + (sampling_results_list, )
+
         for i, r in enumerate(rest_results):  # user-added return values
-            rest_results[i] = images_to_levels(r, num_level_anchors)
+            rest_results[i] = [torch.cat(r, 0)]
 
         return res + tuple(rest_results)
 
@@ -362,16 +346,10 @@ class YOLOFHead(AnchorHead):
             decoder_bbox_preds, anchors, gt_bboxes, gt_bboxes_ignore,
             None if self.sampling else gt_labels)
 
-        # TODO
-        if False and VisualHelper is not None:
-            # 统计下正样本个数
-            print('----anchor分配正负样本后，正样本anchor可视化，白色bbox是gt----')
-            gt_inds = assign_result.gt_inds  # 0 1 -1 正负忽略样本标志
-            index = gt_inds > 0
-            gt_inds = gt_inds[index]
-            gt_anchors = anchors[index]
-            print('单张图片中正样本anchor个数', len(gt_inds))
-            show_pos_anchor(img_meta, gt_anchors, gt_bboxes)
+        pos_idx = assign_result.get_extra_property('pos_idx')
+        pos_predicted_boxes = assign_result.get_extra_property(
+            'pos_predicted_boxes')
+        target_boxes = assign_result.get_extra_property('target_boxes')
 
         sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
@@ -415,4 +393,50 @@ class YOLOFHead(AnchorHead):
             bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
-                neg_inds, sampling_result)
+                neg_inds, sampling_result, pos_idx, pos_predicted_boxes,
+                target_boxes)
+
+    def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
+                    bbox_targets, bbox_weights, pos_idxs, pos_predicted_boxes,
+                    target_boxes, num_total_samples):
+        """Compute loss of a single scale level.
+
+        Args:
+            cls_score (Tensor): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W).
+            bbox_pred (Tensor): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W).
+            anchors (Tensor): Box reference for each scale level with shape
+                (N, num_total_anchors, 4).
+            labels (Tensor): Labels of each anchors with shape
+                (N, num_total_anchors).
+            label_weights (Tensor): Label weights of each anchor with shape
+                (N, num_total_anchors)
+            bbox_targets (Tensor): BBox regression targets of each anchor wight
+                shape (N, num_total_anchors, 4).
+            bbox_weights (Tensor): BBox regression loss weights of each anchor
+                with shape (N, num_total_anchors, 4).
+            num_total_samples (int): If sampling, num total samples equal to
+                the number of total anchors; Otherwise, it is the number of
+                positive anchors.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+        # classification loss
+        labels = labels.reshape(-1)
+        label_weights = label_weights.reshape(-1)
+        cls_score = cls_score.permute(0, 2, 3,
+                                      1).reshape(-1, self.cls_out_channels)
+
+        loss_cls = self.loss_cls(
+            cls_score, labels, label_weights, avg_factor=num_total_samples)
+
+        # regression loss
+        loss_bbox = self.loss_bbox(
+            pos_predicted_boxes,
+            target_boxes,
+            pos_idxs.float(),
+            avg_factor=num_total_samples)
+
+        return loss_cls, loss_bbox

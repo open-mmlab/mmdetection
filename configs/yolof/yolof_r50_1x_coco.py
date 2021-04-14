@@ -79,12 +79,7 @@ train_pipeline = [
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
-    dict(
-        type='Collect',
-        keys=['img', 'gt_bboxes', 'gt_labels'],
-        meta_keys=('filename', 'ori_filename', 'ori_shape', 'img_shape',
-                   'pad_shape', 'scale_factor', 'flip', 'flip_direction',
-                   'img_norm_cfg', 'img')),  # meta_keys新增‘img’，用于可视化调试
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -102,8 +97,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=8,
-    workers_per_gpu=8,
+    samples_per_gpu=2,
+    workers_per_gpu=0,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
