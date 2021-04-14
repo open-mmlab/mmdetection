@@ -14,7 +14,7 @@ from .anchor_free_head import AnchorFreeHead
 
 
 @HEADS.register_module()
-class TransformerHead(AnchorFreeHead):
+class DETRHead(AnchorFreeHead):
     """Implements the DETR transformer head.
 
     See `paper: End-to-End Object Detection with Transformers
@@ -40,14 +40,6 @@ class TransformerHead(AnchorFreeHead):
             transformer head.
         test_cfg (obj:`mmcv.ConfigDict`|dict): Testing config of
             transformer head.
-
-    Example:
-        >>> import torch
-        >>> self = TransformerHead(80, 2048)
-        >>> x = torch.rand(1, 2048, 32, 32)
-        >>> mask = torch.ones(1, 32, 32).to(x.dtype)
-        >>> mask[:, :16, :15] = 0
-        >>> all_cls_scores, all_bbox_preds = self(x, mask)
     """
 
     def __init__(self,
@@ -81,13 +73,9 @@ class TransformerHead(AnchorFreeHead):
         # since it brings inconvenience when the initialization of
         # `AnchorFreeHead` is called.
         super(AnchorFreeHead, self).__init__()
-        use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        assert not use_sigmoid_cls, 'setting use_sigmoid_cls as True is ' \
-            'not supported in DETR, since background is needed for the ' \
-            'matching process.'
-
+        self.bg_cls_weight = 0
         class_weight = loss_cls.get('class_weight', None)
-        if class_weight is not None:
+        if class_weight is not None and (self.__class__ is DETRHead):
             assert isinstance(class_weight, float), 'Expected ' \
                 'class_weight to have type float. Found ' \
                 f'{type(class_weight)}.'
@@ -124,18 +112,19 @@ class TransformerHead(AnchorFreeHead):
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.num_query = num_query
         self.num_classes = num_classes
-        self.cls_out_channels = num_classes + 1
         self.in_channels = in_channels
         self.reg_num_fcs = reg_num_fcs
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.use_sigmoid_cls = use_sigmoid_cls
-
-        self.num_query = test_cfg['max_per_img']
         self.fp16_enabled = False
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.loss_iou = build_loss(loss_iou)
+
+        if self.loss_cls.use_sigmoid:
+            self.cls_out_channels = num_classes
+        else:
+            self.cls_out_channels = num_classes + 1
         self.act_cfg = transformer.get('act_cfg',
                                        dict(type='ReLU', inplace=True))
         self.activate = build_activation_layer(self.act_cfg)
@@ -148,7 +137,6 @@ class TransformerHead(AnchorFreeHead):
         assert num_feats * 2 == self.embed_dims, 'embed_dims should' \
             f' be exactly 2 times of num_feats. Found {self.embed_dims}' \
             f' and {num_feats}.'
-        assert test_cfg is not None and 'max_per_img' in test_cfg
         self._init_layers()
 
     def _init_layers(self):
@@ -166,7 +154,7 @@ class TransformerHead(AnchorFreeHead):
         self.fc_reg = Linear(self.embed_dims, 4)
         self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
 
-    def init_weights(self, distribution='uniform'):
+    def init_weights(self):
         """Initialize weights of the transformer head."""
         # The initialization for transformer is important
         self.transformer.init_weights()
@@ -361,6 +349,8 @@ class TransformerHead(AnchorFreeHead):
         # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
             num_total_neg * self.bg_cls_weight
+
+        cls_avg_factor = max(cls_avg_factor, 1)
         loss_cls = self.loss_cls(
             cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
 
@@ -563,6 +553,7 @@ class TransformerHead(AnchorFreeHead):
                    all_cls_scores_list,
                    all_bbox_preds_list,
                    img_metas,
+                   cfg=None,
                    rescale=False):
         """Transform network outputs for a batch into bbox predictions.
 
@@ -575,6 +566,8 @@ class TransformerHead(AnchorFreeHead):
                 normalized coordinate format (cx, cy, w, h) and shape
                 [nb_dec, bs, num_query, 4].
             img_metas (list[dict]): Meta information of each image.
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used
             rescale (bool, optional): If True, return boxes in original
                 image space. Defalut False.
 
@@ -603,12 +596,14 @@ class TransformerHead(AnchorFreeHead):
             result_list.append(proposals)
         return result_list
 
-    def _get_bboxes_single(self,
-                           cls_score,
-                           bbox_pred,
-                           img_shape,
-                           scale_factor,
-                           rescale=False):
+    def _get_bboxes_single(
+        self,
+        cls_score,
+        bbox_pred,
+        img_shape,
+        scale_factor,
+        rescale=False,
+    ):
         """Transform outputs from the last decoder layer into bbox predictions
         for each image.
 
@@ -623,6 +618,8 @@ class TransformerHead(AnchorFreeHead):
                 as (w_scale, h_scale, w_scale, h_scale).
             rescale (bool, optional): If True, return boxes in original image
                 space. Default False.
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used
 
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels.
@@ -645,4 +642,7 @@ class TransformerHead(AnchorFreeHead):
         if rescale:
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(1)), -1)
-        return det_bboxes, det_labels
+        _, index = torch.sort(scores, descending=True)
+        number = self.test_cfg.get('max_per_img', self.num_query)
+        index = index[:number]
+        return det_bboxes[index], det_labels[index]
