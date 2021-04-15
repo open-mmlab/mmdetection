@@ -41,8 +41,7 @@ class Model:
 
         self.pt_model = None
         if cfg is not None:
-            self.pt_model = build_detector(
-                cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+            self.pt_model = build_detector(cfg.model)
             if classes is not None:
                 self.pt_model.CLASSES = classes
 
