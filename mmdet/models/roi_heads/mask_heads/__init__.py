@@ -9,9 +9,11 @@ from .mask_point_head import MaskPointHead
 from .maskiou_head import MaskIoUHead
 from .scnet_mask_head import SCNetMaskHead
 from .scnet_semantic_head import SCNetSemanticHead
+from .semantic_head import SemanticHead
 
 __all__ = [
     'FCNMaskHead', 'HTCMaskHead', 'FusedSemanticHead', 'GridHead',
     'MaskIoUHead', 'CoarseMaskHead', 'MaskPointHead', 'SCNetMaskHead',
-    'SCNetSemanticHead', 'GlobalContextHead', 'FeatureRelayHead'
+    'SCNetSemanticHead', 'GlobalContextHead', 'FeatureRelayHead',
+    'SemanticHead'
 ]

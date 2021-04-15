@@ -11,7 +11,8 @@ def cross_entropy(pred,
                   weight=None,
                   reduction='mean',
                   avg_factor=None,
-                  class_weight=None):
+                  class_weight=None,
+                  ignore_index=-100):
     """Calculate the CrossEntropy loss.
 
     Args:
@@ -23,12 +24,19 @@ def cross_entropy(pred,
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
         class_weight (list[float], optional): The weight for each class.
+        ignore_index (int): The label index to be ignored when calculating
+            losses.
 
     Returns:
         torch.Tensor: The calculated loss
     """
     # element-wise losses
-    loss = F.cross_entropy(pred, label, weight=class_weight, reduction='none')
+    loss = F.cross_entropy(
+        pred,
+        label,
+        weight=class_weight,
+        reduction='none',
+        ignore_index=ignore_index)
 
     # apply weights and do the reduction
     if weight is not None:

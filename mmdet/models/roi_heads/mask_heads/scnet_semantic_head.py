@@ -12,8 +12,8 @@ class SCNetSemanticHead(FusedSemanticHead):
             ``SimplifiedBasicBlock``.
     """
 
-    def __init__(self, conv_to_res=True, **kwargs):
-        super(SCNetSemanticHead, self).__init__(**kwargs)
+    def __init__(self, *args, conv_to_res=True, **kwargs):
+        super(SCNetSemanticHead, self).__init__(*args, **kwargs)
         self.conv_to_res = conv_to_res
         if self.conv_to_res:
             num_res_blocks = self.num_convs // 2
