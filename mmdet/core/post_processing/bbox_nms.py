@@ -49,7 +49,7 @@ def multiclass_nms(multi_bboxes,
     labels = labels.reshape(-1)
 
     nms_cfg['score_threshold'] = score_thr
-    nms_cfg['max_num'] = max_num if max_num > 0 else boxes.shape[0]
+    nms_cfg['max_num'] = max_num if max_num > 0 else bboxes.shape[0]
     if not torch.onnx.is_in_onnx_export():
         # NonZero not supported  in TensorRT
         # remove low scoring boxes
