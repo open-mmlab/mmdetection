@@ -95,6 +95,7 @@ model = dict(
                 num_convs=4,
                 in_channels=256),
             conv_out_channels=256,
+            num_convs=4,
             num_classes=183,
             ignore_label=255,
             loss_seg=dict(

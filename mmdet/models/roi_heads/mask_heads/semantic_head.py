@@ -45,6 +45,7 @@ class SemanticHead(nn.Module):
         self.conv_logits = nn.Conv2d(in_channels, num_classes, 1)
         self.loss_seg = build_loss(loss_seg)
 
+        self.in_channels = in_channels
         self.num_classes = num_classes
         self.ignore_label = ignore_label
         self.conv_cfg = conv_cfg

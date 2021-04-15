@@ -6,7 +6,7 @@ from mmcv.cnn import ConvModule, normal_init
 from ..builder import NECKS
 
 
-def generate_coord(self, input_feat):
+def generate_coord(input_feat):
     x_range = torch.linspace(
         -1, 1, input_feat.shape[-1], device=input_feat.device)
     y_range = torch.linspace(

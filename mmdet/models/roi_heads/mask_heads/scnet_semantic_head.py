@@ -12,9 +12,10 @@ class SCNetSemanticHead(FusedSemanticHead):
             ``SimplifiedBasicBlock``.
     """
 
-    def __init__(self, *args, conv_to_res=True, **kwargs):
+    def __init__(self, *args, conv_to_res=True, num_convs=4, **kwargs):
         super(SCNetSemanticHead, self).__init__(*args, **kwargs)
         self.conv_to_res = conv_to_res
+        self.num_convs = num_convs
         if self.conv_to_res:
             num_res_blocks = self.num_convs // 2
             self.convs = ResLayer(
