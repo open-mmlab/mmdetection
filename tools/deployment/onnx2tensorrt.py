@@ -82,7 +82,11 @@ def onnx2tensorrt(onnx_file,
         print(f'TensorRT output names: {output_names}, \
             output shapes: {trt_shapes}')
         trt_masks = trt_outputs[2] if with_mask else None
-
+        # convert segment results to bool
+        if trt_masks is not None and trt_masks.dtype != np.bool:
+            mask_binary_thr = 0.5
+            trt_masks = trt_masks >= mask_binary_thr
+            ort_masks = ort_masks >= mask_binary_thr
         # Show detection outputs
         if show:
             CLASSES = get_classes(dataset)

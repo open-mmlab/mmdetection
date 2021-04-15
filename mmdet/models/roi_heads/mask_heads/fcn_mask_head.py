@@ -259,8 +259,6 @@ class FCNMaskHead(nn.Module):
                 mask_pred, bboxes, img_h, img_w, skip_empty=False)
             if threshold >= 0:
                 masks = (masks >= threshold).to(dtype=torch.bool)
-            else:
-                masks = (masks * 255).to(dtype=torch.bool)
             return masks
 
         N = len(mask_pred)

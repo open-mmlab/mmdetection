@@ -157,7 +157,7 @@ def pytorch2onnx(config_path,
             show_result_pyplot(
                 model, one_meta['show_img'], pytorch_results, title='Pytorch')
             show_result_pyplot(
-                model, one_meta['show_img'], onnx_results, title='ONNX')
+                model, one_meta['show_img'], onnx_results, title='ONNXRuntime')
 
         # compare a part of result
         if model.with_mask:
