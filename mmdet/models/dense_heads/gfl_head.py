@@ -11,6 +11,8 @@ from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
+EPS = 1e-12
+
 
 class Integral(nn.Module):
     """A fixed layer for calculating integral result from distribution.
@@ -363,6 +365,8 @@ class GFLHead(AnchorHead):
 
         avg_factor = sum(avg_factor)
         avg_factor = reduce_mean(avg_factor).item()
+        if avg_factor < EPS:
+            avg_factor = 1
         losses_bbox = list(map(lambda x: x / avg_factor, losses_bbox))
         losses_dfl = list(map(lambda x: x / avg_factor, losses_dfl))
         return dict(
