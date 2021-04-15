@@ -1,5 +1,6 @@
 import copy
 import os.path as osp
+from unittest.mock import MagicMock, patch
 
 import mmcv
 import numpy as np
@@ -9,6 +10,7 @@ from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets.builder import PIPELINES
+from mmdet.datasets import DATASETS
 
 
 def test_resize():
@@ -78,6 +80,10 @@ def test_resize():
     assert np.equal(results['img'], results['img2']).all()
     assert results['img_shape'] == (800, 1280, 3)
 
+
+@patch('mmdet.datasets.CustomDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.CustomDataset._filter_imgs', MagicMock)
+@patch('mmdet.datasets.CustomDataset.__len__', MagicMock(return_value=1))
 def test_mosaic():
     results = dict()
     img = mmcv.imread(
@@ -104,25 +110,31 @@ def test_mosaic():
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
     results['gt_bboxes'] = gt_bboxes
+
+    results['gt_labels'] = np.zeros(8, dtype=np.int64)
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
-    transform = dict(type='Mosaic', size=(640, 640), min_offset=0.2)
+    dataset = 'CustomDataset'
+    dataset_class = DATASETS.get(dataset)
+    custom_dataset = dataset_class(
+        ann_file=MagicMock(),
+        pipeline=[],
+        classes=None,
+        test_mode=True,
+        img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
+    custom_dataset.__getitem__ = MagicMock(return_value=results)
+    # custom_dataset.__len__ = MagicMock(return_value=1)
+
+    transform = dict(type='Mosaic',
+                     dataset=custom_dataset,
+                     min_offset=0.2)
 
     mosaic_module = build_from_cfg(transform, PIPELINES)
 
     results = mosaic_module(results)
-    # data_root = 'data/coco/'
-    # datasets = build_dataset({
-    #     'type': 'CocoDataset',
-    #     'ann_file': data_root + 'annotations/instances_train2017.json',
-    #     'img_prefix': data_root + 'train2017/',
-    #     'pipeline': pipeline,
-    #     'num_samples_per_iter': 4
-    # })
-    #
-    # data = datasets.__getitem__(2)
-    # img = data['img']
-    # bboxes = data['gt_bboxes']
-    # mmcv.imshow_bboxes(img, bboxes, show=False)
+
+    img = results['img']
+    bboxes = results['gt_bboxes']
+    mmcv.imshow_bboxes(img, bboxes, show=True)
     # mmcv.imwrite(img, "img.png")
 
 def test_flip():

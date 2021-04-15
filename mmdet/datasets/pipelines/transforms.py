@@ -1880,7 +1880,7 @@ class Mosaic(object):
             int(self.size[1] * (1 - self.min_offset[1]))
         )
 
-        tmp_img = np.zeros((self.size[0], self.size[1], 3), dtype=np.float32)
+        buffer_img = np.zeros((self.size[0], self.size[1], 3), dtype=np.float32)
 
         out_bboxes = []
         out_labels = []
@@ -1894,7 +1894,7 @@ class Mosaic(object):
                 # randomly sample a new image from the dataset
                 results_i = next(self.dataset)
 
-            tmp_img, bboxes, labels, ignores = self._mosiac_combine(i, results_i, tmp_img, cut_x, cut_y)
+            buffer_img, bboxes, labels, ignores = self._mosiac_combine(i, results_i, buffer_img, cut_x, cut_y)
             out_bboxes.append(bboxes)
             out_labels.append(labels)
             out_ignores.append(ignores)
@@ -1903,8 +1903,8 @@ class Mosaic(object):
         out_labels = np.concatenate(out_labels, axis=0)
         out_ignores = np.concatenate(out_ignores, axis=0)
 
-        results['img'] = tmp_img
-        results['img_shape'] = tmp_img.shape
+        results['img'] = buffer_img
+        results['img_shape'] = buffer_img.shape
         results['gt_bboxes'] = out_bboxes
         results['gt_labels'] = out_labels
         results['gt_bboxes_ignore'] = out_ignores
