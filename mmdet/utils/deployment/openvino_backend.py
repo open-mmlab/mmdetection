@@ -307,7 +307,10 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
         if 'masks' in output:
             output['masks'] = output['masks'][valid_detections_mask]
 
-        texts = []
+        confidences = []
+        decoded_texts = []
+        distributions = []
+        
         for feature in output['text_features']:
             feature = np.expand_dims(feature, 0)
             feature = self.text_encoder({'input': feature})['output']
@@ -323,6 +326,8 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
             decoded = ''
             confidence = 1
 
+            distribution = []
+
             for _ in range(max_seq_len):
                 out = self.text_decoder({
                     'prev_symbol': prev_symbol,
@@ -330,6 +335,7 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
                     'encoder_outputs': feature
                 })
                 softmaxed = softmax(out['output'], axis=1)
+                distribution.append(softmaxed[0, 2:])
                 softmaxed_max = np.max(softmaxed, axis=1)
                 confidence *= softmaxed_max[0]
                 prev_symbol = np.argmax(softmaxed, axis=1)[0]
@@ -337,10 +343,11 @@ class MaskTextSpotterOpenVINO(ModelOpenVINO):
                     break
                 hidden = out['hidden']
                 decoded = decoded + self.alphabet[prev_symbol]
+            distribution = np.transpose(np.array(distribution))
+            distributions.append(distribution)
+            confidences.append(confidence)
+            decoded_texts.append(decoded if confidence >= self.text_recognition_thr else '')
 
-            texts.append(decoded if confidence >= self.text_recognition_thr else '')
-
-        texts = np.array(texts)
-        output['texts'] = texts
+        output['texts'] = decoded_texts, confidences, distributions
 
         return output
