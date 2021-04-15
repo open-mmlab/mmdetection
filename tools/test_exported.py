@@ -216,8 +216,8 @@ def parse_args():
     parser.add_argument('--out', type=str, help='path to file with inference results')
     parser.add_argument('--json_out', type=str, help='output result file name without extension')
     parser.add_argument('--eval', type=str, nargs='+',
-                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints', 'f1', 'word_spotting'],
-                        help='eval types')
+                        help='evaluation metrics, which depends on the dataset, e.g., "bbox",'
+                             ' "segm", "proposal", "f1" for COCO, and "mAP", "recall" for PASCAL VOC')
     parser.add_argument('--video', default=None, help='run model on the video rather than the dataset')
     parser.add_argument('--show', action='store_true', help='visualize results')
     parser.add_argument('--score_thr', type=float, default=0.3,
