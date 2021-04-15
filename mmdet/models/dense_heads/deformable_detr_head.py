@@ -3,7 +3,7 @@ import copy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Linear
+from mmcv.cnn import Linear, bias_init_with_prob, constant_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply
@@ -52,25 +52,37 @@ class DeformableDETRHead(DETRHead):
 
         if self.with_box_refine:
 
-            self.fc_cls = _get_clones(fc_cls, num_pred)
+            self.cls_branch = _get_clones(fc_cls, num_pred)
             self.reg_branch = _get_clones(reg_branch, num_pred)
+            # TODO find a better way, set_refine_head??
+            self.transformer.decoder.bbox_embed = self.bbox_embed
         else:
-            # TODO check this
-            # nn.init.constant_(self.bbox_embed.layers[-1].bias.data[2:], -2.0)
+
             self.cls_branch = nn.ModuleList([fc_cls for _ in range(num_pred)])
             self.reg_branch = nn.ModuleList(
                 [reg_branch for _ in range(num_pred)])
+            # TODO find a better way
             self.transformer.decoder.bbox_embed = None
 
         if not self.as_two_stage:
             self.query_embedding = nn.Embedding(self.num_query,
                                                 self.embed_dims * 2)
 
-    def init_weights(self, distribution='uniform'):
-        """Initialize weights of the transformer head."""
-        # The initialization for transformer i important
-        # TODO
-        pass
+    def init_weights(self):
+        """Initialize weights of the DeformDETR head."""
+        self.transformer.init_weight()
+        if self.loss_cls.use_sigmoid:
+            bias_init = bias_init_with_prob(0.01)
+            for m in self.cls_branch:
+                nn.init.constant_(m.bias, bias_init)
+        for m in self.reg_branch:
+            constant_init(m[-1], 0, bias=0)
+        nn.init.constant_(self.reg_branch[0][-1].bias.data[2:], -2.0)
+        if self.as_two_stage:
+            # TODO find a better way, set cls_branch??
+            self.transformer.decoder.class_embed = self.cls_branch
+            for m in self.reg_branch:
+                nn.init.constant_(m.layers[-1].bias.data[2:], 0.0)
 
     def forward(self, mlvl_feats, img_metas):
         """Forward function.
