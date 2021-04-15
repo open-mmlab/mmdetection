@@ -85,28 +85,27 @@ class SemanticHead(nn.Module):
         # only surport 1 batch
         seg_preds = seg_preds[:, :, 0:img_shape_withoutpad[0],
                               0:img_shape_withoutpad[1]]
-        segm_pred_map = F.softmax(seg_preds, 1)
-        segm_pred_map = F.interpolate(
-            segm_pred_map,
+        seg_masks = F.softmax(seg_preds, 1)
+        seg_masks = F.interpolate(
+            seg_masks,
             size=ori_shape[0:2],
             mode='bilinear',
             align_corners=False)
-        segm_pred_map = torch.max(segm_pred_map, 1).indices
-        segm_pred_map = segm_pred_map.float()
-        segm_pred_map = segm_pred_map[0]
+        seg_masks = torch.max(seg_masks, 1).indices
+        seg_masks = seg_masks.float()
+        seg_masks = seg_masks[0]
 
-        segm_pred_map = segm_pred_map.cpu().numpy()
-        segm_pred_map_unique = np.unique(segm_pred_map).astype(np.int)
-        cls_segms = [[] for _ in range(self.num_classes - 1)]
+        seg_masks = seg_masks.cpu().numpy()
+        unique_seg_masks = np.unique(seg_masks).astype(np.int)
+        seg_results = [[] for _ in range(self.num_classes - 1)]
 
-        for i in segm_pred_map_unique:
+        for i in unique_seg_masks:
             if i == 0:
                 continue
-            cls_im_mask = np.zeros(
-                (ori_shape[0], ori_shape[1])).astype(np.uint8)
-            cls_im_mask[segm_pred_map == i] = 1
+            cls_mask = np.zeros((ori_shape[0], ori_shape[1])).astype(np.uint8)
+            cls_mask[seg_masks == i] = 1
             rle = mask_util.encode(
-                np.array(cls_im_mask[:, :, np.newaxis], order='F'))[0]
-            cls_segms[i - 1].append(rle)
+                np.array(cls_mask[:, :, np.newaxis], order='F'))[0]
+            seg_results[i - 1].append(rle)
 
-        return cls_segms
+        return seg_results
