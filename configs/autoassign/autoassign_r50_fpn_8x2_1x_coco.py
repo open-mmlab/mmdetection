@@ -23,6 +23,7 @@ model = dict(
         start_level=1,
         add_extra_convs=True,
         extra_convs_on_inputs=True,
+        caffe2_xavier_init=True,
         num_outs=5,
         relu_before_extra_convs=True),
     bbox_head=dict(
@@ -69,7 +70,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    train=dict(pipeline=train_pipeline, filter_only_ignore=True),
+    train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 # optimizer
