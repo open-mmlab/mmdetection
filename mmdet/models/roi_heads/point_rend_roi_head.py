@@ -78,18 +78,25 @@ class PointRendRoIHead(StandardRoIHead):
             feats = x[idx]
             spatial_scale = 1. / float(
                 self.mask_roi_extractor.featmap_strides[idx])
-            point_feats = []
-            for batch_ind in range(num_imgs):
-                # unravel batch dim
-                feat = feats[batch_ind].unsqueeze(0)
-                inds = (rois[:, 0].long() == batch_ind)
-                if inds.any():
-                    rel_img_points = rel_roi_point_to_rel_img_point(
-                        rois[inds], rel_roi_points[inds], feat.shape[2:],
-                        spatial_scale).unsqueeze(0)
-                    point_feat = point_sample(feat, rel_img_points)
-                    point_feat = point_feat.squeeze(0).transpose(0, 1)
-                    point_feats.append(point_feat)
+            if torch.onnx.is_in_onnx_export():
+                feat = feats[0].unsqueeze(0)
+                rel_img_points = rel_roi_point_to_rel_img_point(
+                    rois, rel_roi_points, feat, spatial_scale).unsqueeze(0)
+                point_feat = point_sample(feat, rel_img_points)
+                point_feats = [point_feat.squeeze(0).transpose(0, 1)]
+            else:
+                point_feats = []
+                for batch_ind in range(num_imgs):
+                    # unravel batch dim
+                    feat = feats[batch_ind].unsqueeze(0)
+                    inds = (rois[:, 0].long() == batch_ind)
+                    if inds.any():
+                        rel_img_points = rel_roi_point_to_rel_img_point(
+                            rois[inds], rel_roi_points[inds], feat,
+                            spatial_scale).unsqueeze(0)
+                        point_feat = point_sample(feat, rel_img_points)
+                        point_feat = point_feat.squeeze(0).transpose(0, 1)
+                        point_feats.append(point_feat)
             fine_grained_feats.append(torch.cat(point_feats, dim=0))
         return torch.cat(fine_grained_feats, dim=1)
 
@@ -162,8 +169,12 @@ class PointRendRoIHead(StandardRoIHead):
             # split batch mask prediction back to each image
             mask_pred = mask_results['mask_pred']
             num_mask_roi_per_img = [len(det_bbox) for det_bbox in det_bboxes]
-            mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
-            mask_rois = mask_rois.split(num_mask_roi_per_img, 0)
+            if torch.onnx.is_in_onnx_export():
+                mask_preds = [mask_pred]
+                mask_rois = [mask_rois]
+            else:
+                mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
+                mask_rois = mask_rois.split(num_mask_roi_per_img, 0)
 
             # apply mask post-processing to each image individually
             segm_results = []
@@ -174,7 +185,8 @@ class PointRendRoIHead(StandardRoIHead):
                 else:
                     x_i = [xx[[i]] for xx in x]
                     mask_rois_i = mask_rois[i]
-                    mask_rois_i[:, 0] = 0  # TODO: remove this hack
+                    if not torch.onnx.is_in_onnx_export():
+                        mask_rois_i[:, 0] = 0  # TODO: remove this hack
                     mask_pred_i = self._mask_point_forward_test(
                         x_i, mask_rois_i, det_labels[i], mask_preds[i],
                         [img_metas])

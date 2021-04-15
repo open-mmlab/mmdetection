@@ -154,7 +154,7 @@ class MaskPointHead(nn.Module):
                     0, pos_assigned_gt_inds))
             gt_masks_th = gt_masks_th.unsqueeze(1)
             rel_img_points = rel_roi_point_to_rel_img_point(
-                rois, rel_roi_points, gt_masks_th.shape[2:])
+                rois, rel_roi_points, gt_masks_th)
             point_targets = point_sample(gt_masks_th,
                                          rel_img_points).squeeze(1)
         else:
@@ -285,16 +285,18 @@ class MaskPointHead(nn.Module):
         num_points = cfg.subdivision_num_points
         uncertainty_map = self._get_uncertainty(mask_pred, pred_label)
         num_rois, _, mask_height, mask_width = uncertainty_map.shape
-        h_step = 1.0 / mask_height
-        w_step = 1.0 / mask_width
+        if isinstance(mask_height, torch.Tensor):
+            h_step = 1.0 / mask_height.float()
+            w_step = 1.0 / mask_width.float()
+        else:
+            h_step = 1.0 / mask_height
+            w_step = 1.0 / mask_width
 
         uncertainty_map = uncertainty_map.view(num_rois,
                                                mask_height * mask_width)
         num_points = min(mask_height * mask_width, num_points)
         point_indices = uncertainty_map.topk(num_points, dim=1)[1]
-        point_coords = uncertainty_map.new_zeros(num_rois, num_points, 2)
-        point_coords[:, :, 0] = w_step / 2.0 + (point_indices %
-                                                mask_width).float() * w_step
-        point_coords[:, :, 1] = h_step / 2.0 + (point_indices //
-                                                mask_width).float() * h_step
+        a = w_step / 2.0 + (point_indices.long() % mask_width).float() * w_step
+        b = h_step / 2.0 + (point_indices.long() // mask_width).float() * h_step
+        point_coords = torch.stack([a, b], dim=2)
         return point_indices, point_coords
