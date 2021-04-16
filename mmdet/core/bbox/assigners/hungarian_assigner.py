@@ -42,16 +42,12 @@ class HungarianAssigner(BaseAssigner):
     """
 
     def __init__(self,
-                 cls_cost=dict(type='ClsSoftmaxCost', weight=1.),
+                 cls_cost=dict(type='ClassificationCost', weight=1.),
                  reg_cost=dict(type='BBoxL1Cost', weight=1.0),
-                 iou_cost=dict(
-                     type='IoUBasedCost',
-                     iou_mode='giou',
-                     iou_calculator=dict(type='BboxOverlaps2D'),
-                     weight=1.0)):
-        self.cls_cost_func = build_match_cost(cls_cost)
-        self.reg_cost_func = build_match_cost(reg_cost)
-        self.iou_cost_func = build_match_cost(iou_cost)
+                 iou_cost=dict(type='IoUCost', iou_mode='giou', weight=1.0)):
+        self.cls_cost = build_match_cost(cls_cost)
+        self.reg_cost = build_match_cost(reg_cost)
+        self.iou_cost = build_match_cost(iou_cost)
 
     def assign(self,
                bbox_pred,
@@ -113,22 +109,26 @@ class HungarianAssigner(BaseAssigner):
             return AssignResult(
                 num_gts, assigned_gt_inds, None, labels=assigned_labels)
         img_h, img_w, _ = img_meta['img_shape']
-        factor = torch.Tensor([img_w, img_h, img_w,
-                               img_h]).unsqueeze(0).to(gt_bboxes.device)
+        factor = gt_bboxes.new_tensor([img_w, img_h, img_w,
+                                       img_h]).unsqueeze(0)
 
         # 2. compute the weighted costs
         # classification and bboxcost.
-        cls_cost = self.cls_cost_func(cls_pred, gt_labels)
+        cls_cost = self.cls_cost(cls_pred, gt_labels)
         # regression L1 cost
-        bbox_cost = self.reg_cost_func(bbox_pred, gt_bboxes, factor)
+        normalize_gt_bboxes = gt_bboxes / factor
+        reg_cost = self.reg_cost(bbox_pred, normalize_gt_bboxes)
         # regression iou cost, defaultly giou is used in official DETR.
         bboxes = bbox_cxcywh_to_xyxy(bbox_pred) * factor
-        iou_cost = self.iou_cost_func(bboxes, gt_bboxes)
+        iou_cost = self.iou_cost(bboxes, gt_bboxes)
         # weighted sum of above three costs
-        cost = cls_cost + bbox_cost + iou_cost
+        cost = cls_cost + reg_cost + iou_cost
 
         # 3. do Hungarian matching on CPU using linear_sum_assignment
         cost = cost.detach().cpu()
+        if linear_sum_assignment is None:
+            raise ImportError('Please run "pip install scipy" '
+                              'to install scipy first.')
         matched_row_inds, matched_col_inds = linear_sum_assignment(cost)
         matched_row_inds = torch.from_numpy(matched_row_inds).to(
             bbox_pred.device)

@@ -187,6 +187,7 @@ class CustomDataset(Dataset):
             dict: Training/test data (with annotation if `test_mode` is set \
                 True).
         """
+
         if self.test_mode:
             return self.prepare_test_img(idx)
         while True:
