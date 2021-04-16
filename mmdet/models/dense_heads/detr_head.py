@@ -591,12 +591,6 @@ class DETRHead(AnchorFreeHead):
                                                 img_shape, scale_factor,
                                                 rescale)
             result_list.append(proposals)
-        import mmcv
-        mmcv.imshow_det_bboxes(
-            img_metas[0]['filename'],
-            result_list[0][0][:10].cpu().numpy(),
-            result_list[0][1][:10].cpu().numpy(),
-            win_name='re')
 
         return result_list
 
