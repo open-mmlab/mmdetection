@@ -1,5 +1,73 @@
 ## Changelog
 
+### v2.11. (01/4/2021)
+
+**Highlights**
+
+- Support new method: [Localization Distillation for Object Detection](https://arxiv.org/pdf/2102.12252.pdf)
+- Support Pytorch2ONNX with batch inference and dynamic shape
+
+**New Features**
+
+- Support localization distillation for object detection (#4758)
+- Support Pytorch2ONNX with batch inference and dynamic shape for Faster-RCNN and mainstream one-stage detectors (#4796)
+- Add Deformable Conv2d TensorRT plugin (#858)
+
+**Improvements**
+
+- Support batch inference in head of RetinaNet (#4699)
+- Add batch dimension in second stage of Faster-RCNN (#4785)
+- Support batch inference in bbox coder (#4721)
+- Add check for `ann_ids` in `COCODataset` to ensure it is unique (#4789)
+- support for showing the FPN results (#4716)
+- support dynamic shape for grid_anchor (#4684)
+- Support automatic statistical evaluation results and export them to EXCEL (#4693)
+- Move pycocotools version check to when it is used (#4880)
+
+**Bug Fixes**
+
+- Fix a bug of TridentNet when doing the batch inference (#4717)
+- Fix a bug of Pytorch2ONNX in FASF (#4735)
+- Fix a bug when show the image with float type (#4732)
+
+### v2.10.0 (01/03/2021)
+
+#### Highlights
+
+- Support new methods: [FPG](https://arxiv.org/abs/2004.03580)
+- Support ONNX2TensorRT for SSD, FSAF, FCOS, YOLOv3, and Faster R-CNN.
+
+#### New Features
+
+- Support ONNX2TensorRT for SSD, FSAF, FCOS, YOLOv3, and Faster R-CNN (#4569)
+- Support [Feature Pyramid Grids (FPG)](https://arxiv.org/abs/2004.03580) (#4645)
+- Support video demo (#4420)
+- Add seed option for sampler (#4665)
+- Support to customize type of runner (#4570, #4669)
+- Support synchronizing BN buffer in `EvalHook` (#4582)
+- Add script for GIF demo (#4573)
+
+#### Bug Fixes
+
+- Fix ConfigDict AttributeError and add Colab link (#4643)
+- Avoid crash in empty gt training of GFL head (#4631)
+- Fix `iou_thrs` bug in RPN evaluation (#4581)
+- Fix syntax error of config when upgrading model version (#4584)
+
+#### Improvements
+
+- Refactor unit test file structures (#4600)
+- Refactor nms config (#4636)
+- Get loading pipeline by checking the class directly rather than through config strings (#4619)
+- Add doctests for mask target generation and mask structures (#4614)
+- Use deep copy when copying pipeline arguments (#4621)
+- Update documentations (#4642, #4650, #4620, #4630)
+- Remove redundant code calling `import_modules_from_strings` (#4601)
+- Clean deprecated FP16 API (#4571)
+- Check whether `CLASSES` is correctly initialized in the intialization of `XMLDataset` (#4555)
+- Support batch inference in the inference API (#4462, #4526)
+- Clean deprecated warning and fix 'meta' error (#4695)
+
 ### v2.9.0 (01/02/2021)
 
 #### Highlights
@@ -355,7 +423,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Implement FCOS training tricks (#2935)
 - Use BaseDenseHead as base class for anchor-base heads (#2963)
 - Add `with_cp` for BasicBlock (#2891)
-- Add `stem_channles` argument for ResNet (#2954)
+- Add `stem_channels` argument for ResNet (#2954)
 
 **Improvements**
 

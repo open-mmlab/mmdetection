@@ -10,7 +10,7 @@
 
 [English](README.md) | 简体中文
 
-MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 OpenMMLab 项目的一部分，这个项目由香港中文大学多媒体实验室和商汤科技联合发起。
+MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
 
 主分支代码目前支持 PyTorch 1.3 以上的版本。
 
@@ -44,7 +44,7 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 
 ## 更新日志
 
-最新的月度版本 v2.9.0 在 2021.02.01 发布。
+最新的月度版本 v2.11.0 在 2021.04.01 发布。
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 在[兼容性说明文档](docs/compatibility.md)中我们提供了 1.x 和 2.0 版本的详细比较。
 

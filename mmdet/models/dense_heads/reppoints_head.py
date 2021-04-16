@@ -167,7 +167,7 @@ class RepPointsHead(AnchorFreeHead):
 
         :param pts: the input points sets (fields), each points
             set (fields) is represented as 2n scalar.
-        :param y_first: if y_fisrt=True, the point set is represented as
+        :param y_first: if y_first=True, the point set is represented as
             [y1, x1, y2, x2 ... yn, xn], otherwise the point set is
             represented as [x1, y1, x2, y2 ... xn, yn].
         :return: each points set is converting to a bbox [x1, y1, x2, y2].

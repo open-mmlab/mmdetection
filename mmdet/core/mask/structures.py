@@ -23,7 +23,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The rescaled masks.
         """
-        pass
 
     @abstractmethod
     def resize(self, out_shape, interpolation='nearest'):
@@ -36,7 +35,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The resized masks.
         """
-        pass
 
     @abstractmethod
     def flip(self, flip_direction='horizontal'):
@@ -48,7 +46,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The flipped masks.
         """
-        pass
 
     @abstractmethod
     def pad(self, out_shape, pad_val):
@@ -61,7 +58,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The padded masks.
         """
-        pass
 
     @abstractmethod
     def crop(self, bbox):
@@ -73,7 +69,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Return:
             BaseInstanceMasks: The cropped masks.
         """
-        pass
 
     @abstractmethod
     def crop_and_resize(self,
@@ -99,18 +94,15 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Return:
             BaseInstanceMasks: the cropped and resized masks.
         """
-        pass
 
     @abstractmethod
     def expand(self, expanded_h, expanded_w, top, left):
         """see :class:`Expand`."""
-        pass
 
     @property
     @abstractmethod
     def areas(self):
         """ndarray: areas of each instance."""
-        pass
 
     @abstractmethod
     def to_ndarray(self):
@@ -119,7 +111,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Return:
             ndarray: Converted masks in the format of ndarray.
         """
-        pass
 
     @abstractmethod
     def to_tensor(self, dtype, device):
@@ -132,7 +123,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Tensor: Converted masks in the format of Tensor.
         """
-        pass
 
     @abstractmethod
     def translate(self,
@@ -154,7 +144,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Translated masks.
         """
-        pass
 
     def shear(self,
               out_shape,
@@ -176,7 +165,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             ndarray: Sheared masks.
         """
-        pass
 
     @abstractmethod
     def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
@@ -195,7 +183,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Rotated masks.
         """
-        pass
 
 
 class BitmapMasks(BaseInstanceMasks):

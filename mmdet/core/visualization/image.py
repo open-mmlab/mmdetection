@@ -1,5 +1,3 @@
-import warnings
-
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
@@ -37,7 +35,6 @@ def imshow_det_bboxes(img,
                       text_color='green',
                       mask_color=None,
                       thickness=2,
-                      font_scale=0.5,
                       font_size=13,
                       win_name='',
                       show=True,
@@ -61,7 +58,6 @@ def imshow_det_bboxes(img,
            Color of masks. The tuple of color should be in BGR order.
            Default: None
         thickness (int): Thickness of lines. Default: 2
-        font_scale (float): Font scales of texts. Default: 0.5
         font_size (int): Font size of texts. Default: 13
         show (bool): Whether to show the image. Default: True
         win_name (str): The window name. Default: ''
@@ -72,8 +68,6 @@ def imshow_det_bboxes(img,
     Returns:
         ndarray: The image with bboxes drawn on it.
     """
-    warnings.warn('"font_scale" will be deprecated in v2.9.0,'
-                  'Please use "font_size"')
     assert bboxes.ndim == 2, \
         f' bboxes ndim should be 2, but its ndim is {bboxes.ndim}.'
     assert labels.ndim == 1, \
@@ -82,7 +76,7 @@ def imshow_det_bboxes(img,
         'bboxes.shape[0] and labels.shape[0] should have the same length.'
     assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5, \
         f' bboxes.shape[1] should be 4 or 5, but its {bboxes.shape[1]}.'
-    img = mmcv.imread(img)
+    img = mmcv.imread(img).astype(np.uint8)
 
     if score_thr > 0:
         assert bboxes.shape[1] == 5
