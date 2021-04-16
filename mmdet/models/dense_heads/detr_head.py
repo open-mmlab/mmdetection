@@ -354,8 +354,12 @@ class DETRHead(AnchorFreeHead):
         cls_avg_factor = reduce_mean(cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)
 
+        # TODO move this to deform detr
         loss_cls = self.loss_cls(
-            cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
+            cls_scores,
+            labels,
+            label_weights,
+            avg_factor=(cls_avg_factor * self.num_query))
 
         # Compute the average number of gt boxes accross all gpus, for
         # normalization purposes
