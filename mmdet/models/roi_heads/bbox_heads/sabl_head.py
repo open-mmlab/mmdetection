@@ -244,13 +244,13 @@ class SABLHead(nn.Module):
         reg_fy = torch.transpose(reg_fy, 1, 2)
         return reg_fx.contiguous(), reg_fy.contiguous()
 
-    def reg_pred(self, x, offfset_fcs, cls_fcs):
-        """Predict bucketing esimation (cls_pred) and fine regression (offset
+    def reg_pred(self, x, offset_fcs, cls_fcs):
+        """Predict bucketing estimation (cls_pred) and fine regression (offset
         pred) with side-aware features."""
         x_offset = x.view(-1, self.reg_in_channels)
         x_cls = x.view(-1, self.reg_in_channels)
 
-        for fc in offfset_fcs:
+        for fc in offset_fcs:
             x_offset = self.relu(fc(x_offset))
         for fc in cls_fcs:
             x_cls = self.relu(fc(x_cls))

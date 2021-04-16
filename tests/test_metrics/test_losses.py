@@ -78,6 +78,37 @@ def test_varifocal_loss():
         loss_cls(fake_pred, fake_target, fake_weight), torch.tensor(0.0))
 
 
+def test_kd_loss():
+    # test that temeprature should be greater than 1
+    with pytest.raises(AssertionError):
+        loss_cfg = dict(
+            type='KnowledgeDistillationKLDivLoss', loss_weight=1.0, T=0.5)
+        build_loss(loss_cfg)
+
+    # test that pred and target should be of the same size
+    loss_cls_cfg = dict(
+        type='KnowledgeDistillationKLDivLoss', loss_weight=1.0, T=1)
+    loss_cls = build_loss(loss_cls_cfg)
+    with pytest.raises(AssertionError):
+        fake_pred = torch.Tensor([[100, -100]])
+        fake_label = torch.Tensor([1]).long()
+        loss_cls(fake_pred, fake_label)
+
+    # test the calculation
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[100.0, 100.0]])
+    fake_target = torch.Tensor([[1.0, 1.0]])
+    assert torch.allclose(loss_cls(fake_pred, fake_target), torch.tensor(0.0))
+
+    # test the loss with weights
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[100.0, -100.0], [100.0, 100.0]])
+    fake_target = torch.Tensor([[1.0, 0.0], [1.0, 1.0]])
+    fake_weight = torch.Tensor([0.0, 1.0])
+    assert torch.allclose(
+        loss_cls(fake_pred, fake_target, fake_weight), torch.tensor(0.0))
+
+
 def test_accuracy():
     # test for empty pred
     pred = torch.empty(0, 4)

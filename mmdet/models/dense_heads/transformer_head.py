@@ -582,7 +582,7 @@ class TransformerHead(AnchorFreeHead):
                 [nb_dec, bs, num_query, 4].
             img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
-                image space. Defalut False.
+                image space. Default False.
 
         Returns:
             list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
@@ -593,7 +593,7 @@ class TransformerHead(AnchorFreeHead):
                 the corresponding box.
         """
         # NOTE defaultly only using outputs from the last feature level,
-        # and only the ouputs from the last decoder layer is used.
+        # and only the outputs from the last decoder layer is used.
         cls_scores = all_cls_scores_list[-1][-1]
         bbox_preds = all_bbox_preds_list[-1][-1]
 

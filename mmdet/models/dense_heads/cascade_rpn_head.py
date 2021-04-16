@@ -53,7 +53,7 @@ class AdaptiveConv(nn.Module):
         assert kernel_size == 3, 'Adaptive conv only supports kernels 3'
         if self.adapt_type == 'offset':
             assert stride == 1 and padding == 1 and groups == 1, \
-                'Addptive conv offset mode only supports padding: {1}, ' \
+                'Adaptive conv offset mode only supports padding: {1}, ' \
                 f'stride: {1}, groups: {1}'
             self.conv = DeformConv2d(
                 in_channels,
@@ -99,7 +99,7 @@ class StageCascadeRPNHead(RPNHead):
         in_channels (int): Number of channels in the input feature map.
         anchor_generator (dict): anchor generator config.
         adapt_cfg (dict): adaptation config.
-        bridged_feature (bool, optional): wheater update rpn feature.
+        bridged_feature (bool, optional): whether update rpn feature.
             Default: False.
         with_cls (bool, optional): wheather use classification branch.
             Default: True.
@@ -471,7 +471,7 @@ class StageCascadeRPNHead(RPNHead):
             num_total_samples = num_total_pos + num_total_neg
         else:
             # 200 is hard-coded average factor,
-            # which follows guilded anchoring.
+            # which follows guided anchoring.
             num_total_samples = sum([label.numel()
                                      for label in labels_list]) / 200.0
 

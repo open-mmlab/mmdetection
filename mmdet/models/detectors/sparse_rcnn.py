@@ -46,7 +46,7 @@ class SparseRCNN(TwoStageDetector):
 
         assert proposals is None, 'Sparse R-CNN does not support' \
                                   ' external proposals'
-        assert gt_masks is None, 'Sparse R-CNN does not instance segmenntaion'
+        assert gt_masks is None, 'Sparse R-CNN does not instance segmentation'
 
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \
