@@ -133,11 +133,12 @@ class NumClassCheckHook(Hook):
             for name, module in model.named_modules():
                 if hasattr(module, 'num_classes') and not isinstance(
                         module, (RPNHead, VGG, FusedSemanticHead, GARPNHead)):
-                    if type(dataset.CLASSES) is str:
-                        len_dataset_classes = 1
-                    else:
-                        len_dataset_classes = len(dataset.CLASSES)
-                    assert module.num_classes == len_dataset_classes, \
+                    assert type(dataset.CLASSES) is not str, \
+                        (f'`CLASSES` in {dataset.__class__.__name__}'
+                         f'should be a tuple of str.'
+                         f'Add comma if number of classes is 1 as '
+                         f'CLASSES = ({dataset.CLASSES},)')
+                    assert module.num_classes == len(dataset.CLASSES), \
                         (f'The `num_classes` ({module.num_classes}) in '
                          f'{module.__class__.__name__} of '
                          f'{model.__class__.__name__} does not matches '
