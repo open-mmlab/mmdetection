@@ -86,8 +86,12 @@ def train_detector(model,
             seed=cfg.seed) for ds in dataset
     ]
 
+    map_location = 'default'
+    if not torch.cuda.is_available():
+        map_location = 'cpu'
+
     if cfg.load_from:
-        load_checkpoint(model=model, filename=cfg.load_from)
+        load_checkpoint(model=model, filename=cfg.load_from, map_location=map_location)
 
     # put model on gpus
     if torch.cuda.is_available():
@@ -100,7 +104,6 @@ def train_detector(model,
     else:
         compression_ctrl = None
 
-    map_location = 'default'
     if torch.cuda.is_available():
         if distributed:
             # put model on gpus
@@ -117,7 +120,6 @@ def train_detector(model,
                 model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
     else:
         model = MMDataCPU(model)
-        map_location = 'cpu'
 
     if nncf_enable_compression and distributed:
         compression_ctrl.distributed()
