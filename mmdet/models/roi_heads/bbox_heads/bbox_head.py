@@ -374,7 +374,7 @@ class BBoxHead(nn.Module):
             offsets = (labels * max_size + 1).unsqueeze(2)
             bboxes_for_nms = bboxes + offsets
             max_output_boxes_per_class = cfg.nms.get(
-                'max_output_boxes_per_class', 200)
+                'max_output_boxes_per_class', cfg.max_per_img)
             iou_threshold = cfg.nms.get('iou_threshold', 0.5)
             score_threshold = cfg.score_thr
             nms_pre = cfg.get('deploy_nms_pre', -1)

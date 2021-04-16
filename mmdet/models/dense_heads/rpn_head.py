@@ -225,7 +225,8 @@ class RPNHead(RPNTestMixin, AnchorHead):
                                              batch_mlvl_scores,
                                              cfg.max_per_img,
                                              cfg.nms.iou_threshold,
-                                             score_threshold, nms_pre)
+                                             score_threshold, nms_pre,
+                                             cfg.max_per_img)
             return dets
 
         result_list = []
