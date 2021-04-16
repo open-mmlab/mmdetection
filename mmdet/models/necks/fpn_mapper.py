@@ -14,8 +14,8 @@ def generate_coord(input_feat):
     y, x = torch.meshgrid(y_range, x_range)
     y = y.expand([input_feat.shape[0], 1, -1, -1])
     x = x.expand([input_feat.shape[0], 1, -1, -1])
-    coord_feat = torch.cat([x, y], 1)
-    return coord_feat
+    coord_feats = torch.cat([x, y], 1)
+    return coord_feats
 
 
 @NECKS.register_module()
@@ -54,6 +54,7 @@ class SemanticFPN(nn.Module):
                  cat_coors_level=3,
                  return_list=False,
                  upsample_times=3,
+                 with_pred=False,
                  out_act_cfg=dict(type='ReLU'),
                  conv_cfg=None,
                  norm_cfg=None):
@@ -70,6 +71,7 @@ class SemanticFPN(nn.Module):
         self.cat_coors_level = cat_coors_level
         self.return_list = return_list
         self.upsample_times = upsample_times
+        self.with_pred = with_pred
 
         self.convs_all_levels = nn.ModuleList()
         for i in range(self.start_level, self.end_level + 1):
@@ -145,14 +147,15 @@ class SemanticFPN(nn.Module):
 
             self.convs_all_levels.append(convs_per_level)
 
-        self.conv_pred = ConvModule(
-            in_channels,
-            self.out_channels,
-            1,
-            padding=0,
-            conv_cfg=self.conv_cfg,
-            act_cfg=out_act_cfg,
-            norm_cfg=self.norm_cfg)
+        if self.with_pred:
+            self.conv_pred = ConvModule(
+                in_channels,
+                self.out_channels,
+                1,
+                padding=0,
+                conv_cfg=self.conv_cfg,
+                act_cfg=out_act_cfg,
+                norm_cfg=self.norm_cfg)
 
     def init_weights(self):
         for m in self.modules():
@@ -162,21 +165,22 @@ class SemanticFPN(nn.Module):
     def forward(self, inputs):
         mlvl_feats = []
         for i in range(self.start_level, self.end_level + 1):
-            input_p = inputs[i]
+            x = inputs[i]
             if i == self.cat_coors_level:
                 if self.cat_coors:
-                    coord_feat = generate_coord(input_p)
-                    input_p = torch.cat([input_p, coord_feat], 1)
+                    coord_feats = generate_coord(x)
+                    x = torch.cat([x, coord_feats], 1)
 
-            mlvl_feats.append(self.convs_all_levels[i](input_p))
+            mlvl_feats.append(self.convs_all_levels[i](x))
 
-        feature_add_all_level = sum(mlvl_feats)
-        feature_pred = self.conv_pred(feature_add_all_level)
+        out = sum(mlvl_feats)
+        if self.with_pred:
+            out = self.conv_pred(out)
 
         if self.return_list:
-            return [feature_pred]
+            return [out]
         else:
-            return feature_pred
+            return out
 
 
 @NECKS.register_module()

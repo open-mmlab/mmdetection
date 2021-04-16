@@ -68,7 +68,7 @@ class SemanticHead(nn.Module):
             mask_pred, labels, ignore_index=self.ignore_label)
         return loss_semantic_seg
 
-    def get_semantic_segm(self, seg_preds, ori_shape, img_shape_withoutpad):
+    def get_semantic_seg(self, seg_preds, ori_shape, img_shape_withoutpad):
         """Obtain semantic segmentation map for panoptic segmentation.
 
         Args:
