@@ -157,7 +157,7 @@ class DETRHead(AnchorFreeHead):
     def init_weights(self):
         """Initialize weights of the transformer head."""
         # The initialization for transformer is important
-        self.transformer.init_weights()
+        self.transformer.init_weight()
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
@@ -595,6 +595,7 @@ class DETRHead(AnchorFreeHead):
                                                 img_shape, scale_factor,
                                                 rescale)
             result_list.append(proposals)
+
         return result_list
 
     def _get_bboxes_single(
@@ -641,7 +642,7 @@ class DETRHead(AnchorFreeHead):
             bbox_pred = bbox_pred[bbox_index]
         else:
             scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
-            _, bbox_index = scores.topk(max_per_img)
+            scores, bbox_index = scores.topk(max_per_img)
             bbox_pred = bbox_pred[bbox_index]
             det_labels = det_labels[bbox_index]
 

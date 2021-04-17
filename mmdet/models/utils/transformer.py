@@ -323,11 +323,12 @@ class Transformer(BaseModule):
         self.decoder = build_transformer_layer_sequence(decoder)
         self.embed_dims = self.encoder.embed_dims
 
-    def init_weights(self):
+    def init_weight(self):
         # follow the official DETR to init parameters
         for m in self.modules():
             if hasattr(m, 'weight') and m.weight.dim() > 1:
                 xavier_init(m, distribution='uniform')
+        self._is_init = True
 
     def forward(self, x, mask, query_embed, pos_embed):
         """Forward function for `Transformer`.
