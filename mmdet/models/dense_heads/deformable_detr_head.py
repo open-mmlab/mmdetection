@@ -47,22 +47,18 @@ class DeformableDETRHead(DETRHead):
         def _get_clones(module, N):
             return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
 
+        # last reg_branch is used to generate proposal when as_two_stage
         num_pred = (self.transformer.decoder.num_layers + 1) if \
             self.as_two_stage else self.transformer.decoder.num_layers
 
         if self.with_box_refine:
-
             self.cls_branch = _get_clones(fc_cls, num_pred)
             self.reg_branch = _get_clones(reg_branch, num_pred)
-            # TODO find a better way, set_refine_head??
-            self.transformer.decoder.bbox_embed = self.bbox_embed
         else:
 
             self.cls_branch = nn.ModuleList([fc_cls for _ in range(num_pred)])
             self.reg_branch = nn.ModuleList(
                 [reg_branch for _ in range(num_pred)])
-            # TODO find a better way
-            self.transformer.decoder.bbox_embed = None
 
         if not self.as_two_stage:
             self.query_embedding = nn.Embedding(self.num_query,
@@ -130,7 +126,9 @@ class DeformableDETRHead(DETRHead):
                     mlvl_feats,
                     mlvl_masks,
                     query_embeds,
-                    mlvl_positional_encodings)
+                    mlvl_positional_encodings,
+                    reg_branchs=self.reg_branch if self.with_box_refine else None  # noqa:E501
+            )
         hs = hs.permute(0, 2, 1, 3)
         outputs_classes = []
         outputs_coords = []
