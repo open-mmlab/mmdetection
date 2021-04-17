@@ -25,8 +25,7 @@ class DeformableDETRHead(DETRHead):
         self.as_two_stage = as_two_stage
         self.aux_loss = aux_loss
         if self.as_two_stage:
-            assert 'as_two_stage' in transformer and \
-                   transformer['as_two_stage'] == self.as_two_stage
+            transformer['as_two_stage'] = self.as_two_stage
 
         super(DeformableDETRHead, self).__init__(
             *args, transformer=transformer, **kwargs)
@@ -52,12 +51,13 @@ class DeformableDETRHead(DETRHead):
             self.as_two_stage else self.transformer.decoder.num_layers
 
         if self.with_box_refine:
-            self.cls_branch = _get_clones(fc_cls, num_pred)
-            self.reg_branch = _get_clones(reg_branch, num_pred)
+            self.cls_branches = _get_clones(fc_cls, num_pred)
+            self.reg_branches = _get_clones(reg_branch, num_pred)
         else:
 
-            self.cls_branch = nn.ModuleList([fc_cls for _ in range(num_pred)])
-            self.reg_branch = nn.ModuleList(
+            self.cls_branches = nn.ModuleList(
+                [fc_cls for _ in range(num_pred)])
+            self.reg_branches = nn.ModuleList(
                 [reg_branch for _ in range(num_pred)])
 
         if not self.as_two_stage:
@@ -69,16 +69,14 @@ class DeformableDETRHead(DETRHead):
         self.transformer.init_weight()
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
-            for m in self.cls_branch:
+            for m in self.cls_branches:
                 nn.init.constant_(m.bias, bias_init)
-        for m in self.reg_branch:
+        for m in self.reg_branches:
             constant_init(m[-1], 0, bias=0)
-        nn.init.constant_(self.reg_branch[0][-1].bias.data[2:], -2.0)
+        nn.init.constant_(self.reg_branches[0][-1].bias.data[2:], -2.0)
         if self.as_two_stage:
-            # TODO find a better way, set cls_branch??
-            self.transformer.decoder.class_embed = self.cls_branch
-            for m in self.reg_branch:
-                nn.init.constant_(m.layers[-1].bias.data[2:], 0.0)
+            for m in self.reg_branches:
+                nn.init.constant_(m[-1].bias.data[2:], 0.0)
 
     def forward(self, mlvl_feats, img_metas):
         """Forward function.
@@ -127,7 +125,8 @@ class DeformableDETRHead(DETRHead):
                     mlvl_masks,
                     query_embeds,
                     mlvl_positional_encodings,
-                    reg_branchs=self.reg_branch if self.with_box_refine else None  # noqa:E501
+                    reg_branches=self.reg_branches if self.with_box_refine else None,  # noqa:E501
+                    cls_branches=self.cls_branches if self.as_two_stage else None  # noqa:E501
             )
         hs = hs.permute(0, 2, 1, 3)
         outputs_classes = []
@@ -147,8 +146,8 @@ class DeformableDETRHead(DETRHead):
                 reference = inter_references[lvl - 1]
             reference = inverse_sigmoid(reference)
             # TODO check brach
-            outputs_class = self.cls_branch[lvl](hs[lvl])
-            tmp = self.reg_branch[lvl](hs[lvl])
+            outputs_class = self.cls_branches[lvl](hs[lvl])
+            tmp = self.reg_branches[lvl](hs[lvl])
             if reference.shape[-1] == 4:
                 tmp += reference
             else:
