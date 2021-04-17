@@ -54,6 +54,7 @@ def multiclass_nms(multi_bboxes,
         # NonZero not supported  in TensorRT
         # remove low scoring boxes
         valid_mask = scores > score_thr
+        nms_cfg['score_threshold'] = 0
     # multiply score_factor after threshold to preserve more bboxes, improve
     # mAP by 1% for YOLOv3
     if score_factors is not None:
