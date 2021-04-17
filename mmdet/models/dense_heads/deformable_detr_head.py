@@ -159,17 +159,22 @@ class DeformableDETRHead(DETRHead):
 
         outputs_classes = torch.stack(outputs_classes)
         outputs_coords = torch.stack(outputs_coords)
-        return outputs_classes, outputs_coords
+
+        return outputs_classes, outputs_coords, \
+            enc_outputs_class, \
+            enc_outputs_coord_unact.sigmoid()
 
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
     def loss(self,
              all_cls_scores,
              all_bbox_preds,
+             enc_cls_scores,
+             enc_bbox_preds,
              gt_bboxes_list,
              gt_labels_list,
              img_metas,
              gt_bboxes_ignore=None):
-        # TODO remove this
+
         assert gt_bboxes_ignore is None, \
             'Only supports for gt_bboxes_ignore setting to None.'
 
@@ -187,6 +192,17 @@ class DeformableDETRHead(DETRHead):
             all_gt_bboxes_ignore_list)
 
         loss_dict = dict()
+        # loss from proposals
+        if enc_cls_scores is not None:
+            binary_labels_list = [torch.zeros_like(gt_labels_list[0])]
+            enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
+                self.loss_single(enc_cls_scores, enc_bbox_preds,
+                                 gt_bboxes_list, binary_labels_list,
+                                 img_metas, gt_bboxes_ignore)
+            loss_dict['enc_loss_cls'] = enc_loss_cls
+            loss_dict['enc_loss_bbox'] = enc_losses_bbox
+            loss_dict['enc_loss_iou'] = enc_losses_iou
+
         # loss from the last decoder layer
         loss_dict['loss_cls'] = losses_cls[-1]
         loss_dict['loss_bbox'] = losses_bbox[-1]
