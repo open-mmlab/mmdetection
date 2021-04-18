@@ -193,6 +193,7 @@ class DeformableDETRHead(DETRHead):
 
         loss_dict = dict()
         # loss from proposals
+
         if enc_cls_scores is not None:
             binary_labels_list = [torch.zeros_like(gt_labels_list[0])]
             enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
@@ -258,6 +259,8 @@ class DeformableDETRHead(DETRHead):
     def get_bboxes(self,
                    all_cls_scores_list,
                    all_bbox_preds_list,
+                   enc_cls_scores,
+                   enc_bbox_preds,
                    img_metas,
                    rescale=False):
         # TODO remove this
