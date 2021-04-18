@@ -492,14 +492,28 @@ class DeformableDetrTransformer(BaseModule):
 
     def gen_encoder_output_proposals(self, memory, memory_padding_mask,
                                      spatial_shapes):
-        """Generate propoasal from encoded memory.
+        """Generate proposals from encoded memory.
 
         Args:
-            memory
-            memory_padding_mask
-            spatial_shapes
+            memory (Tensor) : The output of encoder,
+                has shape (bs, num_key, embed_dim).  num_key is
+                equal the number of points on feature map from
+                all level.
+            memory_padding_mask (Tensor): Padding mask for memory.
+                has shape (bs, num_key).
+            spatial_shapes (Tensor): The shape of all feature maps.
+                has shape (num_level, 2).
 
-        Retures:
+        Returns:
+            tuple: A tuple of feature map and bbox prediction.
+
+                - output_memory (Tensor): The input of decoder,  \
+                    has shape (bs, num_key, embed_dim).  num_key is \
+                    equal the number of points on feature map from \
+                    all levels.
+                - output_proposals (Tensor): The normalized proposal \
+                    after a inverse sigmoid, has shape \
+                    (bs, num_keys, 4).
         """
 
         N_, S_, C_ = memory.shape
@@ -545,6 +559,21 @@ class DeformableDetrTransformer(BaseModule):
 
     @staticmethod
     def get_reference_points(spatial_shapes, valid_ratios, device):
+        """Get the reference points used in decoder.
+
+        Args:
+            spatial_shapes (Tensor): The shape of all
+                feature maps, has shape (num_level, 2).
+            valid_ratios (Tensor): The radios of valid
+                points on the feature map, has shape
+                (bs, num_levels, 2)
+            device (obj:`device`): The device where
+                reference_points should be.
+
+        Returns:
+            Tensor: reference points used in decoder, has \
+                shape (bs, num_keys, num_levels, 2).
+        """
         reference_points_list = []
         for lvl, (H_, W_) in enumerate(spatial_shapes):
             #  TODO  check this 0.5
@@ -564,6 +593,7 @@ class DeformableDetrTransformer(BaseModule):
         return reference_points
 
     def get_valid_ratio(self, mask):
+        """Get the valid radios of feature maps of all  level."""
         _, H, W = mask.shape
         valid_H = torch.sum(~mask[:, :, 0], 1)
         valid_W = torch.sum(~mask[:, 0, :], 1)
@@ -576,6 +606,7 @@ class DeformableDetrTransformer(BaseModule):
                                proposals,
                                num_pos_feats=128,
                                temperature=10000):
+        """Get the position embedding of proposal."""
         scale = 2 * math.pi
         dim_t = torch.arange(
             num_pos_feats, dtype=torch.float32, device=proposals.device)
@@ -623,9 +654,7 @@ class DeformableDetrTransformer(BaseModule):
                       [bs, embed_dims, h, w].
         """
         assert self.as_two_stage or query_embed is not None
-        # TODO: make all to (num_query, bs, num_dims)
-        # prepare input for encoder
-        # TODO : move these to encoder may be better ?
+
         feat_flatten = []
         mask_flatten = []
         lvl_pos_embed_flatten = []
@@ -657,8 +686,6 @@ class DeformableDetrTransformer(BaseModule):
                                       valid_ratios,
                                       device=feat.device)
 
-        # encoder
-        # TODO change the dim order
         feat_flatten = feat_flatten.permute(1, 0, 2)  # (H*W, bs, embed_dims)
         lvl_pos_embed_flatten = lvl_pos_embed_flatten.permute(
             1, 0, 2)  # (H*W, bs, embed_dims)
@@ -674,16 +701,12 @@ class DeformableDetrTransformer(BaseModule):
             valid_ratios=valid_ratios,
             **kwargs)
 
-        # prepare input for decoder
-        # move these to decoder may be batter ?
         memory = memory.permute(1, 0, 2)
         bs, _, c = memory.shape
         if self.as_two_stage:
             output_memory, output_proposals = \
                 self.gen_encoder_output_proposals(
                     memory, mask_flatten, spatial_shapes)
-
-            # hack implementation for two-stage Deformable DETR
             enc_outputs_class = cls_branches[self.decoder.num_layers](
                 output_memory)
             enc_outputs_coord_unact = \
