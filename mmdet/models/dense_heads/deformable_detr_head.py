@@ -7,23 +7,39 @@ from mmcv.cnn import Linear, bias_init_with_prob, constant_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply
+from mmdet.models.utils.transformer import inverse_sigmoid
 from ..builder import HEADS
 from .detr_head import DETRHead
 
 
 @HEADS.register_module()
 class DeformableDETRHead(DETRHead):
+    """Head of DeformDETR: Deformable DETR: Deformable Transformers for End-to-
+    End Object Detection.
+
+    Code is modified from the `official github repo
+    <https://github.com/fundamentalvision/Deformable-DETR>`_.
+
+    More details can be found in the `paper
+    <https://arxiv.org/abs/2010.04159>`_ .
+
+    Args:
+        with_box_refine (bool): Whether to refine the reference points
+            in the decoder. Defaults to False.
+        as_two_stage (bool) : Whether to generate the proposal from
+            the outputs of encoder.
+        transformer (obj:`ConfigDict`): ConfigDict is used for building
+            the Encoder and Decoder.
+    """
 
     def __init__(self,
                  *args,
                  with_box_refine=False,
                  as_two_stage=False,
                  transformer=None,
-                 aux_loss=True,
                  **kwargs):
         self.with_box_refine = with_box_refine
         self.as_two_stage = as_two_stage
-        self.aux_loss = aux_loss
         if self.as_two_stage:
             transformer['as_two_stage'] = self.as_two_stage
 
@@ -31,22 +47,21 @@ class DeformableDETRHead(DETRHead):
             *args, transformer=transformer, **kwargs)
 
     def _init_layers(self):
-        """Initialize layers of the transformer head."""
+        """Initialize classification branch and regression branch of head."""
 
         fc_cls = Linear(self.embed_dims, self.cls_out_channels)
-
         reg_branch = []
         for _ in range(self.reg_num_fcs):
             reg_branch.append(Linear(self.embed_dims, self.embed_dims))
             reg_branch.append(nn.ReLU())
         reg_branch.append(Linear(self.embed_dims, 4))
-
         reg_branch = nn.Sequential(*reg_branch)
 
         def _get_clones(module, N):
             return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
 
-        # last reg_branch is used to generate proposal when as_two_stage
+        # last reg_branch is used to generate proposal from
+        # encode feature map when as_two_stage is True.
         num_pred = (self.transformer.decoder.num_layers + 1) if \
             self.as_two_stage else self.transformer.decoder.num_layers
 
@@ -82,21 +97,26 @@ class DeformableDETRHead(DETRHead):
         """Forward function.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
+            mlvl_feats (tuple[Tensor]): Features from the upstream
+                network, each is a 4D-tensor with shape
+                (N, C, H, W).
             img_metas (list[dict]): List of image information.
 
         Returns:
-            tuple[list[Tensor], list[Tensor]]: Outputs for all scale levels.
-
-                - all_cls_scores_list (list[Tensor]): Classification scores \
-                    for each scale level. Each is a 4D-tensor with shape \
-                    [nb_dec, bs, num_query, cls_out_channels]. Note \
-                    `cls_out_channels` should includes background.
-                - all_bbox_preds_list (list[Tensor]): Sigmoid regression \
-                    outputs for each scale level. Each is a 4D-tensor with \
-                    normalized coordinate format (cx, cy, w, h) and shape \
-                    [nb_dec, bs, num_query, 4].
+            all_cls_scores (Tensor): Outputs from the classification head, \
+                shape [nb_dec, bs, num_query, cls_out_channels]. Note \
+                cls_out_channels should includes background.
+            all_bbox_preds (Tensor): Sigmoid outputs from the regression \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_query, 4].
+            enc_outputs_class (Tensor): The score of each point on encode \
+                feature map, has shape (N, h*w, num_class). Only when \
+                as_two_stage is Ture it would be returned, otherwise \
+                `None` would be returned.
+            enc_outputs_coord (Tensor): The proposal generate from the \
+                encode feature map, has shape (N, h*w, 4). Only when \
+                as_two_stage is Ture it would be returned, otherwise \
+                `None` would be returned.
         """
 
         batch_size = mlvl_feats[0].size(0)
@@ -115,12 +135,12 @@ class DeformableDETRHead(DETRHead):
                               size=feat.shape[-2:]).to(torch.bool).squeeze(0))
             mlvl_positional_encodings.append(
                 self.positional_encoding(mlvl_masks[-1]))
-        # outs_dec: [nb_dec, bs, num_query, embed_dim]
+
         query_embeds = None
         if not self.as_two_stage:
             query_embeds = self.query_embedding.weight
         hs, init_reference, inter_references, \
-            enc_outputs_class, enc_outputs_coord_unact = self.transformer(
+            enc_outputs_class, enc_outputs_coord = self.transformer(
                     mlvl_feats,
                     mlvl_masks,
                     query_embeds,
@@ -132,20 +152,12 @@ class DeformableDETRHead(DETRHead):
         outputs_classes = []
         outputs_coords = []
 
-        def inverse_sigmoid(x, eps=1e-5):
-            x = x.clamp(min=0, max=1)
-            x1 = x.clamp(min=eps)
-            x2 = (1 - x).clamp(min=eps)
-            return torch.log(x1 / x2)
-
-        # TODO save memory when test, only return last lalyer
         for lvl in range(hs.shape[0]):
             if lvl == 0:
                 reference = init_reference
             else:
                 reference = inter_references[lvl - 1]
             reference = inverse_sigmoid(reference)
-            # TODO check brach
             outputs_class = self.cls_branches[lvl](hs[lvl])
             tmp = self.reg_branches[lvl](hs[lvl])
             if reference.shape[-1] == 4:
@@ -159,10 +171,13 @@ class DeformableDETRHead(DETRHead):
 
         outputs_classes = torch.stack(outputs_classes)
         outputs_coords = torch.stack(outputs_coords)
-
-        return outputs_classes, outputs_coords, \
-            enc_outputs_class, \
-            enc_outputs_coord_unact.sigmoid()
+        if self.as_two_stage:
+            return outputs_classes, outputs_coords, \
+                enc_outputs_class, \
+                enc_outputs_coord.sigmoid()
+        else:
+            return outputs_classes, outputs_coords, \
+                None, None
 
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
     def loss(self,
@@ -174,9 +189,37 @@ class DeformableDETRHead(DETRHead):
              gt_labels_list,
              img_metas,
              gt_bboxes_ignore=None):
+        """"Loss function.
 
+        Args:
+            all_cls_scores (Tensor): Classification score of all
+                decoder layers, has shape
+                [nb_dec, bs, num_query, cls_out_channels].
+            all_bbox_preds (Tensor): Sigmoid regression
+                outputs of all decode layers. Each is a 4D-tensor with
+                normalized coordinate format (cx, cy, w, h) and shape
+                [nb_dec, bs, num_query, 4].
+            enc_cls_scores (Tensor): Classification scores of
+                points on encode feature map , has shape
+                (N, h*w, num_classes). Only be passed when as_two_stage is
+                True, otherwise is None.
+            enc_bbox_preds (Tensor): Regression results of each points
+                on the encode feature map, has shape (N, h*w, 4). Only be
+                passed when as_two_stage is True, otherwise is None.
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes for each image
+                with shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels_list (list[Tensor]): Ground truth class indices for each
+                image with shape (num_gts, ).
+            img_metas (list[dict]): List of image meta information.
+            gt_bboxes_ignore (list[Tensor], optional): Bounding boxes
+                which can be ignored for each image. Default None.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         assert gt_bboxes_ignore is None, \
-            'Only supports for gt_bboxes_ignore setting to None.'
+            f'{self.__class__.__name__} only supports ' \
+            f'for gt_bboxes_ignore setting to None.'
 
         num_dec_layers = len(all_cls_scores)
         all_gt_bboxes_list = [gt_bboxes_list for _ in range(num_dec_layers)]
@@ -192,8 +235,7 @@ class DeformableDETRHead(DETRHead):
             all_gt_bboxes_ignore_list)
 
         loss_dict = dict()
-        # loss from proposals
-
+        # loss of proposal generated from encode feature map.
         if enc_cls_scores is not None:
             binary_labels_list = [torch.zeros_like(gt_labels_list[0])]
             enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
@@ -219,53 +261,45 @@ class DeformableDETRHead(DETRHead):
             num_dec_layer += 1
         return loss_dict
 
-    # over-write because img_metas are needed as inputs for bbox_head.
-    def forward_train(self,
-                      x,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels=None,
-                      gt_bboxes_ignore=None,
-                      proposal_cfg=None,
-                      **kwargs):
-        """Forward function for training mode.
-
-        Args:
-            x (list[Tensor]): Features from backbone.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            proposal_cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-
-        Returns:
-            dict[str, Tensor]: A dictionary of loss components.
-        """
-        assert proposal_cfg is None, '"proposal_cfg" must be None'
-        outs = self(x, img_metas)
-        if gt_labels is None:
-            loss_inputs = outs + (gt_bboxes, img_metas)
-        else:
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas)
-        losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-        return losses
-
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
     def get_bboxes(self,
-                   all_cls_scores_list,
-                   all_bbox_preds_list,
+                   all_cls_scores,
+                   all_bbox_preds,
                    enc_cls_scores,
                    enc_bbox_preds,
                    img_metas,
                    rescale=False):
-        # TODO remove this
-        cls_scores = all_cls_scores_list[-1]
-        bbox_preds = all_bbox_preds_list[-1]
+        """Transform network outputs for a batch into bbox predictions.
+
+        Args:
+            all_cls_scores (Tensor): Classification score of all
+                decoder layers, has shape
+                [nb_dec, bs, num_query, cls_out_channels].
+            all_bbox_preds (Tensor): Sigmoid regression
+                outputs of all decode layers. Each is a 4D-tensor with
+                normalized coordinate format (cx, cy, w, h) and shape
+                [nb_dec, bs, num_query, 4].
+            enc_cls_scores (Tensor): Classification scores of
+                points on encode feature map , has shape
+                (N, h*w, num_classes). Only be passed when as_two_stage is
+                True, otherwise is None.
+            enc_bbox_preds (Tensor): Regression results of each points
+                on the encode feature map, has shape (N, h*w, 4). Only be
+                passed when as_two_stage is True, otherwise is None.
+            img_metas (list[dict]): Meta information of each image.
+            rescale (bool, optional): If True, return boxes in original
+                image space. Defalut False.
+
+        Returns:
+            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
+                The first item is an (n, 5) tensor, where the first 4 columns \
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
+                5-th column is a score between 0 and 1. The second item is a \
+                (n,) tensor where each item is the predicted class label of \
+                the corresponding box.
+        """
+        cls_scores = all_cls_scores[-1]
+        bbox_preds = all_bbox_preds[-1]
 
         result_list = []
         for img_id in range(len(img_metas)):
