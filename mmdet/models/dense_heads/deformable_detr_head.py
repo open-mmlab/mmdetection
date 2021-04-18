@@ -237,7 +237,10 @@ class DeformableDETRHead(DETRHead):
         loss_dict = dict()
         # loss of proposal generated from encode feature map.
         if enc_cls_scores is not None:
-            binary_labels_list = [torch.zeros_like(gt_labels_list[0])]
+            binary_labels_list = [
+                torch.zeros_like(gt_labels_list[i])
+                for i in range(len(img_metas))
+            ]
             enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
                 self.loss_single(enc_cls_scores, enc_bbox_preds,
                                  gt_bboxes_list, binary_labels_list,
