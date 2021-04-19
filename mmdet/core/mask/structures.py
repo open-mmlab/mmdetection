@@ -1,10 +1,9 @@
-from abc import ABCMeta, abstractmethod
-
 import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
+from abc import ABCMeta, abstractmethod
 from mmcv.ops.roi_align import roi_align
 
 
@@ -649,9 +648,8 @@ class PolygonMasks(BaseInstanceMasks):
             return PolygonMasks([], out_h, out_w)
 
         if not binarize:
-            raise ValueError(
-                'Polygons are always binary, '
-                'setting binarize=False is unsupported')
+            raise ValueError('Polygons are always binary, '
+                             'setting binarize=False is unsupported')
 
         resized_masks = []
         for i in range(len(bboxes)):
