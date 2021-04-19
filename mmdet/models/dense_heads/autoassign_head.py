@@ -26,7 +26,7 @@ class CenterPrior(nn.Module):
             center prior when no point falls in gt_bbox. Only work when
             force_topk if True. Defaults to 9.
         num_classes (int): The class number of dataset. Defaults to 80.
-        stride (tuple[int]): The stride of each input feature map. Defaults
+        strides (tuple[int]): The stride of each input feature map. Defaults
             to (8, 16, 32, 64, 128).
     """
 
@@ -49,7 +49,7 @@ class CenterPrior(nn.Module):
 
         Args:
             anchor_points_list (list[Tensor]): list of coordinate
-                of points in feature map. Each with shape
+                of points on feature map. Each with shape
                 (num_points, 2).
             gt_bboxes (Tensor): The gt_bboxes with shape of
                 (num_gt, 4).
@@ -79,6 +79,8 @@ class CenterPrior(nn.Module):
                                        num_gts), inside_gt_bbox_mask
         center_prior_list = []
         for slvl_points, stride in zip(anchor_points_list, self.strides):
+            # slvl_points: points from single level in FPN, has shape (h*w, 2)
+            # single_level_points has shape (h*w, num_gt, 2)
             single_level_points = slvl_points[:, None, :].expand(
                 (slvl_points.size(0), len(gt_bboxes), 2))
             gt_center_x = ((gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2)
@@ -208,9 +210,11 @@ class AutoAssignHead(FCOSHead):
                 - pos_loss (Tensor): The positive loss of all points
                   in the gt_bboxes.
         """
-
+        # p_loc: localization confidence
         p_loc = torch.exp(-reg_loss)
+        # p_cls: classification confidence
         p_cls = (cls_score * objectness)[:, gt_labels]
+        # p_pos: joint confidence indicator
         p_pos = p_cls * p_loc
 
         # 3 is a hyper-parameter to control the contributions of high and
@@ -219,9 +223,11 @@ class AutoAssignHead(FCOSHead):
         p_pos_weight = (confidence_weight * center_prior_weights) / (
             (confidence_weight * center_prior_weights).sum(
                 0, keepdim=True)).clamp(min=EPS)
-        reweight_p_pos = (p_pos * p_pos_weight).sum(0)
+        reweighted_p_pos = (p_pos * p_pos_weight).sum(0)
         pos_loss = F.binary_cross_entropy(
-            reweight_p_pos, torch.ones_like(reweight_p_pos), reduction='none')
+            reweighted_p_pos,
+            torch.ones_like(reweighted_p_pos),
+            reduction='none')
         pos_loss = pos_loss.sum() * self.pos_loss_weight
         return pos_loss,
 
@@ -374,7 +380,8 @@ class AutoAssignHead(FCOSHead):
         pos_loss_list, = multi_apply(self.get_pos_loss_single, cls_scores,
                                      objectnesses, reg_loss_list, gt_labels,
                                      center_prior_weight_list)
-        pos_avg_factor = reduce_mean(bbox_pred.new_tensor(all_num_gt))
+        pos_avg_factor = reduce_mean(
+            bbox_pred.new_tensor(all_num_gt)).clamp_(min=1)
         pos_loss = sum(pos_loss_list) / pos_avg_factor
 
         neg_loss_list, = multi_apply(self.get_neg_loss_single, cls_scores,
@@ -382,8 +389,8 @@ class AutoAssignHead(FCOSHead):
                                      inside_gt_bbox_mask_list)
         neg_avg_factor = sum(item.data.sum()
                              for item in center_prior_weight_list)
-        neg_avg_factor = reduce_mean(neg_avg_factor)
-        neg_loss = sum(neg_loss_list) / max(neg_avg_factor, 1)
+        neg_avg_factor = reduce_mean(neg_avg_factor).clamp_(min=1)
+        neg_loss = sum(neg_loss_list) / neg_avg_factor
 
         center_loss = []
         for i in range(len(img_metas)):
