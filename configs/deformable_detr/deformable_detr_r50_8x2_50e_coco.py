@@ -143,7 +143,6 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    filter_empty_gt=False,
     samples_per_gpu=2,
     workers_per_gpu=2,
     train=dict(filter_empty_gt=False, pipeline=train_pipeline),
