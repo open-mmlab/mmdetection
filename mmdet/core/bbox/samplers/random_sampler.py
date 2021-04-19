@@ -51,7 +51,7 @@ class RandomSampler(BaseSampler):
             else:
                 device = 'cpu'
             gallery = torch.tensor(gallery, dtype=torch.long, device=device)
-        perm = torch.randperm(gallery.numel(), device=gallery.device)[:num]
+        perm = torch.randperm(gallery.numel()).to(device=gallery.device)[:num]
         rand_inds = gallery[perm]
         if not is_tensor:
             rand_inds = rand_inds.cpu().numpy()
