@@ -656,7 +656,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                           1).reshape(batch_size, -1, 4)
             anchors = anchors.expand_as(bbox_pred)
             # Always keep topk op for dynamic input in onnx
-            from mmdet.core.export.onnx_helper import get_k_for_topk
+            from mmdet.core.export import get_k_for_topk
             nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
             if nms_pre > 0:
                 # Get maximum scores for foreground classes.
@@ -688,7 +688,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export() and with_nms:
-            from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            from mmdet.core.export import add_dummy_nms_for_onnx
             # ignore background class
             if not self.use_sigmoid_cls:
                 num_classes = batch_mlvl_scores.shape[2] - 1

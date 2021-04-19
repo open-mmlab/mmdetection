@@ -279,7 +279,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 batch_size, -1, self.num_classes)  # Cls pred one-hot.
 
             # Get top-k prediction
-            from mmdet.core.export.onnx_helper import get_k_for_topk
+            from mmdet.core.export import get_k_for_topk
             nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
             if nms_pre > 0:
                 _, topk_inds = conf_pred.topk(nms_pre)
@@ -313,7 +313,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export() and with_nms:
-            from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            from mmdet.core.export import add_dummy_nms_for_onnx
             conf_thr = cfg.get('conf_thr', -1)
             score_thr = cfg.get('score_thr', -1)
             # follow original pipeline of YOLOv3

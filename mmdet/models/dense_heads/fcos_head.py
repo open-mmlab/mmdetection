@@ -383,7 +383,7 @@ class FCOSHead(AnchorFreeHead):
                                           1).reshape(batch_size, -1, 4)
             points = points.expand(batch_size, -1, 2)
             # Get top-k prediction
-            from mmdet.core.export.onnx_helper import get_k_for_topk
+            from mmdet.core.export import get_k_for_topk
             nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
             if nms_pre > 0:
                 max_scores, _ = (scores * centerness[..., None]).max(-1)
@@ -424,7 +424,7 @@ class FCOSHead(AnchorFreeHead):
 
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export() and with_nms:
-            from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            from mmdet.core.export import add_dummy_nms_for_onnx
             batch_mlvl_scores = batch_mlvl_scores * (
                 batch_mlvl_centerness.unsqueeze(2))
             max_output_boxes_per_class = cfg.nms.get(

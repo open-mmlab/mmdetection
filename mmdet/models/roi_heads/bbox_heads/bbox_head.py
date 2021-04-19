@@ -357,7 +357,7 @@ class BBoxHead(nn.Module):
 
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export():
-            from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            from mmdet.core.export import add_dummy_nms_for_onnx
             batch_size = scores.shape[0]
             # ignore background class
             scores = scores[..., :self.num_classes]
