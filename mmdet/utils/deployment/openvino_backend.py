@@ -81,6 +81,7 @@ class Model:
             if name not in outputs:
                 raise KeyError(f'Failed to identify output "{name}"')
             key = name
+        print(f'get {name} {key}')
         return outputs[key]
 
     def preprocess(self, inputs):
@@ -143,9 +144,7 @@ class Detector(Model):
 
 class MaskTextSpotterOpenVINO(Model):
     def __init__(self, xml_file_path, *args, text_recognition_thr=0.5, **kwargs):
-        super().__init__(xml_file_path,
-                         *args,
-                         **kwargs)
+        super().__init__(xml_file_path, *args, **kwargs)
 
         batch_size = self.net.input_info['image'].input_data.shape[0]
         assert batch_size == 1, 'Only batch 1 is supported.'
