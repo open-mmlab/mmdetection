@@ -314,13 +314,24 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export() and with_nms:
             from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            conf_thr = cfg.get('conf_thr', -1)
+            score_thr = cfg.get('score_thr', -1)
+            # follow original pipeline of YOLOv3
+            if conf_thr > 0:
+                mask = (batch_mlvl_conf_scores >= conf_thr).float()
+                batch_mlvl_conf_scores *= mask
+            if score_thr > 0:
+                mask = (batch_mlvl_scores > score_thr).float()
+                batch_mlvl_scores *= mask
             batch_mlvl_conf_scores = batch_mlvl_conf_scores.unsqueeze(
                 2).expand_as(batch_mlvl_scores)
             batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_conf_scores
             max_output_boxes_per_class = cfg.nms.get(
                 'max_output_boxes_per_class', 200)
             iou_threshold = cfg.nms.get('iou_threshold', 0.5)
-            score_threshold = cfg.score_thr
+            # keep aligned with original pipeline, improve
+            # mAP by 1% for YOLOv3 in ONNX
+            score_threshold = 0
             nms_pre = cfg.get('deploy_nms_pre', -1)
             return add_dummy_nms_for_onnx(
                 batch_mlvl_bboxes,

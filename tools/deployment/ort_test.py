@@ -105,7 +105,7 @@ class ONNXRuntimeDetector(BaseDetector):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='MMDet test (and eval) a ONNX model using ONNXRuntime')
+        description='MMDet test (and eval) an ONNX model using ONNXRuntime')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('model', help='Input model file')
     parser.add_argument('--out', help='output result file in pickle format')
