@@ -81,7 +81,8 @@ class BaseInstanceMasks(metaclass=ABCMeta):
                         out_shape,
                         inds,
                         device,
-                        interpolation='bilinear'):
+                        interpolation='bilinear',
+                        binarize=True):
         """Crop and resize masks by the given bboxes.
 
         This function is mainly used in mask targets computation.
@@ -94,6 +95,9 @@ class BaseInstanceMasks(metaclass=ABCMeta):
             inds (ndarray): Indexes to assign masks to each bbox
             device (str): Device of bboxes
             interpolation (str): See `mmcv.imresize`
+            binarize (bool): if True fractional values are rounded to 0 or 1
+                after the resize operation. if False and unsupported an error
+                will be raised. Defaults to True.
 
         Return:
             BaseInstanceMasks: the cropped and resized masks.
@@ -323,7 +327,8 @@ class BitmapMasks(BaseInstanceMasks):
                         out_shape,
                         inds,
                         device='cpu',
-                        interpolation='bilinear', rounded=True):
+                        interpolation='bilinear',
+                        binarize=True):
         """See :func:`BaseInstanceMasks.crop_and_resize`."""
         if len(self.masks) == 0:
             empty_masks = np.empty((0, *out_shape), dtype=np.uint8)
@@ -345,7 +350,7 @@ class BitmapMasks(BaseInstanceMasks):
                 0, inds).to(dtype=rois.dtype)
             targets = roi_align(gt_masks_th[:, None, :, :], rois, out_shape,
                                 1.0, 0, 'avg', True).squeeze(1)
-            if rounded:
+            if binarize:
                 resized_masks = (targets >= 0.5).cpu().numpy()
             else:
                 resized_masks = targets.cpu().numpy()
@@ -637,16 +642,16 @@ class PolygonMasks(BaseInstanceMasks):
                         inds,
                         device='cpu',
                         interpolation='bilinear',
-                        rounded=True):
+                        binarize=True):
         """see :func:`BaseInstanceMasks.crop_and_resize`"""
         out_h, out_w = out_shape
         if len(self.masks) == 0:
             return PolygonMasks([], out_h, out_w)
 
-        if not rounded:
+        if not binarize:
             raise ValueError(
-                'Polygon are always binary, '
-                'setting rounded=False is unsupported')
+                'Polygons are always binary, '
+                'setting binarize=False is unsupported')
 
         resized_masks = []
         for i in range(len(bboxes)):

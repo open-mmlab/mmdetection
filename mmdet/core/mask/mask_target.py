@@ -43,7 +43,7 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
     """
     device = pos_proposals.device
     mask_size = _pair(cfg.mask_size)
-    mask_soft = cfg.get('mask_soft', False)
+    binarize = not cfg.get('soft_mask_target', False)
     num_pos = pos_proposals.size(0)
     if num_pos > 0:
         proposals_np = pos_proposals.cpu().numpy()
@@ -54,7 +54,7 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
 
         mask_targets = gt_masks.crop_and_resize(
             proposals_np, mask_size, device=device,
-            inds=pos_assigned_gt_inds, rounded=not mask_soft).to_ndarray()
+            inds=pos_assigned_gt_inds, binarize=binarize).to_ndarray()
 
         mask_targets = torch.from_numpy(mask_targets).float().to(device)
     else:
