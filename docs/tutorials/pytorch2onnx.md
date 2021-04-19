@@ -135,92 +135,62 @@ python tools/deployment/ort_test.py \
 	<tr>
 	    <th>Model</th>
 	    <th>Config</th>
-	    <th>Backend</th>
-	    <th>Box AP</th>
-	    <th>Mask AP</th>
+	    <th>Metric</th>
+	    <th>PyTorch</th>
+	    <th>ONNX Runtime</th>
 	</tr >
 	<tr >
-	    <td rowspan="2">SSD</td>
-	    <td rowspan="2">configs/ssd/ssd300_coco.py</td>
-	    <td>PyTorch</td>
+	    <td >SSD</td>
+	    <td>configs/ssd/ssd300_coco.py</td>
+	    <td>Box AP</td>
 	    <td>25.6</td>
-	    <td>None</td>
-	</tr>
-	<tr>
-	    <td >ONNXRuntime</td>
 	    <td>25.6</td>
-	    <td>None</td>
 	</tr>
   <tr >
-	    <td rowspan="2">FSAF</td>
-	    <td rowspan="2">configs/ssd/ssd300_coco.py</td>
-	    <td>PyTorch</td>
+	    <td>FSAF</td>
+	    <td>configs/ssd/ssd300_coco.py</td>
+	    <td>Box AP</td>
 	    <td>36.0</td>
-	    <td>None</td>
-	</tr>
-	<tr>
-	    <td >ONNXRuntime</td>
 	    <td>36.0</td>
-	    <td>None</td>
 	</tr>
   <tr >
-	    <td rowspan="2">FCOS</td>
-	    <td rowspan="2">configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py</td>
-	    <td>PyTorch</td>
+	    <td>FCOS</td>
+	    <td>configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py</td>
+	    <td>Box AP</td>
 	    <td>36.6</td>
-	    <td>None</td>
-	</tr>
-	<tr>
-	    <td >ONNXRuntime</td>
 	    <td>36.5</td>
-	    <td>None</td>
 	</tr>
   <tr >
-	    <td rowspan="2">YOLOv3</td>
-	    <td rowspan="2">configs/yolo/yolov3_d53_mstrain-608_273e_coco.py</td>
-	    <td>PyTorch</td>
+	    <td>YOLOv3</td>
+	    <td>configs/yolo/yolov3_d53_mstrain-608_273e_coco.py</td>
+	    <td>Box AP</td>
 	    <td>33.5</td>
-	    <td>None</td>
-	</tr>
-	<tr>
-	    <td >ONNXRuntime</td>
 	    <td>33.5</td>
-	    <td>None</td>
 	</tr>
   <tr >
-	    <td rowspan="2">RetinaNet</td>
-	    <td rowspan="2">configs/retinanet/retinanet_r50_fpn_1x_coco.py</td>
-	    <td>PyTorch</td>
+	    <td>RetinaNet</td>
+	    <td>configs/retinanet/retinanet_r50_fpn_1x_coco.py</td>
+	    <td>Box AP</td>
 	    <td>36.5</td>
-	    <td>None</td>
-	</tr>
-	<tr>
-	    <td >ONNXRuntime</td>
 	    <td>36.4</td>
-	    <td>None</td>
 	</tr>
   <tr >
-	    <td rowspan="2">Faster R-CNN</td>
-	    <td rowspan="2">configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py</td>
-	    <td>PyTorch</td>
+	    <td>Faster R-CNN</td>
+	    <td>configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py</td>
+	    <td>Box AP</td>
 	    <td>37.4</td>
-	    <td>None</td>
-	</tr>
-	<tr>
-	    <td >ONNXRuntime</td>
 	    <td>37.4</td>
-	    <td>None</td>
 	</tr>
   <tr >
 	    <td rowspan="2">Mask R-CNN</td>
 	    <td rowspan="2">configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py</td>
-	    <td>PyTorch</td>
+	    <td>Box AP</td>
 	    <td>38.2</td>
-	    <td>34.7</td>
+	    <td>37.9</td>
 	</tr>
 	<tr>
-	    <td >ONNXRuntime</td>
-	    <td>37.9</td>
+	    <td>Mask AP</td>
+	    <td>34.7</td>
 	    <td>33.5</td>
 	</tr>
 </table>
