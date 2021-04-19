@@ -50,11 +50,11 @@ def multiclass_nms(multi_bboxes,
 
     nms_cfg['score_threshold'] = score_thr
     nms_cfg['max_num'] = max_num if max_num > 0 else bboxes.shape[0]
+    
     if not torch.onnx.is_in_onnx_export():
         # NonZero not supported  in TensorRT
         # remove low scoring boxes
         valid_mask = scores > score_thr
-        nms_cfg['score_threshold'] = 0
     # multiply score_factor after threshold to preserve more bboxes, improve
     # mAP by 1% for YOLOv3
     if score_factors is not None:
@@ -63,6 +63,7 @@ def multiclass_nms(multi_bboxes,
             multi_scores.size(0), num_classes)
         score_factors = score_factors.reshape(-1)
         scores = scores * score_factors
+        nms_cfg['score_threshold'] = 0
 
     if not torch.onnx.is_in_onnx_export():
         # NonZero not supported  in TensorRT
