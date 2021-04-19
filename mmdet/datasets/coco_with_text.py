@@ -284,7 +284,7 @@ class CocoWithTextDataset(CocoDataset):
                 if len(res[2]) == 3:
                     texts, text_confidences, character_distributions = res[2]
                 else:
-                    texts = res[2]
+                    texts = res[2][0]
                     text_confidences = [1.0 for _ in texts]
                     character_distributions = [None for _ in texts]
                 per_image_predictions = []
