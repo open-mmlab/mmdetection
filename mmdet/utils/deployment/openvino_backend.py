@@ -175,20 +175,21 @@ class MaskTextSpotterOpenVINO(Model):
         if 'masks' in output:
             output['masks'] = output['masks'][valid_detections_mask]
 
+        eos = 1
+        max_seq_len = 28
+
         confidences = []
         decoded_texts = []
         distributions = []
         for feature in output['text_features']:
             feature = np.expand_dims(feature, 0)
-            feature = self.text_encoder({'input': feature})['output']
+            feature = self.text_encoder({'input': feature})
+            feature = self.text_encoder.get(feature, 'output')
             feature = np.reshape(feature, (feature.shape[0], feature.shape[1], -1))
             feature = np.transpose(feature, (0, 2, 1))
 
             hidden = np.zeros(self.hidden_shape)
             prev_symbol = np.zeros((1,))
-
-            eos = 1
-            max_seq_len = 28
 
             decoded = ''
             confidence = 1
