@@ -1,6 +1,7 @@
+exclude: ^tests/data/
 repos:
-  - repo: https://gitlab.com/pycqa/flake8.git
-    rev: 3.8.3
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.8.1
     hooks:
       - id: flake8
   - repo: https://github.com/asottile/seed-isort-config
@@ -28,11 +29,6 @@ repos:
         args: ["--remove"]
       - id: mixed-line-ending
         args: ["--fix=lf"]
-  - repo: https://github.com/jumanjihouse/pre-commit-hooks
-    rev: 2.1.4
-    hooks:
-      - id: markdownlint
-        args: ["-r", "~MD002,~MD013,~MD024,~MD029,~MD033,~MD034,~MD036"]
   - repo: https://github.com/myint/docformatter
     rev: v1.3.1
     hooks:
