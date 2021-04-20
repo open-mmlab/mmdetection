@@ -81,7 +81,6 @@ class Model:
             if name not in outputs:
                 raise KeyError(f'Failed to identify output "{name}"')
             key = name
-        print(f'get {name} {key}')
         return outputs[key]
 
     def preprocess(self, inputs):
