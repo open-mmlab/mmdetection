@@ -9,8 +9,6 @@ from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
-EPS = 1e-12
-
 
 @HEADS.register_module()
 class ATSSHead(AnchorHead):
@@ -286,9 +284,7 @@ class ATSSHead(AnchorHead):
                 num_total_samples=num_total_samples)
 
         bbox_avg_factor = sum(bbox_avg_factor)
-        bbox_avg_factor = reduce_mean(bbox_avg_factor).item()
-        if bbox_avg_factor < EPS:
-            bbox_avg_factor = 1
+        bbox_avg_factor = reduce_mean(bbox_avg_factor).clamp_(min=1).item()
         losses_bbox = list(map(lambda x: x / bbox_avg_factor, losses_bbox))
         return dict(
             loss_cls=losses_cls,
