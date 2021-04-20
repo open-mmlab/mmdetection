@@ -5,7 +5,7 @@ from mmcv import Config, DictAction
 from mmcv.parallel import MMDataParallel
 
 from mmdet.apis import single_gpu_test
-from mmdet.core.export.test import ONNXRuntimeDetector
+from mmdet.core.export import ONNXRuntimeDetector
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 

@@ -8,8 +8,9 @@ import onnxruntime as rt
 import torch
 from mmcv import DictAction
 
-from mmdet.core import (build_model_from_cfg, generate_inputs_and_wrap_model,
-                        preprocess_example_input)
+from mmdet.core.export import (build_model_from_cfg,
+                               generate_inputs_and_wrap_model,
+                               preprocess_example_input)
 
 
 def pytorch2onnx(config_path,
