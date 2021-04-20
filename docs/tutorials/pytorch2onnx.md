@@ -92,7 +92,7 @@ python tools/deployment/pytorch2onnx.py \
 
 ## How to evaluate ONNX models with ONNX Runtime
 
-We prepare a tool `tools/deplopyment/ort_test.py` to evaluate ONNX models with ONNX Runtime backend.
+We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNX Runtime backend.
 
 ### Prerequisite
 
@@ -105,7 +105,7 @@ We prepare a tool `tools/deplopyment/ort_test.py` to evaluate ONNX models with O
 ### Usage
 
 ```bash
-python tools/deployment/ort_test.py \
+python tools/deployment/test.py \
     ${CONFIG_FILE} \
     ${ONNX_FILE} \
     --out ${OUTPUT_FILE} \
