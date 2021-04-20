@@ -3,10 +3,10 @@ import inspect
 
 import mmcv
 import numpy as np
-from numpy import random
-
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
+from numpy import random
+
 from ..builder import PIPELINES
 
 try:
@@ -625,7 +625,7 @@ class RandomCrop(object):
                  allow_negative_crop=False,
                  bbox_clip_border=True):
         if crop_type not in [
-                'relative_range', 'relative', 'absolute', 'absolute_range'
+            'relative_range', 'relative', 'absolute', 'absolute_range'
         ]:
             raise ValueError(f'Invalid crop_type {crop_type}.')
         if crop_type in ['absolute', 'absolute_range']:
@@ -688,7 +688,7 @@ class RandomCrop(object):
                 bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
                 bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
             valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
-                bboxes[:, 3] > bboxes[:, 1])
+                    bboxes[:, 3] > bboxes[:, 1])
             # If the crop does not contain any gt-bbox area and
             # allow_negative_crop is False, skip this image.
             if (key == 'gt_bboxes' and not valid_inds.any()
@@ -705,7 +705,7 @@ class RandomCrop(object):
             if mask_key in results:
                 results[mask_key] = results[mask_key][
                     valid_inds.nonzero()[0]].crop(
-                        np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
+                    np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
 
         # crop semantic seg
         for key in results.get('seg_fields', []):
@@ -773,6 +773,7 @@ class RandomCrop(object):
         """
         image_size = results['img'].shape[:2]
         crop_size = self._get_crop_size(image_size)
+        print(self.crop_size, crop_size)
         results = self._crop_data(results, crop_size, self.allow_negative_crop)
         return results
 
@@ -870,7 +871,7 @@ class PhotoMetricDistortion(object):
                 'Only single img_fields is allowed'
         img = results['img']
         assert img.dtype == np.float32, \
-            'PhotoMetricDistortion needs the input image of dtype np.float32,'\
+            'PhotoMetricDistortion needs the input image of dtype np.float32,' \
             ' please set "to_float32=True" in "LoadImageFromFile" pipeline'
         # random brightness
         if random.randint(2):
@@ -1150,7 +1151,7 @@ class MinIoURandomCrop(object):
                 # seg fields
                 for key in results.get('seg_fields', []):
                     results[key] = results[key][patch[1]:patch[3],
-                                                patch[0]:patch[2]]
+                                   patch[0]:patch[2]]
                 return results
 
     def __repr__(self):
@@ -1572,8 +1573,8 @@ class RandomCenterCropPad(object):
         """
         center = (boxes[:, :2] + boxes[:, 2:]) / 2
         mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
-            center[:, 0] < patch[2]) * (
-                center[:, 1] < patch[3])
+                center[:, 0] < patch[2]) * (
+                       center[:, 1] < patch[3])
         return mask
 
     def _crop_image_and_paste(self, image, center, size):
@@ -1623,7 +1624,7 @@ class RandomCenterCropPad(object):
             cropped_center_y - top, cropped_center_y + bottom,
             cropped_center_x - left, cropped_center_x + right
         ],
-                          dtype=np.float32)
+            dtype=np.float32)
 
         return cropped_img, border, patch
 
@@ -1677,7 +1678,7 @@ class RandomCenterCropPad(object):
                         bboxes[:, 0:4:2] = np.clip(bboxes[:, 0:4:2], 0, new_w)
                         bboxes[:, 1:4:2] = np.clip(bboxes[:, 1:4:2], 0, new_h)
                     keep = (bboxes[:, 2] > bboxes[:, 0]) & (
-                        bboxes[:, 3] > bboxes[:, 1])
+                            bboxes[:, 3] > bboxes[:, 1])
                     bboxes = bboxes[keep]
                     results[key] = bboxes
                     if key in ['gt_bboxes']:
@@ -1868,7 +1869,6 @@ class Mosaic(object):
         if size[0] <= 0 or size[1] <= 0:
             raise ValueError('image size must > 0 in train mode')
 
-
         if min_offset is None:
             self.min_offset = (0, 0)
         elif isinstance(min_offset, float):
@@ -1915,12 +1915,11 @@ class Mosaic(object):
         for loc in ('top_left', 'top_right', 'bottom_left', 'bottom_right'):
             if loc == 'top_left':
                 # use the current image
-                results_i = results
+                results_i = copy.deepcopy(results)
             else:
                 # randomly sample a new image from the dataset
                 index = random.randint(self.num_sample)
-                results_i = self.dataset.__getitem__(index)
-
+                results_i = copy.deepcopy(self.dataset.__getitem__(index))
             tmp_img, bboxes, labels, ignores = self._mosiac_combine(loc,
                                                                     results_i,
                                                                     tmp_img,
@@ -1953,28 +1952,28 @@ class Mosaic(object):
         Returns:
             bboxes: Result dict with images and bounding boxes cropped.
         """
-        if loc == 0:
+        if loc == 'top_left':
             # Image 0: top left
             crop_size = cut_position
-            img_slices = [(slice(0, cut_position[0]), slice(0, cut_position[1]))]
+            img_slices = (slice(0, cut_position[0]), slice(0, cut_position[1]))
             paste_position = (0, 0)
 
         elif loc == 'top_right':
             # Image 1: top right
             crop_size = (cut_position[0], self.size[1] - cut_position[1])
-            img_slices = [(slice(0, cut_position[0]), slice(cut_position[1], self.size[1]))]
+            img_slices = (slice(0, cut_position[0]), slice(cut_position[1], self.size[1]))
             paste_position = (0, cut_position[1])
 
         elif loc == 'bottom_left':
             # Image 2: bottom left
             crop_size = (self.size[0] - cut_position[0], cut_position[1])
-            img_slices = [(slice(cut_position[0], self.size[0]), slice(0, cut_position[1]))]
+            img_slices = (slice(cut_position[0], self.size[0]), slice(0, cut_position[1]))
             paste_position = (cut_position[0], 0)
 
         elif loc == 'bottom_right':
             # Image 3: bottom right
             crop_size = (self.size[0] - cut_position[0], self.size[1] - cut_position[1])
-            img_slices = [(slice(cut_position[0], self.size[0]), slice(cut_position[1], self.size[1]))]
+            img_slices = (slice(cut_position[0], self.size[0]), slice(cut_position[1], self.size[1]))
             paste_position = cut_position
 
         self.cropper.set_crop_size(crop_size)

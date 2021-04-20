@@ -125,6 +125,7 @@ def test_mosaic():
     # custom_dataset.__len__ = MagicMock(return_value=1)
 
     transform = dict(type='Mosaic',
+                     size=(320,320),
                      dataset=custom_dataset,
                      min_offset=0.2)
 
@@ -134,8 +135,9 @@ def test_mosaic():
 
     img = results['img']
     bboxes = results['gt_bboxes']
-    mmcv.imshow_bboxes(img, bboxes, show=True)
-    # mmcv.imwrite(img, "img.png")
+    # mmcv.imshow_bboxes(img, bboxes, show=True)
+    # mmcv.imshow_bboxes(img, gt_bboxes, show=True)
+    mmcv.imwrite(img, "img.png")
 
 def test_flip():
     # test assertion for invalid flip_ratio
