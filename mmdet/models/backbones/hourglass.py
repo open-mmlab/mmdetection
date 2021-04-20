@@ -172,10 +172,10 @@ class HourglassNet(BaseModule):
 
         self.relu = nn.ReLU(inplace=True)
 
-    def init_weight(self):
+    def init_weights(self):
         """Init module weights."""
         # Training Centripetal Model needs to reset parameters for Conv2d
-        super(HourglassNet, self).init_weight()
+        super(HourglassNet, self).init_weights()
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 m.reset_parameters()

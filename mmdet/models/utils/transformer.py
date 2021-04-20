@@ -701,10 +701,10 @@ class Transformer(BaseModule):
                                           norm_cfg, num_fcs,
                                           return_intermediate_dec)
 
-    def init_weight(self, distribution='uniform'):
+    def init_weights(self, distribution='uniform'):
         """Initialize the transformer weights."""
         # follow the official DETR to init parameters
-        super(Transformer, self).init_weight()
+        super(Transformer, self).init_weights()
         for m in self.modules():
             if hasattr(m, 'weight') and m.weight.dim() > 1:
                 xavier_init(m, distribution=distribution)

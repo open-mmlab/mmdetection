@@ -101,7 +101,7 @@ class RFP(FPN):
             padding=0,
             bias=True)
 
-    def init_weight(self):
+    def init_weights(self):
         # Avoid using super().init_weights(), which may alter the default
         # initialization of the modules in self.rfp_modules that have missing
         # keys in the pretrained checkpoint.
@@ -110,7 +110,7 @@ class RFP(FPN):
                 if isinstance(m, nn.Conv2d):
                     xavier_init(m, distribution='uniform')
         for rfp_idx in range(self.rfp_steps - 1):
-            self.rfp_modules[rfp_idx].init_weight()
+            self.rfp_modules[rfp_idx].init_weights()
         constant_init(self.rfp_weight, 0)
 
     def forward(self, inputs):

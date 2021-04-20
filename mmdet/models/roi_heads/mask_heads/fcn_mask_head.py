@@ -106,8 +106,8 @@ class FCNMaskHead(BaseModule):
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
-    def init_weight(self):
-        super(FCNMaskHead, self).init_weight()
+    def init_weights(self):
+        super(FCNMaskHead, self).init_weights()
         for m in [self.upsample, self.conv_logits]:
             if m is None:
                 continue

@@ -40,13 +40,13 @@ class EmbeddingRPNHead(BaseModule):
         self.init_proposal_features = nn.Embedding(
             self.num_proposals, self.proposal_feature_channel)
 
-    def init_weight(self):
+    def init_weights(self):
         """Initialize the init_proposal_bboxes as normalized.
 
         [c_x, c_y, w, h], and we initialize it to the size of  the entire
         image.
         """
-        super(EmbeddingRPNHead, self).init_weight()
+        super(EmbeddingRPNHead, self).init_weights()
         nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
         nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
 

@@ -204,10 +204,10 @@ class FPN_CARAFE(BaseModule):
                 self.fpn_convs.append(extra_fpn_conv)
                 self.lateral_convs.append(extra_l_conv)
 
-    # default init_weight for conv(msra) and norm in ConvModule
-    def init_weight(self):
+    # default init_weights for conv(msra) and norm in ConvModule
+    def init_weights(self):
         """Initialize the weights of module."""
-        super(FPN_CARAFE, self).init_weight()
+        super(FPN_CARAFE, self).init_weights()
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
                 xavier_init(m, distribution='uniform')

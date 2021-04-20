@@ -283,9 +283,9 @@ class DetectoRS_ResNet(ResNet):
         self._freeze_stages()
 
     # In order to be properly initialized by RFP
-    def init_weight(self):
+    def init_weights(self):
         # Calling this method will cause parameter initialization exception
-        # super(DetectoRS_ResNet, self).init_weight()
+        # super(DetectoRS_ResNet, self).init_weights()
 
         if isinstance(self.pretrained, str):
             logger = get_root_logger()

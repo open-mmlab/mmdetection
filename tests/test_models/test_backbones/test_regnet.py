@@ -39,7 +39,7 @@ def test_regnet_backbone(arch_name, arch, out_channels):
 
     # Test RegNet with arch_name
     model = RegNet(arch_name)
-    model.init_weight()
+    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 224, 224)

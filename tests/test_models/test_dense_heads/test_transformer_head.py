@@ -40,7 +40,7 @@ def test_transformer_head_loss():
         train_cfg=train_cfg,
         transformer=transformer_cfg,
         positional_encoding=positional_encoding_cfg)
-    self.init_weight()
+    self.init_weights()
     feat = [
         torch.rand(1, 1, s // feat_size, s // feat_size)
         for feat_size in [4, 8, 16, 32, 64]

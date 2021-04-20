@@ -74,9 +74,9 @@ class RetinaSepBNHead(AnchorHead):
         self.retina_reg = nn.Conv2d(
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
 
-    def init_weight(self):
+    def init_weights(self):
         """Initialize weights of the head."""
-        super(RetinaSepBNHead, self).init_weight()
+        super(RetinaSepBNHead, self).init_weights()
         for m in self.cls_convs[0]:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs[0]:

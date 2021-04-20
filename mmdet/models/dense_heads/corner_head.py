@@ -222,8 +222,8 @@ class CornerHead(BaseDenseHead):
         if self.with_corner_emb:
             self._init_corner_emb_layers()
 
-    def init_weight(self):
-        super(CornerHead, self).init_weight()
+    def init_weights(self):
+        super(CornerHead, self).init_weights()
         bias_init = bias_init_with_prob(0.1)
         for i in range(self.num_feat_levels):
             # The initialization of parameters are different between

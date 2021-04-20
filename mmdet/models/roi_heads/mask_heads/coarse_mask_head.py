@@ -80,8 +80,8 @@ class CoarseMaskHead(FCNMaskHead):
         output_channels = self.num_classes * self.output_area
         self.fc_logits = Linear(last_layer_dim, output_channels)
 
-    def init_weight(self):
-        super(FCNMaskHead, self).init_weight()
+    def init_weights(self):
+        super(FCNMaskHead, self).init_weights()
 
     @auto_fp16()
     def forward(self, x):

@@ -65,7 +65,7 @@ def test_resnext_backbone():
     for m in model.modules():
         if is_block(m):
             assert m.conv2.groups == 32
-    model.init_weight()
+    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 224, 224)

@@ -519,5 +519,5 @@ def test_transformer(num_enc_layers=2,
     assert hs.shape == (num_dec_layers, batch_size, num_query, embed_dims)
     assert mem.shape == (batch_size, embed_dims, height, width)
 
-    # test init_weight
-    module.init_weight()
+    # test init_weights
+    module.init_weights()

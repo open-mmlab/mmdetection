@@ -120,10 +120,10 @@ class DIIHead(BBoxHead):
         assert self.reg_decoded_bbox, 'DIIHead only ' \
             'suppport `reg_decoded_bbox=True`'
 
-    def init_weight(self):
+    def init_weights(self):
         """Use xavier initialization for all weight parameter and set
         classification head bias as a specific value when use focal loss."""
-        super(DIIHead, self).init_weight()
+        super(DIIHead, self).init_weights()
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)

@@ -136,8 +136,8 @@ class CentripetalHead(CornerHead):
         super()._init_layers()  # using _init_layers in CornerHead
         self._init_centripetal_layers()
 
-    def init_weight(self):
-        super(CentripetalHead, self).init_weight()
+    def init_weights(self):
+        super(CentripetalHead, self).init_weights()
         for i in range(self.num_feat_levels):
             normal_init(self.tl_feat_adaption[i], std=0.01)
             normal_init(self.br_feat_adaption[i], std=0.01)
