@@ -3,7 +3,7 @@ import sys
 import torch
 
 from mmcv.utils import deprecated_api_warning
-
+from mmdet.integration.nncf.utils import no_nncf_trace
 
 class NMSop(torch.autograd.Function):
     @staticmethod
