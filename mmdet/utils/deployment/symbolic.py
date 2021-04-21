@@ -1,3 +1,4 @@
+
 # Copyright (C) 2020 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -281,6 +282,28 @@ def patch_nms_aten_to():
         NMSop.forward = staticmethod(forward)
 
 
+def patch_conv_ws():
+    import torch.nn.functional as F
+    from mmcv.cnn.bricks.conv_ws import ConvWS2d
+
+    def normalize_weights(weight, eps=1e-5):
+        c_in = weight.size(0)
+        weight_flat = weight.view(c_in, -1)
+        mean = weight_flat.mean(dim=1, keepdim=True).view(c_in, 1, 1, 1)
+        std = weight_flat.std(dim=1, keepdim=True).view(c_in, 1, 1, 1)
+        weight = (weight - mean) / (std + eps)
+        return weight
+
+    def forward(self, x):
+        weight = normalize_weights(self.weight, self.eps)
+        if torch.onnx.is_in_onnx_export():
+            weight = weight.data
+        return F.conv2d(x, weight, self.bias, self.stride, self.padding,
+                      self.dilation, self.groups)
+
+    ConvWS2d.forward = forward
+
+
 def nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
     """
     This function adds 'score_threshold' and 'max_output_boxes_per_class' to ONNX::NonMaxSuppression.
@@ -324,8 +347,9 @@ def register_extra_symbolics(opset=10):
     register_op('view_as', view_as_symbolic, '', opset)
     register_op('topk', topk_symbolic, '', opset)
     # register_op('multiclass_nms_core', multiclass_nms_core_symbolic, 'mmdet_custom', opset)
-    
+
     patch_nms_aten_to()
+    patch_conv_ws()
 
 
 def register_extra_symbolics_for_openvino(opset=10):
