@@ -112,7 +112,7 @@ def pytorch2onnx(config_path,
         onnx.checker.check_model(onnx_model)
         if dynamic_export:
             # scale up to test dynamic shape
-            h, w = int(input_shape[2] * 1.5), int(input_shape[3] * 1.5)
+            h, w = [int((_ * 1.5) // 32 * 32) for _ in input_shape[2:]]
             input_config['input_shape'] = (1, 3, h, w)
         if test_img is not None:
             input_config['input_path'] = test_img
