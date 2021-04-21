@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -95,14 +94,12 @@ class SingleStageDetector(BaseDetector):
                                               gt_labels, gt_bboxes_ignore)
         return losses
 
-    def simple_test(self, img, img_metas, rescale=False):
+    def simple_test(self, img, img_metas):
         """Test function without test time augmentation.
 
         Args:
             imgs (list[torch.Tensor]): List of multiple images
             img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
 
         Returns:
             list[list[np.ndarray]]: BBox results of each image and classes.
@@ -116,17 +113,14 @@ class SingleStageDetector(BaseDetector):
             # get shape as tensor
             img_shape = torch._shape_as_tensor(img)[2:]
             img_metas[0]['img_shape_for_onnx'] = img_shape
-        bbox_list = self.bbox_head.get_bboxes(
-            *outs, img_metas, rescale=rescale)
+            self.bbox_head.bbox_post
+
+        results_list = self.bbox_head.get_bboxes(*outs, img_metas)
         # skip post-processing when exporting to ONNX
         if torch.onnx.is_in_onnx_export():
-            return bbox_list
+            return results_list
 
-        bbox_results = [
-            bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-            for det_bboxes, det_labels in bbox_list
-        ]
-        return bbox_results
+        return [results.export('bbox') for results in results_list]
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test function with test time augmentation.

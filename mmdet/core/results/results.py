@@ -4,6 +4,7 @@ import itertools
 import numpy as np
 import torch
 
+from mmdet.core import bbox2result
 from mmdet.utils.util_mixins import NiceRepr
 
 
@@ -57,17 +58,13 @@ class Results(NiceRepr):
                 new_results[k] = dict()
         return new_results
 
-    def export_results(self):
+    def export(self, ressults_type='bbox', num_classes=80):
         """Export results field to a dict, all tensor in results field would be
         converted to numpy."""
-        r_results = dict()
-        for k, v in self._results_field.items():
-            if isinstance(v, torch.Tensor):
-                v = v.cpu().numpy()
-                r_results[k] = v
-            else:
-                r_results[k] = copy.deepcopy(v)
-        return r_results
+        assert ressults_type in ('bbox', 'mask')
+        if ressults_type == 'bbox':
+            det_bboxes = torch.cat([self.bboxes, self.scores[:, None]], -1)
+            return bbox2result(det_bboxes, self.labels, num_classes)
 
     def keys(self):
         return list(self._results_field.keys()) + \

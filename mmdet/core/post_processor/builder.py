@@ -2,10 +2,10 @@ import collections
 
 from mmcv.utils import Registry, build_from_cfg
 
-POST_PROCESS = Registry('post_process')
+POST_PROCESSOR = Registry('post_processor')
 
 
-@POST_PROCESS.register_module()
+@POST_PROCESSOR.register_module()
 class ComposePostProcess(object):
     """Compose multiple post process operation sequentially.
 
@@ -20,7 +20,7 @@ class ComposePostProcess(object):
         self.post_processes = []
         for process in post_processes:
             if isinstance(process, dict):
-                operation = build_from_cfg(process, POST_PROCESS)
+                operation = build_from_cfg(process, POST_PROCESSOR)
                 self.post_processes.append(operation)
             elif callable(process):
                 self.post_processes.append(process)
@@ -53,6 +53,6 @@ class ComposePostProcess(object):
         return format_string
 
 
-def build_post_process(cfg, default_args=None):
-    post_process = build_from_cfg(cfg, POST_PROCESS, default_args)
+def build_post_processes(cfg, default_args=None):
+    post_process = build_from_cfg(cfg, POST_PROCESSOR, default_args)
     return post_process

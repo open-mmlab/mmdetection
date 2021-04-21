@@ -224,6 +224,7 @@ def delta2bbox(rois,
             max_shape = x1.new_tensor(max_shape)
         max_shape = max_shape[..., :2].type_as(x1)
         if max_shape.ndim == 2:
+            # with batch dimension
             assert bboxes.ndim == 3
             assert max_shape.size(0) == bboxes.size(0)
 

@@ -2,10 +2,10 @@ import torch
 from mmcv.ops.nms import batched_nms, nms
 
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
-from mmdet.core.post_processing.builder import POST_PROCESS
+from mmdet.core.post_processor.builder import POST_PROCESSOR
 
 
-@POST_PROCESS.register_module()
+@POST_PROCESSOR.register_module()
 class PreNMS(object):
     """Reshape the prediction and remove low score boxes before the NMS.
 
@@ -17,73 +17,76 @@ class PreNMS(object):
     def __init__(self, score_thr=0.05):
         self.score_thr = score_thr
 
-    def __call__(self, results):
+    def __call__(self, results_list):
         # shape(n, num_class), the num_class does not
         # include the background
-        scores = results.scores
-        # multi_bboxes (Tensor): shape (n, num_class*4) or (n, 4)
-        multi_bboxes = results.bboxes
+        r_results_list = []
+        for results in results_list:
+            # exclude background category
+            scores = results.scores[..., :-1]
+            # multi_bboxes (Tensor): shape (n, num_class*4) or (n, 4)
+            multi_bboxes = results.bboxes
+            score_factors = results.get('score_factors', None)
+            num_classes = scores.size(1)
+            if multi_bboxes.shape[1] > 4:
+                bboxes = multi_bboxes.view(scores.size(0), -1, 4)
+            else:
+                bboxes = multi_bboxes[:, None].expand(
+                    scores.size(0), num_classes, 4)
 
-        score_factors = results.get('score_factors', None)
-        num_classes = scores.size(1)
-        if multi_bboxes.shape[1] > 4:
-            bboxes = multi_bboxes.view(scores.size(0), -1, 4)
-        else:
-            bboxes = multi_bboxes[:,
-                                  None].expand(scores.size(0), num_classes, 4)
+            labels = torch.arange(num_classes, dtype=torch.long)
+            labels = labels.view(1, -1).expand_as(scores)
 
-        labels = torch.arange(num_classes, dtype=torch.long)
-        labels = labels.view(1, -1).expand_as(scores)
+            bboxes = bboxes.reshape(-1, 4)
+            scores = scores.reshape(-1)
+            labels = labels.reshape(-1)
 
-        bboxes = bboxes.reshape(-1, 4)
-        scores = scores.reshape(-1)
-        labels = labels.reshape(-1)
-
-        r_results = results.new_results()
-        r_results.bboxes = bboxes
-        r_results.scores = scores
-        r_results.labels = labels
-        r_results.keep_ids = scores.arange(0, len(results))
-
-        if not torch.onnx.is_in_onnx_export():
-            # NonZero not supported  in TensorRT
-            # remove low scoring boxes
-            valid_mask = scores > self.score_thr
-        # multiply score_factor after threshold to preserve
-        # more bboxes, improve mAP by 1% for YOLOv3
-        if score_factors is not None:
-            # expand the shape to match original shape of score
-            score_factors = score_factors.view(-1, 1).expand(
-                r_results.scores.size(0), num_classes)
-            score_factors = score_factors.reshape(-1)
-            r_results.scores = r_results.scores * score_factors
-
-        if not torch.onnx.is_in_onnx_export():
-            # NonZero not supported  in TensorRT
-            r_results = r_results[valid_mask]
-        else:
-            # TensorRT NMS plugin has invalid output filled with -1
-            # add dummy data to make detection output correct.
-            assert bboxes.size(1) == 4, 'TensorRT NMS plugin only ' \
-                                        'support class ignore' \
-                                        'regression'
-            bboxes = torch.cat([bboxes, bboxes.new_zeros(1, 4)], dim=0)
-            scores = torch.cat([scores, scores.new_zeros(1)], dim=0)
-            labels = torch.cat([labels, labels.new_zeros(1)], dim=0)
             r_results = results.new_results()
             r_results.bboxes = bboxes
-            r_results.labels = labels
             r_results.scores = scores
+            r_results.labels = labels
+            r_results.keep_ids = torch.arange(
+                0, len(r_results), device=scores.device)
 
-        if len(r_results) == 0:
-            if torch.onnx.is_in_onnx_export():
-                raise RuntimeError('[ONNX Error] Can not record NMS '
-                                   'as it has not been executed this time')
+            if not torch.onnx.is_in_onnx_export():
+                # NonZero not supported  in TensorRT
+                # remove low scoring boxes
+                valid_mask = scores > self.score_thr
+            # multiply score_factor after threshold to preserve
+            # more bboxes, improve mAP by 1% for YOLOv3
+            if score_factors is not None:
+                # expand the shape to match original shape of score
+                score_factors = score_factors.view(-1, 1).expand(
+                    r_results.scores.size(0), num_classes)
+                score_factors = score_factors.reshape(-1)
+                r_results.scores = r_results.scores * score_factors
 
-        return r_results
+            if not torch.onnx.is_in_onnx_export():
+                # NonZero not supported  in TensorRT
+                r_results = r_results[valid_mask]
+            else:
+                # TensorRT NMS plugin has invalid output filled with -1
+                # add dummy data to make detection output correct.
+                assert bboxes.size(1) == 4, 'TensorRT NMS plugin only ' \
+                                            'support class ignore' \
+                                            'regression'
+                bboxes = torch.cat([bboxes, bboxes.new_zeros(1, 4)], dim=0)
+                scores = torch.cat([scores, scores.new_zeros(1)], dim=0)
+                labels = torch.cat([labels, labels.new_zeros(1)], dim=0)
+                r_results = results.new_results()
+                r_results.bboxes = bboxes
+                r_results.labels = labels
+                r_results.scores = scores
+
+            if len(r_results) == 0:
+                if torch.onnx.is_in_onnx_export():
+                    raise RuntimeError('[ONNX Error] Can not record NMS '
+                                       'as it has not been executed this time')
+            r_results_list.append(r_results)
+        return r_results_list
 
 
-@POST_PROCESS.register_module()
+@POST_PROCESSOR.register_module()
 class NaiveNMS(object):
 
     def __init__(self,
@@ -98,47 +101,51 @@ class NaiveNMS(object):
         self.split_thr = split_thr
         self.offset = offset
 
-    def __call__(self, results):
+    def __call__(self, results_list):
+        r_results_list = []
 
-        if len(results) == 0:
-            return results
+        for results in results_list:
+            if len(results) == 0:
+                r_results_list.append(results)
+                continue
 
-        boxes = results.bboxes
-        labels = results.labels
-        scores = results.scores
+            boxes = results.bboxes
+            labels = results.labels
+            scores = results.scores
 
-        if self.class_agnostic:
-            boxes_for_nms = boxes
-        else:
-            max_coordinate = boxes.max()
-            offsets = labels.to(boxes) * (
-                max_coordinate + torch.tensor(1).to(boxes))
-            boxes_for_nms = boxes + offsets[:, None]
+            if self.class_agnostic:
+                boxes_for_nms = boxes
+            else:
+                max_coordinate = boxes.max()
+                offsets = labels.to(boxes) * (
+                    max_coordinate + torch.tensor(1).to(boxes))
+                boxes_for_nms = boxes + offsets[:, None]
 
-        if boxes_for_nms.shape[0] < self.split_thr:
-            dets, keep_ids = nms(
-                boxes_for_nms,
-                scores,
-                iou_threshold=self.iou_threshold,
-                offset=self.offset)
-            r_results = results[keep_ids]
-
-        else:
-            total_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
-            for id in torch.unique(labels):
-                class_ids = (labels == id).nonzero(as_tuple=False).view(-1)
+            if boxes_for_nms.shape[0] < self.split_thr:
                 dets, keep_ids = nms(
-                    boxes_for_nms[class_ids],
-                    scores[class_ids],
+                    boxes_for_nms,
+                    scores,
                     iou_threshold=self.iou_threshold,
                     offset=self.offset)
-                total_mask[class_ids[keep_ids]] = True
+                r_results = results[keep_ids]
 
-            keep = total_mask.nonzero(as_tuple=False).view(-1)
-            keep = keep[scores[keep].argsort(descending=True)]
-            r_results = results[keep]
+            else:
+                total_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
+                for id in torch.unique(labels):
+                    class_ids = (labels == id).nonzero(as_tuple=False).view(-1)
+                    dets, keep_ids = nms(
+                        boxes_for_nms[class_ids],
+                        scores[class_ids],
+                        iou_threshold=self.iou_threshold,
+                        offset=self.offset)
+                    total_mask[class_ids[keep_ids]] = True
 
-        return r_results
+                keep = total_mask.nonzero(as_tuple=False).view(-1)
+                keep = keep[scores[keep].argsort(descending=True)]
+                r_results = results[keep]
+            r_results_list.append(r_results)
+
+        return r_results_list
 
 
 def multiclass_nms(multi_bboxes,

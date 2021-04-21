@@ -5,7 +5,9 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+                        images_to_levels, multi_apply, unmap)
+from mmdet.core.results.results import InstanceResults
+from ...core.post_processor.builder import ComposePostProcess
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -54,6 +56,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                      loss_weight=1.0),
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
+                 bbox_post_processes=[
+                     dict(type='PreNMS'),
+                     dict(type='NaiveNMS'),
+                     dict(type='ResizeResultsToOri', results_types=['bbox'])
+                 ],
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
@@ -61,6 +68,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.num_classes = num_classes
         self.feat_channels = feat_channels
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
+        self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
+
         # TODO better way to determine whether sample or not
         self.sampling = loss_cls['type'] not in [
             'FocalLoss', 'GHMC', 'QualityFocalLoss'
@@ -493,13 +502,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   img_metas,
-                   cfg=None,
-                   rescale=False,
-                   with_nms=True):
+    def get_bboxes(
+        self,
+        cls_scores,
+        bbox_preds,
+        img_metas,
+        cfg=None,
+    ):
         """Transform network output for a batch into bbox predictions.
 
         Args:
@@ -511,10 +520,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 image size, scaling factor, etc.
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
@@ -525,6 +531,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 box.
 
         Example:
+            TODO modify this example
             >>> import mmcv
             >>> self = AnchorHead(
             >>>     num_classes=9,
@@ -548,7 +555,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             >>> det_bboxes, det_labels = result_list[0]
             >>> assert len(result_list) == 1
             >>> assert det_bboxes.shape[1] == 5
-            >>> assert len(det_bboxes) == len(det_labels) == cfg.max_per_img
         """
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
@@ -565,37 +571,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             assert len(
                 img_metas
             ) == 1, 'Only support one input image while in exporting to ONNX'
-            img_shapes = img_metas[0]['img_shape_for_onnx']
-        else:
-            img_shapes = [
-                img_metas[i]['img_shape']
-                for i in range(cls_scores[0].shape[0])
-            ]
-        scale_factors = [
-            img_metas[i]['scale_factor'] for i in range(cls_scores[0].shape[0])
-        ]
 
-        if with_nms:
-            # some heads don't support with_nms argument
-            result_list = self._get_bboxes(cls_score_list, bbox_pred_list,
-                                           mlvl_anchors, img_shapes,
-                                           scale_factors, cfg, rescale)
-        else:
-            result_list = self._get_bboxes(cls_score_list, bbox_pred_list,
-                                           mlvl_anchors, img_shapes,
-                                           scale_factors, cfg, rescale,
-                                           with_nms)
+        result_list = self._get_bboxes(cls_score_list, bbox_pred_list,
+                                       mlvl_anchors, img_metas, cfg)
+
         return result_list
 
-    def _get_bboxes(self,
-                    cls_score_list,
-                    bbox_pred_list,
-                    mlvl_anchors,
-                    img_shapes,
-                    scale_factors,
-                    cfg,
-                    rescale=False,
-                    with_nms=True):
+    def _get_bboxes(self, cls_score_list, bbox_pred_list, mlvl_anchors,
+                    img_metas, cfg):
         """Transform outputs for a batch item into bbox predictions.
 
         Args:
@@ -605,24 +588,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scale level with shape (N, num_anchors * 4, H, W).
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
-            img_shapes (list[tuple[int]]): Shape of the batch input image,
-                list[(height, width, 3)].
-            scale_factors (list[ndarray]): Scale factor of the batch
-                image arange as list[(w_scale, h_scale, w_scale, h_scale)].
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
+            list[obj:`InstanceResults`]: Results of each image after the
+                post process.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
@@ -632,11 +605,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             cfg.get('nms_pre', -1),
             device=cls_score_list[0].device,
             dtype=torch.long)
-
+        img_shapes = [img_meta['img_shape'] for img_meta in img_metas]
         mlvl_bboxes = []
         mlvl_scores = []
-        for cls_score, bbox_pred, anchors in zip(cls_score_list,
-                                                 bbox_pred_list, mlvl_anchors):
+        for cls_score, bbox_pred, anchors, img_meta in zip(
+                cls_score_list, bbox_pred_list, mlvl_anchors, img_metas):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             cls_score = cls_score.permute(0, 2, 3,
                                           1).reshape(batch_size, -1,
@@ -680,9 +653,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             mlvl_scores.append(scores)
 
         batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
-        if rescale:
-            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
-                scale_factors).unsqueeze(1)
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
 
         # Set max number of box to be feed into nms in deployment
@@ -710,20 +680,16 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                                   1)
             batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
 
-        if with_nms:
-            det_results = []
-            for (mlvl_bboxes, mlvl_scores) in zip(batch_mlvl_bboxes,
-                                                  batch_mlvl_scores):
-                det_bbox, det_label = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                     cfg.score_thr, cfg.nms,
-                                                     cfg.max_per_img)
-                det_results.append(tuple([det_bbox, det_label]))
-        else:
-            det_results = [
-                tuple(mlvl_bs)
-                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores)
-            ]
-        return det_results
+        results_list = []
+        for img_ids in range(len(batch_mlvl_scores)):
+            results = InstanceResults(img_metas[img_ids])
+            results.bboxes = batch_mlvl_bboxes[img_ids]
+            results.scores = batch_mlvl_scores[img_ids]
+            results_list.append(results)
+
+        r_results_list = self.bbox_post_processes(results_list)
+
+        return r_results_list
 
     def aug_test(self, feats, img_metas, rescale=False):
         """Test function with test time augmentation.
