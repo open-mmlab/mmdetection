@@ -9,6 +9,16 @@ from .base_assigner import BaseAssigner
 
 @BBOX_ASSIGNERS.register_module()
 class UniformAssigner(BaseAssigner):
+    """Uniform Matching between the anchors and gt boxes, which can achieve
+    balance in positive anchors.
+
+    Args:
+        pos_ignore_thresh (float): the threshold to ignore positive anchors
+        neg_ignore_thresh (float): the threshold to ignore negative anchors
+        match_times(int): Number of positive anchors for each gt box.
+           Default 4.
+        iou_calculator (dict): iou_calculator config
+    """
 
     def __init__(self,
                  pos_ignore_thresh,
@@ -20,7 +30,12 @@ class UniformAssigner(BaseAssigner):
         self.neg_ignore_thresh = neg_ignore_thresh
         self.iou_calculator = build_iou_calculator(iou_calculator)
 
-    def assign(self, bbox_pred, anchor, gt_bboxes, gt_labels, img_meta):
+    def assign(self,
+               bbox_pred,
+               anchor,
+               gt_bboxes,
+               gt_bboxes_ignore=None,
+               gt_labels=None):
         num_gts, num_bboxes = gt_bboxes.size(0), bbox_pred.size(0)
 
         # 1. assign -1 by default

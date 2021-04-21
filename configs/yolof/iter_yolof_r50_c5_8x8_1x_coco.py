@@ -33,7 +33,9 @@ model = dict(
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
-            target_stds=[1., 1., 1., 1.]),
+            target_stds=[1., 1., 1., 1.],
+            add_ctr_clamp=True,
+            ctr_clamp=32),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -65,7 +67,7 @@ optimizer = dict(
     weight_decay=0.0001,
     paramwise_cfg=dict(
         norm_decay_mult=0.,
-        custom_keys={'backbone': dict(lr_mult=0.334, decay_mult=1.0)}))
+        custom_keys={'backbone': dict(lr_mult=1. / 3, decay_mult=1.0)}))
 
 lr_config = dict(
     policy='step',

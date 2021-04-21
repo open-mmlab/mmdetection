@@ -1,13 +1,15 @@
-import torch
 import torch.nn as nn
-from mmcv.cnn import caffe2_xavier_init
-from torch.nn import BatchNorm2d, ReLU
+from mmcv.cnn import (ConvModule, caffe2_xavier_init, constant_init, is_norm,
+                      normal_init)
+from torch.nn import BatchNorm2d
 
 from ..builder import NECKS
 
 
 class Bottleneck(nn.Module):
-    """Bottleneck block for DilatedEncoder.
+    """Bottleneck block for DilatedEncoder used in `YOLOF.
+
+    <https://arxiv.org/abs/2103.09460>`.
 
     The Bottleneck contains three ConvLayers and one residual connection.
 
@@ -15,28 +17,28 @@ class Bottleneck(nn.Module):
         in_channels (int): The number of input channels.
         mid_channels (int): The number of middle output channels.
         dilation (int): Dilation rate.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
     """
 
     def __init__(self,
-                 in_channels: int = 512,
-                 mid_channels: int = 128,
-                 dilation: int = 1):
+                 in_channels,
+                 mid_channels,
+                 dilation,
+                 norm_cfg=dict(type='BN', requires_grad=True)):
         super(Bottleneck, self).__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, mid_channels, kernel_size=1, padding=0),
-            BatchNorm2d(mid_channels), ReLU())
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(
-                mid_channels,
-                mid_channels,
-                kernel_size=3,
-                padding=dilation,
-                dilation=dilation), BatchNorm2d(mid_channels), ReLU())
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(mid_channels, in_channels, kernel_size=1, padding=0),
-            BatchNorm2d(in_channels), ReLU())
+        self.conv1 = ConvModule(
+            in_channels, mid_channels, 1, norm_cfg=norm_cfg)
+        self.conv2 = ConvModule(
+            mid_channels,
+            mid_channels,
+            3,
+            padding=dilation,
+            dilation=dilation,
+            norm_cfg=norm_cfg)
+        self.conv3 = ConvModule(
+            mid_channels, in_channels, 1, norm_cfg=norm_cfg)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x):
         identity = x
         out = self.conv1(x)
         out = self.conv2(out)
@@ -92,17 +94,12 @@ class DilatedEncoder(nn.Module):
         caffe2_xavier_init(self.lateral_conv)
         caffe2_xavier_init(self.fpn_conv)
         for m in [self.lateral_norm, self.fpn_norm]:
-            nn.init.constant_(m.weight, 1)
-            nn.init.constant_(m.bias, 0)
+            constant_init(m, 1)
         for m in self.dilated_encoder_blocks.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.normal_(m.weight, mean=0, std=0.01)
-                if hasattr(m, 'bias') and m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-
-            if isinstance(m, (nn.GroupNorm, nn.BatchNorm2d, nn.SyncBatchNorm)):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+                normal_init(m, mean=0, std=0.01)
+            if is_norm(m):
+                constant_init(m, 1)
 
     def forward(self, feature):
         out = self.lateral_norm(self.lateral_conv(feature[-1]))

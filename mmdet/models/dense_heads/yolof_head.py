@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import bias_init_with_prob
+from mmcv.cnn import bias_init_with_prob, constant_init, is_norm, normal_init
 from mmcv.runner import force_fp32
 from torch.nn import BatchNorm2d, ReLU
 
@@ -39,6 +39,16 @@ def levels_to_images(mlvl_tensor):
 
 @HEADS.register_module()
 class YOLOFHead(AnchorHead):
+    """YOLOFHead Paper link: https://arxiv.org/abs/2103.09460.
+
+    Args:
+        num_classes (int): The number of object classes (w/o background)
+        in_channels (List[int]): The number of input channels per scale.
+        cls_num_convs (int): The number of convolutions of cls branch.
+           Default 2.
+        reg_num_convs (int): The number of convolutions of reg branch.
+           Default 4.
+    """
 
     def __init__(self,
                  num_classes,
@@ -98,13 +108,9 @@ class YOLOFHead(AnchorHead):
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.normal_(m.weight, mean=0, std=0.01)
-                if hasattr(m, 'bias') and m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-
-            if isinstance(m, (nn.GroupNorm, nn.BatchNorm2d, nn.SyncBatchNorm)):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+                normal_init(m, mean=0, std=0.01)
+            if is_norm(m):
+                constant_init(m, 1)
 
         # Use prior in model initialization to improve stability
         bias_cls = bias_init_with_prob(0.01)
@@ -189,24 +195,12 @@ class YOLOFHead(AnchorHead):
             len(pos_inds), dtype=torch.float, device=bbox_preds[0].device)
         num_total_samples = max(reduce_mean(num_pos), 1.0)
 
-        # anchor number of multi levels
-        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
-        # concat all level anchors and flags to a single tensor
-        concat_anchor_list = []
-        for i in range(len(anchor_list)):
-            concat_anchor_list.append(torch.cat(anchor_list[i]))
-        all_anchor_list = images_to_levels(concat_anchor_list,
-                                           num_level_anchors)
-
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
             bbox_preds,
-            all_anchor_list,
             labels_list,
             label_weights_list,
-            bbox_targets_list,
-            bbox_weights_list,
             pos_idx_list,
             pos_predicted_boxes_list,
             target_boxes_list,
@@ -229,6 +223,10 @@ class YOLOFHead(AnchorHead):
         multiple images.
 
         Args:
+            cls_scores_list (list[list[Tensor]])： Multi level cls scores of
+                each image.
+            bbox_preds_list (list[list[Tensor]])： Multi level bbox preds of
+                each image.
             anchor_list (list[list[Tensor]]): Multi level anchors of each
                 image. The outer list indicates images, and the inner list
                 corresponds to feature levels of the image. Each element of
@@ -333,7 +331,7 @@ class YOLOFHead(AnchorHead):
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
         if not inside_flags.any():
-            return (None, ) * 7
+            return (None, ) * 10
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
         bbox_preds = bbox_preds.reshape(-1, 4)
@@ -396,9 +394,9 @@ class YOLOFHead(AnchorHead):
                 neg_inds, sampling_result, pos_idx, pos_predicted_boxes,
                 target_boxes)
 
-    def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
-                    bbox_targets, bbox_weights, pos_idxs, pos_predicted_boxes,
-                    target_boxes, num_total_samples):
+    def loss_single(self, cls_score, bbox_pred, labels, label_weights,
+                    bbox_weights, pos_predicted_boxes, bbox_targets,
+                    num_total_samples):
         """Compute loss of a single scale level.
 
         Args:
@@ -406,22 +404,21 @@ class YOLOFHead(AnchorHead):
                 Has shape (N, num_anchors * num_classes, H, W).
             bbox_pred (Tensor): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W).
-            anchors (Tensor): Box reference for each scale level with shape
-                (N, num_total_anchors, 4).
             labels (Tensor): Labels of each anchors with shape
                 (N, num_total_anchors).
             label_weights (Tensor): Label weights of each anchor with shape
                 (N, num_total_anchors)
+            bbox_weights (Tensor): BBox regression loss weights of each anchor
+                with shape (N, num, 4).
+            pos_predicted_boxes (Tensor): BBox regression predicted.
             bbox_targets (Tensor): BBox regression targets of each anchor wight
                 shape (N, num_total_anchors, 4).
-            bbox_weights (Tensor): BBox regression loss weights of each anchor
-                with shape (N, num_total_anchors, 4).
             num_total_samples (int): If sampling, num total samples equal to
                 the number of total anchors; Otherwise, it is the number of
                 positive anchors.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            tuple[Tensor]: A tuple of loss components.
         """
         # classification loss
         labels = labels.reshape(-1)
@@ -435,8 +432,8 @@ class YOLOFHead(AnchorHead):
         # regression loss
         loss_bbox = self.loss_bbox(
             pos_predicted_boxes,
-            target_boxes,
-            pos_idxs.float(),
+            bbox_targets,
+            bbox_weights.float(),
             avg_factor=num_total_samples)
 
         return loss_cls, loss_bbox
