@@ -157,7 +157,7 @@ class DETRHead(AnchorFreeHead):
     def init_weights(self):
         """Initialize weights of the transformer head."""
         # The initialization for transformer is important
-        self.transformer.init_weight()
+        self.transformer.init_weights()
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
