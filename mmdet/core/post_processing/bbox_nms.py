@@ -86,7 +86,7 @@ def multiclass_nms(multi_bboxes,
             return bboxes, labels, inds
         else:
             return bboxes, labels
- 
+
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
 
     if not torch.onnx.is_in_onnx_export() and max_num > 0:
