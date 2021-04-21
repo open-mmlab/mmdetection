@@ -136,7 +136,6 @@ def test_mosaic():
     # mmcv.imshow_bboxes(img, gt_bboxes, show=True)
     # mmcv.imwrite(img, "img.png")
 
-
 def test_flip():
     # test assertion for invalid flip_ratio
     with pytest.raises(AssertionError):
