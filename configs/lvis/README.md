@@ -19,14 +19,7 @@
 * Run following scripts to install our forked lvis-api.
 
     ```shell
-    # mmlvis is fully compatible with official lvis
-    pip install mmlvis
-    ```
-
-    or
-
-    ```shell
-    pip install -r requirements/optional.txt
+    pip install git+https://github.com/lvis-dataset/lvis-api.git
     ```
 
 * All experiments use oversample strategy [here](../../docs/tutorials/new_dataset.md#class-balanced-dataset) with oversample threshold `1e-3`.

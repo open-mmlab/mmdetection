@@ -152,7 +152,7 @@ def inference_detector(model, imgs):
         return results
 
 
-async def async_inference_detector(model, img):
+async def async_inference_detector(model, imgs):
     """Async inference image(s) with the detector.
 
     Args:
@@ -162,28 +162,51 @@ async def async_inference_detector(model, img):
     Returns:
         Awaitable detection results.
     """
+    if not isinstance(imgs, (list, tuple)):
+        imgs = [imgs]
+
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
-    # prepare data
-    if isinstance(img, np.ndarray):
-        # directly add img
-        data = dict(img=img)
+
+    if isinstance(imgs[0], np.ndarray):
         cfg = cfg.copy()
         # set loading pipeline type
         cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
-    else:
-        # add information into dict
-        data = dict(img_info=dict(filename=img), img_prefix=None)
-    # build the data pipeline
+
+    cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     test_pipeline = Compose(cfg.data.test.pipeline)
-    data = test_pipeline(data)
-    data = scatter(collate([data], samples_per_gpu=1), [device])[0]
+
+    datas = []
+    for img in imgs:
+        # prepare data
+        if isinstance(img, np.ndarray):
+            # directly add img
+            data = dict(img=img)
+        else:
+            # add information into dict
+            data = dict(img_info=dict(filename=img), img_prefix=None)
+        # build the data pipeline
+        data = test_pipeline(data)
+        datas.append(data)
+
+    data = collate(datas, samples_per_gpu=len(imgs))
+    # just get the actual data from DataContainer
+    data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
+    data['img'] = [img.data[0] for img in data['img']]
+    if next(model.parameters()).is_cuda:
+        # scatter to specified GPU
+        data = scatter(data, [device])[0]
+    else:
+        for m in model.modules():
+            assert not isinstance(
+                m, RoIPool
+            ), 'CPU inference with RoIPool is not supported currently.'
 
     # We don't restore `torch.is_grad_enabled()` value during concurrent
     # inference since execution can overlap
     torch.set_grad_enabled(False)
-    result = await model.aforward_test(rescale=True, **data)
-    return result
+    results = await model.aforward_test(rescale=True, **data)
+    return results
 
 
 def show_result_pyplot(model,

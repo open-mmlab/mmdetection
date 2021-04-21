@@ -232,17 +232,17 @@ class FCOSHead(AnchorFreeHead):
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_centerness = flatten_centerness[pos_inds]
+        pos_bbox_targets = flatten_bbox_targets[pos_inds]
+        pos_centerness_targets = self.centerness_target(pos_bbox_targets)
+        # centerness weighted iou loss
+        centerness_denorm = max(
+            reduce_mean(pos_centerness_targets.sum().detach()), 1e-6)
 
         if len(pos_inds) > 0:
-            pos_bbox_targets = flatten_bbox_targets[pos_inds]
-            pos_centerness_targets = self.centerness_target(pos_bbox_targets)
             pos_points = flatten_points[pos_inds]
             pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
             pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
-            # centerness weighted iou loss
-            centerness_denorm = max(
-                reduce_mean(pos_centerness_targets.sum().detach()), 1e-6)
             loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
@@ -343,7 +343,7 @@ class FCOSHead(AnchorFreeHead):
             bbox_preds (list[Tensor]): Box energies / deltas for a single scale
                 level with shape (N, num_points * 4, H, W).
             centernesses (list[Tensor]): Centerness for a single scale level
-                with shape (N, num_points * 4, H, W).
+                with shape (N, num_points, H, W).
             mlvl_points (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_points, 4).
             img_shapes (list[tuple[int]]): Shape of the input image,
@@ -629,7 +629,10 @@ class FCOSHead(AnchorFreeHead):
         # only calculate pos centerness targets, otherwise there may be nan
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
-        centerness_targets = (
-            left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
-                top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
+        if len(left_right) == 0:
+            centerness_targets = left_right[..., 0]
+        else:
+            centerness_targets = (
+                left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
+                    top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
         return torch.sqrt(centerness_targets)
