@@ -47,9 +47,10 @@ def multiclass_nms(multi_bboxes,
     bboxes = bboxes.reshape(-1, 4)
     scores = scores.reshape(-1)
     labels = labels.reshape(-1)
-
-    nms_cfg['score_threshold'] = score_thr
-    nms_cfg['max_num'] = max_num if max_num > 0 else bboxes.shape[0]
+    
+    if torch.onnx.is_in_onnx_export():
+        nms_cfg['score_threshold'] = score_thr
+        nms_cfg['max_num'] = max_num if max_num > 0 else bboxes.shape[0]
     
     if not torch.onnx.is_in_onnx_export():
         # NonZero not supported  in TensorRT
@@ -63,7 +64,8 @@ def multiclass_nms(multi_bboxes,
             multi_scores.size(0), num_classes)
         score_factors = score_factors.reshape(-1)
         scores = scores * score_factors
-        nms_cfg['score_threshold'] = 0
+        if torch.onnx.is_in_onnx_export():
+            nms_cfg['score_threshold'] = 0
 
     if not torch.onnx.is_in_onnx_export():
         # NonZero not supported  in TensorRT
@@ -84,8 +86,12 @@ def multiclass_nms(multi_bboxes,
             return bboxes, labels, inds
         else:
             return bboxes, labels
-
+ 
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
+
+    if not torch.onnx.is_in_onnx_export() and max_num > 0:
+        dets = dets[:max_num]
+        keep = keep[:max_num]
 
     if return_inds:
         return dets, labels[keep], keep
