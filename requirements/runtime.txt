@@ -9,6 +9,7 @@ torchvision>=0.6.1,<=0.9.1
 pytorchcv==0.0.55
 tqdm
 onnx>=1.7.0
+onnxoptimizer
 onnxruntime>=1.1.2
 lxml
 Polygon3==3.0.8
