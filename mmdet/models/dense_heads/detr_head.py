@@ -594,14 +594,12 @@ class DETRHead(AnchorFreeHead):
 
         return result_list
 
-    def _get_bboxes_single(
-        self,
-        cls_score,
-        bbox_pred,
-        img_shape,
-        scale_factor,
-        rescale=False,
-    ):
+    def _get_bboxes_single(self,
+                           cls_score,
+                           bbox_pred,
+                           img_shape,
+                           scale_factor,
+                           rescale=False):
         """Transform outputs from the last decoder layer into bbox predictions
         for each image.
 
