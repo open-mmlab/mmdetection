@@ -7,6 +7,7 @@ from torch.nn.modules.utils import _pair
 from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.losses import accuracy
+from mmdet.models.utils import build_linear_layer
 
 
 @HEADS.register_module()
@@ -28,6 +29,7 @@ class BBoxHead(nn.Module):
                      target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
                  reg_decoded_bbox=False,
+                 cls_predictor_cfg=None,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
@@ -45,6 +47,7 @@ class BBoxHead(nn.Module):
         self.num_classes = num_classes
         self.reg_class_agnostic = reg_class_agnostic
         self.reg_decoded_bbox = reg_decoded_bbox
+        self.cls_predictor_cfg = cls_predictor_cfg
         self.fp16_enabled = False
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
@@ -58,7 +61,18 @@ class BBoxHead(nn.Module):
             in_channels *= self.roi_feat_area
         if self.with_cls:
             # need to add background class
-            self.fc_cls = nn.Linear(in_channels, num_classes + 1)
+            if self.custom_cls_channels:
+                cls_channels = self.loss_cls.get_cls_channels(self.num_classes)
+            else:
+                cls_channels = num_classes + 1
+            if self.cls_predictor_cfg:
+                self.fc_cls = build_linear_layer(
+                    dict(
+                        in_features=in_channels,
+                        out_features=cls_channels,
+                        **self.cls_predictor_cfg))
+            else:
+                self.fc_cls = nn.Linear(in_channels, num_classes + 1)
         if self.with_reg:
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
             self.fc_reg = nn.Linear(in_channels, out_dim_reg)
@@ -72,6 +86,14 @@ class BBoxHead(nn.Module):
         if self.with_reg:
             nn.init.normal_(self.fc_reg.weight, 0, 0.001)
             nn.init.constant_(self.fc_reg.bias, 0)
+
+    @property
+    def custom_cls_channels(self):
+        return getattr(self.loss_cls, 'custom_cls_channels', False)
+
+    @property
+    def custom_acc(self):
+        return getattr(self.loss_cls, 'custom_acc', False)
 
     @auto_fp16()
     def forward(self, x):
@@ -229,13 +251,21 @@ class BBoxHead(nn.Module):
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if cls_score.numel() > 0:
-                losses['loss_cls'] = self.loss_cls(
+                loss_cls_ = self.loss_cls(
                     cls_score,
                     labels,
                     label_weights,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
-                losses['acc'] = accuracy(cls_score, labels)
+                if isinstance(loss_cls_, dict):
+                    losses.update(loss_cls_)
+                else:
+                    losses['loss_cls'] = loss_cls_
+                if self.custom_acc:
+                    acc_ = self.loss_cls.get_accuracy(cls_score, labels)
+                    losses.update(acc_)
+                else:
+                    losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             bg_class_ind = self.num_classes
             # 0~self.num_classes-1 are FG, self.num_classes is BG
@@ -318,8 +348,11 @@ class BBoxHead(nn.Module):
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
 
-        scores = F.softmax(
-            cls_score, dim=-1) if cls_score is not None else None
+        if self.custom_cls_channels:
+            scores = self.loss_cls.get_activation(cls_score)
+        else:
+            scores = F.softmax(
+                cls_score, dim=-1) if cls_score is not None else None
 
         batch_mode = True
         if rois.ndim == 2:
