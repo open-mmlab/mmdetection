@@ -15,7 +15,6 @@
 import onnx
 import onnxruntime
 from onnx import helper, shape_inference
-from onnx.utils import polish_model
 
 from mmdet.models import build_detector
 
@@ -25,7 +24,6 @@ class ModelONNXRuntime:
     def __init__(self, model_file_path, cfg=None, classes=None):
         self.device = onnxruntime.get_device()
         self.model = onnx.load(model_file_path)
-        # self.model = polish_model(self.model)
         self.classes = classes
         self.pt_model = None
         if cfg is not None:
