@@ -1,12 +1,11 @@
 import copy
 import inspect
-
 import mmcv
 import numpy as np
-from mmdet.core import PolygonMasks
-from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from numpy import random
 
+from mmdet.core import PolygonMasks
+from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..builder import PIPELINES
 
 try:
@@ -625,7 +624,7 @@ class RandomCrop(object):
                  allow_negative_crop=False,
                  bbox_clip_border=True):
         if crop_type not in [
-            'relative_range', 'relative', 'absolute', 'absolute_range'
+                'relative_range', 'relative', 'absolute', 'absolute_range'
         ]:
             raise ValueError(f'Invalid crop_type {crop_type}.')
         if crop_type in ['absolute', 'absolute_range']:
@@ -688,7 +687,7 @@ class RandomCrop(object):
                 bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
                 bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
             valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
-                    bboxes[:, 3] > bboxes[:, 1])
+                bboxes[:, 3] > bboxes[:, 1])
             # If the crop does not contain any gt-bbox area and
             # allow_negative_crop is False, skip this image.
             if (key == 'gt_bboxes' and not valid_inds.any()
@@ -705,30 +704,13 @@ class RandomCrop(object):
             if mask_key in results:
                 results[mask_key] = results[mask_key][
                     valid_inds.nonzero()[0]].crop(
-                    np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
+                        np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
 
         # crop semantic seg
         for key in results.get('seg_fields', []):
             results[key] = results[key][crop_y1:crop_y2, crop_x1:crop_x2]
 
         return results
-
-    def set_crop_size(self, crop_size):
-        """Reset the crop_size attribute.
-
-        Args:
-            crop_size (tuple): (h, w).
-
-        Returns:
-            None
-        """
-        if self.crop_type in ['absolute', 'absolute_range']:
-            assert crop_size[0] > 0 and crop_size[1] > 0
-            assert isinstance(crop_size[0], int) and isinstance(
-                crop_size[1], int)
-        else:
-            assert 0 < crop_size[0] <= 1 and 0 < crop_size[1] <= 1
-        self.crop_size = crop_size
 
     def _get_crop_size(self, image_size):
         """Randomly generates the absolute crop size based on `crop_type` and
@@ -871,7 +853,7 @@ class PhotoMetricDistortion(object):
                 'Only single img_fields is allowed'
         img = results['img']
         assert img.dtype == np.float32, \
-            'PhotoMetricDistortion needs the input image of dtype np.float32,' \
+            'PhotoMetricDistortion needs the input image of dtype np.float32,'\
             ' please set "to_float32=True" in "LoadImageFromFile" pipeline'
         # random brightness
         if random.randint(2):
@@ -1150,8 +1132,8 @@ class MinIoURandomCrop(object):
 
                 # seg fields
                 for key in results.get('seg_fields', []):
-                    results[key] = results[key][patch[1]:patch[3],
-                                   patch[0]:patch[2]]
+                    results[key] = \
+                        results[key][patch[1]:patch[3], patch[0]:patch[2]]
                 return results
 
     def __repr__(self):
@@ -1573,8 +1555,8 @@ class RandomCenterCropPad(object):
         """
         center = (boxes[:, :2] + boxes[:, 2:]) / 2
         mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
-                center[:, 0] < patch[2]) * (
-                       center[:, 1] < patch[3])
+            center[:, 0] < patch[2]) * (
+                center[:, 1] < patch[3])
         return mask
 
     def _crop_image_and_paste(self, image, center, size):
@@ -1624,7 +1606,7 @@ class RandomCenterCropPad(object):
             cropped_center_y - top, cropped_center_y + bottom,
             cropped_center_x - left, cropped_center_x + right
         ],
-            dtype=np.float32)
+                          dtype=np.float32)
 
         return cropped_img, border, patch
 
@@ -1678,7 +1660,7 @@ class RandomCenterCropPad(object):
                         bboxes[:, 0:4:2] = np.clip(bboxes[:, 0:4:2], 0, new_w)
                         bboxes[:, 1:4:2] = np.clip(bboxes[:, 1:4:2], 0, new_h)
                     keep = (bboxes[:, 2] > bboxes[:, 0]) & (
-                            bboxes[:, 3] > bboxes[:, 1])
+                        bboxes[:, 3] > bboxes[:, 1])
                     bboxes = bboxes[keep]
                     results[key] = bboxes
                     if key in ['gt_bboxes']:
@@ -1853,25 +1835,19 @@ class Mosaic(object):
 
     Args:
         size (tuple[int]): output image size in (h,w).
-        min_offset (float | tuple[float] | None): Volume of the offset
-            of the cropping window. If float, both height and weidth are
+        min_offset (float | tuple[float]): Volume of the offset
+            of the cropping window. If float, both height and width are
         dataset (torch.nn.Dataset): Dataset with augmentation pipeline.
     """
 
-    def __init__(self,
-                 size=(640, 640),
-                 min_offset=0.2,
-                 dataset=None):
+    def __init__(self, size=(640, 640), min_offset=0.2, dataset=None):
 
         assert isinstance(size, tuple)
-        assert isinstance(size[0], int) and isinstance(
-            size[1], int)
+        assert isinstance(size[0], int) and isinstance(size[1], int)
         if size[0] <= 0 or size[1] <= 0:
             raise ValueError('image size must > 0 in train mode')
 
-        if min_offset is None:
-            self.min_offset = (0, 0)
-        elif isinstance(min_offset, float):
+        if isinstance(min_offset, float):
             assert 0 <= min_offset <= 1
             self.min_offset = (min_offset, min_offset)
         elif isinstance(min_offset, tuple):
@@ -1880,6 +1856,9 @@ class Mosaic(object):
             assert 0 <= min_offset[0] <= 1 and \
                    0 <= min_offset[1] <= 1
             self.min_offset = min_offset
+        else:
+            raise TypeError('Unsupported type for min_offset, '
+                            'should be either float or tuple[float]')
 
         self.size = size
         self.dataset = dataset
@@ -1898,15 +1877,23 @@ class Mosaic(object):
         # Generate the Mosaic coordinate
         cut_y = random.randint(
             int(self.size[0] * self.min_offset[0]),
-            int(self.size[0] * (1 - self.min_offset[0]))
-        )
+            int(self.size[0] * (1 - self.min_offset[0])))
         cut_x = random.randint(
             int(self.size[1] * self.min_offset[1]),
-            int(self.size[1] * (1 - self.min_offset[1]))
-        )
+            int(self.size[1] * (1 - self.min_offset[1])))
 
         cut_position = (cut_y, cut_x)
-        tmp_img = np.zeros((self.size[0], self.size[1], 3), dtype=np.float32)
+        tmp_result = copy.deepcopy(results)
+        # create the image buffer and mask buffer
+        tmp_result['img'] = np.zeros(
+            (self.size[0], self.size[1], *tmp_result['img'].shape[2:]),
+            dtype=tmp_result['img'].dtype)
+
+        for key in tmp_result.get('seg_fields', []):
+            tmp_result[key] = np.zeros(
+                (self.size[0], self.size[1], *tmp_result[key].shape[2:]),
+                dtype=tmp_result[key].dtype)
+        tmp_result['img_shape'] = self.size
 
         out_bboxes = []
         out_labels = []
@@ -1920,26 +1907,35 @@ class Mosaic(object):
                 # randomly sample a new image from the dataset
                 index = random.randint(self.num_sample)
                 results_i = copy.deepcopy(self.dataset.__getitem__(index))
-            tmp_img, bboxes, labels, ignores = self._mosiac_combine(loc,
-                                                                    results_i,
-                                                                    tmp_img,
-                                                                    cut_position)
-            out_bboxes.append(bboxes)
-            out_labels.append(labels)
-            out_ignores.append(ignores)
+
+            # compute the crop parameters
+            crop_size, img_slices, paste_position = self._mosiac_combine(
+                loc, cut_position)
+
+            self.cropper.crop_size = crop_size
+            results_i = self.cropper(results_i)
+
+            tmp_result['img'][img_slices] = results_i['img'].copy()
+            for key in tmp_result.get('seg_fields', []):
+                tmp_result[key][img_slices] = results_i[key].copy()
+
+            results_i = self._adjust_coordinate(results_i, paste_position)
+
+            out_bboxes.append(results_i['gt_bboxes'])
+            out_labels.append(results_i['gt_labels'])
+            out_ignores.append(results_i['gt_bboxes_ignore'])
 
         out_bboxes = np.concatenate(out_bboxes, axis=0)
         out_labels = np.concatenate(out_labels, axis=0)
         out_ignores = np.concatenate(out_ignores, axis=0)
 
-        results['img'] = tmp_img
-        results['img_shape'] = self.size
-        results['gt_bboxes'] = out_bboxes
-        results['gt_labels'] = out_labels
-        results['gt_bboxes_ignore'] = out_ignores
-        return results
+        tmp_result['gt_bboxes'] = out_bboxes
+        tmp_result['gt_labels'] = out_labels
+        tmp_result['gt_bboxes_ignore'] = out_ignores
 
-    def _mosiac_combine(self, loc, results, img, cut_position):
+        return tmp_result
+
+    def _mosiac_combine(self, loc, cut_position):
         """Crop the subimage, change the label and mix the image.
 
         Args:
@@ -1957,42 +1953,39 @@ class Mosaic(object):
             crop_size = cut_position
             img_slices = (slice(0, cut_position[0]), slice(0, cut_position[1]))
             paste_position = (0, 0)
-
         elif loc == 'top_right':
             # Image 1: top right
             crop_size = (cut_position[0], self.size[1] - cut_position[1])
-            img_slices = (slice(0, cut_position[0]), slice(cut_position[1], self.size[1]))
+            img_slices = (slice(0, cut_position[0]),
+                          slice(cut_position[1], self.size[1]))
             paste_position = (0, cut_position[1])
-
         elif loc == 'bottom_left':
             # Image 2: bottom left
             crop_size = (self.size[0] - cut_position[0], cut_position[1])
-            img_slices = (slice(cut_position[0], self.size[0]), slice(0, cut_position[1]))
+            img_slices = (slice(cut_position[0],
+                                self.size[0]), slice(0, cut_position[1]))
             paste_position = (cut_position[0], 0)
-
         elif loc == 'bottom_right':
             # Image 3: bottom right
-            crop_size = (self.size[0] - cut_position[0], self.size[1] - cut_position[1])
-            img_slices = (slice(cut_position[0], self.size[0]), slice(cut_position[1], self.size[1]))
+            crop_size = (self.size[0] - cut_position[0],
+                         self.size[1] - cut_position[1])
+            img_slices = (slice(cut_position[0], self.size[0]),
+                          slice(cut_position[1], self.size[1]))
             paste_position = cut_position
 
-        self.cropper.set_crop_size(crop_size)
-        results = self.cropper(results)
-        img[img_slices] = results['img'].copy()
-        results = self._adjust_coordinate(results, paste_position)
-
-        return img, results['gt_bboxes'], results['gt_labels'], results['gt_bboxes_ignore']
+        return crop_size, img_slices, paste_position
 
     def _adjust_coordinate(self, results, paste_position):
         """Convert subimage coordinate to mosaic image coordinate.
 
          Args:
             results (dict): Result dict from :obj:`dataset`.
-            paste_position (tuple[int]): paste up-left corner coordinate (y, x)
-                in moaiac image.
+            paste_position (tuple[int]): paste up-left corner
+                coordinate (y, x) in moaiac image.
 
         Returns:
-            results (dict): Result dict with corrected bbox and mask coordinate.
+            results (dict): Result dict with corrected bbox
+                and mask coordinate.
         """
 
         for key in results.get('bbox_fields', []):

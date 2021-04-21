@@ -1,16 +1,15 @@
 import copy
-import os.path as osp
-from unittest.mock import MagicMock, patch
-
 import mmcv
 import numpy as np
+import os.path as osp
 import pytest
 import torch
 from mmcv.utils import build_from_cfg
+from unittest.mock import MagicMock, patch
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-from mmdet.datasets.builder import PIPELINES
 from mmdet.datasets import DATASETS
+from mmdet.datasets.builder import PIPELINES
 
 
 def test_resize():
@@ -124,10 +123,8 @@ def test_mosaic():
     custom_dataset.__getitem__ = MagicMock(return_value=results)
     # custom_dataset.__len__ = MagicMock(return_value=1)
 
-    transform = dict(type='Mosaic',
-                     size=(320,320),
-                     dataset=custom_dataset,
-                     min_offset=0.2)
+    transform = dict(
+        type='Mosaic', size=(320, 320), dataset=custom_dataset, min_offset=0.2)
 
     mosaic_module = build_from_cfg(transform, PIPELINES)
 
@@ -135,9 +132,10 @@ def test_mosaic():
 
     img = results['img']
     bboxes = results['gt_bboxes']
-    # mmcv.imshow_bboxes(img, bboxes, show=True)
+    mmcv.imshow_bboxes(img, bboxes, show=True, out_file='img.png')
     # mmcv.imshow_bboxes(img, gt_bboxes, show=True)
-    mmcv.imwrite(img, "img.png")
+    # mmcv.imwrite(img, "img.png")
+
 
 def test_flip():
     # test assertion for invalid flip_ratio
