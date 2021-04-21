@@ -10,7 +10,7 @@ from mmcv.runner import (HOOKS, DistSamplerSeedHook, EpochBasedRunner, LoggerHoo
 
 from mmdet.core import (DistEvalHook, DistEvalPlusBeforeRunHook, EvalHook,
                         EvalPlusBeforeRunHook)
-from mmdet.integration.nncf import CompressionHook, wrap_nncf_model
+from mmdet.integration.nncf import CompressionHook, CheckpointHookBeforeTraining, wrap_nncf_model
 from mmdet.parallel import MMDataCPU
 from mmcv.utils import build_from_cfg
 
@@ -191,6 +191,7 @@ def train_detector(model,
 
     if nncf_enable_compression:
         runner.register_hook(CompressionHook(compression_ctrl=compression_ctrl))
+        runner.register_hook(CheckpointHookBeforeTraining())
     # user-defined hooks
     if cfg.get('custom_hooks', None):
         custom_hooks = cfg.custom_hooks
