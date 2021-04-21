@@ -176,6 +176,86 @@ python tools/analysis_tools/coco_error_analysis.py \
        --types='segm'
 ```
 
+## Model Serving
+
+In order to serve an `MMDetection` model with [`TorchServe`](https://pytorch.org/serve/), you can follow the steps:
+
+### 1. Convert model from MMDetection to TorchServe
+
+```shell
+python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
+--output-folder ${MODEL_STORE} \
+--model-name ${MODEL_NAME}
+```
+
+***Note**: ${MODEL_STORE} needs to be an absolute path to a folder.
+
+### 2. Build `mmdet-serve` docker image
+
+```shell
+docker build -t mmdet-serve:latest docker/serve/
+```
+
+### 3. Run `mmdet-serve`
+
+Check the official docs for [running TorchServe with docker](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment).
+
+In order to run in GPU, you need to install [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). You can omit the `--gpus` argument in order to run in CPU.
+
+Example:
+
+```shell
+docker run --rm \
+--cpus 8 \
+--gpus device=0 \
+-p8080:8080 -p8081:8081 -p8082:8082 \
+--mount type=bind,source=$MODEL_STORE,target=/home/model-server/model-store \
+mmdet-serve:latest
+```
+
+[Read the docs](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md) about the Inference (8080), Management (8081) and Metrics (8082) APis
+
+### 4. Test deployment
+
+```shell
+curl -O curl -O https://raw.githubusercontent.com/pytorch/serve/master/docs/images/3dogs.jpg
+curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
+```
+
+You should obtain a respose similar to:
+
+```json
+[
+  {
+    "dog": [
+      402.9117736816406,
+      124.19664001464844,
+      571.7910766601562,
+      292.6463623046875
+    ],
+    "score": 0.9561963081359863
+  },
+  {
+    "dog": [
+      293.90057373046875,
+      196.2908477783203,
+      417.4869079589844,
+      286.2522277832031
+    ],
+    "score": 0.9179860353469849
+  },
+  {
+    "dog": [
+      202.178466796875,
+      86.3709487915039,
+      311.9863586425781,
+      276.28411865234375
+    ],
+    "score": 0.8933767080307007
+  }
+]
+```
+
 ## Model Complexity
 
 `tools/analysis_tools/get_flops.py` is a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
@@ -277,6 +357,10 @@ python tools/dataset_converters/cityscapes.py ${CITYSCAPES_PATH} [-h] [--img-dir
 python tools/dataset_converters/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}]
 ```
 
+## Robust Detection Benchmark
+
+`tools/analysis_tools/test_robustness.py` and`tools/analysis_tools/robustness_eval.py`  helps users to evaluate model robustness. The core idea comes from [Benchmarking Robustness in Object Detection: Autonomous Driving when Winter is Coming](https://arxiv.org/abs/1907.07484). For more information how to evaluate models on corrupted images and results for a set of standard models please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
+
 ## Miscellaneous
 
 ### Evaluating a metric
@@ -298,7 +382,3 @@ python tools/analysis_tools/eval_metric.py ${CONFIG} ${PKL_RESULTS} [-h] [--form
 ```shell
 python tools/misc/print_config.py ${CONFIG} [-h] [--options ${OPTIONS [OPTIONS...]}]
 ```
-
-### Test the robustness of detectors
-
-Please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
