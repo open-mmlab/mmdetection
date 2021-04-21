@@ -21,7 +21,7 @@ from subprocess import DEVNULL, CalledProcessError, run
 import mmcv
 import onnx
 import torch
-from onnx.optimizer import optimize
+from onnxoptimizer import optimize
 from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 
 from mmdet.apis import get_fake_input, init_detector
