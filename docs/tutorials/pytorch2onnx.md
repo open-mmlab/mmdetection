@@ -186,12 +186,12 @@ python tools/deployment/test.py \
 	    <td rowspan="2">configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py</td>
 	    <td>Box AP</td>
 	    <td>38.2</td>
-	    <td>37.9</td>
+	    <td>38.1</td>
 	</tr>
 	<tr>
 	    <td>Mask AP</td>
 	    <td>34.7</td>
-	    <td>33.5</td>
+	    <td>33.7</td>
 	</tr>
 </table>
 
