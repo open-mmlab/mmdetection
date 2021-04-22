@@ -9,9 +9,9 @@ from .utils import weight_reduce_loss
 
 
 def _seesaw_ce_loss(cls_score,
-                    onehot_labels,
                     labels,
                     label_weights,
+                    onehot_labels,
                     cum_samples,
                     p,
                     q,
@@ -185,19 +185,13 @@ class SeesawLoss(nn.Module):
         cls_score_classes, cls_score_objectness = self._split_cls_score(
             cls_score)
         loss_cls_classes = self.loss_weight * self.cls_criterion(
-            cls_score_classes[pos_inds], onehot_labels[pos_inds, :],
-            labels[pos_inds], label_weights[pos_inds], self.cum_samples,
-            self.p, self.q, self.eps, self.reduction, avg_factor)
+            cls_score_classes[pos_inds], labels[pos_inds],
+            label_weights[pos_inds], onehot_labels[pos_inds, :],
+            self.cum_samples, self.p, self.q, self.eps, self.reduction,
+            avg_factor)
         loss_cls_objectness = self.loss_weight * cross_entropy(
             cls_score_objectness, obj_labels, label_weights, self.reduction,
             avg_factor)
-        loss_cls_objectness = self.loss_weight * F.cross_entropy(
-            cls_score_objectness, obj_labels, weight=None, reduction='none')
-        loss_cls_objectness = weight_reduce_loss(
-            loss_cls_objectness,
-            weight=label_weights,
-            reduction=self.reduction,
-            avg_factor=avg_factor)
 
         if self.return_dict:
             loss_cls = dict()
