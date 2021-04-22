@@ -49,7 +49,7 @@ class Bottleneck(nn.Module):
 
 @NECKS.register_module()
 class DilatedEncoder(nn.Module):
-    """Dilated Encoder for YOLOF.
+    """Dilated Encoder for YOLOF <https://arxiv.org/abs/2103.09460>`.
 
     This module contains two types of components:
         - the original FPN lateral convolution layer and fpn convolution layer,

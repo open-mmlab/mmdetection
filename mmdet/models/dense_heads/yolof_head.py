@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import bias_init_with_prob, constant_init, is_norm, normal_init
+from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
+                      normal_init)
 from mmcv.runner import force_fp32
-from torch.nn import BatchNorm2d, ReLU
 
 from mmdet.core import (anchor_inside_flags, images_to_levels, multi_apply,
                         reduce_mean, unmap)
@@ -48,6 +48,7 @@ class YOLOFHead(AnchorHead):
            Default 2.
         reg_num_convs (int): The number of convolutions of reg branch.
            Default 4.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
     """
 
     def __init__(self,
@@ -55,9 +56,11 @@ class YOLOFHead(AnchorHead):
                  in_channels,
                  cls_num_convs=2,
                  reg_num_convs=4,
+                 norm_cfg=dict(type='BN', requires_grad=True),
                  **kwargs):
         self.cls_num_convs = cls_num_convs
         self.reg_num_convs = reg_num_convs
+        self.norm_cfg = norm_cfg
         self.INF = 1e8
         super(YOLOFHead, self).__init__(num_classes, in_channels, **kwargs)
 
@@ -66,24 +69,20 @@ class YOLOFHead(AnchorHead):
         bbox_subnet = []
         for i in range(self.cls_num_convs):
             cls_subnet.append(
-                nn.Conv2d(
+                ConvModule(
                     self.in_channels,
                     self.in_channels,
                     kernel_size=3,
-                    stride=1,
-                    padding=1))
-            cls_subnet.append(BatchNorm2d(self.in_channels))
-            cls_subnet.append(ReLU())
+                    padding=1,
+                    norm_cfg=self.norm_cfg))
         for i in range(self.reg_num_convs):
             bbox_subnet.append(
-                nn.Conv2d(
+                ConvModule(
                     self.in_channels,
                     self.in_channels,
                     kernel_size=3,
-                    stride=1,
-                    padding=1))
-            bbox_subnet.append(BatchNorm2d(self.in_channels))
-            bbox_subnet.append(ReLU())
+                    padding=1,
+                    norm_cfg=self.norm_cfg))
         self.cls_subnet = nn.Sequential(*cls_subnet)
         self.bbox_subnet = nn.Sequential(*bbox_subnet)
         self.cls_score = nn.Conv2d(

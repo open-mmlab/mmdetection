@@ -480,40 +480,33 @@ class RandomShift(object):
         self.max_shift = max_shift
 
     def __call__(self, results):
+        """Call function to random shift images, bounding boxes.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Shift results.
+        """
         if random.random() < self.prob:
             random_shift_x = random.randint(-self.max_shift, self.max_shift)
             random_shift_y = random.randint(-self.max_shift, self.max_shift)
+            new_x = max(0, random_shift_x)
+            orig_x = max(0, -random_shift_x)
+            new_y = max(0, random_shift_y)
+            orig_y = max(0, -random_shift_y)
+
             for key in results.get('img_fields', ['img']):
                 img = results[key]
                 new_img = np.zeros_like(img)
-                if random_shift_x < 0:
-                    new_x = 0
-                    orig_x = -random_shift_x
-                else:
-                    new_x = random_shift_x
-                    orig_x = 0
-                if random_shift_y < 0:
-                    new_y = 0
-                    orig_y = -random_shift_y
-                else:
-                    new_y = random_shift_y
-                    orig_y = 0
+                img_h, img_w = img.shape[:2]
+                new_h = img_h - np.abs(random_shift_y)
+                new_w = img_w - np.abs(random_shift_x)
+                new_img[new_y:new_y + new_h, new_x:new_x + new_w] \
+                    = img[orig_y:orig_y + new_h, orig_x:orig_x + new_w]
+                results[key] = new_img
 
-                if len(img.shape) <= 3:
-                    img_h, img_w = img.shape[:2]
-                    new_h = img_h - np.abs(random_shift_y)
-                    new_w = img_w - np.abs(random_shift_x)
-                    new_img[new_y:new_y + new_h, new_x:new_x + new_w] \
-                        = img[orig_y:orig_y + new_h, orig_x:orig_x + new_w]
-                    results[key] = new_img
-                else:
-                    img_h, img_w = img.shape[1:3]
-                    new_h = img_h - np.abs(random_shift_y)
-                    new_w = img_w - np.abs(random_shift_x)
-                    new_img[..., new_y:new_y + new_h, new_x:new_x + new_w, :] \
-                        = img[..., orig_y:orig_y + new_h,
-                              orig_x:orig_x + new_w, :]
-                    results[key] = new_img
+            # TODO: support mask and semantic segmentation maps.
             for key in results.get('bbox_fields', []):
                 bbox = results[key]
                 bbox[..., 0::2] += random_shift_x
