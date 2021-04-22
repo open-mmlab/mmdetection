@@ -1,4 +1,5 @@
 from .atss import ATSS
+from .autoassign import AutoAssign
 from .base import BaseDetector
 from .cascade_rcnn import CascadeRCNN
 from .cornernet import CornerNet
@@ -37,5 +38,5 @@ __all__ = [
     'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector',
     'FOVEA', 'FSAF', 'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA',
     'YOLOV3', 'YOLACT', 'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN',
-    'SCNet', 'YOLOF'
+    'SCNet', 'YOLOF', 'AutoAssign'
 ]
