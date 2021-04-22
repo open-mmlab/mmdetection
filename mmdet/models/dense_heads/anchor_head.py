@@ -608,8 +608,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         img_shapes = [img_meta['img_shape'] for img_meta in img_metas]
         mlvl_bboxes = []
         mlvl_scores = []
-        for cls_score, bbox_pred, anchors, img_meta in zip(
-                cls_score_list, bbox_pred_list, mlvl_anchors, img_metas):
+        for cls_score, bbox_pred, anchors in zip(cls_score_list,
+                                                 bbox_pred_list, mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             cls_score = cls_score.permute(0, 2, 3,
                                           1).reshape(batch_size, -1,

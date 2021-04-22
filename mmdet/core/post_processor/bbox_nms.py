@@ -90,7 +90,7 @@ class PreNMS(object):
 class NaiveNMS(object):
 
     def __init__(self,
-                 iou_threshold=0.6,
+                 iou_threshold=0.5,
                  class_agnostic=False,
                  max_num=100,
                  split_thr=10000,
@@ -109,17 +109,17 @@ class NaiveNMS(object):
                 r_results_list.append(results)
                 continue
 
-            boxes = results.bboxes
+            bboxes = results.bboxes
             labels = results.labels
             scores = results.scores
 
             if self.class_agnostic:
-                boxes_for_nms = boxes
+                boxes_for_nms = bboxes
             else:
-                max_coordinate = boxes.max()
-                offsets = labels.to(boxes) * (
-                    max_coordinate + torch.tensor(1).to(boxes))
-                boxes_for_nms = boxes + offsets[:, None]
+                max_coordinate = bboxes.max()
+                offsets = labels.to(bboxes) * (
+                    max_coordinate + torch.tensor(1).to(bboxes))
+                boxes_for_nms = bboxes + offsets[:, None]
 
             if boxes_for_nms.shape[0] < self.split_thr:
                 dets, keep_ids = nms(
@@ -143,6 +143,8 @@ class NaiveNMS(object):
                 keep = total_mask.nonzero(as_tuple=False).view(-1)
                 keep = keep[scores[keep].argsort(descending=True)]
                 r_results = results[keep]
+            if self.max_num > 0:
+                r_results = r_results[:self.max_num]
             r_results_list.append(r_results)
 
         return r_results_list

@@ -282,7 +282,7 @@ class InstanceResults(Results):
                 item = slice(item, None, len(self))
 
         r_results = self.new_results()
-        if isinstance(item, (torch.LongTensor, torch.BoolTensor)):
+        if isinstance(item, (torch.Tensor)):
             assert item.dim() == 1, 'Only support to get the' \
                                  ' values along the first dimension.'
             for k, v in self._results_field.items():

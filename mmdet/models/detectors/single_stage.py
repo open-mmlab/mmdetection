@@ -116,7 +116,7 @@ class SingleStageDetector(BaseDetector):
             self.bbox_head.bbox_post
 
         results_list = self.bbox_head.get_bboxes(*outs, img_metas)
-        # skip post-processing when exporting to ONNX
+        # TODO check this @ningsheng
         if torch.onnx.is_in_onnx_export():
             return results_list
 
