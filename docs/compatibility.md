@@ -80,3 +80,11 @@ model-level compatibility but slightly improves the performance. The major ones 
 To convert the models trained by MMDetection V1.x to MMDetection V2.0, the users can use the script `tools/model_converters/upgrade_model_version.py` to convert
 their models. The converted models can be run in MMDetection V2.0 with slightly dropped performance (less than 1% AP absolute).
 Details can be found in `configs/legacy`.
+
+## pycocotools compatibility
+
+`mmpycocotools` is the OpenMMlab's folk of official `pycocotools`, which works for both MMDetection and Detectron2.
+Before [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939), since `pycocotools` and `mmpycocotool` have the same package name, if users already installed `pyccocotools` (installed Detectron2 first under the same environment), then the setup of MMDetection will skip installing `mmpycocotool`. Thus MMDetection fails due to the missing `mmpycocotools`.
+If MMDetection is installed before Detectron2, they could work under the same environment.
+[PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939) deprecates mmpycocotools in favor of official pycocotools.
+Users may install MMDetection and Detectron2 under the same environment after [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939), no matter what the installation order is.

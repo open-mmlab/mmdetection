@@ -362,7 +362,7 @@ class GFLHead(AnchorHead):
                 num_total_samples=num_total_samples)
 
         avg_factor = sum(avg_factor)
-        avg_factor = reduce_mean(avg_factor).item()
+        avg_factor = reduce_mean(avg_factor).clamp_(min=1).item()
         losses_bbox = list(map(lambda x: x / avg_factor, losses_bbox))
         losses_dfl = list(map(lambda x: x / avg_factor, losses_dfl))
         return dict(
