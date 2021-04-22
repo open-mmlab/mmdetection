@@ -69,7 +69,6 @@ class Model:
                 break
         if reshape_needed:
             self.logger.info(f'reshape net to {input_shapes}')
-            print(f'reshape net to {input_shapes}')
             self.net.reshape(input_shapes)
             self.exec_net = self.ie.load_network(network=self.net, device_name=self.device, num_requests=1)
 
@@ -112,8 +111,6 @@ class Detector(Model):
     def __call__(self, inputs):
         inputs = self.unify_inputs(inputs)
         output = super().__call__(inputs)
-
-        print(list(output.keys()))
 
         if 'detection_out' in output:
             detection_out = output['detection_out']
