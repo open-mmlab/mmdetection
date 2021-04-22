@@ -54,11 +54,9 @@ jobs:
         run: pip install -r requirements/tests.txt -r requirements/optional.txt
       - name: Build and install
         run: rm -rf .eggs && pip install -e .
-      - name: Run unittests and generate coverage report
+      - name: Run unittests
         run: |
           coverage run --branch --source mmdet -m pytest -k "not test_models.py" tests/
-          coverage xml
-          coverage report -m
 
   build_cuda:
     runs-on: ubuntu-latest
@@ -121,16 +119,6 @@ jobs:
           rm -rf .eggs
           python setup.py check -m -s
           TORCH_CUDA_ARCH_LIST=7.0 pip install .
-      - name: Run unittests and generate coverage report
+      - name: Run unittests
         run: |
           coverage run --branch --source mmdet -m pytest -k "not test_models.py" tests/
-          coverage xml
-          coverage report -m
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.10
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          env_vars: OS,PYTHON
-          name: codecov-umbrella
-          fail_ci_if_error: false
