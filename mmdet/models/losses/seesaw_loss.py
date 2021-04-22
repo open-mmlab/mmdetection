@@ -8,16 +8,36 @@ from .cross_entropy_loss import cross_entropy
 from .utils import weight_reduce_loss
 
 
-def _seesaw_ce_loss(cls_score,
-                    labels,
-                    label_weights,
-                    cum_samples,
-                    num_classes,
-                    p,
-                    q,
-                    eps,
-                    reduction='mean',
-                    avg_factor=None):
+def seesaw_ce_loss(cls_score,
+                   labels,
+                   label_weights,
+                   cum_samples,
+                   num_classes,
+                   p,
+                   q,
+                   eps,
+                   reduction='mean',
+                   avg_factor=None):
+    """Calculate the Seesaw CrossEntropy loss.
+
+    Args:
+        cls_score (torch.Tensor): The prediction with shape (N, C),
+             C is the number of classes.
+        labels (torch.Tensor): The learning label of the prediction.
+        label_weights (torch.Tensor): Sample-wise loss weight.
+        cum_samples (torch.Tensor): Cumulative samples for each category.
+        num_classes (int): The number of classes.
+        p (float): The ``p`` in the mitigation factor.
+        q (float): The ``q`` in the compenstation factor.
+        eps (float): The minimal value of divisor to smooth
+             the computation of compensation factor
+        reduction (str, optional): The method used to reduce the loss.
+        avg_factor (int, optional): Average factor that is used to average
+            the loss. Defaults to None.
+
+    Returns:
+        torch.Tensor: The calculated loss
+    """
     assert cls_score.size(-1) == num_classes
     assert len(cum_samples) == num_classes
 
@@ -62,20 +82,20 @@ class SeesawLoss(nn.Module):
 
     Args:
         use_sigmoid (bool, optional): Whether the prediction uses sigmoid
-            of softmax. Only False is supported.
-        p (float, optional): The ``p`` in the mitigation factor. \
-            Defaults to 0.8.
-        q (float, optional): The ``q`` in the compenstation factor. \
-            Defaults to 2.0.
-        num_classes (float, optional): The number of classes. \
-            Default to 1203 for LVIS v1 dataset.
-        eps (float, optional): The eps value of divisor to smooth \
-            the computation of compensation factor
-        reduction (str, optional): The method that reduces the loss to a \
-            scalar. Options are "none", "mean" and "sum".
+             of softmax. Only False is supported.
+        p (float, optional): The ``p`` in the mitigation factor.
+             Defaults to 0.8.
+        q (float, optional): The ``q`` in the compenstation factor.
+             Defaults to 2.0.
+        num_classes (int, optional): The number of classes.
+             Default to 1203 for LVIS v1 dataset.
+        eps (float, optional): The minimal value of divisor to smooth
+             the computation of compensation factor
+        reduction (str, optional): The method that reduces the loss to a
+             scalar. Options are "none", "mean" and "sum".
         loss_weight (float, optional): The weight of the loss. Defaults to 1.0
-        return_dict (bool, optional): Whether return the losses as a dict. \
-            Default to True.
+        return_dict (bool, optional): Whether return the losses as a dict.
+             Default to True.
     """
 
     def __init__(self,
@@ -99,7 +119,7 @@ class SeesawLoss(nn.Module):
         self.return_dict = return_dict
 
         # 0 for pos, 1 for neg
-        self.cls_criterion = _seesaw_ce_loss
+        self.cls_criterion = seesaw_ce_loss
 
         # cumulative samples for each category
         self.register_buffer(
@@ -152,8 +172,24 @@ class SeesawLoss(nn.Module):
                 cls_score,
                 labels,
                 label_weights,
-                avg_factor,
+                avg_factor=None,
                 reduction_override=None):
+        """Forward function.
+
+        Args:
+            cls_score (torch.Tensor): The prediction with shape (N, C + 2).
+            labels (torch.Tensor): The learning label of the prediction.
+            label_weights (torch.Tensor, optional): Sample-wise loss weight.
+            avg_factor (int, optional): Average factor that is used to average
+                 the loss. Defaults to None.
+            reduction (str, optional): The method used to reduce the loss.
+                 Options are "none", "mean" and "sum".
+        Returns:
+            torch.Tensor: The calculated loss
+        """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
         assert cls_score.size(-1) == self.num_classes + 2
         pos_inds = labels < self.num_classes
         # 0 for pos, 1 for neg
@@ -174,11 +210,10 @@ class SeesawLoss(nn.Module):
         loss_cls_classes = self.loss_weight * self.cls_criterion(
             cls_score_classes[pos_inds], labels[pos_inds],
             label_weights[pos_inds], self.cum_samples[:self.num_classes],
-            self.num_classes, self.p, self.q, self.eps, self.reduction,
-            avg_factor)
+            self.num_classes, self.p, self.q, self.eps, reduction, avg_factor)
         # calculate loss_cls_objectness
         loss_cls_objectness = self.loss_weight * cross_entropy(
-            cls_score_objectness, obj_labels, label_weights, self.reduction,
+            cls_score_objectness, obj_labels, label_weights, reduction,
             avg_factor)
 
         if self.return_dict:
