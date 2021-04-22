@@ -11,15 +11,17 @@ from .utils import weight_reduce_loss
 def _seesaw_ce_loss(cls_score,
                     labels,
                     label_weights,
-                    onehot_labels,
                     cum_samples,
+                    num_classes,
                     p,
                     q,
                     eps,
                     reduction='mean',
                     avg_factor=None):
-    # only need pos samples
-    assert onehot_labels[:, -1].sum() == 0
+    assert cls_score.size(-1) == num_classes
+    assert len(cum_samples) == num_classes
+
+    onehot_labels = F.one_hot(labels, num_classes)
     seesaw_weights = cls_score.new_ones(onehot_labels.size())
 
     # mitigation factor
@@ -39,10 +41,9 @@ def _seesaw_ce_loss(cls_score,
         score_matrix = scores / self_scores[:, None].clamp_min(eps)
         index = (score_matrix > 1.0).float()
         compensation_factor = score_matrix.pow(q) * index + (1 - index)
-        seesaw_weights[:, :-1] = seesaw_weights[:, :-1] * compensation_factor
+        seesaw_weights = seesaw_weights * compensation_factor
 
-    cls_score = cls_score + (seesaw_weights.log() *
-                             (1 - onehot_labels))[:, :-1]
+    cls_score = cls_score + (seesaw_weights.log() * (1 - onehot_labels))
 
     loss = F.cross_entropy(cls_score, labels, weight=None, reduction='none')
 
@@ -110,18 +111,6 @@ class SeesawLoss(nn.Module):
         # custom accuracy of the classsifier
         self.custom_acc = True
 
-    def _expand_onehot_labels(self, labels, label_weights, label_channels):
-        # expand the labels to onehot labels
-        bin_labels = labels.new_full((labels.size(0), label_channels), 0)
-        inds = torch.arange(0, labels.size(0)).cuda().long()
-        bin_labels[inds, labels[inds]] = 1
-        if label_weights is None:
-            bin_label_weights = None
-        else:
-            bin_label_weights = label_weights.view(-1, 1).expand(
-                label_weights.size(0), label_channels)
-        return bin_labels, bin_label_weights
-
     def get_cls_channels(self, num_classes):
         # cls_channels = num_classes + 2
         assert num_classes == self.num_classes
@@ -129,6 +118,7 @@ class SeesawLoss(nn.Module):
 
     def _split_cls_score(self, cls_score):
         # split cls_score to cls_score_classes and cls_score_objectness
+        assert cls_score.size(-1) == self.num_classes + 2
         cls_score_classes = cls_score[..., :-2]
         cls_score_objectness = cls_score[..., -2:]
         return cls_score_classes, cls_score_objectness
@@ -164,11 +154,7 @@ class SeesawLoss(nn.Module):
                 label_weights,
                 avg_factor,
                 reduction_override=None):
-        # expand labels to onehot labels
-        onehot_labels, _ = self._expand_onehot_labels(labels, label_weights,
-                                                      self.num_classes + 1)
-        assert (onehot_labels[torch.arange(0, labels.size(0)).cuda().long(),
-                              labels] == 0).sum() == 0
+        assert cls_score.size(-1) == self.num_classes + 2
         pos_inds = labels < self.num_classes
         # 0 for pos, 1 for neg
         obj_labels = (labels == self.num_classes).long()
@@ -184,11 +170,13 @@ class SeesawLoss(nn.Module):
 
         cls_score_classes, cls_score_objectness = self._split_cls_score(
             cls_score)
+        # calculate loss_cls_classes (only need pos samples)
         loss_cls_classes = self.loss_weight * self.cls_criterion(
             cls_score_classes[pos_inds], labels[pos_inds],
-            label_weights[pos_inds], onehot_labels[pos_inds, :],
-            self.cum_samples, self.p, self.q, self.eps, self.reduction,
+            label_weights[pos_inds], self.cum_samples[:self.num_classes],
+            self.num_classes, self.p, self.q, self.eps, self.reduction,
             avg_factor)
+        # calculate loss_cls_objectness
         loss_cls_objectness = self.loss_weight * cross_entropy(
             cls_score_objectness, obj_labels, label_weights, self.reduction,
             avg_factor)
