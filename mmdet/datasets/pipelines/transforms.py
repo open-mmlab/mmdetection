@@ -475,7 +475,7 @@ class RandomFlip(object):
 @PIPELINES.register_module()
 class RandomShift(object):
 
-    def __init__(self, prob=1.5, max_shift=32):
+    def __init__(self, prob=0.5, max_shift=32):
         self.prob = prob
         self.max_shift = max_shift
 

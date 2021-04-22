@@ -53,7 +53,7 @@ class UniformAssigner(BaseAssigner):
             return AssignResult(
                 num_gts, assigned_gt_inds, None, labels=assigned_labels)
 
-        # Compute the L1 cost between boxes
+        # 2. Compute the L1 cost between boxes
         # Note that we use anchors and predict boxes both
         cost_bbox = torch.cdist(
             bbox_xyxy_to_cxcywh(bbox_pred),
@@ -62,7 +62,10 @@ class UniformAssigner(BaseAssigner):
         cost_bbox_anchors = torch.cdist(
             bbox_xyxy_to_cxcywh(anchor), bbox_xyxy_to_cxcywh(gt_bboxes), p=1)
 
-        # TODO: TOPK function has different results in cpu and cuda mode
+        # We found that topk function has different results in cpu and
+        # cuda mode. In order to ensure consistency with the source code,
+        # we also use cpu mode.
+        # TODO: Check whether the performance of cpu and cuda are the same.
         C = cost_bbox.cpu()
         C1 = cost_bbox_anchors.cpu()
 
@@ -84,9 +87,12 @@ class UniformAssigner(BaseAssigner):
         pred_max_overlaps, _ = pred_overlaps.max(dim=1)
         anchor_max_overlaps, _ = anchor_overlaps.max(dim=0)
 
+        # 3. Compute the ignore indexes use gt_bboxes and predict boxes
         ignore_idx = pred_max_overlaps > self.neg_ignore_thresh
         assigned_gt_inds[ignore_idx] = -1
 
+        # 4. Compute the ignore indexes of positive sample use anchors
+        # and predict boxes
         pos_gt_index = torch.arange(
             0, C1.size(1),
             device=bbox_pred.device).repeat(self.match_times * 2)

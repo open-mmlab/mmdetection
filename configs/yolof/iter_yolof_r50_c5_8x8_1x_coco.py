@@ -69,6 +69,13 @@ optimizer = dict(
         norm_decay_mult=0.,
         custom_keys={'backbone': dict(lr_mult=1. / 3, decay_mult=1.0)}))
 
+# We implemented the iter-based config according to the source code.
+# COCO dataset has 117266 images after filtering. We use 8 gpu and
+# 8 batch size training, so 22500 is equivalent to
+# 22500/(117266/(8x8))=12.3 epoch, 15000 is equivalent to 8.2 epoch,
+# 20000 is equivalent to 10.9 epoch. Due to lr(0.12) is large,
+# the iter-based and epoch-based setting have about 0.3 influence on
+# the MAP evaluation value.
 lr_config = dict(
     policy='step',
     warmup='linear',
@@ -88,7 +95,7 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='RandomShift'),
+    dict(type='RandomShift', prob=0.5, max_shift=32),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
