@@ -26,7 +26,11 @@ class NASFCOSHead(FCOSHead):
                     override=[
                         dict(name='conv_reg'),
                         dict(name='conv_centerness'),
-                        dict(name='conv_cls', bias_prob=0.01)
+                        dict(
+                            name='conv_cls',
+                            type='Normal',
+                            std=0.01,
+                            bias_prob=0.01)
                     ]),
             ]
         super(NASFCOSHead, self).__init__(*args, init_cfg=init_cfg, **kwargs)
