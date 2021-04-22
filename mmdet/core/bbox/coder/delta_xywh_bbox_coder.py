@@ -222,7 +222,7 @@ def delta2bbox(rois,
     if clip_border and max_shape is not None:
         # clip bboxes with dynamic `min` and `max` for onnx
         if torch.onnx.is_in_onnx_export():
-            from mmdet.core.export.onnx_helper import dynamic_clip_for_onnx
+            from mmdet.core.export import dynamic_clip_for_onnx
             x1, y1, x2, y2 = dynamic_clip_for_onnx(x1, y1, x2, y2, max_shape)
             bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
             return bboxes

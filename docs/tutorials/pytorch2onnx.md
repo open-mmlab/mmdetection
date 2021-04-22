@@ -6,6 +6,12 @@
   - [How to convert models from Pytorch to ONNX](#how-to-convert-models-from-pytorch-to-onnx)
     - [Prerequisite](#prerequisite)
     - [Usage](#usage)
+    - [Description of all arguments](#description-of-all-arguments)
+  - [How to evaluate ONNX models with ONNX Runtime](#how-to-evaluate-onnx-models-with-onnx-runtime)
+    - [Prerequisite](#prerequisite-1)
+    - [Usage](#usage-1)
+    - [Description of all arguments](#description-of-all-arguments-1)
+    - [Results and Models](#results-and-models)
   - [List of supported models exportable to ONNX](#list-of-supported-models-exportable-to-onnx)
   - [The Parameters of Non-Maximum Suppression in ONNX Export](#the-parameters-of-non-maximum-suppression-in-onnx-export)
   - [Reminders](#reminders)
@@ -45,12 +51,12 @@ python tools/deployment/pytorch2onnx.py \
     --simplify \
 ```
 
-Description of all arguments:
+### Description of all arguments
 
 - `config` : The path of a model config file.
 - `checkpoint` : The path of a model checkpoint file.
 - `--output-file`: The path of output ONNX model. If not specified, it will be set to `tmp.onnx`.
-- `--input-img` : The path of an input image for tracing and conversion. By default, it will be set to `tests/data/color.jpg`.
+- `--input-img`: The path of an input image for tracing and conversion. By default, it will be set to `tests/data/color.jpg`.
 - `--shape`: The height and width of input tensor to the model. If not specified, it will be set to `800 1216`.
 - `--mean` : Three mean values for the input image. If not specified, it will be set to `123.675 116.28 103.53`.
 - `--std` : Three std values for the input image. If not specified, it will be set to `58.395 57.12 57.375`.
@@ -83,6 +89,111 @@ python tools/deployment/pytorch2onnx.py \
       model.test_cfg.max_per_img=200  \
       model.test_cfg.deploy_nms_pre=300 \
 ```
+
+## How to evaluate ONNX models with ONNX Runtime
+
+We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNX Runtime backend.
+
+### Prerequisite
+
+- Install onnx and onnxruntime-gpu
+
+  ```shell
+  pip install onnx onnxruntime-gpu
+  ```
+
+### Usage
+
+```bash
+python tools/deployment/test.py \
+    ${CONFIG_FILE} \
+    ${ONNX_FILE} \
+    --out ${OUTPUT_FILE} \
+    --format-only ${FORMAT_ONLY} \
+    --eval ${EVALUATION_METRICS} \
+    --show-dir ${SHOW_DIRECTORY} \
+    ----show-score-thr ${SHOW_SCORE_THRESHOLD} \
+    ----cfg-options ${CFG_OPTIONS} \
+    ----eval-options ${EVALUATION_OPTIONS} \
+```
+
+### Description of all arguments
+
+- `config`: The path of a model config file.
+- `model`: The path of a ONNX model file.
+- `--out`: The path of output result file in pickle format.
+- `--format-only` : Format the output results without perform evaluation. It is useful when you want to format the result to a specific format and submit it to the test server. If not specified, it will be set to `False`.
+- `--eval`: Evaluation metrics, which depends on the dataset, e.g., "bbox", "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC.
+- `--show-dir`: Directory where painted images will be saved
+- `--show-score-thr`: Score threshold. Default is set to `0.3`.
+- `--cfg-options`: Override some settings in the used config file, the key-value pair in `xxx=yyy` format will be merged into config file.
+- `--eval-options`: Custom options for evaluation, the key-value pair in `xxx=yyy` format will be kwargs for `dataset.evaluate()` function
+
+### Results and Models
+
+<table>
+	<tr>
+	    <th>Model</th>
+	    <th>Config</th>
+	    <th>Metric</th>
+	    <th>PyTorch</th>
+	    <th>ONNX Runtime</th>
+	</tr >
+	<tr >
+	    <td >SSD</td>
+	    <td>configs/ssd/ssd300_coco.py</td>
+	    <td>Box AP</td>
+	    <td>25.6</td>
+	    <td>25.6</td>
+	</tr>
+  <tr >
+	    <td>FSAF</td>
+	    <td>configs/ssd/ssd300_coco.py</td>
+	    <td>Box AP</td>
+	    <td>36.0</td>
+	    <td>36.0</td>
+	</tr>
+  <tr >
+	    <td>FCOS</td>
+	    <td>configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py</td>
+	    <td>Box AP</td>
+	    <td>36.6</td>
+	    <td>36.5</td>
+	</tr>
+  <tr >
+	    <td>YOLOv3</td>
+	    <td>configs/yolo/yolov3_d53_mstrain-608_273e_coco.py</td>
+	    <td>Box AP</td>
+	    <td>33.5</td>
+	    <td>33.5</td>
+	</tr>
+  <tr >
+	    <td>RetinaNet</td>
+	    <td>configs/retinanet/retinanet_r50_fpn_1x_coco.py</td>
+	    <td>Box AP</td>
+	    <td>36.5</td>
+	    <td>36.4</td>
+	</tr>
+  <tr >
+	    <td>Faster R-CNN</td>
+	    <td>configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py</td>
+	    <td>Box AP</td>
+	    <td>37.4</td>
+	    <td>37.4</td>
+	</tr>
+  <tr >
+	    <td rowspan="2">Mask R-CNN</td>
+	    <td rowspan="2">configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py</td>
+	    <td>Box AP</td>
+	    <td>38.2</td>
+	    <td>38.1</td>
+	</tr>
+	<tr>
+	    <td>Mask AP</td>
+	    <td>34.7</td>
+	    <td>33.7</td>
+	</tr>
+</table>
 
 ## List of supported models exportable to ONNX
 

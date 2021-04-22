@@ -10,7 +10,8 @@ from mmcv.ops import get_onnxruntime_op_path
 from mmcv.tensorrt import (TRTWraper, is_tensorrt_plugin_loaded, onnx2trt,
                            save_trt_engine)
 
-from mmdet.core import get_classes, preprocess_example_input
+from mmdet.core import get_classes
+from mmdet.core.export import preprocess_example_input
 from mmdet.core.visualization.image import imshow_det_bboxes
 
 

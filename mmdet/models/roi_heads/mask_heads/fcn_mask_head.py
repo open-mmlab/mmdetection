@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -260,7 +262,11 @@ class FCNMaskHead(nn.Module):
             if threshold >= 0:
                 masks = (masks >= threshold).to(dtype=torch.bool)
             else:
-                masks = (masks * 255).to(dtype=torch.bool)
+                # TensorRT backend does not have data type of uint8
+                is_trt_backend = os.environ.get(
+                    'ONNX_BACKEND') == 'MMCVTensorRT'
+                target_dtype = torch.int32 if is_trt_backend else torch.uint8
+                masks = (masks * 255).to(dtype=target_dtype)
             return masks
 
         N = len(mask_pred)

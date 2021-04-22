@@ -143,7 +143,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
             anchors = mlvl_anchors[idx]
             anchors = anchors.expand_as(rpn_bbox_pred)
             # Get top-k prediction
-            from mmdet.core.export.onnx_helper import get_k_for_topk
+            from mmdet.core.export import get_k_for_topk
             nms_pre = get_k_for_topk(nms_pre_tensor, rpn_bbox_pred.shape[1])
             if nms_pre > 0:
                 _, topk_inds = scores.topk(nms_pre)
@@ -217,7 +217,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
 
         # Replace batched_nms with ONNX::NonMaxSuppression in deployment
         if torch.onnx.is_in_onnx_export():
-            from mmdet.core.export.onnx_helper import add_dummy_nms_for_onnx
+            from mmdet.core.export import add_dummy_nms_for_onnx
             batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
             score_threshold = cfg.nms.get('score_thr', 0.0)
             nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
@@ -225,7 +225,8 @@ class RPNHead(RPNTestMixin, AnchorHead):
                                              batch_mlvl_scores,
                                              cfg.max_per_img,
                                              cfg.nms.iou_threshold,
-                                             score_threshold, nms_pre)
+                                             score_threshold, nms_pre,
+                                             cfg.max_per_img)
             return dets
 
         result_list = []
