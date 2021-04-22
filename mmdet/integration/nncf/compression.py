@@ -90,7 +90,7 @@ def wrap_nncf_model(model,
 
     from nncf import (NNCFConfig, create_compressed_model,
                       register_default_init_args)
-    from nncf.dynamic_graph.input_wrapping import nncf_model_input
+    from nncf.dynamic_graph.io_handling import nncf_model_input
     from nncf.initialization import InitializingDataLoader
 
     class MMInitializeDataLoader(InitializingDataLoader):
