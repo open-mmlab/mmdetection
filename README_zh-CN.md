@@ -175,7 +175,6 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 <img src="/resources/zhihu_qrcode.jpg" height="400" />  <img src="/resources/qq_group_qrcode.jpg" height="400" />
 </div>
 
-
 我们会在 OpenMMLab 社区为大家
 
 - 📢 分享 AI 框架的前沿核心技术
