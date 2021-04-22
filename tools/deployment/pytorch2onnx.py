@@ -8,8 +8,9 @@ import onnxruntime as rt
 import torch
 from mmcv import DictAction
 
-from mmdet.core import (build_model_from_cfg, generate_inputs_and_wrap_model,
-                        preprocess_example_input)
+from mmdet.core.export import (build_model_from_cfg,
+                               generate_inputs_and_wrap_model,
+                               preprocess_example_input)
 
 
 def pytorch2onnx(config_path,
@@ -111,7 +112,7 @@ def pytorch2onnx(config_path,
         onnx.checker.check_model(onnx_model)
         if dynamic_export:
             # scale up to test dynamic shape
-            h, w = int(input_shape[2] * 1.5), int(input_shape[3] * 1.5)
+            h, w = [int((_ * 1.5) // 32 * 32) for _ in input_shape[2:]]
             input_config['input_shape'] = (1, 3, h, w)
         if test_img is not None:
             input_config['input_path'] = test_img
@@ -157,7 +158,7 @@ def pytorch2onnx(config_path,
             show_result_pyplot(
                 model, one_meta['show_img'], pytorch_results, title='Pytorch')
             show_result_pyplot(
-                model, one_meta['show_img'], onnx_results, title='ONNX')
+                model, one_meta['show_img'], onnx_results, title='ONNXRuntime')
 
         # compare a part of result
         if model.with_mask:
