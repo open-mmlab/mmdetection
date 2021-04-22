@@ -2,7 +2,7 @@ import warnings
 
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, xavier_init
+from mmcv.cnn import ConvModule, caffe2_xavier_init, xavier_init
 from mmcv.runner import auto_fp16
 
 from ..builder import NECKS
@@ -40,6 +40,8 @@ class FPN(nn.Module):
             conv. Default: False.
         no_norm_on_lateral (bool): Whether to apply norm on lateral.
             Default: False.
+        caffe2_xavier_init (bool): Whether to apply caffe2_xavier_init on all
+            conv in FPN. Default: False.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         act_cfg (str): Config dict for activation layer in ConvModule.
@@ -73,6 +75,7 @@ class FPN(nn.Module):
                  extra_convs_on_inputs=True,
                  relu_before_extra_convs=False,
                  no_norm_on_lateral=False,
+                 caffe2_xavier_init=False,
                  conv_cfg=None,
                  norm_cfg=None,
                  act_cfg=None,
@@ -87,6 +90,7 @@ class FPN(nn.Module):
         self.no_norm_on_lateral = no_norm_on_lateral
         self.fp16_enabled = False
         self.upsample_cfg = upsample_cfg.copy()
+        self.caffe2_xavier_init = caffe2_xavier_init
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -164,7 +168,10 @@ class FPN(nn.Module):
         """Initialize the weights of FPN module."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
+                if self.caffe2_xavier_init:
+                    caffe2_xavier_init(m)
+                else:
+                    xavier_init(m, distribution='uniform')
 
     @auto_fp16()
     def forward(self, inputs):
