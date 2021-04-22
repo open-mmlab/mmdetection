@@ -69,7 +69,7 @@ def test_autoassign_head_loss():
     cls_scores = [torch.ones(2, 4, 5, 5)]
     bbox_preds = [torch.ones(2, 4, 5, 5)]
     iou_preds = [torch.ones(2, 1, 5, 5)]
-    mlvl_anchors = [torch.ones(5 * 5, 4)]
+    mlvl_anchors = [torch.ones(5 * 5, 2)]
     img_shape = None
     scale_factor = [0.5, 0.5]
     cfg = mmcv.Config(
