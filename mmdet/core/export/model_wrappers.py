@@ -31,8 +31,8 @@ class ONNXRuntimeDetector(BaseDetector):
         options = [{}]
         is_cuda_available = ort.get_device() == 'GPU'
         if is_cuda_available:
-            providers.append('CUDAExecutionProvider')
-            options.append({'device_id': device_id})
+            providers.insert(0, 'CUDAExecutionProvider')
+            options.insert(0, {'device_id': device_id})
 
         sess.set_providers(providers, options)
 
