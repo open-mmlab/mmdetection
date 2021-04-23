@@ -336,33 +336,31 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
             if i < self.num_stages - 1:
                 bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
-                with no_nncf_trace():
-                    rois = torch.cat([
-                        self.bbox_head[i].regress_by_class(rois[j], bbox_label[j],
-                                                           bbox_pred[j],
-                                                           img_metas[j])
-                        for j in range(num_imgs)
-                    ])
-        with no_nncf_trace():
+                rois = torch.cat([
+                    self.bbox_head[i].regress_by_class(rois[j], bbox_label[j],
+                                                       bbox_pred[j],
+                                                       img_metas[j])
+                    for j in range(num_imgs)
+                ])
         # average scores of each image by stages
-            cls_score = [
-                sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-                for i in range(num_imgs)
-            ]
-            # apply bbox post-processing to each image individually
-            det_bboxes = []
-            det_labels = []
-            for i in range(num_imgs):
-                det_bbox, det_label = self.bbox_head[-1].get_bboxes(
-                    rois[i],
-                    cls_score[i],
-                    bbox_pred[i],
-                    img_shapes[i],
-                    scale_factors[i],
-                    rescale=False,
-                    cfg=rcnn_test_cfg)
-                det_bboxes.append(det_bbox)
-                det_labels.append(det_label)
+        cls_score = [
+            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+            for i in range(num_imgs)
+        ]
+        # apply bbox post-processing to each image individually
+        det_bboxes = []
+        det_labels = []
+        for i in range(num_imgs):
+            det_bbox, det_label = self.bbox_head[-1].get_bboxes(
+                rois[i],
+                cls_score[i],
+                bbox_pred[i],
+                img_shapes[i],
+                scale_factors[i],
+                rescale=False,
+                cfg=rcnn_test_cfg)
+            det_bboxes.append(det_bbox)
+            det_labels.append(det_label)
 
         ms_bbox_result['ensemble'] = (det_bboxes, det_labels)
 
@@ -408,28 +406,27 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
                 # apply mask post-processing to each image individually
                 segm_results = []
-                with no_nncf_trace():
-                    for i in range(num_imgs):
-                        aug_mask = [mask[i] for mask in aug_masks]
-                        merged_masks = merge_aug_masks(
-                            aug_mask, [[img_metas[i]]] * self.num_stages,
-                            rcnn_test_cfg)
-                        segm_result = self.mask_head[-1].get_seg_masks(
-                            merged_masks, _bboxes[i], det_labels[i],
-                            rcnn_test_cfg, ori_shapes[i], scale_factors[i],
-                            rescale)
-                        segm_results.append(segm_result)
+                for i in range(num_imgs):
+                    aug_mask = [mask[i] for mask in aug_masks]
+                    merged_masks = merge_aug_masks(
+                        aug_mask, [[img_metas[i]]] * self.num_stages,
+                        rcnn_test_cfg)
+                    segm_result = self.mask_head[-1].get_seg_masks(
+                        merged_masks, _bboxes[i], det_labels[i],
+                        rcnn_test_cfg, ori_shapes[i], scale_factors[i],
+                        rescale)
+                    segm_results.append(segm_result)
             ms_segm_result['ensemble'] = segm_results
-        with no_nncf_trace():
-            if postprocess:
-                det_masks = ms_segm_result['ensemble'] if self.with_mask else [None for _ in det_bboxes]
+        if postprocess:
+            det_masks = ms_segm_result['ensemble'] if self.with_mask else [None for _ in det_bboxes]
+            with no_nncf_trace():
                 results = [self.postprocess(det_bboxes[i], det_labels[i], det_masks[i], img_metas[i], rescale=rescale)
                            for i in range(len(det_bboxes))]
+        else:
+            if self.with_mask:
+                results = (*ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
             else:
-                if self.with_mask:
-                    results = (*ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
-                else:
-                    results = ms_bbox_result['ensemble']
+                results = ms_bbox_result['ensemble']
         return results
 
     def postprocess(self,
