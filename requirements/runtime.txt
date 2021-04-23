@@ -1,5 +1,6 @@
 matplotlib
 numpy
-pycocotools
+pycocotools-windows; platform_system == "Windows"
+pycocotools; platform_system == "Linux"
 six
 terminaltables
