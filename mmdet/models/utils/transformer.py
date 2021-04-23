@@ -62,25 +62,20 @@ class DetrTransformerEncoder(TransformerLayerSequence):
     """TransformerEncoder of DETR.
 
     Args:
-        coder_norm_cfg (dict): Config of last normalization layer. Default：
+        post_norm_cfg (dict): Config of last normalization layer. Default：
             `LN`. Only used when `self.pre_norm` is `True`
     """
 
-    def __init__(
-            self,
-            *args,
-            coder_norm_cfg=dict(type='LN'),
-            **kwargs,
-    ):
+    def __init__(self, *args, post_norm_cfg=dict(type='LN'), **kwargs):
         super(DetrTransformerEncoder, self).__init__(*args, **kwargs)
-        if coder_norm_cfg is not None:
-            self.coder_norm = build_norm_layer(
-                coder_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
+        if post_norm_cfg is not None:
+            self.post_norm = build_norm_layer(
+                post_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
         else:
             assert not self.pre_norm, f'Use prenorm in ' \
                                       f'{self.__class__.__name__},' \
-                                      f'Please specify coder_norm_cfg'
-            self.coder_norm = None
+                                      f'Please specify post_norm_cfg'
+            self.post_norm = None
 
     def forward(self, *args, **kwargs):
         """Forward function for `TransformerCoder`.
@@ -89,8 +84,8 @@ class DetrTransformerEncoder(TransformerLayerSequence):
             Tensor: forwarded results with shape [num_query, bs, embed_dims].
         """
         x = super(DetrTransformerEncoder, self).forward(*args, **kwargs)
-        if self.coder_norm is not None:
-            x = self.coder_norm(x)
+        if self.post_norm is not None:
+            x = self.post_norm(x)
         return x
 
 
@@ -100,23 +95,23 @@ class DetrTransformerDecoder(TransformerLayerSequence):
 
     Args:
         return_intermediate (bool): Whether to return intermediate outputs.
-        coder_norm_cfg (dict): Config of last normalization layer. Default：
+        post_norm_cfg (dict): Config of last normalization layer. Default：
             `LN`.
     """
 
     def __init__(self,
                  *args,
-                 coder_norm_cfg=dict(type='LN'),
+                 post_norm_cfg=dict(type='LN'),
                  return_intermediate=False,
                  **kwargs):
 
         super(DetrTransformerDecoder, self).__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
-        if coder_norm_cfg is not None:
-            self.coder_norm = build_norm_layer(coder_norm_cfg,
-                                               self.embed_dims)[1]
+        if post_norm_cfg is not None:
+            self.post_norm = build_norm_layer(post_norm_cfg,
+                                              self.embed_dims)[1]
         else:
-            self.coder_norm = None
+            self.post_norm = None
 
     def forward(self, query, *args, **kwargs):
         """Forward function for `TransformerDecoder`.
@@ -132,16 +127,16 @@ class DetrTransformerDecoder(TransformerLayerSequence):
         """
         if not self.return_intermediate:
             x = super().forward(query, *args, **kwargs)
-            if self.coder_norm:
-                x = self.coder_norm(x)[None]
+            if self.post_norm:
+                x = self.post_norm(x)[None]
             return x
 
         intermediate = []
         for layer in self.layers:
             query = layer(query, *args, **kwargs)
             if self.return_intermediate:
-                if self.coder_norm is not None:
-                    intermediate.append(self.coder_norm(query))
+                if self.post_norm is not None:
+                    intermediate.append(self.post_norm(query))
                 else:
                     intermediate.append(query)
         return torch.stack(intermediate)
@@ -174,12 +169,12 @@ class Transformer(BaseModule):
                  encoder=dict(
                      transformerlayers=None,
                      num_encoder_layers=6,
-                     coder_norm_cfg=None,
+                     post_norm_cfg=None,
                  ),
                  decoder=dict(
                      transformerlayers=None,
                      num_decoder_layers=6,
-                     coder_norm_cfg=None,
+                     post_norm_cfg=None,
                  ),
                  init_cfg=None):
         super(Transformer, self).__init__(init_cfg=init_cfg)
