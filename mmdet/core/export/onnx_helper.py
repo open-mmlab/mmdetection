@@ -143,9 +143,10 @@ def add_dummy_nms_for_onnx(boxes,
     # turn off tracing to create a dummy output of nms
     state = torch._C._get_tracing_state()
     # dummy indices of nms's output
-    batch_inds = torch.randint(batch_size, (num_box, 1))
-    cls_inds = torch.randint(num_class, (num_box, 1))
-    box_inds = torch.randint(num_box, (num_box, 1))
+    num_fake_det = 2
+    batch_inds = torch.randint(batch_size, (num_fake_det, 1))
+    cls_inds = torch.randint(num_class, (num_fake_det, 1))
+    box_inds = torch.randint(num_box, (num_fake_det, 1))
     indices = torch.cat([batch_inds, cls_inds, box_inds], dim=1)
     output = indices
     setattr(DymmyONNXNMSop, 'output', output)
