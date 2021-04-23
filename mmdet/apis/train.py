@@ -86,7 +86,7 @@ def train_detector(model,
             seed=cfg.seed) for ds in dataset
     ]
 
-    map_location = 'default'
+    map_location = 'cuda'
     if not torch.cuda.is_available():
         map_location = 'cpu'
 

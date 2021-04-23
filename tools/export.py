@@ -27,7 +27,7 @@ from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 from mmdet.apis import get_fake_input, init_detector
 from mmdet.integration.nncf import (check_nncf_is_enabled,
                                     get_nncf_config_from_meta,
-                                    get_uncompressed_model, is_checkpoint_nncf,
+                                    is_checkpoint_nncf,
                                     wrap_nncf_model)
 from mmdet.models import detectors
 from mmdet.utils import ExtendedDictAction
