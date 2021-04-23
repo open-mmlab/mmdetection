@@ -207,11 +207,15 @@ class YOLOFHead(AnchorHead):
             avg_factor=num_total_samples)
 
         # regression loss
-        loss_bbox = self.loss_bbox(
-            batch_pos_predicted_boxes,
-            batch_target_boxes,
-            batch_bbox_weights.float(),
-            avg_factor=num_total_samples)
+        if batch_pos_predicted_boxes.shape[0] == 0:
+            # no pos sample
+            loss_bbox = batch_pos_predicted_boxes.sum() * 0
+        else:
+            loss_bbox = self.loss_bbox(
+                batch_pos_predicted_boxes,
+                batch_target_boxes,
+                batch_bbox_weights.float(),
+                avg_factor=num_total_samples)
 
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
@@ -297,8 +301,8 @@ class YOLOFHead(AnchorHead):
         batch_label_weights = torch.stack(all_label_weights, 0)
 
         res = (batch_labels, batch_label_weights, num_total_pos, num_total_neg)
-        for i, r in enumerate(rest_results):  # user-added return values
-            rest_results[i] = torch.cat(r, 0)
+        for i, rests in enumerate(rest_results):  # user-added return values
+            rest_results[i] = torch.cat(rests, 0)
 
         return res + tuple(rest_results)
 

@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 
 from ..builder import BBOX_ASSIGNERS
@@ -36,6 +38,8 @@ class UniformAssigner(BaseAssigner):
                gt_bboxes,
                gt_bboxes_ignore=None,
                gt_labels=None):
+        warnings.warn('gt_bboxes_ignore was not considered for now.')
+
         num_gts, num_bboxes = gt_bboxes.size(0), bbox_pred.size(0)
 
         # 1. assign -1 by default
@@ -50,8 +54,15 @@ class UniformAssigner(BaseAssigner):
             if num_gts == 0:
                 # No ground truth, assign all to background
                 assigned_gt_inds[:] = 0
-            return AssignResult(
+            assign_result = AssignResult(
                 num_gts, assigned_gt_inds, None, labels=assigned_labels)
+            assign_result.set_extra_property(
+                'pos_idx', bbox_pred.new_empty(0, dtype=torch.bool))
+            assign_result.set_extra_property('pos_predicted_boxes',
+                                             bbox_pred.new_empty((0, 4)))
+            assign_result.set_extra_property('target_boxes',
+                                             bbox_pred.new_empty((0, 4)))
+            return assign_result
 
         # 2. Compute the L1 cost between boxes
         # Note that we use anchors and predict boxes both
