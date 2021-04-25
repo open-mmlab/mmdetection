@@ -1809,3 +1809,92 @@ class CutOut(object):
                      else f'cutout_shape={self.candidates}, ')
         repr_str += f'fill_in={self.fill_in})'
         return repr_str
+
+
+class BlendTransform(object):
+
+    def apply_image(self, img, src_weight, src_image, dst_weight):
+        """Apply blend transform on the image(s).
+
+        Args:
+            img (ndarray): of shape NxHxWxC, or HxWxC or HxW. The array can be
+                of type uint8 in range [0, 255], or floating point in range
+                [0, 1] or [0, 255].
+            interp (str): keep this option for consistency, perform blend would
+                not require interpolation.
+        Returns:
+            ndarray: blended image(s).
+        """
+        if img.dtype == np.uint8:
+            img = img.astype(np.float32)
+            img = src_weight * src_image + dst_weight * img
+            return np.clip(img, 0, 255).astype(np.uint8)
+        else:
+            return src_weight * src_image + dst_weight * img
+
+
+@PIPELINES.register_module()
+class RandomContrast(BlendTransform):
+
+    def __init__(self, intensity_min, intensity_max):
+        self.intensity_min = intensity_min
+        self.intensity_max = intensity_max
+
+    def __call__(self, result):
+        w = np.random.uniform(self.intensity_min, self.intensity_max)
+        img = result['img']
+        img = self.apply_image(result['img'], img.mean(), 1 - w, w)
+        result['img'] = img
+        return img
+
+
+@PIPELINES.register_module()
+class RandomBrightness(BlendTransform):
+
+    def __init__(self, intensity_min, intensity_max):
+        self.intensity_min = intensity_min
+        self.intensity_max = intensity_max
+
+    def __call__(self, result):
+        w = np.random.uniform(self.intensity_min, self.intensity_max)
+        img = self.apply_image(result['img'], 0, 1 - w, w)
+        result['img'] = img
+        return result
+
+
+@PIPELINES.register_module()
+class RandomSaturation(BlendTransform):
+
+    def __init__(self, intensity_min, intensity_max):
+        self.intensity_min = intensity_min
+        self.intensity_max = intensity_max
+
+    def __call__(self, result):
+        img = result['img']
+        assert img.shape[-1] == 3, 'Saturation only works on RGB images'
+        w = np.random.uniform(self.intensity_min, self.intensity_max)
+        grayscale = img.dot([0.299, 0.587, 0.114])[:, :, np.newaxis]
+        img = self.apply_image(img, grayscale, 1 - w, w)
+        return img
+
+
+@PIPELINES.register_module()
+class RandomLighting(BlendTransform):
+
+    def __init__(self, scale):
+        self.scale = scale
+        self.eigen_vecs = np.array([
+            [-0.5675, 0.7192, 0.4009],
+            [-0.5808, -0.0045, -0.8140],
+            [-0.5836, -0.6948, 0.4203],
+        ])
+        self.eigen_vals = np.array([0.2175, 0.0188, 0.0045])
+
+    def __call__(self, result):
+        img = result['img']
+        assert img.shape[-1] == 3, 'Saturation only works on RGB images'
+        weights = np.random.normal(scale=self.scale, size=3)
+        src_img = self.eigen_vecs.dot(weights * self.eigen_vals)
+        img = self.apply_image(img, src_img, 1.0, 1.0)
+        result['img'] = img
+        return result
