@@ -407,9 +407,8 @@ class VFNetHead(ATSSHead, FCOSHead):
             pos_decoded_target_preds.detach(),
             is_aligned=True).clamp(min=1e-6)
         bbox_weights_ini = iou_targets_ini.clone().detach()
-        iou_targets_ini_avg_per_gpu = reduce_mean(
-            bbox_weights_ini.sum()).item()
-        bbox_avg_factor_ini = max(iou_targets_ini_avg_per_gpu, 1.0)
+        bbox_avg_factor_ini = reduce_mean(
+            bbox_weights_ini.sum()).clamp_(min=1).item()
 
         pos_decoded_bbox_preds_refine = \
             distance2bbox(pos_points, pos_bbox_preds_refine)
@@ -418,8 +417,8 @@ class VFNetHead(ATSSHead, FCOSHead):
             pos_decoded_target_preds.detach(),
             is_aligned=True).clamp(min=1e-6)
         bbox_weights_rf = iou_targets_rf.clone().detach()
-        iou_targets_rf_avg_per_gpu = reduce_mean(bbox_weights_rf.sum()).item()
-        bbox_avg_factor_rf = max(iou_targets_rf_avg_per_gpu, 1.0)
+        bbox_avg_factor_rf = reduce_mean(
+            bbox_weights_rf.sum()).clamp_(min=1).item()
 
         if num_pos > 0:
             loss_bbox = self.loss_bbox(
