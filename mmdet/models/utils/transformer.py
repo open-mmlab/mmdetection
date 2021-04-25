@@ -1,9 +1,7 @@
-import copy
 import math
 
 import torch
 import torch.nn as nn
-from mmcv import ConfigDict
 from mmcv.cnn import build_activation_layer, build_norm_layer, xavier_init
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
                                       TRANSFORMER_LAYER_SEQUENCE)
@@ -179,18 +177,7 @@ class Transformer(BaseModule):
             Default: None.
     """
 
-    def __init__(self,
-                 encoder=dict(
-                     transformerlayers=None,
-                     num_encoder_layers=6,
-                     post_norm_cfg=None,
-                 ),
-                 decoder=dict(
-                     transformerlayers=None,
-                     num_decoder_layers=6,
-                     post_norm_cfg=None,
-                 ),
-                 init_cfg=None):
+    def __init__(self, encoder=None, decoder=None, init_cfg=None):
         super(Transformer, self).__init__(init_cfg=init_cfg)
         self.encoder = build_transformer_layer_sequence(encoder)
         self.decoder = build_transformer_layer_sequence(decoder)
@@ -253,6 +240,7 @@ class Transformer(BaseModule):
         return out_dec, memory
 
 
+@TRANSFORMER_LAYER_SEQUENCE.register_module()
 class DeformableDetrTransformerDecoder(TransformerLayerSequence):
     """Implements the decoder in DETR transformer.
 
@@ -341,78 +329,28 @@ class DeformableDetrTransformerDecoder(TransformerLayerSequence):
 
 
 @TRANSFORMER.register_module()
-class DeformableDetrTransformer(BaseModule):
-    """Implements the Deformable Detr  transformer.
+class DeformableDetrTransformer(Transformer):
+    """Implements the DeformableDETR transformer.
 
     Args:
-        attn_cfgs (sequence[obj:`mmcv.Config`]) : Config of
-            Attention in Encoder and decoder in Transformer.
-        num_encoder_layers (int): Number of `TransformerEncoderLayer`.
-        num_decoder_layers (int): Number of `TransformerDecoderLayer`.
+        as_two_stage (bool): Generate query from encoder features.
+            Default: False.
         num_feature_levels (int): Number of feature maps from FPN:
-            Default: 4
-        feedforward_channels (int): The hidden dimension for FFNs used in both
-            encoder and decoder.
-        ffn_dropout (float): Probability of an element to
-            be zeroed. Default 0.0.
-        act_cfg (dict): Activation config for FFNs used in both encoder
-            and decoder. Defalut: ReLU.
-        norm_cfg (dict): Config dict for normalization used in both encoder
-            and decoder. Default layer normalization.
-        num_fcs (int): The number of fully-connected layers in FFNs, which is
-            used for both encoder and decoder.
-        pre_norm (bool): Whether the normalization layer is ordered
-            first in the encoder and decoder. Default False.
-        return_intermediate_dec (bool): Whether to return the intermediate
-            output from each TransformerDecoderLayer or only the last
-            TransformerDecoderLayer. Default False. If False, the returned
-            `hs` has shape [num_decoder_layers, bs, num_query, embed_dims].
-            If True, the returned `hs` will have shape [1, bs, num_query,
-            embed_dims].
+            Default: 4.
         two_stage_num_proposals (int): Number of proposals when set
             `as_two_stage` as True. Default: 300.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
-            Default: None.
     """
 
     def __init__(self,
-                 encodelayers=None,
-                 dencodelayers=None,
-                 embed_dims=256,
                  as_two_stage=False,
-                 num_encoder_layers=6,
-                 num_decoder_layers=6,
                  num_feature_levels=4,
-                 norm_cfg=dict(type='LN'),
-                 return_intermediate=False,
                  two_stage_num_proposals=300,
-                 init_cfg=None):
-        super(DeformableDetrTransformer, self).__init__(init_cfg)
+                 **kwargs):
+        super(DeformableDetrTransformer, self).__init__(**kwargs)
         self.as_two_stage = as_two_stage
         self.num_feature_levels = num_feature_levels
-        self.embed_dims = embed_dims
         self.two_stage_num_proposals = two_stage_num_proposals
-
-        encodelayers = copy.deepcopy(encodelayers)
-        dncodelayers = copy.deepcopy(dencodelayers)
-        if isinstance(encodelayers, ConfigDict):
-            encodelayers = [
-                copy.deepcopy(encodelayers) for _ in range(num_encoder_layers)
-            ]
-        if isinstance(dencodelayers, ConfigDict):
-            dencodelayers = [
-                copy.deepcopy(dncodelayers) for _ in range(num_encoder_layers)
-            ]
-        self.encoder = DetrTransformerEncoder(
-            transformerlayers=encodelayers,
-            num_layers=num_encoder_layers,
-            coder_norm_cfg=norm_cfg,
-        )
-        self.decoder = DeformableDetrTransformerDecoder(
-            transformerlayers=dencodelayers,
-            num_layers=num_decoder_layers,
-            return_intermediate=return_intermediate)
-
+        self.embed_dims = self.encoder.embed_dims
         self.init_layers()
 
     def init_layers(self):
@@ -429,7 +367,7 @@ class DeformableDetrTransformer(BaseModule):
         else:
             self.reference_points = nn.Linear(self.embed_dims, 2)
 
-    def init_weight(self):
+    def init_weights(self):
         """Initialize the transformer weights."""
         for p in self.parameters():
             if p.dim() > 1:

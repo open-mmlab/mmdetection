@@ -81,7 +81,7 @@ class DeformableDETRHead(DETRHead):
 
     def init_weights(self):
         """Initialize weights of the DeformDETR head."""
-        self.transformer.init_weight()
+        self.transformer.init_weights()
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             for m in self.cls_branches:
