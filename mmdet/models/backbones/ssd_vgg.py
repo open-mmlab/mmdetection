@@ -106,6 +106,9 @@ class SSDVGG(VGG, BaseModule):
                     override=dict(name='l2_norm'))
             ]
 
+    def init_weights(self, pretrained=None):
+        super(VGG, self).init_weights()
+
     def forward(self, x):
         """Forward function."""
         outs = []
