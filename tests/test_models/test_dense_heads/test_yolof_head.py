@@ -16,8 +16,8 @@ def test_yolof_head_loss():
         dict(
             assigner=dict(
                 type='UniformAssigner',
-                pos_ignore_thresh=0.15,
-                neg_ignore_thresh=0.7),
+                pos_ignore_thr=0.15,
+                neg_ignore_thr=0.7),
             allowed_border=-1,
             pos_weight=-1,
             debug=False))
