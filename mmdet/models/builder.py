@@ -54,4 +54,5 @@ def build_detector(cfg, train_cfg=None, test_cfg=None):
         'train_cfg specified in both outer field and model field '
     assert cfg.get('test_cfg') is None or test_cfg is None, \
         'test_cfg specified in both outer field and model field '
-    return DETECTORS.build(cfg, dict(train_cfg=train_cfg, test_cfg=test_cfg))
+    return DETECTORS.build(
+        cfg, default_args=dict(train_cfg=train_cfg, test_cfg=test_cfg))
