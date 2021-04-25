@@ -170,11 +170,11 @@ class Transformer(BaseModule):
 
     Args:
         encoder (`mmcv.ConfigDict` | Dict): Config of
-            TransformerEncoder.
+            TransformerEncoder. Defaults to None.
         decoder ((`mmcv.ConfigDict` | Dict)): Config of
-            TransformerDecoder.
+            TransformerDecoder. Defaults to None
         init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
-            Default: None.
+            Defaults to None.
     """
 
     def __init__(self, encoder=None, decoder=None, init_cfg=None):
