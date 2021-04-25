@@ -28,6 +28,7 @@ model = dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[0.1, 0.1, 0.2, 0.2])),
+    # model training and testing settings
     train_cfg=dict(
         assigner=dict(
             type='MaxIoUAssigner',
@@ -42,6 +43,7 @@ model = dict(
         neg_pos_ratio=3,
         debug=False),
     test_cfg=dict(
+        nms_pre=1000,
         nms=dict(type='nms', iou_threshold=0.45),
         min_bbox_size=0,
         score_thr=0.02,

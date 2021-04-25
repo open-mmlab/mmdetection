@@ -30,15 +30,13 @@ class SinePositionalEncoding(nn.Module):
             Defaults to 0.
     """
 
-    def __init__(
-        self,
-        num_feats,
-        temperature=10000,
-        normalize=False,
-        scale=2 * math.pi,
-        eps=1e-6,
-        offset=0.,
-    ):
+    def __init__(self,
+                 num_feats,
+                 temperature=10000,
+                 normalize=False,
+                 scale=2 * math.pi,
+                 eps=1e-6,
+                 offset=0.):
         super(SinePositionalEncoding, self).__init__()
         if normalize:
             assert isinstance(scale, (float, int)), 'when normalize is set,' \

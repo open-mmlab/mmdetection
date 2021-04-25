@@ -44,7 +44,7 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 
 ## 更新日志
 
-最新的月度版本 v2.10.0 在 2021.03.01 发布。
+最新的月度版本 v2.11.0 在 2021.04.01 发布。
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 在[兼容性说明文档](docs/compatibility.md)中我们提供了 1.x 和 2.0 版本的详细比较。
 
@@ -164,3 +164,4 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 - [MMTracking](https://github.com/open-mmlab/mmtracking): OpenMMLab 一体化视频目标感知平台
 - [MMPose](https://github.com/open-mmlab/mmpose): OpenMMLab 姿态估计工具箱
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab 图像视频编辑工具箱
+- [MMOCR](https://github.com/open-mmlab/mmocr): OpenMMLab 全流程文字检测识别理解工具包.

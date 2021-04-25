@@ -26,50 +26,6 @@ def inverse_sigmoid(x, eps=1e-5):
 
 
 @TRANSFORMER_LAYER.register_module()
-class DetrTransformerEncoderLayer(BaseTransformerLayer):
-    """Implements encoder layer in DETR transformer.
-
-    Args:
-        attn_cfgs (list[`mmcv.ConfigDict`] | list[dict] | dict )):
-            Configs for self_attention or cross_attention, the order
-            should be consistent with it in `operation_order`. If it is
-            a dict, it would be expand to the number of attention in
-            `operation_order`.
-        feedforward_channels (int): The hidden dimension for FFNs.
-        ffn_dropout (float): Probability of an element to be zeroed
-            in ffn. Default 0.0.
-        operation_order (tuple[str]): The execution order of operation
-            in transformer. Such as ('self_attn', 'norm', 'ffn', 'norm').
-            Default：None
-        act_cfg (dict): The activation config for FFNs.
-        norm_cfg (dict): Config dict for normalization layer.
-        ffn_num_fcs (int): The number of fully-connected layers in FFNs.
-            Default：2.
-    """
-
-    def __init__(self,
-                 attn_cfgs,
-                 feedforward_channels,
-                 ffn_dropout=0.0,
-                 operation_order=None,
-                 act_cfg=dict(type='ReLU', inplace=True),
-                 norm_cfg=dict(type='LN'),
-                 ffn_num_fcs=2,
-                 **kwargs):
-        super(DetrTransformerEncoderLayer, self).__init__(
-            attn_cfgs=attn_cfgs,
-            feedforward_channels=feedforward_channels,
-            operation_order=operation_order,
-            ffn_dropout=ffn_dropout,
-            act_cfg=act_cfg,
-            norm_cfg=norm_cfg,
-            ffn_num_fcs=ffn_num_fcs,
-            **kwargs)
-        assert len(self.operation_order) == 4
-        assert set(self.operation_order) == set(['self_attn', 'norm', 'ffn'])
-
-
-@TRANSFORMER_LAYER.register_module()
 class DetrTransformerDecoderLayer(BaseTransformerLayer):
     """Implements decoder layer in DETR transformer.
 
@@ -120,25 +76,20 @@ class DetrTransformerEncoder(TransformerLayerSequence):
     """TransformerEncoder of DETR.
 
     Args:
-        coder_norm_cfg (dict): Config of last normalization layer. Default：
+        post_norm_cfg (dict): Config of last normalization layer. Default：
             `LN`. Only used when `self.pre_norm` is `True`
     """
 
-    def __init__(
-            self,
-            *args,
-            coder_norm_cfg=dict(type='LN'),
-            **kwargs,
-    ):
+    def __init__(self, *args, post_norm_cfg=dict(type='LN'), **kwargs):
         super(DetrTransformerEncoder, self).__init__(*args, **kwargs)
-        if coder_norm_cfg is not None:
-            self.coder_norm = build_norm_layer(
-                coder_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
+        if post_norm_cfg is not None:
+            self.post_norm = build_norm_layer(
+                post_norm_cfg, self.embed_dims)[1] if self.pre_norm else None
         else:
             assert not self.pre_norm, f'Use prenorm in ' \
                                       f'{self.__class__.__name__},' \
-                                      f'Please specify coder_norm_cfg'
-            self.coder_norm = None
+                                      f'Please specify post_norm_cfg'
+            self.post_norm = None
 
     def forward(self, *args, **kwargs):
         """Forward function for `TransformerCoder`.
@@ -147,8 +98,8 @@ class DetrTransformerEncoder(TransformerLayerSequence):
             Tensor: forwarded results with shape [num_query, bs, embed_dims].
         """
         x = super(DetrTransformerEncoder, self).forward(*args, **kwargs)
-        if self.coder_norm is not None:
-            x = self.coder_norm(x)
+        if self.post_norm is not None:
+            x = self.post_norm(x)
         return x
 
 
@@ -158,23 +109,23 @@ class DetrTransformerDecoder(TransformerLayerSequence):
 
     Args:
         return_intermediate (bool): Whether to return intermediate outputs.
-        coder_norm_cfg (dict): Config of last normalization layer. Default：
+        post_norm_cfg (dict): Config of last normalization layer. Default：
             `LN`.
     """
 
     def __init__(self,
                  *args,
-                 coder_norm_cfg=dict(type='LN'),
+                 post_norm_cfg=dict(type='LN'),
                  return_intermediate=False,
                  **kwargs):
 
         super(DetrTransformerDecoder, self).__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
-        if coder_norm_cfg is not None:
-            self.coder_norm = build_norm_layer(coder_norm_cfg,
-                                               self.embed_dims)[1]
+        if post_norm_cfg is not None:
+            self.post_norm = build_norm_layer(post_norm_cfg,
+                                              self.embed_dims)[1]
         else:
-            self.coder_norm = None
+            self.post_norm = None
 
     def forward(self, query, *args, **kwargs):
         """Forward function for `TransformerDecoder`.
@@ -190,16 +141,16 @@ class DetrTransformerDecoder(TransformerLayerSequence):
         """
         if not self.return_intermediate:
             x = super().forward(query, *args, **kwargs)
-            if self.coder_norm:
-                x = self.coder_norm(x)[None]
+            if self.post_norm:
+                x = self.post_norm(x)[None]
             return x
 
         intermediate = []
         for layer in self.layers:
             query = layer(query, *args, **kwargs)
             if self.return_intermediate:
-                if self.coder_norm is not None:
-                    intermediate.append(self.coder_norm(query))
+                if self.post_norm is not None:
+                    intermediate.append(self.post_norm(query))
                 else:
                     intermediate.append(query)
         return torch.stack(intermediate)
@@ -232,12 +183,12 @@ class Transformer(BaseModule):
                  encoder=dict(
                      transformerlayers=None,
                      num_encoder_layers=6,
-                     coder_norm_cfg=None,
+                     post_norm_cfg=None,
                  ),
                  decoder=dict(
                      transformerlayers=None,
                      num_decoder_layers=6,
-                     coder_norm_cfg=None,
+                     post_norm_cfg=None,
                  ),
                  init_cfg=None):
         super(Transformer, self).__init__(init_cfg=init_cfg)
@@ -245,7 +196,7 @@ class Transformer(BaseModule):
         self.decoder = build_transformer_layer_sequence(decoder)
         self.embed_dims = self.encoder.embed_dims
 
-    def init_weight(self):
+    def init_weights(self):
         # follow the official DETR to init parameters
         for m in self.modules():
             if hasattr(m, 'weight') and m.weight.dim() > 1:

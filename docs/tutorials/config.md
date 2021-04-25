@@ -32,7 +32,7 @@ The configs that are composed by components from `_base_` are called _primitive_
 
 For all configs under the same folder, it is recommended to have only **one** _primitive_ config. All other configs should inherit from the _primitive_ config. In this way, the maximum of inheritance level is 3.
 
-For easy understanding, we recommend contributors to inherit from exiting methods.
+For easy understanding, we recommend contributors to inherit from existing methods.
 For example, if some modification is made base on Faster R-CNN, user may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`, then modify the necessary fields in the config files.
 
 If you are building an entirely new method that does not share the structure with any of the existing methods, you may create a folder `xxx_rcnn` under `configs`,
@@ -290,7 +290,7 @@ test_pipeline = [
         flip=False,  # Whether to flip images during testing
         transforms=[
             dict(type='Resize',  # Use resize augmentation
-                 keep_ratio=True),  # Whether to keep the ratio between height and width, the img_scale set here will be supressed by the img_scale set above.
+                 keep_ratio=True),  # Whether to keep the ratio between height and width, the img_scale set here will be suppressed by the img_scale set above.
             dict(type='RandomFlip'),  # Thought RandomFlip is added in pipeline, it is not used because flip=False
             dict(
                 type='Normalize',  # Normalization config, the values are from img_norm_cfg

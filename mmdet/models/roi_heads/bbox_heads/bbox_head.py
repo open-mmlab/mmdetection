@@ -275,35 +275,102 @@ class BBoxHead(nn.Module):
                    scale_factor,
                    rescale=False,
                    cfg=None):
+        """Transform network output for a batch into bbox predictions.
+
+        If the input rois has batch dimension, the function would be in
+        `batch_mode` and return is a tuple[list[Tensor], list[Tensor]],
+        otherwise, the return is a tuple[Tensor, Tensor].
+
+        Args:
+            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5)
+               or (B, num_boxes, 5)
+            cls_score (list[Tensor] or Tensor): Box scores for
+               each scale level, each is a 4D-tensor, the channel number is
+               num_points * num_classes.
+            bbox_pred (Tensor, optional): Box energies / deltas for each scale
+                level, each is a 4D-tensor, the channel number is
+                num_classes * 4.
+            img_shape (Sequence[int] or torch.Tensor or Sequence[
+                Sequence[int]], optional): Maximum bounds for boxes, specifies
+                (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
+                the max_shape should be a Sequence[Sequence[int]]
+                and the length of max_shape should also be B.
+            scale_factor (tuple[ndarray] or ndarray): Scale factor of the
+               image arange as (w_scale, h_scale, w_scale, h_scale). In
+               `batch_mode`, the scale_factor shape is tuple[ndarray].
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
+
+        Returns:
+            tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor]:
+                If the input has a batch dimension, the return value is
+                a tuple of the list. The first list contains the boxes of
+                the corresponding image in a batch, each tensor has the
+                shape (num_boxes, 5) and last dimension 5 represent
+                (tl_x, tl_y, br_x, br_y, score). Each Tensor in the second
+                list is the labels with shape (num_boxes, ). The length of
+                both lists should be equal to batch_size. Otherwise return
+                value is a tuple of two tensors, the first tensor is the
+                boxes with scores, the second tensor is the labels, both
+                have the same shape as the first case.
+        """
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
-        scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
+
+        scores = F.softmax(
+            cls_score, dim=-1) if cls_score is not None else None
+
+        batch_mode = True
+        if rois.ndim == 2:
+            # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
+            batch_mode = False
+
+            # add batch dimension
+            if scores is not None:
+                scores = scores.unsqueeze(0)
+            if bbox_pred is not None:
+                bbox_pred = bbox_pred.unsqueeze(0)
+            rois = rois.unsqueeze(0)
 
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=img_shape)
+                rois[..., 1:], bbox_pred, max_shape=img_shape)
         else:
-            bboxes = rois[:, 1:].clone()
+            bboxes = rois[..., 1:].clone()
             if img_shape is not None:
-                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
-                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
+                max_shape = bboxes.new_tensor(img_shape)[..., :2]
+                min_xy = bboxes.new_tensor(0)
+                max_xy = torch.cat(
+                    [max_shape] * 2, dim=-1).flip(-1).unsqueeze(-2)
+                bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
+                bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 
-        if rescale and bboxes.size(0) > 0:
-            if isinstance(scale_factor, float):
-                bboxes /= scale_factor
+        if rescale and bboxes.size(-2) > 0:
+            if not isinstance(scale_factor, tuple):
+                scale_factor = tuple([scale_factor])
+            # B, 1, bboxes.size(-1)
+            scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(1).repeat(
+                1, 1,
+                bboxes.size(-1) // 4)
+            bboxes /= scale_factor
+
+        det_bboxes = []
+        det_labels = []
+        for (bbox, score) in zip(bboxes, scores):
+            if cfg is not None:
+                det_bbox, det_label = multiclass_nms(bbox, score,
+                                                     cfg.score_thr, cfg.nms,
+                                                     cfg.max_per_img)
             else:
-                scale_factor = bboxes.new_tensor(scale_factor)
-                bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
-                          scale_factor).view(bboxes.size()[0], -1)
+                det_bbox, det_label = bbox, score
+            det_bboxes.append(det_bbox)
+            det_labels.append(det_label)
 
-        if cfg is None:
-            return bboxes, scores
-        else:
-            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-
-            return det_bboxes, det_labels
+        if not batch_mode:
+            det_bboxes = det_bboxes[0]
+            det_labels = det_labels[0]
+        return det_bboxes, det_labels
 
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):

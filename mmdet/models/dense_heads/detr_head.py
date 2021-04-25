@@ -157,7 +157,7 @@ class DETRHead(AnchorFreeHead):
     def init_weights(self):
         """Initialize weights of the transformer head."""
         # The initialization for transformer is important
-        self.transformer.init_weight()
+        self.transformer.init_weights()
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
@@ -570,7 +570,7 @@ class DETRHead(AnchorFreeHead):
                 [nb_dec, bs, num_query, 4].
             img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
-                image space. Defalut False.
+                image space. Default False.
 
         Returns:
             list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
@@ -581,7 +581,7 @@ class DETRHead(AnchorFreeHead):
                 the corresponding box.
         """
         # NOTE defaultly only using outputs from the last feature level,
-        # and only the ouputs from the last decoder layer is used.
+        # and only the outputs from the last decoder layer is used.
         cls_scores = all_cls_scores_list[-1][-1]
         bbox_preds = all_bbox_preds_list[-1][-1]
 
@@ -598,14 +598,12 @@ class DETRHead(AnchorFreeHead):
 
         return result_list
 
-    def _get_bboxes_single(
-        self,
-        cls_score,
-        bbox_pred,
-        img_shape,
-        scale_factor,
-        rescale=False,
-    ):
+    def _get_bboxes_single(self,
+                           cls_score,
+                           bbox_pred,
+                           img_shape,
+                           scale_factor,
+                           rescale=False):
         """Transform outputs from the last decoder layer into bbox predictions
         for each image.
 
