@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import Conv2d, Linear, build_activation_layer
 from mmcv.runner import force_fp32
 
-from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
+from mmdet.core import (bbox2result, bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply,
                         reduce_mean)
 from mmdet.models.utils import (FFN, build_positional_encoding,
@@ -652,3 +652,40 @@ class TransformerHead(AnchorFreeHead):
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(1)), -1)
         return det_bboxes, det_labels
+
+    def simple_test_bboxes(self,
+                           feats,
+                           img_metas,
+                           rescale=False,
+                           postprocess=True):
+        """Test det bboxes without test-time augmentation.
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+            postprocess (bool, optional): Whether to perform post-processing
+                by bbox2result. Defaults to True.
+
+        Returns:
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
+        """
+        batch_size = len(img_metas)
+        assert batch_size == 1, 'Currently only batch_size 1 for inference ' \
+            f'mode is supported. Found batch_size {batch_size}.'
+
+        # forward of this head requires img_metas
+        outs = self.forward(feats, img_metas)
+        bbox_list = self.get_bboxes(*outs, img_metas, rescale=rescale)
+        if postprocess:
+            bbox_results = [
+                bbox2result(det_bboxes, det_labels, self.num_classes)
+                for det_bboxes, det_labels in bbox_list
+            ]
+            return bbox_results
+        else:
+            return bbox_list

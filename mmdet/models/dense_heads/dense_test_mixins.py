@@ -8,6 +8,38 @@ from mmdet.core import bbox2result, bbox_mapping_back, multiclass_nms
 class BBoxTestMixin(object):
     """Mixin class for test time augmentation of bboxes."""
 
+    def simple_test_bboxes(self,
+                           feats,
+                           img_metas,
+                           rescale=False,
+                           postprocess=True):
+        """Test det bboxes without test-time augmentation.
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+            postprocess (bool, optional): Whether to perform post-processing
+                by bbox2result. Defaults to True.
+
+        Returns:
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
+        """
+        outs = self.forward(feats)
+        bbox_list = self.get_bboxes(*outs, img_metas, rescale=rescale)
+        if postprocess:
+            bbox_results = [
+                bbox2result(det_bboxes, det_labels, self.num_classes)
+                for det_bboxes, det_labels in bbox_list
+            ]
+            return bbox_results
+        else:
+            return bbox_list
+
     def merge_aug_bboxes(self, aug_bboxes, aug_scores, img_metas):
         """Merge augmented detection bboxes and scores.
 

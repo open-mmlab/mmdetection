@@ -11,6 +11,7 @@ from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
 from .base_dense_head import BaseDenseHead
+from .dense_test_mixins import BBoxTestMixin
 
 
 class BiCornerPool(nn.Module):
@@ -74,7 +75,7 @@ class BiCornerPool(nn.Module):
 
 
 @HEADS.register_module()
-class CornerHead(BaseDenseHead):
+class CornerHead(BaseDenseHead, BBoxTestMixin):
     """Head of CornerNet: Detecting Objects as Paired Keypoints.
 
     Code is modified from the `official github repo
