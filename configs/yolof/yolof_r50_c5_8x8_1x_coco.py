@@ -46,9 +46,7 @@ model = dict(
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
-            type='UniformAssigner',
-            pos_ignore_thresh=0.15,
-            neg_ignore_thresh=0.7),
+            type='UniformAssigner', pos_ignore_thr=0.15, neg_ignore_thr=0.7),
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
@@ -65,8 +63,7 @@ optimizer = dict(
     momentum=0.9,
     weight_decay=0.0001,
     paramwise_cfg=dict(
-        norm_decay_mult=0.,
-        custom_keys={'backbone': dict(lr_mult=1. / 3, decay_mult=1.0)}))
+        norm_decay_mult=0., custom_keys={'backbone': dict(lr_mult=1. / 3)}))
 lr_config = dict(warmup_iters=1500, warmup_ratio=0.00066667)
 
 # use caffe img_norm

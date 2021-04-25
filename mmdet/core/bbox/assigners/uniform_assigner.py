@@ -1,5 +1,3 @@
-import warnings
-
 import torch
 
 from ..builder import BBOX_ASSIGNERS
@@ -12,24 +10,25 @@ from .base_assigner import BaseAssigner
 @BBOX_ASSIGNERS.register_module()
 class UniformAssigner(BaseAssigner):
     """Uniform Matching between the anchors and gt boxes, which can achieve
-    balance in positive anchors.
+    balance in positive anchors, and gt_bboxes_ignore was not considered for
+    now.
 
     Args:
-        pos_ignore_thresh (float): the threshold to ignore positive anchors
-        neg_ignore_thresh (float): the threshold to ignore negative anchors
+        pos_ignore_thr (float): the threshold to ignore positive anchors
+        neg_ignore_thr (float): the threshold to ignore negative anchors
         match_times(int): Number of positive anchors for each gt box.
            Default 4.
         iou_calculator (dict): iou_calculator config
     """
 
     def __init__(self,
-                 pos_ignore_thresh,
-                 neg_ignore_thresh,
+                 pos_ignore_thr,
+                 neg_ignore_thr,
                  match_times=4,
                  iou_calculator=dict(type='BboxOverlaps2D')):
         self.match_times = match_times
-        self.pos_ignore_thresh = pos_ignore_thresh
-        self.neg_ignore_thresh = neg_ignore_thresh
+        self.pos_ignore_thr = pos_ignore_thr
+        self.neg_ignore_thr = neg_ignore_thr
         self.iou_calculator = build_iou_calculator(iou_calculator)
 
     def assign(self,
@@ -38,8 +37,6 @@ class UniformAssigner(BaseAssigner):
                gt_bboxes,
                gt_bboxes_ignore=None,
                gt_labels=None):
-        warnings.warn('gt_bboxes_ignore was not considered for now.')
-
         num_gts, num_bboxes = gt_bboxes.size(0), bbox_pred.size(0)
 
         # 1. assign -1 by default
@@ -99,7 +96,7 @@ class UniformAssigner(BaseAssigner):
         anchor_max_overlaps, _ = anchor_overlaps.max(dim=0)
 
         # 3. Compute the ignore indexes use gt_bboxes and predict boxes
-        ignore_idx = pred_max_overlaps > self.neg_ignore_thresh
+        ignore_idx = pred_max_overlaps > self.neg_ignore_thr
         assigned_gt_inds[ignore_idx] = -1
 
         # 4. Compute the ignore indexes of positive sample use anchors
@@ -108,11 +105,11 @@ class UniformAssigner(BaseAssigner):
             0, C1.size(1),
             device=bbox_pred.device).repeat(self.match_times * 2)
         pos_ious = anchor_overlaps[indexes, pos_gt_index]
-        pos_ignore_idx = pos_ious < self.pos_ignore_thresh
+        pos_ignore_idx = pos_ious < self.pos_ignore_thr
 
-        target_classes_o = pos_gt_index + 1
-        target_classes_o[pos_ignore_idx] = -1
-        assigned_gt_inds[indexes] = target_classes_o
+        pos_gt_index_with_ignore = pos_gt_index + 1
+        pos_gt_index_with_ignore[pos_ignore_idx] = -1
+        assigned_gt_inds[indexes] = pos_gt_index_with_ignore
 
         if gt_labels is not None:
             assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)

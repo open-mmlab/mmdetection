@@ -8,6 +8,8 @@ from mmdet.core import anchor_inside_flags, multi_apply, reduce_mean, unmap
 from ..builder import HEADS
 from .anchor_head import AnchorHead
 
+INF = 1e8
+
 
 def levels_to_images(mlvl_tensor):
     """Concat multi-level feature maps by image.
@@ -53,20 +55,19 @@ class YOLOFHead(AnchorHead):
     def __init__(self,
                  num_classes,
                  in_channels,
-                 cls_num_convs=2,
-                 reg_num_convs=4,
+                 num_cls_convs=2,
+                 num_reg_convs=4,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  **kwargs):
-        self.cls_num_convs = cls_num_convs
-        self.reg_num_convs = reg_num_convs
+        self.num_cls_convs = num_cls_convs
+        self.num_reg_convs = num_reg_convs
         self.norm_cfg = norm_cfg
-        self.INF = 1e8
         super(YOLOFHead, self).__init__(num_classes, in_channels, **kwargs)
 
     def _init_layers(self):
         cls_subnet = []
         bbox_subnet = []
-        for i in range(self.cls_num_convs):
+        for i in range(self.num_cls_convs):
             cls_subnet.append(
                 ConvModule(
                     self.in_channels,
@@ -74,7 +75,7 @@ class YOLOFHead(AnchorHead):
                     kernel_size=3,
                     padding=1,
                     norm_cfg=self.norm_cfg))
-        for i in range(self.reg_num_convs):
+        for i in range(self.num_reg_convs):
             bbox_subnet.append(
                 ConvModule(
                     self.in_channels,
@@ -126,8 +127,8 @@ class YOLOFHead(AnchorHead):
         # implicit objectness
         objectness = objectness.view(N, -1, 1, H, W)
         normalized_cls_score = cls_score + objectness - torch.log(
-            1. + torch.clamp(cls_score.exp(), max=self.INF) +
-            torch.clamp(objectness.exp(), max=self.INF))
+            1. + torch.clamp(cls_score.exp(), max=INF) +
+            torch.clamp(objectness.exp(), max=INF))
         normalized_cls_score = normalized_cls_score.view(N, -1, H, W)
         return normalized_cls_score, bbox_reg
 
@@ -196,8 +197,8 @@ class YOLOFHead(AnchorHead):
 
         num_total_samples = (num_total_pos +
                              num_total_neg) if self.sampling else num_total_pos
-        num_total_samples = max(
-            reduce_mean(cls_score.new_tensor(num_total_samples)).item(), 1.0)
+        num_total_samples = reduce_mean(
+            cls_score.new_tensor(num_total_samples)).clamp_(1.0).item()
 
         # classification loss
         loss_cls = self.loss_cls(

@@ -22,4 +22,4 @@
 **Note**:
 
 1. We find that the performance is unstable and may fluctuate by about 0.3 mAP. mAP 37.4 ~ 37.7 is acceptable in YOLOF_R_50_C5_1x. Such fluctuation can also be found in the [original implementation](https://github.com/chensnathan/YOLOF).
-2. In addition to instability issues, I found that sometimes there are large loss fluctuations and NAN, so there may still be problems with this project, which will be improved subsequently.
+2. In addition to instability issues, sometimes there are large loss fluctuations and NAN, so there may still be problems with this project, which will be improved subsequently.
