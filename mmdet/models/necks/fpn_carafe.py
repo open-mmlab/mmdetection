@@ -1,7 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, build_upsample_layer, xavier_init
 from mmcv.ops.carafe import CARAFEPack
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, ModuleList
 
 from ..builder import NECKS
 
@@ -87,9 +87,9 @@ class FPN_CARAFE(BaseModule):
         self.start_level = start_level
         self.end_level = end_level
 
-        self.lateral_convs = nn.ModuleList()
-        self.fpn_convs = nn.ModuleList()
-        self.upsample_modules = nn.ModuleList()
+        self.lateral_convs = ModuleList()
+        self.fpn_convs = ModuleList()
+        self.upsample_modules = ModuleList()
 
         for i in range(self.start_level, self.backbone_end_level):
             l_conv = ConvModule(

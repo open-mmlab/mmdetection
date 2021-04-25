@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, ConvModule, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
-from mmcv.runner import BaseModule, auto_fp16, force_fp32
+from mmcv.runner import BaseModule, ModuleList, auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import mask_target
@@ -59,7 +59,7 @@ class FCNMaskHead(BaseModule):
         self.fp16_enabled = False
         self.loss_mask = build_loss(loss_mask)
 
-        self.convs = nn.ModuleList()
+        self.convs = ModuleList()
         for i in range(self.num_convs):
             in_channels = (
                 self.in_channels if i == 0 else self.conv_out_channels)
