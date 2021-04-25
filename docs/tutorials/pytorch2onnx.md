@@ -139,20 +139,6 @@ python tools/deployment/test.py \
 	    <th>PyTorch</th>
 	    <th>ONNX Runtime</th>
 	</tr >
-	<tr >
-	    <td >SSD</td>
-	    <td>configs/ssd/ssd300_coco.py</td>
-	    <td>Box AP</td>
-	    <td>25.6</td>
-	    <td>25.6</td>
-	</tr>
-  <tr >
-	    <td>FSAF</td>
-	    <td>configs/ssd/ssd300_coco.py</td>
-	    <td>Box AP</td>
-	    <td>36.0</td>
-	    <td>36.0</td>
-	</tr>
   <tr >
 	    <td>FCOS</td>
 	    <td>configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py</td>
@@ -161,11 +147,11 @@ python tools/deployment/test.py \
 	    <td>36.5</td>
 	</tr>
   <tr >
-	    <td>YOLOv3</td>
-	    <td>configs/yolo/yolov3_d53_mstrain-608_273e_coco.py</td>
+	    <td>FSAF</td>
+	    <td>configs/fsaf/fsaf_r50_fpn_1x_coco.py</td>
 	    <td>Box AP</td>
-	    <td>33.5</td>
-	    <td>33.5</td>
+	    <td>36.0</td>
+	    <td>36.0</td>
 	</tr>
   <tr >
 	    <td>RetinaNet</td>
@@ -173,6 +159,20 @@ python tools/deployment/test.py \
 	    <td>Box AP</td>
 	    <td>36.5</td>
 	    <td>36.4</td>
+	</tr>
+	<tr >
+	    <td >SSD</td>
+	    <td>configs/ssd/ssd300_coco.py</td>
+	    <td>Box AP</td>
+	    <td>25.6</td>
+	    <td>25.6</td>
+	</tr>
+  <tr >
+	    <td>YOLOv3</td>
+	    <td>configs/yolo/yolov3_d53_mstrain-608_273e_coco.py</td>
+	    <td>Box AP</td>
+	    <td>33.5</td>
+	    <td>33.5</td>
 	</tr>
   <tr >
 	    <td>Faster R-CNN</td>
@@ -195,6 +195,12 @@ python tools/deployment/test.py \
 	</tr>
 </table>
 
+Notes:
+
+- All ONNX models are evaluated with dynamic shape on coco dataset and images are preprocessed according to the original config file.
+
+- Mask AP of Mask R-CNN drops by 1% for ONNXRuntime. The main reason is that the predicted masks are directly interpolated to original image in PyTorch, while they are at first interpolated to the preprocessed input image of the model and then to original image in ONNXRuntime.
+
 ## List of supported models exportable to ONNX
 
 The table below lists the models that are guaranteed to be exportable to ONNX and runnable in ONNX Runtime.
@@ -202,10 +208,10 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 |    Model     |                          Config                          | Dynamic Shape | Batch Inference | Note  |
 | :----------: | :------------------------------------------------------: | :-----------: | :-------------: | :---: |
 |     FCOS     | `configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py` |       Y       |        Y        |       |
-|     SSD      |               `configs/ssd/ssd300_coco.py`               |       Y       |        Y        |       |
-|    YOLOv3    |    `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`    |       Y       |        Y        |       |
 |     FSAF     |          `configs/fsaf/fsaf_r50_fpn_1x_coco.py`          |       Y       |        Y        |       |
 |  RetinaNet   |     `configs/retinanet/retinanet_r50_fpn_1x_coco.py`     |       Y       |        Y        |       |
+|     SSD      |               `configs/ssd/ssd300_coco.py`               |       Y       |        Y        |       |
+|    YOLOv3    |    `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`    |       Y       |        Y        |       |
 | Faster R-CNN |   `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
 |  Mask R-CNN  |     `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`     |       Y       |        Y        |       |
 
