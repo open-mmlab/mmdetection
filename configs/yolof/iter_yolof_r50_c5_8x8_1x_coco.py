@@ -74,8 +74,8 @@ optimizer = dict(
 # 8 batch size training, so 22500 is equivalent to
 # 22500/(117266/(8x8))=12.3 epoch, 15000 is equivalent to 8.2 epoch,
 # 20000 is equivalent to 10.9 epoch. Due to lr(0.12) is large,
-# the iter-based and epoch-based setting have about 0.3 influence on
-# the MAP evaluation value.
+# the iter-based and epoch-based setting have about 0.2 influence on
+# the mAP evaluation value.
 lr_config = dict(
     policy='step',
     warmup='linear',
