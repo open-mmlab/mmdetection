@@ -115,7 +115,7 @@ class BBoxTestMixin(object):
 
         if not torch.onnx.is_in_onnx_export():
             # remove padding
-            supplement_mask = rois[..., -1] == 0
+            supplement_mask = rois.abs().sum(dim=-1) == 0
             cls_score[supplement_mask, :] = 0
 
         # bbox_pred would be None in some detector when with_reg is False,
@@ -137,7 +137,7 @@ class BBoxTestMixin(object):
                 det_labels = []
                 for i in range(len(proposals)):
                     # remove padding
-                    supplement_mask = proposals[i][..., -1] == 0
+                    supplement_mask = proposals[i].abs().sum(dim=-1) == 0
                     for bbox in bbox_preds[i]:
                         bbox[supplement_mask] = 0
                     det_bbox, det_label = self.bbox_head.get_bboxes(
@@ -300,7 +300,7 @@ class MaskTestMixin(object):
             det_label = det_labels[i]
 
             # remove padding
-            supplement_mask = det_bbox[..., -1] != 0
+            supplement_mask = det_bbox.abs().sum(dim=-1) != 0
             mask_pred = mask_pred[supplement_mask]
             det_bbox = det_bbox[supplement_mask]
             det_label = det_label[supplement_mask]
