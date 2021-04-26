@@ -17,7 +17,7 @@ def test_detr_head_loss():
         dict(
             type='DETRHead',
             num_classes=80,
-            in_channels=2048,
+            in_channels=200,
             transformer=dict(
                 type='Transformer',
                 encoder=dict(
@@ -64,7 +64,7 @@ def test_detr_head_loss():
 
     self = DETRHead(**config)
     self.init_weights()
-    feat = [torch.rand(1, 2048, 10, 10)]
+    feat = [torch.rand(1, 200, 10, 10)]
     cls_scores, bbox_preds = self.forward(feat, img_metas)
     # Test that empty ground truth encourages the network to predict background
     gt_bboxes = [torch.empty((0, 4))]

@@ -24,7 +24,7 @@ class DETRHead(AnchorFreeHead):
         num_classes (int): Number of categories excluding the background.
         in_channels (int): Number of channels in the input feature map.
         num_query (int): Number of query in Transformer.
-        reg_num_fcs (int, optional): Number of fully-connected layers used in
+        num_reg_fcs (int, optional): Number of fully-connected layers used in
             `FFN`, which is then used for the regression head. Default 2.
         transformer (obj:`mmcv.ConfigDict`|dict): Config for transformer.
             Default: None
@@ -46,7 +46,7 @@ class DETRHead(AnchorFreeHead):
                  num_classes,
                  in_channels,
                  num_query=100,
-                 reg_num_fcs=2,
+                 num_reg_fcs=2,
                  transformer=None,
                  positional_encoding=dict(
                      type='SinePositionalEncoding',
@@ -113,7 +113,7 @@ class DETRHead(AnchorFreeHead):
         self.num_query = num_query
         self.num_classes = num_classes
         self.in_channels = in_channels
-        self.reg_num_fcs = reg_num_fcs
+        self.num_reg_fcs = num_reg_fcs
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.fp16_enabled = False
@@ -147,7 +147,7 @@ class DETRHead(AnchorFreeHead):
         self.reg_ffn = FFN(
             self.embed_dims,
             self.embed_dims,
-            self.reg_num_fcs,
+            self.num_reg_fcs,
             self.act_cfg,
             dropout=0.0,
             add_residual=False)

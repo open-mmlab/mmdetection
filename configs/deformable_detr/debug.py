@@ -26,19 +26,21 @@ model = dict(
         num_query=300,
         num_classes=80,
         in_channels=2048,
+        reg_num_fcs=2,
         as_two_stage=False,
         transformer=dict(
             type='DeformableDetrTransformer',
             encoder=dict(
                 type='DetrTransformerEncoder',
-                num_layers=6,
-                transformerlayers=dict(
-                    type='BaseTransformerLayer',
-                    attn_cfgs=dict(
-                        type='MultiScaleDeformableAttention', embed_dims=256),
-                    feedforward_channels=1024,
-                    ffn_dropout=0.1,
-                    operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
+                    num_layers=6,
+                    transformerlayers=dict(
+                        type='BaseTransformerLayer',
+                        attn_cfgs=dict(
+                            type='MultiScaleDeformableAttention', embed_dims=256),
+                        feedforward_channels=1024,
+                        ffn_dropout=0.1,
+                operation_order=('self_attn', 'norm', 'ffn', 'norm'))
+            ),
             decoder=dict(
                 type='DeformableDetrTransformerDecoder',
                 num_layers=6,
@@ -52,13 +54,13 @@ model = dict(
                             num_heads=8,
                             dropout=0.1),
                         dict(
-                            type='MultiScaleDeformableAttention',
-                            embed_dims=256)
-                    ],
+                            type='MultiScaleDeformableAttention', embed_dims=256)
+                            ],
                     feedforward_channels=1024,
                     ffn_dropout=0.1,
                     operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
-                                     'ffn', 'norm')))),
+                                     'ffn', 'norm'))
+            )),
         positional_encoding=dict(
             type='SinePositionalEncoding',
             num_feats=128,
@@ -95,36 +97,11 @@ train_pipeline = [
             [
                 dict(
                     type='Resize',
-                    img_scale=[(480, 1333), (512, 1333), (544, 1333),
-                               (576, 1333), (608, 1333), (640, 1333),
-                               (672, 1333), (704, 1333), (736, 1333),
-                               (768, 1333), (800, 1333)],
+                    img_scale=[(200, 1333)],
                     multiscale_mode='value',
                     keep_ratio=True)
             ],
-            [
-                dict(
-                    type='Resize',
-                    # The radio of all image in train dataset < 7
-                    # follow the original impl
-                    img_scale=[(400, 4200), (500, 4200), (600, 4200)],
-                    multiscale_mode='value',
-                    keep_ratio=True),
-                dict(
-                    type='RandomCrop',
-                    crop_type='absolute_range',
-                    crop_size=(384, 600),
-                    allow_negative_crop=True),
-                dict(
-                    type='Resize',
-                    img_scale=[(480, 1333), (512, 1333), (544, 1333),
-                               (576, 1333), (608, 1333), (640, 1333),
-                               (672, 1333), (704, 1333), (736, 1333),
-                               (768, 1333), (800, 1333)],
-                    multiscale_mode='value',
-                    override=True,
-                    keep_ratio=True)
-            ]
+
         ]),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=1),

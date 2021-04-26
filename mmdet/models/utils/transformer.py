@@ -233,8 +233,7 @@ class Transformer(BaseModule):
             value=memory,
             key_pos=pos_embed,
             query_pos=query_embed,
-            key_padding_mask=mask,
-        )
+            key_padding_mask=mask)
         out_dec = out_dec.transpose(1, 2)
         memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
         return out_dec, memory

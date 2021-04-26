@@ -51,7 +51,7 @@ class DeformableDETRHead(DETRHead):
 
         fc_cls = Linear(self.embed_dims, self.cls_out_channels)
         reg_branch = []
-        for _ in range(self.reg_num_fcs):
+        for _ in range(self.num_reg_fcs):
             reg_branch.append(Linear(self.embed_dims, self.embed_dims))
             reg_branch.append(nn.ReLU())
         reg_branch.append(Linear(self.embed_dims, 4))
