@@ -169,7 +169,7 @@ class DETRHead(AnchorFreeHead):
         # called here. Invoking the default `Module._load_from_state_dict`
         # is enough.
 
-        # Names of some parameters in has been changed after version 2.11
+        # Names of some parameters in has been changed.
         version = local_metadata.get('version', None)
         if (version is None or version < 2) and self.__class__ is DETRHead:
             convert_dict = {
