@@ -296,8 +296,9 @@ class MaskPointHead(nn.Module):
                                                mask_height * mask_width)
         num_points = min(mask_height * mask_width, num_points)
         point_indices = uncertainty_map.topk(num_points, dim=1)[1]
-        a = w_step / 2.0 + (point_indices.long() % mask_width).float() * w_step
-        b = h_step / 2.0 + (point_indices.long() //
-                            mask_width).float() * h_step
-        point_coords = torch.stack([a, b], dim=2)
+        xs = w_step / 2.0 + (point_indices.long() %
+                             mask_width).float() * w_step
+        ys = h_step / 2.0 + (point_indices.long() //
+                             mask_width).float() * h_step
+        point_coords = torch.stack([xs, ys], dim=2)
         return point_indices, point_coords
