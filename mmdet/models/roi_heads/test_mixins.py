@@ -114,7 +114,7 @@ class BBoxTestMixin(object):
         cls_score = cls_score.reshape(batch_size, num_proposals_per_img, -1)
 
         if not torch.onnx.is_in_onnx_export():
-            # remove padding, ignore batch_inds when calculating mask
+            # remove padding, ignore batch_index when calculating mask
             supplement_mask = rois.abs()[..., 1:].sum(dim=-1) == 0
             cls_score[supplement_mask, :] = 0
 
