@@ -4,8 +4,8 @@ from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
-                        images_to_levels, multi_apply, multiclass_nms,
-                        reduce_mean, unmap)
+                        images_to_levels, multi_apply, reduce_mean, unmap)
+from ...core.results.results import InstanceResults
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -361,28 +361,14 @@ class ATSSHead(AnchorHead):
         centerness_pred_list = [
             centernesses[i].detach() for i in range(num_levels)
         ]
-        img_shapes = [
-            img_metas[i]['img_shape'] for i in range(cls_scores[0].shape[0])
-        ]
-        scale_factors = [
-            img_metas[i]['scale_factor'] for i in range(cls_scores[0].shape[0])
-        ]
         result_list = self._get_bboxes(cls_score_list, bbox_pred_list,
                                        centerness_pred_list, mlvl_anchors,
-                                       img_shapes, scale_factors, cfg, rescale,
-                                       with_nms)
+                                       img_metas, cfg)
+
         return result_list
 
-    def _get_bboxes(self,
-                    cls_scores,
-                    bbox_preds,
-                    centernesses,
-                    mlvl_anchors,
-                    img_shapes,
-                    scale_factors,
-                    cfg,
-                    rescale=False,
-                    with_nms=True):
+    def _get_bboxes(self, cls_scores, bbox_preds, centernesses, mlvl_anchors,
+                    img_metas, cfg):
         """Transform outputs for a single batch item into labeled boxes.
 
         Args:
@@ -394,24 +380,14 @@ class ATSSHead(AnchorHead):
                 with shape (N, num_anchors * 1, H, W).
             mlvl_anchors (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_anchors, 4).
-            img_shapes (list[tuple[int]]): Shape of the input image,
-                list[(height, width, 3)].
-            scale_factors (list[ndarray]): Scale factor of the image arrange as
-                (w_scale, h_scale, w_scale, h_scale).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
+            list[obj:`InstanceResults`]: Results of each image after the
+                post process.
         """
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         device = cls_scores[0].device
@@ -419,6 +395,7 @@ class ATSSHead(AnchorHead):
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
             cfg.get('nms_pre', -1), device=device, dtype=torch.long)
+        img_shapes = [img_meta['img_shape'] for img_meta in img_metas]
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_centerness = []
@@ -460,9 +437,6 @@ class ATSSHead(AnchorHead):
             mlvl_centerness.append(centerness)
 
         batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
-        if rescale:
-            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
-                scale_factors).unsqueeze(1)
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
         batch_mlvl_centerness = torch.cat(mlvl_centerness, dim=1)
 
@@ -486,26 +460,17 @@ class ATSSHead(AnchorHead):
                                               batch_mlvl_scores.shape[1], 1)
         batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
 
-        if with_nms:
-            det_results = []
-            for (mlvl_bboxes, mlvl_scores,
-                 mlvl_centerness) in zip(batch_mlvl_bboxes, batch_mlvl_scores,
-                                         batch_mlvl_centerness):
-                det_bbox, det_label = multiclass_nms(
-                    mlvl_bboxes,
-                    mlvl_scores,
-                    cfg.score_thr,
-                    cfg.nms,
-                    cfg.max_per_img,
-                    score_factors=mlvl_centerness)
-                det_results.append(tuple([det_bbox, det_label]))
-        else:
-            det_results = [
-                tuple(mlvl_bs)
-                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores,
-                                   batch_mlvl_centerness)
-            ]
-        return det_results
+        results_list = []
+        for img_ids in range(len(batch_mlvl_scores)):
+            results = InstanceResults(img_metas[img_ids])
+            results.bboxes = batch_mlvl_bboxes[img_ids]
+            results.scores = batch_mlvl_scores[img_ids]
+            results.centerness = batch_mlvl_centerness[img_ids]
+
+            results_list.append(results)
+
+        r_results_list = self.bbox_post_processes(results_list)
+        return r_results_list
 
     def get_targets(self,
                     anchor_list,

@@ -552,9 +552,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             >>> cls_scores, bbox_preds = [cls_score], [bbox_pred]
             >>> result_list = self.get_bboxes(cls_scores, bbox_preds,
             >>>                               img_metas, cfg)
-            >>> det_bboxes, det_labels = result_list[0]
-            >>> assert len(result_list) == 1
-            >>> assert det_bboxes.shape[1] == 5
         """
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
