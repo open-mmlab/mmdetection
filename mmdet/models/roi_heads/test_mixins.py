@@ -254,6 +254,11 @@ class MaskTestMixin(object):
         ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
+        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
+            segm_results = [[[] for _ in range(self.mask_head.num_classes)]
+                            for _ in range(len(det_bboxes))]
+            return segm_results
+
         # The length of proposals of different batches may be different.
         # In order to form a batch, a padding operation is required.
         if isinstance(det_bboxes, list):
