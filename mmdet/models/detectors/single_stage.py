@@ -108,11 +108,10 @@ class SingleStageDetector(BaseDetector):
             return bbox_results[0]
 
         if postprocess:
-            with no_nncf_trace():
-                bbox_results = [
-                    self.postprocess(det_bboxes, det_labels, None, img_metas, rescale=rescale)
-                    for det_bboxes, det_labels in bbox_results
-                ]
+            bbox_results = [
+                self.postprocess(det_bboxes, det_labels, None, img_metas, rescale=rescale)
+                for det_bboxes, det_labels in bbox_results
+            ]
         return bbox_results
 
     def postprocess(self,

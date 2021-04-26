@@ -10,6 +10,7 @@ from .standard_roi_head import StandardRoIHead
 from .test_mixins import dummy_pad
 
 
+
 @HEADS.register_module()
 class StandardRoIHeadWithText(StandardRoIHead):
     """Simplest base roi head including one bbox head, one mask head and one text head.
@@ -165,7 +166,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
         # image shape of the first image in the batch (only one)
         ori_shape = img_metas['ori_shape']
         scale_factor = img_metas['scale_factor']
-        if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
+        if (torch.onnx.is_in_onnx_export() or is_in_nncf_tracing()) and det_bboxes.shape[0] == 0:
             # If there are no detection there is nothing to do for a mask head.
             # But during ONNX export we should run mask head
             # for it to appear in the graph.
@@ -193,7 +194,7 @@ class StandardRoIHeadWithText(StandardRoIHead):
                 det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
             text_rois = bbox2roi([_bboxes])
             text_results = self._text_forward(x, text_rois, det_masks=det_masks)
-            if torch.onnx.is_in_onnx_export():
+            if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
                 return text_results
             text_results = text_results['text_results'].permute(1, 0, 2)
             text_results = torch.nn.functional.softmax(text_results, dim=-1)

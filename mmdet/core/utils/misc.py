@@ -99,8 +99,8 @@ def topk(x, k, dim=None, **kwargs):
         n = operators.shape_as_tensor(x)[dim].unsqueeze(0)
         if not isinstance(k, torch.Tensor):
             k = torch.tensor([k], dtype=torch.long)
-        # Workaround for ONNXRuntime: convert values to int to get minimum.
         with no_nncf_trace():
+            # Workaround for ONNXRuntime: convert values to int to get minimum.
             n = torch.min(torch.cat((k, n), dim=0).int()).long()
         # ONNX OpSet 10 does not support non-floating point input for TopK.
         original_dtype = x.dtype

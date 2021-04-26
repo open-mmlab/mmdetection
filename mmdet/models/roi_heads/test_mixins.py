@@ -7,7 +7,6 @@ from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 
 from mmdet.core.utils.misc import dummy_pad
-from mmdet.integration.nncf.utils import is_in_nncf_tracing
 from mmdet.integration.nncf.utils import no_nncf_trace, is_in_nncf_tracing
 
 logger = logging.getLogger(__name__)
@@ -60,7 +59,6 @@ class BBoxTestMixin(object):
                            rcnn_test_cfg,
                            rescale=False):
         """Test only det bboxes without augmentation."""
-        from mmdet.integration.nncf.utils import no_nncf_trace
         with no_nncf_trace():
             rois = bbox2roi(proposals)
         bbox_results = self._bbox_forward(x, rois)

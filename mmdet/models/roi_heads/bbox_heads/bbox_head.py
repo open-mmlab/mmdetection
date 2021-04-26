@@ -7,7 +7,6 @@ from torch.nn.modules.utils import _pair
 from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.losses import accuracy
-
 from mmdet.integration.nncf.utils import no_nncf_trace
 
 
