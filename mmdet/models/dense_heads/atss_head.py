@@ -465,7 +465,7 @@ class ATSSHead(AnchorHead):
             results = InstanceResults(img_metas[img_ids])
             results.bboxes = batch_mlvl_bboxes[img_ids]
             results.scores = batch_mlvl_scores[img_ids]
-            results.centerness = batch_mlvl_centerness[img_ids]
+            results.score_factors = batch_mlvl_centerness[img_ids]
 
             results_list.append(results)
 
