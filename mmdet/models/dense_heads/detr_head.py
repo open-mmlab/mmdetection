@@ -42,6 +42,8 @@ class DETRHead(AnchorFreeHead):
             transformer head.
     """
 
+    _version = 2
+
     def __init__(self,
                  num_classes,
                  in_channels,
@@ -166,6 +168,23 @@ class DETRHead(AnchorFreeHead):
         # since `AnchorFreeHead._load_from_state_dict` should not be
         # called here. Invoking the default `Module._load_from_state_dict`
         # is enough.
+
+        # Names of some parameters in has been changed.
+        version = local_metadata.get('version', None)
+        if (version is None or version < 2) and self.__class__ is DETRHead:
+            convert_dict = {
+                '.self_attn.': '.attentions.0.',
+                '.ffn.': '.ffns.0.',
+                '.multihead_attn.': '.attentions.1.',
+                '.decoder.norm.': '.decoder.post_norm.'
+            }
+            for k in state_dict.keys():
+                for ori_key, convert_key in convert_dict.items():
+                    if ori_key in k:
+                        convert_key = k.replace(ori_key, convert_key)
+                        state_dict[convert_key] = state_dict[k]
+                        del state_dict[k]
+
         super(AnchorFreeHead,
               self)._load_from_state_dict(state_dict, prefix, local_metadata,
                                           strict, missing_keys,
