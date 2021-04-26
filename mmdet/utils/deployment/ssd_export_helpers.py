@@ -14,8 +14,6 @@
 
 # pylint: disable=all
 
-from functools import partial
-
 import torch
 
 from ...core import multiclass_nms
@@ -101,7 +99,7 @@ class PriorBox(torch.autograd.Function):
     def forward(ctx, single_level_grid_anchors, base_anchors, base_size, scales, ratios,
                 anchor_stride, feat, img_tensor, target_stds):
         assert anchor_stride[0] == anchor_stride[1]
-        mlvl_anchor = single_level_grid_anchors(base_anchors, feat.size()[-2:], anchor_stride)
+        mlvl_anchor = single_level_grid_anchors(base_anchors, feat.size()[-2:], anchor_stride, base_anchors.device)
         mlvl_anchor = mlvl_anchor.view(1, -1).unsqueeze(0)
         return mlvl_anchor
 
@@ -207,7 +205,7 @@ def export_forward_ssd_head(self, cls_scores, bbox_preds, cfg, rescale,
     for i in range(num_levels):
         if isinstance(self.anchor_generator, SSDAnchorGeneratorClustered):
             anchors.append(PriorBoxClustered.apply(
-                partial(self.anchor_generator.single_level_grid_anchors, device=feats[i].device),
+                self.anchor_generator.single_level_grid_anchors,
                 self.anchor_generator.base_anchors[i],
                 self.anchor_generator.heights[i],
                 self.anchor_generator.widths[i],
@@ -215,7 +213,7 @@ def export_forward_ssd_head(self, cls_scores, bbox_preds, cfg, rescale,
                 feats[i], img_tensor, self.bbox_coder.stds))
         else:
             anchors.append(PriorBox.apply(
-                partial(self.anchor_generator.single_level_grid_anchors, device=feats[i].device),
+                self.anchor_generator.single_level_grid_anchors,
                 self.anchor_generator.base_anchors[i],
                 self.anchor_generator.base_sizes[i],
                 self.anchor_generator.scales[i].tolist(),
