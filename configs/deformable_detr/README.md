@@ -6,12 +6,14 @@
 
 We provide the config files for Deformable DETR: [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159).
 
-```bibtex
-@article{zhu2020deformable,
-  title={Deformable DETR: Deformable Transformers for End-to-End Object Detection},
-  author={Zhu, Xizhou and Su, Weijie and Lu, Lewei and Li, Bin and Wang, Xiaogang and Dai, Jifeng},
-  journal={arXiv preprint arXiv:2010.04159},
-  year={2020}
+```
+@inproceedings{
+zhu2021deformable,
+title={Deformable {\{}DETR{\}}: Deformable Transformers for End-to-End Object Detection},
+author={Xizhou Zhu and Weijie Su and Lewei Lu and Bin Li and Xiaogang Wang and Jifeng Dai},
+booktitle={International Conference on Learning Representations},
+year={2021},
+url={https://openreview.net/forum?id=gZ9hCDWe6ke}
 }
 ```
 
