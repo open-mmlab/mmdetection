@@ -296,6 +296,18 @@ class MaskTestMixin(object):
         mask_results = self._mask_forward(x, mask_rois)
         mask_pred = mask_results['mask_pred']
 
+        # Support get_seg_masks exporting to ONNX
+        if torch.onnx.is_in_onnx_export():
+            max_shape = img_metas[0]['img_shape_for_onnx']
+            num_det = det_bboxes.shape[1]
+            det_bboxes = det_bboxes.reshape(-1, 4)
+            det_labels = det_labels.reshape(-1)
+            segm_results = self.mask_head.get_seg_masks(
+                mask_pred, det_bboxes, det_labels, self.test_cfg, max_shape,
+                scale_factors[0], rescale)
+            segm_results = segm_results.reshape(batch_size, num_det,
+                                                max_shape[0], max_shape[1])
+            return segm_results
         # Recover the batch dimension
         mask_preds = mask_pred.reshape(batch_size, num_proposals_per_img,
                                        *mask_pred.shape[1:])
