@@ -69,7 +69,7 @@ class PointRendRoIHead(StandardRoIHead):
             feats = x[idx]
             spatial_scale = 1. / float(
                 self.mask_roi_extractor.featmap_strides[idx])
-            if torch.onnx.is_in_onnx_export():
+            if torch.onnx.is_in_onnx_export() and num_imgs == 1:
                 feat = feats[0].unsqueeze(0)
                 rel_img_points = rel_roi_point_to_rel_img_point(
                     rois, rel_roi_points, feat, spatial_scale).unsqueeze(0)
