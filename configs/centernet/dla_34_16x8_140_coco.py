@@ -2,51 +2,45 @@ _base_ = [
     '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
 optimizer = dict(type='Adam', lr=5e-4)
-optimizer_config = dict(grad_clip=None)
+# optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=100,
-    warmup_ratio=1.,
+    warmup_iters=500,
+    warmup_ratio=0.3333333333333333,
     step=[90, 120])
 total_epochs = 140
+norm_cfg = dict(type='BN')
 
 model = dict(
     type='CenterNet',
-    pretrained='torchvision://resnet18',
-    backbone=dict(type='ResNet', depth=18, norm_cfg=dict(type='BN')),
+    backbone=dict(type='DLANet', depth=34),
     neck=dict(
-        type='CT_ResNeck',
-        in_channels=512,
-        num_filters=[256, 128, 64],
-        num_kernels=[4, 4, 4]),
+        type='DLA_Neck',
+        in_channels=[16, 32, 64, 128, 256, 512],
+        start_level=2,
+        end_level=5),
     bbox_head=dict(
         type='CenterHead',
         num_classes=80,
-        feat_channels=64,
+        feat_channels=256,
         in_channels=64,
         loss_center=dict(type='GaussianFocalLoss', loss_weight=1.0),
         loss_wh=dict(type='L1Loss', loss_weight=0.1),
         loss_offset=dict(type='L1Loss', loss_weight=1.0)))
 
 img_norm_cfg = dict(
-    mean=[104.01362025, 114.03422265, 119.9165958],
-    std=[73.6027665, 69.89082075, 70.9150767],
+    mean=[0.408 * 255, 0.447 * 255, 0.470 * 255],
+    std=[0.289 * 255, 0.274 * 255, 0.278 * 255],
     to_rgb=False)
 
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True, color_type='color'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='PhotoMetricDistortion',
-        brightness_delta=32,
-        contrast_range=(0.5, 1.5),
-        saturation_range=(0.5, 1.5),
-        hue_delta=18),
-    dict(
         type='RandomCenterCropPad',
         crop_size=(512, 512),
-        ratios=(0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3),
+        ratios=(0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4),
         mean=[0, 0, 0],
         std=[1, 1, 1],
         to_rgb=False,
@@ -88,13 +82,13 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=32,
-    workers_per_gpu=8,
+    samples_per_gpu=1,
+    workers_per_gpu=0,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 train_cfg = None
 test_cfg = dict(
     topK=100,
-    nms_cfg=dict(type='soft_nms', iou_threshold=0.5),
+    nms_cfg=dict(type='soft_nms', iou_threshold=0.5, method='gaussian'),
     max_per_img=100)

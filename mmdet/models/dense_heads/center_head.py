@@ -86,7 +86,7 @@ class CenterHead(BaseDenseHead):
         self.feat_shape = x.shape
         center_out = self.center_head(x).sigmoid()
         wh_out = self.wh_head(x)
-        offset_out = self.offset_head(x).sigmoid()
+        offset_out = self.offset_head(x)
         return center_out, wh_out, offset_out
 
     def get_bboxes_center(self, bboxes, ratio_w, ratio_h, toInt):
