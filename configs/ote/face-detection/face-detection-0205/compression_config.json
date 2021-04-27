@@ -1,0 +1,91 @@
+{
+    "base": {
+        "find_unused_parameters": true,
+        "nncf_config": {
+            "input_info": {
+                "sample_size": [
+                    1,
+                    3,
+                    416,
+                    416
+                ]
+            },
+            "compression": [],
+            "log_dir": "."
+        }
+    },
+    "nncf_quantization": {
+        "optimizer": {
+            "type": "SGD",
+            "lr": 0.0005,
+            "momentum": 0.9,
+            "weight_decay": 0.0005
+        },
+        "lr_config": {
+            "_delete_": true,
+            "policy": "fixed"
+        },
+        "total_epochs": 5,
+        "nncf_config": {
+            "compression": [
+                {
+                    "algorithm": "quantization",
+                    "initializer": {
+                        "range": {
+                            "num_init_samples": 10
+                        },
+                        "batchnorm_adaptation": {
+                            "num_bn_adaptation_samples": 30
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "nncf_pruning": {
+        "optimizer": {
+            "lr": 0.05
+        },
+        "lr_config": {
+            "policy": "step",
+            "warmup": "linear",
+            "warmup_iters": 500,
+            "warmup_ratio": 0.1,
+            "step": [50, 80]
+        },
+        "total_epochs": 100,
+        "nncf_config": {
+            "compression": [
+                {
+                    "algorithm": "filter_pruning",
+                    "pruning_init": 0.05,
+                    "params": {
+                        "schedule": "exponential",
+                        "pruning_steps": 25,
+                        "pruning_flops_target": 0.30,
+                        "weight_importance": "geometric_median"
+                    },
+                    "ignored_scopes": [
+                        "FCOS/FPN[neck]/ModuleList[fpn_convs]/ConvModule[0]/NNCFConv2d[conv]",
+                        "FCOS/FPN[neck]/ModuleList[fpn_convs]/ConvModule[1]/NNCFConv2d[conv]",
+                        "FCOS/FPN[neck]/ModuleList[fpn_convs]/ConvModule[2]/NNCFConv2d[conv]",
+                        "FCOS/FPN[neck]/ModuleList[fpn_convs]/ConvModule[3]/NNCFConv2d[conv]",
+                        "FCOS/FPN[neck]/ModuleList[fpn_convs]/ConvModule[4]/NNCFConv2d[conv]",
+                        "FCOS/FCOSHead[bbox_head]/ModuleList[cls_convs]/ConvModule[0]/NNCFConv2d[conv]",
+                        "FCOS/FCOSHead[bbox_head]/ModuleList[cls_convs]/ConvModule[1]/NNCFConv2d[conv]",
+                        "FCOS/FCOSHead[bbox_head]/ModuleList[cls_convs]/ConvModule[2]/NNCFConv2d[conv]",
+                        "FCOS/FCOSHead[bbox_head]/ModuleList[cls_convs]/ConvModule[3]/NNCFConv2d[conv]",
+                        "FCOS/FCOSHead[bbox_head]/ModuleList[reg_convs]/ConvModule[0]/NNCFConv2d[conv]",
+                        "FCOS/FCOSHead[bbox_head]/ModuleList[reg_convs]/ConvModule[1]/NNCFConv2d[conv]",
+                        "FCOS/FCOSHead[bbox_head]/ModuleList[reg_convs]/ConvModule[2]/NNCFConv2d[conv]",
+                        "FCOS/FCOSHead[bbox_head]/ModuleList[reg_convs]/ConvModule[3]/NNCFConv2d[conv]"
+                    ]
+                 }
+            ]
+        }
+    },
+    "order_of_parts": [
+        "nncf_quantization",
+        "nncf_pruning"
+    ]
+}

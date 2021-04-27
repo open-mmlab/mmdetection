@@ -1,0 +1,10 @@
+# Face Detection
+
+| Model Name          | Complexity (GFLOPs) | Size (Mp) | AP @ [IoU=0.50:0.95] (%) | AP for faces > 64x64 (%) | WiderFace Easy (%) | WiderFace Medium (%) | WiderFace Hard (%) | Links | GPU_NUM |
+| ------------------- | ------ | ----- | ---- | ------ | ------ | ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| face-detection-0200 | 0.82   | 1.83  | 16.0 | 86.743 | 82.917 | 76.198 | 41.443 | [snapshot](https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/face-detection-0200.pth), [config](./face-detection-0200/template.yaml) | 2   |
+| face-detection-0202 | 1.84   | 1.83  | 20.3 | 91.938 | 89.382 | 83.919 | 50.189 | [snapshot](https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/face-detection-0202.pth), [config](./face-detection-0202/template.yaml) | 2   |
+| face-detection-0204 | 2.52   | 1.83  | 21.4 | 92.888 | 90.453 | 85.448 | 52.091 | [snapshot](https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/face-detection-0204.pth), [config](./face-detection-0204/template.yaml) | 4   |
+| face-detection-0205 | 2.94   | 2.02  | 22.7 | 93.995 | 92.606 | 87.556 | 56.221 | [snapshot](https://storage.openvinotoolkit.org/repositories/openvino_training_extensions/models/object_detection/v2/face-detection-0205-retrained.pth), [config](./face-detection-0205/template.yaml) | 3   |
+| face-detection-0206 | 340.06 | 63.79 | 34.2 | 94.274 | 94.281 | 93.207 | 84.439 | [snapshot](https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/face-detection-0206.pth), [config](./face-detection-0206/template.yaml) | 8   |
+| face-detection-0207 | 1.04   | 0.81  | 17.2 | 88.17  | 84.406 | 76.748 | 43.452 | [snapshot](https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/face-detection-0207.pth), [config](./face-detection-0207/template.yaml) | 1   |

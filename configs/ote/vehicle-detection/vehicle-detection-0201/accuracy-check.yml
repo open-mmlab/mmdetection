@@ -1,0 +1,22 @@
+models:
+  - name: vehicle-detection-0201
+
+    launchers:
+      - framework: dlsdk
+        adapter:
+          type: ssd_onnx
+          bboxes_out: boxes
+          labels_out: labels
+
+    datasets:
+      - name: crossroad_extra_untagged_vehicle
+        preprocessing:
+          - type: resize
+            dst_width: 384
+            dst_height: 384
+        postprocessing:
+          - type: resize_prediction_boxes
+            rescale: True
+        metrics:
+          - type: coco_orig_precision
+            include_boundaries: False

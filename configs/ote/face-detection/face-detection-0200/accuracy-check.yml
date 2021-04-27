@@ -1,0 +1,26 @@
+models:
+  - name: face-detection-0200
+    launchers:
+      - framework: dlsdk
+        adapter:
+          type: ssd_onnx
+          bboxes_out: boxes
+          labels_out: labels
+    datasets:
+      - name: wider_without_bkgr
+        data_source: WiderFace/
+        annotation_conversion:
+          converter: mscoco_detection
+          annotation_file: WiderFace/val.json
+          has_background: False
+          sort_annotations: True
+          use_full_label_map: False
+        preprocessing:
+          - type: resize
+            size: 256
+        postprocessing:
+          - type: resize_prediction_boxes
+            rescale: True
+        metrics:
+          - type: coco_orig_precision
+            include_boundaries: False

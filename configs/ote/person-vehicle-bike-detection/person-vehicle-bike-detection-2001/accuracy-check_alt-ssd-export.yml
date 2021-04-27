@@ -1,0 +1,20 @@
+models:
+  - name: person-vehicle-bike-detection-2001
+
+    launchers:
+      - framework: dlsdk
+        adapter: ssd
+
+    datasets:
+      - name: crossroad_extra_untagged
+        preprocessing:
+          - type: resize
+            dst_width: 384
+            dst_height: 384
+        postprocessing:
+          - type: resize_prediction_boxes
+          - type: clip_boxes
+            apply_to: prediction
+        metrics:
+          - type: coco_orig_precision
+            include_boundaries: false

@@ -1,0 +1,98 @@
+{
+    "base": {
+        "find_unused_parameters": true,
+        "nncf_config": {
+            "input_info": {
+                "sample_size": [1, 3, 256, 256]
+            },
+            "compression": [],
+            "log_dir": "."
+        }
+    },
+    "nncf_quantization": {
+        "optimizer": {
+            "lr": 0.00025
+        },
+        "lr_config": {
+            "_delete_": true,
+            "policy": "fixed"
+        },
+        "total_epochs": 2,
+        "nncf_config": {
+            "compression": [
+                {
+                    "algorithm": "quantization",
+                    "initializer": {
+                        "range": {
+                            "num_init_samples": 10
+                        },
+                        "batchnorm_adaptation": {
+                            "num_bn_adaptation_samples": 30
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "nncf_sparsity": {
+        "optimizer": {
+            "lr": 0.0025
+        },
+        "total_epochs": 50,
+        "nncf_config": {
+            "compression": [
+                {
+                    "algorithm": "magnitude_sparsity",
+                    "params": {
+                        "schedule": "multistep",
+                        "multistep_sparsity_levels": [0.2, 0.4, 0.5],
+                        "multistep_steps": [10, 20]
+                    }
+                }
+            ]
+        }
+    },
+    "nncf_pruning": {
+        "optimizer": {
+            "lr": 0.05
+        },
+        "lr_config": {
+            "policy": "step",
+            "warmup": "linear",
+            "warmup_iters": 500,
+            "warmup_ratio": 0.1,
+            "step": [40, 60]
+        },
+        "total_epochs": 80,
+        "nncf_config": {
+            "compression": [
+                {
+                    "algorithm": "filter_pruning",
+                    "pruning_init": 0.05,
+                    "params": {
+                        "schedule": "exponential",
+                        "pruning_init": 0.10,
+                        "pruning_steps": 20,
+                        "pruning_target": 0.30,
+                        "weight_importance": "geometric_median"
+                    },
+                    "ignored_scopes": [
+                        "SingleStageDetector/SSDHead[bbox_head]/ModuleList[cls_convs]/Sequential[0]/NNCFConv2d[0]",
+                        "SingleStageDetector/SSDHead[bbox_head]/ModuleList[cls_convs]/Sequential[0]/NNCFConv2d[0]",
+                        "SingleStageDetector/SSDHead[bbox_head]/ModuleList[reg_convs]/Sequential[0]/NNCFConv2d[0]",
+                        "SingleStageDetector/SSDHead[bbox_head]/ModuleList[reg_convs]/Sequential[0]/NNCFConv2d[0]",
+                        "SingleStageDetector/SSDHead[bbox_head]/ModuleList[reg_convs]/Sequential[1]/NNCFConv2d[0]",
+                        "SingleStageDetector/SSDHead[bbox_head]/ModuleList[reg_convs]/Sequential[1]/NNCFConv2d[0]",
+                        "SingleStageDetector/SSDHead[bbox_head]/ModuleList[cls_convs]/Sequential[1]/NNCFConv2d[0]",
+                        "SingleStageDetector/SSDHead[bbox_head]/ModuleList[cls_convs]/Sequential[1]/NNCFConv2d[0]"
+                     ]
+                }
+            ]
+        }
+    },
+    "order_of_parts": [
+        "nncf_quantization",
+        "nncf_sparsity",
+        "nncf_pruning"
+    ]
+}
