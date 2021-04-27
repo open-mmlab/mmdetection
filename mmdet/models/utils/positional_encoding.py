@@ -3,8 +3,7 @@ import math
 import torch
 import torch.nn as nn
 from mmcv.cnn import uniform_init
-
-from .builder import POSITIONAL_ENCODING
+from mmcv.cnn.bricks.transformer import POSITIONAL_ENCODING
 
 
 @POSITIONAL_ENCODING.register_module()
@@ -19,14 +18,16 @@ class SinePositionalEncoding(nn.Module):
             along x-axis or y-axis. Note the final returned dimension
             for each position is 2 times of this value.
         temperature (int, optional): The temperature used for scaling
-            the position embedding. Default 10000.
+            the position embedding. Defaults to 10000.
         normalize (bool, optional): Whether to normalize the position
-            embedding. Default False.
+            embedding. Defaults to False.
         scale (float, optional): A scale factor that scales the position
             embedding. The scale will be used only when `normalize` is True.
-            Default 2*pi.
+            Defaults to 2*pi.
         eps (float, optional): A value added to the denominator for
-            numerical stability. Default 1e-6.
+            numerical stability. Defaults to 1e-6.
+        offset (float): offset add to embed when do the normalization.
+            Defaults to 0.
     """
 
     def __init__(self,
@@ -34,7 +35,8 @@ class SinePositionalEncoding(nn.Module):
                  temperature=10000,
                  normalize=False,
                  scale=2 * math.pi,
-                 eps=1e-6):
+                 eps=1e-6,
+                 offset=0.):
         super(SinePositionalEncoding, self).__init__()
         if normalize:
             assert isinstance(scale, (float, int)), 'when normalize is set,' \
@@ -45,6 +47,7 @@ class SinePositionalEncoding(nn.Module):
         self.normalize = normalize
         self.scale = scale
         self.eps = eps
+        self.offset = offset
 
     def forward(self, mask):
         """Forward function for `SinePositionalEncoding`.
@@ -62,8 +65,10 @@ class SinePositionalEncoding(nn.Module):
         y_embed = not_mask.cumsum(1, dtype=torch.float32)
         x_embed = not_mask.cumsum(2, dtype=torch.float32)
         if self.normalize:
-            y_embed = y_embed / (y_embed[:, -1:, :] + self.eps) * self.scale
-            x_embed = x_embed / (x_embed[:, :, -1:] + self.eps) * self.scale
+            y_embed = (y_embed + self.offset) / \
+                      (y_embed[:, -1:, :] + self.eps) * self.scale
+            x_embed = (x_embed + self.offset) / \
+                      (x_embed[:, :, -1:] + self.eps) * self.scale
         dim_t = torch.arange(
             self.num_feats, dtype=torch.float32, device=mask.device)
         dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
