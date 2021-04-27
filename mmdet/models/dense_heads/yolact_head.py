@@ -938,9 +938,10 @@ class YOLACTProtonet(nn.Module):
                     det_bboxes=None,
                     det_labels=None,
                     det_coeffs=None):
-        assert det_bboxes
-        assert det_labels
-        assert det_coeffs
+        """Test function without test-time augmentation."""
+        assert det_bboxes is not None
+        assert det_labels is not None
+        assert det_coeffs is not None
         num_imgs = len(img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
