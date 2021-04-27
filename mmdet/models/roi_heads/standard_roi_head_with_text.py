@@ -10,7 +10,6 @@ from .standard_roi_head import StandardRoIHead
 from .test_mixins import dummy_pad
 
 
-
 @HEADS.register_module()
 class StandardRoIHeadWithText(StandardRoIHead):
     """Simplest base roi head including one bbox head, one mask head and one text head.

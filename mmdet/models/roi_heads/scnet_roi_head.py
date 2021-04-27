@@ -10,7 +10,6 @@ from ..builder import HEADS, build_head, build_roi_extractor
 from .cascade_roi_head import CascadeRoIHead
 
 
-
 @HEADS.register_module()
 class SCNetRoIHead(CascadeRoIHead):
     """RoIHead for `SCNet <https://arxiv.org/abs/2012.10150>`_.

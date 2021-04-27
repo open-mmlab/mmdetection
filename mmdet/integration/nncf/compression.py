@@ -216,9 +216,9 @@ def wrap_nncf_model(model,
 
 
 def get_uncompressed_model(module):
-    from nncf.nncf_network import NNCFNetwork
     if not is_nncf_enabled():
         return module
+    from nncf.nncf_network import NNCFNetwork
     if isinstance(module, NNCFNetwork):
         return module.get_nncf_wrapped_model()
     return module

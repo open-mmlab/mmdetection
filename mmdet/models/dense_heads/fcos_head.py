@@ -9,8 +9,6 @@ from mmdet.integration.nncf.utils import is_in_nncf_tracing
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
-
-
 INF = 1e8
 
 

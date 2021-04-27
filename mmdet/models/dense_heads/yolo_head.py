@@ -17,7 +17,6 @@ from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
 
-
 @HEADS.register_module()
 class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
     """YOLOV3Head Paper link: https://arxiv.org/abs/1804.02767.
