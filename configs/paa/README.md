@@ -1,6 +1,6 @@
 # Probabilistic Anchor Assignment with IoU Prediction for Object Detection
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 ```latex
 @inproceedings{paa-eccv2020,
