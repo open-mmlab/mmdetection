@@ -530,16 +530,39 @@ class DeformableDetrTransformer(Transformer):
             mlvl_pos_embeds (list(Tensor)): The positional encoding
                 of feats from different level, has the shape
                  [bs, embed_dims, h, w].
+            reg_branches (obj:`nn.Module`): Regression heads for
+                feature maps from each decoder layer. Only would
+                be passed when
+                `with_box_refine` is Ture. Default to None.
+            cls_branches (obj:`nn.Module`): Classification heads
+                for feature maps from each decoder layer. Only would
+                 be passed when `as_two_stage`
+                 is Ture. Default to None.
+
 
         Returns:
             tuple[Tensor]: results of decoder containing the following tensor.
 
-                - out_dec: Output from decoder. If return_intermediate_dec \
-                      is True output has shape [num_dec_layers, bs,
-                      num_query, embed_dims], else has shape [1, bs, \
-                      num_query, embed_dims].
-                - memory: Output results from encoder, with shape \
-                      [bs, embed_dims, h, w].
+                - inter_states: Outputs from decoder. If
+                    return_intermediate_dec is True output has shape \
+                      (num_dec_layers, bs, num_query, embed_dims), else has \
+                      shape (1, bs, num_query, embed_dims).
+                - init_reference_out: The initial value of reference \
+                    points, has shape (bs, num_queries, 4).
+                - inter_references_out: The internal value of reference \
+                    points in decoder, has shape \
+                    (num_dec_layers, bs,num_query, embed_dims)
+                - enc_outputs_class: The classification score of \
+                    proposals generated from \
+                    encoder's feature maps, has shape \
+                    (batch, h*w, num_classes). \
+                    Only would be returned when `as_two_stage` is True, \
+                    otherwise None.
+                - enc_outputs_coord_unact: The regression results \
+                    generated from encoder's feature maps., has shape \
+                    (batch, h*w, 4). Only would \
+                    be returned when `as_two_stage` is True, \
+                    otherwise None.
         """
         assert self.as_two_stage or query_embed is not None
 
@@ -612,23 +635,23 @@ class DeformableDetrTransformer(Transformer):
             init_reference_out = reference_points
             pos_trans_out = self.pos_trans_norm(
                 self.pos_trans(self.get_proposal_pos_embed(topk_coords_unact)))
-            query_embeds, tgt = torch.split(pos_trans_out, c, dim=2)
+            query_pos, query = torch.split(pos_trans_out, c, dim=2)
         else:
-            query_embeds, tgt = torch.split(query_embed, c, dim=1)
-            query_embeds = query_embeds.unsqueeze(0).expand(bs, -1, -1)
-            tgt = tgt.unsqueeze(0).expand(bs, -1, -1)
-            reference_points = self.reference_points(query_embeds).sigmoid()
+            query_pos, query = torch.split(query_embed, c, dim=1)
+            query_pos = query_pos.unsqueeze(0).expand(bs, -1, -1)
+            query = query.unsqueeze(0).expand(bs, -1, -1)
+            reference_points = self.reference_points(query_pos).sigmoid()
             init_reference_out = reference_points
 
         # decoder
-        tgt = tgt.permute(1, 0, 2)
+        query = query.permute(1, 0, 2)
         memory = memory.permute(1, 0, 2)
-        query_embeds = query_embeds.permute(1, 0, 2)
-        hs, inter_references = self.decoder(
-            query=tgt,
+        query_pos = query_pos.permute(1, 0, 2)
+        inter_states, inter_references = self.decoder(
+            query=query,
             key=None,
             value=memory,
-            query_pos=query_embeds,
+            query_pos=query_pos,
             key_padding_mask=mask_flatten,
             reference_points=reference_points,
             spatial_shapes=spatial_shapes,
@@ -639,10 +662,10 @@ class DeformableDetrTransformer(Transformer):
 
         inter_references_out = inter_references
         if self.as_two_stage:
-            return hs, init_reference_out,\
+            return inter_states, init_reference_out,\
                 inter_references_out, enc_outputs_class,\
                 enc_outputs_coord_unact
-        return hs, init_reference_out, \
+        return inter_states, init_reference_out, \
             inter_references_out, None, None
 
 
