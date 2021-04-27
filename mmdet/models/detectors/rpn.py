@@ -1,4 +1,5 @@
 import mmcv
+import torch
 from mmcv.image import tensor2imgs
 
 from mmdet.core import bbox_mapping
@@ -106,10 +107,16 @@ class RPN(BaseDetector):
             list[np.ndarray]: proposals
         """
         x = self.extract_feat(img)
+        # get origin input shape to onnx dynamic input shape
+        if torch.onnx.is_in_onnx_export():
+            img_shape = torch._shape_as_tensor(img)[2:]
+            img_metas[0]['img_shape_for_onnx'] = img_shape
         proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         if rescale:
             for proposals, meta in zip(proposal_list, img_metas):
                 proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])
+        if torch.onnx.is_in_onnx_export():
+            return proposal_list
 
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
