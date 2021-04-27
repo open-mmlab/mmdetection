@@ -530,11 +530,11 @@ class DeformableDetrTransformer(Transformer):
             mlvl_pos_embeds (list(Tensor)): The positional encoding
                 of feats from different level, has the shape
                  [bs, embed_dims, h, w].
-            reg_branches (obj:`nn.Module`): Regression heads for
+            reg_branches (obj:`nn.ModuleList`): Regression heads for
                 feature maps from each decoder layer. Only would
                 be passed when
                 `with_box_refine` is Ture. Default to None.
-            cls_branches (obj:`nn.Module`): Classification heads
+            cls_branches (obj:`nn.ModuleList`): Classification heads
                 for feature maps from each decoder layer. Only would
                  be passed when `as_two_stage`
                  is Ture. Default to None.
