@@ -54,6 +54,7 @@ class SingleStageDetector(BaseDetector):
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
+        #x = self.bbox_head(x)
         return x
 
     def forward_dummy(self, img):

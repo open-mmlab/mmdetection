@@ -5,8 +5,8 @@ from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init,
 from mmcv.runner import force_fp32
 from mmcv.ops.nms import batched_nms
 
-from mmdet.core import (build_assigner, build_sampler,
-                        multiclass_nms)
+from mmdet.core import (build_assigner, build_sampler,images_to_levels, multi_apply,  reduce_mean,
+                        bbox_overlaps, multiclass_nms)
 from .anchor_head import AnchorHead
 from ..builder import HEADS, build_loss
 
@@ -18,24 +18,28 @@ class TinaFaceHead(AnchorHead):
                  num_classes,
                  in_channels,
                  stacked_convs=4,
+                 feat_channels=256,
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  loss_iou=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
+                 detach=True,  # 新加
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        super(TinaFaceHead, self).__init__(num_classes, in_channels, **kwargs)
+        self.detach = detach
+        super(TinaFaceHead, self).__init__(num_classes, in_channels, feat_channels, **kwargs)
 
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
-        self.loss_centerness = build_loss(loss_iou)
+        #self.loss_centerness = build_loss(loss_iou)
+        self.loss_iou = build_loss(loss_iou)
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -377,3 +381,165 @@ class TinaFaceHead(AnchorHead):
             labels = labels[:max_num]
 
         return dets, labels
+
+    def loss_single(self, cls_score, bbox_pred, iou_pred, anchors, labels, label_weights,
+                    bbox_targets, bbox_weights, num_total_samples):  # 区别
+        """Compute loss of a single scale level.
+
+        Args:
+            cls_score (Tensor): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W).
+            bbox_pred (Tensor): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W).
+            anchors (Tensor): Box reference for each scale level with shape
+                (N, num_total_anchors, 4).
+            labels (Tensor): Labels of each anchors with shape
+                (N, num_total_anchors).
+            label_weights (Tensor): Label weights of each anchor with shape
+                (N, num_total_anchors)
+            bbox_targets (Tensor): BBox regression targets of each anchor wight
+                shape (N, num_total_anchors, 4).
+            bbox_weights (Tensor): BBox regression loss weights of each anchor
+                with shape (N, num_total_anchors, 4).
+            num_total_samples (int): If sampling, num total samples equal to
+                the number of total anchors; Otherwise, it is the number of
+                positive anchors.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+        # classification loss
+        anchors = anchors.reshape(-1, 4)  # 新加
+        labels = labels.reshape(-1)
+        label_weights = label_weights.reshape(-1)
+        cls_score = cls_score.permute(0, 2, 3,
+                                      1).reshape(-1, self.cls_out_channels)
+        loss_cls = self.loss_cls(
+            cls_score, labels, label_weights, avg_factor=num_total_samples)
+        # regression loss
+        bbox_targets = bbox_targets.reshape(-1, 4)
+        bbox_weights = bbox_weights.reshape(-1, 4)
+        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
+
+        iou_targets = label_weights.new_zeros(labels.shape)  # 新加
+        iou_weights = label_weights.new_zeros(labels.shape)  # 新加
+        iou_weights[(bbox_weights.sum(axis=1) > 0).nonzero(as_tuple=False)] = 1.  # 新加
+        iou_pred = iou_pred.permute(0, 2, 3, 1).reshape(-1)  # 新加
+
+        bg_class_ind = self.num_classes  # 新加
+        pos_inds = ((labels >= 0) &
+                    (labels < bg_class_ind)).nonzero(as_tuple=False).squeeze(1)  # 新加
+
+        if self.reg_decoded_bbox:
+            anchors = anchors.reshape(-1, 4)
+            bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
+        loss_bbox = self.loss_bbox(
+            bbox_pred,
+            bbox_targets,
+            bbox_weights,
+            avg_factor=num_total_samples)
+
+        if len(pos_inds) > 0:  # 新加
+            # dx, dy, dw, dh
+            pos_bbox_targets = bbox_targets[pos_inds]
+            # tx, ty, tw, th
+            pos_bbox_pred = bbox_pred[pos_inds]
+            # x1, y1, x2, y2
+            pos_anchors = anchors[pos_inds]
+
+            if self.reg_decoded_bbox:
+                pos_decode_bbox_pred = pos_bbox_pred
+                gt_bboxes = pos_bbox_targets
+            else:
+                # x1, y1, x2 ,y2
+                pos_decode_bbox_pred = self.bbox_coder.decode(
+                    pos_anchors, pos_bbox_pred)
+
+                gt_bboxes = self.bbox_coder.decode(pos_anchors,
+                                                   pos_bbox_targets)
+
+            if self.detach:
+                pos_decode_bbox_pred = pos_decode_bbox_pred.detach()
+
+            iou_targets[pos_inds] = bbox_overlaps(
+                pos_decode_bbox_pred, gt_bboxes, is_aligned=True)
+
+        loss_iou = self.loss_iou(
+            iou_pred, iou_targets, iou_weights, avg_factor=num_total_samples)
+
+        return loss_cls, loss_bbox, loss_iou  # 区别
+
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
+    def loss(self,
+             cls_scores,
+             bbox_preds,
+             iou_preds,  # 新加
+             gt_bboxes,
+             gt_labels,
+             img_metas,
+             gt_bboxes_ignore=None):
+        """Compute losses of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss. Default: None
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        assert len(featmap_sizes) == self.anchor_generator.num_levels
+
+        device = cls_scores[0].device
+
+        anchor_list, valid_flag_list = self.get_anchors(
+            featmap_sizes, img_metas, device=device)
+        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
+        cls_reg_targets = self.get_targets(
+            anchor_list,
+            valid_flag_list,
+            gt_bboxes,
+            img_metas,
+            gt_bboxes_ignore_list=gt_bboxes_ignore,
+            gt_labels_list=gt_labels,
+            label_channels=label_channels)
+        if cls_reg_targets is None:
+            return None
+        (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
+         num_total_pos, num_total_neg) = cls_reg_targets
+        # num_total_samples = (num_total_pos + num_total_neg if self.sampling else num_total_pos)
+        num_total_samples = reduce_mean(
+            torch.tensor(1. * num_total_pos).cuda()).item()
+        num_total_samples = max(num_total_samples, 1.0)  # 区别
+
+        # anchor number of multi levels
+        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
+        # concat all level anchors and flags to a single tensor
+        concat_anchor_list = []
+        for i in range(len(anchor_list)):
+            concat_anchor_list.append(torch.cat(anchor_list[i]))
+        all_anchor_list = images_to_levels(concat_anchor_list,
+                                           num_level_anchors)
+
+        losses_cls, losses_bbox, losses_iou = multi_apply(  # 区别
+            self.loss_single,
+            cls_scores,
+            bbox_preds,
+            iou_preds,  # 区别
+            all_anchor_list,
+            labels_list,
+            label_weights_list,
+            bbox_targets_list,
+            bbox_weights_list,
+            num_total_samples=num_total_samples)
+
+        return dict(loss_cls=losses_cls, loss_bbox=losses_bbox, losses_iou=losses_iou)

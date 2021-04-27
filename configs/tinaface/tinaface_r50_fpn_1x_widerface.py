@@ -57,7 +57,7 @@ model = dict(
             gamma=2.0,
             alpha=0.25,
             loss_weight=1.0),
-        loss_bbox=dict(type='GIoULoss', loss_weight=2.0)),
+        loss_bbox=dict(type='DIoULoss', loss_weight=2.0)),
     train_cfg=dict(
         assigner=dict(
             type='MaxIoUAssigner',
@@ -80,6 +80,8 @@ model = dict(
 )
 
 optimizer = dict(type='SGD', lr=3.75e-3, momentum=0.9, weight_decay=5e-4)
+
+
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
