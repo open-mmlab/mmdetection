@@ -1693,8 +1693,8 @@ class RandomCenterCropPad(object):
         h, w, c = img.shape
         results['img_shape'] = img.shape
         if self.test_pad_mode[0] in ['logical_or']:
-            target_h = h | self.test_pad_mode[1]
-            target_w = w | self.test_pad_mode[1]
+            target_h = (h | self.test_pad_mode[1]) + 1
+            target_w = (w | self.test_pad_mode[1]) + 1
         elif self.test_pad_mode[0] in ['size_divisor']:
             divisor = self.test_pad_mode[1]
             target_h = int(np.ceil(h / divisor)) * divisor

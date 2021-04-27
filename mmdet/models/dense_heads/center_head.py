@@ -325,7 +325,7 @@ class CenterHead(BaseDenseHead):
                    offset_hm,
                    img_metas,
                    rescale=False,
-                   with_nms=True):
+                   with_nms=False):
         """
             Args:
                 center_hm (tensor): shape (B, num_class, H, W),
@@ -403,6 +403,14 @@ class CenterHead(BaseDenseHead):
         flip = img_meta['flip']
         ratio_w = feat_w / img_meta['pad_shape'][1]
         ratio_h = feat_h / img_meta['pad_shape'][0]
+        # import cv2
+        # import numpy as np
+        # hm = center_hm.clone()[0].cpu().sum(axis=0).numpy()
+        # hm = (hm * 255).astype(np.uint8)
+        # # import pdb;pdb.set_trace()
+        # hm = cv2.applyColorMap(hm, cv2.COLORMAP_HOT)
+        # cv2.imshow('sadasd', hm)
+        # cv2.waitKey()
         # 1. get topK center points
         center_hm = self._local_maximum(center_hm)
         scores, index, clses, cy, cx = self._topk(center_hm,
@@ -427,10 +435,19 @@ class CenterHead(BaseDenseHead):
         bboxes[:, [0, 2]] -= x_off
         bboxes[:, [1, 3]] -= y_off
         scores = scores.view(-1, 1).clone().contiguous()
-
         detections = torch.cat([bboxes, scores], dim=1)
         if with_nms:
             detections, labels = self._bboxes_nms(detections, labels,
                                                   self.test_cfg)
+            # detections, labels = multiclass_nms(detections[:, :4],
+            #                                     detections[:])
+            # print('after', len(detections))
+            # import cv2
+            # img = cv2.imread(img_meta['filename'])
+            # for box in detections:
+            #     x1, y1, x2, y2 = box[:4].cpu().numpy().astype(int)
+            #     cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            # cv2.imshow('img', img)
+            # cv2.waitKey()
             return detections, labels
         return detections, labels

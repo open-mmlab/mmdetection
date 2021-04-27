@@ -135,7 +135,7 @@ class DLA_Neck(nn.Module):
         for i in range(self.end_level - self.start_level):
             y.append(x[i].clone())
         self.ida_up(y, 0, len(y))
-        return y
+        return [y[-1]]
 
     def init_weights(self, pretrained=True):
         """Initialize the weights of FPN module."""
