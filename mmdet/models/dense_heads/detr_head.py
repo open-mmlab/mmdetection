@@ -369,11 +369,10 @@ class DETRHead(AnchorFreeHead):
         cls_avg_factor = num_total_pos * 1.0 + \
             num_total_neg * self.bg_cls_weight
 
-        # TODO find a better way
         cls_avg_factor = reduce_mean(cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)
 
-        # TODO move this to deform detr
+        cls_avg_factor = max(cls_avg_factor, 1)
         loss_cls = self.loss_cls(
             cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
 

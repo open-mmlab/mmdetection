@@ -37,8 +37,8 @@ __all__ = [
     'SSDHead', 'FCOSHead', 'RepPointsHead', 'FoveaHead',
     'FreeAnchorRetinaHead', 'ATSSHead', 'FSAFHead', 'NASFCOSHead',
     'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead', 'YOLACTHead',
-    'YOLACTSegmHead', 'YOLACTProtonet', 'YOLOV3Head', 'PAAHead', 'DETRHead',
-    'DeformableDETRHead', 'SABLRetinaHead', 'CentripetalHead', 'VFNetHead',
+    'YOLACTSegmHead', 'YOLACTProtonet', 'YOLOV3Head', 'PAAHead',
+    'SABLRetinaHead', 'CentripetalHead', 'VFNetHead',
     'StageCascadeRPNHead', 'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead',
-    'CascadeRPNHead', 'AutoAssignHead'
+    'CascadeRPNHead', 'AutoAssignHead', 'DeformableDETRHead'
 ]

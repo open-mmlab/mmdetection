@@ -295,8 +295,10 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                            flatten=False):
         """Get points of a single scale level."""
         h, w = featmap_size
-        x_range = torch.arange(w, dtype=dtype, device=device)
-        y_range = torch.arange(h, dtype=dtype, device=device)
+        # First create Range with the defaut dtype, than convert to
+        # target `dtype` for onnx exporting.
+        x_range = torch.arange(w, device=device).to(dtype)
+        y_range = torch.arange(h, device=device).to(dtype)
         y, x = torch.meshgrid(y_range, x_range)
         if flatten:
             y = y.flatten()
