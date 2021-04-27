@@ -56,8 +56,8 @@ class PreNMS(object):
             # more bboxes, improve mAP by 1% for YOLOv3
             if score_factors is not None:
                 # expand the shape to match original shape of score
-                score_factors = score_factors.view(-1, 1).expand(
-                    r_results.scores.size(0), num_classes)
+                score_factors = score_factors.view(-1,
+                                                   1).repeat(1, num_classes)
                 score_factors = score_factors.reshape(-1)
                 r_results.scores = r_results.scores * score_factors
 
