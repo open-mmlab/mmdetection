@@ -368,8 +368,10 @@ class DETRHead(AnchorFreeHead):
         # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
             num_total_neg * self.bg_cls_weight
-
-        cls_avg_factor = reduce_mean(cls_scores.new_tensor([cls_avg_factor]))
+        if self.__class__ is not DETRHead:
+            # DETRHead does not reduce the cls_avg_factor
+            cls_avg_factor = reduce_mean(
+                cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)
 
         cls_avg_factor = max(cls_avg_factor, 1)
