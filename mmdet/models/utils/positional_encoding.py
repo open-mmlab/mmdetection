@@ -2,9 +2,8 @@ import math
 
 import torch
 import torch.nn as nn
-from mmcv.runner import BaseModule
-from mmcv.cnn import uniform_init
 from mmcv.cnn.bricks.transformer import POSITIONAL_ENCODING
+from mmcv.runner import BaseModule
 
 
 @POSITIONAL_ENCODING.register_module()
