@@ -6,11 +6,6 @@ _base_ = [
 model = dict(
     type='FCOS',
     pretrained='open-mmlab://detectron/resnet50_caffe',
-    bbox_post_processes=[
-        dict(type='PreNMS'),
-        dict(type='NaiveNMS', iou_threshold=0.6),
-        dict(type='ResizeResultsToOri', results_types=['bbox'])
-    ],
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -31,6 +26,11 @@ model = dict(
         relu_before_extra_convs=True),
     bbox_head=dict(
         type='FCOSHead',
+        bbox_post_processes=[
+            dict(type='PreNMS'),
+            dict(type='NaiveNMS', iou_threshold=0.6),
+            dict(type='ResizeResultsToOri', results_types=['bbox'])
+        ],
         num_classes=80,
         in_channels=256,
         stacked_convs=4,
