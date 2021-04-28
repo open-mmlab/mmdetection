@@ -183,6 +183,10 @@ Please refer to [ResNeSt](https://github.com/open-mmlab/mmdetection/blob/master/
 
 Please refer to [DETR](https://github.com/open-mmlab/mmdetection/blob/master/configs/detr) for details.
 
+### Deformable DETR
+
+Please refer to [Deformable DETR](https://github.com/open-mmlab/mmdetection/blob/master/configs/deformable_detr) for details.
+
 ### AutoAssign
 
 Please refer to [AutoAssign](https://github.com/open-mmlab/mmdetection/blob/master/configs/autoassign) for details.

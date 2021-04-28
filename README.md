@@ -109,6 +109,7 @@ Supported methods:
 - [x] [CentripetalNet (CVPR'2020)](configs/centripetalnet/README.md)
 - [x] [VFNet (ArXix'2020)](configs/vfnet/README.md)
 - [x] [DETR (ECCV'2020)](configs/detr/README.md)
+- [x] [Deformable DETR (ICLR'2021)](configs/deformable_detr/README.md)
 - [x] [CascadeRPN (NeurIPS'2019)](configs/cascade_rpn/README.md)
 - [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
 - [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
