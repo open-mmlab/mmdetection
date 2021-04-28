@@ -40,6 +40,8 @@ class DETRHead(AnchorFreeHead):
             transformer head.
         test_cfg (obj:`mmcv.ConfigDict`|dict): Testing config of
             transformer head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     _version = 2
@@ -70,11 +72,12 @@ class DETRHead(AnchorFreeHead):
                          iou_cost=dict(
                              type='IoUCost', iou_mode='giou', weight=2.0))),
                  test_cfg=dict(max_per_img=100),
+                 init_cfg=None,
                  **kwargs):
         # NOTE here use `AnchorFreeHead` instead of `TransformerHead`,
         # since it brings inconvenience when the initialization of
         # `AnchorFreeHead` is called.
-        super(AnchorFreeHead, self).__init__()
+        super(AnchorFreeHead, self).__init__(init_cfg)
         self.bg_cls_weight = 0
         class_weight = loss_cls.get('class_weight', None)
         if class_weight is not None and (self.__class__ is DETRHead):

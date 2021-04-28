@@ -1,8 +1,7 @@
 import copy
 
 import torch.nn as nn
-from mmcv.cnn import (ConvModule, Scale, bias_init_with_prob,
-                      caffe2_xavier_init, normal_init)
+from mmcv.cnn import ConvModule, Scale
 
 from mmdet.models.dense_heads.fcos_head import FCOSHead
 from ..builder import HEADS
@@ -16,6 +15,25 @@ class NASFCOSHead(FCOSHead):
     classification branch and bbox regression branch, where a structure of
     "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
     """
+
+    def __init__(self, *args, init_cfg=None, **kwargs):
+        if init_cfg is None:
+            init_cfg = [
+                dict(type='Caffe2Xavier', layer=['ConvModule', 'Conv2d']),
+                dict(
+                    type='Normal',
+                    std=0.01,
+                    override=[
+                        dict(name='conv_reg'),
+                        dict(name='conv_centerness'),
+                        dict(
+                            name='conv_cls',
+                            type='Normal',
+                            std=0.01,
+                            bias_prob=0.01)
+                    ]),
+            ]
+        super(NASFCOSHead, self).__init__(*args, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -59,17 +77,3 @@ class NASFCOSHead(FCOSHead):
         self.conv_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
 
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        # retinanet_bias_init
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.conv_reg, std=0.01)
-        normal_init(self.conv_centerness, std=0.01)
-        normal_init(self.conv_cls, std=0.01, bias=bias_cls)
-
-        for branch in [self.cls_convs, self.reg_convs]:
-            for module in branch.modules():
-                if isinstance(module, ConvModule) \
-                        and isinstance(module.conv, nn.Conv2d):
-                    caffe2_xavier_init(module.conv)

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from mmcv.runner import ModuleList
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
                         build_sampler, merge_aug_bboxes, merge_aug_masks,
@@ -25,11 +26,14 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                  mask_head=None,
                  shared_head=None,
                  train_cfg=None,
-                 test_cfg=None):
+                 test_cfg=None,
+                 pretrained=None,
+                 init_cfg=None):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
         assert shared_head is None, \
             'Shared head is not supported in Cascade RCNN anymore'
+
         self.num_stages = num_stages
         self.stage_loss_weights = stage_loss_weights
         super(CascadeRoIHead, self).__init__(
@@ -39,7 +43,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_head=mask_head,
             shared_head=shared_head,
             train_cfg=train_cfg,
-            test_cfg=test_cfg)
+            test_cfg=test_cfg,
+            pretrained=pretrained,
+            init_cfg=init_cfg)
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
         """Initialize box head and box roi extractor.
@@ -48,8 +54,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             bbox_roi_extractor (dict): Config of box roi extractor.
             bbox_head (dict): Config of box in box head.
         """
-        self.bbox_roi_extractor = nn.ModuleList()
-        self.bbox_head = nn.ModuleList()
+        self.bbox_roi_extractor = ModuleList()
+        self.bbox_head = ModuleList()
         if not isinstance(bbox_roi_extractor, list):
             bbox_roi_extractor = [
                 bbox_roi_extractor for _ in range(self.num_stages)
@@ -76,7 +82,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_head.append(build_head(head))
         if mask_roi_extractor is not None:
             self.share_roi_extractor = False
-            self.mask_roi_extractor = nn.ModuleList()
+            self.mask_roi_extractor = ModuleList()
             if not isinstance(mask_roi_extractor, list):
                 mask_roi_extractor = [
                     mask_roi_extractor for _ in range(self.num_stages)
@@ -100,24 +106,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.current_stage = idx
                 self.bbox_sampler.append(
                     build_sampler(rcnn_train_cfg.sampler, context=self))
-
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        if self.with_shared_head:
-            self.shared_head.init_weights(pretrained=pretrained)
-        for i in range(self.num_stages):
-            if self.with_bbox:
-                self.bbox_roi_extractor[i].init_weights()
-                self.bbox_head[i].init_weights()
-            if self.with_mask:
-                if not self.share_roi_extractor:
-                    self.mask_roi_extractor[i].init_weights()
-                self.mask_head[i].init_weights()
 
     def forward_dummy(self, x, proposals):
         """Dummy forward function."""

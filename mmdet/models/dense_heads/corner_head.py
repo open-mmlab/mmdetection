@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, bias_init_with_prob
 from mmcv.ops import CornerPool, batched_nms
+from mmcv.runner import BaseModule
 
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
@@ -13,7 +14,7 @@ from ..utils import gaussian_radius, gen_gaussian_target
 from .base_dense_head import BaseDenseHead
 
 
-class BiCornerPool(nn.Module):
+class BiCornerPool(BaseModule):
     """Bidirectional Corner Pooling Module (TopLeft, BottomRight, etc.)
 
     Args:
@@ -22,6 +23,8 @@ class BiCornerPool(nn.Module):
         feat_channels (int): Feature channels of module.
         directions (list[str]): Directions of two CornerPools.
         norm_cfg (dict): Dictionary to construct and config norm layer.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -29,8 +32,9 @@ class BiCornerPool(nn.Module):
                  directions,
                  feat_channels=128,
                  out_channels=128,
-                 norm_cfg=dict(type='BN', requires_grad=True)):
-        super(BiCornerPool, self).__init__()
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 init_cfg=None):
+        super(BiCornerPool, self).__init__(init_cfg)
         self.direction1_conv = ConvModule(
             in_channels, feat_channels, 3, padding=1, norm_cfg=norm_cfg)
         self.direction2_conv = ConvModule(
@@ -103,6 +107,8 @@ class CornerHead(BaseDenseHead):
             AssociativeEmbeddingLoss.
         loss_offset (dict | None): Config of corner offset loss. Default:
             SmoothL1Loss.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -122,8 +128,11 @@ class CornerHead(BaseDenseHead):
                      pull_weight=0.25,
                      push_weight=0.25),
                  loss_offset=dict(
-                     type='SmoothL1Loss', beta=1.0, loss_weight=1)):
-        super(CornerHead, self).__init__()
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1),
+                 init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
+        super(CornerHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.corner_emb_channels = corner_emb_channels
@@ -214,12 +223,13 @@ class CornerHead(BaseDenseHead):
             self._init_corner_emb_layers()
 
     def init_weights(self):
-        """Initialize weights of the head."""
+        super(CornerHead, self).init_weights()
         bias_init = bias_init_with_prob(0.1)
         for i in range(self.num_feat_levels):
-            # The initialization of parameters are different between nn.Conv2d
-            # and ConvModule. Our experiments show that using the original
-            # initialization of nn.Conv2d increases the final mAP by about 0.2%
+            # The initialization of parameters are different between
+            # nn.Conv2d and ConvModule. Our experiments show that
+            # using the original initialization of nn.Conv2d increases
+            # the final mAP by about 0.2%
             self.tl_heat[i][-1].conv.reset_parameters()
             self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
             self.br_heat[i][-1].conv.reset_parameters()
