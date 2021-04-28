@@ -1,4 +1,4 @@
 # These must be installed before building mmdetection
 cython
 numpy
-torch>=1.5.1,<=1.8.1
+torch>=1.7.1,<=1.8.1

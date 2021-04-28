@@ -157,14 +157,13 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, 
             not normalize['to_rgb'] and input_format.lower() == 'rgb':
         command_line += ' --reverse_input_channels'
 
-    try:
-        run('mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True, check=True)
-    except CalledProcessError as ex:
-        print('OpenVINO Model Optimizer not found, please source '
-              'openvino/bin/setupvars.sh before running this script.')
-        return
-
     print(command_line)
+
+    try:
+        run(f'mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True, check=True)
+    except CalledProcessError:
+        raise RuntimeError('OpenVINO Model Optimizer is not found or configured improperly')
+
     run(command_line, shell=True, check=True)
 
     if with_text:
