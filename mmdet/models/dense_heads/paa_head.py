@@ -628,12 +628,12 @@ class PAAHead(ATSSHead):
                 continue
             det_bboxes = after_process_results.bboxes
             det_labels = after_process_results.labels
+            det_scores = after_process_results.scores
             candidate_cls_scores = candidate_scores[candidate_cls_mask]
             candidate_cls_bboxes = candidate_bboxes[candidate_cls_mask]
             det_cls_mask = det_labels == cls
 
-            det_cls_bboxes = det_bboxes[det_cls_mask].view(
-                -1, det_bboxes.size(-1))
+            det_cls_bboxes = det_bboxes[det_cls_mask]
             det_candidate_ious = bbox_overlaps(det_cls_bboxes[:, :4],
                                                candidate_cls_bboxes)
             for det_ind in range(len(det_cls_bboxes)):
@@ -647,9 +647,8 @@ class PAAHead(ATSSHead):
                 voted_box = torch.sum(
                     pis * pos_bboxes, dim=0) / torch.sum(
                         pis, dim=0)
-                voted_score = det_cls_bboxes[det_ind][-1:]
                 det_bboxes_voted.append(voted_box)
-                det_scores_voted.append(voted_score)
+                det_scores_voted.append(det_scores[det_ind])
                 det_labels_voted.append(cls)
 
         det_bboxes_voted = torch.stack(det_bboxes_voted)
