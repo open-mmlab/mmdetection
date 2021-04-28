@@ -282,12 +282,8 @@ class FCOSHead(AnchorFreeHead):
                 Default: True.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
+            list[obj:`InstanceResults`]: Results of each image after the
+                post process.
         """
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
@@ -310,15 +306,8 @@ class FCOSHead(AnchorFreeHead):
                                        img_metas, cfg)
         return result_list
 
-    def _get_bboxes(
-        self,
-        cls_scores,
-        bbox_preds,
-        centernesses,
-        mlvl_points,
-        img_metas,
-        cfg,
-    ):
+    def _get_bboxes(self, cls_scores, bbox_preds, centernesses, mlvl_points,
+                    img_metas, cfg):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:

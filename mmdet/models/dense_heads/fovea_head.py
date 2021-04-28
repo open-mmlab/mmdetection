@@ -3,7 +3,8 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init
 from mmcv.ops import DeformConv2d
 
-from mmdet.core import multi_apply, multiclass_nms
+from mmdet.core import multi_apply
+from ...core.results.results import InstanceResults
 from ..builder import HEADS
 from .anchor_free_head import AnchorFreeHead
 
@@ -279,28 +280,21 @@ class FoveaHead(AnchorFreeHead):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
             det_bboxes = self._get_bboxes_single(cls_score_list,
                                                  bbox_pred_list, featmap_sizes,
-                                                 points, img_shape,
-                                                 scale_factor, cfg, rescale)
+                                                 points, img_metas[img_id],
+                                                 cfg)
             result_list.append(det_bboxes)
         return result_list
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           featmap_sizes,
-                           point_list,
-                           img_shape,
-                           scale_factor,
-                           cfg,
-                           rescale=False):
+    def _get_bboxes_single(self, cls_scores, bbox_preds, featmap_sizes,
+                           point_list, img_meta, cfg):
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(point_list)
         det_bboxes = []
         det_scores = []
+        img_shape = img_meta['img_shape']
+
         for cls_score, bbox_pred, featmap_size, stride, base_len, (y, x) \
                 in zip(cls_scores, bbox_preds, featmap_sizes, self.strides,
                        self.base_edge_list, point_list):
@@ -328,14 +322,16 @@ class FoveaHead(AnchorFreeHead):
             det_bboxes.append(bboxes)
             det_scores.append(scores)
         det_bboxes = torch.cat(det_bboxes)
-        if rescale:
-            det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_scores = torch.cat(det_scores)
         padding = det_scores.new_zeros(det_scores.shape[0], 1)
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         det_scores = torch.cat([det_scores, padding], dim=1)
-        det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,
-                                                cfg.score_thr, cfg.nms,
-                                                cfg.max_per_img)
-        return det_bboxes, det_labels
+
+        results = InstanceResults(img_meta)
+        results.bboxes = det_bboxes
+        results.scores = det_scores
+
+        r_results = self.bbox_post_processes(results)[0]
+
+        return r_results
