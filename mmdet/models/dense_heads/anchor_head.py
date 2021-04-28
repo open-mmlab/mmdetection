@@ -32,6 +32,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
+        bbox_post_processes (list[obj:`ConfigDict`])): The configuration
+            of bbox's post process.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
     """  # noqa: W605

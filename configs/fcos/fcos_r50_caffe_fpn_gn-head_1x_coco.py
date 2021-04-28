@@ -6,6 +6,11 @@ _base_ = [
 model = dict(
     type='FCOS',
     pretrained='open-mmlab://detectron/resnet50_caffe',
+    bbox_post_processes=[
+        dict(type='PreNMS'),
+        dict(type='NaiveNMS', iou_threshold=0.6),
+        dict(type='ResizeResultsToOri', results_types=['bbox'])
+    ],
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -51,12 +56,7 @@ model = dict(
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
-    test_cfg=dict(
-        nms_pre=1000,
-        min_bbox_size=0,
-        score_thr=0.05,
-        nms=dict(type='nms', iou_threshold=0.5),
-        max_per_img=100))
+    test_cfg=dict(nms_pre=1000, score_thr=0.05))
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [

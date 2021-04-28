@@ -4,8 +4,10 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
+from py._log import warning
 
 from mmdet.core import multi_apply
+from ...core.post_processor.builder import ComposePostProcess
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -31,6 +33,8 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         loss_bbox (dict): Config of localization loss.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
+        bbox_post_processes (list[obj:`ConfigDict`])): The configuration
+            of bbox's post process.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
     """  # noqa: W605
@@ -54,6 +58,11 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                  loss_bbox=dict(type='IoULoss', loss_weight=1.0),
                  conv_cfg=None,
                  norm_cfg=None,
+                 bbox_post_processes=[
+                     dict(type='PreNMS'),
+                     dict(type='NaiveNMS'),
+                     dict(type='ResizeResultsToOri', results_types=['bbox'])
+                 ],
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorFreeHead, self).__init__()
@@ -73,7 +82,23 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
-
+        if self.test_cfg:
+            if self.test_cfg.get('score_thr', None):
+                warning.warn('The way to specify the score_thr has been'
+                             'changed. Please specify it in '
+                             'PreNMS in bbox_post_processes ')
+            if self.test_cfg.get('nms', None):
+                warning.warn(
+                    'The way to specify the type of mms and corresponding '
+                    'iou_threshold has been'
+                    'changed. Please specify it in '
+                    ' bbox_post_processes ')
+            if self.test_cfg.get('max_per_img', None):
+                warning.warn('The way to specify the max number of '
+                             'bboxes after nms '
+                             'has been changed. Please specify'
+                             'it in bbox_post_processes ')
+        self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
         self._init_layers()
 
     def _init_layers(self):
