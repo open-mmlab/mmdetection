@@ -2,13 +2,14 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import (bias_init_with_prob, build_activation_layer,
                       build_norm_layer)
+from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
 from mmcv.runner import auto_fp16, force_fp32
 
 from mmdet.core import multi_apply
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.losses import accuracy
-from mmdet.models.utils import FFN, MultiheadAttention, build_transformer
+from mmdet.models.utils import build_transformer
 from .bbox_head import BBoxHead
 
 
