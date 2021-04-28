@@ -634,7 +634,8 @@ class PAAHead(ATSSHead):
             det_cls_mask = det_labels == cls
 
             det_cls_bboxes = det_bboxes[det_cls_mask]
-            det_candidate_ious = bbox_overlaps(det_cls_bboxes[:, :4],
+            det_cls_scores = det_scores[det_cls_mask]
+            det_candidate_ious = bbox_overlaps(det_cls_bboxes,
                                                candidate_cls_bboxes)
             for det_ind in range(len(det_cls_bboxes)):
                 single_det_ious = det_candidate_ious[det_ind]
@@ -648,7 +649,7 @@ class PAAHead(ATSSHead):
                     pis * pos_bboxes, dim=0) / torch.sum(
                         pis, dim=0)
                 det_bboxes_voted.append(voted_box)
-                det_scores_voted.append(det_scores[det_ind])
+                det_scores_voted.append(det_cls_scores[det_ind])
                 det_labels_voted.append(cls)
 
         det_bboxes_voted = torch.stack(det_bboxes_voted)
