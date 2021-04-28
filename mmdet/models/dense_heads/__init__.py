@@ -5,6 +5,7 @@ from .autoassign_head import AutoAssignHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
 from .centripetal_head import CentripetalHead
 from .corner_head import CornerHead
+from .deformable_detr_head import DeformableDETRHead
 from .detr_head import DETRHead
 from .embedding_rpn_head import EmbeddingRPNHead
 from .fcos_head import FCOSHead
@@ -40,5 +41,5 @@ __all__ = [
     'YOLACTSegmHead', 'YOLACTProtonet', 'YOLOV3Head', 'PAAHead',
     'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'StageCascadeRPNHead',
     'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead',
-    'AutoAssignHead', 'DETRHead', 'YOLOFHead'
+    'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead'
 ]
