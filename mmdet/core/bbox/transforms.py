@@ -1,5 +1,35 @@
 import numpy as np
 import torch
+from torch.onnx import is_in_onnx_export
+
+
+def clamp(x, min, max):
+    if is_in_onnx_export():
+        is_min_tensor = isinstance(min, torch.Tensor)
+        is_max_tensor = isinstance(max, torch.Tensor)
+
+        if is_min_tensor and is_max_tensor:
+            y = x.clamp(min=min, max=max)
+        else:
+            device = x.device
+            dtype = x.dtype
+
+            y = x
+            d = len(y.shape)
+
+            min_val = torch.as_tensor(min, dtype=dtype, device=device)
+            y = torch.stack(
+                [y, min_val.view([1, ] * y.dim()).expand_as(y)], dim=d)
+            y = torch.max(y, dim=d, keepdim=False)[0]
+
+            max_val = torch.as_tensor(max, dtype=dtype, device=device)
+            y = torch.stack(
+                [y, max_val.view([1, ] * y.dim()).expand_as(y)], dim=d)
+            y = torch.min(y, dim=d, keepdim=False)[0]
+    else:
+        y = x.clamp(min=min, max=max)
+
+    return y
 
 
 def bbox_flip(bboxes, img_shape, direction='horizontal'):

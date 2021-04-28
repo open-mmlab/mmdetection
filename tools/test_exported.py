@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2021 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -147,11 +147,9 @@ def main(args):
             from mmdet.utils.deployment.openvino_backend import MaskTextSpotterOpenVINO as Model
             extra_args['text_recognition_thr'] = cfg['model'].get('roi_head', {}).get('text_thr', 0.0)
         else:
-            from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO as Model
+            from mmdet.utils.deployment.openvino_backend import Detector as Model
 
         model = Model(args.model,
-                      args.model[:-3] + 'bin',
-                      mapping_file_path=args.model[:-3] + 'mapping',
                       cfg=cfg,
                       classes=dataset.CLASSES,
                       **extra_args)

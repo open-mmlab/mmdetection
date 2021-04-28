@@ -4,6 +4,7 @@ from mmcv.cnn import ConvModule, normal_init
 from mmcv.ops import DeformConv2d
 
 from mmdet.core import multi_apply, multiclass_nms
+from mmdet.core.bbox.transforms import clamp
 from ..builder import HEADS
 from .anchor_free_head import AnchorFreeHead
 
@@ -265,7 +266,7 @@ class FoveaHead(AnchorFreeHead):
                    rescale=None):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        featmap_sizes = [featmap.shape[-2:] for featmap in cls_scores]
         points = self.get_points(
             featmap_sizes,
             bbox_preds[0].dtype,
@@ -316,14 +317,10 @@ class FoveaHead(AnchorFreeHead):
                 scores = scores[topk_inds, :]
                 y = y[topk_inds]
                 x = x[topk_inds]
-            x1 = (stride * x - base_len * bbox_pred[:, 0]).\
-                clamp(min=0, max=img_shape[1] - 1)
-            y1 = (stride * y - base_len * bbox_pred[:, 1]).\
-                clamp(min=0, max=img_shape[0] - 1)
-            x2 = (stride * x + base_len * bbox_pred[:, 2]).\
-                clamp(min=0, max=img_shape[1] - 1)
-            y2 = (stride * y + base_len * bbox_pred[:, 3]).\
-                clamp(min=0, max=img_shape[0] - 1)
+            x1 = clamp(stride * x + (-base_len) * bbox_pred[:, 0], min=0, max=img_shape[1] - 1)
+            y1 = clamp(stride * y + (-base_len) * bbox_pred[:, 1], min=0, max=img_shape[0] - 1)
+            x2 = clamp(stride * x + base_len * bbox_pred[:, 2], min=0, max=img_shape[1] - 1)
+            y2 = clamp(stride * y + base_len * bbox_pred[:, 3], min=0, max=img_shape[0] - 1)
             bboxes = torch.stack([x1, y1, x2, y2], -1)
             det_bboxes.append(bboxes)
             det_scores.append(scores)

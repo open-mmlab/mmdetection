@@ -27,14 +27,8 @@ jobs:
     strategy:
       matrix:
         python-version: [3.7]
-        torch: [1.5.1, 1.6.0, 1.7.1, 1.8.1]
+        torch: [1.7.1, 1.8.1]
         include:
-          - torch: 1.5.1
-            torchvision: 0.6.1
-            mmcv: "latest+torch1.5.0+cpu"
-          - torch: 1.6.0
-            torchvision: 0.7.0
-            mmcv: "latest+torch1.6.0+cpu"
           - torch: 1.7.1
             torchvision: 0.8.2
             mmcv: "latest+torch1.7.0+cpu"
@@ -60,11 +54,9 @@ jobs:
         run: pip install -r requirements/tests.txt -r requirements/optional.txt
       - name: Build and install
         run: rm -rf .eggs && pip install -e .
-      - name: Run unittests and generate coverage report
+      - name: Run unittests
         run: |
           coverage run --branch --source mmdet -m pytest -k "not test_models.py" tests/
-          coverage xml
-          coverage report -m
 
   build_cuda:
     runs-on: ubuntu-latest
@@ -76,27 +68,21 @@ jobs:
     strategy:
       matrix:
         python-version: [3.7]
-        torch: [1.5.1+cu101, 1.6.0+cu101, 1.7.1+cu101, 1.8.1+cu101]
+        torch: [1.7.1+cu101, 1.8.1+cu101]
         include:
-          - torch: 1.5.1+cu101
-            torchvision: 0.6.1+cu101
-            mmcv: "latest+torch1.5.0+cu101"
-          - torch: 1.6.0+cu101
-            torchvision: 0.7.0+cu101
-            mmcv: "latest+torch1.6.0+cu101"
           - torch: 1.7.1+cu101
             torchvision: 0.8.2+cu101
             mmcv: "latest+torch1.7.0+cu101"
           - torch: 1.8.1+cu101
             torchvision: 0.9.1+cu101
             mmcv: "latest+torch1.8.0+cu101"
-          - torch: 1.6.0+cu101
-            torchvision: 0.7.0+cu101
-            mmcv: "latest+torch1.6.0+cu101"
+          - torch: 1.8.1+cu101
+            torchvision: 0.9.1+cu101
+            mmcv: "latest+torch1.8.0+cu101"
             python-version: 3.6
-          - torch: 1.6.0+cu101
-            torchvision: 0.7.0+cu101
-            mmcv: "latest+torch1.6.0+cu101"
+          - torch: 1.8.1+cu101
+            torchvision: 0.9.1+cu101
+            mmcv: "latest+torch1.8.0+cu101"
             python-version: 3.8
 
     steps:
@@ -133,16 +119,6 @@ jobs:
           rm -rf .eggs
           python setup.py check -m -s
           TORCH_CUDA_ARCH_LIST=7.0 pip install .
-      - name: Run unittests and generate coverage report
+      - name: Run unittests
         run: |
           coverage run --branch --source mmdet -m pytest -k "not test_models.py" tests/
-          coverage xml
-          coverage report -m
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.10
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          env_vars: OS,PYTHON
-          name: codecov-umbrella
-          fail_ci_if_error: false

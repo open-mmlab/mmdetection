@@ -80,7 +80,8 @@ def get_nncf_config_from_meta(path):
 def wrap_nncf_model(model,
                     cfg,
                     data_loader_for_init=None,
-                    get_fake_input_func=None):
+                    get_fake_input_func=None,
+                    is_alt_ssd_export=False):
     """
     The function wraps mmdet model by NNCF
     Note that the parameter `get_fake_input_func` should be the function `get_fake_input`
@@ -168,6 +169,9 @@ def wrap_nncf_model(model,
         img, img_metas = fake_data["img"], fake_data["img_metas"]
         img[0] = nncf_model_input(img[0])
         if nncf_compress_postprocessing:
+            if is_alt_ssd_export:
+                img = img[0]
+                img_metas = img_metas[0]
             ctx = model.forward_export_context(img_metas)
             logger.debug(f"NNCF will compress a postprocessing part of the model")
         else:
@@ -179,9 +183,14 @@ def wrap_nncf_model(model,
     def wrap_inputs(args, kwargs):
         # during dummy_forward
         if not len(kwargs):
-            if not isinstance(args[0][0], TracedTensor):
-                args[0][0] = nncf_model_input(args[0][0])
-            return args, kwargs
+            if not is_alt_ssd_export:
+                if not isinstance(args[0][0], TracedTensor):
+                    args[0][0] = nncf_model_input(args[0][0])
+                return args, kwargs
+            else:
+                if not isinstance(args[0], TracedTensor):
+                    nnc_input = nncf_model_input(args[0])
+                return (nnc_input,), kwargs
 
         # during building original graph
         if not kwargs.get('return_loss') and kwargs.get('forward_export'):
