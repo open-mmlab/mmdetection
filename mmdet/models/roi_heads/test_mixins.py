@@ -110,8 +110,9 @@ class BBoxTestMixin(object):
         bbox_pred = bbox_results['bbox_pred']
 
         # Recover the batch dimension
-        rois = rois.reshape(batch_size, num_proposals_per_img, -1)
-        cls_score = cls_score.reshape(batch_size, num_proposals_per_img, -1)
+        rois = rois.reshape(batch_size, num_proposals_per_img, rois.size(-1))
+        cls_score = cls_score.reshape(batch_size, num_proposals_per_img,
+                                      cls_score.size(-1))
 
         if not torch.onnx.is_in_onnx_export():
             # remove padding, ignore batch_index when calculating mask
@@ -124,7 +125,8 @@ class BBoxTestMixin(object):
             # the bbox prediction of some detectors like SABL is not Tensor
             if isinstance(bbox_pred, torch.Tensor):
                 bbox_pred = bbox_pred.reshape(batch_size,
-                                              num_proposals_per_img, -1)
+                                              num_proposals_per_img,
+                                              bbox_pred.size(-1))
                 if not torch.onnx.is_in_onnx_export():
                     bbox_pred[supplement_mask, :] = 0
             else:
