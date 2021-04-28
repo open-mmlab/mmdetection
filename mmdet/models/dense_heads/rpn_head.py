@@ -5,6 +5,7 @@ from mmcv.cnn import normal_init
 from torch.onnx import is_in_onnx_export
 
 from mmdet.ops.nms import batched_nms
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 from ...core.utils.misc import topk
 
 from ..builder import HEADS
@@ -157,7 +158,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 (w >= cfg.min_bbox_size)
                 & (h >= cfg.min_bbox_size),
                 as_tuple=False).squeeze()
-            if valid_inds.sum().item() != len(proposals) or is_in_onnx_export():
+            if valid_inds.sum().item() != len(proposals) or (is_in_onnx_export() or is_in_nncf_tracing()):
                 proposals = proposals[valid_inds, :]
                 scores = scores[valid_inds]
                 ids = ids[valid_inds]

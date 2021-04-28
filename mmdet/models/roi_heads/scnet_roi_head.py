@@ -5,6 +5,7 @@ from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 from mmdet.core.mask.transforms import mask2result
 from mmdet.core.utils.misc import dummy_pad
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 from ..builder import HEADS, build_head, build_roi_extractor
 from .cascade_roi_head import CascadeRoIHead
 
@@ -372,7 +373,7 @@ class SCNetRoIHead(CascadeRoIHead):
             cls_score = bbox_results['cls_score']
             bbox_pred = bbox_results['bbox_pred']
             num_proposals_per_img = tuple(len(p) for p in proposal_list)
-            if torch.onnx.is_in_onnx_export():
+            if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
                 rois = [rois]
                 cls_score = [cls_score]
                 bbox_pred = [bbox_pred]
@@ -414,7 +415,7 @@ class SCNetRoIHead(CascadeRoIHead):
         det_bboxes_results = (det_bboxes, det_labels)
 
         if self.with_mask:
-            if torch.onnx.is_in_onnx_export() and det_bboxes[0].shape[0] == 0:
+            if (torch.onnx.is_in_onnx_export() or is_in_nncf_tracing() )and det_bboxes[0].shape[0] == 0:
                 # If there are no detection there is nothing to do for a mask head.
                 # But during ONNX export we should run mask head
                 # for it to appear in the graph.
@@ -459,7 +460,7 @@ class SCNetRoIHead(CascadeRoIHead):
 
                 # split batch mask prediction back to each image
                 num_bbox_per_img = tuple(len(_bbox) for _bbox in _bboxes)
-                if torch.onnx.is_in_onnx_export():
+                if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
                     mask_preds = [mask_pred]
                 else:
                     mask_preds = mask_pred.split(num_bbox_per_img, 0)

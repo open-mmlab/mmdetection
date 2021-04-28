@@ -5,6 +5,7 @@ from mmcv.cnn import Scale, normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import distance2bbox, multi_apply, multiclass_nms, reduce_mean
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -387,7 +388,7 @@ class FCOSHead(AnchorFreeHead):
 
         # Set max number of box to be feed into nms in deployment
         deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
-        if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
+        if deploy_nms_pre > 0 and (torch.onnx.is_in_onnx_export() or is_in_nncf_tracing()):
             max_scores, _ = (mlvl_scores * mlvl_centerness[:, None]).max(dim=1)
             _, topk_inds = max_scores.topk(deploy_nms_pre)
             mlvl_scores = mlvl_scores[topk_inds, :]
