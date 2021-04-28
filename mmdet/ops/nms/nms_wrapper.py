@@ -1,12 +1,10 @@
 import numpy as np
 import sys
 import torch
-from torch.onnx import is_in_onnx_export
-
-from mmdet.integration.nncf import no_nncf_trace
 
 from mmcv.utils import deprecated_api_warning
-
+from mmdet.integration.nncf.utils import no_nncf_trace
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 
 class NMSop(torch.autograd.Function):
     @staticmethod
@@ -160,7 +158,7 @@ def batched_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
 
     split_thr = nms_cfg_.pop('split_thr', 10000)
     # Won't split to multiple nms nodes when exporting to onnx
-    if boxes_for_nms.shape[0] < split_thr or torch.onnx.is_in_onnx_export():
+    if boxes_for_nms.shape[0] < split_thr or (torch.onnx.is_in_onnx_export() or is_in_nncf_tracing):
         dets, keep = nms_op(boxes_for_nms, scores, **nms_cfg_)
         boxes = boxes[keep]
         scores = dets[:, 4]
