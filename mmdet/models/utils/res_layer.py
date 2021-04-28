@@ -1,8 +1,9 @@
 from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.runner import BaseModule, Sequential
 from torch import nn as nn
 
 
-class ResLayer(nn.Sequential):
+class ResLayer(Sequential):
     """ResLayer to build ResNet style backbone.
 
     Args:
@@ -102,7 +103,7 @@ class ResLayer(nn.Sequential):
         super(ResLayer, self).__init__(*layers)
 
 
-class SimplifiedBasicBlock(nn.Module):
+class SimplifiedBasicBlock(BaseModule):
     """Simplified version of original basic residual block. This is used in
     `SCNet <https://arxiv.org/abs/2012.10150>`_.
 
@@ -122,8 +123,9 @@ class SimplifiedBasicBlock(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 plugins=None):
-        super(SimplifiedBasicBlock, self).__init__()
+                 plugins=None,
+                 init_fg=None):
+        super(SimplifiedBasicBlock, self).__init__(init_fg)
         assert dcn is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
         assert not with_cp, 'Not implemented yet.'

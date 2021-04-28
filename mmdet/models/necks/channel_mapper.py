@@ -1,11 +1,12 @@
 import torch.nn as nn
-from mmcv.cnn import ConvModule, xavier_init
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class ChannelMapper(nn.Module):
+class ChannelMapper(BaseModule):
     r"""Channel Mapper to reduce/increase channels of backbone features.
 
     This is used to reduce/increase channels of backbone features.
@@ -24,6 +25,7 @@ class ChannelMapper(nn.Module):
         num_outs (int, optional): Number of output feature maps. There
             would be extra_convs when num_outs larger than the lenghth
             of in_channels.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     Example:
         >>> import torch
         >>> in_channels = [2, 3, 5, 7]
@@ -47,8 +49,10 @@ class ChannelMapper(nn.Module):
                  conv_cfg=None,
                  norm_cfg=None,
                  act_cfg=dict(type='ReLU'),
-                 num_outs=None):
-        super(ChannelMapper, self).__init__()
+                 num_outs=None,
+                 init_cfg=dict(
+                     type='Xavier', layer='Conv2d', distribution='uniform')):
+        super(ChannelMapper, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.extra_convs = None
         if num_outs is None:
@@ -81,13 +85,6 @@ class ChannelMapper(nn.Module):
                         conv_cfg=conv_cfg,
                         norm_cfg=norm_cfg,
                         act_cfg=act_cfg))
-
-    # default init_weights for conv(msra) and norm in ConvModule
-    def init_weights(self):
-        """Initialize the weights of ChannelMapper module."""
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
 
     def forward(self, inputs):
         """Forward function."""

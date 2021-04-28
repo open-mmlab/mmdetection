@@ -1,15 +1,15 @@
+import warnings
+
 import torch.nn as nn
-from mmcv.cnn import constant_init, kaiming_init
-from mmcv.runner import auto_fp16, load_checkpoint
+from mmcv.runner import BaseModule, auto_fp16
 
 from mmdet.models.backbones import ResNet
 from mmdet.models.builder import SHARED_HEADS
 from mmdet.models.utils import ResLayer as _ResLayer
-from mmdet.utils import get_root_logger
 
 
 @SHARED_HEADS.register_module()
-class ResLayer(nn.Module):
+class ResLayer(BaseModule):
 
     def __init__(self,
                  depth,
@@ -20,8 +20,11 @@ class ResLayer(nn.Module):
                  norm_cfg=dict(type='BN', requires_grad=True),
                  norm_eval=True,
                  with_cp=False,
-                 dcn=None):
-        super(ResLayer, self).__init__()
+                 dcn=None,
+                 pretrained=None,
+                 init_cfg=None):
+        super(ResLayer, self).__init__(init_cfg)
+
         self.norm_eval = norm_eval
         self.norm_cfg = norm_cfg
         self.stage = stage
@@ -44,22 +47,21 @@ class ResLayer(nn.Module):
             dcn=dcn)
         self.add_module(f'layer{stage + 1}', res_layer)
 
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in the module.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
         if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
+            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+                          'please use "init_cfg" instead')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
         elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, nn.BatchNorm2d):
-                    constant_init(m, 1)
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(
+                        type='Constant',
+                        val=1,
+                        layer=['_BatchNorm', 'GroupNorm'])
+                ]
         else:
             raise TypeError('pretrained must be a str or None')
 
