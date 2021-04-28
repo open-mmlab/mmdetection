@@ -653,7 +653,7 @@ class PAAHead(ATSSHead):
 
         det_bboxes_voted = torch.stack(det_bboxes_voted)
         det_labels_voted = det_labels.new_tensor(det_labels_voted)
-        det_scores_voted = torch.cat(det_scores_voted)
+        det_scores_voted = torch.stack(det_scores_voted)
 
         r_results = after_process_results.new_results()
         r_results.bboxes = det_bboxes_voted
