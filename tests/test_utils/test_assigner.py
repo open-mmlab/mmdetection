@@ -8,7 +8,8 @@ import torch
 
 from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
                                        CenterRegionAssigner, HungarianAssigner,
-                                       MaxIoUAssigner, PointAssigner)
+                                       MaxIoUAssigner, PointAssigner,
+                                       UniformAssigner)
 
 
 def test_max_iou_assigner():
@@ -422,3 +423,75 @@ def test_hungarian_match_assigner():
     assert torch.all(assign_result.gt_inds > -1)
     assert (assign_result.gt_inds > 0).sum() == gt_bboxes.size(0)
     assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)
+
+
+def test_uniform_assigner():
+    self = UniformAssigner(0.15, 0.7, 1)
+    pred_bbox = torch.FloatTensor([
+        [1, 1, 12, 8],
+        [4, 4, 20, 20],
+        [1, 5, 15, 15],
+        [30, 5, 32, 42],
+    ])
+    anchor = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ])
+    gt_labels = torch.LongTensor([2, 3])
+    assign_result = self.assign(
+        pred_bbox, anchor, gt_bboxes, gt_labels=gt_labels)
+    assert len(assign_result.gt_inds) == 4
+    assert len(assign_result.labels) == 4
+
+    expected_gt_inds = torch.LongTensor([-1, 0, 2, 0])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
+
+
+def test_uniform_assigner_with_empty_gt():
+    """Test corner case where an image might have no true detections."""
+    self = UniformAssigner(0.15, 0.7, 1)
+    pred_bbox = torch.FloatTensor([
+        [1, 1, 12, 8],
+        [4, 4, 20, 20],
+        [1, 5, 15, 15],
+        [30, 5, 32, 42],
+    ])
+    anchor = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_bboxes = torch.empty(0, 4)
+    assign_result = self.assign(pred_bbox, anchor, gt_bboxes)
+
+    expected_gt_inds = torch.LongTensor([0, 0, 0, 0])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
+
+
+def test_uniform_assigner_with_empty_boxes():
+    """Test corner case where a network might predict no boxes."""
+    self = UniformAssigner(0.15, 0.7, 1)
+    pred_bbox = torch.empty((0, 4))
+    anchor = torch.empty((0, 4))
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ])
+    gt_labels = torch.LongTensor([2, 3])
+
+    # Test with gt_labels
+    assign_result = self.assign(
+        pred_bbox, anchor, gt_bboxes, gt_labels=gt_labels)
+    assert len(assign_result.gt_inds) == 0
+    assert tuple(assign_result.labels.shape) == (0, )
+
+    # Test without gt_labels
+    assign_result = self.assign(pred_bbox, anchor, gt_bboxes, gt_labels=None)
+    assert len(assign_result.gt_inds) == 0
