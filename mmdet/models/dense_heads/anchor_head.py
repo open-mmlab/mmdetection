@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 from mmcv.runner import force_fp32
+from py._log import warning
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
@@ -68,6 +69,26 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.num_classes = num_classes
         self.feat_channels = feat_channels
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
+
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
+        if self.test_cfg:
+            if self.test_cfg.get('score_thr', None):
+                warning.warn('The way to specify the score_thr has been'
+                             'changed. Please specify it in '
+                             'PreNMS in bbox_post_processes ')
+            if self.test_cfg.get('nms', None):
+                warning.warn(
+                    'The way to specify the type of mms and corresponding '
+                    'iou_threshold has been'
+                    'changed. Please specify it in '
+                    ' bbox_post_processes ')
+            if self.test_cfg.get('max_per_img', None):
+                warning.warn('The way to specify the max number of '
+                             'bboxes after nms '
+                             'has been changed. Please specify'
+                             'it in bbox_post_processes ')
+
         self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
 
         # TODO better way to determine whether sample or not
@@ -86,8 +107,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
+
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
             # use PseudoSampler when sampling is False

@@ -2,8 +2,9 @@ import numpy as np
 import torch
 from mmcv.runner import force_fp32
 
-from mmdet.core import multi_apply, multiclass_nms
+from mmdet.core import multi_apply
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
+from mmdet.core.results.results import InstanceResults
 from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead
 
@@ -516,16 +517,8 @@ class PAAHead(ATSSHead):
             label_channels=1,
             unmap_outputs=True)
 
-    def _get_bboxes(self,
-                    cls_scores,
-                    bbox_preds,
-                    iou_preds,
-                    mlvl_anchors,
-                    img_shapes,
-                    scale_factors,
-                    cfg,
-                    rescale=False,
-                    with_nms=True):
+    def _get_bboxes(self, cls_scores, bbox_preds, iou_preds, mlvl_anchors,
+                    img_metas, cfg):
         """Transform outputs for a single batch item into labeled boxes.
 
         This method is almost same as `ATSSHead._get_bboxes()`.
@@ -533,10 +526,10 @@ class PAAHead(ATSSHead):
         cls_scores. Besides, score voting is used when `` score_voting``
         is set to True.
         """
-        assert with_nms, 'PAA only supports "with_nms=True" now'
+
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         batch_size = cls_scores[0].shape[0]
-
+        img_shapes = [img_meta['img_shape'] for img_meta in img_metas]
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_iou_preds = []
@@ -571,9 +564,6 @@ class PAAHead(ATSSHead):
             mlvl_iou_preds.append(iou_preds)
 
         batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
-        if rescale:
-            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
-                scale_factors).unsqueeze(1)
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
         # Add a dummy background class to the backend when using sigmoid
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
@@ -585,67 +575,63 @@ class PAAHead(ATSSHead):
         batch_mlvl_nms_scores = (batch_mlvl_scores *
                                  batch_mlvl_iou_preds[..., None]).sqrt()
 
-        det_results = []
-        for (mlvl_bboxes, mlvl_scores) in zip(batch_mlvl_bboxes,
-                                              batch_mlvl_nms_scores):
-            det_bbox, det_label = multiclass_nms(
-                mlvl_bboxes,
-                mlvl_scores,
-                cfg.score_thr,
-                cfg.nms,
-                cfg.max_per_img,
-                score_factors=None)
-            if self.with_score_voting and len(det_bbox) > 0:
-                det_bbox, det_label = self.score_voting(
-                    det_bbox, det_label, mlvl_bboxes, mlvl_scores,
-                    cfg.score_thr)
-            det_results.append(tuple([det_bbox, det_label]))
+        results_list = []
+        for img_ids in range(len(batch_mlvl_scores)):
+            results = InstanceResults(img_metas[img_ids])
+            results.bboxes = batch_mlvl_bboxes[img_ids]
+            results.scores = batch_mlvl_nms_scores[img_ids]
+            results_list.append(results)
 
-        return det_results
+        r_results_list = self.bbox_post_processes(results_list)
 
-    def score_voting(self, det_bboxes, det_labels, mlvl_bboxes,
-                     mlvl_nms_scores, score_thr):
+        if self.with_score_voting:
+            voting_results_list = []
+            for (after_process_results,
+                 pre_process_results) in zip(r_results_list, results_list):
+                operation = self.bbox_post_processes.get('ResizeResultsToOri')
+                if operation:
+                    pre_process_results = operation([pre_process_results])[0]
+                voting_results_list.append(
+                    self.score_voting(after_process_results,
+                                      pre_process_results))
+            r_results_list = voting_results_list
+
+        return r_results_list
+
+    def score_voting(self,
+                     after_process_results,
+                     pre_process_results,
+                     score_thr=0.05):
         """Implementation of score voting method works on each remaining boxes
         after NMS procedure.
 
         Args:
-            det_bboxes (Tensor): Remaining boxes after NMS procedure,
-                with shape (k, 5), each dimension means
-                (x1, y1, x2, y2, score).
-            det_labels (Tensor): The label of remaining boxes, with shape
-                (k, 1),Labels are 0-based.
-            mlvl_bboxes (Tensor): All boxes before the NMS procedure,
-                with shape (num_anchors,4).
-            mlvl_nms_scores (Tensor): The scores of all boxes which is used
-                in the NMS procedure, with shape (num_anchors, num_class)
-            mlvl_iou_preds (Tensor): The predictions of IOU of all boxes
-                before the NMS procedure, with shape (num_anchors, 1)
-            score_thr (float): The score threshold of bboxes.
-
+            after_process_results (obj:`InstanceResults`):
+                Results after postprocess.
+            pre_process_results (obj:`InstanceResults`):
+                Results before postprocess.
         Returns:
-            tuple: Usually returns a tuple containing voting results.
-
-                - det_bboxes_voted (Tensor): Remaining boxes after
-                    score voting procedure, with shape (k, 5), each
-                    dimension means (x1, y1, x2, y2, score).
-                - det_labels_voted (Tensor): Label of remaining bboxes
-                    after voting, with shape (num_anchors,).
+            obj:`InstanceResults`: results after the score voting.
         """
-        candidate_mask = mlvl_nms_scores > score_thr
+        candidate_mask = pre_process_results.scores > score_thr
         candidate_mask_nonzeros = candidate_mask.nonzero()
         candidate_inds = candidate_mask_nonzeros[:, 0]
         candidate_labels = candidate_mask_nonzeros[:, 1]
-        candidate_bboxes = mlvl_bboxes[candidate_inds]
-        candidate_scores = mlvl_nms_scores[candidate_mask]
+        candidate_bboxes = pre_process_results.bboxes[candidate_inds]
+        candidate_scores = pre_process_results.scores[candidate_mask]
         det_bboxes_voted = []
         det_labels_voted = []
+        det_scores_voted = []
         for cls in range(self.cls_out_channels):
             candidate_cls_mask = candidate_labels == cls
             if not candidate_cls_mask.any():
                 continue
+            det_bboxes = after_process_results.bboxes
+            det_labels = after_process_results.labels
             candidate_cls_scores = candidate_scores[candidate_cls_mask]
             candidate_cls_bboxes = candidate_bboxes[candidate_cls_mask]
             det_cls_mask = det_labels == cls
+
             det_cls_bboxes = det_bboxes[det_cls_mask].view(
                 -1, det_bboxes.size(-1))
             det_candidate_ious = bbox_overlaps(det_cls_bboxes[:, :4],
@@ -661,11 +647,17 @@ class PAAHead(ATSSHead):
                 voted_box = torch.sum(
                     pis * pos_bboxes, dim=0) / torch.sum(
                         pis, dim=0)
-                voted_score = det_cls_bboxes[det_ind][-1:][None, :]
-                det_bboxes_voted.append(
-                    torch.cat((voted_box[None, :], voted_score), dim=1))
+                voted_score = det_cls_bboxes[det_ind][-1:]
+                det_bboxes_voted.append(voted_box)
+                det_scores_voted.append(voted_score)
                 det_labels_voted.append(cls)
 
-        det_bboxes_voted = torch.cat(det_bboxes_voted, dim=0)
+        det_bboxes_voted = torch.stack(det_scores_voted)
         det_labels_voted = det_labels.new_tensor(det_labels_voted)
-        return det_bboxes_voted, det_labels_voted
+        det_scores_voted = torch.cat(det_scores_voted)
+
+        r_results = after_process_results.new_results()
+        r_results.bboxes = det_bboxes_voted
+        r_results.scores = det_scores_voted
+        r_results.labels = det_labels_voted
+        return r_results

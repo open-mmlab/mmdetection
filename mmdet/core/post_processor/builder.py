@@ -1,4 +1,5 @@
 import collections
+import copy
 
 from mmcv.utils import Registry, build_from_cfg
 
@@ -43,6 +44,37 @@ class ComposePostProcess(object):
             if results is None:
                 return None
         return results
+
+    def get(self, operation_name):
+        """Get a specific operation from post_process.
+
+        Args:
+            operation_name (str): The name of operation
+                you want.
+        Returns:
+            obj: post_process operation. If the post
+                process does not contain the operation,
+                None would be returned.
+        """
+        for p in self.post_processes:
+            if p.__class__.__name__ is operation_name:
+                return copy.deepcopy(p)
+        return None
+
+    def __contains__(self, operation_name):
+        """Check whether a operation is in post_process.
+
+        Args:
+            operation_name (str): The name of operation
+                you want to check.
+        Returns:
+            bool: Whether the operation is in the post
+                process.
+        """
+        for p in self.post_processes:
+            if p.__class__.__name__ is operation_name:
+                return True
+        return False
 
     def __repr__(self):
         format_string = self.__class__.__name__ + '('
