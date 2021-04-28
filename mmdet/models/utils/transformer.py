@@ -415,29 +415,29 @@ class DeformableDetrTransformer(Transformer):
                     (bs, num_keys, 4).
         """
 
-        N_, S_, C_ = memory.shape
+        N, S, C = memory.shape
         proposals = []
         _cur = 0
-        for lvl, (H_, W_) in enumerate(spatial_shapes):
-            mask_flatten_ = memory_padding_mask[:, _cur:(_cur + H_ * W_)].view(
-                N_, H_, W_, 1)
+        for lvl, (H, W) in enumerate(spatial_shapes):
+            mask_flatten_ = memory_padding_mask[:, _cur:(_cur + H * W)].view(
+                N, H, W, 1)
             valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1)
             valid_W = torch.sum(~mask_flatten_[:, 0, :, 0], 1)
 
             grid_y, grid_x = torch.meshgrid(
                 torch.linspace(
-                    0, H_ - 1, H_, dtype=torch.float32, device=memory.device),
+                    0, H - 1, H, dtype=torch.float32, device=memory.device),
                 torch.linspace(
-                    0, W_ - 1, W_, dtype=torch.float32, device=memory.device))
+                    0, W - 1, W, dtype=torch.float32, device=memory.device))
             grid = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
 
             scale = torch.cat([valid_W.unsqueeze(-1),
-                               valid_H.unsqueeze(-1)], 1).view(N_, 1, 1, 2)
-            grid = (grid.unsqueeze(0).expand(N_, -1, -1, -1) + 0.5) / scale
+                               valid_H.unsqueeze(-1)], 1).view(N, 1, 1, 2)
+            grid = (grid.unsqueeze(0).expand(N, -1, -1, -1) + 0.5) / scale
             wh = torch.ones_like(grid) * 0.05 * (2.0**lvl)
-            proposal = torch.cat((grid, wh), -1).view(N_, -1, 4)
+            proposal = torch.cat((grid, wh), -1).view(N, -1, 4)
             proposals.append(proposal)
-            _cur += (H_ * W_)
+            _cur += (H * W)
         output_proposals = torch.cat(proposals, 1)
         output_proposals_valid = ((output_proposals > 0.01) &
                                   (output_proposals < 0.99)).all(
@@ -474,17 +474,17 @@ class DeformableDetrTransformer(Transformer):
                 shape (bs, num_keys, num_levels, 2).
         """
         reference_points_list = []
-        for lvl, (H_, W_) in enumerate(spatial_shapes):
+        for lvl, (H, W) in enumerate(spatial_shapes):
             #  TODO  check this 0.5
             ref_y, ref_x = torch.meshgrid(
                 torch.linspace(
-                    0.5, H_ - 0.5, H_, dtype=torch.float32, device=device),
+                    0.5, H - 0.5, H, dtype=torch.float32, device=device),
                 torch.linspace(
-                    0.5, W_ - 0.5, W_, dtype=torch.float32, device=device))
+                    0.5, W - 0.5, W, dtype=torch.float32, device=device))
             ref_y = ref_y.reshape(-1)[None] / (
-                valid_ratios[:, None, lvl, 1] * H_)
+                valid_ratios[:, None, lvl, 1] * H)
             ref_x = ref_x.reshape(-1)[None] / (
-                valid_ratios[:, None, lvl, 0] * W_)
+                valid_ratios[:, None, lvl, 0] * W)
             ref = torch.stack((ref_x, ref_y), -1)
             reference_points_list.append(ref)
         reference_points = torch.cat(reference_points_list, 1)
