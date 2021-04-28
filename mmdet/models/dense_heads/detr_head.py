@@ -27,7 +27,9 @@ class DETRHead(AnchorFreeHead):
         num_reg_fcs (int, optional): Number of fully-connected layers used in
             `FFN`, which is then used for the regression head. Default 2.
         transformer (obj:`mmcv.ConfigDict`|dict): Config for transformer.
-            Default: None
+            Default: None.
+        sync_cls_avg_factor (bool): Whether to sync the avg_factor of
+            all ranks. Default to False.
         positional_encoding (obj:`mmcv.ConfigDict`|dict):
             Config for position encoding.
         loss_cls (obj:`mmcv.ConfigDict`|dict): Config of the
@@ -50,6 +52,7 @@ class DETRHead(AnchorFreeHead):
                  num_query=100,
                  num_reg_fcs=2,
                  transformer=None,
+                 sync_cls_avg_factor=False,
                  positional_encoding=dict(
                      type='SinePositionalEncoding',
                      num_feats=128,
@@ -76,6 +79,7 @@ class DETRHead(AnchorFreeHead):
         # `AnchorFreeHead` is called.
         super(AnchorFreeHead, self).__init__()
         self.bg_cls_weight = 0
+        self.sync_cls_avg_factor = sync_cls_avg_factor
         class_weight = loss_cls.get('class_weight', None)
         if class_weight is not None and (self.__class__ is DETRHead):
             assert isinstance(class_weight, float), 'Expected ' \
@@ -368,8 +372,7 @@ class DETRHead(AnchorFreeHead):
         # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
             num_total_neg * self.bg_cls_weight
-        if self.__class__ is not DETRHead:
-            # DETRHead does not reduce the cls_avg_factor
+        if self.sync_cls_avg_factor:
             cls_avg_factor = reduce_mean(
                 cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)

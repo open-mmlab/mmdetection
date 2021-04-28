@@ -26,6 +26,7 @@ model = dict(
         num_query=300,
         num_classes=80,
         in_channels=2048,
+        sync_cls_avg_factor=True,
         as_two_stage=False,
         transformer=dict(
             type='DeformableDetrTransformer',

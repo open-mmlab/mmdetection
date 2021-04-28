@@ -27,4 +27,5 @@ url={https://openreview.net/forum?id=gZ9hCDWe6ke}
 
 # NOTE
 
-1. The performance is unstable. `Deformable DETR` and `iterative bounding box refinement` may fluctuate about 0.3 mAP. `two-stage Deformable DETR` fluctuate about 0.2 mAP.
+1. All models are trained with batch size 32.
+2. The performance is unstable. `Deformable DETR` and `iterative bounding box refinement` may fluctuate about 0.3 mAP. `two-stage Deformable DETR` fluctuate about 0.2 mAP.
