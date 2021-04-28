@@ -24,3 +24,7 @@ url={https://openreview.net/forum?id=gZ9hCDWe6ke}
 | R-50 | Deformable DETR  |50e  | 44.5 | [config]() | [model]() &#124; [log]() |
 | R-50 | + iterative bounding box refinement  |50e  | 46.1 | [config]() | [model]() &#124; [log]() |
 | R-50 | ++ two-stage Deformable DETR  |50e  | 46.8 | [config]() | [model]() &#124; [log]() |
+
+# NOTE
+
+1. The performance is unstable. `Deformable DETR` and `iterative bounding box refinement` may fluctuate about 0.3 mAP. `two-stage Deformable DETR` fluctuate about 0.2 mAP.
