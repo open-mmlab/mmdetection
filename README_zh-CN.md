@@ -109,8 +109,11 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 - [x] [CentripetalNet (CVPR'2020)](configs/centripetalnet/README.md)
 - [x] [VFNet (ArXix'2020)](configs/vfnet/README.md)
 - [x] [DETR (ECCV'2020)](configs/detr/README.md)
+- [x] [Deformable DETR (ICLR'2021)](configs/deformable_detr/README.md)
 - [x] [CascadeRPN (NeurIPS'2019)](configs/cascade_rpn/README.md)
 - [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
+- [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
+- [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
 
 我们在[基于 MMDetection 的项目](./docs/projects.md)中列举了一些其他的支持的算法。
 
