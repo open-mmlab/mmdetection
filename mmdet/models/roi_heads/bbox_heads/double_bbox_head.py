@@ -1,12 +1,13 @@
 import torch.nn as nn
-from mmcv.cnn import ConvModule, normal_init, xavier_init
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.models.backbones.resnet import Bottleneck
 from mmdet.models.builder import HEADS
 from .bbox_head import BBoxHead
 
 
-class BasicResBlock(nn.Module):
+class BasicResBlock(BaseModule):
     """Basic residual block.
 
     This block is a little different from the block in the ResNet backbone.
@@ -17,14 +18,17 @@ class BasicResBlock(nn.Module):
         out_channels (int): Channels of the output feature map.
         conv_cfg (dict): The config dict for convolution layers.
         norm_cfg (dict): The config dict for normalization layers.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
                  in_channels,
                  out_channels,
                  conv_cfg=None,
-                 norm_cfg=dict(type='BN')):
-        super(BasicResBlock, self).__init__()
+                 norm_cfg=dict(type='BN'),
+                 init_cfg=None):
+        super(BasicResBlock, self).__init__(init_cfg)
 
         # main path
         self.conv1 = ConvModule(
@@ -90,9 +94,19 @@ class DoubleConvFCBBoxHead(BBoxHead):
                  fc_out_channels=1024,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
+                 init_cfg=dict(
+                     type='Normal',
+                     override=[
+                         dict(type='Normal', name='fc_cls', std=0.01),
+                         dict(type='Normal', name='fc_reg', std=0.001),
+                         dict(
+                             type='Xavier',
+                             name='fc_branch',
+                             distribution='uniform')
+                     ]),
                  **kwargs):
         kwargs.setdefault('with_avg_pool', True)
-        super(DoubleConvFCBBoxHead, self).__init__(**kwargs)
+        super(DoubleConvFCBBoxHead, self).__init__(init_cfg=init_cfg, **kwargs)
         assert self.with_avg_pool
         assert num_convs > 0
         assert num_fcs > 0
@@ -120,7 +134,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
 
     def _add_conv_branch(self):
         """Add the fc branch which consists of a sequential of conv layers."""
-        branch_convs = nn.ModuleList()
+        branch_convs = ModuleList()
         for i in range(self.num_convs):
             branch_convs.append(
                 Bottleneck(
@@ -132,22 +146,13 @@ class DoubleConvFCBBoxHead(BBoxHead):
 
     def _add_fc_branch(self):
         """Add the fc branch which consists of a sequential of fc layers."""
-        branch_fcs = nn.ModuleList()
+        branch_fcs = ModuleList()
         for i in range(self.num_fcs):
             fc_in_channels = (
                 self.in_channels *
                 self.roi_feat_area if i == 0 else self.fc_out_channels)
             branch_fcs.append(nn.Linear(fc_in_channels, self.fc_out_channels))
         return branch_fcs
-
-    def init_weights(self):
-        # conv layers are already initialized by ConvModule
-        normal_init(self.fc_cls, std=0.01)
-        normal_init(self.fc_reg, std=0.001)
-
-        for m in self.fc_branch.modules():
-            if isinstance(m, nn.Linear):
-                xavier_init(m, distribution='uniform')
 
     def forward(self, x_cls, x_reg):
         # conv head
