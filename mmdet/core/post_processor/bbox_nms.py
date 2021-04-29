@@ -121,7 +121,8 @@ class NaiveNMS(object):
                     max_coordinate + torch.tensor(1).to(bboxes))
                 boxes_for_nms = bboxes + offsets[:, None]
 
-            if boxes_for_nms.shape[0] < self.split_thr:
+            if boxes_for_nms.shape[0] < self.split_thr or \
+                    torch.onnx.is_in_onnx_export():
                 dets, keep_ids = nms(
                     boxes_for_nms,
                     scores,
