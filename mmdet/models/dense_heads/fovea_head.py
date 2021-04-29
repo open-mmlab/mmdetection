@@ -332,6 +332,6 @@ class FoveaHead(AnchorFreeHead):
         results.bboxes = det_bboxes
         results.scores = det_scores
 
-        r_results = self.bbox_post_processes(results)[0]
+        r_results = self.bbox_post_processes([results])[0]
 
         return r_results
