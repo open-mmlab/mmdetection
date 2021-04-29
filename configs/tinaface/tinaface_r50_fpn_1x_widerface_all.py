@@ -45,7 +45,7 @@ model = dict(
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[0.0, 0.0, 0.0, 0.0],
-            target_stds=[0.1, 0.1, 0.2, 0.2]),
+            target_stds=[0.1, 0.1, 0.1, 0.1]),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -65,9 +65,9 @@ model = dict(
         pos_weight=-1,
         debug=False),
     test_cfg=dict(
-        alpha=0.4,
-        height_th=9,
-        nms_pre=-1,
+        #alpha=0.4,
+        #height_th=9,
+        #nms_pre=-1,
         min_bbox_size=0,
         score_thr=0.01,
         nms=dict(type='nms', iou_threshold=0.45),
@@ -75,47 +75,6 @@ model = dict(
 dataset_type = 'WIDERFaceDataset'
 data_root = 'data/WIDERFace/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
-train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='RandomSquareCrop', crop_choice=[0.3, 0.45, 0.6, 0.8, 1.0]),
-    dict(
-        type='PhotoMetricDistortion',
-        brightness_delta=32,
-        contrast_range=(0.5, 1.5),
-        saturation_range=(0.5, 1.5),
-        hue_delta=18),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Resize', img_scale=(640, 640), keep_ratio=False),
-    dict(
-        type='Normalize',
-        mean=[123.675, 116.28, 103.53],
-        std=[1, 1, 1],
-        to_rgb=True),
-    dict(type='DefaultFormatBundle'),
-    dict(
-        type='Collect',
-        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_bboxes_ignore'])
-]
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1100, 1650),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip', flip_ratio=0.0),
-            dict(
-                type='Normalize',
-                mean=[123.675, 116.28, 103.53],
-                std=[1, 1, 1],
-                to_rgb=True),
-            dict(type='Pad', size_divisor=32, pad_val=0),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img'])
-        ])
-]
 '''
 data = dict(
     samples_per_gpu=4,
@@ -212,8 +171,8 @@ data = dict(
             dict(type='LoadImageFromFile', to_float32=True),
             dict(type='LoadAnnotations', with_bbox=True),
             dict(
-                type='RandomSquareCrop',
-                crop_choice=[0.3, 0.45, 0.6, 0.8, 1.0]),
+                type='MinIoURandomCrop',
+                min_ious=[0.3, 0.45, 0.6, 0.8, 1.0]),
             dict(
                 type='PhotoMetricDistortion',
                 brightness_delta=32,

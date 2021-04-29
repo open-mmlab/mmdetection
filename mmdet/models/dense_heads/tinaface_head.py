@@ -439,7 +439,7 @@ class TinaFaceHead(AnchorHead):
             bbox_weights,
             avg_factor=num_total_samples)
 
-        if len(pos_inds) > 0:  # 新加
+        if len(pos_inds) > 0:
             # dx, dy, dw, dh
             pos_bbox_targets = bbox_targets[pos_inds]
             # tx, ty, tw, th
@@ -467,7 +467,7 @@ class TinaFaceHead(AnchorHead):
         loss_iou = self.loss_iou(
             iou_pred, iou_targets, iou_weights, avg_factor=num_total_samples)
 
-        return loss_cls, loss_bbox, loss_iou  # 区别
+        return loss_cls, loss_bbox, loss_iou
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
     def loss(self,
