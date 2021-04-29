@@ -47,14 +47,13 @@ from mmcv.parallel import MMDataParallel
 from mmcv.utils import Config
 from mmcv.runner import save_checkpoint
 
-from tasks.mmdetection_tasks.detection import MMDetectionParameters
-from tasks.mmdetection_tasks.config import MMDetectionConfigManager, MMDetectionTaskType
+from .configurable_parameters import MMDetectionParameters
+from ..config import MMDetectionConfigManager, MMDetectionTaskType
 
 # The following imports are needed to register the custom datasets and hooks for NOUS as modules in the
 # mmdetection framework. They are not used directly in this file, but they have to be here for the registration to work
-from tasks.mmdetection_tasks.datasets import NOUSDataset
-from tasks.mmdetection_tasks.utils import CancelTrainingHook, FixedMomentumUpdaterHook, LoadImageFromNOUSDataset, \
-    EpochRunnerWithCancel, LoadAnnotationFromNOUSDataset
+import ...extension
+
 
 logger = logger_factory.get_logger("MMDetectionTask")
 
@@ -113,7 +112,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         self.load_model(self.task_environment)
 
     @staticmethod
-    def create_model(config: Config, from_scratch: bool = False):
+    def _create_model(config: Config, from_scratch: bool = False):
         """
         Creates a model, based on the configuration in config
 
@@ -124,13 +123,14 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         model_cfg = copy.deepcopy(config.model)
         if from_scratch:
+            # TODO. This does not always hold true as long as we have pytorchcv-based backbones with ad-hoc weights specification.
             model_cfg.pretrained = None
         return build_detector(model_cfg)
 
     def analyse(self, dataset: Dataset, analyse_parameters: Optional[AnalyseParameters] = None) -> Dataset:
         """ Analyzes a dataset using the latest inference model. """
         is_evaluation = analyse_parameters is not None and analyse_parameters.is_evaluation
-        confidence_threshold, nms_threshold, cross_class_nms = self.get_confidence_and_nms_thresholds(is_evaluation)
+        confidence_threshold, nms_threshold, cross_class_nms = self._get_confidence_and_nms_thresholds(is_evaluation)
 
         batch_size = self.config_manager.config.data.samples_per_gpu
 
@@ -150,19 +150,20 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             #   documentation for details: https://pymongo.readthedocs.io/en/stable/faq.html#is-pymongo-fork-safe
             #   Link to JIRA ticket:
             #   https://cosmonio.atlassian.net/browse/NI-660?atlOrigin=eyJpIjoiOGJmZjE4M2FmMjY1NDBmY2E0Yzk0N2NiYzk4ZTc5NjIiLCJwIjoiaiJ9
+            # FIXME. Why the dataset is always copied and re-created?
             self.inference_model.cfg.data.test.nous_dataset = dataset
             mm_test_dataset = build_dataset(copy.deepcopy(self.inference_model.cfg.data.test))
             # Use a single gpu for testing. Set in both mm_test_dataloader and prediction_model
             mm_test_dataloader = build_dataloader(mm_test_dataset, samples_per_gpu=batch_size, num_gpus=1, dist=False,
                                                   workers_per_gpu=self.config_manager.config.data.workers_per_gpu,
                                                   shuffle=False)
+            # TODO. Support multi-gpu distributed setup.
             prediction_model = MMDataParallel(self.inference_model.cuda(self.config_manager.config.gpu_ids[0]),
                                               device_ids=self.config_manager.config.gpu_ids)
             prediction_results = single_gpu_test(prediction_model, mm_test_dataloader, show=False)
 
         # Loop over dataset again to assign predictions. Convert from MMdetection format to NOUS format
-        for ii, dataset_item in enumerate(dataset):
-            output = prediction_results[ii]
+        for dataset_item, output in zip(dataset, prediction_results):
             width = dataset_item.width
             height = dataset_item.height
 
@@ -185,6 +186,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                                       y2=float(detections[i, 3])/height,
                                       labels=assigned_label))
 
+            # FIXME. What is it done for?
             if nms_threshold < 1.0:
                 nms_filter = get_nms_filter(shapes, nms_threshold, cross_class_nms)
                 shapes = list(compress(shapes, nms_filter))
@@ -212,7 +214,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             model_data_bytes = io.BytesIO(model.data)
             model_data = torch.load(model_data_bytes)
             model_config = self.config_manager.config_from_string(model_data['config'])
-            torch_model = self.create_model(config=model_config, from_scratch=True)
+            torch_model = self._create_model(config=model_config, from_scratch=True)
 
             try:
                 torch_model.load_state_dict(model_data['state_dict'])
@@ -223,28 +225,31 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                     from ex
 
             self.inference_model = torch_model
+            # FIXME. Not a reliable condition. Model might be changed in many different ways.
             if model_config.model.type == self.config_manager.config.model.type:
                 # If the model architecture hasn't changed in the configurable parameters, train model builds upon
                 # the loaded inference model weights and we can just copy the inference model to train_model
                 self.train_model = copy.deepcopy(self.inference_model)
             else:
                 # If the model architecture has changed, then we start training a model with the desired architecture
-                self.train_model = self.create_model(config=self.config_manager.config, from_scratch=False)
+                self.train_model = self._create_model(config=self.config_manager.config, from_scratch=False)
                 logger.info(f"Model architecture has changed in configurable parameters. Initialized train model with "
                             f"{self.config_manager.config.model.type} architecture.")
         else:
             # If there is no trained model yet, create model with pretrained weights as defined in the model config
             # file. These are ImageNet pretrained
             model_config = self.config_manager.config_copy
-            torch_model = self.create_model(config=model_config, from_scratch=False)
+            torch_model = self._create_model(config=model_config, from_scratch=False)
             self.train_model = torch_model
             self.inference_model = copy.deepcopy(self.train_model)
             logger.info(f"No trained model in project yet. Created new model with {model_config.model.type} "
                         f"architecture and ImageNet pretrained weights.")
 
+        # FIXME. Why is this?
         # Set the model configs. Inference always uses the config that came with the model, while training uses the
         # latest config in the config_manager
         self.inference_model.cfg = model_config
+        # FIXME. What is config_copy?
         self.train_model.cfg = self.config_manager.config_copy
 
         self.inference_model.eval()
@@ -256,6 +261,8 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         :return train_round_checkpoint_dir: str, path to checkpoint dir
         """
         # Create new directory for checkpoints
+        # FIXME. This is somewhat out of context here. The task accepts the Dataset and TrainParameters and produce a model.
+        #   It's not responsible for storing or managing the artifacts.
         checkpoint_dirs = glob.glob(os.path.join(self.scratch_space, "checkpoints_round_*"))
         train_round_checkpoint_dir = os.path.join(self.scratch_space, f"checkpoints_round_{len(checkpoint_dirs)}")
         os.makedirs(train_round_checkpoint_dir)
@@ -276,10 +283,15 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         :return (old_train_model, train_from_scratch): old_train_model holds the old training model.
             train_from_scratch is True in case training from scratch, False otherwise
         """
+        # FIXME. OTE models have multiple initialization options:
+        #   1. Random init (from scratch),
+        #   2. ImageNet-pretrained backbone with random init of the remaining parts,
+        #   3. COCO-pretrained weights for the whole model, maybe except the final layers, that depend on the number of classes.
+        #   It should be supported by train_parameters in the first place.
         old_train_model = copy.deepcopy(self.train_model)
         if train_parameters is not None and train_parameters.train_on_empty_model:
             logger.info("Training from scratch, created new model")
-            self.train_model = self.create_model(config=self.config_manager.config, from_scratch=True)
+            self.train_model = self._create_model(config=self.config_manager.config, from_scratch=True)
             train_from_scratch = True
         else:
             train_from_scratch = False
@@ -379,7 +391,8 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         # First make sure train_model.cfg is up to date, then load state_dict and config to bytes in model_data
         self.train_model.cfg = self.config_manager.config_copy
-        model_data = self.get_model_bytes()
+        model_data = self._get_model_bytes()
+        # FIXME. What about the link to the previous model?
         model = Model(project=self.task_environment.project,
                       task_node=self.task_environment.task_node,
                       configuration=self.task_environment.get_model_configuration(),
@@ -395,6 +408,15 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
     def train(self, dataset: Dataset, train_parameters: Optional[TrainParameters] = None) -> Model:
         """ Trains a model on a dataset """
+
+        # FIXME. Looks like implementation is not intuitive here. This is what it does now:
+        # 1. Build the dataset in a proper format for training. (fine).
+        # 2. Overrides training model, if there is need to reset the weights and train from scratch. (fine).
+        # 3. Evaluates performance before training. (could be done at the upper level via analyze/performace interface).
+        # 4. Do training. (fine).
+        # 5. Evaluate the best obtained model and check if it improved. (see 3).
+        # 6. If model improved (over what?), replace it in task_environment. (this is a side-effect which, IMO, better be ommited here).
+
         # Configure datasets
         self.config_manager.update_dataset_subsets(dataset=dataset, model=None)
         # Dataset building modifies the config in place, so use a copy
@@ -440,7 +462,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                 logger.info("First training round, NOUS is saving the model.")
             # Add mAP metric and loss curves
             performance = Performance(score=ScoreMetric(value=best_score, name="mAP"),
-                                      dashboard_metrics=self.generate_training_metrics_group())
+                                      dashboard_metrics=self._generate_training_metrics_group())
             self._persist_new_model(dataset, performance, training_duration)
         else:
             logger.info("Model performance has not improved while training. No new model has been saved.")
@@ -542,7 +564,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         return f_measure_metrics.get_performance()
 
-    def generate_training_metrics_group(self) -> Optional[List[MetricsGroup]]:
+    def _generate_training_metrics_group(self) -> Optional[List[MetricsGroup]]:
         """
         Parses the mmdetection logs to get metrics from the latest training run
 
@@ -616,7 +638,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         return output
 
-    def get_model_bytes(self) -> bytes:
+    def _get_model_bytes(self) -> bytes:
         """
         Returns the data of the current model. We store both the state_dict and the configuration to make the model
         self-contained.
@@ -657,7 +679,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         if new_model_arch != previous_model_arch:
             self.load_model(task_environment)
 
-    def get_confidence_and_nms_thresholds(self, is_evaluation: bool) -> Tuple[float, float, bool]:
+    def _get_confidence_and_nms_thresholds(self, is_evaluation: bool) -> Tuple[float, float, bool]:
         """
         Retrieves the thresholds for confidence and non maximum suppression (nms) from the configurable parameters. If
         is_evaluation is True, the confidence threshold is set to 0 and nms threshold is set to 1, since in that case
@@ -684,7 +706,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         return confidence_threshold, nms_threshold, cross_class_nms
 
     @staticmethod
-    def is_docker():
+    def _is_docker():
         """
         Checks whether the task runs in docker container
 
@@ -700,8 +722,8 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         Unload the task
         """
-        self.delete_scratch_space()
-        if self.is_docker():
+        self._delete_scratch_space()
+        if self._is_docker():
             logger.warning(
                 "Got unload request. Unloading models. Throwing Segmentation Fault on purpose")
             import ctypes
@@ -716,10 +738,10 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         Create list of optimized models. Currently only OpenVINO models are supported.
         """
-        optimized_models = [self.generate_openvino_model()]
+        optimized_models = [self._generate_openvino_model()]
         return optimized_models
 
-    def prepare_trained_model_for_onnx_conversion(self, optimized_model_dir: str):
+    def _prepare_trained_model_for_onnx_conversion(self, optimized_model_dir: str):
         """
         Prepares the model for conversion to ONNX format. The conversion mechanism from mmdetection is file system based
         so it uses the model configuration and model checkpoint stored in the most recent temporary training directory.
@@ -768,7 +790,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         model, tensor_data = generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config)
         return model, tensor_data
 
-    def generate_openvino_model(self) -> OpenVINOModel:
+    def _generate_openvino_model(self) -> OpenVINOModel:
         """
         Convert the current model to OpenVINO with FP16 precision by first converting to ONNX and
         then converting the ONNX model to an OpenVINO IR model.
@@ -781,7 +803,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
             # Convert PyTorch model to ONNX
             onnxmodel_path = os.path.join(optimized_model_dir, 'inference_model.onnx')
-            model, tensor_data = self.prepare_trained_model_for_onnx_conversion(optimized_model_dir)
+            model, tensor_data = self._prepare_trained_model_for_onnx_conversion(optimized_model_dir)
             torch.onnx.export(model, args=tensor_data, f=onnxmodel_path, opset_version=11)
             logger.info("Model conversion to ONNX format was successful.")
 
@@ -798,7 +820,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                                            model=self.task_environment.model,
                                            precision=optimized_model_precision)
 
-    def delete_scratch_space(self):
+    def _delete_scratch_space(self):
         """
         Remove model checkpoints and mmdet logs
         """
