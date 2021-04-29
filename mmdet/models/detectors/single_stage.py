@@ -113,12 +113,12 @@ class SingleStageDetector(BaseDetector):
             # get shape as tensor
             img_shape = torch._shape_as_tensor(img)[2:]
             img_metas[0]['img_shape_for_onnx'] = img_shape
-            self.bbox_head.bbox_post
 
         results_list = self.bbox_head.get_bboxes(*outs, img_metas)
         # TODO check this @ningsheng
         if torch.onnx.is_in_onnx_export():
-            return results_list
+            return [(torch.cat([item.bboxes, item.scores[:, None]],
+                               dim=-1), item.labels) for item in results_list]
 
         return [results.export('bbox') for results in results_list]
 
