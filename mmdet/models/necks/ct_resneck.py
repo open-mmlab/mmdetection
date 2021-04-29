@@ -61,11 +61,7 @@ class CT_ResNeck(nn.Module):
     def init_weights(self, pretrained=False):
         """Initialize the weights of FPN module."""
         for m in self.modules():
-            if isinstance(m, (nn.ConvTranspose2d, nn.Conv2d)):
-                nn.init.normal_(m.weight, std=0.001)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, ModulatedDeformConv2dPack):
+            if isinstance(m, nn.ConvTranspose2d):
                 w = m.weight.data
                 f = math.ceil(w.size(2) / 2)
                 c = (2 * f - 1 - f % 2) / (2. * f)

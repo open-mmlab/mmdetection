@@ -58,18 +58,13 @@ class CenterHead(BaseDenseHead):
 
     def init_weights(self):
         """Initialize weights of the head."""
-        for m in self.center_head.modules():
-            if isinstance(m, nn.Conv2d):
-                normal_init(m, std=0.01)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
         self.center_head[-1].bias.data.fill_(-2.19)
         for m in self.offset_head.modules():
             if isinstance(m, nn.Conv2d):
-                normal_init(m, std=0.01)
+                normal_init(m, std=0.001)
         for m in self.wh_head.modules():
             if isinstance(m, nn.Conv2d):
-                normal_init(m, std=0.01)
+                normal_init(m, std=0.001)
 
     def build_head(self, in_channel, feat_channel, out_channel):
         """Build head for each branch."""

@@ -1,20 +1,23 @@
 _base_ = [
     '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
-optimizer = dict(type='Adam', lr=5e-4)
+#optimizer = dict(type='Adam', lr=5e-4)
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+
 optimizer_config = dict(grad_clip=None)
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=100,
-    warmup_ratio=1.,
+    warmup_iters=1000,
+    warmup_ratio=1.0 / 1000,
     step=[90, 120])
 total_epochs = 140
 
 model = dict(
     type='CenterNet',
     pretrained='torchvision://resnet18',
-    backbone=dict(type='ResNet', depth=18, norm_cfg=dict(type='BN')),
+    backbone=dict(
+        type='ResNet', depth=18, norm_eval=False, norm_cfg=dict(type='BN')),
     neck=dict(
         type='CT_ResNeck',
         in_channels=512,
@@ -29,10 +32,13 @@ model = dict(
         loss_wh=dict(type='L1Loss', loss_weight=0.1),
         loss_offset=dict(type='L1Loss', loss_weight=1.0)))
 
+# img_norm_cfg = dict(
+#     mean=[0.408 * 255, 0.447 * 255, 0.470 * 255],
+#     std=[0.289 * 255, 0.274 * 255, 0.278 * 255],
+#     to_rgb=False)
+
 img_norm_cfg = dict(
-    mean=[104.01362025, 114.03422265, 119.9165958],
-    std=[73.6027665, 69.89082075, 70.9150767],
-    to_rgb=False)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True, color_type='color'),
@@ -49,7 +55,7 @@ train_pipeline = [
         ratios=(0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3),
         mean=[0, 0, 0],
         std=[1, 1, 1],
-        to_rgb=False,
+        to_rgb=True,
         test_mode=False,
         test_pad_mode=None),
     dict(type='Resize', img_scale=(512, 512), keep_ratio=True),
@@ -74,7 +80,7 @@ test_pipeline = [
                 test_mode=True,
                 mean=[0, 0, 0],
                 std=[1, 1, 1],
-                to_rgb=False,
+                to_rgb=True,
                 test_pad_mode=['logical_or', 31],
                 test_pad_add_pix=1),
             dict(type='RandomFlip'),
@@ -88,7 +94,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=16,
     workers_per_gpu=8,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
@@ -98,3 +104,7 @@ test_cfg = dict(
     topK=100,
     nms_cfg=dict(type='soft_nms', iou_threshold=0.5),
     max_per_img=100)
+
+# log_config = dict(interval=1)
+# evaluation = dict(interval=10000, metric='bbox')
+# checkpoint_config = dict(interval=10000)
