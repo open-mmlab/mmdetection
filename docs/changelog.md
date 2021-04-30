@@ -1,5 +1,44 @@
 ## Changelog
 
+### v2.11. (01/5/2021)
+
+**Highlights**
+- Support new methods: [AutoAssign](https://arxiv.org/abs/2007.03496), [YOLOF](https://arxiv.org/abs/2103.09460), and [Deformable DETR](https://arxiv.org/abs/2010.04159)
+- Stable support of exporting models to ONNX with batched images and dynamic shape (#5039)
+
+**New Features**
+- Support paper [AutoAssign: Differentiable Label Assignment for Dense Object Detection](https://arxiv.org/abs/2007.03496) (#4295)
+- Support paper [You Only Look One-level Feature](https://arxiv.org/abs/2103.09460) (#4295)
+- Supportpaper [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159) (#4778)
+- Support calculating IoU with FP16 tensor in `bbox_overlaps` to save memory and keep speed (#4889)
+- Add __repr__ in custom dataset to count the number of instances (#4756)
+- Add windows support by updating requirements.txt (#5052)
+- Stable support of exporting models to ONNX with batched images and dynamic shape, including SSD, FSAF,FCOS, YOLOv3, RetinaNet, Faster R-CNN, and Mask R-CNN (#5039)
+
+**Improvements**
+- Use MMCV `MODEL_REGISTRY` (#5059)
+- Unified parameter initialization for more flexible usage (#4750)
+- Rename variable names and fix docstring in anchor head (#4883)
+- Support training with empty GT in Cascade RPN (#4928)
+- Add more details of usage of `test_robustness` in documentation (#4917)
+- Changing to use pycocotools instead of mmpycocotools to fully support Detectron2 and MMDetection in one environment (#4939)
+- Update torch serve dockerfile to support dockers of more versions (#4954)
+- Add check for training with single class dataset (#4973)
+- Refactor transformer and DETR Head (#4763)
+- Update FPG model zoo (#5079)
+- More accurate mask AP of small/medium/large instances (#4898)
+
+**Bug Fixes**
+- Fix bug in mean_ap.py when calculating mAP by 11 points (#4875)
+- Fix error when key `meta` is not in old checkpoints (#4936)
+- Fix hanging bug when training with empty GT in VFNet, GFL, and FCOS by changing the place of `reduce_mean` (#4923, #4978, #5058)
+- Fix asyncronized inference error and provide related demo (#4941)
+- Fix IoU losses dimensionality unmatch error (#4982)
+- Fix torch.randperm whtn using PyTorch 1.8 (#5014)
+- Fix empty bbox error in `mask_head` when using CARAFE (#5062)
+- Fix `supplement_mask` bug when there are zero-size RoIs (#5065)
+- Fix testing with empty rois in RoI Heads (#5081)
+
 ### v2.11. (01/4/2021)
 
 **Highlights**
@@ -9,9 +48,8 @@
 
 **New Features**
 
-- Support localization distillation for object detection (#4758)
+- Support [Localization Distillation for Object Detection](https://arxiv.org/pdf/2102.12252.pdf) (#4758)
 - Support Pytorch2ONNX with batch inference and dynamic shape for Faster-RCNN and mainstream one-stage detectors (#4796)
-- Add Deformable Conv2d TensorRT plugin (#858)
 
 **Improvements**
 
@@ -21,7 +59,6 @@
 - Add check for `ann_ids` in `COCODataset` to ensure it is unique (#4789)
 - support for showing the FPN results (#4716)
 - support dynamic shape for grid_anchor (#4684)
-- Support automatic statistical evaluation results and export them to EXCEL (#4693)
 - Move pycocotools version check to when it is used (#4880)
 
 **Bug Fixes**
