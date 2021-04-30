@@ -1,4 +1,5 @@
 import itertools
+import warnings
 import logging
 import os.path as osp
 import tempfile
@@ -445,10 +446,16 @@ class CocoDataset(CustomDataset):
                     # When evaluating mask AP, if the results contain bbox,
                     # cocoapi will use the box area instead of the mask area
                     # for calculating the instance area. Though the overall AP
-                    # is not affected, this leads to different small/medium/large
-                    # mask AP results.
+                    # is not affected, this leads to different
+                    # small/medium/large mask AP results.
                     for x in predictions:
                         x.pop('bbox')
+                    warnings.simplefilter('once')
+                    warnings.warn(
+                        'The key "bbox" is deleted for more accurate mask AP '
+                        'of small/medium/large instances since v2.13.0. This '
+                        'does not change the overall mAP calculation.',
+                        UserWarning)
                 cocoDt = cocoGt.loadRes(predictions)
             except IndexError:
                 print_log(
