@@ -203,10 +203,7 @@ class AutoAssignHead(FCOSHead):
         """
         cls_score, bbox_pred, cls_feat, reg_feat = super(
             FCOSHead, self).forward_single(x)
-        if self.centerness_on_reg:
-            centerness = self.conv_centerness(reg_feat)
-        else:
-            centerness = self.conv_centerness(cls_feat)
+        centerness = self.conv_centerness(reg_feat)
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
         bbox_pred = scale(bbox_pred).float()
