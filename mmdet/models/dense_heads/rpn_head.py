@@ -205,6 +205,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
                     'Please delete max_num which will be deprecated.'
             else:
                 cfg.max_per_img = cfg.max_num
+        cfg.nms.update(dict(max_num=cfg.max_per_img))
         if 'nms_thr' in cfg:
             assert cfg.nms.iou_threshold == cfg.nms_thr, f'You set' \
                 f' iou_threshold in nms and ' \
@@ -232,5 +233,5 @@ class RPNHead(RPNTestMixin, AnchorHead):
 
             dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
                                      cfg.nms)
-            result_list.append(dets[:cfg.max_per_img])
+            result_list.append(dets)
         return result_list
