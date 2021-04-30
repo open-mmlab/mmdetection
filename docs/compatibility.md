@@ -2,10 +2,10 @@
 
 ## Mask AP Evaluation since MMDetection 2.12.0
 
-Before [PR 4898](https://github.com/open-mmlab/mmdetection/pull/4898) and V2.13.0, the mask AP of small, medium, and large instances is calculated based on the bounding box area rather than the real mask area. This leads to higher APs and APm but lower APl but will not affect the overall mask AP. 
+Before [PR 4898](https://github.com/open-mmlab/mmdetection/pull/4898) and V2.12.0, the mask AP of small, medium, and large instances is calculated based on the bounding box area rather than the real mask area. This leads to higher APs and APm but lower APl but will not affect the overall mask AP.
 [PR 4898](https://github.com/open-mmlab/mmdetection/pull/4898) change it to use mask areas by deleting `bbox` in mask AP calculation.
 The new calculation is consistent with [Detectron2](https://github.com/facebookresearch/detectron2/).
- 
+
 ## Compatibility with MMDetection 1.x
 
 MMDetection 2.0 goes through a big refactoring and addresses many legacy issues. It is not compatible with the 1.x version, i.e., running inference with the same model weights in these two versions will produce different results. Thus, MMDetection 2.0 re-benchmarks all the models and provides their links and logs in the model zoo.

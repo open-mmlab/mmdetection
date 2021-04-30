@@ -1,8 +1,8 @@
 import itertools
-import warnings
 import logging
 import os.path as osp
 import tempfile
+import warnings
 from collections import OrderedDict
 
 import mmcv
