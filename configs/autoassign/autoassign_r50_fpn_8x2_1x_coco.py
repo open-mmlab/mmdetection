@@ -28,7 +28,6 @@ model = dict(
         relu_before_extra_convs=True),
     bbox_head=dict(
         type='AutoAssignHead',
-        norm_on_bbox=True,
         num_classes=80,
         in_channels=256,
         stacked_convs=4,
