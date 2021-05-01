@@ -1,10 +1,18 @@
-# Compatibility with MMDetection 1.x
+# Compatibility of MMDetection 2.x
+
+## Mask AP Evaluation since MMDetection 2.12.0
+
+Before [PR 4898](https://github.com/open-mmlab/mmdetection/pull/4898) and V2.12.0, the mask AP of small, medium, and large instances is calculated based on the bounding box area rather than the real mask area. This leads to higher APs and APm but lower APl but will not affect the overall mask AP.
+[PR 4898](https://github.com/open-mmlab/mmdetection/pull/4898) change it to use mask areas by deleting `bbox` in mask AP calculation.
+The new calculation is consistent with [Detectron2](https://github.com/facebookresearch/detectron2/).
+
+## Compatibility with MMDetection 1.x
 
 MMDetection 2.0 goes through a big refactoring and addresses many legacy issues. It is not compatible with the 1.x version, i.e., running inference with the same model weights in these two versions will produce different results. Thus, MMDetection 2.0 re-benchmarks all the models and provides their links and logs in the model zoo.
 
 The major differences are in four folds: coordinate system, codebase conventions, training hyperparameters, and modular design.
 
-## Coordinate System
+### Coordinate System
 
 The new coordinate system is consistent with [Detectron2](https://github.com/facebookresearch/detectron2/) and treats the center of the most left-top pixel as (0, 0) rather than the left-top corner of that pixel.
 Accordingly, the system interprets the coordinates in COCO bounding box and segmentation annotations as coordinates in range `[0, width]` or `[0, height]`.
@@ -33,7 +41,7 @@ which is more natural and accurate.
 
   2. In MMDetection 2.0, the "`paste_mask()`" function is different and should be more accurate than those in previous versions. This change follows the modification in [Detectron2](https://github.com/facebookresearch/detectron2/blob/master/detectron2/structures/masks.py) and can improve mask AP on COCO by ~0.5% absolute.
 
-## Codebase Conventions
+### Codebase Conventions
 
 - MMDetection 2.0 changes the order of class labels to reduce unused parameters in regression and mask branch more naturally (without +1 and -1).
   This effect all the classification layers of the model to have a different ordering of class labels. The final layers of regression branch and mask head no longer keep K+1 channels for K categories, and their class orders are consistent with the classification branch.
@@ -59,7 +67,7 @@ which is more natural and accurate.
 
 - MMDetection V2.0 uses new ResNet Caffe backbones to reduce warnings when loading pre-trained models. Most of the new backbones' weights are the same as the former ones but do not have `conv.bias`, except that they use a different `img_norm_cfg`. Thus, the new backbone will not cause warning of unexpected keys.
 
-## Training Hyperparameters
+### Training Hyperparameters
 
 The change in training hyperparameters does not affect
 model-level compatibility but slightly improves the performance. The major ones are:
@@ -75,7 +83,7 @@ model-level compatibility but slightly improves the performance. The major ones 
 
 - The default warmup ratio is changed from 1/3 to 0.001 for a more smooth warming up process since the gradient clipping is usually not used. The effect is found negligible during our re-benchmarking, though.
 
-## Upgrade Models from 1.x to 2.0
+### Upgrade Models from 1.x to 2.0
 
 To convert the models trained by MMDetection V1.x to MMDetection V2.0, the users can use the script `tools/model_converters/upgrade_model_version.py` to convert
 their models. The converted models can be run in MMDetection V2.0 with slightly dropped performance (less than 1% AP absolute).
