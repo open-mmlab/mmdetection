@@ -11,7 +11,7 @@ You can replace `https://s3.ap-northeast-2.amazonaws.com/open-mmlab` with `https
 - We use distributed training.
 - All pytorch-style pretrained backbones on ImageNet are from PyTorch model zoo, caffe-style pretrained backbones are converted from the newly released model from detectron2.
 - For fair comparison with other codebases, we report the GPU memory as the maximum value of `torch.cuda.max_memory_allocated()` for all 8 GPUs. Note that this value is usually less than what `nvidia-smi` shows.
-- We report the inference time as the total time of network forwarding and post-processing, excluding the data loading time. Results are obtained with the script [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/benchmark.py) which computes the average time on 2000 images.
+- We report the inference time as the total time of network forwarding and post-processing, excluding the data loading time. Results are obtained with the script [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) which computes the average time on 2000 images.
 
 ## Baselines
 
@@ -183,6 +183,18 @@ Please refer to [ResNeSt](https://github.com/open-mmlab/mmdetection/blob/master/
 
 Please refer to [DETR](https://github.com/open-mmlab/mmdetection/blob/master/configs/detr) for details.
 
+### Deformable DETR
+
+Please refer to [Deformable DETR](https://github.com/open-mmlab/mmdetection/blob/master/configs/deformable_detr) for details.
+
+### AutoAssign
+
+Please refer to [AutoAssign](https://github.com/open-mmlab/mmdetection/blob/master/configs/autoassign) for details.
+
+### YOLOF
+
+Please refer to [YOLOF](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolof) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
@@ -192,6 +204,10 @@ We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmd
 We also train [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn) and [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn) using ResNet-50 and [RegNetX-3.2G](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet) with multi-scale training and longer schedules. These models serve as strong pre-trained models for downstream tasks for convenience.
 
 ## Speed benchmark
+
+### Training Speed benchmark
+
+We provide [analyze_logs.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/analyze_logs.py) to get average time of iteration in training. You can find examples in [Log Analysis](https://mmdetection.readthedocs.io/en/latest/useful_tools.html#log-analysis).
 
 We compare the training speed of Mask R-CNN with some other popular frameworks (The data is copied from [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md)).
 For mmdetection, we benchmark with [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py), which should have the same setting with [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) of detectron2.
@@ -206,6 +222,17 @@ We also provide the [checkpoint](http://download.openmmlab.com/mmdetection/v2.0/
 | [simpledet](https://github.com/TuSimple/simpledet/) | 39 |
 | [Detectron](https://github.com/facebookresearch/Detectron) | 19 |
 | [matterport/Mask_RCNN](https://github.com/matterport/Mask_RCNN/) | 14 |
+
+### Inference Speed Benchmark
+
+We provide [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) to benchmark the inference latency.
+The script benchmarkes the model with 2000 images and calculates the average time ignoring first 5 times. You can change the output log interval (defaults: 50) by setting `LOG-INTERVAL`.
+
+```shell
+python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
+```
+
+The latency of all models in our model zoo is benchmarked without setting `fuse-conv-bn`, you can get a lower latency by setting it.
 
 ## Comparison with Detectron2
 

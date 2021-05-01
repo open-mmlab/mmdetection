@@ -1,16 +1,17 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, build_upsample_layer, xavier_init
 from mmcv.ops.carafe import CARAFEPack
+from mmcv.runner import BaseModule, ModuleList
 
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class FPN_CARAFE(nn.Module):
+class FPN_CARAFE(BaseModule):
     """FPN_CARAFE is a more flexible implementation of FPN. It allows more
     choice for upsample methods during the top-down pathway.
 
-    It can reproduce the preformance of ICCV 2019 paper
+    It can reproduce the performance of ICCV 2019 paper
     CARAFE: Content-Aware ReAssembly of FEatures
     Please refer to https://arxiv.org/abs/1905.02188 for more details.
 
@@ -28,6 +29,8 @@ class FPN_CARAFE(nn.Module):
         order (dict): Order of components in ConvModule.
         upsample (str): Type of upsample layer.
         upsample_cfg (dict): Dictionary to construct and config upsample layer.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -44,8 +47,11 @@ class FPN_CARAFE(nn.Module):
                      up_kernel=5,
                      up_group=1,
                      encoder_kernel=3,
-                     encoder_dilation=1)):
-        super(FPN_CARAFE, self).__init__()
+                     encoder_dilation=1),
+                 init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
+        super(FPN_CARAFE, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -81,9 +87,9 @@ class FPN_CARAFE(nn.Module):
         self.start_level = start_level
         self.end_level = end_level
 
-        self.lateral_convs = nn.ModuleList()
-        self.fpn_convs = nn.ModuleList()
-        self.upsample_modules = nn.ModuleList()
+        self.lateral_convs = ModuleList()
+        self.fpn_convs = ModuleList()
+        self.upsample_modules = ModuleList()
 
         for i in range(self.start_level, self.backbone_end_level):
             l_conv = ConvModule(
@@ -201,6 +207,7 @@ class FPN_CARAFE(nn.Module):
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
         """Initialize the weights of module."""
+        super(FPN_CARAFE, self).init_weights()
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
                 xavier_init(m, distribution='uniform')

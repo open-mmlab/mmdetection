@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.ops import DeformConv2d
 
 from mmdet.core import (PointGenerator, build_assigner, build_sampler,
@@ -27,6 +27,7 @@ class RepPointsHead(AnchorFreeHead):
         reppoints is represented as grid points on the bounding box.
         center_init (bool): Whether to use center point assignment.
         transform_method (str): The methods to transform RepPoints to bbox.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     def __init__(self,
@@ -51,6 +52,15 @@ class RepPointsHead(AnchorFreeHead):
                  center_init=True,
                  transform_method='moment',
                  moment_mul=0.01,
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='reppoints_cls_out',
+                         std=0.01,
+                         bias_prob=0.01)),
                  **kwargs):
         self.num_points = num_points
         self.point_feat_channels = point_feat_channels
@@ -72,7 +82,12 @@ class RepPointsHead(AnchorFreeHead):
             (-1))
         self.dcn_base_offset = torch.tensor(dcn_base_offset).view(1, -1, 1, 1)
 
-        super().__init__(num_classes, in_channels, loss_cls=loss_cls, **kwargs)
+        super().__init__(
+            num_classes,
+            in_channels,
+            loss_cls=loss_cls,
+            init_cfg=init_cfg,
+            **kwargs)
 
         self.gradient_mul = gradient_mul
         self.point_base_scale = point_base_scale
@@ -148,26 +163,12 @@ class RepPointsHead(AnchorFreeHead):
         self.reppoints_pts_refine_out = nn.Conv2d(self.point_feat_channels,
                                                   pts_out_dim, 1, 1, 0)
 
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.reppoints_cls_conv, std=0.01)
-        normal_init(self.reppoints_cls_out, std=0.01, bias=bias_cls)
-        normal_init(self.reppoints_pts_init_conv, std=0.01)
-        normal_init(self.reppoints_pts_init_out, std=0.01)
-        normal_init(self.reppoints_pts_refine_conv, std=0.01)
-        normal_init(self.reppoints_pts_refine_out, std=0.01)
-
     def points2bbox(self, pts, y_first=True):
         """Converting the points set into bounding box.
 
         :param pts: the input points sets (fields), each points
             set (fields) is represented as 2n scalar.
-        :param y_first: if y_fisrt=True, the point set is represented as
+        :param y_first: if y_first=True, the point set is represented as
             [y1, x1, y2, x2 ... yn, xn], otherwise the point set is
             represented as [x1, y1, x2, y2 ... xn, yn].
         :return: each points set is converting to a bbox [x1, y1, x2, y2].

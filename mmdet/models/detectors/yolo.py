@@ -13,6 +13,7 @@ class YOLOV3(SingleStageDetector):
                  bbox_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
         super(YOLOV3, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                     test_cfg, pretrained)
+                                     test_cfg, pretrained, init_cfg)

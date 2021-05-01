@@ -5,19 +5,16 @@ import mmcv
 import numpy as np
 import torch
 import torch.distributed as dist
-import torch.nn as nn
-from mmcv.runner import auto_fp16
-from mmcv.utils import print_log
+from mmcv.runner import BaseModule, auto_fp16
 
 from mmdet.core.visualization import imshow_det_bboxes
-from mmdet.utils import get_root_logger
 
 
-class BaseDetector(nn.Module, metaclass=ABCMeta):
+class BaseDetector(BaseModule, metaclass=ABCMeta):
     """Base class for detectors."""
 
-    def __init__(self):
-        super(BaseDetector, self).__init__()
+    def __init__(self, init_cfg=None):
+        super(BaseDetector, self).__init__(init_cfg)
         self.fp16_enabled = False
 
     @property
@@ -92,17 +89,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
     def aug_test(self, imgs, img_metas, **kwargs):
         """Test function with test time augmentation."""
         pass
-
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in detector.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        if pretrained is not None:
-            logger = get_root_logger()
-            print_log(f'load model from: {pretrained}', logger=logger)
 
     async def aforward_test(self, *, img, img_metas, **kwargs):
         for var, name in [(img, 'img'), (img_metas, 'img_metas')]:
@@ -275,10 +261,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     text_color=(72, 101, 241),
                     mask_color=None,
                     thickness=2,
-                    font_scale=0.5,
                     font_size=13,
                     win_name='',
-                    fig_size=(15, 10),
                     show=False,
                     wait_time=0,
                     out_file=None):
@@ -298,11 +282,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                Color of masks. The tuple of color should be in BGR order.
                Default: None
             thickness (int): Thickness of lines. Default: 2
-            font_scale (float): Font scales of texts. Default: 0.5
             font_size (int): Font size of texts. Default: 13
             win_name (str): The window name. Default: ''
-            fig_size (tuple): Figure size of the pyplot figure.
-                Default: (15, 10)
             wait_time (float): Value of waitKey param.
                 Default: 0.
             show (bool): Whether to show the image.
@@ -339,7 +320,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if out_file is not None:
             show = False
         # draw bounding boxes
-        imshow_det_bboxes(
+        img = imshow_det_bboxes(
             img,
             bboxes,
             labels,
@@ -350,10 +331,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             text_color=text_color,
             mask_color=mask_color,
             thickness=thickness,
-            font_scale=font_scale,
             font_size=font_size,
             win_name=win_name,
-            fig_size=fig_size,
             show=show,
             wait_time=wait_time,
             out_file=out_file)

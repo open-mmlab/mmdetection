@@ -17,22 +17,17 @@ class YOLACT(SingleStageDetector):
                  mask_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
         super(YOLACT, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                     test_cfg, pretrained)
+                                     test_cfg, pretrained, init_cfg)
         self.segm_head = build_head(segm_head)
         self.mask_head = build_head(mask_head)
-        self.init_segm_mask_weights()
-
-    def init_segm_mask_weights(self):
-        """Initialize weights of the YOLACT semg head and YOLACT mask head."""
-        self.segm_head.init_weights()
-        self.mask_head.init_weights()
 
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         raise NotImplementedError
 

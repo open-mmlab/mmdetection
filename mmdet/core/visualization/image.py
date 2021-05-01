@@ -1,6 +1,3 @@
-import os.path as osp
-import warnings
-
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
@@ -9,6 +6,8 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
 from ..utils import mask2ndarray
+
+EPS = 1e-2
 
 
 def color_val_matplotlib(color):
@@ -36,10 +35,8 @@ def imshow_det_bboxes(img,
                       text_color='green',
                       mask_color=None,
                       thickness=2,
-                      font_scale=0.5,
                       font_size=13,
                       win_name='',
-                      fig_size=(15, 10),
                       show=True,
                       wait_time=0,
                       out_file=None):
@@ -61,11 +58,9 @@ def imshow_det_bboxes(img,
            Color of masks. The tuple of color should be in BGR order.
            Default: None
         thickness (int): Thickness of lines. Default: 2
-        font_scale (float): Font scales of texts. Default: 0.5
         font_size (int): Font size of texts. Default: 13
         show (bool): Whether to show the image. Default: True
         win_name (str): The window name. Default: ''
-        fig_size (tuple): Figure size of the pyplot figure. Default: (15, 10)
         wait_time (float): Value of waitKey param. Default: 0.
         out_file (str, optional): The filename to write the image.
             Default: None
@@ -73,8 +68,6 @@ def imshow_det_bboxes(img,
     Returns:
         ndarray: The image with bboxes drawn on it.
     """
-    warnings.warn('"font_scale" will be deprecated in v2.9.0,'
-                  'Please use "font_size"')
     assert bboxes.ndim == 2, \
         f' bboxes ndim should be 2, but its ndim is {bboxes.ndim}.'
     assert labels.ndim == 1, \
@@ -83,7 +76,7 @@ def imshow_det_bboxes(img,
         'bboxes.shape[0] and labels.shape[0] should have the same length.'
     assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5, \
         f' bboxes.shape[1] should be 4 or 5, but its {bboxes.shape[1]}.'
-    img = mmcv.imread(img).copy()
+    img = mmcv.imread(img).astype(np.uint8)
 
     if score_thr > 0:
         assert bboxes.shape[1] == 5
@@ -114,12 +107,21 @@ def imshow_det_bboxes(img,
     text_color = color_val_matplotlib(text_color)
 
     img = mmcv.bgr2rgb(img)
+    width, height = img.shape[1], img.shape[0]
     img = np.ascontiguousarray(img)
 
-    plt.figure(win_name, figsize=fig_size)
+    fig = plt.figure(win_name, frameon=False)
     plt.title(win_name)
-    plt.axis('off')
+    canvas = fig.canvas
+    dpi = fig.get_dpi()
+    # add a small EPS to avoid precision lost due to matplotlib's truncation
+    # (https://github.com/matplotlib/matplotlib/issues/15363)
+    fig.set_size_inches((width + EPS) / dpi, (height + EPS) / dpi)
+
+    # remove white edges by set subplot margin
+    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
     ax = plt.gca()
+    ax.axis('off')
 
     polygons = []
     color = []
@@ -159,20 +161,29 @@ def imshow_det_bboxes(img,
         polygons, facecolor='none', edgecolors=color, linewidths=thickness)
     ax.add_collection(p)
 
-    if out_file is not None:
-        dir_name = osp.abspath(osp.dirname(out_file))
-        mmcv.mkdir_or_exist(dir_name)
-        plt.savefig(out_file)
-        if not show:
-            plt.close()
+    stream, _ = canvas.print_to_buffer()
+    buffer = np.frombuffer(stream, dtype='uint8')
+    img_rgba = buffer.reshape(height, width, 4)
+    rgb, alpha = np.split(img_rgba, [3], axis=2)
+    img = rgb.astype('uint8')
+    img = mmcv.rgb2bgr(img)
+
     if show:
+        # We do not use cv2 for display because in some cases, opencv will
+        # conflict with Qt, it will output a warning: Current thread
+        # is not the object's thread. You can refer to
+        # https://github.com/opencv/opencv-python/issues/46 for details
         if wait_time == 0:
             plt.show()
         else:
             plt.show(block=False)
             plt.pause(wait_time)
-            plt.close()
-    return mmcv.rgb2bgr(img)
+    if out_file is not None:
+        mmcv.imwrite(img, out_file)
+
+    plt.close()
+
+    return img
 
 
 def imshow_gt_det_bboxes(img,
@@ -189,7 +200,6 @@ def imshow_gt_det_bboxes(img,
                          thickness=2,
                          font_size=13,
                          win_name='',
-                         fig_size=(15, 10),
                          show=True,
                          wait_time=0,
                          out_file=None):
@@ -220,7 +230,6 @@ def imshow_gt_det_bboxes(img,
       thickness (int): Thickness of lines. Default: 2
       font_size (int): Font size of texts. Default: 13
       win_name (str): The window name. Default: ''
-      fig_size (tuple): Figure size of the pyplot figure. Default: (15, 10)
       show (bool): Whether to show the image. Default: True
       wait_time (float): Value of waitKey param. Default: 0.
       out_file (str, optional): The filename to write the image.
@@ -253,7 +262,6 @@ def imshow_gt_det_bboxes(img,
         thickness=thickness,
         font_size=font_size,
         win_name=win_name,
-        fig_size=fig_size,
         show=False)
 
     if isinstance(result, tuple):
@@ -289,7 +297,6 @@ def imshow_gt_det_bboxes(img,
         thickness=thickness,
         font_size=font_size,
         win_name=win_name,
-        fig_size=fig_size,
         show=show,
         wait_time=wait_time,
         out_file=out_file)

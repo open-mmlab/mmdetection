@@ -25,4 +25,4 @@ train_pipeline = [
 data = dict(train=dict(pipeline=train_pipeline))
 # learning policy
 lr_config = dict(step=[32, 44])
-total_epochs = 48
+runner = dict(type='EpochBasedRunner', max_epochs=48)

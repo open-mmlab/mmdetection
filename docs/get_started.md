@@ -11,12 +11,15 @@ The compatible MMDetection and MMCV versions are as below. Please install the co
 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
-| master              | mmcv-full>=1.2.4, <1.3|
-| 2.8.0               | mmcv-full>=1.2.4, <1.3|
-| 2.7.0               | mmcv-full>=1.1.5, <1.3|
-| 2.6.0               | mmcv-full>=1.1.5, <1.3|
-| 2.5.0               | mmcv-full>=1.1.5, <1.3|
-| 2.4.0               | mmcv-full>=1.1.1, <1.3|
+| master              | mmcv-full>=1.3.2, <1.4.0 |
+| 2.11.0              | mmcv-full>=1.2.4, <1.4.0 |
+| 2.10.0              | mmcv-full>=1.2.4, <1.4.0 |
+| 2.9.0               | mmcv-full>=1.2.4, <1.4.0 |
+| 2.8.0               | mmcv-full>=1.2.4, <1.4.0 |
+| 2.7.0               | mmcv-full>=1.1.5, <1.4.0 |
+| 2.6.0               | mmcv-full>=1.1.5, <1.4.0 |
+| 2.5.0               | mmcv-full>=1.1.5, <1.4.0 |
+| 2.4.0               | mmcv-full>=1.1.1, <1.4.0 |
 | 2.3.0               | mmcv-full==1.0.5    |
 | 2.3.0rc0            | mmcv-full>=1.0.2    |
 | 2.2.1               | mmcv==0.6.2         |
@@ -28,6 +31,9 @@ Note: You need to run `pip uninstall mmcv` first if you have mmcv installed.
 If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
 ## Installation
+
+0. You can simply install mmdetection with the following commands:
+    `pip install mmdet`
 
 1. Create a conda virtual environment and activate it.
 
@@ -65,7 +71,13 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 3. Install mmcv-full, we recommend you to install the pre-build package as below.
 
     ```shell
-    pip install mmcv-full==latest+torch1.6.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
+    ```
+
+    Please replace `{cu_version}` and `{torch_version}` in the url to your desired one. For example, to install the latest `mmcv-full` with `CUDA 11` and `PyTorch 1.7.0`, use the following command:
+
+    ```shell
+    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
     ```
 
     See [here](https://github.com/open-mmlab/mmcv#install-with-pip) for different versions of MMCV compatible to different PyTorch and CUDA versions.

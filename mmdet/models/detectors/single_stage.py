@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 
 from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
@@ -20,8 +19,10 @@ class SingleStageDetector(BaseDetector):
                  bbox_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
-        super(SingleStageDetector, self).__init__()
+                 pretrained=None,
+                 init_cfg=None):
+        super(SingleStageDetector, self).__init__(init_cfg)
+        backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)
@@ -30,24 +31,6 @@ class SingleStageDetector(BaseDetector):
         self.bbox_head = build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.init_weights(pretrained=pretrained)
-
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in detector.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        super(SingleStageDetector, self).init_weights(pretrained)
-        self.backbone.init_weights(pretrained=pretrained)
-        if self.with_neck:
-            if isinstance(self.neck, nn.Sequential):
-                for m in self.neck:
-                    m.init_weights()
-            else:
-                self.neck.init_weights()
-        self.bbox_head.init_weights()
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""
@@ -59,7 +42,7 @@ class SingleStageDetector(BaseDetector):
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
@@ -111,6 +94,11 @@ class SingleStageDetector(BaseDetector):
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
+        # get origin input shape to support onnx dynamic shape
+        if torch.onnx.is_in_onnx_export():
+            # get shape as tensor
+            img_shape = torch._shape_as_tensor(img)[2:]
+            img_metas[0]['img_shape_for_onnx'] = img_shape
         bbox_list = self.bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
         # skip post-processing when exporting to ONNX

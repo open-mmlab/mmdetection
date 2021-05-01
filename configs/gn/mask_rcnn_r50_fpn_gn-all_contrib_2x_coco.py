@@ -12,4 +12,4 @@ model = dict(
         mask_head=dict(norm_cfg=norm_cfg)))
 # learning policy
 lr_config = dict(step=[16, 22])
-total_epochs = 24
+runner = dict(type='EpochBasedRunner', max_epochs=24)

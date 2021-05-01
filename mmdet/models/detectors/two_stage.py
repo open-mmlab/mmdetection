@@ -1,7 +1,5 @@
 import torch
-import torch.nn as nn
 
-# from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -21,8 +19,10 @@ class TwoStageDetector(BaseDetector):
                  roi_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
-        super(TwoStageDetector, self).__init__()
+                 pretrained=None,
+                 init_cfg=None):
+        super(TwoStageDetector, self).__init__(init_cfg)
+        backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
 
         if neck is not None:
@@ -40,12 +40,11 @@ class TwoStageDetector(BaseDetector):
             rcnn_train_cfg = train_cfg.rcnn if train_cfg is not None else None
             roi_head.update(train_cfg=rcnn_train_cfg)
             roi_head.update(test_cfg=test_cfg.rcnn)
+            roi_head.pretrained = pretrained
             self.roi_head = build_head(roi_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-
-        self.init_weights(pretrained=pretrained)
 
     @property
     def with_rpn(self):
@@ -57,26 +56,6 @@ class TwoStageDetector(BaseDetector):
         """bool: whether the detector has a RoI head"""
         return hasattr(self, 'roi_head') and self.roi_head is not None
 
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in detector.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        super(TwoStageDetector, self).init_weights(pretrained)
-        self.backbone.init_weights(pretrained=pretrained)
-        if self.with_neck:
-            if isinstance(self.neck, nn.Sequential):
-                for m in self.neck:
-                    m.init_weights()
-            else:
-                self.neck.init_weights()
-        if self.with_rpn:
-            self.rpn_head.init_weights()
-        if self.with_roi_head:
-            self.roi_head.init_weights(pretrained)
-
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""
         x = self.backbone(img)
@@ -87,7 +66,7 @@ class TwoStageDetector(BaseDetector):
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         outs = ()
         # backbone
@@ -189,6 +168,11 @@ class TwoStageDetector(BaseDetector):
         assert self.with_bbox, 'Bbox head must be implemented.'
 
         x = self.extract_feat(img)
+
+        # get origin input shape to onnx dynamic input shape
+        if torch.onnx.is_in_onnx_export():
+            img_shape = torch._shape_as_tensor(img)[2:]
+            img_metas[0]['img_shape_for_onnx'] = img_shape
 
         if proposals is None:
             proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)

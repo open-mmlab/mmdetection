@@ -80,12 +80,13 @@ model = dict(
                 pos_weight=-1,
                 debug=False)
         ],
-        rpn_proposal=dict(max_num=300, nms_thr=0.8),
+        rpn_proposal=dict(max_per_img=300, nms=dict(iou_threshold=0.8)),
         rcnn=dict(
             assigner=dict(
                 pos_iou_thr=0.65, neg_iou_thr=0.65, min_pos_iou=0.65),
             sampler=dict(type='RandomSampler', num=256))),
     test_cfg=dict(
-        rpn=dict(max_num=300, nms_thr=0.8), rcnn=dict(score_thr=1e-3)))
+        rpn=dict(max_per_img=300, nms=dict(iou_threshold=0.8)),
+        rcnn=dict(score_thr=1e-3)))
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
