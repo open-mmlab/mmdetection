@@ -32,9 +32,6 @@ class MobileNet(nn.Module):
 
     def forward(self, x):  # should return a tuple
         pass
-
-    def init_weights(self, pretrained=None):
-        pass
 ```
 
 #### 2. Import the module
@@ -157,8 +154,6 @@ class DoubleConvFCBBoxHead(BBoxHead):
         kwargs.setdefault('with_avg_pool', True)
         super(DoubleConvFCBBoxHead, self).__init__(**kwargs)
 
-    def init_weights(self):
-        # conv layers are already initialized by ConvModule
 
     def forward(self, x_cls, x_reg):
 
@@ -186,7 +181,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
 
-    def init_weights(self, pretrained):
 
     def forward_dummy(self, x, proposals):
 

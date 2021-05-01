@@ -2,13 +2,14 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import (bias_init_with_prob, build_activation_layer,
                       build_norm_layer)
+from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
 from mmcv.runner import auto_fp16, force_fp32
 
 from mmdet.core import multi_apply
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.losses import accuracy
-from mmdet.models.utils import FFN, MultiheadAttention, build_transformer
+from mmdet.models.utils import build_transformer
 from .bbox_head import BBoxHead
 
 
@@ -60,11 +61,15 @@ class DIIHead(BBoxHead):
                      act_cfg=dict(type='ReLU', inplace=True),
                      norm_cfg=dict(type='LN')),
                  loss_iou=dict(type='GIoULoss', loss_weight=2.0),
+                 init_cfg=None,
                  **kwargs):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(DIIHead, self).__init__(
             num_classes=num_classes,
             reg_decoded_bbox=True,
             reg_class_agnostic=True,
+            init_cfg=init_cfg,
             **kwargs)
         self.loss_iou = build_loss(loss_iou)
         self.in_channels = in_channels
@@ -119,6 +124,7 @@ class DIIHead(BBoxHead):
     def init_weights(self):
         """Use xavier initialization for all weight parameter and set
         classification head bias as a specific value when use focal loss."""
+        super(DIIHead, self).init_weights()
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)

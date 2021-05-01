@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
@@ -31,6 +30,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         loss_bbox (dict): Config of localization loss.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     def __init__(self,
@@ -55,8 +55,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
                  train_cfg=None,
-                 test_cfg=None):
-        super(AnchorHead, self).__init__()
+                 test_cfg=None,
+                 init_cfg=dict(type='Normal', layers='Conv2d', std=0.01)):
+        super(AnchorHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
@@ -100,11 +101,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.conv_cls = nn.Conv2d(self.in_channels,
                                   self.num_anchors * self.cls_out_channels, 1)
         self.conv_reg = nn.Conv2d(self.in_channels, self.num_anchors * 4, 1)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        normal_init(self.conv_cls, std=0.01)
-        normal_init(self.conv_reg, std=0.01)
 
     def forward_single(self, x):
         """Forward feature of a single scale level.
@@ -656,15 +652,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                           1).reshape(batch_size, -1, 4)
             anchors = anchors.expand_as(bbox_pred)
             # Always keep topk op for dynamic input in onnx
-            if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
-                                       or scores.shape[-2] > nms_pre_tensor):
-                from torch import _shape_as_tensor
-                # keep shape as tensor and get k
-                num_anchor = _shape_as_tensor(scores)[-2].to(
-                    nms_pre_tensor.device)
-                nms_pre = torch.where(nms_pre_tensor < num_anchor,
-                                      nms_pre_tensor, num_anchor)
-
+            from mmdet.core.export import get_k_for_topk
+            nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
+            if nms_pre > 0:
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(-1)
@@ -692,22 +682,22 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scale_factors).unsqueeze(1)
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
 
-        # Set max number of box to be feed into nms in deployment
-        deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
-        if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            # Get maximum scores for foreground classes.
-            if self.use_sigmoid_cls:
-                max_scores, _ = batch_mlvl_scores.max(-1)
-            else:
-                # remind that we set FG labels to [0, num_class-1]
-                # since mmdet v2.0
-                # BG cat_id: num_class
-                max_scores, _ = batch_mlvl_scores[..., :-1].max(-1)
-            _, topk_inds = max_scores.topk(deploy_nms_pre)
-            batch_inds = torch.arange(batch_size).view(-1,
-                                                       1).expand_as(topk_inds)
-            batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds]
-            batch_mlvl_bboxes = batch_mlvl_bboxes[batch_inds, topk_inds]
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export() and with_nms:
+            from mmdet.core.export import add_dummy_nms_for_onnx
+            # ignore background class
+            if not self.use_sigmoid_cls:
+                num_classes = batch_mlvl_scores.shape[2] - 1
+                batch_mlvl_scores = batch_mlvl_scores[..., :num_classes]
+            max_output_boxes_per_class = cfg.nms.get(
+                'max_output_boxes_per_class', 200)
+            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+            score_threshold = cfg.score_thr
+            nms_pre = cfg.get('deploy_nms_pre', -1)
+            return add_dummy_nms_for_onnx(batch_mlvl_bboxes, batch_mlvl_scores,
+                                          max_output_boxes_per_class,
+                                          iou_threshold, score_threshold,
+                                          nms_pre, cfg.max_per_img)
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
             # remind that we set FG labels to [0, num_class-1] since mmdet v2.0

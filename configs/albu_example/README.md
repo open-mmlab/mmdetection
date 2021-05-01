@@ -1,6 +1,6 @@
 # Albu Example
 
-[OTHERS]
+<!-- [OTHERS] -->
 
 ```
 @article{2018arXiv180906839B,

@@ -5,8 +5,8 @@ import warnings
 import torch
 import torch.nn as nn
 from mmcv import ConfigDict
-from mmcv.cnn import normal_init
 from mmcv.ops import DeformConv2d, batched_nms
+from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
@@ -15,7 +15,7 @@ from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
 
 
-class AdaptiveConv(nn.Module):
+class AdaptiveConv(BaseModule):
     """AdaptiveConv used to adapt the sampling location with the anchors.
 
     Args:
@@ -34,6 +34,7 @@ class AdaptiveConv(nn.Module):
         type (str, optional): Type of adaptive conv, can be either 'offset'
             (arbitrary anchors) or 'dilation' (uniform anchor).
             Default: 'dilation'.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -45,8 +46,10 @@ class AdaptiveConv(nn.Module):
                  dilation=3,
                  groups=1,
                  bias=False,
-                 type='dilation'):
-        super(AdaptiveConv, self).__init__()
+                 type='dilation',
+                 init_cfg=dict(
+                     type='Normal', std=0.01, override=dict(name='conv'))):
+        super(AdaptiveConv, self).__init__(init_cfg)
         assert type in ['offset', 'dilation']
         self.adapt_type = type
 
@@ -70,10 +73,6 @@ class AdaptiveConv(nn.Module):
                 kernel_size,
                 padding=dilation,
                 dilation=dilation)
-
-    def init_weights(self):
-        """Init weights."""
-        normal_init(self.conv, std=0.01)
 
     def forward(self, x, offset):
         """Forward function."""
@@ -104,6 +103,8 @@ class StageCascadeRPNHead(RPNHead):
         with_cls (bool, optional): wheather use classification branch.
             Default: True.
         sampling (bool, optional): wheather use sampling. Default: True.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -117,6 +118,7 @@ class StageCascadeRPNHead(RPNHead):
                  bridged_feature=False,
                  with_cls=True,
                  sampling=True,
+                 init_cfg=None,
                  **kwargs):
         self.with_cls = with_cls
         self.anchor_strides = anchor_generator['strides']
@@ -124,7 +126,10 @@ class StageCascadeRPNHead(RPNHead):
         self.bridged_feature = bridged_feature
         self.adapt_cfg = adapt_cfg
         super(StageCascadeRPNHead, self).__init__(
-            in_channels, anchor_generator=anchor_generator, **kwargs)
+            in_channels,
+            anchor_generator=anchor_generator,
+            init_cfg=init_cfg,
+            **kwargs)
 
         # override sampling and sampler
         self.sampling = sampling
@@ -137,6 +142,12 @@ class StageCascadeRPNHead(RPNHead):
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
 
+        if init_cfg is None:
+            self.init_cfg = dict(
+                type='Normal', std=0.01, override=[dict(name='rpn_reg')])
+            if self.with_cls:
+                self.init_cfg['override'].append(dict(name='rpn_cls'))
+
     def _init_layers(self):
         """Init layers of a CascadeRPN stage."""
         self.rpn_conv = AdaptiveConv(self.in_channels, self.feat_channels,
@@ -147,13 +158,6 @@ class StageCascadeRPNHead(RPNHead):
                                      1)
         self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
         self.relu = nn.ReLU(inplace=True)
-
-    def init_weights(self):
-        """Init weights of a CascadeRPN stage."""
-        self.rpn_conv.init_weights()
-        normal_init(self.rpn_reg, std=0.01)
-        if self.with_cls:
-            normal_init(self.rpn_cls, std=0.01)
 
     def forward_single(self, x, offset):
         """Forward function of single scale."""
@@ -683,11 +687,13 @@ class CascadeRPNHead(BaseDenseHead):
         test_cfg (dict): config at testing time.
     """
 
-    def __init__(self, num_stages, stages, train_cfg, test_cfg):
-        super(CascadeRPNHead, self).__init__()
+    def __init__(self, num_stages, stages, train_cfg, test_cfg, init_cfg=None):
+        super(CascadeRPNHead, self).__init__(init_cfg)
         assert num_stages == len(stages)
         self.num_stages = num_stages
-        self.stages = nn.ModuleList()
+        # Be careful! Pretrained weights cannot be loaded when use
+        # nn.ModuleList
+        self.stages = ModuleList()
         for i in range(len(stages)):
             train_cfg_i = train_cfg[i] if train_cfg is not None else None
             stages[i].update(train_cfg=train_cfg_i)
@@ -695,11 +701,6 @@ class CascadeRPNHead(BaseDenseHead):
             self.stages.append(build_head(stages[i]))
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-
-    def init_weights(self):
-        """Init weight of CascadeRPN."""
-        for i in range(self.num_stages):
-            self.stages[i].init_weights()
 
     def loss(self):
         """loss() is implemented in StageCascadeRPNHead."""

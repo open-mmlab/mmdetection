@@ -109,8 +109,12 @@ Supported methods:
 - [x] [CentripetalNet (CVPR'2020)](configs/centripetalnet/README.md)
 - [x] [VFNet (ArXix'2020)](configs/vfnet/README.md)
 - [x] [DETR (ECCV'2020)](configs/detr/README.md)
+- [x] [Deformable DETR (ICLR'2021)](configs/deformable_detr/README.md)
 - [x] [CascadeRPN (NeurIPS'2019)](configs/cascade_rpn/README.md)
 - [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
+- [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
+- [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
+
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
@@ -164,3 +168,5 @@ If you use this toolbox or benchmark in your research, please cite this project.
 - [MMTracking](https://github.com/open-mmlab/mmtracking): OpenMMLab video perception toolbox and benchmark.
 - [MMPose](https://github.com/open-mmlab/mmpose): OpenMMLab pose estimation toolbox and benchmark.
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab image and video editing toolbox.
+- [MMOCR](https://github.com/open-mmlab/mmocr): A Comprehensive Toolbox for Text Detection, Recognition and Understanding.
+- [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab image and video generative models toolbox.
