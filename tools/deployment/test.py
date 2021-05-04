@@ -81,6 +81,8 @@ def main():
     if isinstance(cfg.data.test, dict):
         cfg.data.test.test_mode = True
         samples_per_gpu = cfg.data.test.pop('samples_per_gpu', 1)
+        # samples_per_gpu = cfg.data.pop('samples_per_gpu', 1)
+        print('samples_per_gpu: +++++++++++++ ', samples_per_gpu)
         if samples_per_gpu > 1:
             # Replace 'ImageToTensor' to 'DefaultFormatBundle'
             cfg.data.test.pipeline = replace_ImageToTensor(

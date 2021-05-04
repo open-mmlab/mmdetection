@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
 
@@ -69,7 +70,7 @@ class HourglassModule(BaseModule):
             norm_cfg=norm_cfg,
             downsample_first=False)
 
-        self.up2 = nn.Upsample(scale_factor=2)
+        # self.up2 = nn.Upsample(scale_factor=2)
 
     def forward(self, x):
         """Forward function."""
@@ -77,7 +78,9 @@ class HourglassModule(BaseModule):
         low1 = self.low1(x)
         low2 = self.low2(low1)
         low3 = self.low3(low2)
-        up2 = self.up2(low3)
+        # up2 = self.up2(low3)
+        size = up1.size()[2:]  # (h,w)
+        up2 = F.interpolate(low3, size=size)
         return up1 + up2
 
 

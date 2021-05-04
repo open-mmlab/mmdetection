@@ -142,12 +142,12 @@ def preprocess_example_input(input_config):
         True)
     (_, C, H, W) = input_shape
     one_meta = {
-        'img_shape': (H, W, C),
-        'ori_shape': (H, W, C),
+        # 'img_shape': (H, W, C),
+        # 'ori_shape': (H, W, C),
         'pad_shape': (H, W, C),
         'filename': '<demo>.png',
         'scale_factor': 1.0,
-        'flip': False,
+        # 'flip': False,
         'show_img': show_img,
     }
 

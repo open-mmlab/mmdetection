@@ -677,6 +677,8 @@ class CornerHead(BaseDenseHead):
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
         """
+        if torch.onnx.is_in_onnx_export():
+            assert len(img_metas) == 1, 'Only support one input image while in exporting to ONNX'
         assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(img_metas)
         result_list = []
         for img_id in range(len(img_metas)):
@@ -756,15 +758,20 @@ class CornerHead(BaseDenseHead):
         scores = batch_scores.view([-1, 1])
         clses = batch_clses.view([-1, 1])
 
-        idx = scores.argsort(dim=0, descending=True)
+        # idx = scores.argsort(dim=0, descending=True)
+        # bboxes = bboxes[idx].view([-1, 4])
+        # scores = scores[idx].view(-1)
+        # clses = clses[idx].view(-1)
+        scores, idx = scores.sort(dim=0, descending=True)
         bboxes = bboxes[idx].view([-1, 4])
-        scores = scores[idx].view(-1)
+        scores = scores.view(-1)
         clses = clses[idx].view(-1)
 
         detections = torch.cat([bboxes, scores.unsqueeze(-1)], -1)
         keepinds = (detections[:, -1] > -0.1)
         detections = detections[keepinds]
         labels = clses[keepinds]
+        print('detections and lables:', detections.size(), labels.size())
 
         if with_nms:
             detections, labels = self._bboxes_nms(detections, labels,
@@ -787,7 +794,8 @@ class CornerHead(BaseDenseHead):
         out_labels = labels[keep]
 
         if len(out_bboxes) > 0:
-            idx = torch.argsort(out_bboxes[:, -1], descending=True)
+            # idx = torch.argsort(out_bboxes[:, -1], descending=True)
+            _, idx = torch.sort(out_bboxes[:, -1], descending=True)
             idx = idx[:cfg.max_per_img]
             out_bboxes = out_bboxes[idx]
             out_labels = out_labels[idx]
@@ -927,7 +935,10 @@ class CornerHead(BaseDenseHead):
             and br_centripetal_shift is not None)
         assert with_embedding + with_centripetal_shift == 1
         batch, _, height, width = tl_heat.size()
-        inp_h, inp_w, _ = img_meta['pad_shape']
+        if torch.onnx.is_in_onnx_export():
+            inp_h, inp_w = img_meta['pad_shape_for_onnx'][:2]
+        else:
+            inp_h, inp_w, _ = img_meta['pad_shape']
 
         # perform nms on heatmaps
         tl_heat = self._local_maximum(tl_heat, kernel=kernel)
@@ -978,8 +989,10 @@ class CornerHead(BaseDenseHead):
             br_ctxs *= (inp_w / width)
             br_ctys *= (inp_h / height)
 
-        x_off = img_meta['border'][2]
-        y_off = img_meta['border'][0]
+        x_off, y_off = 0, 0  # no crop
+        if 'border' in img_meta:       
+            x_off = img_meta['border'][2]
+            y_off = img_meta['border'][0]
 
         tl_xs -= x_off
         tl_ys -= y_off
@@ -1061,10 +1074,16 @@ class CornerHead(BaseDenseHead):
         width_inds = (br_xs <= tl_xs)
         height_inds = (br_ys <= tl_ys)
 
-        scores[cls_inds] = -1
-        scores[width_inds] = -1
-        scores[height_inds] = -1
-        scores[dist_inds] = -1
+        # scores[cls_inds] = -1
+        # scores[width_inds] = -1
+        # scores[height_inds] = -1
+        # scores[dist_inds] = -1
+        negative_scores = -1*torch.ones_like(scores)
+        scores = torch.where(cls_inds, negative_scores, scores)
+        scores = torch.where(width_inds, negative_scores, scores)
+        scores = torch.where(height_inds, negative_scores, scores)
+        scores = torch.where(dist_inds, negative_scores, scores)
+        
         if with_centripetal_shift:
             scores[tl_ctx_inds] = -1
             scores[tl_cty_inds] = -1
