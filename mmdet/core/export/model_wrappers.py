@@ -85,12 +85,13 @@ class ONNXRuntimeDetector(BaseDetector):
                 scale_factor = np.array(scale_factor)[None, :]  # [1,4]
             dets[:, :4] /= scale_factor
             if 'border' in img_metas[i]:
-                # offset pixel of the top-left corners between original image and padded/enlarged image
-                # 'border' is used when exporting CornerNet and CentripetalNet to onnx
-                x_off = img_metas[i]['border'][2]  
+                # offset pixel of the top-left corners between original image
+                # and padded/enlarged image, 'border' is used when exporting
+                # CornerNet and CentripetalNet to onnx
+                x_off = img_metas[i]['border'][2]
                 y_off = img_metas[i]['border'][0]
-                dets[:, [0,2]] -= x_off
-                dets[:, [1,3]] -= y_off
+                dets[:, [0, 2]] -= x_off
+                dets[:, [1, 3]] -= y_off
                 dets[:, :4] *= (dets[:, :4] > 0).astype(dets.dtype)
             dets_results = bbox2result(dets, labels, len(self.CLASSES))
             if batch_masks is not None:
@@ -115,4 +116,3 @@ class ONNXRuntimeDetector(BaseDetector):
             else:
                 results.append(dets_results)
         return results
-
