@@ -100,7 +100,8 @@ class SingleStageDetector(BaseDetector):
             img_shape = torch._shape_as_tensor(img)[2:]
             img_metas[0]['img_shape_for_onnx'] = img_shape
             # get pad input shape to support onnx dynamic shape for exporting
-            # `CornerNet` and `CentripetalNet`, which 'pad_shape' is used for inference.
+            # `CornerNet` and `CentripetalNet`, which 'pad_shape' is used
+            # for inference
             img_metas[0]['pad_shape_for_onnx'] = img_shape
         bbox_list = self.bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
