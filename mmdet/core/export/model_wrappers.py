@@ -74,8 +74,6 @@ class ONNXRuntimeDetector(BaseDetector):
         self.sess.run_with_iobinding(self.io_binding)
         ort_outputs = self.io_binding.copy_outputs_to_cpu()
         batch_dets, batch_labels = ort_outputs[:2]
-        print('batch_dets: ', batch_dets)
-        print('batch_labels: ', batch_labels)
         batch_masks = ort_outputs[2] if len(ort_outputs) == 3 else None
 
         results = []
@@ -85,13 +83,10 @@ class ONNXRuntimeDetector(BaseDetector):
             if isinstance(scale_factor, (list, tuple, np.ndarray)):
                 assert len(scale_factor) == 4
                 scale_factor = np.array(scale_factor)[None, :]  # [1,4]
-                # print('dets: =============== ', dets.shape)
-            if len(dets.shape) == 1:
-                dets = dets[None, :]
-                assert dets.shape[-1] == 5
             dets[:, :4] /= scale_factor
             if 'border' in img_metas[i]:
                 # offset pixel of the top-left corners between original image and padded/enlarged image
+                # 'border' is used when exporting CornerNet and CentripetalNet to onnx
                 x_off = img_metas[i]['border'][2]  
                 y_off = img_metas[i]['border'][0]
                 dets[:, [0,2]] -= x_off

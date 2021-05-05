@@ -677,8 +677,6 @@ class CornerHead(BaseDenseHead):
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
         """
-        if torch.onnx.is_in_onnx_export():
-            assert len(img_metas) == 1, 'Only support one input image while in exporting to ONNX'
         assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(img_metas)
         result_list = []
         for img_id in range(len(img_metas)):
@@ -693,6 +691,12 @@ class CornerHead(BaseDenseHead):
                     br_emb=br_embs[-1][img_id:img_id + 1, :],
                     rescale=rescale,
                     with_nms=with_nms))
+
+        if torch.onnx.is_in_onnx_export():
+            assert len(img_metas) == 1, 'Only support one input image while in exporting to ONNX'
+            detections, labels = result_list[0]
+            # batch_size 1 here, [1, num_det, 5], [1, num_det]
+            return detections.unsqueeze(0), labels.unsqueeze(0)
 
         return result_list
 
@@ -758,10 +762,7 @@ class CornerHead(BaseDenseHead):
         scores = batch_scores.view([-1, 1])
         clses = batch_clses.view([-1, 1])
 
-        # idx = scores.argsort(dim=0, descending=True)
-        # bboxes = bboxes[idx].view([-1, 4])
-        # scores = scores[idx].view(-1)
-        # clses = clses[idx].view(-1)
+        # use `sort` instead of `argsort` here, since currently exporting `argsort` to ONNX opset version 11 is not supported
         scores, idx = scores.sort(dim=0, descending=True)
         bboxes = bboxes[idx].view([-1, 4])
         scores = scores.view(-1)
@@ -771,7 +772,6 @@ class CornerHead(BaseDenseHead):
         keepinds = (detections[:, -1] > -0.1)
         detections = detections[keepinds]
         labels = clses[keepinds]
-        print('detections and lables:', detections.size(), labels.size())
 
         if with_nms:
             detections, labels = self._bboxes_nms(detections, labels,
@@ -793,8 +793,24 @@ class CornerHead(BaseDenseHead):
                                        cfg.nms)
         out_labels = labels[keep]
 
+        if torch.onnx.is_in_onnx_export():
+            # No use `torch.Tensor([cfg.max_per_img])` here, instead we use `_shape_as_tensor`.
+            # Since the former will return a tensor with ndim 1 which is not a valid input dtype for `torch.topk`, 
+            # while the latter return a tensor with ndim 0 which can be regards as int dtype
+            tmp_tensor = out_bboxes.new_zeros((cfg.max_per_img))
+            max_per_img = torch._shape_as_tensor(tmp_tensor)[0]
+            # No use `out_bboxes.shape[0]` here, instead `_shape_as_tensor` is used
+            out_nums = torch._shape_as_tensor(out_bboxes)[0]
+            # Always keep topk op for dynamic input in onnx
+            from mmdet.core.export import get_k_for_topk
+            nms_after = get_k_for_topk(max_per_img, out_nums)
+            _, idx = out_bboxes[:, -1].topk(nms_after)
+            out_bboxes = out_bboxes[idx]
+            out_labels = out_labels[idx]
+            return out_bboxes, out_labels
+
         if len(out_bboxes) > 0:
-            # idx = torch.argsort(out_bboxes[:, -1], descending=True)
+            # use `sort` to replace with `argsort` here
             _, idx = torch.sort(out_bboxes[:, -1], descending=True)
             idx = idx[:cfg.max_per_img]
             out_bboxes = out_bboxes[idx]
@@ -999,10 +1015,11 @@ class CornerHead(BaseDenseHead):
         br_xs -= x_off
         br_ys -= y_off
 
-        tl_xs *= tl_xs.gt(0.0).type_as(tl_xs)
-        tl_ys *= tl_ys.gt(0.0).type_as(tl_ys)
-        br_xs *= br_xs.gt(0.0).type_as(br_xs)
-        br_ys *= br_ys.gt(0.0).type_as(br_ys)
+        zeros = tl_xs.new_zeros(*tl_xs.size())
+        tl_xs = torch.where(tl_xs > 0.0, tl_xs, zeros)
+        tl_ys = torch.where(tl_ys > 0.0, tl_ys, zeros)
+        br_xs = torch.where(br_xs > 0.0, br_xs, zeros)
+        br_ys = torch.where(br_ys > 0.0, br_ys, zeros)
 
         bboxes = torch.stack((tl_xs, tl_ys, br_xs, br_ys), dim=3)
         area_bboxes = ((br_xs - tl_xs) * (br_ys - tl_ys)).abs()
@@ -1074,10 +1091,9 @@ class CornerHead(BaseDenseHead):
         width_inds = (br_xs <= tl_xs)
         height_inds = (br_ys <= tl_ys)
 
-        # scores[cls_inds] = -1
-        # scores[width_inds] = -1
-        # scores[height_inds] = -1
-        # scores[dist_inds] = -1
+        # No use `scores[cls_inds]`, instead we use `torch.where` here.
+        # Since only 1-D indices with type 'tensor(bool)' are supported when exporting to ONNX,
+        # any other bool indices with more dimensions (e.g. 2-D bool tensor)' as input parameter in node is invalid
         negative_scores = -1*torch.ones_like(scores)
         scores = torch.where(cls_inds, negative_scores, scores)
         scores = torch.where(width_inds, negative_scores, scores)
