@@ -808,6 +808,8 @@ class CornerHead(BaseDenseHead):
             # Always keep topk op for dynamic input in onnx
             from mmdet.core.export import get_k_for_topk
             nms_after = get_k_for_topk(max_per_img, out_nums)
+            # now `nms_after` is a tensor with ndim 0, which is valid as input
+            # for `out_bboxes[:, -1].topk`
             _, idx = out_bboxes[:, -1].topk(nms_after)
             out_bboxes = out_bboxes[idx]
             out_labels = out_labels[idx]
@@ -1016,7 +1018,10 @@ class CornerHead(BaseDenseHead):
             # does not appears as key in 'img_meta'. As a tmp solution,
             # we move this 'border' handle part to the postprocess after
             # finished exporting to ONNX, which is handle in
-            # `mmdet/core/export/model_wrappers.py`.
+            # `mmdet/core/export/model_wrappers.py`. Though difference between
+            # pytorch and exported onnx model, it might be ignored since
+            # comparable performance is achieved between them (e.g. 40.4 vs
+            # 40.6 on COCO val2017, for CornerNet without test-time flip)
             if 'border' in img_meta:
                 x_off = img_meta['border'][2]
                 y_off = img_meta['border'][0]
@@ -1105,7 +1110,7 @@ class CornerHead(BaseDenseHead):
         # No use `scores[cls_inds]`, instead we use `torch.where` here.
         # Since only 1-D indices with type 'tensor(bool)' are supported
         # when exporting to ONNX, any other bool indices with more dimensions
-        # (e.g. 2-D bool tensor)' as input parameter in node is invalid
+        # (e.g. 2-D bool tensor) as input parameter in node is invalid
         negative_scores = -1 * torch.ones_like(scores)
         scores = torch.where(cls_inds, negative_scores, scores)
         scores = torch.where(width_inds, negative_scores, scores)

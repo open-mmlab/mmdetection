@@ -1679,10 +1679,6 @@ class RandomCenterCropPad(object):
         x1 = min(center_x + target_w // 2, img_w)
         y0 = max(0, center_y - target_h // 2)
         y1 = min(center_y + target_h // 2, img_h)
-        assert x0 == 0, x0
-        assert abs(x1 - img_w) <= 1, '{}'.format(abs(x1 - img_w))
-        assert y0 == 0, y0
-        assert abs(y1 - img_h) <= 1, '{}'.format(abs(y1 - img_h))
         patch = np.array((int(x0), int(y0), int(x1), int(y1)))
 
         left, right = center_x - x0, x1 - center_x

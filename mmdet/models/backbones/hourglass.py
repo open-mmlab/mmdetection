@@ -80,7 +80,7 @@ class HourglassModule(BaseModule):
         low1 = self.low1(x)
         low2 = self.low2(low1)
         low3 = self.low3(low2)
-        # Fixing `scale factor` (e.g. 2) is simple for upsampling, but
+        # Fixing `scale factor` (e.g. 2) is common for upsampling, but
         # in some cases the spatial size is mismatched and error will arise.
         if 'scale_factor' in self.upsample_cfg:
             up2 = self.up2(low3, **self.upsample_cfg)
