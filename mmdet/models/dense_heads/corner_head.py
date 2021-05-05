@@ -1006,9 +1006,14 @@ class CornerHead(BaseDenseHead):
             br_ctys *= (inp_h / height)
 
         x_off, y_off = 0, 0  # no crop
-        if 'border' in img_meta:       
-            x_off = img_meta['border'][2]
-            y_off = img_meta['border'][0]
+        if not torch.onnx.is_in_onnx_export():
+            # since `RandomCenterCropPad` is done on CPU with numpy and it's not dynamic traceable
+            # when exporting to ONNX, thus 'border' does not appears as key in 'img_meta'.
+            # As a tmp solution, we move this 'border' handle part to the postprocess
+            # after finished exporting to ONNX, which is handle in `mmdet/core/export/model_wrappers.py`.
+            if 'border' in img_meta:
+                x_off = img_meta['border'][2]
+                y_off = img_meta['border'][0]
 
         tl_xs -= x_off
         tl_ys -= y_off

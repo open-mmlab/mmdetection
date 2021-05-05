@@ -115,3 +115,4 @@ class ONNXRuntimeDetector(BaseDetector):
             else:
                 results.append(dets_results)
         return results
+
