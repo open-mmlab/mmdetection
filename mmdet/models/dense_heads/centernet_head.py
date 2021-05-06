@@ -116,7 +116,7 @@ class CenterNetHead(BaseDenseHead):
         loss_center_heatmap = self.loss_heatmap(
             center_heatmap_preds,
             center_heatmap_targets,
-            avg_factor=avg_factor)
+            avg_factor=avg_factor/2.)
         loss_wh = self.loss_wh(
             wh_preds,
             wh_targets,
@@ -171,7 +171,7 @@ class CenterNetHead(BaseDenseHead):
 
                 wh_offset_target_weights[i, :, cty_int, ctx_int] = 1
 
-        avg_factor = max(1, wh_offset_target_weights[:, 0, ...].eq(1).sum())
+        avg_factor = max(1, wh_offset_target_weights.eq(1).sum())
         target_result = dict(
             center_heatmap_targets=center_heatmap_targets,
             wh_targets=wh_targets,
