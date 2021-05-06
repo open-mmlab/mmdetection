@@ -1,7 +1,8 @@
 import os
+import os.path as osp
 
 from .task_types import MMDetectionTaskType
-from tasks.mmdetection_tasks.detection import MMDetectionParameters
+from ..detection import MMDetectionParameters, list_available_models
 
 
 class ConfigMappings(object):
@@ -13,49 +14,39 @@ class ConfigMappings(object):
         :param task_type: MMDetectionTaskType that specifies the type of task
         """
 
-        # This path points to the mmdetection_tasks directory, i.e. the parent directory containing the config,
-        # datasets, schedules, etc.
-        base_task_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+        base_task_path = osp.join(osp.abspath(osp.dirname(__file__)), '..', '..')
 
-        default_data_pipeline_path = os.path.join(base_task_path, 'datasets/default_data_pipeline.py')
+        default_data_pipeline_path = osp.join(base_task_path, 'configs', 'datasets', 'default_data_pipeline.py')
 
+        self.model_file_map = {}
         if task_type == MMDetectionTaskType.OBJECTDETECTION:
-            model_directory = os.path.join(base_task_path, 'thirdparty/models/detection/')
-            self.model_file_map = {
-                'faster-rcnn': dict(filename=os.path.join(model_directory, 'faster_rcnn_r50_fpn.py'),
-                                    data_pipeline=default_data_pipeline_path,
-                                    gradient_clipping=None),
-                'cascade-rcnn': dict(filename=os.path.join(model_directory, 'cascade_rcnn_r101_fpn.py'),
-                                     data_pipeline=default_data_pipeline_path,
-                                     gradient_clipping=dict(max_norm=35, norm_type=2)),
-                'retinanet': dict(filename=os.path.join(model_directory, 'retinanet_r101_fpn.py'),
-                                  data_pipeline=default_data_pipeline_path,
-                                  gradient_clipping=dict(max_norm=35, norm_type=2)),
-                'yolov3': dict(filename=os.path.join(model_directory, 'yolov3.py'),
-                               data_pipeline='../../datasets/yolo_data_pipeline.py',
-                               gradient_clipping=dict(max_norm=100, norm_type=2))}
+            model_directory = osp.join(base_task_path, '..', 'configs', 'ote', 'task-debug')
+            available_models = list_available_models(model_directory)
+            for model in available_models:
+                self.model_file_map[model['name']] = dict(
+                    filename=osp.join(model['dir'], 'model.py'),
+                    data_pipeline=osp.join(model['dir'], 'nous_data_pipeline.py'),
+                    gradient_clipping=None
+                )
             self.configurable_parameter_type = MMDetectionParameters
 
         elif task_type == MMDetectionTaskType.INSTANCESEGMENTATION:
-            model_directory = os.path.join(base_task_path, 'thirdparty/models/instance_segmentation/')
-            self.model_file_map = {'mask-rcnn': dict(filename=os.path.join(model_directory, 'mask_rcnn_r101_fpn.py'),
+            raise NotImplementedError()
+            model_directory = osp.join(base_task_path, 'thirdparty', 'models', 'instance_segmentation')
+            self.model_file_map = {'mask-rcnn': dict(filename=osp.join(model_directory, 'mask_rcnn_r101_fpn.py'),
                                                      data_pipeline=default_data_pipeline_path,
                                                      gradient_clipping=None)}
 
         # Base dir for the learning rate schedule config files
-        schedule_dir = os.path.join(base_task_path, 'schedules')
-
+        schedule_dir = osp.join(base_task_path, 'configs', 'schedules')
         self.learning_rate_schedule_map = {
-            'fixed': dict(filename=os.path.join(schedule_dir, 'schedule_fixed.py'), name='Fixed'),
-            'step': dict(filename=os.path.join(schedule_dir, 'schedule_step.py'), name='Step-wise annealing'),
-            'cyclic': dict(filename=os.path.join(schedule_dir, 'schedule_cyclic.py'), name='Cyclic cosine annealing'),
-            'exp': dict(filename=os.path.join(schedule_dir, 'schedule_exp.py'), name='Exponential annealing')}
-
-        # Base dir for the runtime config files
-        runtime_dir = os.path.join(base_task_path, 'runtimes')
+            'fixed': dict(filename=osp.join(schedule_dir, 'schedule_fixed.py'), name='Fixed'),
+            'step': dict(filename=osp.join(schedule_dir, 'schedule_step.py'), name='Step-wise annealing'),
+            'cyclic': dict(filename=osp.join(schedule_dir, 'schedule_cyclic.py'), name='Cyclic cosine annealing'),
+            'exp': dict(filename=osp.join(schedule_dir, 'schedule_exp.py'), name='Exponential annealing')}
 
         self.runtime_map = {
-            'default': dict(filename=os.path.join(runtime_dir, 'default_runtime.py'), name='Default')
+            'default': dict(filename=osp.join(base_task_path, 'configs', 'default_runtime.py'), name='Default')
         }
 
     def get_model_file(self, model_name: str) -> str:

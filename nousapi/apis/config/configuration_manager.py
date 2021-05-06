@@ -12,7 +12,7 @@ from noussdk.entities.task_environment import TaskEnvironment
 from noussdk.entities.datasets import Dataset, Subset
 from noussdk.logging import logger_factory
 
-from tasks.mmdetection_tasks.detection import MMDetectionParameters
+from ..detection import MMDetectionParameters
 from .config_mapper import ConfigMappings
 from .task_types import MMDetectionTaskType
 
@@ -50,9 +50,14 @@ class MMDetectionConfigManager(object):
             dataset_file=self.config_mapper.get_data_pipeline_file(model_name),
             runtime_file=self.config_mapper.get_runtime_file('default')
         )
+        # Fix config.
+        if hasattr(self.config, 'total_epochs'):
+            self.config.runner.max_epochs = self.config.total_epochs
 
         # Assign additional parameters
-        self.model_name = model_name
+        # self.model_name = model_name
+        self.config.model_name = model_name
+        # FIXME.
         self.config.gpu_ids = range(1)
 
         # this controls the maximum number of ground truth bboxes per image that will be processed on the gpu. If an
@@ -68,6 +73,7 @@ class MMDetectionConfigManager(object):
         # Specify label names in config
         labels = task_environment.labels
         self.label_names = [lab.name for lab in labels]
+        # FIXME. What for?
         self.config.labels = labels
         self.project_name = task_environment.project.name
         self.set_data_classes()

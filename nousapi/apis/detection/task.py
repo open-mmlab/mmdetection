@@ -9,6 +9,7 @@ import json
 import time
 import mmcv
 
+from collections import defaultdict
 from itertools import compress
 from typing import Optional, List, Tuple
 
@@ -45,14 +46,15 @@ from mmdet.core import preprocess_example_input, generate_inputs_and_wrap_model
 
 from mmcv.parallel import MMDataParallel
 from mmcv.utils import Config
-from mmcv.runner import save_checkpoint
+from mmcv.runner import save_checkpoint, load_checkpoint
 
 from .configurable_parameters import MMDetectionParameters
 from ..config import MMDetectionConfigManager, MMDetectionTaskType
+from nousapi.extension.utils.hooks import NOUSLoggerHook
 
 # The following imports are needed to register the custom datasets and hooks for NOUS as modules in the
 # mmdetection framework. They are not used directly in this file, but they have to be here for the registration to work
-import ...extension
+# from ...extension import *
 
 
 logger = logger_factory.get_logger("MMDetectionTask")
@@ -109,10 +111,10 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         # Model initialization.
         self.train_model = None
         self.inference_model = None
+        self.learning_curves = defaultdict(NOUSLoggerHook.Curve)
         self.load_model(self.task_environment)
 
-    @staticmethod
-    def _create_model(config: Config, from_scratch: bool = False):
+    def _create_model(self, config: Config, from_scratch: bool = False):
         """
         Creates a model, based on the configuration in config
 
@@ -122,10 +124,26 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         :return model: Model in training mode
         """
         model_cfg = copy.deepcopy(config.model)
+
+        self.learning_curves = defaultdict(NOUSLoggerHook.Curve)
+
+        init_from = config.get('init_from', None)
         if from_scratch:
-            # TODO. This does not always hold true as long as we have pytorchcv-based backbones with ad-hoc weights specification.
             model_cfg.pretrained = None
-        return build_detector(model_cfg)
+            init_from = None
+        logger.warning(init_from)
+        if init_from is not None:
+            # No need to initialize backbone separately, if all weights are provided.
+            model_cfg.pretrained = None
+            logger.warning('build detector')
+            model = build_detector(model_cfg)
+            # Load all weights.
+            logger.warning('load checkpoint')
+            load_checkpoint(model, init_from, map_location='cpu')
+        else:
+            logger.warning('build detector as is')
+            model = build_detector(model_cfg)
+        return model
 
     def analyse(self, dataset: Dataset, analyse_parameters: Optional[AnalyseParameters] = None) -> Dataset:
         """ Analyzes a dataset using the latest inference model. """
@@ -226,7 +244,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
             self.inference_model = torch_model
             # FIXME. Not a reliable condition. Model might be changed in many different ways.
-            if model_config.model.type == self.config_manager.config.model.type:
+            if model_config.model_name == self.config_manager.config.model_name:
                 # If the model architecture hasn't changed in the configurable parameters, train model builds upon
                 # the loaded inference model weights and we can just copy the inference model to train_model
                 self.train_model = copy.deepcopy(self.inference_model)
@@ -234,22 +252,22 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                 # If the model architecture has changed, then we start training a model with the desired architecture
                 self.train_model = self._create_model(config=self.config_manager.config, from_scratch=False)
                 logger.info(f"Model architecture has changed in configurable parameters. Initialized train model with "
-                            f"{self.config_manager.config.model.type} architecture.")
+                            f"{self.config_manager.config.model_name} architecture.")
         else:
             # If there is no trained model yet, create model with pretrained weights as defined in the model config
             # file. These are ImageNet pretrained
             model_config = self.config_manager.config_copy
+            logger.info(model_config)
+            # logger.info(Config(model_config).pretty_text)
             torch_model = self._create_model(config=model_config, from_scratch=False)
             self.train_model = torch_model
             self.inference_model = copy.deepcopy(self.train_model)
-            logger.info(f"No trained model in project yet. Created new model with {model_config.model.type} "
+            logger.info(f"No trained model in project yet. Created new model with {self.config_manager.config.model_name} "
                         f"architecture and ImageNet pretrained weights.")
 
-        # FIXME. Why is this?
         # Set the model configs. Inference always uses the config that came with the model, while training uses the
         # latest config in the config_manager
         self.inference_model.cfg = model_config
-        # FIXME. What is config_copy?
         self.train_model.cfg = self.config_manager.config_copy
 
         self.inference_model.eval()
@@ -344,12 +362,21 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         # Set model config to the most up to date version. Not 100% sure if this is even needed, setting just in case
         self.train_model.cfg = self.config_manager.config_copy
 
+        # Replace all logger hooks by the NOUSLoggerHook.
+        config = self.config_manager.config_copy
+        config.log_config.hooks = [NOUSLoggerHook(curves=self.learning_curves)]
+        # hooks = [hook for hook in config.log_config.hooks if hook.type == 'NOUSLoggerHook']
+        # if hooks:
+        #     hooks[0].curves = self.learning_curves
+        # else:
+        #     logger.warning('Failed to find NOUSLoggerHook')
+
         # Train the model. Training modifies mmdet config in place, so make a deepcopy
         self.is_training = True
         start_train_time = time.time()
         train_detector(model=self.train_model,
                        dataset=[mm_train_dataset],
-                       cfg=self.config_manager.config_copy,
+                       cfg=config,
                        validate=True)
         training_duration = time.time() - start_train_time
         return training_duration
@@ -571,6 +598,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         :return output List[MetricsGroup]
         """
         output: List[MetricsGroup] = []
+
         log_list = self._load_current_training_logs()
         if not log_list:
             return None
@@ -600,7 +628,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                     df.at[entry['epoch'], 'train_loss'] = entry.get('loss', 0)
 
         # Model architecture
-        architecture = InfoMetric(name='Model architecture', value=self.train_model.cfg.model.type)
+        architecture = InfoMetric(name='Model architecture', value=self.train_model.cfg.model_name)
         visualization_info_architecture = VisualizationInfo(name="Model architecture",
                                                             visualisation_type=VisualizationType.TEXT)
         output.append(MetricsGroup(metrics=[architecture],

@@ -1,7 +1,13 @@
 import os
+from collections import defaultdict
 
-from mmcv.runner.hooks import HOOKS, Hook
+from mmcv.runner.hooks import HOOKS, Hook, LoggerHook
 from mmcv.runner import EpochBasedRunner
+from mmcv.runner.dist_utils import master_only
+from noussdk.logging import logger_factory
+
+
+logger = logger_factory.get_logger("MMDetectionTask")
 
 
 @HOOKS.register_module()
@@ -57,3 +63,37 @@ class EnsureCorrectBestCheckpointHook(Hook):
 
     def after_run(self, runner):
         runner.call_hook('after_train_epoch')
+
+
+@HOOKS.register_module()
+class NOUSLoggerHook(LoggerHook):
+
+    class Curve:
+        def __init__(self):
+            self.x = []
+            self.y = []
+
+        def __repr__(self):
+            points = []
+            for x, y in zip(self.x, self.y):
+                points.append(f'({x},{y})')
+            return 'curve[' + ','.join(points) + ']'
+
+    def __init__(self,
+                 curves=None,
+                 interval=10,
+                 ignore_last=True,
+                 reset_flag=True,
+                 by_epoch=True):
+        super().__init__(interval, ignore_last, reset_flag, by_epoch)
+        self.curves = curves if curves is not None else defaultdict(self.Curve)
+
+    @master_only
+    def log(self, runner):
+        tags = self.get_loggable_tags(runner, allow_text=False)
+        normalized_iter = runner.max_epochs / runner.max_iters * self.get_iter(runner)
+        for tag, value in tags.items():
+            self.curves[tag].x.append(normalized_iter)
+            self.curves[tag].y.append(value)
+        # logger.warning(sorted(self.curves.keys()))
+        # logger.warning(str(self.curves['train/loss']))

@@ -2,8 +2,23 @@
 #  This file is subject to the terms and conditions defined in file 'LICENSE.txt',
 #  which is part of this source code package.
 
+import os
+import os.path as osp
+
 from noussdk.configuration.configurable_parameters import *
 from noussdk.configuration.deep_learning_configurable_parameters import DeepLearningConfigurableParameters
+
+
+def list_available_models(models_directory):
+    available_models = []
+    for dirpath, dirnames, filenames in os.walk(models_directory):
+        for filename in filenames:
+            if filename == 'model.py':
+                available_models.append(dict(
+                    name=osp.basename(dirpath),
+                    dir=osp.join(models_directory, dirpath)))
+    available_models.sort(key=lambda x: x['name'])
+    return available_models
 
 
 class MMDetectionParameters(DeepLearningConfigurableParameters):
@@ -84,7 +99,7 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
         )
 
         num_epochs = Integer(
-            default_value=25,
+            default_value=2,
             header="Number of epochs",
             description="Increasing this value causes the results to be more robust but training time "
             "will be longer.",
@@ -133,31 +148,12 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
     class __LearningArchitecture(Group):
         header = "Learning Architecture"
         description = header
-
+        base_models_dir = osp.join(osp.abspath(osp.dirname(__file__)), '..', '..', '..', 'configs', 'ote', 'task-debug')
+        available_models = list_available_models(base_models_dir)
         model_architecture = Selectable(header="Model architecture",
-                                        default_value="faster-rcnn",
-                                        options=[Option(key="faster-rcnn",
-                                                        value="Faster-RCNN",
-                                                        description=""),
-                                                 Option(key="cascade-rcnn",
-                                                        value="Cascade-RCNN",
-                                                        description=""),
-                                                 Option(key="retinanet",
-                                                        value="RetinaNet",
-                                                        description=""),
-                                                 # TODO: I had a lot of problems training YOLO, it does train but does
-                                                 #   not seem to converge. So it is disabled for now.
-                                                 # Option(key='yolov3',
-                                                 #        value='YOLOv3',
-                                                 #        description="")
-                                                 ],
-                                        description="Specify learning architecture for the MMDetection task. For "
-                                                    "high throughput during inference, or when dataset size is small,"
-                                                    " Faster-RCNN is recommended. For best accuracy, Cascade-RCNN is "
-                                                    " recommended. For large datasets, RetinaNet might give higher "
-                                                    "accuracy, but it generally requires more training epochs. Note: "
-                                                    "not all models support OpenVINO export. Currently exporting to "
-                                                    "OpenVINO is supported for: ['Faster-RCNN', 'Cascade-RCNN']",
+                                        default_value=available_models[0]['name'],
+                                        options=[Option(key=x['name'], value=x['name'], description='') for x in available_models],
+                                        description="Specify learning architecture for the the task.",
                                         editable=True)
 
     learning_parameters: __LearningParameters = Object(__LearningParameters)
