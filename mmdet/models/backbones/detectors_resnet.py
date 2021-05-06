@@ -1,8 +1,13 @@
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import build_conv_layer, build_norm_layer, constant_init
+from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
+                      kaiming_init)
+from mmcv.runner import Sequential, load_checkpoint
+from torch.nn.modules.batchnorm import _BatchNorm
 
+from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
+from .resnet import BasicBlock
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 
@@ -22,6 +27,8 @@ class Bottleneck(_Bottleneck):
              added for ``rfp_feat``. Otherwise, the structure is the same as
              base class.
          sac (dict, optional): Dictionary to construct SAC. Default: None.
+         init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
     expansion = 4
 
@@ -30,8 +37,10 @@ class Bottleneck(_Bottleneck):
                  planes,
                  rfp_inplanes=None,
                  sac=None,
+                 init_cfg=None,
                  **kwargs):
-        super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
+        super(Bottleneck, self).__init__(
+            inplanes, planes, init_cfg=init_cfg, **kwargs)
 
         assert sac is None or isinstance(sac, dict)
         self.sac = sac
@@ -56,12 +65,9 @@ class Bottleneck(_Bottleneck):
                 1,
                 stride=1,
                 bias=True)
-        self.init_weights()
-
-    def init_weights(self):
-        """Initialize the weights."""
-        if self.rfp_inplanes:
-            constant_init(self.rfp_conv, 0)
+            if init_cfg is None:
+                self.init_cfg = dict(
+                    type='Constant', val=0, override=dict(name='rfp_conv'))
 
     def rfp_forward(self, x, rfp_feat):
         """The forward function that also takes the RFP features as input."""
@@ -110,7 +116,7 @@ class Bottleneck(_Bottleneck):
         return out
 
 
-class ResLayer(nn.Sequential):
+class ResLayer(Sequential):
     """ResLayer to build ResNet style backbone for RPF in detectoRS.
 
     The difference between this module and base class is that we pass
@@ -149,7 +155,7 @@ class ResLayer(nn.Sequential):
                  rfp_inplanes=None,
                  **kwargs):
         self.block = block
-        assert downsample_first, f'downsampel_first={downsample_first} is ' \
+        assert downsample_first, f'downsample_first={downsample_first} is ' \
                                  'not supported in DetectoRS'
 
         downsample = None
@@ -216,7 +222,6 @@ class DetectoRS_ResNet(ResNet):
             base class.
         output_img (bool): If ``True``, the input image will be inserted into
             the starting position of output. Default: False.
-        pretrained (str, optional): The pretrained model to load.
     """
 
     arch_settings = {
@@ -231,12 +236,15 @@ class DetectoRS_ResNet(ResNet):
                  rfp_inplanes=None,
                  output_img=False,
                  pretrained=None,
+                 init_cfg=None,
                  **kwargs):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
+        self.pretrained = pretrained
         self.sac = sac
         self.stage_with_sac = stage_with_sac
         self.rfp_inplanes = rfp_inplanes
         self.output_img = output_img
-        self.pretrained = pretrained
         super(DetectoRS_ResNet, self).__init__(**kwargs)
 
         self.inplanes = self.stem_channels
@@ -273,6 +281,36 @@ class DetectoRS_ResNet(ResNet):
             self.res_layers.append(layer_name)
 
         self._freeze_stages()
+
+    # In order to be properly initialized by RFP
+    def init_weights(self):
+        # Calling this method will cause parameter initialization exception
+        # super(DetectoRS_ResNet, self).init_weights()
+
+        if isinstance(self.pretrained, str):
+            logger = get_root_logger()
+            load_checkpoint(self, self.pretrained, strict=False, logger=logger)
+        elif self.pretrained is None:
+            for m in self.modules():
+                if isinstance(m, nn.Conv2d):
+                    kaiming_init(m)
+                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                    constant_init(m, 1)
+
+            if self.dcn is not None:
+                for m in self.modules():
+                    if isinstance(m, Bottleneck) and hasattr(
+                            m.conv2, 'conv_offset'):
+                        constant_init(m.conv2.conv_offset, 0)
+
+            if self.zero_init_residual:
+                for m in self.modules():
+                    if isinstance(m, Bottleneck):
+                        constant_init(m.norm3, 0)
+                    elif isinstance(m, BasicBlock):
+                        constant_init(m.norm2, 0)
+        else:
+            raise TypeError('pretrained must be a str or None')
 
     def make_res_layer(self, **kwargs):
         """Pack all blocks in a stage into a ``ResLayer`` for DetectoRS."""

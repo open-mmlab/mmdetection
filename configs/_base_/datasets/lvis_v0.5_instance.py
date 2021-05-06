@@ -1,3 +1,4 @@
+# dataset settings
 _base_ = 'coco_instance.py'
 dataset_type = 'LVISV05Dataset'
 data_root = 'data/lvis_v0.5/'

@@ -1,3 +1,5 @@
+_base_ = '../_base_/default_runtime.py'
+
 # model settings
 model = dict(
     type='RetinaNet',
@@ -20,7 +22,7 @@ model = dict(
         num_outs=5),
     bbox_head=dict(
         type='GARetinaHead',
-        num_classes=81,
+        num_classes=80,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -144,8 +146,7 @@ data = dict(
 evaluation = dict(interval=1, metric='bbox')
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
@@ -163,10 +164,4 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 24
-dist_params = dict(backend='nccl')
-log_level = 'INFO'
-work_dir = './work_dirs/ga_retinanet_r101_caffe_fpn_mstrain_2x'
-load_from = None
-resume_from = None
-workflow = [('train', 1)]
+runner = dict(type='EpochBasedRunner', max_epochs=24)

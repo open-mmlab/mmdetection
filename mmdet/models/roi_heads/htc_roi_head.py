@@ -37,17 +37,6 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         self.interleaved = interleaved
         self.mask_info_flow = mask_info_flow
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        super(HybridTaskCascadeRoIHead, self).init_weights(pretrained)
-        if self.with_semantic:
-            self.semantic_head.init_weights()
-
     @property
     def with_semantic(self):
         """bool: whether the head has semantic head"""
@@ -536,8 +525,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
                 segm_result = [[[]
-                                for _ in range(self.mask_head[-1].num_classes -
-                                               1)]]
+                                for _ in range(self.mask_head[-1].num_classes)]
+                               ]
             else:
                 aug_masks = []
                 aug_img_metas = []

@@ -1,3 +1,4 @@
+import mmcv
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -9,7 +10,7 @@ from .base_bbox_coder import BaseBBoxCoder
 
 @BBOX_CODERS.register_module()
 class BucketingBBoxCoder(BaseBBoxCoder):
-    """Bucketing BBox Coder for Side-Aware Bounday Localization (SABL).
+    """Bucketing BBox Coder for Side-Aware Boundary Localization (SABL).
 
     Boundary Localization with Bucketing and Bucketing Guided Rescoring
     are implemented here.
@@ -90,6 +91,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         return decoded_bboxes
 
 
+@mmcv.jit(coderize=True)
 def generat_buckets(proposals, num_buckets, scale_factor=1.0):
     """Generate buckets w.r.t bucket number and scale factor of proposals.
 
@@ -138,6 +140,7 @@ def generat_buckets(proposals, num_buckets, scale_factor=1.0):
     return bucket_w, bucket_h, l_buckets, r_buckets, t_buckets, d_buckets
 
 
+@mmcv.jit(coderize=True)
 def bbox2bucket(proposals,
                 gt,
                 num_buckets,
@@ -252,7 +255,7 @@ def bbox2bucket(proposals,
         bucket_cls_d_weights
     ],
                                    dim=-1)
-    # ignore second nearest buckets for cls if necessay
+    # ignore second nearest buckets for cls if necessary
     if cls_ignore_neighbor:
         bucket_cls_weights = (~((bucket_cls_weights == 1) &
                                 (bucket_labels == 0))).float()
@@ -261,6 +264,7 @@ def bbox2bucket(proposals,
     return offsets, offsets_weights, bucket_labels, bucket_cls_weights
 
 
+@mmcv.jit(coderize=True)
 def bucket2bbox(proposals,
                 cls_preds,
                 offset_preds,

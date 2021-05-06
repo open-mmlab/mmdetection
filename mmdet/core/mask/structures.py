@@ -23,7 +23,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The rescaled masks.
         """
-        pass
 
     @abstractmethod
     def resize(self, out_shape, interpolation='nearest'):
@@ -36,7 +35,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The resized masks.
         """
-        pass
 
     @abstractmethod
     def flip(self, flip_direction='horizontal'):
@@ -48,7 +46,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The flipped masks.
         """
-        pass
 
     @abstractmethod
     def pad(self, out_shape, pad_val):
@@ -61,7 +58,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The padded masks.
         """
-        pass
 
     @abstractmethod
     def crop(self, bbox):
@@ -73,7 +69,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Return:
             BaseInstanceMasks: The cropped masks.
         """
-        pass
 
     @abstractmethod
     def crop_and_resize(self,
@@ -91,25 +86,23 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Args:
             bboxes (Tensor): Bboxes in format [x1, y1, x2, y2], shape (N, 4)
             out_shape (tuple[int]): Target (h, w) of resized mask
-            inds (ndarray): Indexes to assign masks to each bbox
+            inds (ndarray): Indexes to assign masks to each bbox,
+                shape (N,) and values should be between [0, num_masks - 1].
             device (str): Device of bboxes
             interpolation (str): See `mmcv.imresize`
 
         Return:
             BaseInstanceMasks: the cropped and resized masks.
         """
-        pass
 
     @abstractmethod
     def expand(self, expanded_h, expanded_w, top, left):
         """see :class:`Expand`."""
-        pass
 
     @property
     @abstractmethod
     def areas(self):
         """ndarray: areas of each instance."""
-        pass
 
     @abstractmethod
     def to_ndarray(self):
@@ -118,7 +111,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Return:
             ndarray: Converted masks in the format of ndarray.
         """
-        pass
 
     @abstractmethod
     def to_tensor(self, dtype, device):
@@ -131,7 +123,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Tensor: Converted masks in the format of Tensor.
         """
-        pass
 
     @abstractmethod
     def translate(self,
@@ -153,7 +144,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Translated masks.
         """
-        pass
 
     def shear(self,
               out_shape,
@@ -175,7 +165,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             ndarray: Sheared masks.
         """
-        pass
 
     @abstractmethod
     def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
@@ -194,7 +183,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Rotated masks.
         """
-        pass
 
 
 class BitmapMasks(BaseInstanceMasks):
@@ -205,6 +193,25 @@ class BitmapMasks(BaseInstanceMasks):
             the number of objects.
         height (int): height of masks
         width (int): width of masks
+
+    Example:
+        >>> from mmdet.core.mask.structures import *  # NOQA
+        >>> num_masks, H, W = 3, 32, 32
+        >>> rng = np.random.RandomState(0)
+        >>> masks = (rng.rand(num_masks, H, W) > 0.1).astype(np.int)
+        >>> self = BitmapMasks(masks, height=H, width=W)
+
+        >>> # demo crop_and_resize
+        >>> num_boxes = 5
+        >>> bboxes = np.array([[0, 0, 30, 10.0]] * num_boxes)
+        >>> out_shape = (14, 14)
+        >>> inds = torch.randint(0, len(self), size=(num_boxes,))
+        >>> device = 'cpu'
+        >>> interpolation = 'bilinear'
+        >>> new = self.crop_and_resize(
+        ...     bboxes, out_shape, inds, device, interpolation)
+        >>> assert len(new) == num_boxes
+        >>> assert new.height, new.width == out_shape
     """
 
     def __init__(self, masks, height, width):
@@ -269,7 +276,8 @@ class BitmapMasks(BaseInstanceMasks):
             resized_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
             resized_masks = np.stack([
-                mmcv.imresize(mask, out_shape, interpolation=interpolation)
+                mmcv.imresize(
+                    mask, out_shape[::-1], interpolation=interpolation)
                 for mask in self.masks
             ])
         return BitmapMasks(resized_masks, *out_shape)
@@ -379,6 +387,22 @@ class BitmapMasks(BaseInstanceMasks):
 
         Returns:
             BitmapMasks: Translated BitmapMasks.
+
+        Example:
+            >>> from mmdet.core.mask.structures import BitmapMasks
+            >>> self = BitmapMasks.random(dtype=np.uint8)
+            >>> out_shape = (32, 32)
+            >>> offset = 4
+            >>> direction = 'horizontal'
+            >>> fill_val = 0
+            >>> interpolation = 'bilinear'
+            >>> # Note, There seem to be issues when:
+            >>> # * out_shape is different than self's shape
+            >>> # * the mask dtype is not supported by cv2.AffineWarp
+            >>> new = self.translate(out_shape, offset, direction, fill_val,
+            >>>                      interpolation)
+            >>> assert len(new) == len(self)
+            >>> assert new.height, new.width == out_shape
         """
         if len(self.masks) == 0:
             translated_masks = np.empty((0, *out_shape), dtype=np.uint8)
@@ -475,6 +499,27 @@ class BitmapMasks(BaseInstanceMasks):
         """See :func:`BaseInstanceMasks.to_tensor`."""
         return torch.tensor(self.masks, dtype=dtype, device=device)
 
+    @classmethod
+    def random(cls,
+               num_masks=3,
+               height=32,
+               width=32,
+               dtype=np.uint8,
+               rng=None):
+        """Generate random bitmap masks for demo / testing purposes.
+
+        Example:
+            >>> from mmdet.core.mask.structures import BitmapMasks
+            >>> self = BitmapMasks.random()
+            >>> print('self = {}'.format(self))
+            self = BitmapMasks(num_masks=3, height=32, width=32)
+        """
+        from mmdet.utils.util_random import ensure_rng
+        rng = ensure_rng(rng)
+        masks = (rng.rand(num_masks, height, width) > 0.1).astype(dtype)
+        self = cls(masks, height=height, width=width)
+        return self
+
 
 class PolygonMasks(BaseInstanceMasks):
     """This class represents masks in the form of polygons.
@@ -489,6 +534,31 @@ class PolygonMasks(BaseInstanceMasks):
             compose the object, the third level to the poly coordinates
         height (int): height of masks
         width (int): width of masks
+
+    Example:
+        >>> from mmdet.core.mask.structures import *  # NOQA
+        >>> masks = [
+        >>>     [ np.array([0, 0, 10, 0, 10, 10., 0, 10, 0, 0]) ]
+        >>> ]
+        >>> height, width = 16, 16
+        >>> self = PolygonMasks(masks, height, width)
+
+        >>> # demo translate
+        >>> new = self.translate((16, 16), 4., direction='horizontal')
+        >>> assert np.all(new.masks[0][0][1::2] == masks[0][0][1::2])
+        >>> assert np.all(new.masks[0][0][0::2] == masks[0][0][0::2] + 4)
+
+        >>> # demo crop_and_resize
+        >>> num_boxes = 3
+        >>> bboxes = np.array([[0, 0, 30, 10.0]] * num_boxes)
+        >>> out_shape = (16, 16)
+        >>> inds = torch.randint(0, len(self), size=(num_boxes,))
+        >>> device = 'cpu'
+        >>> interpolation = 'bilinear'
+        >>> new = self.crop_and_resize(
+        ...     bboxes, out_shape, inds, device, interpolation)
+        >>> assert len(new) == num_boxes
+        >>> assert new.height, new.width == out_shape
     """
 
     def __init__(self, masks, height, width):
@@ -669,7 +739,15 @@ class PolygonMasks(BaseInstanceMasks):
                   direction='horizontal',
                   fill_val=None,
                   interpolation=None):
-        """Translate the PolygonMasks."""
+        """Translate the PolygonMasks.
+
+        Example:
+            >>> self = PolygonMasks.random(dtype=np.int)
+            >>> out_shape = (self.height, self.width)
+            >>> new = self.translate(out_shape, 4., direction='horizontal')
+            >>> assert np.all(new.masks[0][0][1::2] == self.masks[0][0][1::2])
+            >>> assert np.all(new.masks[0][0][0::2] == self.masks[0][0][0::2] + 4)  # noqa: E501
+        """
         assert fill_val is None or fill_val == 0, 'Here fill_val is not '\
             f'used, and defaultly should be None or 0. got {fill_val}.'
         if len(self.masks) == 0:
@@ -808,6 +886,125 @@ class PolygonMasks(BaseInstanceMasks):
                                device=device)
         ndarray_masks = self.to_ndarray()
         return torch.tensor(ndarray_masks, dtype=dtype, device=device)
+
+    @classmethod
+    def random(cls,
+               num_masks=3,
+               height=32,
+               width=32,
+               n_verts=5,
+               dtype=np.float32,
+               rng=None):
+        """Generate random polygon masks for demo / testing purposes.
+
+        Adapted from [1]_
+
+        References:
+            .. [1] https://gitlab.kitware.com/computer-vision/kwimage/-/blob/928cae35ca8/kwimage/structs/polygon.py#L379  # noqa: E501
+
+        Example:
+            >>> from mmdet.core.mask.structures import PolygonMasks
+            >>> self = PolygonMasks.random()
+            >>> print('self = {}'.format(self))
+        """
+        from mmdet.utils.util_random import ensure_rng
+        rng = ensure_rng(rng)
+
+        def _gen_polygon(n, irregularity, spikeyness):
+            """Creates the polygon by sampling points on a circle around the
+            centre.  Random noise is added by varying the angular spacing
+            between sequential points, and by varying the radial distance of
+            each point from the centre.
+
+            Based on original code by Mike Ounsworth
+
+            Args:
+                n (int): number of vertices
+                irregularity (float): [0,1] indicating how much variance there
+                    is in the angular spacing of vertices. [0,1] will map to
+                    [0, 2pi/numberOfVerts]
+                spikeyness (float): [0,1] indicating how much variance there is
+                    in each vertex from the circle of radius aveRadius. [0,1]
+                    will map to [0, aveRadius]
+
+            Returns:
+                a list of vertices, in CCW order.
+            """
+            from scipy.stats import truncnorm
+            # Generate around the unit circle
+            cx, cy = (0.0, 0.0)
+            radius = 1
+
+            tau = np.pi * 2
+
+            irregularity = np.clip(irregularity, 0, 1) * 2 * np.pi / n
+            spikeyness = np.clip(spikeyness, 1e-9, 1)
+
+            # generate n angle steps
+            lower = (tau / n) - irregularity
+            upper = (tau / n) + irregularity
+            angle_steps = rng.uniform(lower, upper, n)
+
+            # normalize the steps so that point 0 and point n+1 are the same
+            k = angle_steps.sum() / (2 * np.pi)
+            angles = (angle_steps / k).cumsum() + rng.uniform(0, tau)
+
+            # Convert high and low values to be wrt the standard normal range
+            # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
+            low = 0
+            high = 2 * radius
+            mean = radius
+            std = spikeyness
+            a = (low - mean) / std
+            b = (high - mean) / std
+            tnorm = truncnorm(a=a, b=b, loc=mean, scale=std)
+
+            # now generate the points
+            radii = tnorm.rvs(n, random_state=rng)
+            x_pts = cx + radii * np.cos(angles)
+            y_pts = cy + radii * np.sin(angles)
+
+            points = np.hstack([x_pts[:, None], y_pts[:, None]])
+
+            # Scale to 0-1 space
+            points = points - points.min(axis=0)
+            points = points / points.max(axis=0)
+
+            # Randomly place within 0-1 space
+            points = points * (rng.rand() * .8 + .2)
+            min_pt = points.min(axis=0)
+            max_pt = points.max(axis=0)
+
+            high = (1 - max_pt)
+            low = (0 - min_pt)
+            offset = (rng.rand(2) * (high - low)) + low
+            points = points + offset
+            return points
+
+        def _order_vertices(verts):
+            """
+            References:
+                https://stackoverflow.com/questions/1709283/how-can-i-sort-a-coordinate-list-for-a-rectangle-counterclockwise
+            """
+            mlat = verts.T[0].sum() / len(verts)
+            mlng = verts.T[1].sum() / len(verts)
+
+            tau = np.pi * 2
+            angle = (np.arctan2(mlat - verts.T[0], verts.T[1] - mlng) +
+                     tau) % tau
+            sortx = angle.argsort()
+            verts = verts.take(sortx, axis=0)
+            return verts
+
+        # Generate a random exterior for each requested mask
+        masks = []
+        for _ in range(num_masks):
+            exterior = _order_vertices(_gen_polygon(n_verts, 0.9, 0.9))
+            exterior = (exterior * [(width, height)]).astype(dtype)
+            masks.append([exterior.ravel()])
+
+        self = cls(masks, height, width)
+        return self
 
 
 def polygon_to_bitmap(polygons, height, width):

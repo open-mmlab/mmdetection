@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
@@ -33,13 +33,17 @@ class SABLRetinaHead(BaseDenseHead):
         conv_cfg (dict): Config dict for ConvModule. Defaults to None.
         norm_cfg (dict): Config dict for Norm Layer. Defaults to None.
         bbox_coder (dict): Config dict for bbox coder.
-        reg_decoded_bbox (bool): Whether to regress decoded bbox. \
-            Defaults to False.
+        reg_decoded_bbox (bool): If true, the regression loss would be
+            applied directly on decoded bounding boxes, converting both
+            the predicted boxes and regression targets to absolute
+            coordinates format. Default False. It should be `True` when
+            using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
         train_cfg (dict): Training config of SABLRetinaHead.
         test_cfg (dict): Testing config of SABLRetinaHead.
         loss_cls (dict): Config of classification loss.
         loss_bbox_cls (dict): Config of classification loss for bbox branch.
         loss_bbox_reg (dict): Config of regression loss for bbox branch.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -78,8 +82,17 @@ class SABLRetinaHead(BaseDenseHead):
                      use_sigmoid=True,
                      loss_weight=1.5),
                  loss_bbox_reg=dict(
-                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.5)):
-        super(SABLRetinaHead, self).__init__()
+                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.5),
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='retina_cls',
+                         std=0.01,
+                         bias_prob=0.01))):
+        super(SABLRetinaHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
@@ -165,16 +178,6 @@ class SABLRetinaHead(BaseDenseHead):
             self.feat_channels, self.side_num * 4, 3, padding=1)
         self.retina_bbox_cls = nn.Conv2d(
             self.feat_channels, self.side_num * 4, 3, padding=1)
-
-    def init_weights(self):
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.retina_cls, std=0.01, bias=bias_cls)
-        normal_init(self.retina_bbox_reg, std=0.01)
-        normal_init(self.retina_bbox_cls, std=0.01)
 
     def forward_single(self, x):
         cls_feat = x

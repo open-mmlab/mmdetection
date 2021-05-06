@@ -157,8 +157,8 @@ def main():
             shuffle=False)
 
         # build the model and load checkpoint
-        model = build_detector(
-            cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+        cfg.model.train_cfg = None
+        model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
         fp16_cfg = cfg.get('fp16', None)
         if fp16_cfg is not None:
             wrap_fp16_model(model)
@@ -166,7 +166,7 @@ def main():
         checkpoint = load_checkpoint(model, cpt, map_location='cpu')
         # old versions did not save class info in checkpoints,
         # this walkaround is for backward compatibility
-        if 'CLASSES' in checkpoint['meta']:
+        if 'CLASSES' in checkpoint.get('meta', {}):
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
             model.CLASSES = dataset.CLASSES

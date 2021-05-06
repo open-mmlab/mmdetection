@@ -18,7 +18,7 @@ class HungarianAssigner(BaseAssigner):
 
     This class computes an assignment between the targets and the predictions
     based on the costs. The costs are weighted sum of three components:
-    classfication cost, regression L1 cost and regression iou cost. The
+    classification cost, regression L1 cost and regression iou cost. The
     targets don't include the no_object, so generally there are more
     predictions than targets. After the one-to-one matching, the un-matched
     are treated as backgrounds. Thus each query prediction will be assigned
@@ -109,8 +109,8 @@ class HungarianAssigner(BaseAssigner):
             return AssignResult(
                 num_gts, assigned_gt_inds, None, labels=assigned_labels)
         img_h, img_w, _ = img_meta['img_shape']
-        factor = torch.Tensor([img_w, img_h, img_w,
-                               img_h]).unsqueeze(0).to(gt_bboxes.device)
+        factor = gt_bboxes.new_tensor([img_w, img_h, img_w,
+                                       img_h]).unsqueeze(0)
 
         # 2. compute the weighted costs
         # classification and bboxcost.

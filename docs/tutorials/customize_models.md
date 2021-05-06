@@ -32,9 +32,6 @@ class MobileNet(nn.Module):
 
     def forward(self, x):  # should return a tuple
         pass
-
-    def init_weights(self, pretrained=None):
-        pass
 ```
 
 #### 2. Import the module
@@ -76,7 +73,7 @@ Create a new file `mmdet/models/necks/pafpn.py`.
 ```python
 from ..builder import NECKS
 
-@NECKS.register
+@NECKS.register_module()
 class PAFPN(nn.Module):
 
     def __init__(self,
@@ -105,7 +102,7 @@ or alternatively add
 
 ```python
 custom_imports = dict(
-    imports=['mmdet.models.necks.mobilenet'],
+    imports=['mmdet.models.necks.pafpn.py'],
     allow_failed_imports=False)
 ```
 
@@ -157,8 +154,6 @@ class DoubleConvFCBBoxHead(BBoxHead):
         kwargs.setdefault('with_avg_pool', True)
         super(DoubleConvFCBBoxHead, self).__init__(**kwargs)
 
-    def init_weights(self):
-        # conv layers are already initialized by ConvModule
 
     def forward(self, x_cls, x_reg):
 
@@ -186,7 +181,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
 
-    def init_weights(self, pretrained):
 
     def forward_dummy(self, x, proposals):
 
