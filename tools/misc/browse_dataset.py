@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument(
         '--show-interval',
         type=float,
-        default=0,
+        default=2,
         help='the interval of show (s)')
     parser.add_argument(
         '--cfg-options',
