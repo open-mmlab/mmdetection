@@ -319,6 +319,9 @@ class CenterHead(BaseDenseHead):
         topk_xs = (topk_inds % width).int().float()
         return topk_scores, topk_inds, topk_clses, topk_ys, topk_xs
 
+    def flip_tensor(self, tensor):
+        return torch.flip(tensor, [3])
+
     def get_bboxes(self,
                    center_hm,
                    wh_hm,
@@ -346,7 +349,11 @@ class CenterHead(BaseDenseHead):
         """
         result_list = []
         bs, _, feat_h, feat_w = self.feat_shape
-        assert bs == 1
+        if bs == 2:
+            center_hm = (center_hm[0:1] + self.flip_tensor(center_hm[1:2])) / 2
+            wh_hm = (wh_hm[0:1] + self.flip_tensor(wh_hm[1:2])) / 2
+            offset_hm = (offset_hm[0:1] + self.flip_tensor(offset_hm[1:2])) / 2
+            img_metas = img_metas[0]
         result_list.append(
             self._get_bboxes_single(
                 center_hm[:1, ...],
@@ -379,7 +386,7 @@ class CenterHead(BaseDenseHead):
                            offset_hm,
                            img_meta,
                            rescale=False,
-                           with_nms=True):
+                           with_nms=False):
         """
         Args:
             center_hm (tensor): shape (B, num_class, H, W),
@@ -403,14 +410,6 @@ class CenterHead(BaseDenseHead):
         flip = img_meta['flip']
         ratio_w = feat_w / img_meta['pad_shape'][1]
         ratio_h = feat_h / img_meta['pad_shape'][0]
-        # import cv2
-        # import numpy as np
-        # hm = center_hm.clone()[0].cpu().sum(axis=0).numpy()
-        # hm = (hm * 255).astype(np.uint8)
-        # # import pdb;pdb.set_trace()
-        # hm = cv2.applyColorMap(hm, cv2.COLORMAP_HOT)
-        # cv2.imshow('sadasd', hm)
-        # cv2.waitKey()
         # 1. get topK center points
         center_hm = self._local_maximum(center_hm)
         scores, index, clses, cy, cx = self._topk(center_hm,
@@ -439,15 +438,5 @@ class CenterHead(BaseDenseHead):
         if with_nms:
             detections, labels = self._bboxes_nms(detections, labels,
                                                   self.test_cfg)
-            # detections, labels = multiclass_nms(detections[:, :4],
-            #                                     detections[:])
-            # print('after', len(detections))
-            # import cv2
-            # img = cv2.imread(img_meta['filename'])
-            # for box in detections:
-            #     x1, y1, x2, y2 = box[:4].cpu().numpy().astype(int)
-            #     cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            # cv2.imshow('img', img)
-            # cv2.waitKey()
             return detections, labels
         return detections, labels

@@ -22,7 +22,7 @@ class CenterNet(SingleStageDetector):
         super(CenterNet, self).__init__(backbone, neck, bbox_head, train_cfg,
                                         test_cfg, pretrained)
 
-    def merge_aug_results(self, aug_results):
+    def merge_aug_results(self, aug_results, with_nms):
         """Merge augmented detection bboxes and score.
 
         Args:
@@ -41,7 +41,7 @@ class CenterNet(SingleStageDetector):
 
         bboxes = torch.cat(recovered_bboxes, dim=0).contiguous()
         labels = torch.cat(aug_labels).contiguous()
-        if bboxes.shape[0] > 0:
+        if with_nms:
             out_bboxes, out_labels = self.bbox_head._bboxes_nms(
                 bboxes, labels, self.bbox_head.test_cfg)
         else:
@@ -49,7 +49,7 @@ class CenterNet(SingleStageDetector):
 
         return out_bboxes, out_labels
 
-    def simple_test(self, img, img_metas, rescale=False):
+    def simple_test(self, img, img_metas, rescale=False, with_nms=False):
         """Test function without test time augmentation.
 
         Args:
@@ -90,16 +90,24 @@ class CenterNet(SingleStageDetector):
             ``imgs`` must including flipped image pairs.
 
         Returns:
-            bbox_results (tuple[np.ndarry]): Detection result of each class.
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
         """
+        img_inds = list(range(len(imgs)))
+        # use nms if use multi_scale test
+        with_nms = True if len(imgs) > 2 else False
+        assert img_metas[0][0]['flip'] + img_metas[1][0]['flip'], (
+            'aug test must have flipped image pair')
         aug_results = []
-        for img, img_meta in zip(imgs, img_metas):
-            x = self.extract_feat(img)
+        for ind, flip_ind in zip(img_inds[0::2], img_inds[1::2]):
+            img_pair = torch.cat([imgs[ind], imgs[flip_ind]])
+            x = self.extract_feat(img_pair)
             outs = self.bbox_head(x)
             bbox_list = self.bbox_head.get_bboxes(
-                *outs, img_meta, rescale, with_nms=False)
+                *outs, [img_metas[ind], img_metas[flip_ind]], False, False)
             aug_results.append(bbox_list)
-        bbox_list = [self.merge_aug_results(aug_results)]
+        bbox_list = [self.merge_aug_results(aug_results, with_nms)]
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
