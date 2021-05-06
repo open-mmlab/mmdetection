@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Scale, normal_init
+from mmcv.cnn import Scale
 from mmcv.runner import force_fp32
 
 from mmdet.core import distance2bbox, multi_apply, multiclass_nms, reduce_mean
@@ -46,6 +46,7 @@ class FCOSHead(AnchorFreeHead):
         loss_centerness (dict): Config of centerness loss.
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: norm_cfg=dict(type='GN', num_groups=32, requires_grad=True).
+        init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
         >>> self = FCOSHead(11, 7)
@@ -75,6 +76,15 @@ class FCOSHead(AnchorFreeHead):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='conv_cls',
+                         std=0.01,
+                         bias_prob=0.01)),
                  **kwargs):
         self.regress_ranges = regress_ranges
         self.center_sampling = center_sampling
@@ -87,6 +97,7 @@ class FCOSHead(AnchorFreeHead):
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
             norm_cfg=norm_cfg,
+            init_cfg=init_cfg,
             **kwargs)
         self.loss_centerness = build_loss(loss_centerness)
 
@@ -95,11 +106,6 @@ class FCOSHead(AnchorFreeHead):
         super()._init_layers()
         self.conv_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        super().init_weights()
-        normal_init(self.conv_centerness, std=0.01)
 
     def forward(self, feats):
         """Forward features from the upstream network.

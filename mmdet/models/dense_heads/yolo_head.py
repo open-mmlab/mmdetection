@@ -5,7 +5,7 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
@@ -42,6 +42,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         loss_wh (dict): Config of wh coordinate loss.
         train_cfg (dict): Training config of YOLOV3 head. Default: None.
         test_cfg (dict): Testing config of YOLOV3 head. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -74,8 +75,11 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                      loss_weight=1.0),
                  loss_wh=dict(type='MSELoss', loss_weight=1.0),
                  train_cfg=None,
-                 test_cfg=None):
-        super(YOLOV3Head, self).__init__()
+                 test_cfg=None,
+                 init_cfg=dict(
+                     type='Normal', std=0.01,
+                     override=dict(name='convs_pred'))):
+        super(YOLOV3Head, self).__init__(init_cfg)
         # Check params
         assert (len(in_channels) == len(out_channels) == len(featmap_strides))
 
@@ -141,11 +145,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
             self.convs_bridge.append(conv_bridge)
             self.convs_pred.append(conv_pred)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.convs_pred:
-            normal_init(m, std=0.01)
 
     def forward(self, feats):
         """Forward features from the upstream network.

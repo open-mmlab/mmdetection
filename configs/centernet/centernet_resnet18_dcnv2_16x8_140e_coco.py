@@ -1,17 +1,7 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-#optimizer = dict(type='Adam', lr=5e-4)
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-
-optimizer_config = dict(grad_clip=None)
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=1.0 / 1000,
-    step=[90, 120])
-total_epochs = 140
 
 model = dict(
     type='CenterNet',
@@ -30,12 +20,9 @@ model = dict(
         in_channels=64,
         loss_center=dict(type='GaussianFocalLoss', loss_weight=1.0),
         loss_wh=dict(type='L1Loss', loss_weight=0.1),
-        loss_offset=dict(type='L1Loss', loss_weight=1.0)))
-
-# img_norm_cfg = dict(
-#     mean=[0.408 * 255, 0.447 * 255, 0.470 * 255],
-#     std=[0.289 * 255, 0.274 * 255, 0.278 * 255],
-#     to_rgb=False)
+        loss_offset=dict(type='L1Loss', loss_weight=1.0)),
+    train_cfg=None,
+    test_cfg=dict(topK=100, max_per_img=100))
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -74,13 +61,12 @@ test_pipeline = [
             dict(type='Resize', keep_ratio=True),
             dict(
                 type='RandomCenterCropPad',
-                crop_size=None,
                 ratios=None,
                 border=None,
-                test_mode=True,
                 mean=[0, 0, 0],
                 std=[1, 1, 1],
                 to_rgb=True,
+                test_mode=True,
                 test_pad_mode=['logical_or', 31],
                 test_pad_add_pix=1),
             dict(type='RandomFlip'),
@@ -99,12 +85,15 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-train_cfg = None
-test_cfg = dict(
-    topK=100,
-    nms_cfg=dict(type='soft_nms', iou_threshold=0.5),
-    max_per_img=100)
 
-# log_config = dict(interval=1)
-# evaluation = dict(interval=10000, metric='bbox')
-# checkpoint_config = dict(interval=10000)
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=1000,
+    warmup_ratio=1.0 / 1000,
+    step=[90, 120])
+runner = dict(type='EpochBasedRunner', max_epochs=140)
+
+# Avoid evaluation and saving weights too frequently
+evaluation = dict(interval=5, metric='bbox')
+checkpoint_config = dict(interval=5)

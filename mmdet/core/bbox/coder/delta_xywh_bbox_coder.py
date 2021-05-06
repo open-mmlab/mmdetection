@@ -21,16 +21,25 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
             target for delta coordinates
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Defaults to True.
+        add_ctr_clamp (bool): Whether to add center clamp, when added, the
+            predicted box is clamped is its center is too far away from
+            the original anchor's center. Only used by YOLOF. Default False.
+        ctr_clamp (int): the maximum pixel shift to clamp. Only used by YOLOF.
+            Default 32.
     """
 
     def __init__(self,
                  target_means=(0., 0., 0., 0.),
                  target_stds=(1., 1., 1., 1.),
-                 clip_border=True):
+                 clip_border=True,
+                 add_ctr_clamp=False,
+                 ctr_clamp=32):
         super(BaseBBoxCoder, self).__init__()
         self.means = target_means
         self.stds = target_stds
         self.clip_border = clip_border
+        self.add_ctr_clamp = add_ctr_clamp
+        self.ctr_clamp = ctr_clamp
 
     def encode(self, bboxes, gt_bboxes):
         """Get box regression transformation deltas that can be used to
@@ -79,7 +88,8 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         if pred_bboxes.ndim == 3:
             assert pred_bboxes.size(1) == bboxes.size(1)
         decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means, self.stds,
-                                    max_shape, wh_ratio_clip, self.clip_border)
+                                    max_shape, wh_ratio_clip, self.clip_border,
+                                    self.add_ctr_clamp, self.ctr_clamp)
 
         return decoded_bboxes
 
@@ -137,7 +147,9 @@ def delta2bbox(rois,
                stds=(1., 1., 1., 1.),
                max_shape=None,
                wh_ratio_clip=16 / 1000,
-               clip_border=True):
+               clip_border=True,
+               add_ctr_clamp=False,
+               ctr_clamp=32):
     """Apply deltas to shift/scale base boxes.
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are
@@ -161,6 +173,11 @@ def delta2bbox(rois,
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Defaults to True.
+        add_ctr_clamp (bool): Whether to add center clamp, when added, the
+            predicted box is clamped is its center is too far away from
+            the original anchor's center. Only used by YOLOF. Default False.
+        ctr_clamp (int): the maximum pixel shift to clamp. Only used by YOLOF.
+            Default 32.
 
     Returns:
         Tensor: Boxes with shape (B, N, num_classes * 4) or (B, N, 4) or
@@ -194,9 +211,7 @@ def delta2bbox(rois,
     dy = denorm_deltas[..., 1::4]
     dw = denorm_deltas[..., 2::4]
     dh = denorm_deltas[..., 3::4]
-    max_ratio = np.abs(np.log(wh_ratio_clip))
-    dw = dw.clamp(min=-max_ratio, max=max_ratio)
-    dh = dh.clamp(min=-max_ratio, max=max_ratio)
+
     x1, y1 = rois[..., 0], rois[..., 1]
     x2, y2 = rois[..., 2], rois[..., 3]
     # Compute center of each roi
@@ -205,12 +220,25 @@ def delta2bbox(rois,
     # Compute width/height of each roi
     pw = (x2 - x1).unsqueeze(-1).expand_as(dw)
     ph = (y2 - y1).unsqueeze(-1).expand_as(dh)
+
+    dx_width = pw * dx
+    dy_height = ph * dy
+
+    max_ratio = np.abs(np.log(wh_ratio_clip))
+    if add_ctr_clamp:
+        dx_width = torch.clamp(dx_width, max=ctr_clamp, min=-ctr_clamp)
+        dy_height = torch.clamp(dy_height, max=ctr_clamp, min=-ctr_clamp)
+        dw = torch.clamp(dw, max=max_ratio)
+        dh = torch.clamp(dh, max=max_ratio)
+    else:
+        dw = dw.clamp(min=-max_ratio, max=max_ratio)
+        dh = dh.clamp(min=-max_ratio, max=max_ratio)
     # Use exp(network energy) to enlarge/shrink each roi
     gw = pw * dw.exp()
     gh = ph * dh.exp()
     # Use network energy to shift the center of each roi
-    gx = px + pw * dx
-    gy = py + ph * dy
+    gx = px + dx_width
+    gy = py + dy_height
     # Convert center-xy/width/height to top-left, bottom-right
     x1 = gx - gw * 0.5
     y1 = gy - gh * 0.5

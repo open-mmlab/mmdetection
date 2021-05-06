@@ -28,9 +28,11 @@ class ConvFCBBoxHead(BBoxHead):
                  fc_out_channels=1024,
                  conv_cfg=None,
                  norm_cfg=None,
+                 init_cfg=None,
                  *args,
                  **kwargs):
-        super(ConvFCBBoxHead, self).__init__(*args, **kwargs)
+        super(ConvFCBBoxHead, self).__init__(
+            *args, init_cfg=init_cfg, **kwargs)
         assert (num_shared_convs + num_shared_fcs + num_cls_convs +
                 num_cls_fcs + num_reg_convs + num_reg_fcs > 0)
         if num_cls_convs > 0 or num_reg_convs > 0:
@@ -82,6 +84,18 @@ class ConvFCBBoxHead(BBoxHead):
                            self.num_classes)
             self.fc_reg = nn.Linear(self.reg_last_dim, out_dim_reg)
 
+        if init_cfg is None:
+            self.init_cfg += [
+                dict(
+                    type='Xavier',
+                    layer='Linear',
+                    override=[
+                        dict(name='shared_fcs'),
+                        dict(name='cls_fcs'),
+                        dict(name='reg_fcs')
+                    ])
+            ]
+
     def _add_conv_fc_branch(self,
                             num_branch_convs,
                             num_branch_fcs,
@@ -122,15 +136,6 @@ class ConvFCBBoxHead(BBoxHead):
                     nn.Linear(fc_in_channels, self.fc_out_channels))
             last_layer_dim = self.fc_out_channels
         return branch_convs, branch_fcs, last_layer_dim
-
-    def init_weights(self):
-        super(ConvFCBBoxHead, self).init_weights()
-        # conv layers are already initialized by ConvModule
-        for module_list in [self.shared_fcs, self.cls_fcs, self.reg_fcs]:
-            for m in module_list.modules():
-                if isinstance(m, nn.Linear):
-                    nn.init.xavier_uniform_(m.weight)
-                    nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         # shared part

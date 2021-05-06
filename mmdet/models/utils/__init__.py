@@ -7,15 +7,8 @@ from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DynamicConv, Transformer)
 
 __all__ = [
-    'ResLayer',
-    'gaussian_radius',
-    'gen_gaussian_target',
-    'DetrTransformerDecoderLayer',
-    'DetrTransformerDecoder',
-    'Transformer',
-    'build_transformer',
-    'SinePositionalEncoding',
-    'LearnedPositionalEncoding',
-    'DynamicConv',
-    'SimplifiedBasicBlock',
+    'ResLayer', 'gaussian_radius', 'gen_gaussian_target',
+    'DetrTransformerDecoderLayer', 'DetrTransformerDecoder', 'Transformer',
+    'build_transformer', 'SinePositionalEncoding', 'LearnedPositionalEncoding',
+    'DynamicConv', 'SimplifiedBasicBlock'
 ]
