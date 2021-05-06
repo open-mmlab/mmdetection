@@ -1,17 +1,17 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import normal_init
 from mmcv.ops import batched_nms
 
 from mmdet.core.bbox import bbox_mapping_back
 from mmdet.models import HEADS, build_loss
 from mmdet.models.utils import gaussian_radius, gen_gaussian_target
+from ..utils.gaussian_target import get_local_maximum, get_topk_from_heatmap
 from .base_dense_head import BaseDenseHead
 
 
 @HEADS.register_module()
-class CenterHead(BaseDenseHead):
+class CenterNetHead(BaseDenseHead):
     """Objects as PointsModule. CenterHead use center_point to indicate
     object's position. Paper link <https://arxiv.org/abs/1904.07850>
 
@@ -19,8 +19,7 @@ class CenterHead(BaseDenseHead):
         in_channels (int): Input channels of module.
         feat_channels (int): Feat channels of module.
         num_classes (int): detect class number.
-        min_overlap (float): min_overlap for center heatmap.
-        loss_center (dict): build center_loss
+        loss_heatmap (dict): build center_loss
         loss_wh (dict): build wh_loss.
         loss_offset (dict): build offset_loss
         train_cfg (dict): train_cfg
@@ -28,45 +27,33 @@ class CenterHead(BaseDenseHead):
     """
 
     def __init__(self,
-                 in_channels=160,
-                 feat_channels=256,
-                 num_classes=1,
-                 min_overlap=0.3,
-                 loss_center=dict(type='GaussianFocalLoss', loss_weight=1.0),
+                 in_channels,
+                 feat_channels,
+                 num_classes,
+                 loss_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
                  loss_wh=dict(type='L1Loss', loss_weight=0.1),
                  loss_offset=dict(type='L1Loss', loss_weight=1.0),
                  train_cfg=None,
-                 test_cfg=None):
-        super(CenterHead, self).__init__()
-        self.in_channels = in_channels
+                 test_cfg=None,
+                 init_cfg=None):
+        super(CenterNetHead, self).__init__(init_cfg)
         self.num_classes = num_classes
-        self.feat_chanels = feat_channels
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-        self.min_overlap = min_overlap
-        self.loss_center = build_loss(loss_center)
+        self.heatmap_head = self._build_head(
+            in_channels,
+            feat_channels,
+            num_classes,
+        )
+        self.wh_head = self._build_head(in_channels, feat_channels, 2)
+        self.offset_head = self._build_head(in_channels, feat_channels, 2)
+
+        self.loss_heatmap = build_loss(loss_heatmap)
         self.loss_wh = build_loss(loss_wh)
         self.loss_offset = build_loss(loss_offset)
-        self.center_head = self.build_head(
-            self.in_channels,
-            self.feat_chanels,
-            self.num_classes,
-        )
-        self.wh_head = self.build_head(self.in_channels, self.feat_chanels, 2)
-        self.offset_head = self.build_head(self.in_channels, self.feat_chanels,
-                                           2)
 
-    def init_weights(self):
-        """Initialize weights of the head."""
-        self.center_head[-1].bias.data.fill_(-2.19)
-        for m in self.offset_head.modules():
-            if isinstance(m, nn.Conv2d):
-                normal_init(m, std=0.001)
-        for m in self.wh_head.modules():
-            if isinstance(m, nn.Conv2d):
-                normal_init(m, std=0.001)
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
 
-    def build_head(self, in_channel, feat_channel, out_channel):
+    def _build_head(self, in_channel, feat_channel, out_channel):
         """Build head for each branch."""
         layer = nn.Sequential(
             nn.Conv2d(in_channel, feat_channel, kernel_size=3, padding=1),
@@ -74,12 +61,21 @@ class CenterHead(BaseDenseHead):
             nn.Conv2d(feat_channel, out_channel, kernel_size=1))
         return layer
 
+    def init_weights(self):
+        """Initialize weights of the head."""
+        self.heatmap_head[-1].bias.data.fill_(-2.19)
+        for head in [self.wh_head, self.offset_head]:
+            for m in head.modules():
+                if isinstance(m, nn.Conv2d):
+                    normal_init(m, std=0.001)
+
     def forward(self, x):
-        """Forward Tensor.Notice centerhead don't use FPN."""
-        if isinstance(x, list) or isinstance(x, tuple):
-            x = x[0]
-        self.feat_shape = x.shape
-        center_out = self.center_head(x).sigmoid()
+        """Forward Tensor.
+
+        Notice centernet head don't use FPN.
+        """
+        x = x[-1]
+        center_out = self.heatmap_head(x).sigmoid()
         wh_out = self.wh_head(x)
         offset_out = self.offset_head(x)
         return center_out, wh_out, offset_out
@@ -94,14 +90,12 @@ class CenterHead(BaseDenseHead):
         else:
             return centers
 
-    def get_center_target(self, gt_bboxes, gt_labels, img_metas,
-                          gt_bboxes_ignore, *args):
+    def get_center_target(self, gt_bboxes, gt_labels, img_metas, feat_shape):
         """
             Args:
                 gt_bboxes (list[Tensor]): gt bboxes of each image.
                 gt_labels (list[Tensor]): gt labels of each image.
                 img_metas (list[Dict]): img_meta of each image.
-                gt_bboxes_ignore (list[Tensor]): ignore box of each image.
 
             Return:
                 dict(str, Tensor): which has components below:
@@ -109,8 +103,7 @@ class CenterHead(BaseDenseHead):
                     - weight (Tensor): loss_weight.
                     - avg_factor (int): number of positive sample.
         """
-        bs, _, feat_h, feat_w = self.feat_shape
-
+        bs, _, feat_h, feat_w = feat_shape
         gt_heatmap = gt_bboxes[-1].new_zeros(
             [bs, self.num_classes, feat_h, feat_w], dtype=torch.float32)
         lw_heatmap = gt_bboxes[-1].new_ones(
@@ -129,7 +122,7 @@ class CenterHead(BaseDenseHead):
                 scale_box_h = (gt_bbox[j][3] - gt_bbox[j][1]) * ratio_h
                 scale_box_w = (gt_bbox[j][2] - gt_bbox[j][0]) * ratio_w
                 radius = gaussian_radius([scale_box_h, scale_box_w],
-                                         min_overlap=self.min_overlap)
+                                         min_overlap=0.3)
                 radius = max(0, int(radius))
                 ind = gt_label[j]
                 gen_gaussian_target(gt_heatmap[i, ind], [ctx, cty], radius)
@@ -138,17 +131,11 @@ class CenterHead(BaseDenseHead):
         return dict(
             target=gt_heatmap, weight=lw_heatmap, avg_factor=avg_factor)
 
-    def get_offset_target(self,
-                          gt_bboxes,
-                          gt_labels,
-                          img_metas,
-                          gt_bboxes_ignore=None):
+    def get_offset_target(self, gt_bboxes, img_metas, feat_shape):
         """
             Args:
                 gt_bboxes (list[Tensor]): gt bboxes of each image.
-                gt_labels (list[Tensor]): gt labels of each image.
                 img_metas (list[Dict]): img_meta of each image.
-                gt_bboxes_ignore (list[Tensor]): ignore box of each image.
 
             Return:
                 dict(str, Tensor): which has components below:
@@ -157,7 +144,7 @@ class CenterHead(BaseDenseHead):
                     - weight (Tensor): loss_weight.
                     - avg_factor (int): number of positive sample.
         """
-        bs, _, feat_h, feat_w = self.feat_shape
+        bs, _, feat_h, feat_w = feat_shape
 
         gt_heatmap = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w],
                                              dtype=torch.float32)
@@ -183,26 +170,20 @@ class CenterHead(BaseDenseHead):
         return dict(
             target=gt_heatmap, weight=lw_heatmap, avg_factor=avg_factor)
 
-    def get_wh_target(self,
-                      gt_bboxes,
-                      gt_labels,
-                      img_metas,
-                      gt_bboxes_ignore=None):
+    def get_wh_target(self, gt_bboxes, img_metas, feat_shape):
         """
-            Args:
-                gt_bboxes (list[Tensor]): gt bboxes of each image.
-                gt_labels (list[Tensor]): gt labels of each image.
-                img_metas (list[Dict]): img_meta of each image.
-                gt_bboxes_ignore (list[Tensor]): ignore box of each image.
+        Args:
+            gt_bboxes (list[Tensor]): gt bboxes of each image.
+            img_metas (list[Dict]): img_meta of each image.
 
-            Return:
-                dict(str, Tensor): which has components below:
-                    - target (Tensor): wh heatmap, notice just assign positive
+        Return:
+            dict(str, Tensor): which has components below:
+                - target (Tensor): wh heatmap, notice just assign positive
                         sample in object's center.
-                    - weight (Tensor): loss_weight.
-                    - avg_factor (int): number of positive sample.
+                - weight (Tensor): loss_weight.
+                - avg_factor (int): number of positive sample.
         """
-        bs, _, feat_h, feat_w = self.feat_shape
+        bs, _, feat_h, feat_w = feat_shape
 
         gt_heatmap = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w],
                                              dtype=torch.float32)
@@ -229,90 +210,48 @@ class CenterHead(BaseDenseHead):
         return dict(
             target=gt_heatmap, weight=lw_heatmap, avg_factor=avg_factor)
 
-    def get_targets(self, *args, **kwargs):
-        """generate targets."""
-        center_target = self.get_center_target(*args, **kwargs)
-        wh_target = self.get_wh_target(*args, **kwargs)
-        offset_target = self.get_offset_target(*args, **kwargs)
+    def get_targets(self, gt_bboxes, gt_labels, img_metas, feat_shape):
+        center_target = self.get_center_target(gt_bboxes, gt_labels, img_metas,
+                                               feat_shape)
+        wh_target = self.get_wh_target(gt_bboxes, img_metas, feat_shape)
+        offset_target = self.get_offset_target(gt_bboxes, img_metas,
+                                               feat_shape)
         return center_target, wh_target, offset_target
 
     def loss(self,
-             center_hm,
-             wh_hm,
-             offset_hm,
+             center_heatmap,
+             wh_preds,
+             offset_preds,
              gt_bboxes,
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
         """
-            Args:
-                center_hm (tensor): shape (B, num_class, H, W),
-                wh_hm (tensor): shape (B, num_class, H, W),
-                offset_hm (tensor): shape (B, num_class, H, W),
-                gt_bboxes (list[Tensor]): gt bboxes of each image.
-                gt_labels (list[Tensor]): gt labels of each image.
-                img_metas (list[Dict]): img_meta of each image.
-                gt_bboxes_ignore (list[Tensor]): ignore box of each image.
+        Args:
+            center_heatmap (tensor): shape (B, num_class, H, W),
+            wh_preds (tensor): shape (B, num_class, H, W),
+            offset_preds (tensor): shape (B, num_class, H, W),
+            gt_bboxes (list[Tensor]): gt bboxes of each image.
+            gt_labels (list[Tensor]): gt labels of each image.
+            img_metas (list[Dict]): img_meta of each image.
+            gt_bboxes_ignore (list[Tensor]): ignore box of each image.
 
-            Return:
-                dict(str, Tensor): which has components below:
-                    - loss_center (Tensor): loss of center heatmap.
-                    - loss_wh (Tensor): loss of hw heatmap
-                    - loss_offset (Tensor): loss of offset heatmap.
+        Return:
+            dict(str, Tensor): which has components below:
+                - loss_heatmap (Tensor): loss of center heatmap.
+                - loss_wh (Tensor): loss of hw heatmap
+                - loss_offset (Tensor): loss of offset heatmap.
         """
-        targets = self.get_targets(
-            gt_bboxes=gt_bboxes,
-            gt_labels=gt_labels,
-            img_metas=img_metas,
-            gt_bboxes_ignore=gt_bboxes_ignore)
-        center_target, wh_target, offset_target = targets
-        loss_center = self.loss_center(center_hm, **center_target)
-        loss_wh = self.loss_wh(wh_hm, **wh_target)
-        loss_offset = self.loss_offset(offset_hm, **offset_target)
+        feat_shape = center_heatmap.shape
+        center_target, wh_target, offset_target = self.get_targets(
+            gt_bboxes, gt_labels, img_metas, feat_shape)
+        loss_heatmap = self.loss_heatmap(center_heatmap, **center_target)
+        loss_wh = self.loss_wh(wh_preds, **wh_target)
+        loss_offset = self.loss_offset(offset_preds, **offset_target)
         return dict(
-            loss_center=loss_center, loss_wh=loss_wh, loss_offset=loss_offset)
-
-    def _local_maximum(self, heat, kernel=3):
-        """Extract local maximum pixel with given kernal.
-
-        Args:
-            heat (Tensor): Target heatmap.
-            kernel (int): Kernel size of max pooling. Default: 3.
-
-        Returns:
-            heat (Tensor): A heatmap where local maximum pixels maintain its
-                own value and other positions are 0.
-        """
-        pad = (kernel - 1) // 2
-        hmax = F.max_pool2d(heat, kernel, stride=1, padding=pad)
-        keep = (hmax == heat).float()
-        return heat * keep
-
-    def _topk(self, scores, k=100):
-        """Get top k positions from heatmap.
-
-        Args:
-            scores (Tensor): Target heatmap with shape
-                [batch, num_classes, height, width].
-            k (int): Target number. Default: 20.
-
-        Returns:
-            tuple[torch.Tensor]: Scores, indexes, categories and coords of
-                topk keypoint. Containing following Tensors:
-
-            - topk_scores (Tensor): Max scores of each topk keypoint.
-            - topk_inds (Tensor): Indexes of each topk keypoint.
-            - topk_clses (Tensor): Categories of each topk keypoint.
-            - topk_ys (Tensor): Y-coord of each topk keypoint.
-            - topk_xs (Tensor): X-coord of each topk keypoint.
-        """
-        batch, _, height, width = scores.size()
-        topk_scores, topk_inds = torch.topk(scores.view(batch, -1), k)
-        topk_clses = topk_inds // (height * width)
-        topk_inds = topk_inds % (height * width)
-        topk_ys = topk_inds // width
-        topk_xs = (topk_inds % width).int().float()
-        return topk_scores, topk_inds, topk_clses, topk_ys, topk_xs
+            loss_heatmap=loss_heatmap,
+            loss_wh=loss_wh,
+            loss_offset=loss_offset)
 
     def flip_tensor(self, tensor):
         return torch.flip(tensor, [3])
@@ -343,7 +282,7 @@ class CenterHead(BaseDenseHead):
                     predicted class label of the corresponding box.
         """
         result_list = []
-        bs, _, feat_h, feat_w = self.feat_shape
+        bs, _, feat_h, feat_w = center_hm.shape
         if bs == 2:
             center_hm = (center_hm[0:1] + self.flip_tensor(center_hm[1:2])) / 2
             wh_hm = (wh_hm[0:1] + self.flip_tensor(wh_hm[1:2])) / 2
@@ -397,7 +336,7 @@ class CenterHead(BaseDenseHead):
             - bboxes (Tensor): Coords of each box.
             - clses (Tensor): Categories of each box.
         """
-        _, _, feat_h, feat_w = self.feat_shape
+        _, _, feat_h, feat_w = center_hm.shape
         x_off = img_meta['border'][2]
         y_off = img_meta['border'][0]
         img_shape = img_meta['img_shape']
@@ -406,9 +345,9 @@ class CenterHead(BaseDenseHead):
         ratio_w = feat_w / img_meta['pad_shape'][1]
         ratio_h = feat_h / img_meta['pad_shape'][0]
         # 1. get topK center points
-        center_hm = self._local_maximum(center_hm)
-        scores, index, clses, cy, cx = self._topk(center_hm,
-                                                  self.test_cfg['topK'])
+        center_hm = get_local_maximum(center_hm)
+        scores, index, clses, cy, cx = get_topk_from_heatmap(
+            center_hm, self.test_cfg['topK'])
         wh = wh_hm.permute(0, 2, 3, 1).view(-1, 2)[index[0]]
         offset = offset_hm.permute(0, 2, 3, 1).view(-1, 2)[index[0]]
         # 2. recover to bboxes

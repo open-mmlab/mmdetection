@@ -3,7 +3,7 @@ from .anchor_head import AnchorHead
 from .atss_head import ATSSHead
 from .autoassign_head import AutoAssignHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
-from .center_head import CenterHead
+from .centernet_head import CenterNetHead
 from .centripetal_head import CentripetalHead
 from .corner_head import CornerHead
 from .deformable_detr_head import DeformableDETRHead
@@ -43,5 +43,5 @@ __all__ = [
     'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'StageCascadeRPNHead',
     'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead',
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
-    'CenterHead'
+    'CenterNetHead'
 ]

@@ -9,16 +9,16 @@ model = dict(
     backbone=dict(
         type='ResNet', depth=18, norm_eval=False, norm_cfg=dict(type='BN')),
     neck=dict(
-        type='CT_ResNeck',
+        type='CTResNetNeck',
         in_channels=512,
         num_filters=[256, 128, 64],
         num_kernels=[4, 4, 4]),
     bbox_head=dict(
-        type='CenterHead',
+        type='CenterNetHead',
         num_classes=80,
-        feat_channels=64,
         in_channels=64,
-        loss_center=dict(type='GaussianFocalLoss', loss_weight=1.0),
+        feat_channels=64,
+        loss_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
         loss_wh=dict(type='L1Loss', loss_weight=0.1),
         loss_offset=dict(type='L1Loss', loss_weight=1.0)),
     train_cfg=None,

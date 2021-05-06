@@ -18,9 +18,10 @@ class CenterNet(SingleStageDetector):
                  bbox_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
         super(CenterNet, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                        test_cfg, pretrained)
+                                        test_cfg, pretrained, init_cfg)
 
     def merge_aug_results(self, aug_results, with_nms):
         """Merge augmented detection bboxes and score.
