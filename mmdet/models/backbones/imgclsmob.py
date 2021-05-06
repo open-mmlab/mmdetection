@@ -13,11 +13,14 @@
 # and limitations under the License.
 
 import logging
+import os
 import tempfile
-import types
+# import types
 
 import torch.nn as nn
 from pytorchcv.model_provider import _models
+from pytorchcv.models.model_store import download_model
+from torch import distributed
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..builder import BACKBONES
@@ -51,7 +54,29 @@ def generate_backbones():
                 return outputs
 
             def init_weights(self, pretrained=True):
-                pass
+                if pretrained:
+                    rank, world_size = get_dist_info()
+                    logger.warning(f'imgclsmob::loading weights proc rank {rank}')
+                    if rank == 0:
+                        # Make sure that model is fetched to the local storage.
+                        logger.warning(f'imgclsmob::downloading {rank}')
+                        download_model(
+                            net=self,
+                            model_name=model_name,
+                            local_model_store_dir_path=self.models_cache_root)
+                        if world_size > 1:
+                            logger.warning(f'imgclsmob::barrier {rank}')
+                            distributed.barrier()
+                    else:
+                        # Wait for model to be in the local storage, then load it.
+                        logger.warning(f'imgclsmob::barrier {rank}')
+                        distributed.barrier()
+                        logger.warning(f'imgclsmob::loading {rank}')
+                        download_model(
+                            net=self,
+                            model_name=model_name,
+                            local_model_store_dir_path=self.models_cache_root)
+                    logger.warning(f'imgclsmob::done {rank}')
 
             def train(self, mode=True):
                 super(self.__class__, self).train(mode)
@@ -71,24 +96,32 @@ def generate_backbones():
             class custom_model_getter(nn.Module):
                 def __init__(self, *args, out_indices=None, frozen_stages=0, norm_eval=False, verbose=False, **kwargs):
                     super().__init__()
-                    if 'pretrained' in kwargs and kwargs['pretrained']:
-                        rank, _ = get_dist_info()
-                        if rank > 0:
-                            if 'root' not in kwargs:
-                                kwargs['root'] = tempfile.mkdtemp()
-                            kwargs['root'] = tempfile.mkdtemp(dir=kwargs['root'])
-                            logger.info('Rank: {}, Setting {} as a target location of pretrained models'.format(rank, kwargs['root']))
+                    models_cache_root = kwargs.get('root', os.path.join('~', '.torch', 'models'))
+                    is_pretrained = kwargs.get('pretrained', False)
+                    logger.warning(f'Init model {model_name}, pretrained={is_pretrained}, models cache {models_cache_root}')
+                    # if 'pretrained' in kwargs and kwargs['pretrained']:
+                    #     rank, _ = get_dist_info()
+                    #     if rank > 0:
+                    #         if 'root' not in kwargs:
+                    #             kwargs['root'] = tempfile.mkdtemp()
+                    #         kwargs['root'] = tempfile.mkdtemp(dir=kwargs['root'])
+                    #         logger.info('Rank: {}, Setting {} as a target location of pretrained models'.format(rank, kwargs['root']))
                     model = model_getter(*args, **kwargs)
                     model.out_indices = out_indices
                     model.frozen_stages = frozen_stages
                     model.norm_eval = norm_eval
                     model.verbose = verbose
+                    model.models_cache_root = models_cache_root
                     if hasattr(model, 'features') and isinstance(model.features, nn.Sequential):
                         # Save original forward, just in case.
                         model.forward_single_output = model.forward
-                        model.forward = types.MethodType(multioutput_forward, model)
-                        model.init_weights = types.MethodType(init_weights, model)
-                        model.train = types.MethodType(train, model)
+                        model.forward = multioutput_forward.__get__(model)
+                        model.init_weights = init_weights.__get__(model)
+                        model.train = train.__get__(model)
+
+                        # model.forward = types.MethodType(multioutput_forward, model)
+                        # model.init_weights = types.MethodType(init_weights, model)
+                        # model.train = types.MethodType(train, model)
 
                         model.output = None
                         for i, _ in enumerate(model.features):
