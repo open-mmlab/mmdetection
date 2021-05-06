@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.runner import auto_fp16, force_fp32
+from mmcv.runner import BaseModule, auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
@@ -10,7 +10,7 @@ from mmdet.models.losses import accuracy
 
 
 @HEADS.register_module()
-class BBoxHead(nn.Module):
+class BBoxHead(BaseModule):
     """Simplest RoI head, with only two fc layers for classification and
     regression respectively."""
 
@@ -33,8 +33,9 @@ class BBoxHead(nn.Module):
                      use_sigmoid=False,
                      loss_weight=1.0),
                  loss_bbox=dict(
-                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
-        super(BBoxHead, self).__init__()
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
+                 init_cfg=None):
+        super(BBoxHead, self).__init__(init_cfg)
         assert with_cls or with_reg
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
@@ -63,15 +64,18 @@ class BBoxHead(nn.Module):
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
             self.fc_reg = nn.Linear(in_channels, out_dim_reg)
         self.debug_imgs = None
-
-    def init_weights(self):
-        # conv layers are already initialized by ConvModule
-        if self.with_cls:
-            nn.init.normal_(self.fc_cls.weight, 0, 0.01)
-            nn.init.constant_(self.fc_cls.bias, 0)
-        if self.with_reg:
-            nn.init.normal_(self.fc_reg.weight, 0, 0.001)
-            nn.init.constant_(self.fc_reg.bias, 0)
+        if init_cfg is None:
+            self.init_cfg = []
+            if self.with_cls:
+                self.init_cfg += [
+                    dict(
+                        type='Normal', std=0.01, override=dict(name='fc_cls'))
+                ]
+            if self.with_reg:
+                self.init_cfg += [
+                    dict(
+                        type='Normal', std=0.001, override=dict(name='fc_reg'))
+                ]
 
     @auto_fp16()
     def forward(self, x):

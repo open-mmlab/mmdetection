@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule, Scale
 from mmcv.ops import DeformConv2d
 from mmcv.runner import force_fp32
 
@@ -53,6 +53,7 @@ class VFNetHead(ATSSHead, FCOSHead):
         use_atss (bool): If true, use ATSS to define positive/negative
             examples. Default: True.
         anchor_generator (dict): Config of anchor generator for ATSS.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
         >>> self = VFNetHead(11, 7)
@@ -96,6 +97,15 @@ class VFNetHead(ATSSHead, FCOSHead):
                      scales_per_octave=1,
                      center_offset=0.0,
                      strides=[8, 16, 32, 64, 128]),
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='vfnet_cls',
+                         std=0.01,
+                         bias_prob=0.01)),
                  **kwargs):
         # dcn base offsets, adapted from reppoints_head.py
         self.num_dconv_points = 9
@@ -110,7 +120,11 @@ class VFNetHead(ATSSHead, FCOSHead):
         self.dcn_base_offset = torch.tensor(dcn_base_offset).view(1, -1, 1, 1)
 
         super(FCOSHead, self).__init__(
-            num_classes, in_channels, norm_cfg=norm_cfg, **kwargs)
+            num_classes,
+            in_channels,
+            norm_cfg=norm_cfg,
+            init_cfg=init_cfg,
+            **kwargs)
         self.regress_ranges = regress_ranges
         self.reg_denoms = [
             regress_range[-1] for regress_range in regress_ranges
@@ -175,22 +189,6 @@ class VFNetHead(ATSSHead, FCOSHead):
             padding=self.dcn_pad)
         self.vfnet_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.cls_convs:
-            if isinstance(m.conv, nn.Conv2d):
-                normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            if isinstance(m.conv, nn.Conv2d):
-                normal_init(m.conv, std=0.01)
-        normal_init(self.vfnet_reg_conv.conv, std=0.01)
-        normal_init(self.vfnet_reg, std=0.01)
-        normal_init(self.vfnet_reg_refine_dconv, std=0.01)
-        normal_init(self.vfnet_reg_refine, std=0.01)
-        normal_init(self.vfnet_cls_dconv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.vfnet_cls, std=0.01, bias=bias_cls)
 
     def forward(self, feats):
         """Forward features from the upstream network.

@@ -2,12 +2,12 @@ import math
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import uniform_init
 from mmcv.cnn.bricks.transformer import POSITIONAL_ENCODING
+from mmcv.runner import BaseModule
 
 
 @POSITIONAL_ENCODING.register_module()
-class SinePositionalEncoding(nn.Module):
+class SinePositionalEncoding(BaseModule):
     """Position encoding with sine and cosine functions.
 
     See `End-to-End Object Detection with Transformers
@@ -28,6 +28,8 @@ class SinePositionalEncoding(nn.Module):
             numerical stability. Defaults to 1e-6.
         offset (float): offset add to embed when do the normalization.
             Defaults to 0.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -36,8 +38,9 @@ class SinePositionalEncoding(nn.Module):
                  normalize=False,
                  scale=2 * math.pi,
                  eps=1e-6,
-                 offset=0.):
-        super(SinePositionalEncoding, self).__init__()
+                 offset=0.,
+                 init_cfg=None):
+        super(SinePositionalEncoding, self).__init__(init_cfg)
         if normalize:
             assert isinstance(scale, (float, int)), 'when normalize is set,' \
                 'scale should be provided and in float or int type, ' \
@@ -95,7 +98,7 @@ class SinePositionalEncoding(nn.Module):
 
 
 @POSITIONAL_ENCODING.register_module()
-class LearnedPositionalEncoding(nn.Module):
+class LearnedPositionalEncoding(BaseModule):
     """Position embedding with learnable embedding weights.
 
     Args:
@@ -106,21 +109,20 @@ class LearnedPositionalEncoding(nn.Module):
             Default 50.
         col_num_embed (int, optional): The dictionary size of col embeddings.
             Default 50.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
-    def __init__(self, num_feats, row_num_embed=50, col_num_embed=50):
-        super(LearnedPositionalEncoding, self).__init__()
+    def __init__(self,
+                 num_feats,
+                 row_num_embed=50,
+                 col_num_embed=50,
+                 init_cfg=dict(type='Uniform', layer='Embedding')):
+        super(LearnedPositionalEncoding, self).__init__(init_cfg)
         self.row_embed = nn.Embedding(row_num_embed, num_feats)
         self.col_embed = nn.Embedding(col_num_embed, num_feats)
         self.num_feats = num_feats
         self.row_num_embed = row_num_embed
         self.col_num_embed = col_num_embed
-        self.init_weights()
-
-    def init_weights(self):
-        """Initialize the learnable weights."""
-        uniform_init(self.row_embed)
-        uniform_init(self.col_embed)
 
     def forward(self, mask):
         """Forward function for `LearnedPositionalEncoding`.
