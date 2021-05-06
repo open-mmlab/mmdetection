@@ -103,18 +103,22 @@ def build_dataset(cfg, default_args=None):
     elif isinstance(cfg.get('ann_file'), (list, tuple)):
         dataset = _concat_dataset(cfg, default_args)
     else:
-        matches = glob.glob(cfg['ann_file'], recursive=True)
-        if not matches:
-            raise RuntimeError(f'Failed to find annotation files that match pattern: '
-                               f'{cfg["ann_file"]}')
-        cfg['ann_file'] = matches
-        if len(cfg['ann_file']) == 1:
-            if cfg.get('img_prefix_auto', False):
-                cfg['img_prefix'] = get_image_prefixes_auto(cfg, cfg['ann_file'])[0]
-            cfg['ann_file'] = cfg['ann_file'][0]
-            dataset = build_from_cfg(cfg, DATASETS, default_args)
+        if 'ann_file' in cfg:
+            # FIXME. Is it still of use?
+            matches = glob.glob(cfg['ann_file'], recursive=True)
+            if not matches:
+                raise RuntimeError(f'Failed to find annotation files that match pattern: '
+                                   f'{cfg["ann_file"]}')
+            cfg['ann_file'] = matches
+            if len(cfg['ann_file']) == 1:
+                if cfg.get('img_prefix_auto', False):
+                    cfg['img_prefix'] = get_image_prefixes_auto(cfg, cfg['ann_file'])[0]
+                cfg['ann_file'] = cfg['ann_file'][0]
+                dataset = build_from_cfg(cfg, DATASETS, default_args)
+            else:
+                dataset = _concat_dataset(cfg, default_args)
         else:
-            dataset = _concat_dataset(cfg, default_args)
+            dataset = build_from_cfg(cfg, DATASETS, default_args)
 
     return dataset
 

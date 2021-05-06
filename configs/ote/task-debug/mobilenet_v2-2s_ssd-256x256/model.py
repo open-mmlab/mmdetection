@@ -1,17 +1,17 @@
 _base_ = [
     './coco_data_pipeline.py'
 ]
-name = 'mobilenet_v2-2s_ssd-512x512'
+name = 'mobilenet_v2-2s_ssd-256x256'
 # model settings
 width_mult = 1.0
 model = dict(
     type='SingleStageDetector',
+    pretrained=True,
     backbone=dict(
         type='mobilenetv2_w1',
         out_indices=(4, 5),
         frozen_stages=-1,
-        norm_eval=False,
-        pretrained=True),
+        norm_eval=False),
     neck=None,
     bbox_head=dict(
         type='SSDHead',
@@ -22,23 +22,24 @@ model = dict(
             strides=(16, 32),
             widths=[
                 [
-                    23.554248425206367, 54.312675122672,
-                    156.8199838472748, 85.79076150022739
+                    11.777124212603184, 27.156337561336,
+                    78.40999192363739, 42.895380750113695
                 ],
                 [
-                    126.29684895774292, 230.92962052918818,
-                    426.98291390718117, 276.4491073812946,
-                    469.60729751113075
-                ]],
+                    63.14842447887146, 115.46481026459409,
+                    213.49145695359056, 138.2245536906473,
+                    234.80364875556538
+                ]
+            ],
             heights=[
                 [
-                    29.534106270311696, 90.99895689425296,
-                    91.96346785149395, 197.3348624823917
+                    14.767053135155848, 45.49947844712648,
+                    45.981733925746965, 98.66743124119586
                 ],
                 [
-                    354.49167554782616, 221.60634559442957,
-                    191.70668631632822, 413.72951531676006,
-                    440.6051718003978
+                    177.24583777391308, 110.80317279721478,
+                    95.85334315816411, 206.86475765838003,
+                    220.30258590019886
                 ]
             ]),
         bbox_coder=dict(
@@ -82,20 +83,21 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=10,
+    interval=5,
     hooks=[
-        dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
+        dict(type='NOUSLoggerHook'),
+        # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
 runner = dict(meta=dict(exp_name='train'),
-              max_epochs=30,
+              max_epochs=1,
               type='EpochBasedRunner')
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = 'outputs/mobilenet_v2-2s_ssd-512x512'
-load_from = 'https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/mobilenet_v2-2s_ssd-512x512.pth'
+work_dir = 'outputs/mobilenet_v2-2s_ssd-256x256'
+init_from = 'https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/mobilenet_v2-2s_ssd-256x256.pth'
+load_from = None
 resume_from = None
 workflow = [('train', 1)]
 cudnn_benchmark = True
