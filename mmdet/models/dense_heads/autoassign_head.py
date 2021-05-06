@@ -148,8 +148,7 @@ class AutoAssignHead(FCOSHead):
                  neg_loss_weight=0.75,
                  center_loss_weight=0.75,
                  **kwargs):
-        super().__init__(
-            *args, conv_bias=True, centerness_on_reg=True, **kwargs)
+        super().__init__(*args, conv_bias=True, **kwargs)
         self.center_prior = CenterPrior(
             force_topk=force_topk,
             topk=topk,
@@ -186,6 +185,31 @@ class AutoAssignHead(FCOSHead):
         points = torch.stack((x.reshape(-1) * stride, y.reshape(-1) * stride),
                              dim=-1)
         return points
+
+    def forward_single(self, x, scale, stride):
+        """Forward features of a single scale level.
+
+        Args:
+            x (Tensor): FPN feature maps of the specified stride.
+            scale (:obj: `mmcv.cnn.Scale`): Learnable scale module to resize
+                the bbox prediction.
+            stride (int): The corresponding stride for feature maps, only
+                used to normalize the bbox prediction when self.norm_on_bbox
+                is True.
+
+        Returns:
+            tuple: scores for each class, bbox predictions and centerness \
+                predictions of input feature maps.
+        """
+        cls_score, bbox_pred, cls_feat, reg_feat = super(
+            FCOSHead, self).forward_single(x)
+        centerness = self.conv_centerness(reg_feat)
+        # scale the bbox_pred of different level
+        # float to avoid overflow when enabling FP16
+        bbox_pred = scale(bbox_pred).float()
+        bbox_pred = F.relu(bbox_pred)
+        bbox_pred *= stride
+        return cls_score, bbox_pred, centerness
 
     def get_pos_loss_single(self, cls_score, objectness, reg_loss, gt_labels,
                             center_prior_weights):
@@ -440,7 +464,6 @@ class AutoAssignHead(FCOSHead):
                   (num_points, num_gt, 4).
         """
 
-        num_levels = len(points)
         concat_points = torch.cat(points, dim=0)
         # the number of points per img, per lvl
         num_points = [center.size(0) for center in points]
@@ -450,11 +473,6 @@ class AutoAssignHead(FCOSHead):
             list(bbox_targets.split(num_points, 0))
             for bbox_targets in bbox_targets_list
         ]
-        if self.norm_on_bbox:
-            for i in range(num_levels):
-                for j in range(len(bbox_targets_list)):
-                    bbox_targets_list[j][
-                        i] = bbox_targets_list[j][i] / self.strides[i]
         concat_lvl_bbox_targets = [
             torch.cat(item, dim=0) for item in bbox_targets_list
         ]

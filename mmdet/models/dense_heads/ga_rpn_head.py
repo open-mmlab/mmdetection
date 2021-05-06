@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv import ConfigDict
-from mmcv.cnn import normal_init
 from mmcv.ops import nms
 
 from ..builder import HEADS
@@ -17,19 +16,26 @@ from .rpn_test_mixin import RPNTestMixin
 class GARPNHead(RPNTestMixin, GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""
 
-    def __init__(self, in_channels, **kwargs):
-        super(GARPNHead, self).__init__(1, in_channels, **kwargs)
+    def __init__(self,
+                 in_channels,
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='conv_loc',
+                         std=0.01,
+                         bias_prob=0.01)),
+                 **kwargs):
+        super(GARPNHead, self).__init__(
+            1, in_channels, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
         """Initialize layers of the head."""
         self.rpn_conv = nn.Conv2d(
             self.in_channels, self.feat_channels, 3, padding=1)
         super(GARPNHead, self)._init_layers()
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        normal_init(self.rpn_conv, std=0.01)
-        super(GARPNHead, self).init_weights()
 
     def forward_single(self, x):
         """Forward feature of a single scale level."""
