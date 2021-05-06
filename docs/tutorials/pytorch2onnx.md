@@ -131,67 +131,67 @@ python tools/deployment/test.py \
 
 ### Results and Models
 
-<table>
+<table border="1" class="docutils">
 	<tr>
-	    <th>Model</th>
-	    <th>Config</th>
-	    <th>Metric</th>
-	    <th>PyTorch</th>
-	    <th>ONNX Runtime</th>
+	    <th align="center">Model</th>
+	    <th align="center">Config</th>
+	    <th align="center">Metric</th>
+	    <th align="center">PyTorch</th>
+	    <th align="center">ONNX Runtime</th>
 	</tr >
   <tr >
-	    <td>FCOS</td>
-	    <td>configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py</td>
-	    <td>Box AP</td>
-	    <td>36.6</td>
-	    <td>36.5</td>
+	    <td align="center">FCOS</td>
+	    <td align="center"><code>configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">36.6</td>
+	    <td align="center">36.5</td>
 	</tr>
   <tr >
-	    <td>FSAF</td>
-	    <td>configs/fsaf/fsaf_r50_fpn_1x_coco.py</td>
-	    <td>Box AP</td>
-	    <td>36.0</td>
-	    <td>36.0</td>
+	    <td align="center">FSAF</td>
+	    <td align="center"><code>configs/fsaf/fsaf_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">36.0</td>
+	    <td align="center">36.0</td>
 	</tr>
   <tr >
-	    <td>RetinaNet</td>
-	    <td>configs/retinanet/retinanet_r50_fpn_1x_coco.py</td>
-	    <td>Box AP</td>
-	    <td>36.5</td>
-	    <td>36.4</td>
+	    <td align="center">RetinaNet</td>
+	    <td align="center"><code>configs/retinanet/retinanet_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">36.5</td>
+	    <td align="center">36.4</td>
 	</tr>
 	<tr >
-	    <td >SSD</td>
-	    <td>configs/ssd/ssd300_coco.py</td>
-	    <td>Box AP</td>
-	    <td>25.6</td>
-	    <td>25.6</td>
+	    <td align="center" align="center" >SSD</td>
+	    <td align="center" align="center"><code>configs/ssd/ssd300_coco.py</code></td>
+	    <td align="center" align="center">Box AP</td>
+	    <td align="center" align="center">25.6</td>
+	    <td align="center" align="center">25.6</td>
 	</tr>
   <tr >
-	    <td>YOLOv3</td>
-	    <td>configs/yolo/yolov3_d53_mstrain-608_273e_coco.py</td>
-	    <td>Box AP</td>
-	    <td>33.5</td>
-	    <td>33.5</td>
+	    <td align="center">YOLOv3</td>
+	    <td align="center"><code>configs/yolo/yolov3_d53_mstrain-608_273e_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">33.5</td>
+	    <td align="center">33.5</td>
 	</tr>
   <tr >
-	    <td>Faster R-CNN</td>
-	    <td>configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py</td>
-	    <td>Box AP</td>
-	    <td>37.4</td>
-	    <td>37.4</td>
+	    <td align="center">Faster R-CNN</td>
+	    <td align="center"><code>configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">37.4</td>
+	    <td align="center">37.4</td>
 	</tr>
   <tr >
-	    <td rowspan="2">Mask R-CNN</td>
-	    <td rowspan="2">configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py</td>
-	    <td>Box AP</td>
-	    <td>38.2</td>
-	    <td>38.1</td>
+	    <td align="center" rowspan="2">Mask R-CNN</td>
+	    <td align="center" rowspan="2"><code>configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">38.2</td>
+	    <td align="center">38.1</td>
 	</tr>
 	<tr>
-	    <td>Mask AP</td>
-	    <td>34.7</td>
-	    <td>33.7</td>
+	    <td align="center">Mask AP</td>
+	    <td align="center">34.7</td>
+	    <td align="center">33.7</td>
 	</tr>
 </table>
 

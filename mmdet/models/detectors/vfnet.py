@@ -13,6 +13,7 @@ class VFNet(SingleStageDetector):
                  bbox_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
         super(VFNet, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                    test_cfg, pretrained)
+                                    test_cfg, pretrained, init_cfg)

@@ -2,14 +2,14 @@ import warnings
 
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, caffe2_xavier_init, xavier_init
-from mmcv.runner import auto_fp16
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule, auto_fp16
 
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class FPN(nn.Module):
+class FPN(BaseModule):
     r"""Feature Pyramid Network.
 
     This is an implementation of paper `Feature Pyramid Networks for Object
@@ -40,14 +40,13 @@ class FPN(nn.Module):
             conv. Default: False.
         no_norm_on_lateral (bool): Whether to apply norm on lateral.
             Default: False.
-        caffe2_xavier_init (bool): Whether to apply caffe2_xavier_init on all
-            conv in FPN. Default: False.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         act_cfg (str): Config dict for activation layer in ConvModule.
             Default: None.
         upsample_cfg (dict): Config dict for interpolate layer.
             Default: `dict(mode='nearest')`
+        init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
         >>> import torch
@@ -75,12 +74,13 @@ class FPN(nn.Module):
                  extra_convs_on_inputs=True,
                  relu_before_extra_convs=False,
                  no_norm_on_lateral=False,
-                 caffe2_xavier_init=False,
                  conv_cfg=None,
                  norm_cfg=None,
                  act_cfg=None,
-                 upsample_cfg=dict(mode='nearest')):
-        super(FPN, self).__init__()
+                 upsample_cfg=dict(mode='nearest'),
+                 init_cfg=dict(
+                     type='Xavier', layer='Conv2d', distribution='uniform')):
+        super(FPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -90,7 +90,6 @@ class FPN(nn.Module):
         self.no_norm_on_lateral = no_norm_on_lateral
         self.fp16_enabled = False
         self.upsample_cfg = upsample_cfg.copy()
-        self.caffe2_xavier_init = caffe2_xavier_init
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -162,16 +161,6 @@ class FPN(nn.Module):
                     act_cfg=act_cfg,
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)
-
-    # default init_weights for conv(msra) and norm in ConvModule
-    def init_weights(self):
-        """Initialize the weights of FPN module."""
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                if self.caffe2_xavier_init:
-                    caffe2_xavier_init(m)
-                else:
-                    xavier_init(m, distribution='uniform')
 
     @auto_fp16()
     def forward(self, inputs):

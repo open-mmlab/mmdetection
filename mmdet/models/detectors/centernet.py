@@ -95,7 +95,7 @@ class CenterNet(SingleStageDetector):
                 corresponds to each class.
         """
         img_inds = list(range(len(imgs)))
-        # use nms if use multi_scale test
+        # TODO: add multi_scale test, use nms if use multi_scale test
         with_nms = True if len(imgs) > 2 else False
         assert img_metas[0][0]['flip'] + img_metas[1][0]['flip'], (
             'aug test must have flipped image pair')
@@ -105,7 +105,9 @@ class CenterNet(SingleStageDetector):
             x = self.extract_feat(img_pair)
             outs = self.bbox_head(x)
             bbox_list = self.bbox_head.get_bboxes(
-                *outs, [img_metas[ind], img_metas[flip_ind]], False, False)
+                *outs, [img_metas[ind], img_metas[flip_ind]],
+                rescale=rescale,
+                with_nms=with_nms)
             aug_results.append(bbox_list)
         bbox_list = [self.merge_aug_results(aug_results, with_nms)]
         bbox_results = [

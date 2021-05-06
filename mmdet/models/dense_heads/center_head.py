@@ -58,18 +58,13 @@ class CenterHead(BaseDenseHead):
 
     def init_weights(self):
         """Initialize weights of the head."""
-        for m in self.center_head.modules():
-            if isinstance(m, nn.Conv2d):
-                normal_init(m, std=0.01)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
         self.center_head[-1].bias.data.fill_(-2.19)
         for m in self.offset_head.modules():
             if isinstance(m, nn.Conv2d):
-                normal_init(m, std=0.01)
+                normal_init(m, std=0.001)
         for m in self.wh_head.modules():
             if isinstance(m, nn.Conv2d):
-                normal_init(m, std=0.01)
+                normal_init(m, std=0.001)
 
     def build_head(self, in_channel, feat_channel, out_channel):
         """Build head for each branch."""
@@ -428,15 +423,10 @@ class CenterHead(BaseDenseHead):
         y2 = (cy + wh[:, 1] / 2).view(-1, 1)
         bboxes = torch.cat([x1, y1, x2, y2], dim=1)
         # 4. add border
-        if not rescale:
-            scale_factor = torch.ones(4)
+        scale_factor = torch.from_numpy(scale_factor)
         bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip)
         bboxes[:, [0, 2]] -= x_off
         bboxes[:, [1, 3]] -= y_off
         scores = scores.view(-1, 1).clone().contiguous()
         detections = torch.cat([bboxes, scores], dim=1)
-        if with_nms:
-            detections, labels = self._bboxes_nms(detections, labels,
-                                                  self.test_cfg)
-            return detections, labels
         return detections, labels

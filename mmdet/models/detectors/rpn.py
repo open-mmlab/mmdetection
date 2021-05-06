@@ -17,8 +17,10 @@ class RPN(BaseDetector):
                  rpn_head,
                  train_cfg,
                  test_cfg,
-                 pretrained=None):
-        super(RPN, self).__init__()
+                 pretrained=None,
+                 init_cfg=None):
+        super(RPN, self).__init__(init_cfg)
+        backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
         self.neck = build_neck(neck) if neck is not None else None
         rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
@@ -27,20 +29,6 @@ class RPN(BaseDetector):
         self.rpn_head = build_head(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.init_weights(pretrained=pretrained)
-
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in detector.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        super(RPN, self).init_weights(pretrained)
-        self.backbone.init_weights(pretrained=pretrained)
-        if self.with_neck:
-            self.neck.init_weights()
-        self.rpn_head.init_weights()
 
     def extract_feat(self, img):
         """Extract features.

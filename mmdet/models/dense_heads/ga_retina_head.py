@@ -1,5 +1,5 @@
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.ops import MaskedConv2d
 
 from ..builder import HEADS
@@ -16,11 +16,30 @@ class GARetinaHead(GuidedAnchorHead):
                  stacked_convs=4,
                  conv_cfg=None,
                  norm_cfg=None,
+                 init_cfg=None,
                  **kwargs):
+        if init_cfg is None:
+            init_cfg = dict(
+                type='Normal',
+                layer='Conv2d',
+                std=0.01,
+                override=[
+                    dict(
+                        type='Normal',
+                        name='conv_loc',
+                        std=0.01,
+                        bias_prob=0.01),
+                    dict(
+                        type='Normal',
+                        name='retina_cls',
+                        std=0.01,
+                        bias_prob=0.01)
+                ])
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        super(GARetinaHead, self).__init__(num_classes, in_channels, **kwargs)
+        super(GARetinaHead, self).__init__(
+            num_classes, in_channels, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -68,22 +87,6 @@ class GARetinaHead(GuidedAnchorHead):
             padding=1)
         self.retina_reg = MaskedConv2d(
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
-
-    def init_weights(self):
-        """Initialize weights of the layer."""
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-
-        self.feature_adaption_cls.init_weights()
-        self.feature_adaption_reg.init_weights()
-
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.conv_loc, std=0.01, bias=bias_cls)
-        normal_init(self.conv_shape, std=0.01)
-        normal_init(self.retina_cls, std=0.01, bias=bias_cls)
-        normal_init(self.retina_reg, std=0.01)
 
     def forward_single(self, x):
         """Forward feature map of a single scale level."""

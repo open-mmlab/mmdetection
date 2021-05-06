@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv import ConfigDict
-from mmcv.cnn import normal_init
 from mmcv.ops import batched_nms
 
 from ..builder import HEADS
@@ -19,10 +18,15 @@ class RPNHead(RPNTestMixin, AnchorHead):
 
     Args:
         in_channels (int): Number of channels in the input feature map.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
-    def __init__(self, in_channels, **kwargs):
-        super(RPNHead, self).__init__(1, in_channels, **kwargs)
+    def __init__(self,
+                 in_channels,
+                 init_cfg=dict(type='Normal', layer='Conv2d', std=0.01),
+                 **kwargs):
+        super(RPNHead, self).__init__(
+            1, in_channels, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -31,12 +35,6 @@ class RPNHead(RPNTestMixin, AnchorHead):
         self.rpn_cls = nn.Conv2d(self.feat_channels,
                                  self.num_anchors * self.cls_out_channels, 1)
         self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        normal_init(self.rpn_conv, std=0.01)
-        normal_init(self.rpn_cls, std=0.01)
-        normal_init(self.rpn_reg, std=0.01)
 
     def forward_single(self, x):
         """Forward feature map of a single scale level."""
