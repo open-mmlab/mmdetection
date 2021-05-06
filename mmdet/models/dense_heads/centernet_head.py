@@ -69,157 +69,20 @@ class CenterNetHead(BaseDenseHead):
                 if isinstance(m, nn.Conv2d):
                     normal_init(m, std=0.001)
 
-    def forward(self, x):
+    def forward(self, feats):
         """Forward Tensor.
 
         Notice centernet head don't use FPN.
         """
-        x = x[-1]
-        center_out = self.heatmap_head(x).sigmoid()
-        wh_out = self.wh_head(x)
-        offset_out = self.offset_head(x)
-        return center_out, wh_out, offset_out
-
-    def get_bboxes_center(self, bboxes, ratio_w, ratio_h, toInt):
-        assert isinstance(bboxes, torch.Tensor)
-        center_x = (bboxes[:, [0]] + bboxes[:, [2]]) * ratio_w / 2
-        center_y = (bboxes[:, [1]] + bboxes[:, [3]]) * ratio_h / 2
-        centers = torch.cat((center_x, center_y), dim=1)
-        if toInt:
-            return centers.int()
-        else:
-            return centers
-
-    def get_center_target(self, gt_bboxes, gt_labels, img_metas, feat_shape):
-        """
-            Args:
-                gt_bboxes (list[Tensor]): gt bboxes of each image.
-                gt_labels (list[Tensor]): gt labels of each image.
-                img_metas (list[Dict]): img_meta of each image.
-
-            Return:
-                dict(str, Tensor): which has components below:
-                    - target (Tensor): center heatmap.
-                    - weight (Tensor): loss_weight.
-                    - avg_factor (int): number of positive sample.
-        """
-        bs, _, feat_h, feat_w = feat_shape
-        gt_heatmap = gt_bboxes[-1].new_zeros(
-            [bs, self.num_classes, feat_h, feat_w], dtype=torch.float32)
-        lw_heatmap = gt_bboxes[-1].new_ones(
-            [bs, self.num_classes, feat_h, feat_w], dtype=torch.float32)
-        pad_w = max([x['pad_shape'][1] for x in img_metas])
-        pad_h = max([x['pad_shape'][0] for x in img_metas])
-        for i in range(bs):
-            ratio_w = feat_w / pad_w
-            ratio_h = feat_h / pad_h
-            gt_bbox = gt_bboxes[i]
-            gt_label = gt_labels[i]
-            gt_centers = self.get_bboxes_center(
-                gt_bbox[:, :4], ratio_w, ratio_h, toInt=True)
-            for j, ct in enumerate(gt_centers):
-                ctx, cty = ct
-                scale_box_h = (gt_bbox[j][3] - gt_bbox[j][1]) * ratio_h
-                scale_box_w = (gt_bbox[j][2] - gt_bbox[j][0]) * ratio_w
-                radius = gaussian_radius([scale_box_h, scale_box_w],
-                                         min_overlap=0.3)
-                radius = max(0, int(radius))
-                ind = gt_label[j]
-                gen_gaussian_target(gt_heatmap[i, ind], [ctx, cty], radius)
-
-        avg_factor = max(1, gt_heatmap.eq(1).sum())
-        return dict(
-            target=gt_heatmap, weight=lw_heatmap, avg_factor=avg_factor)
-
-    def get_offset_target(self, gt_bboxes, img_metas, feat_shape):
-        """
-            Args:
-                gt_bboxes (list[Tensor]): gt bboxes of each image.
-                img_metas (list[Dict]): img_meta of each image.
-
-            Return:
-                dict(str, Tensor): which has components below:
-                    - target (Tensor): offset heatmap, notice just assign
-                    positive sample in object's center.
-                    - weight (Tensor): loss_weight.
-                    - avg_factor (int): number of positive sample.
-        """
-        bs, _, feat_h, feat_w = feat_shape
-
-        gt_heatmap = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w],
-                                             dtype=torch.float32)
-        lw_heatmap = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w],
-                                             dtype=torch.float32)
-
-        pad_w = max([x['pad_shape'][1] for x in img_metas])
-        pad_h = max([x['pad_shape'][0] for x in img_metas])
-        for i in range(bs):
-            ratio_w = feat_w / pad_w
-            ratio_h = feat_h / pad_h
-            gt_bbox = gt_bboxes[i]
-            gt_centers = self.get_bboxes_center(gt_bbox[:, :4], ratio_w,
-                                                ratio_h, False)
-            for j, ct in enumerate(gt_centers):
-                ctx_int, cty_int = ct.int()
-                ctx, cty = ct
-                gt_heatmap[i, 0, cty_int, ctx_int] = ctx - ctx_int
-                gt_heatmap[i, 1, cty_int, ctx_int] = cty - cty_int
-                lw_heatmap[i, :, cty_int, ctx_int] = 1
-
-        avg_factor = max(1, lw_heatmap.eq(1).sum())
-        return dict(
-            target=gt_heatmap, weight=lw_heatmap, avg_factor=avg_factor)
-
-    def get_wh_target(self, gt_bboxes, img_metas, feat_shape):
-        """
-        Args:
-            gt_bboxes (list[Tensor]): gt bboxes of each image.
-            img_metas (list[Dict]): img_meta of each image.
-
-        Return:
-            dict(str, Tensor): which has components below:
-                - target (Tensor): wh heatmap, notice just assign positive
-                        sample in object's center.
-                - weight (Tensor): loss_weight.
-                - avg_factor (int): number of positive sample.
-        """
-        bs, _, feat_h, feat_w = feat_shape
-
-        gt_heatmap = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w],
-                                             dtype=torch.float32)
-        lw_heatmap = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w],
-                                             dtype=torch.float32)
-        pad_w = max([x['pad_shape'][1] for x in img_metas])
-        pad_h = max([x['pad_shape'][0] for x in img_metas])
-        for i in range(bs):
-            ratio_w = feat_w / pad_w
-            ratio_h = feat_h / pad_h
-            gt_bbox = gt_bboxes[i]
-            gt_centers = self.get_bboxes_center(gt_bbox[:, :4], ratio_w,
-                                                ratio_h, True)
-            # 1. assign wh heatmap in input_level
-            for j, ct in enumerate(gt_centers):
-                ctx, cty = ct
-                scale_box_h = (gt_bbox[j][3] - gt_bbox[j][1]) * ratio_h
-                scale_box_w = (gt_bbox[j][2] - gt_bbox[j][0]) * ratio_w
-                gt_heatmap[i, 0, cty, ctx] = scale_box_w
-                gt_heatmap[i, 1, cty, ctx] = scale_box_h
-                lw_heatmap[i, :, cty, ctx] = 1
-
-        avg_factor = max(1, lw_heatmap.eq(1).sum())
-        return dict(
-            target=gt_heatmap, weight=lw_heatmap, avg_factor=avg_factor)
-
-    def get_targets(self, gt_bboxes, gt_labels, img_metas, feat_shape):
-        center_target = self.get_center_target(gt_bboxes, gt_labels, img_metas,
-                                               feat_shape)
-        wh_target = self.get_wh_target(gt_bboxes, img_metas, feat_shape)
-        offset_target = self.get_offset_target(gt_bboxes, img_metas,
-                                               feat_shape)
-        return center_target, wh_target, offset_target
+        assert len(feats) == 1
+        feat = feats[-1]
+        center_heatmap_preds = self.heatmap_head(feat).sigmoid()
+        wh_preds = self.wh_head(feat)
+        offset_preds = self.offset_head(feat)
+        return center_heatmap_preds, wh_preds, offset_preds
 
     def loss(self,
-             center_heatmap,
+             center_heatmap_preds,
              wh_preds,
              offset_preds,
              gt_bboxes,
@@ -228,33 +91,93 @@ class CenterNetHead(BaseDenseHead):
              gt_bboxes_ignore=None):
         """
         Args:
-            center_heatmap (tensor): shape (B, num_class, H, W),
+            center_heatmap_preds (tensor): shape (B, num_class, H, W),
             wh_preds (tensor): shape (B, num_class, H, W),
             offset_preds (tensor): shape (B, num_class, H, W),
             gt_bboxes (list[Tensor]): gt bboxes of each image.
             gt_labels (list[Tensor]): gt labels of each image.
             img_metas (list[Dict]): img_meta of each image.
             gt_bboxes_ignore (list[Tensor]): ignore box of each image.
-
         Return:
             dict(str, Tensor): which has components below:
                 - loss_heatmap (Tensor): loss of center heatmap.
                 - loss_wh (Tensor): loss of hw heatmap
                 - loss_offset (Tensor): loss of offset heatmap.
         """
-        feat_shape = center_heatmap.shape
-        center_target, wh_target, offset_target = self.get_targets(
-            gt_bboxes, gt_labels, img_metas, feat_shape)
-        loss_heatmap = self.loss_heatmap(center_heatmap, **center_target)
-        loss_wh = self.loss_wh(wh_preds, **wh_target)
-        loss_offset = self.loss_offset(offset_preds, **offset_target)
+        target_result, avg_factor = self.get_targets(
+            gt_bboxes, gt_labels, center_heatmap_preds.shape,
+            img_metas[0]['pad_shape'])
+
+        center_heatmap_targets = target_result['center_heatmap_targets']
+        wh_targets = target_result['wh_targets']
+        offset_targets = target_result['offset_targets']
+        wh_offset_target_weights = target_result['wh_offset_target_weights']
+
+        loss_heatmap = self.loss_heatmap(
+            center_heatmap_preds,
+            center_heatmap_targets,
+            avg_factor=avg_factor)
+        loss_wh = self.loss_wh(
+            wh_preds,
+            wh_targets,
+            wh_offset_target_weights,
+            avg_factor=avg_factor)
+        loss_offset = self.loss_offset(
+            offset_preds,
+            offset_targets,
+            wh_offset_target_weights,
+            avg_factor=avg_factor)
         return dict(
             loss_heatmap=loss_heatmap,
             loss_wh=loss_wh,
             loss_offset=loss_offset)
 
-    def flip_tensor(self, tensor):
-        return torch.flip(tensor, [3])
+    def get_targets(self, gt_bboxes, gt_labels, feat_shape, img_shape):
+        img_h, img_w = img_shape[:2]
+        bs, _, feat_h, feat_w = feat_shape
+        center_heatmap_targets = gt_bboxes[-1].new_zeros(
+            [bs, self.num_classes, feat_h, feat_w])
+        wh_targets = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w])
+        offset_targets = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w])
+        wh_offset_target_weights = gt_bboxes[-1].new_zeros(
+            [bs, 2, feat_h, feat_w])
+
+        for i in range(bs):
+            ratio_w = feat_w / img_w
+            ratio_h = feat_h / img_h
+            gt_bbox = gt_bboxes[i]
+            gt_label = gt_labels[i]
+            center_x = (gt_bbox[:, [0]] + gt_bbox[:, [2]]) * ratio_w / 2
+            center_y = (gt_bbox[:, [1]] + gt_bbox[:, [3]]) * ratio_h / 2
+            gt_centers = torch.cat((center_x, center_y), dim=1)
+
+            for j, ct in enumerate(gt_centers):
+                ctx_int, cty_int = ct.int()
+                ctx, cty = ct
+                scale_box_h = (gt_bbox[j][3] - gt_bbox[j][1]) * ratio_h
+                scale_box_w = (gt_bbox[j][2] - gt_bbox[j][0]) * ratio_w
+                radius = gaussian_radius([scale_box_h, scale_box_w],
+                                         min_overlap=0.3)
+                radius = max(0, int(radius))
+                ind = gt_label[j]
+                gen_gaussian_target(center_heatmap_targets[i, ind],
+                                    [ctx_int, cty_int], radius)
+
+                wh_targets[i, 0, cty_int, ctx_int] = scale_box_w
+                wh_targets[i, 1, cty_int, ctx_int] = scale_box_h
+
+                offset_targets[i, 0, cty_int, ctx_int] = ctx - ctx_int
+                offset_targets[i, 1, cty_int, ctx_int] = cty - cty_int
+
+                wh_offset_target_weights[i, :, cty_int, ctx_int] = 1
+
+        avg_factor = max(1, wh_offset_target_weights[:, 0, ...].eq(1).sum())
+        target_result = dict(
+            center_heatmap_targets=center_heatmap_targets,
+            wh_targets=wh_targets,
+            offset_targets=offset_targets,
+            wh_offset_target_weights=wh_offset_target_weights)
+        return target_result, avg_factor
 
     def get_bboxes(self,
                    center_hm,
@@ -297,22 +220,6 @@ class CenterNetHead(BaseDenseHead):
                 rescale=rescale,
                 with_nms=with_nms))
         return result_list
-
-    def _bboxes_nms(self, bboxes, labels, cfg):
-        if labels.numel() == 0:
-            return bboxes, labels
-        scores = bboxes[:, -1].contiguous()
-        out_bboxes, keep = batched_nms(bboxes[:, :4], scores, labels,
-                                       cfg['nms_cfg'])
-        out_labels = labels[keep]
-
-        if len(out_bboxes) > 0:
-            idx = torch.argsort(out_bboxes[:, -1], descending=True)
-            idx = idx[:cfg['max_per_img']]
-            out_bboxes = out_bboxes[idx]
-            out_labels = out_labels[idx]
-
-        return out_bboxes, out_labels
 
     def _get_bboxes_single(self,
                            center_hm,
@@ -369,3 +276,22 @@ class CenterNetHead(BaseDenseHead):
         scores = scores.view(-1, 1).clone().contiguous()
         detections = torch.cat([bboxes, scores], dim=1)
         return detections, labels
+
+    def flip_tensor(self, tensor):
+        return torch.flip(tensor, [3])
+
+    def _bboxes_nms(self, bboxes, labels, cfg):
+        if labels.numel() == 0:
+            return bboxes, labels
+        scores = bboxes[:, -1].contiguous()
+        out_bboxes, keep = batched_nms(bboxes[:, :4], scores, labels,
+                                       cfg['nms_cfg'])
+        out_labels = labels[keep]
+
+        if len(out_bboxes) > 0:
+            idx = torch.argsort(out_bboxes[:, -1], descending=True)
+            idx = idx[:cfg['max_per_img']]
+            out_bboxes = out_bboxes[idx]
+            out_labels = out_labels[idx]
+
+        return out_bboxes, out_labels
