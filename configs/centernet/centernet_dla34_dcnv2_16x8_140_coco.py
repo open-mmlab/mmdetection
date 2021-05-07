@@ -95,3 +95,4 @@ runner = dict(type='EpochBasedRunner', max_epochs=140)
 # Avoid evaluation and saving weights too frequently
 evaluation = dict(interval=5, metric='bbox')
 checkpoint_config = dict(interval=5)
+find_unused_parameters = True
