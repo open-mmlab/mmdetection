@@ -1,5 +1,5 @@
-import torch.nn as nn
 import mmcv
+import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
 
@@ -19,14 +19,17 @@ class SELayer(BaseModule):
             activation layer will be configurated by the first dict and the
             second activation layer will be configurated by the second dict.
             Default: (dict(type='ReLU'), dict(type='Sigmoid'))
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
                  channels,
                  ratio=16,
                  conv_cfg=None,
-                 act_cfg=(dict(type='ReLU'), dict(type='Sigmoid'))):
-        super(SELayer, self).__init__()
+                 act_cfg=(dict(type='ReLU'), dict(type='Sigmoid')),
+                 init_cfg=None):
+        super(SELayer, self).__init__(init_cfg)
         if isinstance(act_cfg, dict):
             act_cfg = (act_cfg, act_cfg)
         assert len(act_cfg) == 2

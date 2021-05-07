@@ -1,3 +1,5 @@
+import warnings
+
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
@@ -29,6 +31,9 @@ class MobileNetV2(BaseModule):
             and its variants only. Default: False.
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed. Default: False.
+        pretrained (str, optional): model pretrained path. Default: None
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     # Parameters to build layers. 4 parameters are needed to construct a
@@ -45,8 +50,30 @@ class MobileNetV2(BaseModule):
                  norm_cfg=dict(type='BN'),
                  act_cfg=dict(type='ReLU6'),
                  norm_eval=False,
-                 with_cp=False):
-        super(MobileNetV2, self).__init__()
+                 with_cp=False,
+                 pretrained=None,
+                 init_cfg=None):
+        super(MobileNetV2, self).__init__(init_cfg)
+
+        self.pretrained = pretrained
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
+        if isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+                          'please use "init_cfg" instead')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(
+                        type='Constant',
+                        val=1,
+                        layer=['_BatchNorm', 'GroupNorm'])
+                ]
+        else:
+            raise TypeError('pretrained must be a str or None')
+
         self.widen_factor = widen_factor
         self.out_indices = out_indices
         for index in out_indices:

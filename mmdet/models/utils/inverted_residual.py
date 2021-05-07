@@ -1,4 +1,3 @@
-import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
@@ -29,6 +28,8 @@ class InvertedResidual(BaseModule):
             Default: dict(type='ReLU').
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed. Default: False.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
 
     Returns:
         Tensor: The output tensor.
@@ -45,8 +46,9 @@ class InvertedResidual(BaseModule):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  act_cfg=dict(type='ReLU'),
-                 with_cp=False):
-        super(InvertedResidual, self).__init__()
+                 with_cp=False,
+                 init_cfg=None):
+        super(InvertedResidual, self).__init__(init_cfg)
         self.with_res_shortcut = (stride == 1 and in_channels == out_channels)
         assert stride in [1, 2], f'stride must in [1, 2]. ' \
             f'But received {stride}.'
