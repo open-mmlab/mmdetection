@@ -39,7 +39,7 @@ class MobileNetV2(BaseModule):
 
     def __init__(self,
                  widen_factor=1.,
-                 out_indices=(1, 2, 4, 6),
+                 out_indices=(1, 2, 4, 7),
                  frozen_stages=-1,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
@@ -150,18 +150,13 @@ class MobileNetV2(BaseModule):
     def forward(self, x):
         """Forward function."""
         x = self.conv1(x)
-
         outs = []
         for i, layer_name in enumerate(self.layers):
             layer = getattr(self, layer_name)
             x = layer(x)
             if i in self.out_indices:
                 outs.append(x)
-
-        if len(outs) == 1:
-            return outs[0]
-        else:
-            return tuple(outs)
+        return tuple(outs)
 
     def train(self, mode=True):
         """Convert the model into training mode while keep normalization layer
