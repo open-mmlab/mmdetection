@@ -771,16 +771,12 @@ class CornerHead(BaseDenseHead):
                          'Please rename it as nms')
         if 'nms' not in cfg:
             cfg.nms = cfg.nms_cfg
+        if 'max_per_img' in cfg:
+            cfg.nms.max_num = cfg.max_per_img
 
         out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
                                        cfg.nms)
         out_labels = labels[keep]
-
-        if len(out_bboxes) > 0:
-            idx = torch.argsort(out_bboxes[:, -1], descending=True)
-            idx = idx[:cfg.max_per_img]
-            out_bboxes = out_bboxes[idx]
-            out_labels = out_labels[idx]
 
         return out_bboxes, out_labels
 

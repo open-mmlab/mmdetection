@@ -33,12 +33,10 @@ class TridentRoIHead(StandardRoIHead):
             nms_scores = trident_det_bboxes[:, 4].contiguous()
             nms_inds = trident_det_labels
             nms_cfg = self.test_cfg['nms']
+            nms_cfg['max_num'] = self.test_cfg['max_per_img']
             det_bboxes, keep = batched_nms(nms_bboxes, nms_scores, nms_inds,
                                            nms_cfg)
             det_labels = trident_det_labels[keep]
-            if self.test_cfg['max_per_img'] > 0:
-                det_labels = det_labels[:self.test_cfg['max_per_img']]
-                det_bboxes = det_bboxes[:self.test_cfg['max_per_img']]
 
         return det_bboxes, det_labels
 
