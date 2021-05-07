@@ -1,9 +1,16 @@
 import pytest
 import torch
 from torch.nn.modules import GroupNorm
+from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.utils import InvertedResidual, SELayer
-from ..test_backbones.utils import is_norm
+
+
+def is_norm(modules):
+    """Check if is one of the norms."""
+    if isinstance(modules, (GroupNorm, _BatchNorm)):
+        return True
+    return False
 
 
 def test_inverted_residual():
