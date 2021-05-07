@@ -3,7 +3,7 @@ import torch
 from torch.nn.modules import GroupNorm
 
 from mmdet.models.utils import InvertedResidual, SELayer
-from .utils import is_norm
+from ..test_backbones.utils import is_norm
 
 
 def test_inverted_residual():
