@@ -1,3 +1,4 @@
+import math
 import os
 from collections import defaultdict
 
@@ -5,7 +6,7 @@ from mmcv.runner.hooks import HOOKS, Hook, LoggerHook
 from mmcv.runner import EpochBasedRunner
 from mmcv.runner.dist_utils import master_only
 from noussdk.logging import logger_factory
-
+from noussdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 
 logger = logger_factory.get_logger("MMDetectionTask")
 
@@ -97,3 +98,41 @@ class NOUSLoggerHook(LoggerHook):
             self.curves[tag].y.append(value)
         # logger.warning(sorted(self.curves.keys()))
         # logger.warning(str(self.curves['train/loss']))
+
+
+@HOOKS.register_module()
+class NOUSETAHook(Hook):
+    def __init__(self, time_monitor):
+        super().__init__()
+        self.time_monitor = time_monitor
+
+    def before_run(self, runner):
+        self.time_monitor.total_epochs = runner.max_epochs
+        self.time_monitor.train_steps = runner.max_iters // runner.max_epochs
+        self.time_monitor.steps_per_epoch = self.time_monitor.train_steps + self.time_monitor.val_steps
+        self.time_monitor.total_steps = math.ceil(self.time_monitor.steps_per_epoch * self.time_monitor.total_epochs)
+        self.time_monitor.current_step = 0
+        self.time_monitor.current_epoch = 0
+
+    def before_epoch(self, runner):
+        self.time_monitor.on_epoch_begin(runner.epoch)
+
+    def after_epoch(self, runner):
+        self.time_monitor.on_epoch_end(runner.epoch)
+
+    def before_iter(self, runner):
+        self.time_monitor.on_train_batch_begin(1)
+
+    def after_iter(self, runner):
+        self.time_monitor.on_train_batch_end(1)
+        logger.warning(f'training progress {self.progress}')
+
+    def before_val_iter(self, runner):
+        self.time_monitor.on_test_batch_begin(1)
+
+    def after_val_iter(self, runner):
+        self.time_monitor.on_test_batch_end(1)
+
+    @property
+    def progress(self):
+        return self.time_monitor.get_progress()

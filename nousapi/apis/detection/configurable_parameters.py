@@ -99,7 +99,7 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
         )
 
         num_epochs = Integer(
-            default_value=2,
+            default_value=1,
             header="Number of epochs",
             description="Increasing this value causes the results to be more robust but training time "
             "will be longer.",

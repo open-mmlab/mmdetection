@@ -30,6 +30,7 @@ from noussdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 
 from noussdk.usecases.evaluation.basic_operations import get_nms_filter
 from noussdk.usecases.evaluation.metrics_helper import MetricsHelper
+from noussdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from noussdk.usecases.tasks.image_deep_learning_task import ImageDeepLearningTask
 from noussdk.usecases.tasks.interfaces.configurable_parameters_interface import IConfigurableParameters
 from noussdk.usecases.tasks.interfaces.model_optimizer import IModelOptimizer
@@ -50,7 +51,7 @@ from mmcv.runner import save_checkpoint, load_checkpoint
 
 from .configurable_parameters import MMDetectionParameters
 from ..config import MMDetectionConfigManager, MMDetectionTaskType
-from nousapi.extension.utils.hooks import NOUSLoggerHook
+from nousapi.extension.utils.hooks import NOUSLoggerHook, NOUSETAHook
 
 # The following imports are needed to register the custom datasets and hooks for NOUS as modules in the
 # mmdetection framework. They are not used directly in this file, but they have to be here for the registration to work
@@ -112,6 +113,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         self.train_model = None
         self.inference_model = None
         self.learning_curves = defaultdict(NOUSLoggerHook.Curve)
+        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0)
         self.load_model(self.task_environment)
 
     def _create_model(self, config: Config, from_scratch: bool = False):
@@ -149,6 +151,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """ Analyzes a dataset using the latest inference model. """
         is_evaluation = analyse_parameters is not None and analyse_parameters.is_evaluation
         confidence_threshold, nms_threshold, cross_class_nms = self._get_confidence_and_nms_thresholds(is_evaluation)
+        confidence_threshold = 0.3
 
         batch_size = self.config_manager.config.data.samples_per_gpu
 
@@ -182,27 +185,40 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         # Loop over dataset again to assign predictions. Convert from MMdetection format to NOUS format
         for dataset_item, output in zip(dataset, prediction_results):
+            # logger.warning(str(output))
             width = dataset_item.width
             height = dataset_item.height
+            image = dataset_item.numpy
+            # logger.warning(f'image shape {image.shape}, width {width}, height {height}')
+            # import cv2
 
             shapes = []
             for label_idx, detections in enumerate(output):
                 for i in range(detections.shape[0]):
                     probability = float(detections[i, 4])
+                    coords = detections[i, :4].astype(float).copy()
+                    coords /= np.array([width, height, width, height], dtype=float)
+                    coords = np.clip(coords, 0, 1)
 
                     if probability < confidence_threshold:
                         continue
 
                     assigned_label = [ScoredLabel(self.config_manager.config.labels[label_idx],
                                                   probability=probability)]
-                    if detections[i, 3] - detections[i, 1] <= 0 or detections[i, 2] - detections[i, 0] <= 0:
+                    if coords[3] - coords[1] <= 0 or coords[2] - coords[0] <= 0:
                         continue
 
-                    shapes.append(Box(x1=float(detections[i, 0])/width,
-                                      y1=float(detections[i, 1])/height,
-                                      x2=float(detections[i, 2])/width,
-                                      y2=float(detections[i, 3])/height,
+                    # x1, y1, x2, y2 = detections[i, :4]
+                    # color = assigned_label[0].color.bgr_tuple
+                    # cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
+
+                    shapes.append(Box(x1=coords[0],
+                                      y1=coords[1],
+                                      x2=coords[2],
+                                      y2=coords[3],
                                       labels=assigned_label))
+            # cv2.imshow('image', image)
+            # cv2.waitKey(0)
 
             # FIXME. What is it done for?
             if nms_threshold < 1.0:
@@ -364,7 +380,11 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         # Replace all logger hooks by the NOUSLoggerHook.
         config = self.config_manager.config_copy
-        config.log_config.hooks = [NOUSLoggerHook(curves=self.learning_curves)]
+        config.log_config.hooks = [{'type': 'NOUSLoggerHook', 'curves': self.learning_curves}]
+        if config.get('custom_hooks', None) is None:
+            config.custom_hooks = []
+        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0) # It will be initialized properly inside the NOUSETAHook before training.
+        config.custom_hooks.append({'type': 'NOUSETAHook', 'time_monitor': self.time_monitor})
         # hooks = [hook for hook in config.log_config.hooks if hook.type == 'NOUSLoggerHook']
         # if hooks:
         #     hooks[0].curves = self.learning_curves
@@ -470,6 +490,8 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         # Train the model
         training_duration = self._do_model_training(mm_train_dataset)
 
+        logger.warning(f'TRAINING PROGRESS {self.get_training_progress():.2f}')
+
         # Check for stop signal when training has stopped. If should_stop is true, training was cancelled and no new
         # model should be returned. Old train model is restored.
         if self.should_stop:
@@ -490,6 +512,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             # Add mAP metric and loss curves
             performance = Performance(score=ScoreMetric(value=best_score, name="mAP"),
                                       dashboard_metrics=self._generate_training_metrics_group())
+            logger.warning('FINAL MODEL PERFORMANCE\n' + str(performance))
             self._persist_new_model(dataset, performance, training_duration)
         else:
             logger.info("Model performance has not improved while training. No new model has been saved.")
@@ -500,48 +523,13 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         self.is_training = False
         return self.task_environment.model
 
-    def _load_current_training_logs(self):
-        """
-        Loads the logs of the last training run.
-
-        :return log_lines: list of log entries. Each entry is a dict of log variables.
-        """
-        training_logs = glob.glob(os.path.join(self.config_manager.config.work_dir, '*.log.json'))
-        if not training_logs:
-            return None
-
-        with open(training_logs[0], 'r') as f:
-            log_lines = []
-            for line in f:
-                log_lines.append(json.loads(line))
-
-        if log_lines:
-            # First line just contains experiment name, so drop that one
-            log_lines.pop(0)
-
-        return log_lines
-
     def get_training_progress(self) -> float:
         """
         Calculate the progress of the current training
-        # TODO: Port TimeMonitorCallback to mmcv Hook, to implement this in a nice way that doesn't require parsing logs
-        #   JIRA ticket:
-        #   https://cosmonio.atlassian.net/browse/NI-661?atlOrigin=eyJpIjoiOWU2YjY5NmQwOGFiNDdlMTg3YzA1YzYxMGZjYTNiNzQiLCJwIjoiaiJ9
 
         :return: training progress in percent
         """
-        log_entries = self._load_current_training_logs()
-        if (not log_entries) or (not self.is_training):
-            return 0
-        total_epochs = self.config_manager.config.runner.max_epochs
-        batch_size = self.config_manager.config.data.samples_per_gpu
-        iterations_per_epoch = int(np.ceil(self.n_samples_in_current_training_set/batch_size))
-        total_iterations = iterations_per_epoch*total_epochs
-
-        current_epoch = log_entries[-1].get('epoch', 1) - 1
-        current_iter = log_entries[-1].get('iter', 1)
-
-        return float((current_iter+(current_epoch*iterations_per_epoch))/total_iterations * 100)
+        return self.time_monitor.get_progress()
 
     def cancel_training(self):
         """
@@ -599,34 +587,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         output: List[MetricsGroup] = []
 
-        log_list = self._load_current_training_logs()
-        if not log_list:
-            return None
-        # Last line contains duplicate validation epoch due to save_best checkpoint mechanism, drop that one
-        log_list.pop(-1)
-
-        train_entries = [x for x in log_list if x.get('mode', None) == 'train']
-        val_entries = [x for x in log_list if x.get('mode', None) == 'val']
-        n_val_epochs = max([x.get('epoch', 0) for x in val_entries])
-
-        if train_entries:
-            n_train_epochs = max([x.get('epoch', 0) for x in train_entries])
-            max_train_iters = max([x.get('iter', 0) for x in train_entries])
-        else:
-            n_train_epochs = n_val_epochs
-            max_train_iters = 0
-
-        real_epochs = min([n_train_epochs, n_val_epochs])
-
-        df = pd.DataFrame(index=np.arange(1, real_epochs+1, 1), columns=['val_mAP', 'train_loss', 'learning_rate'])
-        for entry in log_list:
-            if entry.get('mode', None) == 'val':
-                df.at[entry['epoch'], 'val_mAP'] = entry.get('mAP', 0)
-                df.at[entry['epoch'], 'learning_rate'] = entry.get('lr', 0)
-            elif entry.get('mode', None) == 'train':
-                if entry['iter'] == max_train_iters:
-                    df.at[entry['epoch'], 'train_loss'] = entry.get('loss', 0)
-
         # Model architecture
         architecture = InfoMetric(name='Model architecture', value=self.train_model.cfg.model_name)
         visualization_info_architecture = VisualizationInfo(name="Model architecture",
@@ -644,25 +604,11 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         output.append(MetricsGroup(metrics=[learning_rate_schedule],
                                    visualization_info=visualization_info_lr_schedule))
 
-        # Training loss and learning rate, if the dataset is really small so that there are less than 5 iterations in
-        # one epoch this will not be logged, so in that case we do not add it to the metrics.
-        if train_entries:
-            # Training loss
-            loss = CurveMetric(ys=df['train_loss'], name="Training")
-            visualization_info = LineChartInfo(name="Loss curve", x_axis_label="Epoch", y_axis_label="Loss value")
-            output.append(MetricsGroup(metrics=[loss], visualization_info=visualization_info))
-
-            # Learning rate
-            lr = CurveMetric(ys=df['learning_rate'], name="Learning rate")
-            visualization_info_lr = LineChartInfo(name="Learning rate", x_axis_label="Epoch",
-                                                  y_axis_label="Learning rate")
-            output.append(MetricsGroup(metrics=[lr], visualization_info=visualization_info_lr))
-
-        # mAP score
-        val_map = CurveMetric(ys=df['val_mAP'], name="Validation")
-        visualization_info_map = LineChartInfo(name="Mean Average Precision (mAP)", x_axis_label="Epoch",
-                                               y_axis_label="Mean Average Precision")
-        output.append(MetricsGroup(metrics=[val_map], visualization_info=visualization_info_map))
+        # Learning curves
+        for key, curve in self.learning_curves.items():
+            metric_curve = CurveMetric(xs=curve.x, ys=curve.y, name=key)
+            visualization_info = LineChartInfo(name=key, x_axis_label="Epoch", y_axis_label=key)
+            output.append(MetricsGroup(metrics=[metric_curve], visualization_info=visualization_info))
 
         return output
 

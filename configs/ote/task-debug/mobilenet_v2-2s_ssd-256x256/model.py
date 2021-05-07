@@ -83,9 +83,9 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=5,
+    interval=10,
     hooks=[
-        dict(type='NOUSLoggerHook'),
+        dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
