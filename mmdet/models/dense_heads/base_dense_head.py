@@ -1,13 +1,43 @@
 from abc import ABCMeta, abstractmethod
 
-import torch.nn as nn
+import torch
+from mmcv import ConfigDict
+from mmcv.runner import BaseModule
+from py._log import warning
 
 
-class BaseDenseHead(nn.Module, metaclass=ABCMeta):
+def deploy_deprecate_warning(cfg):
+    if 'deploy' not in cfg:
+        warning.warn('All deploy releated arguments has been moved to'
+                     ' a dict named deploy in test_cfg')
+        cfg.deploy = ConfigDict(dict())
+    if 'nms' in cfg:
+        warning.warn('When export the model to onnx, all nms related '
+                     'parameters has been moved to a dict `deploy` in '
+                     'test_cfg, and add a prefix `deploy_`, such as '
+                     '`max_per_img` to `deploy_max_per_img`')
+        for n, v in cfg.nms.items():
+            cfg.deploy[f'deploy_{n}'] = v
+
+    deprecated_convert = {
+        'max_per_img': 'deploy_max_per_img',
+        'deploy_nms_pre': 'deploy_nms_pre',
+        'score_thr': 'deploy_score_thr',
+    }
+    for ori_name, convert_name in deprecated_convert.items():
+        if ori_name in cfg:
+            warning.warn(f'Please specify {convert_name} instead of '
+                         f' {ori_name} to a dict named '
+                         ' `deploy` in test_cfg')
+            cfg.deploy[convert_name] = cfg[ori_name]
+    return cfg
+
+
+class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     """Base class for DenseHeads."""
 
-    def __init__(self):
-        super(BaseDenseHead, self).__init__()
+    def __init__(self, init_cfg=None):
+        super(BaseDenseHead, self).__init__(init_cfg)
 
     @abstractmethod
     def loss(self, **kwargs):
@@ -57,3 +87,38 @@ class BaseDenseHead(nn.Module, metaclass=ABCMeta):
         else:
             proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
             return losses, proposal_list
+
+    def onnx_trace(self, batch_mlvl_bboxes, batch_mlvl_scores, cfg):
+        cfg = deploy_deprecate_warning(cfg)
+        if cfg.deploy.get('with_nms', True):
+            from mmdet.core.export import add_dummy_nms_for_onnx
+            # ignore background class
+            if not self.loss_cls.use_sigmoid:
+                num_classes = batch_mlvl_scores.shape[2] - 1
+                batch_mlvl_scores = batch_mlvl_scores[..., :num_classes]
+            max_output_boxes_per_class = cfg.deploy.get(
+                'max_output_boxes_per_class', 200)
+            score_threshold = cfg.deploy.get('deploy_score_thr', 0.05)
+            nms_pre = cfg.deploy.get('deploy_nms_pre', -1)
+            iou_threshold = cfg.deploy.get('deploy_iou_threshold', 0.5)
+            max_per_img = cfg.deploy.get('deploy_max_per_img', 100)
+
+            return add_dummy_nms_for_onnx(batch_mlvl_bboxes, batch_mlvl_scores,
+                                          max_output_boxes_per_class,
+                                          iou_threshold, score_threshold,
+                                          nms_pre, max_per_img)
+        else:
+            if self.loss_cls.use_sigmoid:
+                # Add a dummy background class to the backend when
+                # using sigmoid remind that we set FG labels
+                # to [0, num_class-1] since mmdet v2.0
+                # BG cat_id: num_class
+                padding = batch_mlvl_scores.new_zeros(
+                    len(batch_mlvl_scores), batch_mlvl_scores.shape[1], 1)
+                batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding],
+                                              dim=-1)
+            det_results = [
+                tuple(mlvl_bs)
+                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores)
+            ]
+            return det_results

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 ```latex
 @inproceedings{cao2019prime,

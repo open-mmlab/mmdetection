@@ -48,6 +48,7 @@ def test_sparse_rcnn_forward():
     model['pretrained'] = None
     from mmdet.models import build_detector
     detector = build_detector(model)
+    detector.init_weights()
     input_shape = (1, 3, 550, 550)
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[5])
     imgs = mm_inputs.pop('imgs')

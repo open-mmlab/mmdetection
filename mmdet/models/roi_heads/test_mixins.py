@@ -110,12 +110,13 @@ class BBoxTestMixin(object):
         bbox_pred = bbox_results['bbox_pred']
 
         # Recover the batch dimension
-        rois = rois.reshape(batch_size, num_proposals_per_img, -1)
-        cls_score = cls_score.reshape(batch_size, num_proposals_per_img, -1)
+        rois = rois.reshape(batch_size, num_proposals_per_img, rois.size(-1))
+        cls_score = cls_score.reshape(batch_size, num_proposals_per_img,
+                                      cls_score.size(-1))
 
         if not torch.onnx.is_in_onnx_export():
-            # remove padding
-            supplement_mask = rois[..., -1] == 0
+            # remove padding, ignore batch_index when calculating mask
+            supplement_mask = rois.abs()[..., 1:].sum(dim=-1) == 0
             cls_score[supplement_mask, :] = 0
 
         # bbox_pred would be None in some detector when with_reg is False,
@@ -124,7 +125,8 @@ class BBoxTestMixin(object):
             # the bbox prediction of some detectors like SABL is not Tensor
             if isinstance(bbox_pred, torch.Tensor):
                 bbox_pred = bbox_pred.reshape(batch_size,
-                                              num_proposals_per_img, -1)
+                                              num_proposals_per_img,
+                                              bbox_pred.size(-1))
                 if not torch.onnx.is_in_onnx_export():
                     bbox_pred[supplement_mask, :] = 0
             else:
@@ -137,7 +139,7 @@ class BBoxTestMixin(object):
                 det_labels = []
                 for i in range(len(proposals)):
                     # remove padding
-                    supplement_mask = proposals[i][..., -1] == 0
+                    supplement_mask = proposals[i].abs().sum(dim=-1) == 0
                     for bbox in bbox_preds[i]:
                         bbox[supplement_mask] = 0
                     det_bbox, det_label = self.bbox_head.get_bboxes(
@@ -253,58 +255,87 @@ class MaskTestMixin(object):
         # image shapes of images in the batch
         ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
-        num_imgs = len(det_bboxes)
-        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
-            segm_results = [[[] for _ in range(self.mask_head.num_classes)]
-                            for _ in range(num_imgs)]
-        else:
-            # if det_bboxes is rescaled to the original image size, we need to
-            # rescale it back to the testing scale to obtain RoIs.
-            if rescale and not isinstance(scale_factors[0], float):
-                scale_factors = [
-                    torch.from_numpy(scale_factor).to(det_bboxes[0].device)
-                    for scale_factor in scale_factors
-                ]
-            if torch.onnx.is_in_onnx_export():
-                # avoid mask_pred.split with static number of prediction
-                mask_preds = []
-                _bboxes = []
-                for i, boxes in enumerate(det_bboxes):
-                    boxes = boxes[:, :4]
-                    if rescale:
-                        boxes *= scale_factors[i]
-                    _bboxes.append(boxes)
-                    img_inds = boxes[:, :1].clone() * 0 + i
-                    mask_rois = torch.cat([img_inds, boxes], dim=-1)
-                    mask_result = self._mask_forward(x, mask_rois)
-                    mask_preds.append(mask_result['mask_pred'])
-            else:
-                _bboxes = [
-                    det_bboxes[i][:, :4] *
-                    scale_factors[i] if rescale else det_bboxes[i][:, :4]
-                    for i in range(len(det_bboxes))
-                ]
-                mask_rois = bbox2roi(_bboxes)
-                mask_results = self._mask_forward(x, mask_rois)
-                mask_pred = mask_results['mask_pred']
-                # split batch mask prediction back to each image
-                num_mask_roi_per_img = [
-                    det_bbox.shape[0] for det_bbox in det_bboxes
-                ]
-                mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
 
-            # apply mask post-processing to each image individually
-            segm_results = []
-            for i in range(num_imgs):
-                if det_bboxes[i].shape[0] == 0:
-                    segm_results.append(
-                        [[] for _ in range(self.mask_head.num_classes)])
-                else:
-                    segm_result = self.mask_head.get_seg_masks(
-                        mask_preds[i], _bboxes[i], det_labels[i],
-                        self.test_cfg, ori_shapes[i], scale_factors[i],
-                        rescale)
-                    segm_results.append(segm_result)
+        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
+            if torch.onnx.is_in_onnx_export():
+                raise RuntimeError('[ONNX Error] Can not record MaskHead '
+                                   'as it has not been executed this time')
+            segm_results = [[[] for _ in range(self.mask_head.num_classes)]
+                            for _ in range(len(det_bboxes))]
+            return segm_results
+
+        # The length of proposals of different batches may be different.
+        # In order to form a batch, a padding operation is required.
+        if isinstance(det_bboxes, list):
+            # padding to form a batch
+            max_size = max([bboxes.size(0) for bboxes in det_bboxes])
+            for i, (bbox, label) in enumerate(zip(det_bboxes, det_labels)):
+                supplement_bbox = bbox.new_full(
+                    (max_size - bbox.size(0), bbox.size(1)), 0)
+                supplement_label = label.new_full((max_size - label.size(0), ),
+                                                  0)
+                det_bboxes[i] = torch.cat((supplement_bbox, bbox), dim=0)
+                det_labels[i] = torch.cat((supplement_label, label), dim=0)
+            det_bboxes = torch.stack(det_bboxes, dim=0)
+            det_labels = torch.stack(det_labels, dim=0)
+
+        batch_size = det_bboxes.size(0)
+        num_proposals_per_img = det_bboxes.shape[1]
+
+        # if det_bboxes is rescaled to the original image size, we need to
+        # rescale it back to the testing scale to obtain RoIs.
+        det_bboxes = det_bboxes[..., :4]
+        if rescale:
+            if not isinstance(scale_factors[0], float):
+                scale_factors = det_bboxes.new_tensor(scale_factors)
+            det_bboxes = det_bboxes * scale_factors.unsqueeze(1)
+
+        batch_index = torch.arange(
+            det_bboxes.size(0), device=det_bboxes.device).float().view(
+                -1, 1, 1).expand(det_bboxes.size(0), det_bboxes.size(1), 1)
+        mask_rois = torch.cat([batch_index, det_bboxes], dim=-1)
+        mask_rois = mask_rois.view(-1, 5)
+        mask_results = self._mask_forward(x, mask_rois)
+        mask_pred = mask_results['mask_pred']
+
+        # Support get_seg_masks exporting to ONNX
+        if torch.onnx.is_in_onnx_export():
+            max_shape = img_metas[0]['img_shape_for_onnx']
+            num_det = det_bboxes.shape[1]
+            det_bboxes = det_bboxes.reshape(-1, 4)
+            det_labels = det_labels.reshape(-1)
+            segm_results = self.mask_head.get_seg_masks(
+                mask_pred, det_bboxes, det_labels, self.test_cfg, max_shape,
+                scale_factors[0], rescale)
+            segm_results = segm_results.reshape(batch_size, num_det,
+                                                max_shape[0], max_shape[1])
+            return segm_results
+        # Recover the batch dimension
+        mask_preds = mask_pred.reshape(batch_size, num_proposals_per_img,
+                                       *mask_pred.shape[1:])
+
+        # apply mask post-processing to each image individually
+        segm_results = []
+        for i in range(batch_size):
+            mask_pred = mask_preds[i]
+            det_bbox = det_bboxes[i]
+            det_label = det_labels[i]
+
+            # remove padding
+            supplement_mask = det_bbox.abs().sum(dim=-1) != 0
+            mask_pred = mask_pred[supplement_mask]
+            det_bbox = det_bbox[supplement_mask]
+            det_label = det_label[supplement_mask]
+
+            if det_label.shape[0] == 0:
+                segm_results.append([[]
+                                     for _ in range(self.mask_head.num_classes)
+                                     ])
+            else:
+                segm_result = self.mask_head.get_seg_masks(
+                    mask_pred, det_bbox, det_label, self.test_cfg,
+                    ori_shapes[i], scale_factors[i], rescale)
+                segm_results.append(segm_result)
         return segm_results
 
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):

@@ -1,6 +1,6 @@
 # Legacy Configs in MMDetection V1.x
 
-[OTHERS]
+<!-- [OTHERS] -->
 
 Configs in this directory implement the legacy configs used by MMDetection V1.x and its model zoos.
 

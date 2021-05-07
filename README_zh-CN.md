@@ -44,7 +44,7 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 
 ## 更新日志
 
-最新的月度版本 v2.10.0 在 2021.03.01 发布。
+最新的月度版本 v2.12.0 在 2021.05.01 发布。
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 在[兼容性说明文档](docs/compatibility.md)中我们提供了 1.x 和 2.0 版本的详细比较。
 
@@ -109,8 +109,11 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 - [x] [CentripetalNet (CVPR'2020)](configs/centripetalnet/README.md)
 - [x] [VFNet (ArXix'2020)](configs/vfnet/README.md)
 - [x] [DETR (ECCV'2020)](configs/detr/README.md)
+- [x] [Deformable DETR (ICLR'2021)](configs/deformable_detr/README.md)
 - [x] [CascadeRPN (NeurIPS'2019)](configs/cascade_rpn/README.md)
 - [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
+- [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
+- [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
 
 我们在[基于 MMDetection 的项目](./docs/projects.md)中列举了一些其他的支持的算法。
 
@@ -164,3 +167,24 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 - [MMTracking](https://github.com/open-mmlab/mmtracking): OpenMMLab 一体化视频目标感知平台
 - [MMPose](https://github.com/open-mmlab/mmpose): OpenMMLab 姿态估计工具箱
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab 图像视频编辑工具箱
+- [MMOCR](https://github.com/open-mmlab/mmocr): OpenMMLab 全流程文字检测识别理解工具包
+- [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab 图片视频生成模型工具箱
+
+## 欢迎加入 OpenMMLab 社区
+
+扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，加入 OpenMMLab 团队的 [官方交流 QQ 群](https://jq.qq.com/?_wv=1027&k=aCvMxdr3)
+
+<div align="center">
+<img src="/resources/zhihu_qrcode.jpg" height="400" />  <img src="/resources/qq_group_qrcode.jpg" height="400" />
+</div>
+
+我们会在 OpenMMLab 社区为大家
+
+- 📢 分享 AI 框架的前沿核心技术
+- 💻 解读 PyTorch 常用模块源码
+- 📰 发布 OpenMMLab 的相关新闻
+- 🚀 介绍 OpenMMLab 开发的前沿算法
+- 🏃 获取更高效的问题答疑和意见反馈
+- 🔥 提供与各行各业开发者充分交流的平台
+
+干货满满 📘，等你来撩 💗，OpenMMLab 社区期待您的加入 👬

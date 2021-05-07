@@ -11,7 +11,9 @@ The compatible MMDetection and MMCV versions are as below. Please install the co
 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
-| master              | mmcv-full>=1.2.4, <1.4.0 |
+| master              | mmcv-full>=1.3.3, <1.4.0 |
+| 2.12.0              | mmcv-full>=1.3.3, <1.4.0 |
+| 2.11.0              | mmcv-full>=1.2.4, <1.4.0 |
 | 2.10.0              | mmcv-full>=1.2.4, <1.4.0 |
 | 2.9.0               | mmcv-full>=1.2.4, <1.4.0 |
 | 2.8.0               | mmcv-full>=1.2.4, <1.4.0 |
@@ -30,6 +32,9 @@ Note: You need to run `pip uninstall mmcv` first if you have mmcv installed.
 If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
 ## Installation
+
+0. You can simply install mmdetection with the following commands:
+    `pip install mmdet`
 
 1. Create a conda virtual environment and activate it.
 
