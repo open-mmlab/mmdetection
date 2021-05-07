@@ -6,27 +6,7 @@ from mmcv.ops import ModulatedDeformConv2dPack
 
 from mmdet.models.builder import NECKS
 
-
-def fill_fc_weights(layers):
-    for m in layers.modules():
-        if isinstance(m, nn.Conv2d):
-            if m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-
-
 BN_MOMENTUM = 0.1
-
-
-def fill_up_weights(up):
-    w = up.weight.data
-    f = math.ceil(w.size(2) / 2)
-    c = (2 * f - 1 - f % 2) / (2. * f)
-    for i in range(w.size(2)):
-        for j in range(w.size(3)):
-            w[0, 0, i, j] = \
-                (1 - math.fabs(i / f - c)) * (1 - math.fabs(j / f - c))
-    for c in range(1, w.size(0)):
-        w[c, 0, :, :] = w[0, 0, :, :]
 
 
 class DeformConv(nn.Module):
@@ -69,7 +49,6 @@ class IDAUp(nn.Module):
                 output_padding=0,
                 groups=o,
                 bias=False)
-            fill_up_weights(up)
 
             setattr(self, 'proj_' + str(i), proj)
             setattr(self, 'up_' + str(i), up)
@@ -112,13 +91,13 @@ class DLAUp(nn.Module):
 
 
 @NECKS.register_module()
-class DLA_Neck(nn.Module):
+class CTDLANetNeck(nn.Module):
 
     def __init__(self,
                  in_channels=[16, 32, 64, 128, 256, 512],
                  start_level=2,
                  end_level=5):
-        super(DLA_Neck, self).__init__()
+        super(CTDLANetNeck, self).__init__()
         self.start_level = start_level
         self.end_level = end_level
         scales = [2**i for i in range(len(in_channels[self.start_level:]))]
@@ -129,22 +108,9 @@ class DLA_Neck(nn.Module):
             in_channels[self.start_level:self.end_level],
             [2**i for i in range(self.end_level - self.start_level)])
 
-    def forward(self, x):
-        x = self.dla_up(x)
-        y = []
-        for i in range(self.end_level - self.start_level):
-            y.append(x[i].clone())
-        self.ida_up(y, 0, len(y))
-        return [y[-1]]
-
-    def init_weights(self, pretrained=True):
-        """Initialize the weights of FPN module."""
+    def init_weights(self):
         for m in self.modules():
-            if isinstance(m, (nn.ConvTranspose2d, nn.Conv2d)):
-                nn.init.normal_(m.weight, std=0.001)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, ModulatedDeformConv2dPack):
+            if isinstance(m, nn.ConvTranspose2d):
                 w = m.weight.data
                 f = math.ceil(w.size(2) / 2)
                 c = (2 * f - 1 - f % 2) / (2. * f)
@@ -152,9 +118,17 @@ class DLA_Neck(nn.Module):
                     for j in range(w.size(3)):
                         w[0, 0, i, j] = \
                             (1 - math.fabs(i / f - c)) * (
-                                        1 - math.fabs(j / f - c))
+                                    1 - math.fabs(j / f - c))
                 for c in range(1, w.size(0)):
                     w[c, 0, :, :] = w[0, 0, :, :]
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+
+    def forward(self, inputs):
+        x = self.dla_up(inputs)
+        y = []
+        for i in range(self.end_level - self.start_level):
+            y.append(x[i].clone())
+        self.ida_up(y, 0, len(y))
+        return y[-1],

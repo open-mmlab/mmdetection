@@ -1,6 +1,6 @@
 from .bfp import BFP
 from .channel_mapper import ChannelMapper
-from .ct_dlaneck import DLA_Neck
+from .ct_dlanet_neck import CTDLANetNeck
 from .ct_resnet_neck import CTResNetNeck
 from .dilated_encoder import DilatedEncoder
 from .fpg import FPG
@@ -16,5 +16,5 @@ from .yolo_neck import YOLOV3Neck
 __all__ = [
     'FPN', 'BFP', 'ChannelMapper', 'HRFPN', 'NASFPN', 'FPN_CARAFE', 'PAFPN',
     'NASFCOS_FPN', 'RFP', 'YOLOV3Neck', 'FPG', 'DilatedEncoder',
-    'CTResNetNeck', 'DLA_Neck'
+    'CTResNetNeck', 'CTDLANetNeck'
 ]

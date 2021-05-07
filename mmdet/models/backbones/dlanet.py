@@ -1,13 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import torch
-from mmcv.cnn import constant_init, kaiming_init
-from mmcv.runner import load_checkpoint
+from mmcv.runner import BaseModule
 from torch import nn
-from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.builder import BACKBONES
-from mmdet.utils import get_root_logger
 
 BN_MOMENTUM = 0.1
 
@@ -160,13 +157,18 @@ class Tree(nn.Module):
 
 
 @BACKBONES.register_module()
-class DLANet(nn.Module):
+class DLANet(BaseModule):
     arch_settings = {
         34: (BasicBlock, (1, 1, 1, 2, 2, 1), (16, 32, 64, 128, 256, 512)),
     }
 
-    def __init__(self, depth, num_classes=80, residual_root=False, type=None):
-        super(DLANet, self).__init__()
+    def __init__(self,
+                 depth,
+                 num_classes=80,
+                 residual_root=False,
+                 pretrained=None,
+                 init_cfg=None):
+        super(DLANet, self).__init__(init_cfg)
         if depth not in self.arch_settings:
             raise KeyError(f'invalida depth {depth} for DLA')
         block, levels, channels = self.arch_settings[depth]
@@ -214,6 +216,9 @@ class DLANet(nn.Module):
             level_root=True,
             root_residual=residual_root)
 
+        if isinstance(pretrained, str):
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+
     def _make_level(self, block, inplanes, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or inplanes != planes:
@@ -256,23 +261,3 @@ class DLANet(nn.Module):
             x = getattr(self, 'level{}'.format(i))(x)
             y.append(x)
         return y
-
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in backbone.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-
-        else:
-            raise TypeError('pretrained must be a str or None')
