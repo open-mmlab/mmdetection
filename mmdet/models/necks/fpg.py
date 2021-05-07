@@ -1,11 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, caffe2_xavier_init, constant_init, is_norm
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 
 from ..builder import NECKS
 
 
-class Transition(nn.Module):
+class Transition(BaseModule):
     """Base class for transition.
 
     Args:
@@ -13,8 +14,8 @@ class Transition(nn.Module):
         out_channels (int): Number of output channels.
     """
 
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
+    def __init__(self, in_channels, out_channels, init_cfg=None):
+        super().__init__(init_cfg)
         self.in_channels = in_channels
         self.out_channels = out_channels
 
@@ -45,8 +46,9 @@ class UpInterpolationConv(Transition):
                  mode='nearest',
                  align_corners=None,
                  kernel_size=3,
+                 init_cfg=None,
                  **kwargs):
-        super().__init__(in_channels, out_channels)
+        super().__init__(in_channels, out_channels, init_cfg)
         self.mode = mode
         self.scale_factor = scale_factor
         self.align_corners = align_corners
@@ -82,8 +84,9 @@ class LastConv(Transition):
                  out_channels,
                  num_inputs,
                  kernel_size=3,
+                 init_cfg=None,
                  **kwargs):
-        super().__init__(in_channels, out_channels)
+        super().__init__(in_channels, out_channels, init_cfg)
         self.num_inputs = num_inputs
         self.conv_out = ConvModule(
             in_channels,
@@ -98,7 +101,7 @@ class LastConv(Transition):
 
 
 @NECKS.register_module()
-class FPG(nn.Module):
+class FPG(BaseModule):
     """FPG.
 
     Implementation of `Feature Pyramid Grids (FPG)
@@ -134,6 +137,7 @@ class FPG(nn.Module):
             layers on top of the original feature maps. Default to False.
             If True, its actual mode is specified by `extra_convs_on_inputs`.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     transition_types = {
@@ -161,8 +165,18 @@ class FPG(nn.Module):
                  end_level=-1,
                  add_extra_convs=False,
                  norm_cfg=None,
-                 skip_inds=None):
-        super(FPG, self).__init__()
+                 skip_inds=None,
+                 init_cfg=[
+                     dict(type='Caffe2Xavier', layer='Conv2d'),
+                     dict(
+                         type='Constant',
+                         layer=[
+                             '_BatchNorm', '_InstanceNorm', 'GroupNorm',
+                             'LayerNorm'
+                         ],
+                         val=1.0)
+                 ]):
+        super(FPG, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -304,13 +318,6 @@ class FPG(nn.Module):
         trans_type = cfg_.pop('type')
         trans_cls = self.transition_types[trans_type]
         return trans_cls(in_channels, out_channels, **cfg_, **extra_args)
-
-    def init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                caffe2_xavier_init(m)
-            elif is_norm(m):
-                constant_init(m, 1.0)
 
     def fuse(self, fuse_dict):
         out = None

@@ -1,13 +1,13 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, kaiming_init
-from mmcv.runner import auto_fp16, force_fp32
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule, auto_fp16, force_fp32
 
 from mmdet.models.builder import HEADS
 
 
 @HEADS.register_module()
-class FusedSemanticHead(nn.Module):
+class FusedSemanticHead(BaseModule):
     r"""Multi-level fused semantic segmentation head.
 
     .. code-block:: none
@@ -33,8 +33,10 @@ class FusedSemanticHead(nn.Module):
                  ignore_label=255,
                  loss_weight=0.2,
                  conv_cfg=None,
-                 norm_cfg=None):
-        super(FusedSemanticHead, self).__init__()
+                 norm_cfg=None,
+                 init_cfg=dict(
+                     type='Kaiming', override=dict(name='conv_logits'))):
+        super(FusedSemanticHead, self).__init__(init_cfg)
         self.num_ins = num_ins
         self.fusion_level = fusion_level
         self.num_convs = num_convs
@@ -78,9 +80,6 @@ class FusedSemanticHead(nn.Module):
         self.conv_logits = nn.Conv2d(conv_out_channels, self.num_classes, 1)
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_label)
-
-    def init_weights(self):
-        kaiming_init(self.conv_logits)
 
     @auto_fp16()
     def forward(self, feats):

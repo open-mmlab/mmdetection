@@ -23,15 +23,6 @@ class PointRendRoIHead(StandardRoIHead):
         """Initialize ``point_head``"""
         self.point_head = builder.build_head(point_head)
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-        """
-        super().init_weights(pretrained)
-        self.point_head.init_weights()
-
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
         """Run forward function and calculate loss for mask head and point head
