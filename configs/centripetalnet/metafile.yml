@@ -9,13 +9,14 @@ Collections:
         - Corner Pooling
         - Stacked Hourglass Network
     Paper: https://arxiv.org/abs/2003.09119
-    README: configs/centripetalnet/metafile.yml
+    README: configs/centripetalnet/README.md
 
 Models:
   - Name: centripetalnet_hourglass104_mstest_16x6_210e_coco
     In Collection: CentripetalNet
     Config: configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py
     Metadata:
+      Batch Size: 16 x 6
       Training Memory (GB): 16.7
       inference time (s/im): 0.27027
     Results:
