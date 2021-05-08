@@ -124,7 +124,7 @@ class SeesawLoss(nn.Module):
         # cumulative samples for each category
         self.register_buffer(
             'cum_samples',
-            torch.Tensor(self.num_classes + 1).float().cuda().fill_(0))
+            torch.zeros(self.num_classes + 1, dtype=torch.float))
 
         # custom output channels of the classifier
         self.custom_cls_channels = True
