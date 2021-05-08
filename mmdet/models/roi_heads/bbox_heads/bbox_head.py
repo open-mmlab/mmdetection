@@ -29,7 +29,8 @@ class BBoxHead(BaseModule):
                      target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
                  reg_decoded_bbox=False,
-                 cls_predictor_cfg=None,
+                 reg_predictor_cfg=dict(type='Linear'),
+                 cls_predictor_cfg=dict(type='Linear'),
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
@@ -48,6 +49,7 @@ class BBoxHead(BaseModule):
         self.num_classes = num_classes
         self.reg_class_agnostic = reg_class_agnostic
         self.reg_decoded_bbox = reg_decoded_bbox
+        self.reg_predictor_cfg = reg_predictor_cfg
         self.cls_predictor_cfg = cls_predictor_cfg
         self.fp16_enabled = False
 
@@ -66,17 +68,16 @@ class BBoxHead(BaseModule):
                 cls_channels = self.loss_cls.get_cls_channels(self.num_classes)
             else:
                 cls_channels = num_classes + 1
-            if self.cls_predictor_cfg:
-                self.fc_cls = build_linear_layer(
-                    dict(
-                        in_features=in_channels,
-                        out_features=cls_channels,
-                        **self.cls_predictor_cfg))
-            else:
-                self.fc_cls = nn.Linear(in_channels, num_classes + 1)
+            self.fc_cls = build_linear_layer(
+                self.cls_predictor_cfg,
+                in_features=in_channels,
+                out_features=cls_channels)
         if self.with_reg:
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
-            self.fc_reg = nn.Linear(in_channels, out_dim_reg)
+            self.fc_reg = build_linear_layer(
+                self.reg_predictor_cfg,
+                in_features=in_channels,
+                out_features=out_dim_reg)
         self.debug_imgs = None
         if init_cfg is None:
             self.init_cfg = []
