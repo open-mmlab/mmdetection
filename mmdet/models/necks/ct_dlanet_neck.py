@@ -3,6 +3,7 @@ import math
 import numpy as np
 import torch.nn as nn
 from mmcv.ops import ModulatedDeformConv2dPack
+from mmcv.runner import auto_fp16
 
 from mmdet.models.builder import NECKS
 
@@ -98,6 +99,9 @@ class CTDLANetNeck(nn.Module):
                  start_level=2,
                  end_level=5):
         super(CTDLANetNeck, self).__init__()
+        assert isinstance(in_channels, list)
+        assert 0 <= start_level < len(in_channels)
+        assert 0 <= end_level < len(in_channels)
         self.start_level = start_level
         self.end_level = end_level
         scales = [2**i for i in range(len(in_channels[self.start_level:]))]
@@ -125,6 +129,7 @@ class CTDLANetNeck(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
+    @auto_fp16()
     def forward(self, inputs):
         x = self.dla_up(inputs)
         y = []

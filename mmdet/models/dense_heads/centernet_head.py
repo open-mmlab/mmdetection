@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 from mmcv.ops import batched_nms
+from mmcv.runner import force_fp32
 
 from mmdet.models import HEADS, build_loss
 from mmdet.models.utils import gaussian_radius, gen_gaussian_target
@@ -14,25 +15,31 @@ from .base_dense_head import BaseDenseHead
 
 @HEADS.register_module()
 class CenterNetHead(BaseDenseHead):
-    """Objects as PointsModule. CenterHead use center_point to indicate
-    object's position. Paper link <https://arxiv.org/abs/1904.07850>
+    """Objects as Points Head. CenterHead use center_point to indicate object's
+    position. Paper link <https://arxiv.org/abs/1904.07850>
 
     Args:
-        in_channels (int): Input channels of module.
-        feat_channels (int): Feat channels of module.
-        num_classes (int): detect class number.
-        loss_heatmap (dict): build center_loss
-        loss_wh (dict): build wh_loss.
-        loss_offset (dict): build offset_loss
-        train_cfg (dict): train_cfg
-        test_cfg (dict): test_cfg
+        in_channel (int): Number of channel in the input feature map.
+        feat_channel (int): Number of channel in the intermediate feature map.
+        num_classes (int): Number of categories excluding the background
+            category.
+        loss_center_heatmap (dict | None): Config of center heatmap loss.
+            Default: GaussianFocalLoss.
+        loss_wh (dict | None): Config of wh loss. Default: L1Loss.
+        loss_offset (dict | None): Config of offset loss. Default: L1Loss.
+        train_cfg (dict | None): Training config. Useless in CenterNet,
+            but we keep this variable for SingleStageDetector. Default: None.
+        test_cfg (dict | None): Testing config of CenterNet. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
-                 in_channels,
-                 feat_channels,
+                 in_channel,
+                 feat_channel,
                  num_classes,
-                 loss_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
+                 loss_center_heatmap=dict(
+                     type='GaussianFocalLoss', loss_weight=1.0),
                  loss_wh=dict(type='L1Loss', loss_weight=0.1),
                  loss_offset=dict(type='L1Loss', loss_weight=1.0),
                  train_cfg=None,
@@ -41,14 +48,14 @@ class CenterNetHead(BaseDenseHead):
         super(CenterNetHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.heatmap_head = self._build_head(
-            in_channels,
-            feat_channels,
+            in_channel,
+            feat_channel,
             num_classes,
         )
-        self.wh_head = self._build_head(in_channels, feat_channels, 2)
-        self.offset_head = self._build_head(in_channels, feat_channels, 2)
+        self.wh_head = self._build_head(in_channel, feat_channel, 2)
+        self.offset_head = self._build_head(in_channel, feat_channel, 2)
 
-        self.loss_heatmap = build_loss(loss_heatmap)
+        self.loss_center_heatmap = build_loss(loss_center_heatmap)
         self.loss_wh = build_loss(loss_wh)
         self.loss_offset = build_loss(loss_offset)
 
@@ -72,9 +79,17 @@ class CenterNetHead(BaseDenseHead):
                     normal_init(m, std=0.001)
 
     def forward(self, feats):
-        """Forward Tensor.
+        """Forward features. Notice CenterNet head don't use FPN.
 
-        Notice centernet head don't use FPN.
+        Args:
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor. The length must be 1.
+
+        Returns:
+            center_heatmap_preds (Tensor): center predict heatmaps, the
+               channels number is num_classes.
+            wh_preds (Tensor): wh predicts, the channels number is 2.
+            offset_preds (Tensor): offset predicts, the channels number is 2.
         """
         assert len(feats) == 1
         feat = feats[-1]
@@ -83,6 +98,7 @@ class CenterNetHead(BaseDenseHead):
         offset_preds = self.offset_head(feat)
         return center_heatmap_preds, wh_preds, offset_preds
 
+    @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
     def loss(self,
              center_heatmap_preds,
              wh_preds,
@@ -91,18 +107,24 @@ class CenterNetHead(BaseDenseHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
-        """
+        """Compute losses of the head.
+
         Args:
-            center_heatmap_preds (tensor): shape (B, num_class, H, W),
-            wh_preds (tensor): shape (B, num_class, H, W),
-            offset_preds (tensor): shape (B, num_class, H, W),
-            gt_bboxes (list[Tensor]): gt bboxes of each image.
-            gt_labels (list[Tensor]): gt labels of each image.
-            img_metas (list[Dict]): img_meta of each image.
-            gt_bboxes_ignore (list[Tensor]): ignore box of each image.
-        Return:
-            dict(str, Tensor): which has components below:
-                - loss_heatmap (Tensor): loss of center heatmap.
+            center_heatmap_preds (Tensor): center predict heatmaps,
+               shape (B, num_classes, H, W).
+            wh_preds (Tensor): wh predicts, shape (B, 2, H, W),
+            offset_preds (Tensor): offset predicts, shape (B, 2, H, W),
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss. Default: None
+
+        Returns:
+            dict[str, Tensor]: which has components below:
+                - loss_center_heatmap (Tensor): loss of center heatmap.
                 - loss_wh (Tensor): loss of hw heatmap
                 - loss_offset (Tensor): loss of offset heatmap.
         """
@@ -115,7 +137,7 @@ class CenterNetHead(BaseDenseHead):
         offset_targets = target_result['offset_targets']
         wh_offset_target_weights = target_result['wh_offset_target_weights']
 
-        loss_center_heatmap = self.loss_heatmap(
+        loss_center_heatmap = self.loss_center_heatmap(
             center_heatmap_preds,
             center_heatmap_targets,
             avg_factor=avg_factor / 2.)
@@ -135,6 +157,27 @@ class CenterNetHead(BaseDenseHead):
             loss_offset=loss_offset)
 
     def get_targets(self, gt_bboxes, gt_labels, feat_shape, img_shape):
+        """Compute regression and classification targets in multiple images.
+
+        Args:
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box.
+            feat_shape (list[int]): feature map shape with value [B, _, H, W]
+            img_shape (list[int]): image shape in [h, w] format.
+
+        Returns:
+            tuple[dict,float]: The float value is mean avg_factor, the dict has
+               components below:
+               - center_heatmap_targets (Tensor): targets of center heatmap, \
+                   shape (B, num_classes, H, W).
+               - wh_targets (Tensor): targets of wh predict, shape \
+                   (B, 2, H, W).
+               - offset_targets (Tensor): targets of offset predict, shape \
+                   (B, 2, H, W).
+               - wh_offset_target_weights (Tensor): weights of wh and offset \
+                   predict, shape (B, 2, H, W).
+        """
         img_h, img_w = img_shape[:2]
         bs, _, feat_h, feat_w = feat_shape
         center_heatmap_targets = gt_bboxes[-1].new_zeros(

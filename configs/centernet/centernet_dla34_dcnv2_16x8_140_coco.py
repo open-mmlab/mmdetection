@@ -15,9 +15,9 @@ model = dict(
     bbox_head=dict(
         type='CenterNetHead',
         num_classes=80,
-        in_channels=64,
-        feat_channels=256,
-        loss_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
+        in_channel=64,
+        feat_channel=256,
+        loss_center_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
         loss_wh=dict(type='L1Loss', loss_weight=0.1),
         loss_offset=dict(type='L1Loss', loss_weight=1.0)),
     train_cfg=None,

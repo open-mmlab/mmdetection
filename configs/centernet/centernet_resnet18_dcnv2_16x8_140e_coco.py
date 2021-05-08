@@ -10,15 +10,15 @@ model = dict(
         type='ResNet', depth=18, norm_eval=False, norm_cfg=dict(type='BN')),
     neck=dict(
         type='CTResNetNeck',
-        in_channels=512,
+        in_channel=512,
         num_filters=[256, 128, 64],
         num_kernels=[4, 4, 4]),
     bbox_head=dict(
         type='CenterNetHead',
         num_classes=80,
-        in_channels=64,
-        feat_channels=64,
-        loss_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
+        in_channel=64,
+        feat_channel=64,
+        loss_center_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
         loss_wh=dict(type='L1Loss', loss_weight=0.1),
         loss_offset=dict(type='L1Loss', loss_weight=1.0)),
     train_cfg=None,
@@ -80,7 +80,7 @@ test_pipeline = [
 ]
 data = dict(
     samples_per_gpu=16,
-    workers_per_gpu=8,
+    workers_per_gpu=4,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))

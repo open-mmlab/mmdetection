@@ -164,7 +164,6 @@ class DLANet(BaseModule):
 
     def __init__(self,
                  depth,
-                 num_classes=80,
                  residual_root=False,
                  pretrained=None,
                  init_cfg=None):
@@ -173,7 +172,6 @@ class DLANet(BaseModule):
             raise KeyError(f'invalida depth {depth} for DLA')
         block, levels, channels = self.arch_settings[depth]
         self.channels = channels
-        self.num_classes = num_classes
         self.base_layer = nn.Sequential(
             nn.Conv2d(
                 3, channels[0], kernel_size=7, stride=1, padding=3,
@@ -218,6 +216,8 @@ class DLANet(BaseModule):
 
         if isinstance(pretrained, str):
             self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is not None:
+            raise TypeError('pretrained must be a str or None')
 
     def _make_level(self, block, inplanes, planes, blocks, stride=1):
         downsample = None
