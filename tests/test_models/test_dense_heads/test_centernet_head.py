@@ -14,7 +14,7 @@ def test_center_head_loss():
     }]
     test_cfg = dict(topK=100, max_per_img=100)
     self = CenterNetHead(
-        num_classes=4, in_channels=1, feat_channels=4, test_cfg=test_cfg)
+        num_classes=4, in_channel=1, feat_channel=4, test_cfg=test_cfg)
 
     feat = [torch.rand(1, 1, s, s)]
     center_out, wh_out, offset_out = self.forward(feat)
@@ -68,7 +68,7 @@ def test_centernet_head_get_bboxes():
     gt_labels = [torch.LongTensor([1, 1, 2])]
 
     self = CenterNetHead(
-        num_classes=4, in_channels=1, feat_channels=4, test_cfg=test_cfg)
+        num_classes=4, in_channel=1, feat_channel=4, test_cfg=test_cfg)
     self.feat_shape = (1, 1, s // 4, s // 4)
     targets, _ = self.get_targets(gt_bboxes, gt_labels, self.feat_shape,
                                   img_metas[0]['pad_shape'])

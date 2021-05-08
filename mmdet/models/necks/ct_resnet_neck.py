@@ -2,7 +2,7 @@ import math
 
 import torch.nn as nn
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, auto_fp16
 
 from mmdet.models.builder import NECKS
 
@@ -73,6 +73,7 @@ class CTResNetNeck(BaseModule):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
+    @auto_fp16()
     def forward(self, inputs):
         assert isinstance(inputs, (list, tuple))
         outs = self.deconv_layers(inputs[-1])
