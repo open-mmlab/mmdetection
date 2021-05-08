@@ -674,7 +674,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             mlvl_scores.append(scores)
 
         batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
-
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
 
         if torch.onnx.is_in_onnx_export():

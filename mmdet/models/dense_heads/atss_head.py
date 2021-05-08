@@ -388,9 +388,16 @@ class ATSSHead(AnchorHead):
         device = cls_scores[0].device
         batch_size = cls_scores[0].shape[0]
         # convert to tensor to keep tracing
+        if torch.onnx.is_in_onnx_export():
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+            img_shapes = img_metas[0]['img_shape_for_onnx']
+        else:
+            img_shapes = [img_meta['img_shape'] for img_meta in img_metas]
+
         nms_pre_tensor = torch.tensor(
             cfg.get('nms_pre', -1), device=device, dtype=torch.long)
-        img_shapes = [img_meta['img_shape'] for img_meta in img_metas]
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_centerness = []
@@ -435,20 +442,12 @@ class ATSSHead(AnchorHead):
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
         batch_mlvl_centerness = torch.cat(mlvl_centerness, dim=1)
 
-        # Set max number of box to be feed into nms in deployment
-        deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
-        if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            batch_mlvl_scores, _ = (
-                batch_mlvl_scores *
-                batch_mlvl_centerness.unsqueeze(2).expand_as(batch_mlvl_scores)
-            ).max(-1)
-            _, topk_inds = batch_mlvl_scores.topk(deploy_nms_pre)
-            batch_inds = torch.arange(batch_size).view(-1,
-                                                       1).expand_as(topk_inds)
-            batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds, :]
-            batch_mlvl_bboxes = batch_mlvl_bboxes[batch_inds, topk_inds, :]
-            batch_mlvl_centerness = batch_mlvl_centerness[batch_inds,
-                                                          topk_inds]
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export():
+            batch_mlvl_scores = batch_mlvl_scores * (
+                batch_mlvl_centerness.unsqueeze(2))
+            return self.onnx_trace(batch_mlvl_bboxes, batch_mlvl_scores, cfg)
+
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         padding = batch_mlvl_scores.new_zeros(batch_size,
