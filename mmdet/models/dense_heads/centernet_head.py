@@ -1,12 +1,14 @@
+from logging import warning
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 from mmcv.ops import batched_nms
 
-from mmdet.core.bbox import bbox_mapping_back
 from mmdet.models import HEADS, build_loss
 from mmdet.models.utils import gaussian_radius, gen_gaussian_target
-from ..utils.gaussian_target import get_local_maximum, get_topk_from_heatmap
+from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
+                                     transpose_and_gather_feat)
 from .base_dense_head import BaseDenseHead
 
 
@@ -116,7 +118,7 @@ class CenterNetHead(BaseDenseHead):
         loss_center_heatmap = self.loss_heatmap(
             center_heatmap_preds,
             center_heatmap_targets,
-            avg_factor=avg_factor/2.)
+            avg_factor=avg_factor / 2.)
         loss_wh = self.loss_wh(
             wh_preds,
             wh_targets,
@@ -221,6 +223,51 @@ class CenterNetHead(BaseDenseHead):
                 with_nms=with_nms))
         return result_list
 
+    def decode_heatmap(self,
+                       center_hm,
+                       wh_hm,
+                       offset_hm,
+                       img_meta,
+                       k=100,
+                       kernel=3):
+        """Transform outputs into detections raw bbox prediction
+        Args:
+            center_hm (Tensor): shape (N, num_classes, H, W),
+            wh_hm (Tensor): shape (N, num_classes, H, W),
+            offset_hm (Tensor): shape (N, num_classes, H, W),
+            img_meta (dict): img_meta of each image.
+            k (int): Get top k center keypoints from heatmap.
+            kernel (int): Max pooling kernel for extract local maximum pixels.
+        Returns:
+            tuple[torch.Tensor]: Decoded output of CornerHead, containing the
+            following Tensors:
+
+            - bboxes (Tensor): Coords of each box with shape (k, 4)
+            - scores (Tensor): Scores of each box with shape (k, 1)
+            - clses (Tensor): Categories of each box with shape (k)
+        """
+        batch, _, height, width = center_hm.size()
+        inp_h, inp_w, _ = img_meta['pad_shape']
+        x_off = img_meta['border'][2]
+        y_off = img_meta['border'][0]
+        center_hm = get_local_maximum(center_hm, kernel=kernel)
+        scores, index, clses, cy, cx = get_topk_from_heatmap(center_hm, k=k)
+        wh = transpose_and_gather_feat(wh_hm, index).view(k, 2)
+        offset = transpose_and_gather_feat(offset_hm, index).view(k, 2)
+        cx = cx.view(k, 1)
+        cy = cy.view(k, 1)
+        cx = cx + offset[:, [0]]
+        cy = cy + offset[:, [1]]
+
+        x1 = (cx - wh[:, [0]] / 2).view(-1, 1) * (inp_w / width)
+        y1 = (cy - wh[:, [1]] / 2).view(-1, 1) * (inp_h / height)
+        x2 = (cx + wh[:, [0]] / 2).view(-1, 1) * (inp_w / width)
+        y2 = (cy + wh[:, [1]] / 2).view(-1, 1) * (inp_h / height)
+        bboxes = torch.cat([x1, y1, x2, y2], dim=1)
+        bboxes[:, [0, 2]] -= x_off
+        bboxes[:, [1, 3]] -= y_off
+        return bboxes, scores.view(-1, 1), clses.squeeze(0)
+
     def _get_bboxes_single(self,
                            center_hm,
                            wh_hm,
@@ -243,39 +290,17 @@ class CenterNetHead(BaseDenseHead):
             - bboxes (Tensor): Coords of each box.
             - clses (Tensor): Categories of each box.
         """
-        _, _, feat_h, feat_w = center_hm.shape
-        x_off = img_meta['border'][2]
-        y_off = img_meta['border'][0]
-        img_shape = img_meta['img_shape']
-        scale_factor = img_meta['scale_factor']
-        flip = img_meta['flip']
-        ratio_w = feat_w / img_meta['pad_shape'][1]
-        ratio_h = feat_h / img_meta['pad_shape'][0]
-        # 1. get topK center points
-        center_hm = get_local_maximum(center_hm)
-        scores, index, clses, cy, cx = get_topk_from_heatmap(
-            center_hm, self.test_cfg['topK'])
-        wh = wh_hm.permute(0, 2, 3, 1).view(-1, 2)[index[0]]
-        offset = offset_hm.permute(0, 2, 3, 1).view(-1, 2)[index[0]]
-        # 2. recover to bboxes
-        labels = clses.squeeze(0)
-        cx = (cx + offset[:, 0]) / ratio_w
-        cy = (cy + offset[:, 1]) / ratio_h
-        wh[:, [0]] /= ratio_w
-        wh[:, [1]] /= ratio_h
-        x1 = (cx - wh[:, 0] / 2).view(-1, 1)
-        y1 = (cy - wh[:, 1] / 2).view(-1, 1)
-        x2 = (cx + wh[:, 0] / 2).view(-1, 1)
-        y2 = (cy + wh[:, 1] / 2).view(-1, 1)
-        bboxes = torch.cat([x1, y1, x2, y2], dim=1)
-        # 4. add border
-        scale_factor = torch.from_numpy(scale_factor)
-        bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip)
-        bboxes[:, [0, 2]] -= x_off
-        bboxes[:, [1, 3]] -= y_off
-        scores = scores.view(-1, 1).clone().contiguous()
-        detections = torch.cat([bboxes, scores], dim=1)
-        return detections, labels
+        bboxes, scores, clses = self.decode_heatmap(
+            center_hm=center_hm,
+            wh_hm=wh_hm,
+            offset_hm=offset_hm,
+            img_meta=img_meta,
+            k=self.test_cfg.topK,
+            kernel=self.test_cfg.local_maximum_kernel)
+        if rescale:
+            bboxes /= bboxes.new_tensor(img_meta['scale_factor'])
+        detections = torch.cat([bboxes, scores], -1)
+        return detections, clses
 
     def flip_tensor(self, tensor):
         return torch.flip(tensor, [3])
@@ -283,14 +308,20 @@ class CenterNetHead(BaseDenseHead):
     def _bboxes_nms(self, bboxes, labels, cfg):
         if labels.numel() == 0:
             return bboxes, labels
-        scores = bboxes[:, -1].contiguous()
-        out_bboxes, keep = batched_nms(bboxes[:, :4], scores, labels,
-                                       cfg['nms_cfg'])
+
+        if 'nms_cfg' in cfg:
+            warning.warn('nms_cfg in test_cfg will be deprecated. '
+                         'Please rename it as nms')
+        if 'nms' not in cfg:
+            cfg.nms = cfg.nms_cfg
+
+        out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
+                                       cfg.nms)
         out_labels = labels[keep]
 
         if len(out_bboxes) > 0:
             idx = torch.argsort(out_bboxes[:, -1], descending=True)
-            idx = idx[:cfg['max_per_img']]
+            idx = idx[:cfg.max_per_img]
             out_bboxes = out_bboxes[idx]
             out_labels = out_labels[idx]
 
