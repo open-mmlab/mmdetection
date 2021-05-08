@@ -291,10 +291,10 @@ class MaskPointHead(nn.Module):
         else:
             h_step = 1.0 / mask_height
             w_step = 1.0 / mask_width
-
-        uncertainty_map = uncertainty_map.view(num_rois,
-                                               mask_height * mask_width)
-        num_points = min(mask_height * mask_width, num_points)
+        # cast to int to avoid dynamic K for TopK op in ONNX
+        mask_size = int(mask_height * mask_width)
+        uncertainty_map = uncertainty_map.view(num_rois, mask_size)
+        num_points = min(mask_size, num_points)
         point_indices = uncertainty_map.topk(num_points, dim=1)[1]
         xs = w_step / 2.0 + (point_indices.long() %
                              mask_width).float() * w_step
