@@ -28,8 +28,12 @@ model = dict(
         stacked_convs=4,
         feat_channels=256,
         bbox_post_processes=[
-            dict(type='PreNMS'),
-            dict(type='NaiveNMS', iou_threshold=0.6),
+            dict(type='PreNMS', score_thr=0.05),
+            dict(
+                type='NaiveNMS',
+                iou_threshold=0.6,
+                class_agnostic=False,
+                max_num=100),
             dict(type='ResizeResultsToOri', results_types=['bbox'])
         ],
         anchor_generator=dict(
@@ -57,6 +61,6 @@ model = dict(
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
-    test_cfg=dict(nms_pre=1000, score_thr=0.05))
+    test_cfg=dict(nms_pre=1000))
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
