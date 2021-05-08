@@ -529,7 +529,13 @@ class PAAHead(ATSSHead):
 
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         batch_size = cls_scores[0].shape[0]
-        img_shapes = [img_meta['img_shape'] for img_meta in img_metas]
+        if torch.onnx.is_in_onnx_export():
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+            img_shapes = img_metas[0]['img_shape_for_onnx']
+        else:
+            img_shapes = [img_meta['img_shape'] for img_meta in img_metas]
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_iou_preds = []
@@ -565,6 +571,10 @@ class PAAHead(ATSSHead):
 
         batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
+
+        if torch.onnx.is_in_onnx_export():
+            return self.onnx_trace(batch_mlvl_bboxes, batch_mlvl_scores, cfg)
+
         # Add a dummy background class to the backend when using sigmoid
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
