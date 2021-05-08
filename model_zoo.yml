@@ -1,5 +1,6 @@
 Import:
   - configs/atss/metafile.yml
   - configs/autoassign/metafile.yml
+  - configs/cascade_rcnn/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
