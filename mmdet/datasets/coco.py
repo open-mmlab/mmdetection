@@ -445,7 +445,7 @@ class CocoDataset(CustomDataset):
                     warnings.simplefilter('once')
                     warnings.warn(
                         'The key "bbox" is deleted for more accurate mask AP '
-                        'of small/medium/large instances since v2.13.0. This '
+                        'of small/medium/large instances since v2.12.0. This '
                         'does not change the overall mAP calculation.',
                         UserWarning)
                 cocoDt = cocoGt.loadRes(predictions)
