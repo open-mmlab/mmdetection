@@ -26,8 +26,12 @@ model = dict(
         reg_decoded_bbox=True,
         score_voting=True,
         bbox_post_processes=[
-            dict(type='PreNMS'),
-            dict(type='NaiveNMS', iou_threshold=0.6),
+            dict(type='PreNMS', score_thr=0.05),
+            dict(
+                type='NaiveNMS',
+                iou_threshold=0.6,
+                class_agnostic=False,
+                max_num=100),
             dict(type='ResizeResultsToOri', results_types=['bbox'])
         ],
         topk=9,
