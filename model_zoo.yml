@@ -1,0 +1,3 @@
+Import:
+  - configs/mask_rcnn/metafile.yml
+
