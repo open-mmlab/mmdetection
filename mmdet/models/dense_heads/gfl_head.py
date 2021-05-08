@@ -442,6 +442,7 @@ class GFLHead(AnchorHead):
         # BG cat_id: num_class
 
         if torch.onnx.is_in_onnx_export():
+            raise NotImplementedError('GFL is not supported to export to ONNX')
             return self.onnx_trace(batch_mlvl_bboxes, batch_mlvl_scores, cfg)
 
         padding = batch_mlvl_scores.new_zeros(batch_size,
