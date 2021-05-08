@@ -1,7 +1,7 @@
 _base_ = [
     '../_base_/models/mask_rcnn_r50_fpn.py',
     '../_base_/datasets/coco_instance.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 model = dict(
     roi_head=dict(
@@ -14,9 +14,7 @@ model = dict(
                 q=2.0,
                 num_classes=1203,
                 loss_weight=1.0)),
-        mask_head=dict(
-            predictor_cfg=dict(type='NormedConv2d', tempearture=20),
-            num_classes=1203)),
+        mask_head=dict(num_classes=1203)),
     test_cfg=dict(
         rcnn=dict(
             score_thr=0.0001,
@@ -74,4 +72,4 @@ data = dict(
         ann_file=data_root + 'annotations/lvis_v1_val.json',
         img_prefix=data_root,
         pipeline=test_pipeline))
-evaluation = dict(interval=12, metric=['bbox', 'segm'])
+evaluation = dict(interval=24, metric=['bbox', 'segm'])

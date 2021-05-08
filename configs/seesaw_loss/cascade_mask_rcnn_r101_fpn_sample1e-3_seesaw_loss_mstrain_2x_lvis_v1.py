@@ -1,7 +1,7 @@
 _base_ = [
     '../_base_/models/cascade_mask_rcnn_r50_fpn.py',
-    '../_base_/datasets/coco_instance.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/lvis_v1_instance.py',
+    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 
 model = dict(
@@ -69,9 +69,7 @@ model = dict(
                     loss_weight=1.0),
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
         ],
-        mask_head=dict(
-            predictor_cfg=dict(type='NormedConv2d', tempearture=20),
-            num_classes=1203)),
+        mask_head=dict(num_classes=1203)),
     test_cfg=dict(
         rcnn=dict(
             score_thr=0.0001,
@@ -94,39 +92,5 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
 ]
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
-]
-dataset_type = 'LVISV1Dataset'
-data_root = 'data/lvis_v1/'
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/lvis_v1_train.json',
-        img_prefix=data_root,
-        pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/lvis_v1_val.json',
-        img_prefix=data_root,
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/lvis_v1_val.json',
-        img_prefix=data_root,
-        pipeline=test_pipeline))
-evaluation = dict(interval=12, metric=['bbox', 'segm'])
+data = dict(train=dict(dataset=dict(pipeline=train_pipeline)))
+evaluation = dict(interval=24, metric=['bbox', 'segm'])
