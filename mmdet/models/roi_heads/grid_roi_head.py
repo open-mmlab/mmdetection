@@ -23,18 +23,6 @@ class GridRoIHead(StandardRoIHead):
             self.grid_roi_extractor = self.bbox_roi_extractor
         self.grid_head = build_head(grid_head)
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        super(GridRoIHead, self).init_weights(pretrained)
-        self.grid_head.init_weights()
-        if not self.share_roi_extractor:
-            self.grid_roi_extractor.init_weights()
-
     def _random_jitter(self, sampling_results, img_metas, amplitude=0.15):
         """Ramdom jitter positive proposals for training."""
         for sampling_result, img_meta in zip(sampling_results, img_metas):

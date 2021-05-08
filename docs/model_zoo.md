@@ -183,6 +183,18 @@ Please refer to [ResNeSt](https://github.com/open-mmlab/mmdetection/blob/master/
 
 Please refer to [DETR](https://github.com/open-mmlab/mmdetection/blob/master/configs/detr) for details.
 
+### Deformable DETR
+
+Please refer to [Deformable DETR](https://github.com/open-mmlab/mmdetection/blob/master/configs/deformable_detr) for details.
+
+### AutoAssign
+
+Please refer to [AutoAssign](https://github.com/open-mmlab/mmdetection/blob/master/configs/autoassign) for details.
+
+### YOLOF
+
+Please refer to [YOLOF](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolof) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).

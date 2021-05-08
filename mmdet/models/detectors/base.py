@@ -5,19 +5,16 @@ import mmcv
 import numpy as np
 import torch
 import torch.distributed as dist
-import torch.nn as nn
-from mmcv.runner import auto_fp16
-from mmcv.utils import print_log
+from mmcv.runner import BaseModule, auto_fp16
 
 from mmdet.core.visualization import imshow_det_bboxes
-from mmdet.utils import get_root_logger
 
 
-class BaseDetector(nn.Module, metaclass=ABCMeta):
+class BaseDetector(BaseModule, metaclass=ABCMeta):
     """Base class for detectors."""
 
-    def __init__(self):
-        super(BaseDetector, self).__init__()
+    def __init__(self, init_cfg=None):
+        super(BaseDetector, self).__init__(init_cfg)
         self.fp16_enabled = False
 
     @property
@@ -92,17 +89,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
     def aug_test(self, imgs, img_metas, **kwargs):
         """Test function with test time augmentation."""
         pass
-
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in detector.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        if pretrained is not None:
-            logger = get_root_logger()
-            print_log(f'load model from: {pretrained}', logger=logger)
 
     async def aforward_test(self, *, img, img_metas, **kwargs):
         for var, name in [(img, 'img'), (img_metas, 'img_metas')]:
