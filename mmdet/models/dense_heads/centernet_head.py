@@ -116,7 +116,7 @@ class CenterNetHead(BaseDenseHead):
         loss_center_heatmap = self.loss_heatmap(
             center_heatmap_preds,
             center_heatmap_targets,
-            avg_factor=avg_factor/2.)
+            avg_factor=avg_factor / 2.)
         loss_wh = self.loss_wh(
             wh_preds,
             wh_targets,

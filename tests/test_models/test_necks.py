@@ -2,7 +2,8 @@ import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.necks import FPN, ChannelMapper, DilatedEncoder
+from mmdet.models.necks import (FPN, ChannelMapper, CTDLANetNeck, CTResNetNeck,
+                                DilatedEncoder)
 
 
 def test_fpn():
@@ -246,3 +247,56 @@ def test_dilated_encoder():
     feat = [torch.rand(1, in_channels, 34, 34)]
     out_feat = dilated_encoder(feat)[0]
     assert out_feat.shape == (1, out_channels, out_shape, out_shape)
+
+
+def test_ct_resnet_neck():
+    # num_filters/num_kernels must be a list
+    with pytest.raises(AssertionError):
+        CTResNetNeck(in_channel=10, num_filters=10, num_kernels=4)
+
+    # num_filters/num_kernels must be same length
+    with pytest.raises(AssertionError):
+        CTResNetNeck(in_channel=10, num_filters=[10, 10], num_kernels=[4])
+
+    in_channels = 16
+    num_filters = [8, 8]
+    num_kernels = [4, 4]
+    ct_resnet_neck = CTResNetNeck(
+        in_channel=in_channels,
+        num_filters=num_filters,
+        num_kernels=num_kernels)
+    if torch.cuda.is_available():
+        ct_resnet_neck = ct_resnet_neck.cuda()
+        feat = [torch.rand(1, 16, 4, 4).cuda()]
+        # feat must be list or tuple
+        with pytest.raises(AssertionError):
+            ct_resnet_neck(feat[0])
+
+        out_feat = ct_resnet_neck(feat)[0]
+        assert out_feat.shape == (1, num_filters[-1], 16, 16)
+
+
+def test_ct_dlanet_neck():
+    # in_channels must be a list
+    with pytest.raises(AssertionError):
+        CTDLANetNeck(in_channels=10)
+
+    # start_level/end_level must be less than len(in_channels)
+    with pytest.raises(AssertionError):
+        CTDLANetNeck(in_channels=[10], start_level=1, end_level=2)
+
+    in_channels = [2, 4, 8, 16, 32, 64]
+    start_level = 2
+    end_level = 5
+    ct_dlanet_neck = CTDLANetNeck(
+        in_channels=in_channels, start_level=start_level, end_level=end_level)
+    if torch.cuda.is_available():
+        ct_dlanet_neck = ct_dlanet_neck.cuda()
+        s = 224
+        feat_sizes = [s // 2**i for i in range(6)]
+        feats = [
+            torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i]).cuda()
+            for i in range(len(in_channels))
+        ]
+        out_feat = ct_dlanet_neck(feats)[0]
+        assert out_feat.shape == (1, 8, 56, 56)

@@ -10,7 +10,7 @@ model = dict(
         type='ResNet', depth=18, norm_eval=False, norm_cfg=dict(type='BN')),
     neck=dict(
         type='CTResNetNeck',
-        in_channels=512,
+        in_channel=512,
         num_filters=[256, 128, 64],
         num_kernels=[4, 4, 4]),
     bbox_head=dict(

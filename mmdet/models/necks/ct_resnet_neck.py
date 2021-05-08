@@ -13,15 +13,18 @@ class CTResNetNeck(BaseModule):
     object classification and box regression.
 
     Args:
-         in_channels (List[int]): Number of input channels per stage.
+         in_channel (int): Number of input channels.
          num_filters (List[int]): Number of filters per stage.
          num_kernels (List[int]): Number of kernels per stage.
          init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
-    def __init__(self, in_channels, num_filters, num_kernels, init_cfg=None):
+    def __init__(self, in_channel, num_filters, num_kernels, init_cfg=None):
         super(CTResNetNeck, self).__init__(init_cfg)
-        self.in_channels = in_channels
+        assert isinstance(num_filters, list)
+        assert isinstance(num_kernels, list)
+        assert len(num_filters) == len(num_kernels)
+        self.in_channel = in_channel
         self.deconv_layers = self._make_deconv_layer(num_filters, num_kernels)
 
     def _make_deconv_layer(self, num_filters, num_kernels):
@@ -31,7 +34,7 @@ class CTResNetNeck(BaseModule):
             feat_channels = num_filters[i]
             kenel_size = num_kernels[i]
             deform_conv = ConvModule(
-                self.in_channels,
+                self.in_channel,
                 feat_channels,
                 3,
                 padding=1,
@@ -49,7 +52,7 @@ class CTResNetNeck(BaseModule):
             layers.append(upsample_conv)
             layers.append(nn.BatchNorm2d(feat_channels))
             layers.append(nn.ReLU(inplace=True))
-            self.in_channels = feat_channels
+            self.in_channel = feat_channels
 
         return nn.Sequential(*layers)
 
@@ -71,5 +74,6 @@ class CTResNetNeck(BaseModule):
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, inputs):
+        assert isinstance(inputs, (list, tuple))
         outs = self.deconv_layers(inputs[-1])
         return outs,
