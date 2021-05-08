@@ -96,7 +96,6 @@ class ConvFCBBoxHead(BBoxHead):
             out_dim_reg = (4 if self.reg_class_agnostic else 4 *
                            self.num_classes)
             self.fc_reg = nn.Linear(self.reg_last_dim, out_dim_reg)
-        print(self)
 
         if init_cfg is None:
             self.init_cfg += [

@@ -114,7 +114,6 @@ class FCNMaskHead(BaseModule):
             self.conv_logits = Conv2d(logits_in_channel, out_channels, 1)
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
-        print(self)
 
     def init_weights(self):
         super(FCNMaskHead, self).init_weights()
