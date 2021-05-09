@@ -288,11 +288,11 @@ class DeformableDETRHead(DETRHead):
                 (N, h*w, num_classes). Only be passed when as_two_stage is
                 True, otherwise is None.
             enc_bbox_preds (Tensor): Regression results of each points
-                on the encode feature map, has shape (N, h*w, 4). Only be
+                on the encode feature map, has shape (N, h*w,
+                 4). Only be
                 passed when as_two_stage is True, otherwise is None.
             img_metas (list[dict]): Meta information of each image.
-            rescale (bool, optional): If True, return boxes in original
-                image space. Defalut False.
+
 
         Returns:
             list[obj:`InstanceResults`]: Results of each image after the
