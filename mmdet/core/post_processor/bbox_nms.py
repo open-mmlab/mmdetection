@@ -196,6 +196,7 @@ class ScoreTopk(object):
                 cls_score, det_labels = scores.softmax(-1)[..., :-1].max(-1)
                 cls_score, bbox_index = cls_score.topk(self.max_per_img)
                 bbox_pred = bboxes[bbox_index]
+                det_labels = det_labels[bbox_index]
                 r_results.scores = cls_score
                 r_results.bboxes = bbox_pred
                 r_results.labels = det_labels
