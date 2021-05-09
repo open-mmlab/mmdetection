@@ -663,5 +663,5 @@ class DETRHead(AnchorFreeHead):
 
         results = InstanceResults(img_meta)
         results.scores = cls_score
-        results.bboxes = bbox_pred
+        results.bboxes = det_bboxes
         return self.bbox_post_processes([results])[0]
