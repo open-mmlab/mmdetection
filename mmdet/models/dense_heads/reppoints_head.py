@@ -5,7 +5,8 @@ from mmcv.cnn import ConvModule
 from mmcv.ops import DeformConv2d
 
 from mmdet.core import (PointGenerator, build_assigner, build_sampler,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+                        images_to_levels, multi_apply, unmap)
+from ...core.results.results import InstanceResults
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -691,28 +692,25 @@ class RepPointsHead(AnchorFreeHead):
                 bbox_preds_refine[i][img_id].detach()
                 for i in range(num_levels)
             ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
             proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                mlvl_points, img_shape,
-                                                scale_factor, cfg, rescale,
-                                                with_nms)
+                                                mlvl_points, img_metas[img_id],
+                                                cfg)
             result_list.append(proposals)
         return result_list
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_points,
-                           img_shape,
-                           scale_factor,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
+    def _get_bboxes_single(
+        self,
+        cls_scores,
+        bbox_preds,
+        mlvl_points,
+        img_meta,
+        cfg,
+    ):
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
         mlvl_scores = []
+        img_shape = img_meta['img_shape']
         for i_lvl, (cls_score, bbox_pred, points) in enumerate(
                 zip(cls_scores, bbox_preds, mlvl_points)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
@@ -746,8 +744,6 @@ class RepPointsHead(AnchorFreeHead):
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
@@ -755,10 +751,11 @@ class RepPointsHead(AnchorFreeHead):
             # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        if with_nms:
-            det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-            return det_bboxes, det_labels
-        else:
-            return mlvl_bboxes, mlvl_scores
+
+        results = InstanceResults(img_meta)
+        results.bboxes = mlvl_bboxes
+        results.scores = mlvl_scores
+
+        r_results = self.bbox_post_processes([results])[0]
+
+        return r_results
