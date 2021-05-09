@@ -9,6 +9,8 @@ from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply,
                         reduce_mean)
 from mmdet.models.utils import build_transformer
+from ...core.post_processor.builder import ComposePostProcess
+from ...core.results.results import InstanceResults
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -32,6 +34,8 @@ class DETRHead(AnchorFreeHead):
             all ranks. Default to False.
         positional_encoding (obj:`mmcv.ConfigDict`|dict):
             Config for position encoding.
+        bbox_post_processes (list[obj:`ConfigDict`])): The configuration
+            of bbox's post process.
         loss_cls (obj:`mmcv.ConfigDict`|dict): Config of the
             classification loss. Default `CrossEntropyLoss`.
         loss_bbox (obj:`mmcv.ConfigDict`|dict): Config of the
@@ -59,6 +63,14 @@ class DETRHead(AnchorFreeHead):
                      type='SinePositionalEncoding',
                      num_feats=128,
                      normalize=True),
+                 bbox_post_processes=[
+                     dict(
+                         type='ScoreTopk',
+                         sigmoid=False,
+                         max_per_img=100,
+                     ),
+                     dict(type='ResizeResultsToOri', results_types=['bbox'])
+                 ],
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      bg_cls_weight=0.1,
@@ -81,6 +93,10 @@ class DETRHead(AnchorFreeHead):
         # since it brings inconvenience when the initialization of
         # `AnchorFreeHead` is called.
         super(AnchorFreeHead, self).__init__(init_cfg)
+        if bbox_post_processes is not None:
+            self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
+        else:
+            self.bbox_post_processes = nn.Identity()
         self.bg_cls_weight = 0
         self.sync_cls_avg_factor = sync_cls_avg_factor
         class_weight = loss_cls.get('class_weight', None)
@@ -579,11 +595,12 @@ class DETRHead(AnchorFreeHead):
         return losses
 
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
-    def get_bboxes(self,
-                   all_cls_scores_list,
-                   all_bbox_preds_list,
-                   img_metas,
-                   rescale=False):
+    def get_bboxes(
+        self,
+        all_cls_scores_list,
+        all_bbox_preds_list,
+        img_metas,
+    ):
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
@@ -595,16 +612,10 @@ class DETRHead(AnchorFreeHead):
                 normalized coordinate format (cx, cy, w, h) and shape
                 [nb_dec, bs, num_query, 4].
             img_metas (list[dict]): Meta information of each image.
-            rescale (bool, optional): If True, return boxes in original
-                image space. Default False.
 
         Returns:
-            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
-                The first item is an (n, 5) tensor, where the first 4 columns \
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
-                5-th column is a score between 0 and 1. The second item is a \
-                (n,) tensor where each item is the predicted class label of \
-                the corresponding box.
+            list[obj:`InstanceResults`]: Results of each image after the
+                post process.
         """
         # NOTE defaultly only using outputs from the last feature level,
         # and only the outputs from the last decoder layer is used.
@@ -615,21 +626,18 @@ class DETRHead(AnchorFreeHead):
         for img_id in range(len(img_metas)):
             cls_score = cls_scores[img_id]
             bbox_pred = bbox_preds[img_id]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self._get_bboxes_single(cls_score, bbox_pred,
-                                                img_shape, scale_factor,
-                                                rescale)
-            result_list.append(proposals)
+            results = self._get_bboxes_single(cls_score, bbox_pred,
+                                              img_metas[img_id])
+            result_list.append(results)
 
         return result_list
 
-    def _get_bboxes_single(self,
-                           cls_score,
-                           bbox_pred,
-                           img_shape,
-                           scale_factor,
-                           rescale=False):
+    def _get_bboxes_single(
+        self,
+        cls_score,
+        bbox_pred,
+        img_meta,
+    ):
         """Transform outputs from the last decoder layer into bbox predictions
         for each image.
 
@@ -639,44 +647,21 @@ class DETRHead(AnchorFreeHead):
             bbox_pred (Tensor): Sigmoid outputs from the last decoder layer
                 for each image, with coordinate format (cx, cy, w, h) and
                 shape [num_query, 4].
-            img_shape (tuple[int]): Shape of input image, (height, width, 3).
-            scale_factor (ndarray, optional): Scale factor of the image arange
-                as (w_scale, h_scale, w_scale, h_scale).
-            rescale (bool, optional): If True, return boxes in original image
-                space. Default False.
+            img_metas (dict): Meta information of image.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels.
-
-                - det_bboxes: Predicted bboxes with shape [num_query, 5], \
-                    where the first 4 columns are bounding box positions \
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
-                    between 0 and 1.
-                - det_labels: Predicted labels of the corresponding box with \
-                    shape [num_query].
+            obj:`InstanceResults`: Results of single image after the
+                post process.
         """
         assert len(cls_score) == len(bbox_pred)
-        max_per_img = self.test_cfg.get('max_per_img', self.num_query)
-        # exclude background
-        if self.loss_cls.use_sigmoid:
-            cls_score = cls_score.sigmoid()
-            scores, indexs = cls_score.view(-1).topk(max_per_img)
-            det_labels = indexs % self.num_classes
-            bbox_index = indexs // self.num_classes
-            bbox_pred = bbox_pred[bbox_index]
-        else:
-            scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
-            scores, bbox_index = scores.topk(max_per_img)
-            bbox_pred = bbox_pred[bbox_index]
-            det_labels = det_labels[bbox_index]
-
         det_bboxes = bbox_cxcywh_to_xyxy(bbox_pred)
+        img_shape = img_meta['img_shape']
         det_bboxes[:, 0::2] = det_bboxes[:, 0::2] * img_shape[1]
         det_bboxes[:, 1::2] = det_bboxes[:, 1::2] * img_shape[0]
         det_bboxes[:, 0::2].clamp_(min=0, max=img_shape[1])
         det_bboxes[:, 1::2].clamp_(min=0, max=img_shape[0])
-        if rescale:
-            det_bboxes /= det_bboxes.new_tensor(scale_factor)
-        det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(1)), -1)
 
-        return det_bboxes, det_labels
+        results = InstanceResults(img_meta)
+        results.scores = cls_score
+        results.bboxes = bbox_pred
+        return self.bbox_post_processes([results])[0]

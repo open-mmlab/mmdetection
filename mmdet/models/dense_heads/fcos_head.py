@@ -266,9 +266,7 @@ class FCOSHead(AnchorFreeHead):
                    bbox_preds,
                    centernesses,
                    img_metas,
-                   cfg=None,
-                   rescale=False,
-                   with_nms=True):
+                   cfg=None):
         """Transform network output for a batch into bbox predictions.
 
         Args:
@@ -282,10 +280,6 @@ class FCOSHead(AnchorFreeHead):
                 image size, scaling factor, etc.
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used. Default: None.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
 
         Returns:
             list[obj:`InstanceResults`]: Results of each image after the

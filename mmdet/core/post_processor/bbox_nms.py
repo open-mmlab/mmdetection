@@ -151,6 +151,60 @@ class NaiveNMS(object):
         return r_results_list
 
 
+@POST_PROCESSOR.register_module()
+class ScoreTopk(object):
+    """Select bboxes with top `max_per_img` score.
+
+    Args:
+        sigmoid (bool): The score should be activated with sigmoid or softmax.
+            Default to True.
+        max_per_image (int): Max
+    """
+
+    def __init__(
+        self,
+        sigmoid=True,
+        max_per_img=100,
+    ):
+        self.with_sigmoid = sigmoid
+        self.max_per_img = max_per_img
+
+    def __call__(self, results_list):
+
+        r_results_list = []
+        for results in results_list:
+            if len(results) == 0:
+                r_results_list.append(results)
+                continue
+
+            r_results = results.new_results()
+            bboxes = results.bboxes
+            scores = results.scores
+
+            if self.with_sigmoid:
+                # without background padding
+                num_class = scores.size(-1)
+                cls_scores = scores.sigmoid()
+                cls_scores, indexs = cls_scores.view(-1).topk(self.max_per_img)
+                det_labels = indexs % num_class
+                bbox_index = indexs // num_class
+                r_results.labels = det_labels
+                r_results.scores = cls_scores
+                r_results.bboxes = bboxes[bbox_index]
+
+            else:
+                cls_score, det_labels = scores.softmax(-1)[..., :-1].max(-1)
+                cls_score, bbox_index = cls_score.topk(self.max_per_img)
+                bbox_pred = bboxes[bbox_index]
+                r_results.scores = cls_score
+                r_results.bboxes = bbox_pred
+                r_results.labels = det_labels
+
+            r_results_list.append(results)
+
+        return r_results_list
+
+
 def multiclass_nms(multi_bboxes,
                    multi_scores,
                    score_thr,

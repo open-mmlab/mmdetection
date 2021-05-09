@@ -108,7 +108,10 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                              'bboxes after nms '
                              'has been changed. Please specify'
                              'it in bbox_post_processes ')
-        self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
+        if bbox_post_processes is not None:
+            self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
+        else:
+            self.bbox_post_processes = nn.Identity()
         self._init_layers()
 
     def _init_layers(self):

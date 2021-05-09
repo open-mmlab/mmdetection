@@ -1,4 +1,3 @@
-from mmdet.core import bbox2result
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
@@ -28,20 +27,14 @@ class DETR(SingleStageDetector):
                 Defaults to False.
 
         Returns:
-            list[list[np.ndarray]]: BBox results of each image and classes.
-                The outer list corresponds to each image. The inner list
-                corresponds to each class.
+            list[obj:`InstanceResults`]: Results of each image after the
+                post process.
         """
         batch_size = len(img_metas)
         assert batch_size == 1, 'Currently only batch_size 1 for inference ' \
             f'mode is supported. Found batch_size {batch_size}.'
         x = self.extract_feat(img)
         outs = self.bbox_head(x, img_metas)
-        bbox_list = self.bbox_head.get_bboxes(
-            *outs, img_metas, rescale=rescale)
+        results_list = self.bbox_head.get_bboxes(*outs, img_metas)
 
-        bbox_results = [
-            bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-            for det_bboxes, det_labels in bbox_list
-        ]
-        return bbox_results
+        return results_list

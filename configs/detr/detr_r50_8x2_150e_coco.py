@@ -15,6 +15,14 @@ model = dict(
         style='pytorch'),
     bbox_head=dict(
         type='DETRHead',
+        bbox_post_processes=[
+            dict(
+                type='ScoreTopk',
+                sigmoid=False,
+                max_per_img=100,
+            ),
+            dict(type='ResizeResultsToOri', results_types=['bbox'])
+        ],
         num_classes=80,
         in_channels=2048,
         transformer=dict(

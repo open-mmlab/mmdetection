@@ -543,14 +543,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used
 
-
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
+            list[obj:`InstanceResults`]: Results of each image after the
+                post process.
 
         Example:
             TODO modify this example
