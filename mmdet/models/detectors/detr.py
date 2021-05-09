@@ -26,9 +26,9 @@ class DETR(SingleStageDetector):
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
 
-        Returns:
-            list[obj:`InstanceResults`]: Results of each image after the
-                post process.
+        list[list[np.ndarray]]: BBox results of each image and classes.
+            The outer list corresponds to each image. The inner list
+            corresponds to each class.
         """
         batch_size = len(img_metas)
         assert batch_size == 1, 'Currently only batch_size 1 for inference ' \
@@ -37,4 +37,4 @@ class DETR(SingleStageDetector):
         outs = self.bbox_head(x, img_metas)
         results_list = self.bbox_head.get_bboxes(*outs, img_metas)
 
-        return results_list
+        return [results.export('bbox') for results in results_list]
