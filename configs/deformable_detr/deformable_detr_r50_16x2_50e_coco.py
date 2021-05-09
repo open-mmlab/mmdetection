@@ -23,6 +23,14 @@ model = dict(
         num_outs=4),
     bbox_head=dict(
         type='DeformableDETRHead',
+        bbox_post_processes=[
+            dict(
+                type='ScoreTopk',
+                sigmoid=True,
+                max_per_img=100,
+            ),
+            dict(type='ResizeResultsToOri', results_types=['bbox'])
+        ],
         num_query=300,
         num_classes=80,
         in_channels=2048,

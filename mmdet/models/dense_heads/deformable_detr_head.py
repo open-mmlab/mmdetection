@@ -265,13 +265,14 @@ class DeformableDETRHead(DETRHead):
         return loss_dict
 
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
-    def get_bboxes(self,
-                   all_cls_scores,
-                   all_bbox_preds,
-                   enc_cls_scores,
-                   enc_bbox_preds,
-                   img_metas,
-                   rescale=False):
+    def get_bboxes(
+        self,
+        all_cls_scores,
+        all_bbox_preds,
+        enc_cls_scores,
+        enc_bbox_preds,
+        img_metas,
+    ):
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
@@ -294,12 +295,8 @@ class DeformableDETRHead(DETRHead):
                 image space. Defalut False.
 
         Returns:
-            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
-                The first item is an (n, 5) tensor, where the first 4 columns \
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
-                5-th column is a score between 0 and 1. The second item is a \
-                (n,) tensor where each item is the predicted class label of \
-                the corresponding box.
+            list[obj:`InstanceResults`]: Results of each image after the
+                post process.
         """
         cls_scores = all_cls_scores[-1]
         bbox_preds = all_bbox_preds[-1]
@@ -308,10 +305,7 @@ class DeformableDETRHead(DETRHead):
         for img_id in range(len(img_metas)):
             cls_score = cls_scores[img_id]
             bbox_pred = bbox_preds[img_id]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
             proposals = self._get_bboxes_single(cls_score, bbox_pred,
-                                                img_shape, scale_factor,
-                                                rescale)
+                                                img_metas[img_id])
             result_list.append(proposals)
         return result_list
