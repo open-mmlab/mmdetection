@@ -35,6 +35,6 @@ class ResizeResultsToOri(object):
         return r_results_list
 
     def __resize_bbox__(self, results):
-        score_factor = results.bboxes.new_tensor(results.scale_factor)
-        results.bboxes = results.bboxes / score_factor
+        scale_factor = results.bboxes.new_tensor(results.scale_factor)
+        results.bboxes = results.bboxes / scale_factor
         return results
