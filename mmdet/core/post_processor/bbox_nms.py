@@ -200,7 +200,7 @@ class ScoreTopk(object):
                 r_results.bboxes = bbox_pred
                 r_results.labels = det_labels
 
-            r_results_list.append(results)
+            r_results_list.append(r_results)
 
         return r_results_list
 
