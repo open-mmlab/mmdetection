@@ -1,5 +1,3 @@
-from logging import warning
-
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
@@ -112,8 +110,8 @@ class CenterNetHead(BaseDenseHead):
         Args:
             center_heatmap_preds (Tensor): center predict heatmaps,
                shape (B, num_classes, H, W).
-            wh_preds (Tensor): wh predicts, shape (B, 2, H, W),
-            offset_preds (Tensor): offset predicts, shape (B, 2, H, W),
+            wh_preds (Tensor): wh predicts, shape (B, 2, H, W).
+            offset_preds (Tensor): offset predicts, shape (B, 2, H, W).
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box.
@@ -225,140 +223,121 @@ class CenterNetHead(BaseDenseHead):
         return target_result, avg_factor
 
     def get_bboxes(self,
-                   center_hm,
-                   wh_hm,
-                   offset_hm,
+                   center_heatmap_preds,
+                   wh_preds,
+                   offset_preds,
                    img_metas,
-                   rescale=False,
+                   rescale=True,
                    with_nms=False):
-        """
-            Args:
-                center_hm (tensor): shape (B, num_class, H, W),
-                wh_hm (tensor): shape (B, num_class, H, W),
-                offset_hm (tensor): shape (B, num_class, H, W),
-                img_metas (list[Dict]): img_meta of each image.
-                rescale (bool): If True, return boxes in original image space.
-                    Default: False.
-                with_nms (bool): use nms before return bboxes.
+        """Transform network output for a batch into bbox predictions.
 
-            Return:
-                list[tuple[Tensor, Tensor]]: Each item in result_list is
-                    2-tuple.The first item is an (n, 5) tensor, where the first
-                    4 columns are bounding box positions (tl_x, tl_y, br_x,
-                    br_y) and the 5-th column is a score between 0 and 1.
-                    The second item is a (n,) tensor where each item is the
-                    predicted class label of the corresponding box.
+        Args:
+            center_heatmap_preds (Tensor): center predict heatmaps,
+               shape (B, num_classes, H, W).
+            wh_preds (Tensor): wh predicts, shape (B, 2, H, W).
+            offset_preds (Tensor): offset predicts, shape (B, 2, H, W).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool): If True, return boxes in original image space.
+                Default: True.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: False.
+
+        Returns:
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
         """
-        result_list = []
-        bs, _, feat_h, feat_w = center_hm.shape
-        if bs == 2:
-            center_hm = (center_hm[0:1] + self.flip_tensor(center_hm[1:2])) / 2
-            wh_hm = (wh_hm[0:1] + self.flip_tensor(wh_hm[1:2])) / 2
-            img_metas = img_metas[0]
-        result_list.append(
-            self._get_bboxes_single(
-                center_hm[:1, ...],
-                wh_hm[:1, ...],
-                offset_hm[:1, ...],
-                img_metas[0],
-                rescale=rescale,
-                with_nms=with_nms))
-        return result_list
+        scale_factors = [img_meta['scale_factor'] for img_meta in img_metas]
+        border_pixs = [img_meta['border'] for img_meta in img_metas]
+
+        batch_det_bboxes, batch_labels = self.decode_heatmap(
+            center_heatmap_preds,
+            wh_preds,
+            offset_preds,
+            img_metas[0]['batch_input_shape'],
+            k=self.test_cfg.topk,
+            kernel=self.test_cfg.local_maximum_kernel)
+
+        batch_border = batch_det_bboxes.new_tensor(
+            border_pixs)[:, [2, 0, 2, 0]].unsqueeze(1)
+        batch_det_bboxes[..., :4] -= batch_border
+
+        if rescale:
+            batch_det_bboxes[..., :4] /= batch_det_bboxes.new_tensor(
+                scale_factors).unsqueeze(1)
+
+        if with_nms:
+            det_results = []
+            for (det_bboxes, det_labels) in zip(batch_det_bboxes,
+                                                batch_labels):
+                det_bbox, det_label = self._bboxes_nms(det_bboxes, det_labels,
+                                                       self.test_cfg)
+                det_results.append(tuple([det_bbox, det_label]))
+        else:
+            det_results = [
+                tuple(bs) for bs in zip(batch_det_bboxes, batch_labels)
+            ]
+        return det_results
 
     def decode_heatmap(self,
-                       center_hm,
-                       wh_hm,
-                       offset_hm,
-                       img_meta,
+                       center_heatmap_preds,
+                       wh_preds,
+                       offset_preds,
+                       img_shape,
                        k=100,
                        kernel=3):
-        """Transform outputs into detections raw bbox prediction
+        """Transform outputs into detections raw bbox prediction.
+
         Args:
-            center_hm (Tensor): shape (N, num_classes, H, W),
-            wh_hm (Tensor): shape (N, num_classes, H, W),
-            offset_hm (Tensor): shape (N, num_classes, H, W),
-            img_meta (dict): img_meta of each image.
-            k (int): Get top k center keypoints from heatmap.
+            center_heatmap_preds (Tensor): center predict heatmaps,
+               shape (B, num_classes, H, W).
+            wh_preds (Tensor): wh predicts, shape (B, 2, H, W).
+            offset_preds (Tensor): offset predicts, shape (B, 2, H, W).
+            img_shape (list[int]): image shape in [h, w] format.
+            k (int): Get top k center keypoints from heatmap. Default 100.
             kernel (int): Max pooling kernel for extract local maximum pixels.
+               Default 3.
+
         Returns:
             tuple[torch.Tensor]: Decoded output of CornerHead, containing the
             following Tensors:
 
-            - bboxes (Tensor): Coords of each box with shape (k, 4)
-            - scores (Tensor): Scores of each box with shape (k, 1)
-            - clses (Tensor): Categories of each box with shape (k)
+            - batch_bboxes (Tensor): Coords of each box with shape (B, k, 5)
+            - batch_topk_labels (Tensor): Categories of each box with \
+               shape (B, k)
         """
-        batch, _, height, width = center_hm.size()
-        inp_h, inp_w, _ = img_meta['pad_shape']
-        x_off = img_meta['border'][2]
-        y_off = img_meta['border'][0]
-        center_hm = get_local_maximum(center_hm, kernel=kernel)
-        scores, index, clses, cy, cx = get_topk_from_heatmap(center_hm, k=k)
-        wh = transpose_and_gather_feat(wh_hm, index).view(k, 2)
-        offset = transpose_and_gather_feat(offset_hm, index).view(k, 2)
-        cx = cx.view(k, 1)
-        cy = cy.view(k, 1)
-        cx = cx + offset[:, [0]]
-        cy = cy + offset[:, [1]]
+        height, width = center_heatmap_preds.shape[2:]
+        inp_h, inp_w = img_shape
 
-        x1 = (cx - wh[:, [0]] / 2).view(-1, 1) * (inp_w / width)
-        y1 = (cy - wh[:, [1]] / 2).view(-1, 1) * (inp_h / height)
-        x2 = (cx + wh[:, [0]] / 2).view(-1, 1) * (inp_w / width)
-        y2 = (cy + wh[:, [1]] / 2).view(-1, 1) * (inp_h / height)
-        bboxes = torch.cat([x1, y1, x2, y2], dim=1)
-        bboxes[:, [0, 2]] -= x_off
-        bboxes[:, [1, 3]] -= y_off
-        return bboxes, scores.view(-1, 1), clses.squeeze(0)
+        center_hm = get_local_maximum(center_heatmap_preds, kernel=kernel)
 
-    def _get_bboxes_single(self,
-                           center_hm,
-                           wh_hm,
-                           offset_hm,
-                           img_meta,
-                           rescale=False,
-                           with_nms=False):
-        """
-        Args:
-            center_hm (tensor): shape (B, num_class, H, W),
-            wh_hm (tensor): shape (B, num_class, H, W),
-            offset_hm (tensor): shape (B, num_class, H, W),
-            img_metas (dict): img_meta of each image.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): use nms before return bboxes.
-        Returns:
-            tuple[torch.Tensor]: Decoded output of CornerHead, containing the
-            following Tensors:
-            - bboxes (Tensor): Coords of each box.
-            - clses (Tensor): Categories of each box.
-        """
-        bboxes, scores, clses = self.decode_heatmap(
-            center_hm=center_hm,
-            wh_hm=wh_hm,
-            offset_hm=offset_hm,
-            img_meta=img_meta,
-            k=self.test_cfg.topK,
-            kernel=self.test_cfg.local_maximum_kernel)
-        if rescale:
-            bboxes /= bboxes.new_tensor(img_meta['scale_factor'])
-        detections = torch.cat([bboxes, scores], -1)
-        return detections, clses
+        *batch_dets, topk_ys, topk_xs = get_topk_from_heatmap(center_hm, k=k)
+        batch_scores, batch_index, batch_topk_labels = batch_dets
 
-    def flip_tensor(self, tensor):
-        return torch.flip(tensor, [3])
+        wh = transpose_and_gather_feat(wh_preds, batch_index)
+        offset = transpose_and_gather_feat(offset_preds, batch_index)
+        topk_xs = topk_xs + offset[..., 0]
+        topk_ys = topk_ys + offset[..., 1]
+        x1 = (topk_xs - wh[..., 0] / 2) * (inp_w / width)
+        y1 = (topk_ys - wh[..., 1] / 2) * (inp_h / height)
+        x2 = (topk_xs + wh[..., 0] / 2) * (inp_w / width)
+        y2 = (topk_ys + wh[..., 1] / 2) * (inp_h / height)
+
+        batch_bboxes = torch.stack([x1, y1, x2, y2], dim=2)
+        batch_bboxes = torch.cat((batch_bboxes, batch_scores[..., None]),
+                                 dim=-1)
+        return batch_bboxes, batch_topk_labels
 
     def _bboxes_nms(self, bboxes, labels, cfg):
         if labels.numel() == 0:
             return bboxes, labels
 
-        if 'nms_cfg' in cfg:
-            warning.warn('nms_cfg in test_cfg will be deprecated. '
-                         'Please rename it as nms')
-        if 'nms' not in cfg:
-            cfg.nms = cfg.nms_cfg
-
         out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
-                                       cfg.nms)
+                                       cfg.nms_cfg)
         out_labels = labels[keep]
 
         if len(out_bboxes) > 0:

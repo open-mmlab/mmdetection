@@ -22,7 +22,7 @@ model = dict(
         loss_wh=dict(type='L1Loss', loss_weight=0.1),
         loss_offset=dict(type='L1Loss', loss_weight=1.0)),
     train_cfg=None,
-    test_cfg=dict(topK=100, local_maximum_kernel=3, max_per_img=100))
+    test_cfg=dict(topk=100, local_maximum_kernel=3, max_per_img=100))
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -74,7 +74,8 @@ test_pipeline = [
             dict(
                 type='Collect',
                 meta_keys=('filename', 'ori_shape', 'img_shape', 'pad_shape',
-                           'scale_factor', 'flip', 'img_norm_cfg', 'border'),
+                           'scale_factor', 'flip', 'flip_direction',
+                           'img_norm_cfg', 'border'),
                 keys=['img'])
         ])
 ]
