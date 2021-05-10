@@ -13,5 +13,6 @@ Import:
   - configs/empirical_attention/metafile.yml
   - configs/fast_rcnn/metafile.yml
   - configs/faster_rcnn/metafile.yml
+  - configs/fcos/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
