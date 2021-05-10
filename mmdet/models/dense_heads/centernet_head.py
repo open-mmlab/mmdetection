@@ -254,7 +254,6 @@ class CenterNetHead(BaseDenseHead):
         if bs == 2:
             center_hm = (center_hm[0:1] + self.flip_tensor(center_hm[1:2])) / 2
             wh_hm = (wh_hm[0:1] + self.flip_tensor(wh_hm[1:2])) / 2
-            offset_hm = (offset_hm[0:1] + self.flip_tensor(offset_hm[1:2])) / 2
             img_metas = img_metas[0]
         result_list.append(
             self._get_bboxes_single(
