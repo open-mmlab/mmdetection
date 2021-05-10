@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv import ConfigDict
 from mmcv.runner import ModuleList, force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
@@ -266,3 +267,9 @@ class SSDHead(AnchorHead):
             all_bbox_weights,
             num_total_samples=num_total_pos)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
+
+    def onnx_trace(self, batch_mlvl_bboxes, batch_mlvl_scores, cfg):
+        self.loss_cls = ConfigDict()
+        self.loss_cls.use_sigmoid = False
+        return super(SSDHead, self).onnx_trace(batch_mlvl_bboxes,
+                                               batch_mlvl_scores, cfg)

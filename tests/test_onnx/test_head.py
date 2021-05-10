@@ -380,7 +380,8 @@ def test_ssd_head_get_bboxes():
     feats = mmcv.load(osp.join(data_path, ssd_head_data))
     cls_score = feats[:6]
     bboxes = feats[6:]
-
+    ssd_model.bbox_post_processes = nn.Identity()
+    cfg = mmcv.ConfigDict(dict(deploy=dict(with_nms=False)))
     ssd_model.get_bboxes = partial(
-        ssd_model.get_bboxes, img_metas=img_metas, with_nms=False)
+        ssd_model.get_bboxes, img_metas=img_metas, cfg=cfg)
     ort_validate(ssd_model.get_bboxes, (cls_score, bboxes))
