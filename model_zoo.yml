@@ -34,4 +34,5 @@ Import:
   - configs/libra_rcnn/metafile.yml
   - configs/mask_rcnn/metafile.yml
   - configs/ms_rcnn/metafile.yml
+  - configs/nas_fcos/metafile.yml
 
