@@ -128,13 +128,10 @@ class SeesawLoss(nn.Module):
 
         # custom output channels of the classifier
         self.custom_cls_channels = True
+        # custom activation of cls_score
+        self.custom_activation = True
         # custom accuracy of the classsifier
-        self.custom_acc = True
-
-    def get_cls_channels(self, num_classes):
-        # cls_channels = num_classes + 2
-        assert num_classes == self.num_classes
-        return num_classes + 2
+        self.custom_accuracy = True
 
     def _split_cls_score(self, cls_score):
         # split cls_score to cls_score_classes and cls_score_objectness
@@ -143,9 +140,28 @@ class SeesawLoss(nn.Module):
         cls_score_objectness = cls_score[..., -2:]
         return cls_score_classes, cls_score_objectness
 
+    def get_cls_channels(self, num_classes):
+        """Get custom classification channels.
+
+        Args:
+            num_classes (int): The number of classes.
+
+        Returns:
+            int: The custom classification channels.
+        """
+        assert num_classes == self.num_classes
+        return num_classes + 2
+
     def get_activation(self, cls_score):
-        # calculate the scores for detection results
-        # scores = score_classes * score_objectness
+        """Get custom activation of cls_score.
+
+        Args:
+            cls_score (torch.Tensor): The prediction with shape (N, C + 2).
+
+        Returns:
+            torch.Tensor: The custom activation of cls_score with shape
+                 (N, C + 1).
+        """
         cls_score_classes, cls_score_objectness = self._split_cls_score(
             cls_score)
         score_classes = F.softmax(cls_score_classes, dim=-1)
@@ -157,6 +173,16 @@ class SeesawLoss(nn.Module):
         return scores
 
     def get_accuracy(self, cls_score, labels):
+        """Get custom accuracy w.r.t. cls_score and labels.
+
+        Args:
+            cls_score (torch.Tensor): The prediction with shape (N, C + 2).
+            labels (torch.Tensor): The learning label of the prediction.
+
+        Returns:
+            Dict [str, torch.Tensor]: The accuracy for objectness and classes,
+                 respectively.
+        """
         pos_inds = labels < self.num_classes
         obj_labels = (labels == self.num_classes).long()
         cls_score_classes, cls_score_objectness = self._split_cls_score(
@@ -185,7 +211,10 @@ class SeesawLoss(nn.Module):
             reduction (str, optional): The method used to reduce the loss.
                  Options are "none", "mean" and "sum".
         Returns:
-            torch.Tensor: The calculated loss
+            torch.Tensor | Dict [str, torch.Tensor]:
+                 if return_dict == False: The calculated loss |
+                 if return_dict == True: The dict of calculated losses
+                 for objectness and classes, respectively.
         """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (

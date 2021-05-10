@@ -97,8 +97,12 @@ class BBoxHead(BaseModule):
         return getattr(self.loss_cls, 'custom_cls_channels', False)
 
     @property
-    def custom_acc(self):
-        return getattr(self.loss_cls, 'custom_acc', False)
+    def custom_activation(self):
+        return getattr(self.loss_cls, 'custom_activation', False)
+
+    @property
+    def custom_accuracy(self):
+        return getattr(self.loss_cls, 'custom_accuracy', False)
 
     @auto_fp16()
     def forward(self, x):
@@ -266,7 +270,7 @@ class BBoxHead(BaseModule):
                     losses.update(loss_cls_)
                 else:
                     losses['loss_cls'] = loss_cls_
-                if self.custom_acc:
+                if self.custom_activation:
                     acc_ = self.loss_cls.get_accuracy(cls_score, labels)
                     losses.update(acc_)
                 else:
