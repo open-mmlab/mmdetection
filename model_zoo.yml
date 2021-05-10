@@ -20,5 +20,6 @@ Import:
   - configs/free_anchor/metafile.yml
   - configs/fsaf/metafile.yml
   - configs/gcnet/metafile.yml
+  - configs/gfl/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
