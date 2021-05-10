@@ -26,5 +26,6 @@ Import:
   - configs/gn+ws/metafile.yml
   - configs/grid_rcnn/metafile.yml
   - configs/groie/metafile.yml
+  - configs/guided_anchoring/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
