@@ -22,5 +22,6 @@ Import:
   - configs/gcnet/metafile.yml
   - configs/gfl/metafile.yml
   - configs/ghm/metafile.yml
+  - configs/gn/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
