@@ -6,5 +6,6 @@ Import:
   - configs/cornernet/metafile.yml
   - configs/dcn/metafile.yml
   - configs/deformable_detr/metafile.yml
+  - configs/detectors/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
