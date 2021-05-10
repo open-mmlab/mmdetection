@@ -46,8 +46,8 @@ def seesaw_ce_loss(cls_score,
 
     # mitigation factor
     if p > 0:
-        sample_ratio_matrix = cum_samples[None, :].clamp_min(
-            1) / cum_samples[:, None].clamp_min(1)
+        sample_ratio_matrix = cum_samples[None, :].clamp(
+            min=1) / cum_samples[:, None].clamp(min=1)
         index = (sample_ratio_matrix < 1.0).float()
         sample_weights = sample_ratio_matrix.pow(p) * index + (1 - index)
         mitigation_factor = sample_weights[labels.long(), :]
@@ -55,10 +55,10 @@ def seesaw_ce_loss(cls_score,
 
     # compensation factor
     if q > 0:
-        scores = F.softmax(cls_score, dim=1).detach()
+        scores = F.softmax(cls_score.detach(), dim=1)
         self_scores = scores[torch.arange(0, len(scores)).cuda().long(),
                              labels.long()]
-        score_matrix = scores / self_scores[:, None].clamp_min(eps)
+        score_matrix = scores / self_scores[:, None].clamp(min=eps)
         index = (score_matrix > 1.0).float()
         compensation_factor = score_matrix.pow(q) * index + (1 - index)
         seesaw_weights = seesaw_weights * compensation_factor
