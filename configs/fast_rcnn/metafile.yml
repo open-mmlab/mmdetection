@@ -1,0 +1,15 @@
+Collections:
+  - Name: Fast R-CNN
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x NVIDIA V100 GPUs
+      Architecture:
+        - FPN
+        - RPN
+        - ResNet
+        - RoIPool
+    Paper: https://arxiv.org/abs/1504.08083
+    README: configs/fast_rcnn/README.md
