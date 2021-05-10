@@ -37,4 +37,5 @@ Import:
   - configs/nas_fcos/metafile.yml
   - configs/nas_fpn/metafile.yml
   - configs/paa/metafile.yml
+  - configs/pafpn/metafile.yml
 
