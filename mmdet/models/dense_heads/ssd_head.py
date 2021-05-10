@@ -26,6 +26,8 @@ class SSDHead(AnchorHead):
             the predicted boxes and regression targets to absolute
             coordinates format. Default False. It should be `True` when
             using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
+        bbox_post_processes (list[obj:`ConfigDict`])): The configuration
+            of bbox's post process. Defaults to None.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
         init_cfg (dict or list[dict], optional): Initialization config dict.
@@ -48,6 +50,7 @@ class SSDHead(AnchorHead):
                      target_stds=[1.0, 1.0, 1.0, 1.0],
                  ),
                  reg_decoded_bbox=False,
+                 bbox_post_processes=None,
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=dict(
@@ -55,7 +58,8 @@ class SSDHead(AnchorHead):
                      layer='Conv2d',
                      distribution='uniform',
                      bias=0)):
-        super(AnchorHead, self).__init__(init_cfg)
+        super(AnchorHead, self).__init__(
+            bbox_post_processes=bbox_post_processes, init_cfg=init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.cls_out_channels = num_classes + 1  # add background class

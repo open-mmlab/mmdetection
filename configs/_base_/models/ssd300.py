@@ -15,6 +15,15 @@ model = dict(
     neck=None,
     bbox_head=dict(
         type='SSDHead',
+        bbox_post_processes=[
+            dict(type='PreNMS', score_thr=0.02),
+            dict(
+                type='NaiveNMS',
+                iou_threshold=0.45,
+                class_agnostic=False,
+                max_num=200),
+            dict(type='ResizeResultsToOri', results_types=['bbox'])
+        ],
         in_channels=(512, 1024, 512, 256, 256, 256),
         num_classes=80,
         anchor_generator=dict(
@@ -42,10 +51,5 @@ model = dict(
         pos_weight=-1,
         neg_pos_ratio=3,
         debug=False),
-    test_cfg=dict(
-        nms_pre=1000,
-        nms=dict(type='nms', iou_threshold=0.45),
-        min_bbox_size=0,
-        score_thr=0.02,
-        max_per_img=200))
+    test_cfg=dict(nms_pre=1000))
 cudnn_benchmark = True
