@@ -15,5 +15,6 @@ Import:
   - configs/faster_rcnn/metafile.yml
   - configs/fcos/metafile.yml
   - configs/foveabox/metafile.yml
+  - configs/fp16/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
