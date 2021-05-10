@@ -20,7 +20,12 @@ class CTResNetNeck(BaseModule):
          init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
-    def __init__(self, in_channel, num_filters, num_kernels, use_dcn=True, init_cfg=None):
+    def __init__(self,
+                 in_channel,
+                 num_filters,
+                 num_kernels,
+                 use_dcn=True,
+                 init_cfg=None):
         super(CTResNetNeck, self).__init__(init_cfg)
         assert isinstance(num_filters, list)
         assert isinstance(num_kernels, list)

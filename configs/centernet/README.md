@@ -17,8 +17,8 @@
 
 | Backbone        | DCN |  Mem (GB) | Inf time (fps) | Box AP | Flip box AP| Config | Download |
 | :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :----: | :----: |
+| ResNet-18 | N |  |  |  |  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/centernet/centernet_resnet18_140e_coco.py) | [model]() &#124; [log]() |
 | ResNet-18 | Y | 3.47 |  | 29.7 | 31.0 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/centernet/centernet_resnet18_dcnv2_140e_coco.py) | [model]() &#124; [log]() |
-
 
 Note:
 
