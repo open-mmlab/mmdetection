@@ -101,6 +101,9 @@ class SingleStageDetector(BaseDetector):
         if torch.onnx.is_in_onnx_export():
             return results_list
 
+        assert 'PreNMS' in \
+               self.bbox_head.bbox_post_processes, \
+            'You need PreNMS to reorganize the model results. '
         return [results.export('bbox') for results in results_list]
 
     def aug_test(self, imgs, img_metas, rescale=False):

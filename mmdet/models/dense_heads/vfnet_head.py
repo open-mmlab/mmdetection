@@ -7,7 +7,8 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (bbox2distance, bbox_overlaps, build_anchor_generator,
                         build_assigner, build_sampler, distance2bbox,
-                        multi_apply, multiclass_nms, reduce_mean)
+                        multi_apply, reduce_mean)
+from ...core.results.results import InstanceResults
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
@@ -53,6 +54,8 @@ class VFNetHead(ATSSHead, FCOSHead):
         use_atss (bool): If true, use ATSS to define positive/negative
             examples. Default: True.
         anchor_generator (dict): Config of anchor generator for ATSS.
+        bbox_post_processes (list[obj:`ConfigDict`])): The configuration
+            of bbox's post process. Defautls to None.
         init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
@@ -97,6 +100,7 @@ class VFNetHead(ATSSHead, FCOSHead):
                      scales_per_octave=1,
                      center_offset=0.0,
                      strides=[8, 16, 32, 64, 128]),
+                 bbox_post_processes=None,
                  init_cfg=dict(
                      type='Normal',
                      layer='Conv2d',
@@ -124,6 +128,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             in_channels,
             norm_cfg=norm_cfg,
             init_cfg=init_cfg,
+            bbox_post_processes=bbox_post_processes,
             **kwargs)
         self.regress_ranges = regress_ranges
         self.reg_denoms = [
@@ -465,9 +470,7 @@ class VFNetHead(ATSSHead, FCOSHead):
                    bbox_preds,
                    bbox_preds_refine,
                    img_metas,
-                   cfg=None,
-                   rescale=None,
-                   with_nms=True):
+                   cfg=None):
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
@@ -481,19 +484,17 @@ class VFNetHead(ATSSHead, FCOSHead):
                 image size, scaling factor, etc.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used. Default: None.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before returning boxes.
-                Default: True.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of
-                the corresponding box.
+             list[obj:`InstanceResults`]: Results of each image after the
+                 post process. In most cases(It depends on the post-processing
+                 you use), results.bboxes is a Tensor with shape (n, 4),
+                 where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                 the number of instance, results.score
+                 is the score between 0 and 1, has shape (n,). results.labels
+                 is the label of corresponding bbox, has shape (n,)
         """
+
         assert len(cls_scores) == len(bbox_preds) == len(bbox_preds_refine)
         num_levels = len(cls_scores)
 
@@ -509,24 +510,14 @@ class VFNetHead(ATSSHead, FCOSHead):
                 bbox_preds_refine[i][img_id].detach()
                 for i in range(num_levels)
             ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
             det_bboxes = self._get_bboxes_single(cls_score_list,
                                                  bbox_pred_list, mlvl_points,
-                                                 img_shape, scale_factor, cfg,
-                                                 rescale, with_nms)
+                                                 img_metas[img_id], cfg)
             result_list.append(det_bboxes)
         return result_list
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_points,
-                           img_shape,
-                           scale_factor,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
+    def _get_bboxes_single(self, cls_scores, bbox_preds, mlvl_points, img_meta,
+                           cfg):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -536,30 +527,25 @@ class VFNetHead(ATSSHead, FCOSHead):
                 level with shape (num_points * 4, H, W).
             mlvl_points (list[Tensor]): Box reference for a single scale level
                 with shape (num_total_points, 4).
-            img_shape (tuple[int]): Shape of the input image,
-                (height, width, 3).
-            scale_factor (ndarray): Scale factor of the image arrange as
-                (w_scale, h_scale, w_scale, h_scale).
+            img_meta (dict): Meta information of image, e.g.,
+                 image size, scaling factor, etc.
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before returning boxes.
-                Default: True.
 
         Returns:
-            tuple(Tensor):
-                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
-                    the first 4 columns are bounding box positions
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
-                    between 0 and 1.
-                det_labels (Tensor): A (n,) tensor where each item is the
-                    predicted class label of the corresponding box.
+             obj:`InstanceResults`: Results of each image after the
+                 post process. In most cases(It depends on the post-processing
+                 you use), results.bboxes is a Tensor with shape (n, 4),
+                 where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                 the number of instance, results.score
+                 is the score between 0 and 1, has shape (n,). results.labels
+                 is the label of corresponding bbox, has shape (n,)
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
         mlvl_scores = []
+        img_shape = img_meta['img_shape']
         for cls_score, bbox_pred, points in zip(cls_scores, bbox_preds,
                                                 mlvl_points):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
@@ -578,20 +564,20 @@ class VFNetHead(ATSSHead, FCOSHead):
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
+
         mlvl_scores = torch.cat(mlvl_scores)
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        if with_nms:
-            det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-            return det_bboxes, det_labels
-        else:
-            return mlvl_bboxes, mlvl_scores
+
+        results = InstanceResults(img_meta)
+        results.bboxes = mlvl_bboxes
+        results.scores = mlvl_scores
+
+        r_results_list = self.bbox_post_processes([results])[0]
+
+        return r_results_list
 
     def _get_points_single(self,
                            featmap_size,
