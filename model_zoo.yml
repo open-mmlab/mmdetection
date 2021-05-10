@@ -31,5 +31,6 @@ Import:
   - configs/htc/metafile.yml
   - configs/instaboost/metafile.yml
   - configs/ld/metafile.yml
+  - configs/libra_rcnn/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
