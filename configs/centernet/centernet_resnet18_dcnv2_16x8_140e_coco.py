@@ -70,7 +70,7 @@ test_pipeline = [
                 test_pad_add_pix=1),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
-            dict(type='ImageToTensor', keys=['img']),
+            dict(type='DefaultFormatBundle'),
             dict(
                 type='Collect',
                 meta_keys=('filename', 'ori_shape', 'img_shape', 'pad_shape',

@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from mmcv import ConfigDict
 
 from mmdet.models.dense_heads import CenterNetHead
 
@@ -57,10 +58,12 @@ def test_centernet_head_get_bboxes():
         'img_shape': (s, s, 3),
         'scale_factor': np.array([1., 1., 1., 1.]),
         'pad_shape': (s, s, 3),
+        'batch_input_shape': (s, s),
         'border': (0, 0, 0, 0),
         'flip': False
     }]
-    test_cfg = dict(topK=3, max_per_img=100)
+    test_cfg = ConfigDict(
+        dict(topk=100, local_maximum_kernel=3, max_per_img=100))
     gt_bboxes = [
         torch.Tensor([[10, 20, 200, 240], [40, 50, 100, 200],
                       [10, 20, 100, 240]])
@@ -96,8 +99,8 @@ def test_centernet_head_get_bboxes():
         img_metas,
         rescale=True,
         with_nms=False)
-    out_bboxes = detections[0][0]
-    out_clses = detections[0][1]
+    out_bboxes = detections[0][0][:3]
+    out_clses = detections[0][1][:3]
     for bbox, cls in zip(out_bboxes, out_clses):
         flag = False
         for gt_bbox, gt_cls in zip(gt_bboxes[0], gt_labels[0]):
