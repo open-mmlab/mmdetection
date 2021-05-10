@@ -16,5 +16,6 @@ Import:
   - configs/fcos/metafile.yml
   - configs/foveabox/metafile.yml
   - configs/fp16/metafile.yml
+  - configs/fpg/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
