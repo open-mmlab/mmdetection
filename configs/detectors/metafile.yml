@@ -101,4 +101,3 @@ Models:
         Metrics:
           mask AP:  42.6
     Weights: http://download.openmmlab.com/mmdetection/v2.0/detectors/detectors_htc_r50_1x_coco/detectors_htc_r50_1x_coco-329b1453.pth
-
