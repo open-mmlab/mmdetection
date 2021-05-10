@@ -16,14 +16,16 @@ class CTResNetNeck(BaseModule):
          in_channel (int): Number of input channels.
          num_filters (List[int]): Number of filters per stage.
          num_kernels (List[int]): Number of kernels per stage.
+         use_dcn (bool): If True, use DCNv2. Default: True.
          init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
-    def __init__(self, in_channel, num_filters, num_kernels, init_cfg=None):
+    def __init__(self, in_channel, num_filters, num_kernels, use_dcn=True, init_cfg=None):
         super(CTResNetNeck, self).__init__(init_cfg)
         assert isinstance(num_filters, list)
         assert isinstance(num_kernels, list)
         assert len(num_filters) == len(num_kernels)
+        self.use_dcn = use_dcn
         self.in_channel = in_channel
         self.deconv_layers = self._make_deconv_layer(num_filters, num_kernels)
 
@@ -33,14 +35,14 @@ class CTResNetNeck(BaseModule):
         for i in range(len(num_filters)):
             feat_channels = num_filters[i]
             kenel_size = num_kernels[i]
-            deform_conv = ConvModule(
+            conv_module = ConvModule(
                 self.in_channel,
                 feat_channels,
                 3,
                 padding=1,
-                conv_cfg=dict(type='DCNv2'),
+                conv_cfg=dict(type='DCNv2') if self.use_dcn else None,
                 norm_cfg=dict(type='BN'))
-            layers.append(deform_conv)
+            layers.append(conv_module)
             upsample_conv = nn.ConvTranspose2d(
                 in_channels=feat_channels,
                 out_channels=feat_channels,
