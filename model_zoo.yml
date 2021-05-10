@@ -7,5 +7,6 @@ Import:
   - configs/dcn/metafile.yml
   - configs/deformable_detr/metafile.yml
   - configs/detectors/metafile.yml
+  - configs/detr/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
