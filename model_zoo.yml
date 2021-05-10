@@ -33,4 +33,5 @@ Import:
   - configs/ld/metafile.yml
   - configs/libra_rcnn/metafile.yml
   - configs/mask_rcnn/metafile.yml
+  - configs/ms_rcnn/metafile.yml
 
