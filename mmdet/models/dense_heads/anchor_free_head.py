@@ -4,10 +4,8 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
-from py._log import warning
 
 from mmdet.core import multi_apply
-from ...core.post_processor.builder import ComposePostProcess
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -75,8 +73,9 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                          name='conv_cls',
                          std=0.01,
                          bias_prob=0.01))):
-        super(AnchorFreeHead, self).__init__(init_cfg)
-        self.num_classes = num_classes
+        super(AnchorFreeHead, self).__init__(bbox_post_processes, train_cfg,
+                                             test_cfg, init_cfg)
+
         self.cls_out_channels = num_classes
         self.in_channels = in_channels
         self.feat_channels = feat_channels
@@ -87,31 +86,11 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.conv_bias = conv_bias
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
+
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
-        if self.test_cfg:
-            if self.test_cfg.get('score_thr', None):
-                warning.warn('The way to specify the score_thr has been'
-                             'changed. Please specify it in '
-                             'PreNMS in bbox_post_processes ')
-            if self.test_cfg.get('nms', None):
-                warning.warn(
-                    'The way to specify the type of mms and corresponding '
-                    'iou_threshold has been'
-                    'changed. Please specify it in '
-                    ' bbox_post_processes ')
-            if self.test_cfg.get('max_per_img', None):
-                warning.warn('The way to specify the max number of '
-                             'bboxes after nms '
-                             'has been changed. Please specify'
-                             'it in bbox_post_processes ')
-        if bbox_post_processes is not None:
-            self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
-        else:
-            self.bbox_post_processes = nn.Identity()
+
         self._init_layers()
 
     def _init_layers(self):

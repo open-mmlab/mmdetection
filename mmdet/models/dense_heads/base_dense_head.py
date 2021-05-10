@@ -1,9 +1,12 @@
 from abc import ABCMeta, abstractmethod
+from logging import warning
 
 import torch
+import torch.nn as nn
 from mmcv import ConfigDict
 from mmcv.runner import BaseModule
-from py._log import warning
+
+from mmdet.core.post_processor.builder import ComposePostProcess
 
 
 def deploy_deprecate_warning(cfg):
@@ -23,6 +26,8 @@ def deploy_deprecate_warning(cfg):
         'max_per_img': 'deploy_max_per_img',
         'deploy_nms_pre': 'deploy_nms_pre',
         'score_thr': 'deploy_score_thr',
+        # conf_thr only in YOLO
+        'conf_thr': 'deploy_conf_thr'
     }
     for ori_name, convert_name in deprecated_convert.items():
         if ori_name in cfg:
@@ -36,7 +41,33 @@ def deploy_deprecate_warning(cfg):
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     """Base class for DenseHeads."""
 
-    def __init__(self, init_cfg=None):
+    def __init__(self,
+                 bbox_post_processes=None,
+                 train_cfg=None,
+                 test_cfg=None,
+                 init_cfg=None):
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
+        if self.test_cfg:
+            if self.test_cfg.get('score_thr', None):
+                warning.warn('The way to specify the score_thr has been'
+                             'changed. Please specify it in '
+                             'PreNMS in bbox_post_processes ')
+            if self.test_cfg.get('nms', None):
+                warning.warn(
+                    'The way to specify the type of mms and corresponding '
+                    'iou_threshold has been'
+                    'changed. Please specify it in '
+                    ' bbox_post_processes ')
+            if self.test_cfg.get('max_per_img', None):
+                warning.warn('The way to specify the max number of '
+                             'bboxes after nms '
+                             'has been changed. Please specify'
+                             'it in bbox_post_processes ')
+        if bbox_post_processes is not None:
+            self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
+        else:
+            self.bbox_post_processes = nn.Identity()
         super(BaseDenseHead, self).__init__(init_cfg)
 
     @abstractmethod

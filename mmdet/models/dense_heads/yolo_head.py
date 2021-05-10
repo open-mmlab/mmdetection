@@ -10,9 +10,10 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
-                        multi_apply, multiclass_nms)
+                        multi_apply)
+from ...core.results.results import InstanceResults
 from ..builder import HEADS, build_loss
-from .base_dense_head import BaseDenseHead
+from .base_dense_head import BaseDenseHead, deploy_deprecate_warning
 from .dense_test_mixins import BBoxTestMixin
 
 
@@ -40,6 +41,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         loss_conf (dict): Config of confidence loss.
         loss_xy (dict): Config of xy coordinate loss.
         loss_wh (dict): Config of wh coordinate loss.
+        bbox_post_processes (list[obj:`ConfigDict`])): The configuration
+            of bbox's post process. Defaults to None.
         train_cfg (dict): Training config of YOLOV3 head. Default: None.
         test_cfg (dict): Testing config of YOLOV3 head. Default: None.
         init_cfg (dict or list[dict], optional): Initialization config dict.
@@ -74,12 +77,14 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  loss_wh=dict(type='MSELoss', loss_weight=1.0),
+                 bbox_post_processes=None,
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=dict(
                      type='Normal', std=0.01,
                      override=dict(name='convs_pred'))):
-        super(YOLOV3Head, self).__init__(init_cfg)
+        super(YOLOV3Head, self).__init__(
+            bbox_post_processes=bbox_post_processes, init_cfg=init_cfg)
         # Check params
         assert (len(in_channels) == len(out_channels) == len(featmap_strides))
 
@@ -169,12 +174,12 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         return tuple(pred_maps),
 
     @force_fp32(apply_to=('pred_maps', ))
-    def get_bboxes(self,
-                   pred_maps,
-                   img_metas,
-                   cfg=None,
-                   rescale=False,
-                   with_nms=True):
+    def get_bboxes(
+        self,
+        pred_maps,
+        img_metas,
+        cfg=None,
+    ):
         """Transform network output for a batch into bbox predictions.
 
         Args:
@@ -183,48 +188,36 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 image size, scaling factor, etc.
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used. Default: None.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
+            list[obj:`InstanceResults`]: Results of each image after the
+                post process. In most cases(It depends on the post-processing
+                you use), results.bboxes is a Tensor with shape (n, 4),
+                where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                the number of instance, results.score
+                is the score between 0 and 1, has shape (n,). results.labels
+                is the label of corresponding bbox, has shape (n,)
         """
         num_levels = len(pred_maps)
         pred_maps_list = [pred_maps[i].detach() for i in range(num_levels)]
-        scale_factors = [
-            img_metas[i]['scale_factor']
-            for i in range(pred_maps_list[0].shape[0])
-        ]
-        result_list = self._get_bboxes(pred_maps_list, scale_factors, cfg,
-                                       rescale, with_nms)
+        result_list = self._get_bboxes(pred_maps_list, img_metas, cfg)
         return result_list
 
-    def _get_bboxes(self,
-                    pred_maps_list,
-                    scale_factors,
-                    cfg,
-                    rescale=False,
-                    with_nms=True):
+    def _get_bboxes(
+        self,
+        pred_maps_list,
+        img_metas,
+        cfg,
+    ):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
             pred_maps_list (list[Tensor]): Prediction maps for different scales
                 of each single image in the batch.
-            scale_factors (list(ndarray)): Scale factor of the image arrange as
-                (w_scale, h_scale, w_scale, h_scale).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
@@ -236,7 +229,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(pred_maps_list) == self.num_levels
-
         device = pred_maps_list[0].device
         batch_size = pred_maps_list[0].shape[0]
 
@@ -311,43 +303,9 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         batch_mlvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
 
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
-        if torch.onnx.is_in_onnx_export() and with_nms:
-            from mmdet.core.export import add_dummy_nms_for_onnx
-            conf_thr = cfg.get('conf_thr', -1)
-            score_thr = cfg.get('score_thr', -1)
-            # follow original pipeline of YOLOv3
-            if conf_thr > 0:
-                mask = (batch_mlvl_conf_scores >= conf_thr).float()
-                batch_mlvl_conf_scores *= mask
-            if score_thr > 0:
-                mask = (batch_mlvl_scores > score_thr).float()
-                batch_mlvl_scores *= mask
-            batch_mlvl_conf_scores = batch_mlvl_conf_scores.unsqueeze(
-                2).expand_as(batch_mlvl_scores)
-            batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_conf_scores
-            max_output_boxes_per_class = cfg.nms.get(
-                'max_output_boxes_per_class', 200)
-            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
-            # keep aligned with original pipeline, improve
-            # mAP by 1% for YOLOv3 in ONNX
-            score_threshold = 0
-            nms_pre = cfg.get('deploy_nms_pre', -1)
-            return add_dummy_nms_for_onnx(
-                batch_mlvl_bboxes,
-                batch_mlvl_scores,
-                max_output_boxes_per_class,
-                iou_threshold,
-                score_threshold,
-                nms_pre,
-                cfg.max_per_img,
-            )
-
-        if with_nms and (batch_mlvl_conf_scores.size(0) == 0):
-            return torch.zeros((0, 5)), torch.zeros((0, ))
-
-        if rescale:
-            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
-                scale_factors).unsqueeze(1)
+        if torch.onnx.is_in_onnx_export():
+            return self.onnx_trace(batch_mlvl_scores, batch_mlvl_conf_scores,
+                                   batch_mlvl_bboxes, cfg)
 
         # In mmdet 2.x, the class_id for background is num_classes.
         # i.e., the last column.
@@ -355,42 +313,17 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                                               batch_mlvl_scores.shape[1], 1)
         batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
 
-        # Support exporting to onnx without nms
-        if with_nms and cfg.get('nms', None) is not None:
-            det_results = []
-            for (mlvl_bboxes, mlvl_scores,
-                 mlvl_conf_scores) in zip(batch_mlvl_bboxes, batch_mlvl_scores,
-                                          batch_mlvl_conf_scores):
-                # Filtering out all predictions with conf < conf_thr
-                conf_thr = cfg.get('conf_thr', -1)
-                if conf_thr > 0 and (not torch.onnx.is_in_onnx_export()):
-                    # TensorRT not support NonZero
-                    # add as_tuple=False for compatibility in Pytorch 1.6
-                    # flatten would create a Reshape op with constant values,
-                    # and raise RuntimeError when doing inference in ONNX
-                    # Runtime with a different input image (#4221).
-                    conf_inds = mlvl_conf_scores.ge(conf_thr).nonzero(
-                        as_tuple=False).squeeze(1)
-                    mlvl_bboxes = mlvl_bboxes[conf_inds, :]
-                    mlvl_scores = mlvl_scores[conf_inds, :]
-                    mlvl_conf_scores = mlvl_conf_scores[conf_inds]
+        results_list = []
+        for img_ids in range(len(batch_mlvl_scores)):
+            results = InstanceResults(img_metas[img_ids])
+            results.bboxes = batch_mlvl_bboxes[img_ids]
+            results.scores = batch_mlvl_scores[img_ids]
+            results.score_factors = batch_mlvl_conf_scores[img_ids]
+            results_list.append(results)
 
-                det_bboxes, det_labels = multiclass_nms(
-                    mlvl_bboxes,
-                    mlvl_scores,
-                    cfg.score_thr,
-                    cfg.nms,
-                    cfg.max_per_img,
-                    score_factors=mlvl_conf_scores)
-                det_results.append(tuple([det_bboxes, det_labels]))
+        r_results_list = self.bbox_post_processes(results_list)
 
-        else:
-            det_results = [
-                tuple(mlvl_bs)
-                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores,
-                                   batch_mlvl_conf_scores)
-            ]
-        return det_results
+        return r_results_list
 
     @force_fp32(apply_to=('pred_maps', ))
     def loss(self,
@@ -602,3 +535,46 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             list[ndarray]: bbox results of each class
         """
         return self.aug_test_bboxes(feats, img_metas, rescale=rescale)
+
+    def onnx_trace(self, batch_mlvl_scores, batch_mlvl_conf_scores,
+                   batch_mlvl_bboxes, cfg):
+        cfg = deploy_deprecate_warning(cfg)
+        if cfg.deploy.get('with_nms', True):
+            from mmdet.core.export import add_dummy_nms_for_onnx
+
+            conf_thr = cfg.deploy.get('deploy_conf_thr', 0.005)
+            score_thr = cfg.deploy.get('deploy_score_thr', 0.05)
+
+            # follow original pipeline of YOLOv3
+            if conf_thr > 0:
+                mask = (batch_mlvl_conf_scores >= conf_thr).float()
+                batch_mlvl_conf_scores *= mask
+            if score_thr > 0:
+                mask = (batch_mlvl_scores > score_thr).float()
+                batch_mlvl_scores *= mask
+            batch_mlvl_conf_scores = batch_mlvl_conf_scores.unsqueeze(
+                2).expand_as(batch_mlvl_scores)
+            batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_conf_scores
+            max_output_boxes_per_class = cfg.deploy.get(
+                'max_output_boxes_per_class', 200)
+            iou_threshold = cfg.deploy.get('deploy_iou_threshold', 0.5)
+            # keep aligned with original pipeline, improve
+            # mAP by 1% for YOLOv3 in ONNX
+            score_threshold = 0
+            nms_pre = cfg.deploy.get('deploy_nms_pre', -1)
+            return add_dummy_nms_for_onnx(
+                batch_mlvl_bboxes,
+                batch_mlvl_scores,
+                max_output_boxes_per_class,
+                iou_threshold,
+                score_threshold,
+                nms_pre,
+                cfg.max_per_img,
+            )
+        else:
+            det_results = [
+                tuple(mlvl_bs)
+                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores,
+                                   batch_mlvl_conf_scores)
+            ]
+        return det_results

@@ -1,13 +1,11 @@
 import torch
 import torch.nn as nn
 from mmcv.runner import force_fp32
-from py._log import warning
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
                         images_to_levels, multi_apply, unmap)
 from mmdet.core.results.results import InstanceResults
-from ...core.post_processor.builder import ComposePostProcess
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -67,34 +65,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=dict(type='Normal', layers='Conv2d', std=0.01)):
-        super(AnchorHead, self).__init__(init_cfg)
+        super(AnchorHead, self).__init__(bbox_post_processes, train_cfg,
+                                         test_cfg, init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-        if self.test_cfg:
-            if self.test_cfg.get('score_thr', None):
-                warning.warn('The way to specify the score_thr has been'
-                             'changed. Please specify it in '
-                             'PreNMS in bbox_post_processes ')
-            if self.test_cfg.get('nms', None):
-                warning.warn(
-                    'The way to specify the type of mms and corresponding '
-                    'iou_threshold has been'
-                    'changed. Please specify it in '
-                    ' bbox_post_processes ')
-            if self.test_cfg.get('max_per_img', None):
-                warning.warn('The way to specify the max number of '
-                             'bboxes after nms '
-                             'has been changed. Please specify'
-                             'it in bbox_post_processes ')
-        if bbox_post_processes:
-            self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
-        else:
-            self.bbox_post_processes = nn.Identity()
 
         # TODO better way to determine whether sample or not
         self.sampling = loss_cls['type'] not in [

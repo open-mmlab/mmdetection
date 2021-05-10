@@ -11,6 +11,15 @@ model = dict(
         out_channels=[512, 256, 128]),
     bbox_head=dict(
         type='YOLOV3Head',
+        bbox_post_processes=[
+            dict(type='PreNMS', score_thr=0.05, score_factor_thr=0.005),
+            dict(
+                type='NaiveNMS',
+                iou_threshold=0.45,
+                class_agnostic=False,
+                max_num=100),
+            dict(type='ResizeResultsToOri', results_types=['bbox'])
+        ],
         num_classes=80,
         in_channels=[512, 256, 128],
         out_channels=[1024, 512, 256],
@@ -45,13 +54,7 @@ model = dict(
             pos_iou_thr=0.5,
             neg_iou_thr=0.5,
             min_pos_iou=0)),
-    test_cfg=dict(
-        nms_pre=1000,
-        min_bbox_size=0,
-        score_thr=0.05,
-        conf_thr=0.005,
-        nms=dict(type='nms', iou_threshold=0.45),
-        max_per_img=100))
+    test_cfg=dict(nms_pre=1000))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

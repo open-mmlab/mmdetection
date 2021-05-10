@@ -11,11 +11,15 @@ class PreNMS(object):
 
     Args:
         score_thr (float): bbox threshold, boxes with scores
-            lower than would be removed.
+            lower than would be removed. Defaults to 0.05.
+        score_factor_thr (float, optional): score_factor threshold,
+            boxes with score_factor lower than would be removed.
+            Defaults to None.
     """
 
-    def __init__(self, score_thr=0.05):
+    def __init__(self, score_thr=0.05, score_factor_thr=None):
         self.score_thr = score_thr
+        self.score_factor_thr = score_factor_thr
 
     def __call__(self, results_list):
         # shape(n, num_class), the num_class does not
@@ -52,6 +56,7 @@ class PreNMS(object):
                 # NonZero not supported  in TensorRT
                 # remove low scoring boxes
                 valid_mask = scores > self.score_thr
+
             # multiply score_factor after threshold to preserve
             # more bboxes, improve mAP by 1% for YOLOv3
             if score_factors is not None:
@@ -60,6 +65,11 @@ class PreNMS(object):
                                                    1).repeat(1, num_classes)
                 score_factors = score_factors.reshape(-1)
                 r_results.scores = r_results.scores * score_factors
+
+                if self.score_factor_thr:
+                    # YOLO  has a score_factor_thr
+                    valid_mask = valid_mask & (
+                        score_factors > self.score_factor_thr)
 
             if not torch.onnx.is_in_onnx_export():
                 # NonZero not supported  in TensorRT
