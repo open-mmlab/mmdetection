@@ -29,5 +29,6 @@ Import:
   - configs/guided_anchoring/metafile.yml
   - configs/hrnet/metafile.yml
   - configs/htc/metafile.yml
+  - configs/instaboost/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
