@@ -23,5 +23,6 @@ Import:
   - configs/gfl/metafile.yml
   - configs/ghm/metafile.yml
   - configs/gn/metafile.yml
+  - configs/gn+ws/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
