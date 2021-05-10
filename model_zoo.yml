@@ -11,5 +11,6 @@ Import:
   - configs/double_heads/metafile.yml
   - configs/dynamic_rcnn/metafile.yml
   - configs/empirical_attention/metafile.yml
+  - configs/faster_rcnn/metafile.yml
   - configs/mask_rcnn/metafile.yml
 
