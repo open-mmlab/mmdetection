@@ -75,7 +75,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                          bias_prob=0.01))):
         super(AnchorFreeHead, self).__init__(bbox_post_processes, train_cfg,
                                              test_cfg, init_cfg)
-
+        self.num_classes = num_classes
         self.cls_out_channels = num_classes
         self.in_channels = in_channels
         self.feat_channels = feat_channels

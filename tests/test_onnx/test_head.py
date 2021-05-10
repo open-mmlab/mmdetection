@@ -164,8 +164,10 @@ def test_yolov3_head_get_bboxes():
     # (1, 27, 32, 32), (1, 27, 16, 16), (1, 27, 8, 8).
     yolo_head_data = 'yolov3_head_get_bboxes.pkl'
     pred_maps = mmcv.load(osp.join(data_path, yolo_head_data))
-
-    yolo_model.get_bboxes = partial(yolo_model.get_bboxes, img_metas=img_metas)
+    yolo_model.bbox_post_processes = nn.Identity()
+    cfg = mmcv.ConfigDict(dict(deploy=dict(with_nms=False)))
+    yolo_model.get_bboxes = partial(
+        yolo_model.get_bboxes, img_metas=img_metas, cfg=cfg)
     ort_validate(yolo_model.get_bboxes, pred_maps)
 
 

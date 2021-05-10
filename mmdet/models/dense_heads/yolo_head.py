@@ -572,9 +572,27 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 cfg.max_per_img,
             )
         else:
-            det_results = [
-                tuple(mlvl_bs)
-                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores,
-                                   batch_mlvl_conf_scores)
-            ]
+            if cfg.deploy.get('return_score_factor', False):
+                det_results = [
+                    tuple(mlvl_bs)
+                    for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores,
+                                       batch_mlvl_conf_scores)
+                ]
+            else:
+                if self.loss_cls.use_sigmoid:
+                    # Add a dummy background class to the backend when
+                    # using sigmoid remind that we set FG labels
+                    # to [0, num_class-1] since mmdet v2.0
+                    # BG cat_id: num_class
+                    padding = batch_mlvl_scores.new_zeros(
+                        len(batch_mlvl_scores), batch_mlvl_scores.shape[1], 1)
+                    batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding],
+                                                  dim=-1)
+
+                batch_mlvl_conf_scores = batch_mlvl_conf_scores[..., None]
+                batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_conf_scores
+                det_results = [
+                    tuple(mlvl_bs)
+                    for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores)
+                ]
         return det_results

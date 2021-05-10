@@ -11,14 +11,14 @@ from mmdet.core.post_processor.builder import ComposePostProcess
 
 def deploy_deprecate_warning(cfg):
     if 'deploy' not in cfg:
-        warning.warn('All deploy releated arguments has been moved to'
-                     ' a dict named deploy in test_cfg')
+        warning('All deploy releated arguments has been moved to'
+                ' a dict named deploy in test_cfg')
         cfg.deploy = ConfigDict(dict())
     if 'nms' in cfg:
-        warning.warn('When export the model to onnx, all nms related '
-                     'parameters has been moved to a dict `deploy` in '
-                     'test_cfg, and add a prefix `deploy_`, such as '
-                     '`max_per_img` to `deploy_max_per_img`')
+        warning('When export the model to onnx, all nms related '
+                'parameters has been moved to a dict `deploy` in '
+                'test_cfg, and add a prefix `deploy_`, such as '
+                '`max_per_img` to `deploy_max_per_img`')
         for n, v in cfg.nms.items():
             cfg.deploy[f'deploy_{n}'] = v
 
@@ -31,9 +31,9 @@ def deploy_deprecate_warning(cfg):
     }
     for ori_name, convert_name in deprecated_convert.items():
         if ori_name in cfg:
-            warning.warn(f'Please specify {convert_name} instead of '
-                         f' {ori_name} to a dict named '
-                         ' `deploy` in test_cfg')
+            warning(f'Please specify {convert_name} instead of '
+                    f' {ori_name} to a dict named '
+                    ' `deploy` in test_cfg')
             cfg.deploy[convert_name] = cfg[ori_name]
     return cfg
 
@@ -46,29 +46,28 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
+        super(BaseDenseHead, self).__init__(init_cfg)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         if self.test_cfg:
             if self.test_cfg.get('score_thr', None):
-                warning.warn('The way to specify the score_thr has been'
-                             'changed. Please specify it in '
-                             'PreNMS in bbox_post_processes ')
+                warning('The way to specify the score_thr has been'
+                        'changed. Please specify it in '
+                        'PreNMS in bbox_post_processes ')
             if self.test_cfg.get('nms', None):
-                warning.warn(
-                    'The way to specify the type of mms and corresponding '
-                    'iou_threshold has been'
-                    'changed. Please specify it in '
-                    ' bbox_post_processes ')
+                warning('The way to specify the type of mms and corresponding '
+                        'iou_threshold has been'
+                        'changed. Please specify it in '
+                        ' bbox_post_processes ')
             if self.test_cfg.get('max_per_img', None):
-                warning.warn('The way to specify the max number of '
-                             'bboxes after nms '
-                             'has been changed. Please specify'
-                             'it in bbox_post_processes ')
+                warning('The way to specify the max number of '
+                        'bboxes after nms '
+                        'has been changed. Please specify'
+                        'it in bbox_post_processes ')
         if bbox_post_processes is not None:
             self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
         else:
             self.bbox_post_processes = nn.Identity()
-        super(BaseDenseHead, self).__init__(init_cfg)
 
     @abstractmethod
     def loss(self, **kwargs):
