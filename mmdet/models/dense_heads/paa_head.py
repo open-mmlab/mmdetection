@@ -621,7 +621,12 @@ class PAAHead(ATSSHead):
             pre_process_results (obj:`InstanceResults`):
                 Results before postprocess.
         Returns:
-            obj:`InstanceResults`: results after the score voting.
+            obj:`InstanceResults`: Results of image after the
+                post process, results.bboxes is a Tensor with shape (n, 4),
+                where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                the number of instance, results.score
+                is the score between 0 and 1, has shape (n,). results.labels
+                is the label of corresponding bbox, has shape (n,)
         """
         candidate_mask = pre_process_results.scores > score_thr
         candidate_mask_nonzeros = candidate_mask.nonzero()

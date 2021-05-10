@@ -275,28 +275,32 @@ class DeformableDETRHead(DETRHead):
     ):
         """Transform network outputs for a batch into bbox predictions.
 
-        Args:
-            all_cls_scores (Tensor): Classification score of all
-                decoder layers, has shape
-                [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs of all decode layers. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
-            enc_cls_scores (Tensor): Classification scores of
-                points on encode feature map , has shape
-                (N, h*w, num_classes). Only be passed when as_two_stage is
-                True, otherwise is None.
-            enc_bbox_preds (Tensor): Regression results of each points
-                on the encode feature map, has shape (N, h*w,
-                 4). Only be
-                passed when as_two_stage is True, otherwise is None.
-            img_metas (list[dict]): Meta information of each image.
-
+         Args:
+             all_cls_scores (Tensor): Classification score of all
+                 decoder layers, has shape
+                 [nb_dec, bs, num_query, cls_out_channels].
+             all_bbox_preds (Tensor): Sigmoid regression
+                 outputs of all decode layers. Each is a 4D-tensor with
+                 normalized coordinate format (cx, cy, w, h) and shape
+                 [nb_dec, bs, num_query, 4].
+             enc_cls_scores (Tensor): Classification scores of
+                 points on encode feature map , has shape
+                 (N, h*w, num_classes). Only be passed when as_two_stage is
+                 True, otherwise is None.
+             enc_bbox_preds (Tensor): Regression results of each points
+                 on the encode feature map, has shape (N, h*w,
+                  4). Only be
+                 passed when as_two_stage is True, otherwise is None.
+             img_metas (list[dict]): Meta information of each image.
 
         Returns:
-            list[obj:`InstanceResults`]: Results of each image after the
-                post process.
+             list[obj:`InstanceResults`]: Results of each image after the
+                 post process. In most cases(It depends on the post-processing
+                 you use), results.bboxes is a Tensor with shape (n, 4),
+                 where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                 the number of instance, results.score
+                 is the score between 0 and 1, has shape (n,). results.labels
+                 is the label of corresponding bbox, has shape (n,)
         """
         cls_scores = all_cls_scores[-1]
         bbox_preds = all_bbox_preds[-1]

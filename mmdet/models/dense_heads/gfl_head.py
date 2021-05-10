@@ -373,23 +373,28 @@ class GFLHead(AnchorHead):
                     img_metas, cfg):
         """Transform outputs for a single batch item into labeled boxes.
 
-        Args:
-            mlvl_cls_scores (list[Tensor]): Box scores for a single
-                scale level has shape (N, num_classes, H, W).
-            mlvl_bbox_preds (list[Tensor]): Box distribution logits
-                for a single scale level with shape
-                (N, 4*(n+1), H, W), n is max value of integral set.
-            mlvl_anchors (list[Tensor]): Box reference for a single scale level
-                with shape (num_total_anchors, 4).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
-                if None, test_cfg would be used.
+         Args:
+             mlvl_cls_scores (list[Tensor]): Box scores for a single
+                 scale level has shape (N, num_classes, H, W).
+             mlvl_bbox_preds (list[Tensor]): Box distribution logits
+                 for a single scale level with shape
+                 (N, 4*(n+1), H, W), n is max value of integral set.
+             mlvl_anchors (list[Tensor]): Box reference for a single
+                 scale level with shape (num_total_anchors, 4).
+             img_metas (list[dict]): Meta information of each image, e.g.,
+                 image size, scaling factor, etc.
+             cfg (mmcv.Config | None): Test / postprocessing configuration,
+                 if None, test_cfg would be used.
 
 
         Returns:
-            list[obj:`InstanceResults`]: Results of each image after the
-                post process.
+             list[obj:`InstanceResults`]: Results of each image after the
+                 post process. In most cases(It depends on the post-processing
+                 you use), results.bboxes is a Tensor with shape (n, 4),
+                 where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                 the number of instance, results.score
+                 is the score between 0 and 1, has shape (n,). results.labels
+                 is the label of corresponding bbox, has shape (n,)
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(mlvl_cls_scores) == len(mlvl_bbox_preds) == len(

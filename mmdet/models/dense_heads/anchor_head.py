@@ -543,9 +543,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used
 
-        Returns:
+       Returns:
             list[obj:`InstanceResults`]: Results of each image after the
-                post process.
+                post process. In most cases(It depends on the post-processing
+                you use), results.bboxes is a Tensor with shape (n, 4),
+                where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                the number of instance, results.score
+                is the score between 0 and 1, has shape (n,). results.labels
+                is the label of corresponding bbox, has shape (n,)
 
         Example:
             TODO modify this example
@@ -590,25 +595,29 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     img_metas, cfg):
         """Transform outputs for a batch item into bbox predictions.
 
-        Args:
-            mlvl_cls_scores (list[Tensor]): Each element in the list is
-                the scores of bboxes of single level in the feature pyramid,
-                has shape (N, num_anchors * num_classes, H, W).
-            mlvl_bbox_preds (list[Tensor]):  Each element in the list is the
-                bboxes predictions of single level in the feature pyramid,
-                has shape (N, num_anchors * 4, H, W).
-            mlvl_anchors (list[Tensor]): Each element in the list is
-                the anchors of single level in feature pyramid, has shape
-                (num_anchors, 4).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-
+         Args:
+             mlvl_cls_scores (list[Tensor]): Each element in the list is
+                 the scores of bboxes of single level in the feature pyramid,
+                 has shape (N, num_anchors * num_classes, H, W).
+             mlvl_bbox_preds (list[Tensor]):  Each element in the list is the
+                 bboxes predictions of single level in the feature pyramid,
+                 has shape (N, num_anchors * 4, H, W).
+             mlvl_anchors (list[Tensor]): Each element in the list is
+                 the anchors of single level in feature pyramid, has shape
+                 (num_anchors, 4).
+             img_metas (list[dict]): Meta information of each image, e.g.,
+                 image size, scaling factor, etc.
+             cfg (mmcv.Config): Test / postprocessing configuration,
+                 if None, test_cfg would be used.
 
         Returns:
-            list[obj:`InstanceResults`]: Results of each image after the
-                post process.
+             list[obj:`InstanceResults`]: Results of each image after the
+                 post process. In most cases(It depends on the post-processing
+                 you use), results.bboxes is a Tensor with shape (n, 4),
+                 where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                 the number of instance, results.score
+                 is the score between 0 and 1, has shape (n,). results.labels
+                 is the label of corresponding bbox, has shape (n,)
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(mlvl_cls_scores) == len(mlvl_bbox_preds) == len(

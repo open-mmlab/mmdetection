@@ -22,6 +22,15 @@ model = dict(
         num_residual_blocks=4),
     bbox_head=dict(
         type='YOLOFHead',
+        bbox_post_processes=[
+            dict(type='PreNMS', score_thr=0.05),
+            dict(
+                type='NaiveNMS',
+                iou_threshold=0.6,
+                class_agnostic=False,
+                max_num=100),
+            dict(type='ResizeResultsToOri', results_types=['bbox'])
+        ],
         num_classes=80,
         in_channels=512,
         reg_decoded_bbox=True,
@@ -50,12 +59,7 @@ model = dict(
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
-    test_cfg=dict(
-        nms_pre=1000,
-        min_bbox_size=0,
-        score_thr=0.05,
-        nms=dict(type='nms', iou_threshold=0.6),
-        max_per_img=100))
+    test_cfg=dict(nms_pre=1000))
 # optimizer
 optimizer = dict(
     type='SGD',

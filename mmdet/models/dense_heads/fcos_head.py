@@ -269,21 +269,26 @@ class FCOSHead(AnchorFreeHead):
                    cfg=None):
         """Transform network output for a batch into bbox predictions.
 
-        Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                with shape (N, num_points * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_points * 4, H, W).
-            centernesses (list[Tensor]): Centerness for each scale level with
-                shape (N, num_points * 1, H, W).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
-                if None, test_cfg would be used. Default: None.
+         Args:
+             cls_scores (list[Tensor]): Box scores for each scale level
+                 with shape (N, num_points * num_classes, H, W).
+             bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                 level with shape (N, num_points * 4, H, W).
+             centernesses (list[Tensor]): Centerness for each scale level with
+                 shape (N, num_points * 1, H, W).
+             img_metas (list[dict]): Meta information of each image, e.g.,
+                 image size, scaling factor, etc.
+             cfg (mmcv.Config | None): Test / postprocessing configuration,
+                 if None, test_cfg would be used. Default: None.
 
         Returns:
-            list[obj:`InstanceResults`]: Results of each image after the
-                post process.
+             list[obj:`InstanceResults`]: Results of each image after the
+                 post process. In most cases(It depends on the post-processing
+                 you use), results.bboxes is a Tensor with shape (n, 4),
+                 where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                 the number of instance, results.score
+                 is the score between 0 and 1, has shape (n,). results.labels
+                 is the label of corresponding bbox, has shape (n,)
         """
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
@@ -323,7 +328,12 @@ class FCOSHead(AnchorFreeHead):
 
         Returns:
             list[obj:`InstanceResults`]: Results of each image after the
-                post process.
+                post process. In most cases(It depends on the post-processing
+                you use), results.bboxes is a Tensor with shape (n, 4),
+                where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                the number of instance, results.score
+                is the score between 0 and 1, has shape (n,). results.labels
+                is the label of corresponding bbox, has shape (n,)
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
