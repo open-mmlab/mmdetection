@@ -1,14 +1,14 @@
-from logging import warning
 from math import ceil, log
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, bias_init_with_prob
-from mmcv.ops import CornerPool, batched_nms
+from mmcv.ops import CornerPool
 from mmcv.runner import BaseModule
 
 from mmdet.core import multi_apply
+from ...core.results.results import InstanceResults
 from ..builder import HEADS, build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
 from .base_dense_head import BaseDenseHead
@@ -107,6 +107,8 @@ class CornerHead(BaseDenseHead):
             AssociativeEmbeddingLoss.
         loss_offset (dict | None): Config of corner offset loss. Default:
             SmoothL1Loss.
+        bbox_post_processes (list[obj:`ConfigDict`])): The configuration
+            of bbox's post process.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None
     """
@@ -129,10 +131,15 @@ class CornerHead(BaseDenseHead):
                      push_weight=0.25),
                  loss_offset=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
+                 bbox_post_processes=[
+                     dict(type='SoftNMS'),
+                     dict(type='ResizeResultsToOri', results_types=['bbox'])
+                 ],
                  init_cfg=None):
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
-        super(CornerHead, self).__init__(init_cfg)
+        super(CornerHead, self).__init__(
+            bbox_post_processes=bbox_post_processes, init_cfg=init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.corner_emb_channels = corner_emb_channels
@@ -645,16 +652,16 @@ class CornerHead(BaseDenseHead):
 
         return det_loss, pull_loss, push_loss, off_loss
 
-    def get_bboxes(self,
-                   tl_heats,
-                   br_heats,
-                   tl_embs,
-                   br_embs,
-                   tl_offs,
-                   br_offs,
-                   img_metas,
-                   rescale=False,
-                   with_nms=True):
+    def get_bboxes(
+        self,
+        tl_heats,
+        br_heats,
+        tl_embs,
+        br_embs,
+        tl_offs,
+        br_offs,
+        img_metas,
+    ):
         """Transform network output for a batch into bbox predictions.
 
         Args:
@@ -672,10 +679,15 @@ class CornerHead(BaseDenseHead):
                 with shape (N, corner_offset_channels, H, W).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+
+        Returns:
+             list[obj:`InstanceResults`]: Results of each image after the
+                 post process. In most cases(It depends on the post-processing
+                 you use), results.bboxes is a Tensor with shape (n, 4),
+                 where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                 the number of instance, results.score
+                 is the score between 0 and 1, has shape (n,). results.labels
+                 is the label of corresponding bbox, has shape (n,)
         """
         assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(img_metas)
         result_list = []
@@ -689,23 +701,22 @@ class CornerHead(BaseDenseHead):
                     img_metas[img_id],
                     tl_emb=tl_embs[-1][img_id:img_id + 1, :],
                     br_emb=br_embs[-1][img_id:img_id + 1, :],
-                    rescale=rescale,
-                    with_nms=with_nms))
+                ))
 
         return result_list
 
-    def _get_bboxes_single(self,
-                           tl_heat,
-                           br_heat,
-                           tl_off,
-                           br_off,
-                           img_meta,
-                           tl_emb=None,
-                           br_emb=None,
-                           tl_centripetal_shift=None,
-                           br_centripetal_shift=None,
-                           rescale=False,
-                           with_nms=True):
+    def _get_bboxes_single(
+        self,
+        tl_heat,
+        br_heat,
+        tl_off,
+        br_off,
+        img_meta,
+        tl_emb=None,
+        br_emb=None,
+        tl_centripetal_shift=None,
+        br_centripetal_shift=None,
+    ):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -727,10 +738,6 @@ class CornerHead(BaseDenseHead):
                 current level with shape (N, 2, H, W).
             br_centripetal_shift: Bottom-right corner's centripetal shift for
                 current level with shape (N, 2, H, W).
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
         """
         if isinstance(img_meta, (list, tuple)):
             img_meta = img_meta[0]
@@ -749,50 +756,17 @@ class CornerHead(BaseDenseHead):
             kernel=self.test_cfg.local_maximum_kernel,
             distance_threshold=self.test_cfg.distance_threshold)
 
-        if rescale:
-            batch_bboxes /= batch_bboxes.new_tensor(img_meta['scale_factor'])
+        results = InstanceResults(img_meta)
+        results.bboxes = batch_bboxes.view([-1, 4])
+        results.scores = batch_scores.view(-1)
+        results.labels = batch_clses.view(-1)
 
-        bboxes = batch_bboxes.view([-1, 4])
-        scores = batch_scores.view([-1, 1])
-        clses = batch_clses.view([-1, 1])
+        filter_mask = results.scores > -0.1
+        results = results[filter_mask]
 
-        idx = scores.argsort(dim=0, descending=True)
-        bboxes = bboxes[idx].view([-1, 4])
-        scores = scores[idx].view(-1)
-        clses = clses[idx].view(-1)
+        results = self.bbox_post_processes([results])[0]
 
-        detections = torch.cat([bboxes, scores.unsqueeze(-1)], -1)
-        keepinds = (detections[:, -1] > -0.1)
-        detections = detections[keepinds]
-        labels = clses[keepinds]
-
-        if with_nms:
-            detections, labels = self._bboxes_nms(detections, labels,
-                                                  self.test_cfg)
-
-        return detections, labels
-
-    def _bboxes_nms(self, bboxes, labels, cfg):
-        if labels.numel() == 0:
-            return bboxes, labels
-
-        if 'nms_cfg' in cfg:
-            warning.warn('nms_cfg in test_cfg will be deprecated. '
-                         'Please rename it as nms')
-        if 'nms' not in cfg:
-            cfg.nms = cfg.nms_cfg
-
-        out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
-                                       cfg.nms)
-        out_labels = labels[keep]
-
-        if len(out_bboxes) > 0:
-            idx = torch.argsort(out_bboxes[:, -1], descending=True)
-            idx = idx[:cfg.max_per_img]
-            out_bboxes = out_bboxes[idx]
-            out_labels = out_labels[idx]
-
-        return out_bboxes, out_labels
+        return results
 
     def _gather_feat(self, feat, ind, mask=None):
         """Gather feature according to index.

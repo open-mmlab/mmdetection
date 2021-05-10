@@ -1,5 +1,5 @@
 import torch
-from mmcv.ops.nms import batched_nms, nms
+from mmcv.ops.nms import batched_nms, nms, soft_nms
 
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.core.post_processor.builder import POST_PROCESSOR
@@ -147,6 +147,94 @@ class NaiveNMS(object):
                     dets, keep_ids = nms(
                         boxes_for_nms[class_ids],
                         scores[class_ids],
+                        iou_threshold=self.iou_threshold,
+                        offset=self.offset)
+                    total_mask[class_ids[keep_ids]] = True
+
+                keep = total_mask.nonzero(as_tuple=False).view(-1)
+                keep = keep[scores[keep].argsort(descending=True)]
+                r_results = results[keep]
+            if self.max_num > 0:
+                r_results = r_results[:self.max_num]
+            r_results_list.append(r_results)
+
+        return r_results_list
+
+
+@POST_PROCESSOR.register_module()
+class SoftNMS(NaiveNMS):
+    """
+
+    Args:
+        boxes (torch.Tensor or np.ndarray): boxes in shape (N, 4).
+        scores (torch.Tensor or np.ndarray): scores in shape (N, ).
+        iou_threshold (float): IoU threshold for NMS.
+        sigma (float): hyperparameter for gaussian method
+        min_score (float): score filter threshold
+        method (str): either 'linear' or 'gaussian'
+        offset (int, 0 or 1): boxes' width or height is (x2 - x1 + offset).
+    """
+
+    def __init__(self,
+                 iou_threshold=0.5,
+                 sigma=0.5,
+                 method='linear',
+                 class_agnostic=False,
+                 max_num=100,
+                 split_thr=10000,
+                 offset=0):
+        self.iou_threshold = iou_threshold
+        self.class_agnostic = class_agnostic
+        self.max_num = max_num
+        self.split_thr = split_thr
+        self.offset = offset
+        self.method = method
+        self.sigma = sigma
+        methods = ('naive', 'linear', 'gaussian')
+        if self.method not in methods:
+            raise NotImplementedError(f'SoftNMS only support {methods}, '
+                                      f'but get {self.method}')
+
+    def __call__(self, results_list):
+        r_results_list = []
+
+        for results in results_list:
+            if len(results) == 0:
+                r_results_list.append(results)
+                continue
+
+            bboxes = results.bboxes
+            labels = results.labels
+            scores = results.scores
+
+            if self.class_agnostic:
+                boxes_for_nms = bboxes
+            else:
+                max_coordinate = bboxes.max()
+                offsets = labels.to(bboxes) * (
+                    max_coordinate + torch.tensor(1).to(bboxes))
+                boxes_for_nms = bboxes + offsets[:, None]
+
+            if boxes_for_nms.shape[0] < self.split_thr or \
+                    torch.onnx.is_in_onnx_export():
+                dets, keep_ids = soft_nms(
+                    boxes_for_nms,
+                    scores,
+                    sigma=self.sigma,
+                    method=self.method,
+                    iou_threshold=self.iou_threshold,
+                    offset=self.offset)
+                r_results = results[keep_ids]
+
+            else:
+                total_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
+                for id in torch.unique(labels):
+                    class_ids = (labels == id).nonzero(as_tuple=False).view(-1)
+                    dets, keep_ids = soft_nms(
+                        boxes_for_nms[class_ids],
+                        scores[class_ids],
+                        sigma=self.sigma,
+                        method=self.method,
                         iou_threshold=self.iou_threshold,
                         offset=self.offset)
                     total_mask[class_ids[keep_ids]] = True
