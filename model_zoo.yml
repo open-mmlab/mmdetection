@@ -30,5 +30,6 @@ Import:
   - configs/hrnet/metafile.yml
   - configs/htc/metafile.yml
   - configs/instaboost/metafile.yml
+  - configs/ld/metafile.yml
   - configs/mask_rcnn/metafile.yml
 

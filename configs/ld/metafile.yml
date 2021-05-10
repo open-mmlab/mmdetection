@@ -1,0 +1,67 @@
+Collections:
+  - Name: Localization Distillation
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - Localization Distillation
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x NVIDIA V100 GPUs
+      Architecture:
+        - FPN
+        - ResNet
+    Paper: https://arxiv.org/abs/2102.12252
+    README: configs/ld/README.md
+
+Models:
+  - Name: ld_r18_gflv1_r101_fpn_coco_1x
+    In Collection: Localization Distillation
+    Config: configs/ld/ld_r18_gflv1_r101_fpn_coco_1x.py
+    Metadata:
+      Teacher: R-101
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 36.5
+          AP50: 52.9
+          AP75: 39.3
+
+  - Name: ld_r34_gflv1_r101_fpn_coco_1x
+    In Collection: Localization Distillation
+    Config: configs/ld/ld_r34_gflv1_r101_fpn_coco_1x.py
+    Metadata:
+      Teacher: R-101
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.8
+          AP50: 56.6
+          AP75: 43.1
+
+  - Name: ld_r50_gflv1_r101_fpn_coco_1x
+    In Collection: Localization Distillation
+    Config: configs/ld/ld_r50_gflv1_r101_fpn_coco_1x.py
+    Metadata:
+      Teacher: R-101
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.1
+          AP50: 58.7
+          AP75: 44.9
+
+  - Name: ld_r101_gflv1_r101dcn_fpn_coco_1x
+    In Collection: Localization Distillation
+    Config: configs/ld/ld_r101_gflv1_r101dcn_fpn_coco_1x.py
+    Metadata:
+      Teacher: R-101-DCN
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.4
+          AP50: 63.1
+          AP75: 49.5
