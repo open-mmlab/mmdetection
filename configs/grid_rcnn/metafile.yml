@@ -11,7 +11,7 @@ Collections:
         - Dilated Convolution
         - ResNet
         - RoIAlign
-    Paper: https://arxiv.org/abs/1811.12030
+    Paper: https://arxiv.org/abs/1906.05688
     README: configs/grid_rcnn/README.md
 
 Models:
