@@ -61,7 +61,4 @@ model = dict(
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
-    test_cfg=dict(
-        nms_pre=1000,
-        score_thr=0.05,
-    ))
+    test_cfg=dict(nms_pre=1000))
