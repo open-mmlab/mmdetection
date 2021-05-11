@@ -46,7 +46,8 @@ def main():
         config_info = f.readlines()
 
         for i, config_str in enumerate(config_info):
-            if len(config_str.strip()) == 0: continue
+            if len(config_str.strip()) == 0:
+                continue
             echo_info = f'echo \'{config_str.rstrip()}\' &'
             commands.append(echo_info)
             commands.append('\n')
@@ -59,7 +60,7 @@ def main():
                            f'CPUS_PER_TASK=2 {script_name} '
 
             command_info += f'{partition} '
-            command_info += f'{config} '
+            command_info += f'{fname} '
             command_info += f'{ckpt} '
             command_info += f'--work-dir {out_fname} '
             command_info += '--eval bbox '
