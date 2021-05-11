@@ -111,11 +111,11 @@ class DeformableDETRHead(DETRHead):
                 Shape [nb_dec, bs, num_query, 4].
             enc_outputs_class (Tensor): The score of each point on encode \
                 feature map, has shape (N, h*w, num_class). Only when \
-                as_two_stage is Ture it would be returned, otherwise \
+                as_two_stage is True it would be returned, otherwise \
                 `None` would be returned.
             enc_outputs_coord (Tensor): The proposal generate from the \
                 encode feature map, has shape (N, h*w, 4). Only when \
-                as_two_stage is Ture it would be returned, otherwise \
+                as_two_stage is True it would be returned, otherwise \
                 `None` would be returned.
         """
 
@@ -291,7 +291,7 @@ class DeformableDETRHead(DETRHead):
                 passed when as_two_stage is True, otherwise is None.
             img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
-                image space. Defalut False.
+                image space. Default False.
 
         Returns:
             list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
