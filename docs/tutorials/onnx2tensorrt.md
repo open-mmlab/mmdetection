@@ -69,15 +69,16 @@ python tools/deployment/onnx2tensorrt.py \
 
 The table below lists the models that are guaranteed to be convertable to TensorRT.
 
-|    Model     |                        Config                        | Status |
-| :----------: | :--------------------------------------------------: | :----: |
-|     SSD      |             `configs/ssd/ssd300_coco.py`             |   Y    |
-|     FSAF     |        `configs/fsaf/fsaf_r50_fpn_1x_coco.py`        |   Y    |
-|     FCOS     |   `configs/fcos/fcos_r50_caffe_fpn_4x4_1x_coco.py`   |   Y    |
-|    YOLOv3    |  `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`  |   Y    |
-|  RetinaNet   |   `configs/retinanet/retinanet_r50_fpn_1x_coco.py`   |   Y    |
-| Faster R-CNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |   Y    |
-|  Mask R-CNN  |   `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`   |   Y    |
+|    Model     |                              Config                              | Status |
+| :----------: | :--------------------------------------------------------------: | :----: |
+|     SSD      |                   `configs/ssd/ssd300_coco.py`                   |   Y    |
+|     FSAF     |              `configs/fsaf/fsaf_r50_fpn_1x_coco.py`              |   Y    |
+|     FCOS     |         `configs/fcos/fcos_r50_caffe_fpn_4x4_1x_coco.py`         |   Y    |
+|    YOLOv3    |        `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`        |   Y    |
+|  RetinaNet   |         `configs/retinanet/retinanet_r50_fpn_1x_coco.py`         |   Y    |
+| Faster R-CNN |       `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`       |   Y    |
+|  Mask R-CNN  |         `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`         |   Y    |
+|  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py` |   Y    |
 
 Notes:
 
