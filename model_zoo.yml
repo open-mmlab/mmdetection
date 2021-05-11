@@ -48,4 +48,5 @@ Import:
   - configs/sabl/metafile.yml
   - configs/scnet/metafile.yml
   - configs/scratch/metafile.yml
+  - configs/sparse_rcnn/metafile.yml
 
