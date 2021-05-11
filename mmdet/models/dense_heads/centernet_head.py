@@ -210,9 +210,9 @@ class CenterNetHead(BaseDenseHead):
         wh_offset_target_weight = gt_bboxes[-1].new_zeros(
             [bs, 2, feat_h, feat_w])
 
-        for i in range(bs):
-            gt_bbox = gt_bboxes[i]
-            gt_label = gt_labels[i]
+        for batch_id in range(bs):
+            gt_bbox = gt_bboxes[batch_id]
+            gt_label = gt_labels[batch_id]
             center_x = (gt_bbox[:, [0]] + gt_bbox[:, [2]]) * width_ratio / 2
             center_y = (gt_bbox[:, [1]] + gt_bbox[:, [3]]) * height_ratio / 2
             gt_centers = torch.cat((center_x, center_y), dim=1)
@@ -226,16 +226,16 @@ class CenterNetHead(BaseDenseHead):
                                          min_overlap=0.3)
                 radius = max(0, int(radius))
                 ind = gt_label[j]
-                gen_gaussian_target(center_heatmap_target[i, ind],
+                gen_gaussian_target(center_heatmap_target[batch_id, ind],
                                     [ctx_int, cty_int], radius)
 
-                wh_target[i, 0, cty_int, ctx_int] = scale_box_w
-                wh_target[i, 1, cty_int, ctx_int] = scale_box_h
+                wh_target[batch_id, 0, cty_int, ctx_int] = scale_box_w
+                wh_target[batch_id, 1, cty_int, ctx_int] = scale_box_h
 
-                offset_target[i, 0, cty_int, ctx_int] = ctx - ctx_int
-                offset_target[i, 1, cty_int, ctx_int] = cty - cty_int
+                offset_target[batch_id, 0, cty_int, ctx_int] = ctx - ctx_int
+                offset_target[batch_id, 1, cty_int, ctx_int] = cty - cty_int
 
-                wh_offset_target_weight[i, :, cty_int, ctx_int] = 1
+                wh_offset_target_weight[batch_id, :, cty_int, ctx_int] = 1
 
         avg_factor = max(1, wh_offset_target_weight.eq(1).sum())
         target_result = dict(
@@ -330,12 +330,12 @@ class CenterNetHead(BaseDenseHead):
                Default 3.
 
         Returns:
-            tuple[torch.Tensor]: Decoded output of CornerHead, containing the
-            following Tensors:
+            tuple[torch.Tensor]: Decoded output of CenterNetHead, containing
+               the following Tensors:
 
-            - batch_bboxes (Tensor): Coords of each box with shape (B, k, 5)
-            - batch_topk_labels (Tensor): Categories of each box with \
-               shape (B, k)
+              - batch_bboxes (Tensor): Coords of each box with shape (B, k, 5)
+              - batch_topk_labels (Tensor): Categories of each box with \
+                  shape (B, k)
         """
         height, width = center_heatmap_pred.shape[2:]
         inp_h, inp_w = img_shape
@@ -351,12 +351,12 @@ class CenterNetHead(BaseDenseHead):
         offset = transpose_and_gather_feat(offset_pred, batch_index)
         topk_xs = topk_xs + offset[..., 0]
         topk_ys = topk_ys + offset[..., 1]
-        x1 = (topk_xs - wh[..., 0] / 2) * (inp_w / width)
-        y1 = (topk_ys - wh[..., 1] / 2) * (inp_h / height)
-        x2 = (topk_xs + wh[..., 0] / 2) * (inp_w / width)
-        y2 = (topk_ys + wh[..., 1] / 2) * (inp_h / height)
+        tl_x = (topk_xs - wh[..., 0] / 2) * (inp_w / width)
+        tl_y = (topk_ys - wh[..., 1] / 2) * (inp_h / height)
+        br_x = (topk_xs + wh[..., 0] / 2) * (inp_w / width)
+        br_y = (topk_ys + wh[..., 1] / 2) * (inp_h / height)
 
-        batch_bboxes = torch.stack([x1, y1, x2, y2], dim=2)
+        batch_bboxes = torch.stack([tl_x, tl_y, br_x, br_y], dim=2)
         batch_bboxes = torch.cat((batch_bboxes, batch_scores[..., None]),
                                  dim=-1)
         return batch_bboxes, batch_topk_labels
