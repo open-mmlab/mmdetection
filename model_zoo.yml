@@ -53,4 +53,5 @@ Import:
   - configs/tridentnet/metafile.yml
   - configs/vfnet/metafile.yml
   - configs/yolact/metafile.yml
+  - configs/yolo/metafile.yml
 
