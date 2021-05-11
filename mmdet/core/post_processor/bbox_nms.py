@@ -235,9 +235,12 @@ class SoftNMS(NMS):
                     iou_threshold=self.iou_threshold,
                     offset=self.offset)
                 processed_results = results[keep_ids]
+                # use the reweight scores
+                processed_results.scores = dets[:, -1]
 
             else:
                 total_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
+                reweight_scores = []
                 for id in torch.unique(labels):
                     class_ids = (labels == id).nonzero(as_tuple=False).view(-1)
                     dets, keep_ids = soft_nms(
@@ -248,10 +251,14 @@ class SoftNMS(NMS):
                         iou_threshold=self.iou_threshold,
                         offset=self.offset)
                     total_mask[class_ids[keep_ids]] = True
+                    reweight_scores.append(dets[:, -1])
 
-                keep = total_mask.nonzero(as_tuple=False).view(-1)
-                keep = keep[scores[keep].argsort(descending=True)]
-                processed_results = results[keep]
+                reweight_scores = torch.cat(reweight_scores)
+                processed_results = results[total_mask]
+                processed_results.scores = reweight_scores
+                processed_results = processed_results[
+                    processed_results.scores.argsort(descending=True)]
+
             if self.max_num > 0:
                 processed_results = processed_results[:self.max_num]
             processed_results_list.append(processed_results)
