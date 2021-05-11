@@ -51,4 +51,5 @@ Import:
   - configs/sparse_rcnn/metafile.yml
   - configs/ssd/metafile.yml
   - configs/tridentnet/metafile.yml
+  - configs/vfnet/metafile.yml
 
