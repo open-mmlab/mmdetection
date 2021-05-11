@@ -40,4 +40,5 @@ Import:
   - configs/pafpn/metafile.yml
   - configs/pisa/metafile.yml
   - configs/point_rend/metafile.yml
+  - configs/regnet/metafile.yml
 
