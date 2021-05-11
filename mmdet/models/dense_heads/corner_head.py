@@ -797,29 +797,16 @@ class CornerHead(BaseDenseHead):
                                        cfg.nms)
         out_labels = labels[keep]
 
-        if torch.onnx.is_in_onnx_export():
-            # No use `torch.Tensor([cfg.max_per_img])` here, instead we use
-            # `_shape_as_tensor`. Since the former will return a tensor with
-            # ndim 1 which is not a valid input dtype for `torch.topk`, while
-            # the latter return a tensor with ndim 0 which can be regard as int
-            tmp_tensor = out_bboxes.new_zeros((cfg.max_per_img))
-            max_per_img = torch._shape_as_tensor(tmp_tensor)[0]
-            # No use `out_bboxes.shape[0]`, instead `_shape_as_tensor` is used
-            out_nums = torch._shape_as_tensor(out_bboxes)[0]
-            # Always keep topk op for dynamic input in onnx
-            from mmdet.core.export import get_k_for_topk
-            nms_after = get_k_for_topk(max_per_img, out_nums)
-            # now `nms_after` is a tensor with ndim 0, which is valid as input
-            # for `out_bboxes[:, -1].topk`
-            _, idx = out_bboxes[:, -1].topk(nms_after)
-            out_bboxes = out_bboxes[idx]
-            out_labels = out_labels[idx]
-            return out_bboxes, out_labels
-
         if len(out_bboxes) > 0:
             # use `sort` to replace with `argsort` here
             _, idx = torch.sort(out_bboxes[:, -1], descending=True)
-            idx = idx[:cfg.max_per_img]
+            max_per_img = out_bboxes.new_tensor(cfg.max_per_img).to(torch.long)
+            nms_after = max_per_img
+            if torch.onnx.is_in_onnx_export():
+                # Always keep topk op for dynamic input in onnx
+                from mmdet.core.export import get_k_for_topk
+                nms_after = get_k_for_topk(max_per_img, out_bboxes.shape[0])
+            idx = idx[:nms_after]
             out_bboxes = out_bboxes[idx]
             out_labels = out_labels[idx]
 
