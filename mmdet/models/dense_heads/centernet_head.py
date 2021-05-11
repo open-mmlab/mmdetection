@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import normal_init
+from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.ops import batched_nms
 from mmcv.runner import force_fp32
 
+from mmdet.core import multi_apply
 from mmdet.models import HEADS, build_loss
 from mmdet.models.utils import gaussian_radius, gen_gaussian_target
 from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
@@ -70,7 +71,8 @@ class CenterNetHead(BaseDenseHead):
 
     def init_weights(self):
         """Initialize weights of the head."""
-        self.heatmap_head[-1].bias.data.fill_(-2.19)
+        bias_init = bias_init_with_prob(0.1)
+        self.heatmap_head[-1].bias.data.fill_(bias_init)
         for head in [self.wh_head, self.offset_head]:
             for m in head.modules():
                 if isinstance(m, nn.Conv2d):
@@ -81,20 +83,34 @@ class CenterNetHead(BaseDenseHead):
 
         Args:
             feats (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor. The length must be 1.
+                a 4D-tensor.
 
         Returns:
-            center_heatmap_preds (Tensor): center predict heatmaps, the
-               channels number is num_classes.
-            wh_preds (Tensor): wh predicts, the channels number is 2.
-            offset_preds (Tensor): offset predicts, the channels number is 2.
+            center_heatmap_preds (List[Tensor]): center predict heatmaps for
+                all levels, the channels number is num_classes.
+            wh_preds (List[Tensor]): wh predicts for all levels, the channels
+                number is 2.
+            offset_preds (List[Tensor]): offset predicts for all levels, the
+               channels number is 2.
         """
-        assert len(feats) == 1
-        feat = feats[-1]
-        center_heatmap_preds = self.heatmap_head(feat).sigmoid()
-        wh_preds = self.wh_head(feat)
-        offset_preds = self.offset_head(feat)
-        return center_heatmap_preds, wh_preds, offset_preds
+        return multi_apply(self.forward_single, feats)
+
+    def forward_single(self, feat):
+        """Forward feature of a single level.
+
+        Args:
+            feat (Tensor): Feature of a single level.
+
+        Returns:
+            center_heatmap_pred (Tensor): center predict heatmaps, the
+               channels number is num_classes.
+            wh_pred (Tensor): wh predicts, the channels number is 2.
+            offset_pred (Tensor): offset predicts, the channels number is 2.
+        """
+        center_heatmap_pred = self.heatmap_head(feat).sigmoid()
+        wh_pred = self.wh_head(feat)
+        offset_pred = self.offset_head(feat)
+        return center_heatmap_pred, wh_pred, offset_pred
 
     @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
     def loss(self,
@@ -108,10 +124,12 @@ class CenterNetHead(BaseDenseHead):
         """Compute losses of the head.
 
         Args:
-            center_heatmap_preds (Tensor): center predict heatmaps,
-               shape (B, num_classes, H, W).
-            wh_preds (Tensor): wh predicts, shape (B, 2, H, W).
-            offset_preds (Tensor): offset predicts, shape (B, 2, H, W).
+            center_heatmap_preds (list[Tensor]): center predict heatmaps for
+               all levels with shape (B, num_classes, H, W).
+            wh_preds (list[Tensor]): wh predicts for all levels with
+               shape (B, 2, H, W).
+            offset_preds (list[Tensor]): offset predicts for all levels
+               with shape (B, 2, H, W).
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box.
@@ -126,28 +144,31 @@ class CenterNetHead(BaseDenseHead):
                 - loss_wh (Tensor): loss of hw heatmap
                 - loss_offset (Tensor): loss of offset heatmap.
         """
-        target_result, avg_factor = self.get_targets(
-            gt_bboxes, gt_labels, center_heatmap_preds.shape,
-            img_metas[0]['pad_shape'])
+        assert len(center_heatmap_preds) == len(wh_preds) == len(
+            offset_preds) == 1
+        center_heatmap_pred = center_heatmap_preds[0]
+        wh_pred = wh_preds[0]
+        offset_pred = offset_preds[0]
 
-        center_heatmap_targets = target_result['center_heatmap_targets']
-        wh_targets = target_result['wh_targets']
-        offset_targets = target_result['offset_targets']
-        wh_offset_target_weights = target_result['wh_offset_target_weights']
+        target_result, avg_factor = self.get_targets(gt_bboxes, gt_labels,
+                                                     center_heatmap_pred.shape,
+                                                     img_metas[0]['pad_shape'])
+
+        center_heatmap_target = target_result['center_heatmap_target']
+        wh_target = target_result['wh_target']
+        offset_target = target_result['offset_target']
+        wh_offset_target_weight = target_result['wh_offset_target_weight']
 
         loss_center_heatmap = self.loss_center_heatmap(
-            center_heatmap_preds,
-            center_heatmap_targets,
+            center_heatmap_pred,
+            center_heatmap_target,
             avg_factor=avg_factor / 2.)
         loss_wh = self.loss_wh(
-            wh_preds,
-            wh_targets,
-            wh_offset_target_weights,
-            avg_factor=avg_factor)
+            wh_pred, wh_target, wh_offset_target_weight, avg_factor=avg_factor)
         loss_offset = self.loss_offset(
-            offset_preds,
-            offset_targets,
-            wh_offset_target_weights,
+            offset_pred,
+            offset_target,
+            wh_offset_target_weight,
             avg_factor=avg_factor)
         return dict(
             loss_center_heatmap=loss_center_heatmap,
@@ -167,59 +188,61 @@ class CenterNetHead(BaseDenseHead):
         Returns:
             tuple[dict,float]: The float value is mean avg_factor, the dict has
                components below:
-               - center_heatmap_targets (Tensor): targets of center heatmap, \
+               - center_heatmap_target (Tensor): targets of center heatmap, \
                    shape (B, num_classes, H, W).
-               - wh_targets (Tensor): targets of wh predict, shape \
+               - wh_target (Tensor): targets of wh predict, shape \
                    (B, 2, H, W).
-               - offset_targets (Tensor): targets of offset predict, shape \
+               - offset_target (Tensor): targets of offset predict, shape \
                    (B, 2, H, W).
-               - wh_offset_target_weights (Tensor): weights of wh and offset \
+               - wh_offset_target_weight (Tensor): weights of wh and offset \
                    predict, shape (B, 2, H, W).
         """
         img_h, img_w = img_shape[:2]
         bs, _, feat_h, feat_w = feat_shape
-        center_heatmap_targets = gt_bboxes[-1].new_zeros(
+
+        width_ratio = float(feat_w / img_w)
+        height_ratio = float(feat_h / img_h)
+
+        center_heatmap_target = gt_bboxes[-1].new_zeros(
             [bs, self.num_classes, feat_h, feat_w])
-        wh_targets = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w])
-        offset_targets = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w])
-        wh_offset_target_weights = gt_bboxes[-1].new_zeros(
+        wh_target = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w])
+        offset_target = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w])
+        wh_offset_target_weight = gt_bboxes[-1].new_zeros(
             [bs, 2, feat_h, feat_w])
 
         for i in range(bs):
-            ratio_w = feat_w / img_w
-            ratio_h = feat_h / img_h
             gt_bbox = gt_bboxes[i]
             gt_label = gt_labels[i]
-            center_x = (gt_bbox[:, [0]] + gt_bbox[:, [2]]) * ratio_w / 2
-            center_y = (gt_bbox[:, [1]] + gt_bbox[:, [3]]) * ratio_h / 2
+            center_x = (gt_bbox[:, [0]] + gt_bbox[:, [2]]) * width_ratio / 2
+            center_y = (gt_bbox[:, [1]] + gt_bbox[:, [3]]) * height_ratio / 2
             gt_centers = torch.cat((center_x, center_y), dim=1)
 
             for j, ct in enumerate(gt_centers):
                 ctx_int, cty_int = ct.int()
                 ctx, cty = ct
-                scale_box_h = (gt_bbox[j][3] - gt_bbox[j][1]) * ratio_h
-                scale_box_w = (gt_bbox[j][2] - gt_bbox[j][0]) * ratio_w
+                scale_box_h = (gt_bbox[j][3] - gt_bbox[j][1]) * height_ratio
+                scale_box_w = (gt_bbox[j][2] - gt_bbox[j][0]) * width_ratio
                 radius = gaussian_radius([scale_box_h, scale_box_w],
                                          min_overlap=0.3)
                 radius = max(0, int(radius))
                 ind = gt_label[j]
-                gen_gaussian_target(center_heatmap_targets[i, ind],
+                gen_gaussian_target(center_heatmap_target[i, ind],
                                     [ctx_int, cty_int], radius)
 
-                wh_targets[i, 0, cty_int, ctx_int] = scale_box_w
-                wh_targets[i, 1, cty_int, ctx_int] = scale_box_h
+                wh_target[i, 0, cty_int, ctx_int] = scale_box_w
+                wh_target[i, 1, cty_int, ctx_int] = scale_box_h
 
-                offset_targets[i, 0, cty_int, ctx_int] = ctx - ctx_int
-                offset_targets[i, 1, cty_int, ctx_int] = cty - cty_int
+                offset_target[i, 0, cty_int, ctx_int] = ctx - ctx_int
+                offset_target[i, 1, cty_int, ctx_int] = cty - cty_int
 
-                wh_offset_target_weights[i, :, cty_int, ctx_int] = 1
+                wh_offset_target_weight[i, :, cty_int, ctx_int] = 1
 
-        avg_factor = max(1, wh_offset_target_weights.eq(1).sum())
+        avg_factor = max(1, wh_offset_target_weight.eq(1).sum())
         target_result = dict(
-            center_heatmap_targets=center_heatmap_targets,
-            wh_targets=wh_targets,
-            offset_targets=offset_targets,
-            wh_offset_target_weights=wh_offset_target_weights)
+            center_heatmap_target=center_heatmap_target,
+            wh_target=wh_target,
+            offset_target=offset_target,
+            wh_offset_target_weight=wh_offset_target_weight)
         return target_result, avg_factor
 
     def get_bboxes(self,
@@ -232,10 +255,12 @@ class CenterNetHead(BaseDenseHead):
         """Transform network output for a batch into bbox predictions.
 
         Args:
-            center_heatmap_preds (Tensor): center predict heatmaps,
-               shape (B, num_classes, H, W).
-            wh_preds (Tensor): wh predicts, shape (B, 2, H, W).
-            offset_preds (Tensor): offset predicts, shape (B, 2, H, W).
+            center_heatmap_preds (list[Tensor]): center predict heatmaps for
+                all levels with shape (B, num_classes, H, W).
+            wh_preds (list[Tensor]): wh predicts for all levels with
+                shape (B, 2, H, W).
+            offset_preds (list[Tensor]): offset predicts for all levels
+                with shape (B, 2, H, W).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             rescale (bool): If True, return boxes in original image space.
@@ -251,13 +276,15 @@ class CenterNetHead(BaseDenseHead):
                 each element represents the class label of the corresponding
                 box.
         """
+        assert len(center_heatmap_preds) == len(wh_preds) == len(
+            offset_preds) == 1
         scale_factors = [img_meta['scale_factor'] for img_meta in img_metas]
         border_pixs = [img_meta['border'] for img_meta in img_metas]
 
         batch_det_bboxes, batch_labels = self.decode_heatmap(
-            center_heatmap_preds,
-            wh_preds,
-            offset_preds,
+            center_heatmap_preds[0],
+            wh_preds[0],
+            offset_preds[0],
             img_metas[0]['batch_input_shape'],
             k=self.test_cfg.topk,
             kernel=self.test_cfg.local_maximum_kernel)
