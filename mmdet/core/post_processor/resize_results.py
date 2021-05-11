@@ -1,3 +1,4 @@
+from mmdet.core import bbox_flip
 from mmdet.core.post_processor.builder import POST_PROCESSOR
 
 
@@ -29,12 +30,14 @@ class ResizeResultsToOri(object):
         r_results_list = []
         for results in results_list:
             for _type in self.results_type:
-                results = getattr(self, f'__resize_{_type}__')(results)
+                results = getattr(self, f'_mapping_{_type}')(results)
             r_results_list.append(results)
 
         return r_results_list
 
-    def __resize_bbox__(self, results):
+    def _mapping_bbox(self, results):
         scale_factor = results.bboxes.new_tensor(results.scale_factor)
+        if results.flip:
+            results.bboxes = bbox_flip(results.bboxes, results.img_shape)
         results.bboxes = results.bboxes / scale_factor
         return results

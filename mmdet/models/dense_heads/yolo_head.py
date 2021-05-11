@@ -14,11 +14,10 @@ from mmdet.core import (build_anchor_generator, build_assigner,
 from ...core.results.results import InstanceResults
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead, deploy_deprecate_warning
-from .dense_test_mixins import BBoxTestMixin
 
 
 @HEADS.register_module()
-class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
+class YOLOV3Head(BaseDenseHead):
     """YOLOV3Head Paper link: https://arxiv.org/abs/1804.02767.
 
     Args:

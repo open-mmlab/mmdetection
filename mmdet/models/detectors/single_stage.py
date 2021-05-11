@@ -1,5 +1,7 @@
 import torch
 
+from ...core.post_processor.bbox_nms import NMS
+from ...core.post_processor.builder import ComposePostProcess
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -19,8 +21,23 @@ class SingleStageDetector(BaseDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
-                 init_cfg=None):
+                 init_cfg=None,
+                 aug_bbox_post_processes=[
+                     dict(type='MergeResults'),
+                     dict(
+                         type='NaiveNMS',
+                         iou_threshold=0.5,
+                         class_agnostic=False,
+                         max_num=100)
+                 ]):
         super(SingleStageDetector, self).__init__(init_cfg)
+
+        if aug_bbox_post_processes is not None:
+            self.aug_bbox_post_processes = ComposePostProcess(
+                aug_bbox_post_processes)
+        else:
+            self.aug_bbox_post_processes = ComposePostProcess[dict(
+                type='MergeResults')]
         backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
         if neck is not None:
@@ -103,7 +120,7 @@ class SingleStageDetector(BaseDetector):
 
         return [results.export('bbox') for results in results_list]
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, imgs, img_metas):
         """Test function with test time augmentation.
 
         Args:
@@ -113,17 +130,38 @@ class SingleStageDetector(BaseDetector):
             img_metas (list[list[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch. each dict has image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
 
         Returns:
             list[list[np.ndarray]]: BBox results of each image and classes.
                 The outer list corresponds to each image. The inner list
                 corresponds to each class.
         """
-        assert hasattr(self.bbox_head, 'aug_test'), \
-            f'{self.bbox_head.__class__.__name__}' \
-            ' does not support test-time augmentation'
 
+        assert len(img_metas[0]) == 1, 'AugTest only support batchsize == 1'
         feats = self.extract_feats(imgs)
-        return [self.bbox_head.aug_test(feats, img_metas, rescale=rescale)]
+        return self.aug_test_bboxes(feats, img_metas)
+
+    def aug_test_bboxes(self, feats, img_metas):
+
+        # remove the nms op from head at first iteration
+        if not hasattr(self, 'remove_head_nms'):
+            nms_op = None
+            head_post_processes = \
+                self.bbox_head.bbox_post_processes.process_list
+            for index, operation in enumerate(head_post_processes):
+                if isinstance(operation, NMS):
+                    break
+            # Some heads do not hav nms, such as detr
+            if nms_op:
+                head_post_processes.pop(index)
+            self.remove_head_nms = True
+
+        aug_resutls_list = []
+        for x, img_meta in zip(feats, img_metas):
+            # only one image in the batch
+            outs = self.bbox_head(x)
+            results = self.bbox_head.get_bboxes(*outs, img_meta)[0]
+            aug_resutls_list.append(results)
+
+        aug_resutls_list = self.aug_bbox_post_processes(aug_resutls_list)
+        return [results.export('bbox') for results in aug_resutls_list]

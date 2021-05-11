@@ -96,8 +96,17 @@ class PreNMS(object):
         return r_results_list
 
 
+class NMS(object):
+    """BaseClass of all nms operation, such as nms, soft nms...
+
+    All type of nms operation must have the same base class to identify it as
+    `nms`,  because in AugTest we need to remove it from process pipline.
+    """
+    pass
+
+
 @POST_PROCESSOR.register_module()
-class NaiveNMS(object):
+class NaiveNMS(NMS):
 
     def __init__(self,
                  iou_threshold=0.5,
@@ -162,7 +171,7 @@ class NaiveNMS(object):
 
 
 @POST_PROCESSOR.register_module()
-class SoftNMS(NaiveNMS):
+class SoftNMS(NMS):
     """
 
     Args:

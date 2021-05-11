@@ -7,6 +7,17 @@ from mmcv import ConfigDict
 from mmcv.ops import nms
 
 from ..bbox import bbox_mapping_back
+from .builder import POST_PROCESSOR
+
+
+@POST_PROCESSOR.register_module()
+class MergeResults(object):
+    """Only used in AugTest to cat the results of different Augmentation."""
+
+    def __call__(self, results_list):
+
+        new_results = results_list[0].cat(results_list)
+        return [new_results]
 
 
 def merge_aug_proposals(aug_proposals, img_metas, cfg):

@@ -8,11 +8,10 @@ from mmcv.runner import force_fp32
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
-from .dense_test_mixins import BBoxTestMixin
 
 
 @HEADS.register_module()
-class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
+class AnchorFreeHead(BaseDenseHead):
     """Anchor-free head (FCOS, Fovea, RepPoints, etc.).
 
     Args:
