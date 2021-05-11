@@ -145,15 +145,13 @@ class SingleStageDetector(BaseDetector):
 
         # remove the nms op from head at first iteration
         if not hasattr(self, 'remove_head_nms'):
-            nms_op = None
             head_post_processes = \
                 self.bbox_head.bbox_post_processes.process_list
             for index, operation in enumerate(head_post_processes):
                 if isinstance(operation, NMS):
+                    head_post_processes.pop(index)
                     break
             # Some heads do not hav nms, such as detr
-            if nms_op:
-                head_post_processes.pop(index)
             self.remove_head_nms = True
 
         aug_resutls_list = []
