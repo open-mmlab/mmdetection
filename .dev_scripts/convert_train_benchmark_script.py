@@ -55,7 +55,7 @@ def main():
         commands.append('\n')
 
         fname, _ = osp.splitext(osp.basename(cfg))
-        out_fname = osp.join(root_name, fname)
+        out_fname = osp.join(root_name, 'work_dir', fname)
         # default setting
         command_info = f'GPUS=8  GPUS_PER_NODE=8  ' \
                        f'CPUS_PER_TASK=2 {train_script_name} '
