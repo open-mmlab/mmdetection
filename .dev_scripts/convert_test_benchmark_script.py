@@ -38,7 +38,7 @@ def main():
     commands.append(checkpoint_dir)
     commands.append('\n' * 2)
 
-    root_name = './dev_scripts'
+    root_name = '.dev_scripts'
     script_name = osp.join(root_name, 'slurm_test.sh')
     partition = args.partition  # cluster name
 
@@ -46,6 +46,7 @@ def main():
         config_info = f.readlines()
 
         for i, config_str in enumerate(config_info):
+            if len(config_str.strip()) == 0: continue
             echo_info = f'echo \'{config_str.rstrip()}\' &'
             commands.append(echo_info)
             commands.append('\n')
