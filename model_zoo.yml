@@ -43,4 +43,5 @@ Import:
   - configs/regnet/metafile.yml
   - configs/reppoints/metafile.yml
   - configs/res2net/metafile.yml
+  - configs/resnest/metafile.yml
 
