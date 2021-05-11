@@ -5,6 +5,15 @@ _base_ = [
 # model settings
 model = dict(
     type='CornerNet',
+    aug_bbox_post_processes=[
+        dict(type='MergeResults'),
+        dict(
+            type='SoftNMS',
+            iou_threshold=0.5,
+            method='gaussian',
+            class_agnostic=False,
+            max_num=100)
+    ],
     backbone=dict(
         type='HourglassNet',
         downsample_times=5,
