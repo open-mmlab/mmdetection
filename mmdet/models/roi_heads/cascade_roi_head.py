@@ -278,73 +278,125 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def simple_test(self, x, proposal_list, img_metas, rescale=False):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
-        num_imgs = len(proposal_list)
-        img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
-
+        # get origin input shape to support onnx dynamic input shape
+        if torch.onnx.is_in_onnx_export():
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+            img_shapes = [img_metas[0]['img_shape_for_onnx']]
+        else:
+            img_shapes = tuple(meta['img_shape'] for meta in img_metas)
+        # The length of proposals of different batches may be different.
+        # In order to form a batch, a padding operation is required.
+        if isinstance(proposal_list, list):
+            # padding to form a batch
+            max_size = max([proposal.size(0) for proposal in proposal_list])
+            for i, proposal in enumerate(proposal_list):
+                supplement = proposal.new_full(
+                    (max_size - proposal.size(0), proposal.size(1)), 0)
+                proposal_list[i] = torch.cat((supplement, proposal), dim=0)
+            rois = torch.stack(proposal_list, dim=0)
+        else:
+            rois = proposal_list
         # "ms" in variable names means multi-stage
         ms_bbox_result = {}
         ms_segm_result = {}
         ms_scores = []
         rcnn_test_cfg = self.test_cfg
+        batch_index = torch.arange(
+            rois.size(0), device=rois.device).float().view(-1, 1, 1).expand(
+                rois.size(0), rois.size(1), 1)
+        rois = torch.cat([batch_index, rois[..., :4]], dim=-1)
+        num_imgs = rois.shape[0]
+        num_proposals_per_img = rois.shape[1]
 
-        rois = bbox2roi(proposal_list)
+        # Eliminate the batch dimension
+        rois = rois.view(-1, 5)
+
         for i in range(self.num_stages):
             bbox_results = self._bbox_forward(i, x, rois)
-
             # split batch bbox prediction back to each image
             cls_score = bbox_results['cls_score']
             bbox_pred = bbox_results['bbox_pred']
-            num_proposals_per_img = tuple(
-                len(proposals) for proposals in proposal_list)
-            rois = rois.split(num_proposals_per_img, 0)
-            cls_score = cls_score.split(num_proposals_per_img, 0)
-            if isinstance(bbox_pred, torch.Tensor):
-                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
-            else:
-                bbox_pred = self.bbox_head[i].bbox_pred_split(
-                    bbox_pred, num_proposals_per_img)
+            if i < self.num_stages - 1:
+                bbox_label = cls_score[..., :-1].argmax(dim=1)
+                rois = self.bbox_head[i].regress_by_class(
+                    rois, bbox_label, bbox_pred, img_metas[0])
+            # Recover the batch dimension
+            cls_score = cls_score.reshape(num_imgs, num_proposals_per_img,
+                                          cls_score.size(-1))
             ms_scores.append(cls_score)
 
-            if i < self.num_stages - 1:
-                bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
-                rois = torch.cat([
-                    self.bbox_head[i].regress_by_class(rois[j], bbox_label[j],
-                                                       bbox_pred[j],
-                                                       img_metas[j])
-                    for j in range(num_imgs)
-                ])
-
         # average scores of each image by stages
-        cls_score = [
-            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-            for i in range(num_imgs)
-        ]
+        cls_score = sum(ms_scores) / len(ms_scores)
 
-        # apply bbox post-processing to each image individually
-        det_bboxes = []
-        det_labels = []
-        for i in range(num_imgs):
-            det_bbox, det_label = self.bbox_head[-1].get_bboxes(
-                rois[i],
-                cls_score[i],
-                bbox_pred[i],
-                img_shapes[i],
-                scale_factors[i],
+        # Recover the batch dimension
+        rois = rois.reshape(num_imgs, -1, rois.size(-1))
+        bbox_pred = bbox_pred.reshape(num_imgs, -1, bbox_pred.size(-1))
+        if torch.onnx.is_in_onnx_export():
+            det_bboxes, det_labels = self.bbox_head[-1].get_bboxes(
+                rois,
+                cls_score,
+                bbox_pred,
+                img_shapes[0],
+                scale_factors[0],
                 rescale=rescale,
                 cfg=rcnn_test_cfg)
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
+            if self.with_mask:
+                batch_index = torch.arange(
+                    det_bboxes.size(0),
+                    device=det_bboxes.device).float().view(-1, 1, 1).expand(
+                        det_bboxes.size(0), det_bboxes.size(1), 1)
+                rois = det_bboxes[..., :4]
+                mask_rois = torch.cat([batch_index, rois], dim=-1)
+                mask_rois = mask_rois.view(-1, 5)
+                aug_masks = []
+                for i in range(self.num_stages):
+                    mask_results = self._mask_forward(i, x, mask_rois)
+                    mask_pred = mask_results['mask_pred']
+                    aug_masks.append(mask_pred)
+                max_shape = img_metas[0]['img_shape_for_onnx']
+                # merge_aug_masks with mean
+                mask_pred = sum(aug_masks) / len(aug_masks)
+                segm_results = self.mask_head[-1].get_seg_masks(
+                    mask_pred, rois.reshape(-1, 4), det_labels.reshape(-1),
+                    self.test_cfg, max_shape, scale_factors[0], rescale)
+                segm_results = segm_results.reshape(num_imgs,
+                                                    det_bboxes.shape[1],
+                                                    max_shape[0], max_shape[1])
+                return det_bboxes, det_labels, segm_results
 
-        if torch.onnx.is_in_onnx_export():
             return det_bboxes, det_labels
-        bbox_results = [
-            bbox2result(det_bboxes[i], det_labels[i],
-                        self.bbox_head[-1].num_classes)
-            for i in range(num_imgs)
-        ]
-        ms_bbox_result['ensemble'] = bbox_results
+        else:
+            # apply bbox post-processing to each image individually
+            det_bboxes = []
+            det_labels = []
+            for i in range(num_imgs):
+                rois_i = rois[i]
+                # remove padding
+                supplement_mask = rois_i[:, :4].abs().sum(dim=-1) != 0
+                rois_i = rois_i[supplement_mask]
+                cls_score_i = cls_score[i][supplement_mask]
+                bbox_pred_i = bbox_pred[i][supplement_mask]
+                det_bbox, det_label = self.bbox_head[-1].get_bboxes(
+                    rois_i,
+                    cls_score_i,
+                    bbox_pred_i,
+                    img_shapes[i],
+                    scale_factors[i],
+                    rescale=rescale,
+                    cfg=rcnn_test_cfg)
+                det_bboxes.append(det_bbox)
+                det_labels.append(det_label)
+
+            bbox_results = [
+                bbox2result(det_bboxes[i], det_labels[i],
+                            self.bbox_head[-1].num_classes)
+                for i in range(num_imgs)
+            ]
+            ms_bbox_result['ensemble'] = bbox_results
 
         if self.with_mask:
             if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
@@ -371,8 +423,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     mask_pred = mask_results['mask_pred']
                     # split batch mask prediction back to each image
                     mask_pred = mask_pred.split(num_mask_rois_per_img, 0)
-                    aug_masks.append(
-                        [m.sigmoid().cpu().numpy() for m in mask_pred])
+                    aug_masks.append([
+                        m.sigmoid().cpu().detach().numpy() for m in mask_pred
+                    ])
 
                 # apply mask post-processing to each image individually
                 segm_results = []

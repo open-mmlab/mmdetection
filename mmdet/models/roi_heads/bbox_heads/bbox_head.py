@@ -365,40 +365,53 @@ class BBoxHead(BaseModule):
             batch_size = scores.shape[0]
             # ignore background class
             scores = scores[..., :self.num_classes]
-            labels = torch.arange(
-                self.num_classes, dtype=torch.long).to(scores.device)
-            labels = labels.view(1, 1, -1).expand_as(scores)
-            labels = labels.reshape(batch_size, -1)
-            scores = scores.reshape(batch_size, -1)
-            bboxes = bboxes.reshape(batch_size, -1, 4)
-
-            max_size = torch.max(img_shape)
-            # Offset bboxes of each class so that bboxes of different labels
-            #  do not overlap.
-            offsets = (labels * max_size + 1).unsqueeze(2)
-            bboxes_for_nms = bboxes + offsets
+            # get nms parameters
             max_output_boxes_per_class = cfg.nms.get(
                 'max_output_boxes_per_class', cfg.max_per_img)
             iou_threshold = cfg.nms.get('iou_threshold', 0.5)
             score_threshold = cfg.score_thr
             nms_pre = cfg.get('deploy_nms_pre', -1)
-            batch_dets, labels = add_dummy_nms_for_onnx(
-                bboxes_for_nms,
-                scores.unsqueeze(2),
-                max_output_boxes_per_class,
-                iou_threshold,
-                score_threshold,
-                pre_top_k=nms_pre,
-                after_top_k=cfg.max_per_img,
-                labels=labels)
-            # Offset the bboxes back after dummy nms.
-            offsets = (labels * max_size + 1).unsqueeze(2)
-            # Indexing + inplace operation fails with dynamic shape in ONNX
-            # original style: batch_dets[..., :4] -= offsets
-            bboxes, scores = batch_dets[..., 0:4], batch_dets[..., 4:5]
-            bboxes -= offsets
-            batch_dets = torch.cat([bboxes, scores], dim=2)
+
+            if bboxes.shape[-1] == 4:
+                batch_dets, labels = add_dummy_nms_for_onnx(
+                    bboxes,
+                    scores,
+                    max_output_boxes_per_class,
+                    iou_threshold,
+                    score_threshold,
+                    pre_top_k=nms_pre,
+                    after_top_k=cfg.max_per_img)
+            else:
+                labels = torch.arange(
+                    self.num_classes, dtype=torch.long).to(scores.device)
+                labels = labels.view(1, 1, -1).expand_as(scores)
+                labels = labels.reshape(batch_size, -1)
+                scores = scores.reshape(batch_size, -1)
+                bboxes = bboxes.reshape(batch_size, -1, 4)
+
+                max_size = torch.max(img_shape)
+                # Offset bboxes of each class so that bboxes of different
+                # labels do not overlap.
+                offsets = (labels * max_size + 1).unsqueeze(2)
+                bboxes_for_nms = bboxes + offsets
+                batch_dets, labels = add_dummy_nms_for_onnx(
+                    bboxes_for_nms,
+                    scores.unsqueeze(2),
+                    max_output_boxes_per_class,
+                    iou_threshold,
+                    score_threshold,
+                    pre_top_k=nms_pre,
+                    after_top_k=cfg.max_per_img,
+                    labels=labels)
+                # Offset the bboxes back after dummy nms.
+                offsets = (labels * max_size + 1).unsqueeze(2)
+                # Indexing + inplace operation fails with dynamic shape in ONNX
+                # original style: batch_dets[..., :4] -= offsets
+                bboxes, scores = batch_dets[..., 0:4], batch_dets[..., 4:5]
+                bboxes -= offsets
+                batch_dets = torch.cat([bboxes, scores], dim=2)
             return batch_dets, labels
+
         det_bboxes = []
         det_labels = []
         for (bbox, score) in zip(bboxes, scores):
@@ -516,12 +529,18 @@ class BBoxHead(BaseModule):
             bbox_pred = torch.gather(bbox_pred, 1, inds)
         assert bbox_pred.size(1) == 4
 
+        # get origin input shape to support onnx dynamic input shape
+        if torch.onnx.is_in_onnx_export():
+            img_shape = img_meta['img_shape_for_onnx']
+        else:
+            img_shape = img_meta['img_shape']
+
         if rois.size(1) == 4:
             new_rois = self.bbox_coder.decode(
-                rois, bbox_pred, max_shape=img_meta['img_shape'])
+                rois, bbox_pred, max_shape=img_shape)
         else:
             bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=img_meta['img_shape'])
+                rois[:, 1:], bbox_pred, max_shape=img_shape)
             new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
 
         return new_rois
