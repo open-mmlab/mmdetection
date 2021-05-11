@@ -41,4 +41,6 @@ Import:
   - configs/pisa/metafile.yml
   - configs/point_rend/metafile.yml
   - configs/regnet/metafile.yml
+  - configs/reppoints/metafile.yml
+  -
 
