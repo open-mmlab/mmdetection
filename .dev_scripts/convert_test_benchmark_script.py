@@ -14,6 +14,7 @@ def parse_args():
         default='openmmlab',
         help='slurm partition name')
     parser.add_argument('checkpoint_dir', help='checkpoint file dir')
+    parser.add_argument('--port', type=int, default=29600, help='dist port')
     parser.add_argument(
         '--run', action='store_true', help='run script directly')
     parser.add_argument(
@@ -40,6 +41,7 @@ def main():
 
     script_name = osp.join('.dev_scripts', 'slurm_test.sh')
     partition = args.partition  # cluster name
+    port = args.port
 
     with open(args.text, 'r') as f:
         config_info = f.readlines()
@@ -53,7 +55,7 @@ def main():
 
             config, ckpt, _ = config_str.split(' ')
             fname, _ = osp.splitext(osp.basename(config))
-            out_fname = osp.join('.tools', 'batch_test', fname)
+            out_fname = osp.join('tools', 'batch_test', fname)
 
             command_info = f'GPUS=8  GPUS_PER_NODE=8  ' \
                            f'CPUS_PER_TASK=2 {script_name} '
@@ -64,12 +66,14 @@ def main():
             command_info += f'{ckpt} '
             command_info += f'--work-dir {out_fname} '
             command_info += '--eval bbox '
+            command_info += f'--cfg-option dist_params.port={port} '
             command_info += ' &'
 
             commands.append(command_info)
 
             if i < len(config_info):
                 commands.append('\n')
+            port += 1
 
     command_str = ''.join(commands)
     if args.out:
