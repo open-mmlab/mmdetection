@@ -8,7 +8,6 @@ Collections:
       Training Resources: 8x NVIDIA V100 GPUs
       Architecture:
         - FPN
-        - RPN
         - ResNet
         - RoIPool
     Paper: https://arxiv.org/abs/1504.08083
