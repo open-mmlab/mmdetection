@@ -38,8 +38,7 @@ def main():
     commands.append(checkpoint_dir)
     commands.append('\n' * 2)
 
-    root_name = '.dev_scripts'
-    script_name = osp.join(root_name, 'slurm_test.sh')
+    script_name = osp.join('.dev_scripts', 'slurm_test.sh')
     partition = args.partition  # cluster name
 
     with open(args.text, 'r') as f:
@@ -54,13 +53,14 @@ def main():
 
             config, ckpt, _ = config_str.split(' ')
             fname, _ = osp.splitext(osp.basename(config))
-            out_fname = osp.join(root_name, 'batch_test', fname)
+            out_fname = osp.join('.tools', 'batch_test', fname)
 
             command_info = f'GPUS=8  GPUS_PER_NODE=8  ' \
                            f'CPUS_PER_TASK=2 {script_name} '
 
             command_info += f'{partition} '
             command_info += f'{fname} '
+            command_info += f'{config} '
             command_info += f'{ckpt} '
             command_info += f'--work-dir {out_fname} '
             command_info += '--eval bbox '
