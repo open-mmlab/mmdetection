@@ -50,4 +50,5 @@ Import:
   - configs/scratch/metafile.yml
   - configs/sparse_rcnn/metafile.yml
   - configs/ssd/metafile.yml
+  - configs/tridentnet/metafile.yml
 
