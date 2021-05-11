@@ -75,9 +75,9 @@ def test_centernet_head_get_bboxes():
     self.feat_shape = (1, 1, s // 4, s // 4)
     targets, _ = self.get_targets(gt_bboxes, gt_labels, self.feat_shape,
                                   img_metas[0]['pad_shape'])
-    center_target = targets['center_heatmap_targets']
-    wh_target = targets['wh_targets']
-    offset_target = targets['offset_targets']
+    center_target = targets['center_heatmap_target']
+    wh_target = targets['wh_target']
+    offset_target = targets['offset_target']
     # make sure assign target right
     for i in range(len(gt_bboxes[0])):
         bbox, label = gt_bboxes[0][i] / 4, gt_labels[0][i]
@@ -92,13 +92,10 @@ def test_centernet_head_get_bboxes():
         assert offset_target[0, 0, int_cty, int_ctx] == x_off
         assert offset_target[0, 1, int_cty, int_ctx] == y_off
     # make sure get_bboxes is right
-    detections = self.get_bboxes(
-        center_target,
-        wh_target,
-        offset_target,
-        img_metas,
-        rescale=True,
-        with_nms=False)
+    detections = self.get_bboxes([center_target], [wh_target], [offset_target],
+                                 img_metas,
+                                 rescale=True,
+                                 with_nms=False)
     out_bboxes = detections[0][0][:3]
     out_clses = detections[0][1][:3]
     for bbox, cls in zip(out_bboxes, out_clses):

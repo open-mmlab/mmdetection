@@ -311,19 +311,19 @@ class CenterNetHead(BaseDenseHead):
         return det_results
 
     def decode_heatmap(self,
-                       center_heatmap_preds,
-                       wh_preds,
-                       offset_preds,
+                       center_heatmap_pred,
+                       wh_pred,
+                       offset_pred,
                        img_shape,
                        k=100,
                        kernel=3):
         """Transform outputs into detections raw bbox prediction.
 
         Args:
-            center_heatmap_preds (Tensor): center predict heatmaps,
+            center_heatmap_pred (Tensor): center predict heatmap,
                shape (B, num_classes, H, W).
-            wh_preds (Tensor): wh predicts, shape (B, 2, H, W).
-            offset_preds (Tensor): offset predicts, shape (B, 2, H, W).
+            wh_pred (Tensor): wh predict, shape (B, 2, H, W).
+            offset_pred (Tensor): offset predict, shape (B, 2, H, W).
             img_shape (list[int]): image shape in [h, w] format.
             k (int): Get top k center keypoints from heatmap. Default 100.
             kernel (int): Max pooling kernel for extract local maximum pixels.
@@ -337,16 +337,18 @@ class CenterNetHead(BaseDenseHead):
             - batch_topk_labels (Tensor): Categories of each box with \
                shape (B, k)
         """
-        height, width = center_heatmap_preds.shape[2:]
+        height, width = center_heatmap_pred.shape[2:]
         inp_h, inp_w = img_shape
 
-        center_hm = get_local_maximum(center_heatmap_preds, kernel=kernel)
+        center_heatmap_pred = get_local_maximum(
+            center_heatmap_pred, kernel=kernel)
 
-        *batch_dets, topk_ys, topk_xs = get_topk_from_heatmap(center_hm, k=k)
+        *batch_dets, topk_ys, topk_xs = get_topk_from_heatmap(
+            center_heatmap_pred, k=k)
         batch_scores, batch_index, batch_topk_labels = batch_dets
 
-        wh = transpose_and_gather_feat(wh_preds, batch_index)
-        offset = transpose_and_gather_feat(offset_preds, batch_index)
+        wh = transpose_and_gather_feat(wh_pred, batch_index)
+        offset = transpose_and_gather_feat(offset_pred, batch_index)
         topk_xs = topk_xs + offset[..., 0]
         topk_ys = topk_ys + offset[..., 1]
         x1 = (topk_xs - wh[..., 0] / 2) * (inp_w / width)
