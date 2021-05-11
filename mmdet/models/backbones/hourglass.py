@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
 
@@ -28,7 +29,8 @@ class HourglassModule(BaseModule):
                  stage_channels,
                  stage_blocks,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 init_cfg=None):
+                 init_cfg=None,
+                 upsample_cfg=dict(mode='nearest')):
         super(HourglassModule, self).__init__(init_cfg)
 
         self.depth = depth
@@ -69,7 +71,8 @@ class HourglassModule(BaseModule):
             norm_cfg=norm_cfg,
             downsample_first=False)
 
-        self.up2 = nn.Upsample(scale_factor=2)
+        self.up2 = F.interpolate
+        self.upsample_cfg = upsample_cfg
 
     def forward(self, x):
         """Forward function."""
@@ -77,7 +80,13 @@ class HourglassModule(BaseModule):
         low1 = self.low1(x)
         low2 = self.low2(low1)
         low3 = self.low3(low2)
-        up2 = self.up2(low3)
+        # Fixing `scale factor` (e.g. 2) is common for upsampling, but
+        # in some cases the spatial size is mismatched and error will arise.
+        if 'scale_factor' in self.upsample_cfg:
+            up2 = self.up2(low3, **self.upsample_cfg)
+        else:
+            shape = up1.shape[2:]
+            up2 = self.up2(low3, size=shape, **self.upsample_cfg)
         return up1 + up2
 
 
