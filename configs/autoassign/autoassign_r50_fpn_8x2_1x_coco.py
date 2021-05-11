@@ -44,7 +44,7 @@ model = dict(
         strides=[8, 16, 32, 64, 128],
         loss_bbox=dict(type='GIoULoss', loss_weight=5.0)),
     train_cfg=None,
-    test_cfg=dict(nms_pre=1000, ))
+    test_cfg=dict(nms_pre=1000))
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [

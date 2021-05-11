@@ -24,7 +24,7 @@ class PreNMS(object):
     def __call__(self, results_list):
         # shape(n, num_class), the num_class does not
         # include the background
-        r_results_list = []
+        processed_results_list = []
         for results in results_list:
             # exclude background category
             scores = results.scores[..., :-1]
@@ -45,12 +45,12 @@ class PreNMS(object):
             scores = scores.reshape(-1)
             labels = labels.reshape(-1)
 
-            r_results = results.new_results()
-            r_results.bboxes = bboxes
-            r_results.scores = scores
-            r_results.labels = labels
-            r_results.keep_ids = torch.arange(
-                0, len(r_results), device=scores.device)
+            processed_results = results.new_results()
+            processed_results.bboxes = bboxes
+            processed_results.scores = scores
+            processed_results.labels = labels
+            processed_results.keep_ids = torch.arange(
+                0, len(processed_results), device=scores.device)
 
             if not torch.onnx.is_in_onnx_export():
                 # NonZero not supported  in TensorRT
@@ -64,7 +64,8 @@ class PreNMS(object):
                 score_factors = score_factors.view(-1,
                                                    1).repeat(1, num_classes)
                 score_factors = score_factors.reshape(-1)
-                r_results.scores = r_results.scores * score_factors
+                processed_results.scores = \
+                    processed_results.scores * score_factors
 
                 if self.score_factor_thr:
                     # YOLO  has a score_factor_thr
@@ -73,7 +74,7 @@ class PreNMS(object):
 
             if not torch.onnx.is_in_onnx_export():
                 # NonZero not supported  in TensorRT
-                r_results = r_results[valid_mask]
+                processed_results = processed_results[valid_mask]
             else:
                 # TensorRT NMS plugin has invalid output filled with -1
                 # add dummy data to make detection output correct.
@@ -83,17 +84,17 @@ class PreNMS(object):
                 bboxes = torch.cat([bboxes, bboxes.new_zeros(1, 4)], dim=0)
                 scores = torch.cat([scores, scores.new_zeros(1)], dim=0)
                 labels = torch.cat([labels, labels.new_zeros(1)], dim=0)
-                r_results = results.new_results()
-                r_results.bboxes = bboxes
-                r_results.labels = labels
-                r_results.scores = scores
+                processed_results = results.new_results()
+                processed_results.bboxes = bboxes
+                processed_results.labels = labels
+                processed_results.scores = scores
 
-            if len(r_results) == 0:
+            if len(processed_results) == 0:
                 if torch.onnx.is_in_onnx_export():
                     raise RuntimeError('[ONNX Error] Can not record NMS '
                                        'as it has not been executed this time')
-            r_results_list.append(r_results)
-        return r_results_list
+            processed_results_list.append(processed_results)
+        return processed_results_list
 
 
 class NMS(object):
@@ -121,11 +122,11 @@ class NaiveNMS(NMS):
         self.offset = offset
 
     def __call__(self, results_list):
-        r_results_list = []
+        processed_results_list = []
 
         for results in results_list:
             if len(results) == 0:
-                r_results_list.append(results)
+                processed_results_list.append(results)
                 continue
 
             bboxes = results.bboxes
@@ -147,7 +148,7 @@ class NaiveNMS(NMS):
                     scores,
                     iou_threshold=self.iou_threshold,
                     offset=self.offset)
-                r_results = results[keep_ids]
+                processed_results = results[keep_ids]
 
             else:
                 total_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
@@ -162,12 +163,12 @@ class NaiveNMS(NMS):
 
                 keep = total_mask.nonzero(as_tuple=False).view(-1)
                 keep = keep[scores[keep].argsort(descending=True)]
-                r_results = results[keep]
+                processed_results = results[keep]
             if self.max_num > 0:
-                r_results = r_results[:self.max_num]
-            r_results_list.append(r_results)
+                processed_results = processed_results[:self.max_num]
+            processed_results_list.append(processed_results)
 
-        return r_results_list
+        return processed_results_list
 
 
 @POST_PROCESSOR.register_module()
@@ -205,11 +206,11 @@ class SoftNMS(NMS):
                                       f'but get {self.method}')
 
     def __call__(self, results_list):
-        r_results_list = []
+        processed_results_list = []
 
         for results in results_list:
             if len(results) == 0:
-                r_results_list.append(results)
+                processed_results_list.append(results)
                 continue
 
             bboxes = results.bboxes
@@ -233,7 +234,7 @@ class SoftNMS(NMS):
                     method=self.method,
                     iou_threshold=self.iou_threshold,
                     offset=self.offset)
-                r_results = results[keep_ids]
+                processed_results = results[keep_ids]
 
             else:
                 total_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
@@ -250,12 +251,12 @@ class SoftNMS(NMS):
 
                 keep = total_mask.nonzero(as_tuple=False).view(-1)
                 keep = keep[scores[keep].argsort(descending=True)]
-                r_results = results[keep]
+                processed_results = results[keep]
             if self.max_num > 0:
-                r_results = r_results[:self.max_num]
-            r_results_list.append(r_results)
+                processed_results = processed_results[:self.max_num]
+            processed_results_list.append(processed_results)
 
-        return r_results_list
+        return processed_results_list
 
 
 @POST_PROCESSOR.register_module()
@@ -278,13 +279,13 @@ class ScoreTopk(object):
 
     def __call__(self, results_list):
 
-        r_results_list = []
+        processed_results_list = []
         for results in results_list:
             if len(results) == 0:
-                r_results_list.append(results)
+                processed_results_list.append(results)
                 continue
 
-            r_results = results.new_results()
+            processed_results = results.new_results()
             bboxes = results.bboxes
             scores = results.scores
 
@@ -295,22 +296,22 @@ class ScoreTopk(object):
                 cls_scores, indexs = cls_scores.view(-1).topk(self.max_per_img)
                 det_labels = indexs % num_class
                 bbox_index = indexs // num_class
-                r_results.labels = det_labels
-                r_results.scores = cls_scores
-                r_results.bboxes = bboxes[bbox_index]
+                processed_results.labels = det_labels
+                processed_results.scores = cls_scores
+                processed_results.bboxes = bboxes[bbox_index]
 
             else:
                 cls_score, det_labels = scores.softmax(-1)[..., :-1].max(-1)
                 cls_score, bbox_index = cls_score.topk(self.max_per_img)
                 bbox_pred = bboxes[bbox_index]
                 det_labels = det_labels[bbox_index]
-                r_results.scores = cls_score
-                r_results.bboxes = bbox_pred
-                r_results.labels = det_labels
+                processed_results.scores = cls_score
+                processed_results.bboxes = bbox_pred
+                processed_results.labels = det_labels
 
-            r_results_list.append(r_results)
+            processed_results_list.append(processed_results)
 
-        return r_results_list
+        return processed_results_list
 
 
 def multiclass_nms(multi_bboxes,

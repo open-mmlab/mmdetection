@@ -60,7 +60,7 @@ model = dict(
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
-    test_cfg=dict(nms_pre=1000, score_thr=0.05))
+    test_cfg=dict(nms_pre=1000))
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [

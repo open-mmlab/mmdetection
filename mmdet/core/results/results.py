@@ -58,11 +58,11 @@ class Results(NiceRepr):
                 new_results[k] = dict()
         return new_results
 
-    def export(self, ressults_type='bbox', num_classes=80):
+    def export(self, results_type='bbox', num_classes=80):
         """Export results field to a dict, all tensor in results field would be
         converted to numpy."""
-        assert ressults_type in ('bbox', 'mask')
-        if ressults_type == 'bbox':
+        assert results_type in ('bbox', 'mask')
+        if results_type == 'bbox':
             det_bboxes = torch.cat([self.bboxes, self.scores[:, None]], -1)
             return bbox2result(det_bboxes, self.labels, num_classes)
 
@@ -336,8 +336,3 @@ class InstanceResults(Results):
                     f'Can not concat the {k} which is a {type(k)}')
             cat_results[k] = values
         return cat_results
-
-
-if __name__ == '__main__':
-    r = Results(img_meta=dict(name='123'))
-    print(r)
