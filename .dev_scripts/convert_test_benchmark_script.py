@@ -14,7 +14,7 @@ def parse_args():
         default='openmmlab',
         help='slurm partition name')
     parser.add_argument('checkpoint_dir', help='checkpoint file dir')
-    parser.add_argument('--port', type=int, default=29600, help='dist port')
+    parser.add_argument('--port', type=int, default=29666, help='dist port')
     parser.add_argument(
         '--run', action='store_true', help='run script directly')
     parser.add_argument(
@@ -65,7 +65,11 @@ def main():
             command_info += f'{config} '
             command_info += f'{ckpt} '
             command_info += f'--work-dir {out_fname} '
-            command_info += '--eval bbox '
+            if config.find('rpn_r50_fpn_1x_coco.py') >= 0 or config.find('crpn_r50_caffe_fpn_1x_coco.py') >= 0:
+                eval_str = 'proposal_fast'
+            else:
+                eval_str = 'bbox'
+            command_info += f'--eval {eval_str} '
             command_info += f'--cfg-option dist_params.port={port} '
             command_info += ' &'
 
