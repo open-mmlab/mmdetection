@@ -44,4 +44,5 @@ Import:
   - configs/reppoints/metafile.yml
   - configs/res2net/metafile.yml
   - configs/resnest/metafile.yml
+  - configs/retinanet/metafile.yml
 
