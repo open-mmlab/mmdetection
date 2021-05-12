@@ -1,11 +1,12 @@
 import copy
+import os.path as osp
+from unittest.mock import MagicMock, patch
+
 import mmcv
 import numpy as np
-import os.path as osp
 import pytest
 import torch
 from mmcv.utils import build_from_cfg
-from unittest.mock import MagicMock, patch
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets import DATASETS
