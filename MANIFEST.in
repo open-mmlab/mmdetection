@@ -1,9 +1,6 @@
 include requirements/*.txt
 include mmdet/VERSION
 include mmdet/model_zoo.yml
-include mmdet/configs/*/*.py
-include mmdet/configs/*/*.yml
-include mmdet/tools/*.py
-include mmdet/tools/*.sh
-include mmdet/tools/*/*.py
 include mmdet/demo/*/*
+recursive-include mmdet/configs *.py *.yml
+recursive-include mmdet/tools *.sh *.py
