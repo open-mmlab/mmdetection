@@ -8,12 +8,12 @@ def parse_args():
         description='Convert benchmark model txt to script')
     parser.add_argument(
         'text', type=str, help='Model list files that need to be batch tested')
+    parser.add_argument('checkpoint_dir', help='checkpoint file dir')
     parser.add_argument(
-        'partition',
+        '--partition',
         type=str,
         default='openmmlab',
         help='slurm partition name')
-    parser.add_argument('checkpoint_dir', help='checkpoint file dir')
     parser.add_argument('--port', type=int, default=29666, help='dist port')
     parser.add_argument(
         '--run', action='store_true', help='run script directly')
