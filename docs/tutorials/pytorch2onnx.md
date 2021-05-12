@@ -221,14 +221,14 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 |    YOLOv3    |    `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`               |       Y       |        Y        |         |
 | Faster R-CNN |   `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`              |       Y       |        Y        |         |
 |  Mask R-CNN  |     `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`                |       Y       |        Y        |         |
-|  CornerNet   | `configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py` |       Y       |        N        | no flip |
+|  CornerNet   | `configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py` |       Y       |        N        | no flip, no batch inference, tested with torch==1.7.0 and onnxruntime==1.5.1. |
 
 Notes:
 
-- *Except for CornerNet, all models above are tested with Pytorch==1.6.0 and onnxruntime==1.5.1*. *CornerNet is tested with Pytorch==1.7.0 and onnxruntime==1.5.1*, since `mmcv::cummax` requires torch version >= 1.7.0 when exporting CornerNet to ONNX. For more details about the
-torch version with `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md) in mmcv.
+- *All models above are tested with Pytorch==1.6.0 and onnxruntime==1.5.1*, except for CornerNet. For more details about the
+torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md#known-issues) in mmcv.
 
-- CornerNet is evaluated with no test-time flip and no batch inference, since currently only single-scale evaluation is supported with ONNX Runtime, and `mmcv::SoftNonMaxSuppression` is only supported for single image.
+- Currently only single-scale evaluation is supported with ONNX Runtime, also `mmcv::SoftNonMaxSuppression` is only supported for single image by now.
 
 - If the deployed backend platform is TensorRT, please add environment variables before running the file:
 
