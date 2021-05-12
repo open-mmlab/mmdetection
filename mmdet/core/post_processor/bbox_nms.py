@@ -100,7 +100,7 @@ class NMS(object):
     """BaseClass of all nms operation, such as nms, soft nms...
 
     All type of nms operation must have the same base class to identify it as
-    `nms`,  because in AugTest we need to remove it from process pipline.
+    `nms`,  because in AugTest we need to remove it from process pipeline.
     """
     pass
 
