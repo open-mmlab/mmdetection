@@ -1,3 +1,5 @@
+from logging import warning
+
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
@@ -31,3 +33,9 @@ class PAA(SingleStageDetector):
             pretrained,
             init_cfg,
             aug_bbox_post_processes=aug_bbox_post_processes)
+
+    def aug_test_bboxes(self, *args, **kwargs):
+        warning(f'AugTesting, We have disabled the score_voting of '
+                f'{self.bbox_head.__class__.__name__} ')
+        self.bbox_head.with_score_voting = False
+        super(PAA, self).aug_test_bboxes(*args, **kwargs)
