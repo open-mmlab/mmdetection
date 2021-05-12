@@ -9,7 +9,6 @@ from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply,
                         reduce_mean)
 from mmdet.models.utils import build_transformer
-from ...core.post_processor.builder import ComposePostProcess
 from ...core.results.results import InstanceResults
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
@@ -63,14 +62,6 @@ class DETRHead(AnchorFreeHead):
                      type='SinePositionalEncoding',
                      num_feats=128,
                      normalize=True),
-                 bbox_post_processes=[
-                     dict(
-                         type='ScoreTopk',
-                         sigmoid=False,
-                         max_per_img=100,
-                     ),
-                     dict(type='ResizeResultsToOri', results_types=['bbox'])
-                 ],
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      bg_cls_weight=0.1,
@@ -87,16 +78,11 @@ class DETRHead(AnchorFreeHead):
                          iou_cost=dict(
                              type='IoUCost', iou_mode='giou', weight=2.0))),
                  test_cfg=dict(max_per_img=100),
-                 init_cfg=None,
                  **kwargs):
         # NOTE here use `AnchorFreeHead` instead of `TransformerHead`,
         # since it brings inconvenience when the initialization of
         # `AnchorFreeHead` is called.
-        super(AnchorFreeHead, self).__init__(init_cfg)
-        if bbox_post_processes is not None:
-            self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
-        else:
-            self.bbox_post_processes = nn.Identity()
+        super(AnchorFreeHead, self).__init__(**kwargs)
         self.bg_cls_weight = 0
         self.sync_cls_avg_factor = sync_cls_avg_factor
         class_weight = loss_cls.get('class_weight', None)

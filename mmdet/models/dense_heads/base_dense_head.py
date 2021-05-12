@@ -2,7 +2,6 @@ from abc import ABCMeta, abstractmethod
 from logging import warning
 
 import torch
-import torch.nn as nn
 from mmcv import ConfigDict
 from mmcv.runner import BaseModule
 
@@ -67,7 +66,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         if bbox_post_processes is not None:
             self.bbox_post_processes = ComposePostProcess(bbox_post_processes)
         else:
-            self.bbox_post_processes = nn.Identity()
+            raise RuntimeError(
+                f'Please set post process for {self.__class__.__name__}')
 
     @abstractmethod
     def loss(self, **kwargs):

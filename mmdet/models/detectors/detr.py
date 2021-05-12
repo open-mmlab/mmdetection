@@ -1,3 +1,4 @@
+from ...core.post_processor.bbox_nms import NMS
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
@@ -53,3 +54,28 @@ class DETR(SingleStageDetector):
         results_list = self.bbox_head.get_bboxes(*outs, img_metas)
 
         return [results.export('bbox') for results in results_list]
+
+    def aug_test_bboxes(self, feats, img_metas):
+        # Almost same with the implementation in SingleStageDetector
+        # except the we need to pass the img_meta to bbox_head
+
+        # remove the nms op from head at first iteration
+        if not hasattr(self, 'remove_head_nms'):
+            head_post_processes = \
+                self.bbox_head.bbox_post_processes.process_list
+            for index, operation in enumerate(head_post_processes):
+                if isinstance(operation, NMS):
+                    head_post_processes.pop(index)
+                    break
+            # Some heads do not hav nms, such as detr
+            self.remove_head_nms = True
+
+        aug_resutls_list = []
+        for x, img_meta in zip(feats, img_metas):
+            # only one image in the batch
+            outs = self.bbox_head(x, img_meta)
+            results = self.bbox_head.get_bboxes(*outs, img_meta)[0]
+            aug_resutls_list.append(results)
+
+        aug_resutls_list = self.aug_bbox_post_processes(aug_resutls_list)
+        return [results.export('bbox') for results in aug_resutls_list]
