@@ -5,6 +5,16 @@ _base_ = [
 # model settings
 model = dict(
     type='CornerNet',
+    # only used in augtest
+    aug_bbox_post_processes=[
+        dict(type='MergeResults'),
+        dict(
+            type='SoftNMS',
+            iou_threshold=0.5,
+            method='gaussian',
+            class_agnostic=False,
+            max_num=100)
+    ],
     backbone=dict(
         type='HourglassNet',
         downsample_times=5,
@@ -15,6 +25,15 @@ model = dict(
     neck=None,
     bbox_head=dict(
         type='CentripetalHead',
+        bbox_post_processes=[
+            dict(
+                type='SoftNMS',
+                iou_threshold=0.5,
+                method='gaussian',
+                class_agnostic=False,
+                max_num=100),
+            dict(type='ResizeResultsToOri', results_types=['bbox'])
+        ],
         num_classes=80,
         in_channels=256,
         num_feat_levels=2,
@@ -32,9 +51,7 @@ model = dict(
         corner_topk=100,
         local_maximum_kernel=3,
         distance_threshold=0.5,
-        score_thr=0.05,
-        max_per_img=100,
-        nms=dict(type='soft_nms', iou_threshold=0.5, method='gaussian')))
+    ))
 # data settings
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)

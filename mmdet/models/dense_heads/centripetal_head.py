@@ -420,7 +420,6 @@ class CentripetalHead(CornerHead):
                         img_id:img_id + 1, :],
                     br_centripetal_shift=br_centripetal_shifts[-1][
                         img_id:img_id + 1, :],
-                    rescale=rescale,
-                    with_nms=with_nms))
+                ))
 
         return result_list
