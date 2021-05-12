@@ -755,7 +755,6 @@ class RandomCrop(object):
         """
         image_size = results['img'].shape[:2]
         crop_size = self._get_crop_size(image_size)
-        print(self.crop_size, crop_size)
         results = self._crop_data(results, crop_size, self.allow_negative_crop)
         return results
 
@@ -1772,7 +1771,8 @@ class CutOut(object):
         assert (isinstance(cutout_shape, (list, tuple))
                 or isinstance(cutout_ratio, (list, tuple)))
         if isinstance(n_holes, tuple):
-            assert len(n_holes) == 2 and 0 <= n_holes[0] < n_holes[1]
+            assert len(n_holes) == 2 and\
+                   0 <= n_holes[0] < n_holes[1]
         else:
             n_holes = (n_holes, n_holes)
         self.n_holes = n_holes
@@ -1853,8 +1853,7 @@ class Mosaic(object):
         elif isinstance(min_offset, tuple):
             assert isinstance(min_offset[0], float) \
                    and isinstance(min_offset[1], float)
-            assert 0 <= min_offset[0] <= 1 and \
-                   0 <= min_offset[1] <= 1
+            assert 0 <= min_offset[0] <= 1 and 0 <= min_offset[1] <= 1
             self.min_offset = min_offset
         else:
             raise TypeError('Unsupported type for min_offset, '
@@ -1888,7 +1887,6 @@ class Mosaic(object):
         tmp_result['img'] = np.zeros(
             (self.size[0], self.size[1], *tmp_result['img'].shape[2:]),
             dtype=tmp_result['img'].dtype)
-
         for key in tmp_result.get('seg_fields', []):
             tmp_result[key] = np.zeros(
                 (self.size[0], self.size[1], *tmp_result[key].shape[2:]),
@@ -1912,9 +1910,10 @@ class Mosaic(object):
             crop_size, img_slices, paste_position = self._mosiac_combine(
                 loc, cut_position)
 
+            # randomly crop the image and segmentation mask
             self.cropper.crop_size = crop_size
             results_i = self.cropper(results_i)
-
+            # paste to the buffer image
             tmp_result['img'][img_slices] = results_i['img'].copy()
             for key in tmp_result.get('seg_fields', []):
                 tmp_result[key][img_slices] = results_i[key].copy()
@@ -1981,7 +1980,7 @@ class Mosaic(object):
          Args:
             results (dict): Result dict from :obj:`dataset`.
             paste_position (tuple[int]): paste up-left corner
-                coordinate (y, x) in moaiac image.
+                coordinate (y, x) in mosaic image.
 
         Returns:
             results (dict): Result dict with corrected bbox
@@ -1995,3 +1994,9 @@ class Mosaic(object):
             results[key] = box
 
         return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'size={self.size}, '
+        repr_str += f'min_offset={self.min_offset})'
+        return repr_str
