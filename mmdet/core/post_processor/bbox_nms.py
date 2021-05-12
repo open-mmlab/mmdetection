@@ -22,8 +22,7 @@ class PreNMS(object):
         self.score_factor_thr = score_factor_thr
 
     def __call__(self, results_list):
-        # shape(n, num_class), the num_class does not
-        # include the background
+
         processed_results_list = []
         for results in results_list:
             # exclude background category
@@ -174,7 +173,6 @@ class NaiveNMS(NMS):
 @POST_PROCESSOR.register_module()
 class SoftNMS(NMS):
     """
-
     Args:
         boxes (torch.Tensor or np.ndarray): boxes in shape (N, 4).
         scores (torch.Tensor or np.ndarray): scores in shape (N, ).
@@ -240,7 +238,7 @@ class SoftNMS(NMS):
 
             else:
                 total_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
-                reweight_scores = []
+                scores_after_nms = scores.new_zeros(scores.size())
                 for id in torch.unique(labels):
                     class_ids = (labels == id).nonzero(as_tuple=False).view(-1)
                     dets, keep_ids = soft_nms(
@@ -251,11 +249,11 @@ class SoftNMS(NMS):
                         iou_threshold=self.iou_threshold,
                         offset=self.offset)
                     total_mask[class_ids[keep_ids]] = True
-                    reweight_scores.append(dets[:, -1])
+                    scores_after_nms[class_ids[keep_ids]] = dets[:, -1]
 
-                reweight_scores = torch.cat(reweight_scores)
                 processed_results = results[total_mask]
-                processed_results.scores = reweight_scores
+                # use the reweight scores
+                processed_results.scores = scores_after_nms[total_mask]
                 processed_results = processed_results[
                     processed_results.scores.argsort(descending=True)]
 
