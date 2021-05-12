@@ -35,7 +35,8 @@ class PAA(SingleStageDetector):
             aug_bbox_post_processes=aug_bbox_post_processes)
 
     def aug_test_bboxes(self, *args, **kwargs):
-        warning(f'AugTesting, We have disabled the score_voting of '
-                f'{self.bbox_head.__class__.__name__} ')
-        self.bbox_head.with_score_voting = False
-        super(PAA, self).aug_test_bboxes(*args, **kwargs)
+        if self.bbox_head.with_score_voting:
+            warning(f'AugTesting, We have disabled the score_voting of '
+                    f'{self.bbox_head.__class__.__name__} ')
+            self.bbox_head.with_score_voting = False
+        return super(PAA, self).aug_test_bboxes(*args, **kwargs)
