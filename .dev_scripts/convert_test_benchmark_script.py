@@ -65,7 +65,8 @@ def main():
             command_info += f'{config} '
             command_info += f'{ckpt} '
             command_info += f'--work-dir {out_fname} '
-            if config.find('rpn_r50_fpn_1x_coco.py') >= 0 or config.find('crpn_r50_caffe_fpn_1x_coco.py') >= 0:
+            if config.find('rpn_r50_fpn_1x_coco.py') >= 0 or config.find(
+                    'crpn_r50_caffe_fpn_1x_coco.py') >= 0:
                 eval_str = 'proposal_fast'
             else:
                 eval_str = 'bbox'
