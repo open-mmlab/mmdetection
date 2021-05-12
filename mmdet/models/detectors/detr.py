@@ -13,9 +13,24 @@ class DETR(SingleStageDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
-                 init_cfg=None):
-        super(DETR, self).__init__(backbone, None, bbox_head, train_cfg,
-                                   test_cfg, pretrained, init_cfg)
+                 init_cfg=None,
+                 aug_bbox_post_processes=[
+                     dict(type='MergeResults'),
+                     dict(
+                         type='NaiveNMS',
+                         iou_threshold=0.5,
+                         class_agnostic=False,
+                         max_num=100)
+                 ]):
+        super(DETR, self).__init__(
+            backbone,
+            None,
+            bbox_head,
+            train_cfg,
+            test_cfg,
+            pretrained,
+            init_cfg,
+            aug_bbox_post_processes=aug_bbox_post_processes)
 
     def simple_test(self, img, img_metas, rescale=False):
         """Test function without test time augmentation.

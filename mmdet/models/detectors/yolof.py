@@ -13,6 +13,20 @@ class YOLOF(SingleStageDetector):
                  bbox_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
-        super(YOLOF, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                    test_cfg, pretrained)
+                 pretrained=None,
+                 aug_bbox_post_processes=[
+                     dict(type='MergeResults'),
+                     dict(
+                         type='NaiveNMS',
+                         iou_threshold=0.5,
+                         class_agnostic=False,
+                         max_num=100)
+                 ]):
+        super(YOLOF, self).__init__(
+            backbone,
+            neck,
+            bbox_head,
+            train_cfg,
+            test_cfg,
+            pretrained,
+            aug_bbox_post_processes=aug_bbox_post_processes)

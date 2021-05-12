@@ -21,8 +21,9 @@ class CornerNet(SingleStageDetector):
                  aug_bbox_post_processes=[
                      dict(type='MergeResults'),
                      dict(
-                         type='NaiveNMS',
+                         type='SoftNMS',
                          iou_threshold=0.5,
+                         method='gaussian',
                          class_agnostic=False,
                          max_num=100)
                  ]):

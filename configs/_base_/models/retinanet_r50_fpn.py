@@ -2,6 +2,15 @@
 model = dict(
     type='RetinaNet',
     pretrained='torchvision://resnet50',
+    # only used in AugTest to merge the results of different augmentation.
+    aug_bbox_post_processes=[
+        dict(type='MergeResults'),
+        dict(
+            type='NaiveNMS',
+            iou_threshold=0.5,
+            class_agnostic=False,
+            max_num=100)
+    ],
     backbone=dict(
         type='ResNet',
         depth=50,
