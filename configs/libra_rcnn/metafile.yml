@@ -19,6 +19,7 @@ Models:
     Metadata:
       Training Memory (GB): 4.6
       inference time (s/im): 0.05263
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -32,6 +33,7 @@ Models:
     Metadata:
       Training Memory (GB): 6.5
       inference time (s/im): 0.06944
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -45,6 +47,7 @@ Models:
     Metadata:
       Training Memory (GB): 10.8
       inference time (s/im): 0.11765
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -57,7 +60,8 @@ Models:
     Config: configs/libra_rcnn/libra_retinanet_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.2
-      inference time (s/im): 0.05650
+      inference time (s/im): 0.0565
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO

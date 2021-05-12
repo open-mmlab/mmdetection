@@ -23,6 +23,7 @@ Models:
     Metadata:
       Training Memory (GB): 8.2
       inference time (s/im): 0.17241
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -39,6 +40,7 @@ Models:
     Config: configs/htc/htc_r50_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 8.2
+      Epochs: 20
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -56,6 +58,7 @@ Models:
     Metadata:
       Training Memory (GB): 10.2
       inference time (s/im): 0.18182
+      Epochs: 20
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -72,7 +75,8 @@ Models:
     Config: configs/htc/htc_x101_32x4d_fpn_16x1_20e_coco.py
     Metadata:
       Training Memory (GB): 11.4
-      inference time (s/im): 0.20000
+      inference time (s/im): 0.2
+      Epochs: 20
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -90,6 +94,7 @@ Models:
     Metadata:
       Training Memory (GB): 14.5
       inference time (s/im): 0.22727
+      Epochs: 20
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -105,6 +110,7 @@ Models:
     In Collection: HTC
     Config: configs/htc/htc_x101_64x4d_fpn_dconv_c3-c5_mstrain_400_1400_16x1_20e_coco.py
     Metadata:
+      Epochs: 20
     Results:
       - Task: Object Detection
         Dataset: COCO

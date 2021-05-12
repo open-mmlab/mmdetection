@@ -19,6 +19,7 @@ Models:
     Config: configs/detr/detr_r50_8x2_150e_coco.py
     Metadata:
       Training Memory (GB): 7.9
+      Epochs: 150
     Results:
       - Task: Object Detection
         Dataset: COCO

@@ -21,6 +21,7 @@ Models:
     Metadata:
       Training Memory (GB): 3.9
       inference time (s/im): 0.06289
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -34,6 +35,7 @@ Models:
     Metadata:
       Training Memory (GB): 3.9
       inference time (s/im): 0.06494
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -47,6 +49,7 @@ Models:
     Metadata:
       Training Memory (GB): 3.3
       inference time (s/im): 0.05405
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -60,6 +63,7 @@ Models:
     Metadata:
       Training Memory (GB): 3.9
       inference time (s/im): 0.05714
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -72,6 +76,7 @@ Models:
     Config: configs/reppoints/reppoints_moment_r50_fpn_gn-neck+head_2x_coco.py
     Metadata:
       Training Memory (GB): 3.9
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -85,6 +90,7 @@ Models:
     Metadata:
       Training Memory (GB): 5.8
       inference time (s/im): 0.07299
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -98,6 +104,7 @@ Models:
     Metadata:
       Training Memory (GB): 5.9
       inference time (s/im): 0.08264
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -111,6 +118,7 @@ Models:
     Metadata:
       Training Memory (GB): 7.1
       inference time (s/im): 0.10753
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO

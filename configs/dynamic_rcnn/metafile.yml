@@ -21,6 +21,7 @@ Models:
     Config: configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.8
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO

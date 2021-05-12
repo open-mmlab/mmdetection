@@ -19,6 +19,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_r50_caffe_dc5_1x_coco.py
     Metadata:
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -31,6 +32,7 @@ Models:
     Config: configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.8
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -44,6 +46,7 @@ Models:
     Metadata:
       Training Memory (GB): 4.0
       inference time (s/im): 0.04673
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -55,6 +58,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_r50_fpn_2x_coco.py
     Metadata:
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -67,6 +71,7 @@ Models:
     Config: configs/faster_rcnn/faster_rcnn_r101_caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.7
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -79,7 +84,8 @@ Models:
     Config: configs/faster_rcnn/faster_rcnn_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.0
-      inference time (s/im): 0.06410
+      inference time (s/im): 0.0641
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -91,6 +97,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_r101_fpn_2x_coco.py
     Metadata:
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -104,6 +111,7 @@ Models:
     Metadata:
       Training Memory (GB): 7.2
       inference time (s/im): 0.07246
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -115,6 +123,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_x101_32x4d_fpn_2x_coco.py
     Metadata:
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -128,6 +137,7 @@ Models:
     Metadata:
       Training Memory (GB): 10.3
       inference time (s/im): 0.10638
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -139,6 +149,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_x101_64x4d_fpn_2x_coco.py
     Metadata:
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -150,6 +161,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_r50_fpn_iou_1x_coco.py
     Metadata:
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -161,6 +173,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_r50_fpn_giou_1x_coco.py
     Metadata:
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -172,6 +185,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_r50_fpn_bounded_iou_1x_coco.py
     Metadata:
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -183,6 +197,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_1x_coco.py
     Metadata:
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -194,6 +209,7 @@ Models:
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_3x_coco.py
     Metadata:
+      Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -206,6 +222,7 @@ Models:
     Config: configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_2x_coco.py
     Metadata:
       Training Memory (GB): 4.3
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -218,6 +235,7 @@ Models:
     Config: configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 4.3
+      Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO

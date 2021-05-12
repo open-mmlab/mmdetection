@@ -17,6 +17,7 @@ Models:
     Config: configs/res2net/faster_rcnn_r2_101_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 7.4
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -29,6 +30,7 @@ Models:
     Config: configs/res2net/mask_rcnn_r2_101_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 7.9
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -45,6 +47,7 @@ Models:
     Config: configs/res2net/cascade_rcnn_r2_101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 7.8
+      Epochs: 20
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -57,6 +60,7 @@ Models:
     Config: configs/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 9.5
+      Epochs: 20
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -72,6 +76,7 @@ Models:
     In Collection: Res2Net
     Config: configs/res2net/htc_r2_101_fpn_20e_coco.py
     Metadata:
+      Epochs: 20
     Results:
       - Task: Object Detection
         Dataset: COCO

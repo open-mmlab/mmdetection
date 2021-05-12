@@ -19,6 +19,7 @@ Models:
     Metadata:
       Training Memory (GB): 5.9
       inference time (s/im): 0.08547
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -32,6 +33,7 @@ Models:
     Metadata:
       Training Memory (GB): 8.9
       inference time (s/im): 0.11111
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -45,6 +47,7 @@ Models:
     Metadata:
       Training Memory (GB): 7.0
       inference time (s/im): 0.09709
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -58,6 +61,7 @@ Models:
     Metadata:
       Training Memory (GB): 10.8
       inference time (s/im): 0.13158
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -71,6 +75,7 @@ Models:
     Metadata:
       Training Memory (GB): 7.3
       inference time (s/im): 0.09524
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -88,6 +93,7 @@ Models:
     Metadata:
       Training Memory (GB): 10.3
       inference time (s/im): 0.11628
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -105,6 +111,7 @@ Models:
     Metadata:
       Training Memory (GB): 8.4
       inference time (s/im): 0.10753
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -122,6 +129,7 @@ Models:
     Metadata:
       Training Memory (GB): 12.2
       inference time (s/im): 0.14085
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -138,6 +146,7 @@ Models:
     Config: configs/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_20_23_24e_coco.py
     Metadata:
       Training Memory (GB): 7.3
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -154,6 +163,7 @@ Models:
     Config: configs/gn%2Bws/mask_rcnn_r101_fpn_gn_ws-all_20_23_24e_coco.py
     Metadata:
       Training Memory (GB): 10.3
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -170,6 +180,7 @@ Models:
     Config: configs/gn%2Bws/mask_rcnn_x50_32x4d_fpn_gn_ws-all_20_23_24e_coco.py
     Metadata:
       Training Memory (GB): 8.4
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -186,6 +197,7 @@ Models:
     Config: configs/gn%2Bws/mask_rcnn_x101_32x4d_fpn_gn_ws-all_20_23_24e_coco.py
     Metadata:
       Training Memory (GB): 12.2
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO

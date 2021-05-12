@@ -19,6 +19,7 @@ Models:
     Metadata:
       Training Memory (GB): 5.6
       inference time (s/im): 0.04149
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -31,6 +32,7 @@ Models:
     Config: configs/foveabox/fovea_r50_fpn_4x4_2x_coco.py
     Metadata:
       Training Memory (GB): 5.6
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -44,6 +46,7 @@ Models:
     Metadata:
       Training Memory (GB): 8.1
       inference time (s/im): 0.05155
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -57,6 +60,7 @@ Models:
     Metadata:
       Training Memory (GB): 8.1
       inference time (s/im): 0.05464
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -70,6 +74,7 @@ Models:
     Metadata:
       Training Memory (GB): 9.2
       inference time (s/im): 0.05747
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -82,6 +87,7 @@ Models:
     Config: configs/foveabox/fovea_r101_fpn_4x4_2x_coco.py
     Metadata:
       Training Memory (GB): 11.7
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -95,6 +101,7 @@ Models:
     Metadata:
       Training Memory (GB): 11.7
       inference time (s/im): 0.06803
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -108,6 +115,7 @@ Models:
     Metadata:
       Training Memory (GB): 11.7
       inference time (s/im): 0.06803
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO

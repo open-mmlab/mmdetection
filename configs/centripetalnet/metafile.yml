@@ -19,6 +19,7 @@ Models:
       Batch Size: 16 x 6
       Training Memory (GB): 16.7
       inference time (s/im): 0.27027
+      Epochs: 210
     Results:
       - Task: Object Detection
         Dataset: COCO

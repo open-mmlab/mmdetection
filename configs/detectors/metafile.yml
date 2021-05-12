@@ -23,6 +23,7 @@ Models:
     Config: configs/detectors/cascade_rcnn_r50_rfp_1x_coco.py
     Metadata:
       Training Memory (GB): 7.5
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -35,6 +36,7 @@ Models:
     Config: configs/detectors/cascade_rcnn_r50_sac_1x_coco.py
     Metadata:
       Training Memory (GB): 5.6
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -47,6 +49,7 @@ Models:
     Config: configs/detectors/detectors_cascade_rcnn_r50_1x_coco.py
     Metadata:
       Training Memory (GB): 9.9
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -59,6 +62,7 @@ Models:
     Config: configs/detectors/htc_r50_rfp_1x_coco.py
     Metadata:
       Training Memory (GB): 11.2
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -75,6 +79,7 @@ Models:
     Config: configs/detectors/htc_r50_sac_1x_coco.py
     Metadata:
       Training Memory (GB): 9.3
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -91,6 +96,7 @@ Models:
     Config: configs/detectors/detectors_htc_r50_1x_coco.py
     Metadata:
       Training Memory (GB): 13.6
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO

@@ -18,6 +18,7 @@ Models:
     Metadata:
       Training Memory (GB): 4.0
       inference time (s/im): 0.05814
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO

@@ -18,7 +18,8 @@ Models:
     Metadata:
       Batch Size: 10 x 5
       Training Memory (GB): 13.9
-      inference time (s/im): 0.23810
+      inference time (s/im): 0.2381
+      Epochs: 210
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -32,7 +33,8 @@ Models:
     Metadata:
       Batch Size: 8 x 6
       Training Memory (GB): 15.9
-      inference time (s/im): 0.23810
+      inference time (s/im): 0.2381
+      Epochs: 210
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -47,10 +49,10 @@ Models:
       Batch Size: 32 x 3
       Training Memory (GB): 9.5
       inference time (s/im): 0.25641
+      Epochs: 210
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 40.4
     Weights: http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco/cornernet_hourglass104_mstest_32x3_210e_coco_20200819_203110-1efaea91.pth
-

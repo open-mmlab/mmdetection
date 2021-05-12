@@ -17,6 +17,7 @@ Models:
     In Collection: TridentNet
     Config: configs/tridentnet/tridentnet_r50_caffe_1x_coco.py
     Metadata:
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -28,6 +29,7 @@ Models:
     In Collection: TridentNet
     Config: configs/tridentnet/tridentnet_r50_caffe_mstrain_1x_coco.py
     Metadata:
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -39,6 +41,7 @@ Models:
     In Collection: TridentNet
     Config: configs/tridentnet/tridentnet_r50_caffe_mstrain_3x_coco.py
     Metadata:
+      Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO

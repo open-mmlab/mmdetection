@@ -18,6 +18,7 @@ Models:
     In Collection: Rethinking ImageNet Pre-training
     Config: configs/scratch/faster_rcnn_r50_fpn_gn-all_scratch_6x_coco.py
     Metadata:
+      Epochs: 72
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -29,6 +30,7 @@ Models:
     In Collection: Rethinking ImageNet Pre-training
     Config: configs/scratch/mask_rcnn_r50_fpn_gn-all_scratch_6x_coco.py
     Metadata:
+      Epochs: 72
     Results:
       - Task: Object Detection
         Dataset: COCO

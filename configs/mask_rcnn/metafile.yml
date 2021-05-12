@@ -23,6 +23,7 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.3
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -40,6 +41,7 @@ Models:
     Metadata:
       Training Memory (GB): 4.4
       inference time (s/im): 0.06211
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -57,6 +59,7 @@ Models:
     Metadata:
       Training Memory (GB): 4.4
       inference time (s/im): 0.06211
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -72,6 +75,7 @@ Models:
     In Collection: Mask R-CNN
     Config: configs/mask_rcnn/mask_rcnn_r101_caffe_fpn_1x_coco.py
     Metadata:
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -89,6 +93,7 @@ Models:
     Metadata:
       Training Memory (GB): 6.4
       inference time (s/im): 0.07407
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -106,6 +111,7 @@ Models:
     Metadata:
       Training Memory (GB): 6.4
       inference time (s/im): 0.07407
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -123,6 +129,7 @@ Models:
     Metadata:
       Training Memory (GB): 7.6
       inference time (s/im): 0.0885
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -140,6 +147,7 @@ Models:
     Metadata:
       Training Memory (GB): 7.6
       inference time (s/im): 0.0885
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -157,6 +165,7 @@ Models:
     Metadata:
       Training Memory (GB): 10.7
       inference time (s/im): 0.125
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -174,6 +183,7 @@ Models:
     Metadata:
       Training Memory (GB): 10.7
       inference time (s/im): 0.125
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -191,6 +201,7 @@ Models:
     Metadata:
       Training Memory (GB): 10.7
       inference time (s/im): 0.125
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -206,6 +217,7 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_2x_coco.py
     Metadata:
       Training Memory (GB): 4.3
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -222,6 +234,7 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco.py
     Metadata:
       Training Memory (GB): 4.3
+      Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -237,6 +250,7 @@ Models:
     In Collection: Mask R-CNN
     Config: configs/mask_rcnn/mask_rcnn_x101_32x8d_fpn_mstrain-poly_1x_coco.py
     Metadata:
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -251,6 +265,7 @@ Models:
     In Collection: Mask R-CNN
     Config: configs/mask_rcnn/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco.py
     Metadata:
+      Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO

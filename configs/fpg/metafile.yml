@@ -17,6 +17,7 @@ Models:
     Config: configs/fpg/faster_rcnn_r50_fpg_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 20.0
+      Epochs: 50
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -29,6 +30,7 @@ Models:
     Config: configs/fpg/faster_rcnn_r50_fpg-chn128_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 11.9
+      Epochs: 50
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -41,6 +43,7 @@ Models:
     Config: configs/fpg/mask_rcnn_r50_fpg_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 23.2
+      Epochs: 50
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -57,6 +60,7 @@ Models:
     Config: configs/fpg/mask_rcnn_r50_fpg-chn128_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 15.3
+      Epochs: 50
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -73,6 +77,7 @@ Models:
     Config: configs/fpg/retinanet_r50_fpg_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 20.8
+      Epochs: 50
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -85,10 +90,10 @@ Models:
     Config: configs/fpg/retinanet_r50_fpg-chn128_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 19.9
+      Epochs: 50
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 40.3
     Weights: http://download.openmmlab.com/mmdetection/v2.0/fpg/retinanet_r50_fpg-chn128_crop640_50e_coco/retinanet_r50_fpg-chn128_crop640_50e_coco-5cf33c76.pth
-

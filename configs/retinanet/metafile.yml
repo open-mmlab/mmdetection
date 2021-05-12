@@ -20,6 +20,7 @@ Models:
     Metadata:
       Training Memory (GB): 3.5
       inference time (s/im): 0.05376
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -33,6 +34,7 @@ Models:
     Metadata:
       Training Memory (GB): 3.8
       inference time (s/im): 0.05263
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -44,6 +46,7 @@ Models:
     In Collection: RetinaNet
     Config: configs/retinanet/retinanet_r50_fpn_2x_coco.py
     Metadata:
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -57,6 +60,7 @@ Models:
     Metadata:
       Training Memory (GB): 5.5
       inference time (s/im): 0.06803
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -70,6 +74,7 @@ Models:
     Metadata:
       Training Memory (GB): 5.7
       inference time (s/im): 0.06667
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -81,6 +86,7 @@ Models:
     In Collection: RetinaNet
     Config: configs/retinanet/retinanet_r101_fpn_2x_coco.py
     Metadata:
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -94,6 +100,7 @@ Models:
     Metadata:
       Training Memory (GB): 7.0
       inference time (s/im): 0.08264
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -105,6 +112,7 @@ Models:
     In Collection: RetinaNet
     Config: configs/retinanet/retinanet_x101_32x4d_fpn_2x_coco.py
     Metadata:
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -118,6 +126,7 @@ Models:
     Metadata:
       Training Memory (GB): 10.0
       inference time (s/im): 0.11494
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -129,6 +138,7 @@ Models:
     In Collection: RetinaNet
     Config: configs/retinanet/retinanet_x101_64x4d_fpn_2x_coco.py
     Metadata:
+      Epochs: 24
     Results:
       - Task: Object Detection
         Dataset: COCO

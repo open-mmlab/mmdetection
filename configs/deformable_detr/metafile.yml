@@ -18,6 +18,7 @@ Models:
     In Collection: Deformable DETR
     Config: configs/deformable_detr/deformable_detr_r50_16x2_50e_coco.py
     Metadata:
+      Epochs: 50
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -29,6 +30,7 @@ Models:
     In Collection: Deformable DETR
     Config: configs/deformable_detr/deformable_detr_refine_r50_16x2_50e_coco.py
     Metadata:
+      Epochs: 50
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -40,6 +42,7 @@ Models:
     In Collection: Deformable DETR
     Config: configs/deformable_detr/deformable_detr_twostage_refine_r50_16x2_50e_coco.py
     Metadata:
+      Epochs: 50
     Results:
       - Task: Object Detection
         Dataset: COCO

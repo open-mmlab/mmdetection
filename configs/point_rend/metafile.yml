@@ -19,6 +19,7 @@ Models:
     Config: configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py
     Metadata:
       Training Memory (GB): 4.6
+      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -35,6 +36,7 @@ Models:
     Config: configs/point_rend/point_rend_r50_caffe_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 4.6
+      Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
