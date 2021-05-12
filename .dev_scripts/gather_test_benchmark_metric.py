@@ -40,26 +40,29 @@ if __name__ == '__main__':
             fname, _ = osp.splitext(osp.basename(config))
             metric_json_dir = osp.join(root_path, fname)
             if osp.exists(metric_json_dir):
-                log_json_path = list(
-                    sorted(glob.glob(osp.join(metric_json_dir, '*.json'))))[-1]
+                json_list = glob.glob(osp.join(metric_json_dir, '*.json'))
+                if len(json_list) > 0:
+                    log_json_path = list(sorted(json_list))[-1]
 
-                metric = mmcv.load(log_json_path)
-                if config in metric:
-                    try:
-                        map = metric[config]['bbox_mAP']
-                    except Exception:
-                        map = metric[config]['AR@1000']
-                    if args.show_all:
-                        result_dict[config] = [old_metric, round(map * 100, 1)]
+                    metric = mmcv.load(log_json_path)
+                    if config in metric:
+                        try:
+                            map = metric[config]['bbox_mAP']
+                        except Exception:
+                            map = metric[config]['AR@1000']
+                        if args.show_all:
+                            result_dict[config] = [old_metric, round(map * 100, 1)]
+                        else:
+                            if round(map * 100, 1) != old_metric:
+                                result_dict[config] = [
+                                    old_metric, round(map * 100, 1)
+                                ]
                     else:
-                        if round(map * 100, 1) != old_metric:
-                            result_dict[config] = [
-                                old_metric, round(map * 100, 1)
-                            ]
+                        print(f'{config} not included in: {log_json_path}')
                 else:
-                    print(f'{config} not included in: {log_json_path}')
+                    print(f'{config} not exist file: {metric_json_dir}')
             else:
-                print(f'{config} not exist path: {metric_json_dir}')
+                print(f'{config} not exist dir: {metric_json_dir}')
 
     print('===================================')
     for config_name, metrics in result_dict.items():
