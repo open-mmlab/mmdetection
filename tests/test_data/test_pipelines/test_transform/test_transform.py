@@ -1,12 +1,11 @@
 import copy
-import os.path as osp
-from unittest.mock import MagicMock, patch
-
 import mmcv
 import numpy as np
+import os.path as osp
 import pytest
 import torch
 from mmcv.utils import build_from_cfg
+from unittest.mock import MagicMock, patch
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets import DATASETS
@@ -130,8 +129,9 @@ def test_mosaic():
 
     results = mosaic_module(results)
 
-    # img = results['img']
-    # bboxes = results['gt_bboxes']
+    img = results['img']
+    bboxes = results['gt_bboxes']
+    print(bboxes)
     # mmcv.imshow_bboxes(img, bboxes, show=True, out_file='img.png')
     # mmcv.imshow_bboxes(img, gt_bboxes, show=True)
     # mmcv.imwrite(img, "img.png")
