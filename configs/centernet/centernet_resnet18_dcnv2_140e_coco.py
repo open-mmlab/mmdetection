@@ -1,6 +1,5 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
 
 model = dict(
@@ -11,8 +10,8 @@ model = dict(
     neck=dict(
         type='CTResNetNeck',
         in_channel=512,
-        num_filters=[256, 128, 64],
-        num_kernels=[4, 4, 4],
+        num_deconv_filters=(256, 128, 64),
+        num_deconv_kernels=(4, 4, 4),
         use_dcn=True),
     bbox_head=dict(
         type='CenterNetHead',
@@ -25,6 +24,7 @@ model = dict(
     train_cfg=None,
     test_cfg=dict(topk=100, local_maximum_kernel=3, max_per_img=100))
 
+# We fixed the incorrect img_norm_cfg problem in the source code.
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -87,6 +87,15 @@ data = dict(
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 
+# optimizer
+# Based on the default settings of modern detectors, the SGD effect is better
+# than the Adam in the source code, so we use SGD default settings and
+# if you use adam+lr5e-4, the map is 29.1.
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=None)
+
+# learning policy
+# Based on the default settings of modern detectors, we added warmup settings.
 lr_config = dict(
     policy='step',
     warmup='linear',

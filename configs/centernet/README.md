@@ -24,6 +24,6 @@ Note:
 
 - Flip box AP setting is single-scale and `flip=True`.
 - Compared to the source code, we refer to [CenterNet-Better](https://github.com/FateScript/CenterNet-better), and make the following change
-  - fix mean and variance errors.
+  - fix mean and variance errors
+  - use a different optimizer setting and warmup
   - use DDP while the original repo use DP
-  - use a different optimizer setting

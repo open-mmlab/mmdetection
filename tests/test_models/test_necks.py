@@ -250,20 +250,24 @@ def test_dilated_encoder():
 
 def test_ct_resnet_neck():
     # num_filters/num_kernels must be a list
-    with pytest.raises(AssertionError):
-        CTResNetNeck(in_channel=10, num_filters=10, num_kernels=4)
+    with pytest.raises(TypeError):
+        CTResNetNeck(
+            in_channel=10, num_deconv_filters=10, num_deconv_kernels=4)
 
     # num_filters/num_kernels must be same length
     with pytest.raises(AssertionError):
-        CTResNetNeck(in_channel=10, num_filters=[10, 10], num_kernels=[4])
+        CTResNetNeck(
+            in_channel=10,
+            num_deconv_filters=(10, 10),
+            num_deconv_kernels=(4, ))
 
     in_channels = 16
-    num_filters = [8, 8]
-    num_kernels = [4, 4]
+    num_filters = (8, 8)
+    num_kernels = (4, 4)
     ct_resnet_neck = CTResNetNeck(
         in_channel=in_channels,
-        num_filters=num_filters,
-        num_kernels=num_kernels)
+        num_deconv_filters=num_filters,
+        num_deconv_kernels=num_kernels)
     if torch.cuda.is_available():
         ct_resnet_neck = ct_resnet_neck.cuda()
         feat = [torch.rand(1, 16, 4, 4).cuda()]
