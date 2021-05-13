@@ -7,7 +7,7 @@ from mmcv import Config
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Convert benchmark model txt to script')
+        description='Convert benchmark model list to script')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint_root', help='checkpoint file root dir')
     parser.add_argument(
@@ -17,6 +17,10 @@ def parse_args():
         help='slurm partition name')
     parser.add_argument('--port', type=int, default=29666, help='dist port')
     parser.add_argument(
+        '--work-dir',
+        default='tools/batch_test',
+        help='the dir to save metric')
+    parser.add_argument(
         '--run', action='store_true', help='run script directly')
     parser.add_argument(
         '--out', type=str, help='path to save model benchmark script')
@@ -25,7 +29,7 @@ def parse_args():
     return args
 
 
-def process_model_info_dict(model_info, work_dir='tools/batch_test'):
+def process_model_info(model_info, work_dir):
     config = model_info['config'].strip()
     fname, _ = osp.splitext(osp.basename(config))
     job_name = fname
@@ -40,11 +44,8 @@ def process_model_info_dict(model_info, work_dir='tools/batch_test'):
         eval=eval)
 
 
-def create_test_bash_info(commands,
-                          model_test_dict,
-                          port,
-                          script_name='.dev_scripts/slurm_test.sh',
-                          partition='openmmlab'):
+def create_test_bash_info(commands, model_test_dict, port, script_name,
+                          partition):
     config = model_test_dict['config']
     job_name = model_test_dict['job_name']
     checkpoint = model_test_dict['checkpoint']
@@ -89,6 +90,7 @@ def main():
     script_name = osp.join('.dev_scripts', 'slurm_test.sh')
     partition = args.partition  # cluster name
     port = args.port
+    work_dir = args.work_dir
 
     cfg = Config.fromfile(args.config)
 
@@ -98,7 +100,7 @@ def main():
             model_infos = [model_infos]
         for model_info in model_infos:
             print('processing: ', model_info['config'])
-            model_test_dict = process_model_info_dict(model_info)
+            model_test_dict = process_model_info(model_info, work_dir)
             create_test_bash_info(commands, model_test_dict, port, script_name,
                                   partition)
             port += 1
