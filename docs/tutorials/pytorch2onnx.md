@@ -7,7 +7,7 @@
     - [Prerequisite](#prerequisite)
     - [Usage](#usage)
     - [Description of all arguments](#description-of-all-arguments)
-  - [How to evaluate ONNX models with ONNX Runtime](#how-to-evaluate-onnx-models-with-onnx-runtime)
+  - [How to evaluate the exported models](#how-to-evaluate-the-exported-models)
     - [Prerequisite](#prerequisite-1)
     - [Usage](#usage-1)
     - [Description of all arguments](#description-of-all-arguments-1)
@@ -90,9 +90,9 @@ python tools/deployment/pytorch2onnx.py \
       model.test_cfg.deploy_nms_pre=300 \
 ```
 
-## How to evaluate ONNX models with ONNX Runtime
+## How to evaluate the exported models
 
-We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNX Runtime backend.
+We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXRuntime and TensorRT.
 
 ### Prerequisite
 
@@ -107,7 +107,7 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNX 
 ```bash
 python tools/deployment/test.py \
     ${CONFIG_FILE} \
-    ${ONNX_FILE} \
+    ${MODEL_FILE} \
     --out ${OUTPUT_FILE} \
     --format-only ${FORMAT_ONLY} \
     --eval ${EVALUATION_METRICS} \
@@ -120,7 +120,7 @@ python tools/deployment/test.py \
 ### Description of all arguments
 
 - `config`: The path of a model config file.
-- `model`: The path of a ONNX model file.
+- `model`: The path of an input model file and it should have extension of `.onnx` or `.trt` .
 - `--out`: The path of output result file in pickle format.
 - `--format-only` : Format the output results without perform evaluation. It is useful when you want to format the result to a specific format and submit it to the test server. If not specified, it will be set to `False`.
 - `--eval`: Evaluation metrics, which depends on the dataset, e.g., "bbox", "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC.
@@ -138,6 +138,7 @@ python tools/deployment/test.py \
 	    <th align="center">Metric</th>
 	    <th align="center">PyTorch</th>
 	    <th align="center">ONNX Runtime</th>
+	    <th align="center">TensorRT</th>
 	</tr >
   <tr >
 	    <td align="center">FCOS</td>
@@ -145,6 +146,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">36.6</td>
 	    <td align="center">36.5</td>
+	    <td align="center">/</td>
 	</tr>
   <tr >
 	    <td align="center">FSAF</td>
@@ -152,6 +154,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">36.0</td>
 	    <td align="center">36.0</td>
+	    <td align="center">35.9</td>
 	</tr>
   <tr >
 	    <td align="center">RetinaNet</td>
@@ -159,11 +162,13 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">36.5</td>
 	    <td align="center">36.4</td>
+	    <td align="center">36.3</td>
 	</tr>
 	<tr >
 	    <td align="center" align="center" >SSD</td>
 	    <td align="center" align="center"><code>configs/ssd/ssd300_coco.py</code></td>
 	    <td align="center" align="center">Box AP</td>
+	    <td align="center" align="center">25.6</td>
 	    <td align="center" align="center">25.6</td>
 	    <td align="center" align="center">25.6</td>
 	</tr>
@@ -173,6 +178,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">33.5</td>
 	    <td align="center">33.5</td>
+	    <td align="center">33.5</td>
 	</tr>
   <tr >
 	    <td align="center">Faster R-CNN</td>
@@ -180,6 +186,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">37.4</td>
 	    <td align="center">37.4</td>
+	    <td align="center">37.0</td>
 	</tr>
   <tr >
 	    <td align="center" rowspan="2">Mask R-CNN</td>
@@ -187,11 +194,13 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">38.2</td>
 	    <td align="center">38.1</td>
+	    <td align="center">/</td>
 	</tr>
 	<tr>
 	    <td align="center">Mask AP</td>
 	    <td align="center">34.7</td>
 	    <td align="center">33.7</td>
+	    <td align="center">/</td>
 	</tr>
 </table>
 
@@ -199,7 +208,7 @@ Notes:
 
 - All ONNX models are evaluated with dynamic shape on coco dataset and images are preprocessed according to the original config file.
 
-- Mask AP of Mask R-CNN drops by 1% for ONNXRuntime. The main reason is that the predicted masks are directly interpolated to original image in PyTorch, while they are at first interpolated to the preprocessed input image of the model and then to original image in ONNXRuntime.
+- Mask AP of Mask R-CNN drops by 1% for ONNXRuntime. The main reason is that the predicted masks are directly interpolated to original image in PyTorch, while they are at first interpolated to the preprocessed input image of the model and then to original image in other backend.
 
 ## List of supported models exportable to ONNX
 

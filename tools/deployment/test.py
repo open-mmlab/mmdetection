@@ -1,11 +1,11 @@
 import argparse
+import os
 
 import mmcv
 from mmcv import Config, DictAction
 from mmcv.parallel import MMDataParallel
 
 from mmdet.apis import single_gpu_test
-from mmdet.core.export.model_wrappers import ONNXRuntimeDetector
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 
@@ -103,8 +103,27 @@ def main():
         dist=False,
         shuffle=False)
 
-    model = ONNXRuntimeDetector(
-        args.model, class_names=dataset.CLASSES, device_id=0)
+    _, file_ext = os.path.splitext(args.model)
+    assert file_ext in ['.onnx', '.trt']
+
+    if file_ext == '.onnx':
+        from mmdet.core.export.model_wrappers import ONNXRuntimeDetector
+        model = ONNXRuntimeDetector(
+            args.model, class_names=dataset.CLASSES, device_id=0)
+    elif file_ext == '.trt':
+        from mmdet.core.export.model_wrappers import TensorRTDetector
+        output_names = ['dets', 'labels']
+        if len(cfg.evaluation['metric']) == 2:
+            output_names.append('masks')
+        model = TensorRTDetector(
+            args.model,
+            class_names=dataset.CLASSES,
+            device_id=0,
+            output_names=output_names)
+    else:
+        raise ValueError(
+            f'The extension of input model file should be `.onnx` or `.trt`, but given: {file_ext}'  # noqa
+        )
 
     model = MMDataParallel(model, device_ids=[0])
     outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
