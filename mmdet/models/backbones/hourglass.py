@@ -22,6 +22,8 @@ class HourglassModule(BaseModule):
         norm_cfg (dict): Dictionary to construct and config norm layer.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None
+        upsample_cfg (dict, optional): Config dict for interpolate layer.
+            Default: `dict(mode='nearest')`
     """
 
     def __init__(self,
