@@ -96,15 +96,15 @@ class NOUSLoggerHook(LoggerHook):
         for tag, value in tags.items():
             self.curves[tag].x.append(normalized_iter)
             self.curves[tag].y.append(value)
-        # logger.warning(sorted(self.curves.keys()))
-        # logger.warning(str(self.curves['train/loss']))
 
 
 @HOOKS.register_module()
 class NOUSETAHook(Hook):
-    def __init__(self, time_monitor):
+    def __init__(self, time_monitor, verbose=False):
         super().__init__()
         self.time_monitor = time_monitor
+        self.verbose = verbose
+        self.print_threshold = 1
 
     def before_run(self, runner):
         self.time_monitor.total_epochs = runner.max_epochs
@@ -125,7 +125,11 @@ class NOUSETAHook(Hook):
 
     def after_iter(self, runner):
         self.time_monitor.on_train_batch_end(1)
-        logger.warning(f'training progress {self.progress}')
+        if self.verbose:
+            progress = self.progress
+            if progress >= self.print_threshold:
+                logger.warning(f'training progress {progress:.0f}%')
+                self.print_threshold = (progress + 10) // 10 * 10
 
     def before_val_iter(self, runner):
         self.time_monitor.on_test_batch_begin(1)

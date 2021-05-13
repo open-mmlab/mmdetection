@@ -185,7 +185,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         # Loop over dataset again to assign predictions. Convert from MMdetection format to NOUS format
         for dataset_item, output in zip(dataset, prediction_results):
-            # logger.warning(str(output))
             width = dataset_item.width
             height = dataset_item.height
             image = dataset_item.numpy
@@ -259,7 +258,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                     from ex
 
             self.inference_model = torch_model
-            # FIXME. Not a reliable condition. Model might be changed in many different ways.
             if model_config.model_name == self.config_manager.config.model_name:
                 # If the model architecture hasn't changed in the configurable parameters, train model builds upon
                 # the loaded inference model weights and we can just copy the inference model to train_model
@@ -375,21 +373,24 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         # Length of the training dataset is required for progress reporting, hence it is passed to the task class
         self.n_samples_in_current_training_set = len(mm_train_dataset)
 
-        # Set model config to the most up to date version. Not 100% sure if this is even needed, setting just in case
-        self.train_model.cfg = self.config_manager.config_copy
-
         # Replace all logger hooks by the NOUSLoggerHook.
         config = self.config_manager.config_copy
         config.log_config.hooks = [{'type': 'NOUSLoggerHook', 'curves': self.learning_curves}]
         if config.get('custom_hooks', None) is None:
             config.custom_hooks = []
         self.time_monitor = TimeMonitorCallback(0, 0, 0, 0) # It will be initialized properly inside the NOUSETAHook before training.
-        config.custom_hooks.append({'type': 'NOUSETAHook', 'time_monitor': self.time_monitor})
+        config.custom_hooks.append({'type': 'NOUSETAHook', 'time_monitor': self.time_monitor, 'verbose': True})
         # hooks = [hook for hook in config.log_config.hooks if hook.type == 'NOUSLoggerHook']
         # if hooks:
         #     hooks[0].curves = self.learning_curves
         # else:
         #     logger.warning('Failed to find NOUSLoggerHook')
+
+        # Set model config to the most up to date version. Not 100% sure if this is even needed, setting just in case
+        self.train_model.cfg = self.config_manager.config_copy
+
+        logger.warning('Training model config')
+        self.config_manager._print_config(self.train_model.cfg)
 
         # Train the model. Training modifies mmdet config in place, so make a deepcopy
         self.is_training = True
@@ -490,8 +491,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         # Train the model
         training_duration = self._do_model_training(mm_train_dataset)
 
-        logger.warning(f'TRAINING PROGRESS {self.get_training_progress():.2f}')
-
         # Check for stop signal when training has stopped. If should_stop is true, training was cancelled and no new
         # model should be returned. Old train model is restored.
         if self.should_stop:
@@ -512,7 +511,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             # Add mAP metric and loss curves
             performance = Performance(score=ScoreMetric(value=best_score, name="mAP"),
                                       dashboard_metrics=self._generate_training_metrics_group())
-            logger.warning('FINAL MODEL PERFORMANCE\n' + str(performance))
+            logger.info('FINAL MODEL PERFORMANCE\n' + str(performance))
             self._persist_new_model(dataset, performance, training_duration)
         else:
             logger.info("Model performance has not improved while training. No new model has been saved.")
@@ -641,16 +640,17 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         :param task_environment: New task environment with updated configurable parameters
         """
-        previous_conf_params = self.get_configurable_parameters(self.task_environment)
         new_conf_params = self.get_configurable_parameters(task_environment)
 
         self.task_environment = task_environment
         self.config_manager.update_project_configuration(new_conf_params)
 
         # Check whether model architecture has changed, because then models have to be loaded again
-        previous_model_arch = previous_conf_params.learning_architecture.model_architecture.value
-        new_model_arch = new_conf_params.learning_architecture.model_architecture.value
-        if new_model_arch != previous_model_arch:
+        prev_model_name = self.train_model.cfg.model_name
+        new_model_name = self.config_manager.config.model_name
+        logger.warning(f'prev model name: {prev_model_name}')
+        logger.warning(f'new  model name: {new_model_name}')
+        if prev_model_name != new_model_name:
             self.load_model(task_environment)
 
     def _get_confidence_and_nms_thresholds(self, is_evaluation: bool) -> Tuple[float, float, bool]:

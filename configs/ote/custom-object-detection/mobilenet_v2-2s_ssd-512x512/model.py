@@ -1,7 +1,6 @@
 _base_ = [
     './coco_data_pipeline.py'
 ]
-name = 'mobilenet_v2-2s_ssd-512x512'
 # model settings
 width_mult = 1.0
 model = dict(

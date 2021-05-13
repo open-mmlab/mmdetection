@@ -1,7 +1,6 @@
 _base_ = [
     './coco_data_pipeline.py'
 ]
-name = 'mobilenet_v2-2s_ssd-256x256'
 # model settings
 width_mult = 1.0
 model = dict(
@@ -86,7 +85,7 @@ log_config = dict(
     interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
+        # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings

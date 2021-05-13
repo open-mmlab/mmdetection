@@ -20,7 +20,7 @@ class ConfigMappings(object):
 
         self.model_file_map = {}
         if task_type == MMDetectionTaskType.OBJECTDETECTION:
-            model_directory = osp.join(base_task_path, '..', 'configs', 'ote', 'task-debug')
+            model_directory = osp.join(base_task_path, '..', 'configs', 'ote', 'custom-object-detection')
             available_models = list_available_models(model_directory)
             for model in available_models:
                 self.model_file_map[model['name']] = dict(

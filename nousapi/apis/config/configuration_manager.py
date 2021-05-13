@@ -43,10 +43,17 @@ class MMDetectionConfigManager(object):
 
         # Build the config
         model_name = conf_params.learning_architecture.model_architecture.value
-        lr_schedule_name = conf_params.learning_parameters.learning_rate_schedule.value
+        conf_params.learning_parameters.learning_rate_schedule.value = 'custom'
+        self.custom_lr_schedule, warmup_iters = self._get_custom_lr_schedule(self.config_mapper.get_model_file(model_name))
+        conf_params.learning_parameters.learning_rate_warmup_iters.value = warmup_iters
+        custom_lr = self.custom_lr_schedule.get('optimizer', {}).get('lr', None)
+        if custom_lr is not None:
+            conf_params.learning_parameters.learning_rate.value = custom_lr
+        task_environment.set_configurable_parameters(conf_params)
+
         self._compose_config(
             model_file=self.config_mapper.get_model_file(model_name),
-            schedule_file=self.config_mapper.get_schedule_file(lr_schedule_name),
+            schedule_file=None,
             dataset_file=self.config_mapper.get_data_pipeline_file(model_name),
             runtime_file=self.config_mapper.get_runtime_file('default')
         )
@@ -82,6 +89,16 @@ class MMDetectionConfigManager(object):
         # set in the configurable parameters are reflected in the config
         self.update_project_configuration(conf_params)
 
+    def _get_custom_lr_schedule(self, model_file: str):
+        schedule_sections = ('optimizer', 'optimizer_config', 'lr_config', 'momentum_config')
+        model_config = Config.fromfile(model_file)
+        schedule_config = dict()
+        for section in schedule_sections:
+            if section in model_config:
+                schedule_config[section] = model_config[section]
+        warmup_iters = model_config.get('lr_config', {}).get('warmup_iters', 0)
+        return schedule_config, warmup_iters
+
     def _compose_config(self, model_file: str, schedule_file: str, dataset_file: str, runtime_file: str):
         """
         Constructs the full mmdetection configuration from files containing the different config sections
@@ -94,7 +111,10 @@ class MMDetectionConfigManager(object):
         config_file_list = [model_file, schedule_file, dataset_file, runtime_file]
         config = dict()
         for filename in config_file_list:
-            config = Config._merge_a_into_b(Config.fromfile(filename), config)
+            if filename is None:
+                continue
+            update_config = Config.fromfile(filename)
+            config = Config._merge_a_into_b(update_config, config)
         self.config = Config(config)
 
     def set_data_classes(self):
@@ -111,9 +131,9 @@ class MMDetectionConfigManager(object):
 
         """
         learning_rate_schedule_name = configurable_parameters.learning_parameters.learning_rate_schedule.value
+        learning_rate_warmup_iters = configurable_parameters.learning_parameters.learning_rate_warmup_iters.value
         model_architecture_name = configurable_parameters.learning_architecture.model_architecture.value
-        self.model_name = model_architecture_name
-        self._update_learning_rate_schedule(learning_rate_schedule_name)
+        self._update_learning_rate_schedule(learning_rate_schedule_name, learning_rate_warmup_iters)
         self._update_model_architecture(model_architecture_name)
         self.config.runner.max_epochs = int(configurable_parameters.learning_parameters.num_epochs.value)
         self.config.optimizer.lr = float(configurable_parameters.learning_parameters.learning_rate.value)
@@ -214,21 +234,53 @@ class MMDetectionConfigManager(object):
         self.config = Config(new_config)
         return config_section
 
-    def _update_learning_rate_schedule(self, schedule_name: str):
+    def _replace_config_section(self, name, config_section) -> Config:
+        config = self.config_copy
+        config.pop(name)
+        config[name] = config_section
+        self.config = config
+
+    @staticmethod
+    def _print_config(config):
+        cfg = copy.deepcopy(config)
+        cfg.pop('labels')
+        if not isinstance(cfg, Config):
+            cfg = Config(cfg)
+        cfg.data.train.nous_dataset = None
+        cfg.data.val.nous_dataset = None
+        cfg.data.test.nous_dataset = None
+        print(cfg.pretty_text)
+
+    def _update_learning_rate_schedule(self, schedule_name: str, warmup_iters: int):
         """
         Update the learning rate scheduling config section in the current configuration
 
         :param schedule_file: Path to the learning rate schedule file containing the desired schedule
         """
-        schedule_file = self.config_mapper.get_schedule_file(schedule_name)
+
         # remove old optimizer and lr config sections
-        sections_to_pop = ['optimizer', 'optimizer_config', 'lr_config', 'momentum_config']
+        sections_to_pop = ('optimizer', 'optimizer_config', 'lr_config', 'momentum_config')
         for section in sections_to_pop:
-            self.config.pop(section)
-        self._replace_config_section_from_file(schedule_file)
+            if section in self.config:
+                self.config.pop(section)
+
+        if schedule_name == 'custom':
+            for section in sections_to_pop:
+                if section in self.custom_lr_schedule:
+                    self.config[section] = self.custom_lr_schedule[section]
+        else:
+            schedule_file = self.config_mapper.get_schedule_file(schedule_name)
+            logger.warning(f'Update LR schedule from {schedule_file}')
+            self._replace_config_section_from_file(schedule_file)
 
         # Set gradient clipping if required for the model in config
         self._update_gradient_clipping()
+
+        # Set learning rate warmup settings.
+        if warmup_iters > 0:
+            self.config.lr_config.warmup = 'linear'
+            self.config.lr_config.warmup_ratio = 1.0 / 3
+            self.config.lr_config.warmup_iters = warmup_iters
 
     def _update_model_architecture(self, model_name: str):
         """
@@ -236,13 +288,13 @@ class MMDetectionConfigManager(object):
 
         :param model_name: Name of the model architecture to use
         """
-        self.model_name = model_name
+        self.config.model_name = model_name
         model_file = self.config_mapper.get_model_file(model_name)
         pipeline_file = self.config_mapper.get_data_pipeline_file(model_name)
 
         # Remove old model section and load new one
-        self.config.pop('model')
-        self._replace_config_section_from_file(model_file)
+        model_config_section = Config.fromfile(model_file).model
+        self._replace_config_section('model', model_config_section)
 
         self._update_model_classification_heads()
         self._update_max_iou_assigner()
@@ -267,7 +319,7 @@ class MMDetectionConfigManager(object):
 
     def _update_gradient_clipping(self):
         """ Sets config section for gradient clipping for the current model in the config """
-        grad_clipping_config = self.config_mapper.model_file_map[self.model_name]['gradient_clipping']
+        grad_clipping_config = self.config_mapper.model_file_map[self.config.model_name]['gradient_clipping']
         self.config.pop('optimizer_config')
         self.config.optimizer_config = dict(grad_clip=grad_clipping_config)
 

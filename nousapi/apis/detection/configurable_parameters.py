@@ -118,6 +118,15 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
             editable=True,
         )
 
+        learning_rate_warmup_iters = Integer(
+            default_value=100,
+            header="Number of iterations for learning rate warmup",
+            description="",
+            min_value=0,
+            max_value=1000,
+            editable=True,
+        )
+
         learning_rate_schedule = Selectable(header="Learning rate schedule",
                                             default_value="exp",
                                             options=[Option(key="fixed",
@@ -135,7 +144,11 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
                                                             description="Learning rate is gradually reduced and "
                                                                         "increased during training, following a cosine "
                                                                         "pattern. The pattern is repeated for two "
-                                                                        "cycles in one training run.")
+                                                                        "cycles in one training run."),
+                                                     Option(key="custom",
+                                                            value="Custom",
+                                                            description="Learning rate schedule that is provided "
+                                                                        "with the model."),
                                                      ],
                                             description="Specify learning rate scheduling for the MMDetection task. "
                                                         "When training for a small number of epochs (N < 10), the fixed"
@@ -148,7 +161,7 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
     class __LearningArchitecture(Group):
         header = "Learning Architecture"
         description = header
-        base_models_dir = osp.join(osp.abspath(osp.dirname(__file__)), '..', '..', '..', 'configs', 'ote', 'task-debug')
+        base_models_dir = osp.join(osp.abspath(osp.dirname(__file__)), '..', '..', '..', 'configs', 'ote', 'custom-object-detection')
         available_models = list_available_models(base_models_dir)
         model_architecture = Selectable(header="Model architecture",
                                         default_value=available_models[0]['name'],
