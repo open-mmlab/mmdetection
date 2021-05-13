@@ -52,7 +52,7 @@ def test_center_head_loss():
 
 
 def test_centernet_head_get_bboxes():
-    """Tests corner head generating and decoding the heatmap."""
+    """Tests center head generating and decoding the heatmap."""
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),

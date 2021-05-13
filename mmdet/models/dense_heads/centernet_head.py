@@ -79,7 +79,7 @@ class CenterNetHead(BaseDenseHead):
                     normal_init(m, std=0.001)
 
     def forward(self, feats):
-        """Forward features. Notice CenterNet head don't use FPN.
+        """Forward features. Notice CenterNet head does not use FPN.
 
         Args:
             feats (tuple[Tensor]): Features from the upstream network, each is

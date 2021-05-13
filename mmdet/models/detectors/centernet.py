@@ -2,7 +2,7 @@ import torch
 
 from mmdet.core import bbox2result
 from mmdet.models.builder import DETECTORS
-from .cornernet import CornerNet
+from .single_stage import SingleStageDetector
 
 
 def flip_feature_map(src_tensor, flip_direction):
@@ -29,7 +29,7 @@ def flip_feature_map(src_tensor, flip_direction):
 
 
 @DETECTORS.register_module()
-class CenterNet(CornerNet):
+class CenterNet(SingleStageDetector):
     """Implementation of CenterNet(Objects as Points)
 
     <https://arxiv.org/abs/1904.07850>.

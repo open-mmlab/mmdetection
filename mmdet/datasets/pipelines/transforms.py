@@ -1566,6 +1566,7 @@ class RandomCenterCropPad(object):
             - 'logical_or': final_shape = input_shape | padding_shape_value
             - 'size_divisor': final_shape = int(
               ceil(input_shape / padding_shape_value) * padding_shape_value)
+        test_pad_add_pix (int): Extra padding pixel in test mode. Default 0.
         bbox_clip_border (bool, optional): Whether clip the objects outside
             the border of the image. Defaults to True.
     """
