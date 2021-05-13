@@ -2,13 +2,14 @@ import argparse
 import os
 import os.path as osp
 
+from mmcv import Config
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert benchmark model txt to script')
-    parser.add_argument(
-        'text', type=str, help='Model list files that need to be batch tested')
-    parser.add_argument('checkpoint_dir', help='checkpoint file dir')
+    parser.add_argument('config', help='test config file path')
+    parser.add_argument('checkpoint_root', help='checkpoint file root dir')
     parser.add_argument(
         '--partition',
         type=str,
@@ -24,6 +25,52 @@ def parse_args():
     return args
 
 
+def process_model_info_dict(model_info, work_dir='tools/batch_test'):
+    config = model_info['config'].strip()
+    fname, _ = osp.splitext(osp.basename(config))
+    job_name = fname
+    work_dir = osp.join(work_dir, fname)
+    checkpoint = model_info['checkpoint'].strip()
+    eval = model_info['eval'].strip()
+    return dict(
+        config=config,
+        job_name=job_name,
+        work_dir=work_dir,
+        checkpoint=checkpoint,
+        eval=eval)
+
+
+def create_test_bash_info(commands,
+                          model_test_dict,
+                          port,
+                          script_name='.dev_scripts/slurm_test.sh',
+                          partition='openmmlab'):
+    config = model_test_dict['config']
+    job_name = model_test_dict['job_name']
+    checkpoint = model_test_dict['checkpoint']
+    work_dir = model_test_dict['work_dir']
+    eval = model_test_dict['eval']
+
+    echo_info = f' \necho \'{config}\' &'
+    commands.append(echo_info)
+    commands.append('\n')
+
+    command_info = f'GPUS=8  GPUS_PER_NODE=8  ' \
+                   f'CPUS_PER_TASK=2 {script_name} '
+
+    command_info += f'{partition} '
+    command_info += f'{job_name} '
+    command_info += f'{config} '
+    command_info += f'{checkpoint} '
+    command_info += f'--work-dir {work_dir} '
+
+    command_info += f'--eval {eval} '
+    command_info += f'--cfg-option dist_params.port={port} '
+    command_info += ' &'
+
+    commands.append(command_info)
+
+
 def main():
     args = parse_args()
     if args.out:
@@ -35,48 +82,25 @@ def main():
          'script) with the argument "--out" or "--run"')
 
     commands = []
-    checkpoint_dir = f'export CHECKPOINT_DIR={args.checkpoint_dir} '
-    commands.append(checkpoint_dir)
-    commands.append('\n' * 2)
+    checkpoint_root = f'export CHECKPOINT_DIR={args.checkpoint_root} '
+    commands.append(checkpoint_root)
+    commands.append('\n')
 
     script_name = osp.join('.dev_scripts', 'slurm_test.sh')
     partition = args.partition  # cluster name
     port = args.port
 
-    with open(args.text, 'r') as f:
-        config_info = f.readlines()
+    cfg = Config.fromfile(args.config)
 
-        for i, config_str in enumerate(config_info):
-            if len(config_str.strip()) == 0:
-                continue
-            echo_info = f'echo \'{config_str.rstrip()}\' &'
-            commands.append(echo_info)
-            commands.append('\n')
-
-            config, ckpt, _ = config_str.split(' ')
-            fname, _ = osp.splitext(osp.basename(config))
-            out_fname = osp.join('tools', 'batch_test', fname)
-
-            command_info = f'GPUS=8  GPUS_PER_NODE=8  ' \
-                           f'CPUS_PER_TASK=2 {script_name} '
-
-            command_info += f'{partition} '
-            command_info += f'{fname} '
-            command_info += f'{config} '
-            command_info += f'{ckpt} '
-            command_info += f'--work-dir {out_fname} '
-            if config.find('rpn_r50_fpn_1x_coco.py') >= 0:
-                eval_str = 'proposal_fast'
-            else:
-                eval_str = 'bbox'
-            command_info += f'--eval {eval_str} '
-            command_info += f'--cfg-option dist_params.port={port} '
-            command_info += ' &'
-
-            commands.append(command_info)
-
-            if i < len(config_info):
-                commands.append('\n')
+    for model_key in cfg:
+        model_infos = cfg[model_key]
+        if not isinstance(model_infos, list):
+            model_infos = [model_infos]
+        for model_info in model_infos:
+            print('processing: ', model_info['config'])
+            model_test_dict = process_model_info_dict(model_info)
+            create_test_bash_info(commands, model_test_dict, port, script_name,
+                                  partition)
             port += 1
 
     command_str = ''.join(commands)

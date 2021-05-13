@@ -3,19 +3,21 @@ import glob
 import os.path as osp
 
 import mmcv
+from mmcv import Config
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Gather benchmarked models metric')
+    parser.add_argument('config', help='test config file path')
     parser.add_argument(
         'root',
         type=str,
         help='root path of benchmarked models to be gathered')
     parser.add_argument(
-        'text', type=str, help='Model list files that need to be batch tested')
-    parser.add_argument(
         '--out', type=str, help='output path of gathered metrics to be stored')
+    parser.add_argument(
+        '--not-show', action='store_true', help='not show metrics')
     parser.add_argument(
         '--show-all', action='store_true', help='show all model metrics')
 
@@ -30,13 +32,15 @@ if __name__ == '__main__':
     metrics_out = args.out
     result_dict = {}
 
-    with open(args.text, 'r') as f:
-        config_info = f.readlines()
-        for i, config_str in enumerate(config_info):
-            if len(config_str.strip()) == 0:
-                continue
-            config, ckpt, old_metric = config_str.split(' ')
-            old_metric = float(old_metric.strip())
+    cfg = Config.fromfile(args.config)
+
+    for model_key in cfg:
+        model_infos = cfg[model_key]
+        if not isinstance(model_infos, list):
+            model_infos = [model_infos]
+        for model_info in model_infos:
+            record_metrics = model_info['metric']
+            config = model_info['config'].strip()
             fname, _ = osp.splitext(osp.basename(config))
             metric_json_dir = osp.join(root_path, fname)
             if osp.exists(metric_json_dir):
@@ -46,17 +50,33 @@ if __name__ == '__main__':
 
                     metric = mmcv.load(log_json_path)
                     if config in metric:
-                        try:
-                            map = metric[config]['bbox_mAP']
-                        except Exception:
-                            map = metric[config]['AR@1000']
+
+                        new_metrics = dict()
+                        for record_metric_key in record_metrics:
+                            record_metric_key_bk = record_metric_key
+                            old_metric = record_metrics[record_metric_key]
+                            if record_metric_key == 'AR_1000':
+                                record_metric_key = 'AR@1000'
+                            if record_metric_key not in metric[config]:
+                                raise KeyError(
+                                    'record_metric_key not exist, please '
+                                    'check your config')
+                            new_metric = round(
+                                metric[config][record_metric_key] * 100, 1)
+                            new_metrics[record_metric_key_bk] = new_metric
+
                         if args.show_all:
-                            result_dict[config] = [old_metric, round(map * 100, 1)]
+                            result_dict[config] = dict(
+                                before=record_metrics, after=new_metrics)
                         else:
-                            if round(map * 100, 1) != old_metric:
-                                result_dict[config] = [
-                                    old_metric, round(map * 100, 1)
-                                ]
+                            for record_metric_key in record_metrics:
+                                old_metric = record_metrics[record_metric_key]
+                                new_metric = new_metrics[record_metric_key]
+                                if old_metric != new_metric:
+                                    result_dict[config] = dict(
+                                        before=record_metrics,
+                                        after=new_metrics)
+                                    break
                     else:
                         print(f'{config} not included in: {log_json_path}')
                 else:
@@ -64,7 +84,12 @@ if __name__ == '__main__':
             else:
                 print(f'{config} not exist dir: {metric_json_dir}')
 
-    print('===================================')
-    for config_name, metrics in result_dict.items():
-        print(config_name, metrics)
-    print('===================================')
+    if metrics_out:
+        mmcv.mkdir_or_exist(metrics_out)
+        mmcv.dump(result_dict,
+                  osp.join(metrics_out, 'batch_test_metric_info.json'))
+    if not args.not_show:
+        print('===================================')
+        for config_name, metrics in result_dict.items():
+            print(config_name, metrics)
+        print('===================================')
