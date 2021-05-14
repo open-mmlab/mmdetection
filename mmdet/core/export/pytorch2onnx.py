@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from mmcv.runner import load_checkpoint
 
+from ..evaluation import get_classes
+
 
 def generate_inputs_and_wrap_model(config_path,
                                    checkpoint_path,
@@ -90,7 +92,11 @@ def build_model_from_cfg(config_path, checkpoint_path, cfg_options=None):
     # build the model
     cfg.model.train_cfg = None
     model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
-    load_checkpoint(model, checkpoint_path, map_location='cpu')
+    checkpoint = load_checkpoint(model, checkpoint_path, map_location='cpu')
+    if 'CLASSES' in checkpoint.get('meta', {}):
+        model.CLASSES = checkpoint['meta']['CLASSES']
+    else:
+        model.CLASSES = get_classes('coco')
     model.cpu().eval()
     return model
 
