@@ -5,16 +5,13 @@ import copy
 import io
 import glob
 import shutil
-import json
 import time
-import mmcv
 
 from collections import defaultdict
 from itertools import compress
 from typing import Optional, List, Tuple
 
 import numpy as np
-import pandas as pd
 
 from noussdk.entities.analyse_parameters import AnalyseParameters
 from noussdk.entities.datasets import Dataset
@@ -31,6 +28,7 @@ from noussdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from noussdk.usecases.evaluation.basic_operations import get_nms_filter
 from noussdk.usecases.evaluation.metrics_helper import MetricsHelper
 from noussdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
+from noussdk.usecases.repos import BinaryRepo
 from noussdk.usecases.tasks.image_deep_learning_task import ImageDeepLearningTask
 from noussdk.usecases.tasks.interfaces.configurable_parameters_interface import IConfigurableParameters
 from noussdk.usecases.tasks.interfaces.model_optimizer import IModelOptimizer
@@ -38,20 +36,18 @@ from noussdk.usecases.tasks.interfaces.unload_interface import IUnload
 
 from noussdk.logging import logger_factory
 
-from noussdk.utils.openvino_tools import generate_openvino_model
-
-from mmdet.apis import train_detector, get_root_logger, set_random_seed, single_gpu_test, inference_detector
+from mmdet.apis import train_detector, get_root_logger, set_random_seed, single_gpu_test, \
+    inference_detector, export_model
 from mmdet.models import build_detector
 from mmdet.datasets import build_dataset, build_dataloader
-from mmdet.core import preprocess_example_input, generate_inputs_and_wrap_model
 
 from mmcv.parallel import MMDataParallel
 from mmcv.utils import Config
-from mmcv.runner import save_checkpoint, load_checkpoint
+from mmcv.runner import load_checkpoint
 
 from .configurable_parameters import MMDetectionParameters
 from ..config import MMDetectionConfigManager, MMDetectionTaskType
-from nousapi.extension.utils.hooks import NOUSLoggerHook, NOUSETAHook
+from nousapi.extension.utils.hooks import NOUSLoggerHook
 
 # The following imports are needed to register the custom datasets and hooks for NOUS as modules in the
 # mmdetection framework. They are not used directly in this file, but they have to be here for the registration to work
@@ -715,84 +711,28 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         optimized_models = [self._generate_openvino_model()]
         return optimized_models
 
-    def _prepare_trained_model_for_onnx_conversion(self, optimized_model_dir: str):
-        """
-        Prepares the model for conversion to ONNX format. The conversion mechanism from mmdetection is file system based
-        so it uses the model configuration and model checkpoint stored in the most recent temporary training directory.
-
-        :param optimized_model_dir: directory in which the sample image for ONNX tracing will be stored
-        :return tuple(model, tensor_data): model that can be passed to onnx exporter, along with input data in
-            tensor_data
-        """
-        # Prepare candidate tracing image. Has to be a real image so that nms post processing operation can be traced
-        image_path = None
-        for dataset_item in self.task_environment.model.train_dataset:
-            if dataset_item.get_shapes(include_empty=False):
-                # If the image has objects, run inference to check that the model makes predictions so that nms will
-                # be performed. Note that it shouldn't take long to find a valid image, since there is no
-                # threshold on probability so any image that will yield even unlikely detections is good.
-                inference_results = safe_inference_detector(self.inference_model, dataset_item.numpy)
-                if inference_results:
-                    # If there are detections, save the image
-                    image_path = os.path.join(optimized_model_dir, 'dummy.jpg')
-                    mmcv.imwrite(dataset_item.numpy, image_path)
-                    break
-
-        if image_path is None:
-            raise ValueError('Unable to find valid image for ONNX tracing.')
-
-        width, height = self.config_manager.input_image_dimensions
-        channels = self.in_channels
-
-        work_dir = self.config_manager.config.work_dir
-        input_config = {'input_shape': (1, channels, height, width),
-                        'input_path': image_path,
-                        'normalize_cfg': self.config_manager.config.img_norm_cfg}
-        config_path = os.path.join(work_dir, 'config.py')
-        checkpoint_path = os.path.join(work_dir, 'best_mAP.pth')
-        if not os.path.isfile(checkpoint_path):
-            # If for whatever reason the checkpoint doesn't exist, create it from the current inference model. The
-            # checkpoint has to be on disk in order to use the mmdet generate_inputs_and_wrap_model utility.
-            save_checkpoint(self.inference_model, checkpoint_path)
-        if not os.path.isfile(config_path):
-            # If config path doesn't exists, create it from current inference model. This can occur if task unloading is
-            # called right after training, since that deletes the scratch space where the config lives.
-            config_path = os.path.join(optimized_model_dir, 'config.py')
-            config_string = self.config_manager.config_to_string(copy.deepcopy(self.inference_model.cfg))
-            with open(config_path, 'w') as f:
-                f.write(config_string)
-        model, tensor_data = generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config)
-        return model, tensor_data
-
     def _generate_openvino_model(self) -> OpenVINOModel:
-        """
-        Convert the current model to OpenVINO with FP16 precision by first converting to ONNX and
-        then converting the ONNX model to an OpenVINO IR model.
-        """
-        optimized_model_precision = Precision.FP16
+        optimized_model_precision = Precision.FP32
 
         with tempfile.TemporaryDirectory() as tempdir:
-            optimized_model_dir = os.path.join(tempdir, "mmdetection")
+            optimized_model_dir = os.path.join(tempdir, "otedet")
+            logger.info(f'Optimized model will be temporarily saved to "{optimized_model_dir}"')
             os.makedirs(optimized_model_dir, exist_ok=True)
+            try:
+                export_model(self.inference_model, tempdir, target='openvino', precision=optimized_model_precision.name)
+                bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
+                openvino_bin_url = BinaryRepo(self.task_environment.project).save_file_at_path(
+                    os.path.join(tempdir, bin_file), "optimized_models")
+                xml_file = [f for f in os.listdir(tempdir) if f.endswith('.xml')][0]
+                openvino_xml_url = BinaryRepo(self.task_environment.project).save_file_at_path(
+                    os.path.join(tempdir, xml_file), "optimized_models")
+            except Exception as ex:
+                raise RuntimeError("Optimization was unsuccessful.") from ex
 
-            # Convert PyTorch model to ONNX
-            onnxmodel_path = os.path.join(optimized_model_dir, 'inference_model.onnx')
-            model, tensor_data = self._prepare_trained_model_for_onnx_conversion(optimized_model_dir)
-            torch.onnx.export(model, args=tensor_data, f=onnxmodel_path, opset_version=11)
-            logger.info("Model conversion to ONNX format was successful.")
-
-            width, height = self.config_manager.input_image_dimensions
-            channels = self.in_channels
-
-            # Convert ONNX model to OpenVINO
-            parameters = f'--input_model "{optimized_model_dir}/inference_model.onnx" \
-                           --data_type {optimized_model_precision.name} \
-                           --input_shape "(1,{channels},{height},{width})"'
-
-            logger.info(parameters)
-            return generate_openvino_model(parameters=parameters, project=self.task_environment.project,
-                                           model=self.task_environment.model,
-                                           precision=optimized_model_precision)
+        return OpenVINOModel(model=self.task_environment.model,
+                            openvino_bin_url=openvino_bin_url,
+                            openvino_xml_url=openvino_xml_url,
+                            precision=optimized_model_precision)
 
     def _delete_scratch_space(self):
         """

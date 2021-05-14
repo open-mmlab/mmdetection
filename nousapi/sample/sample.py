@@ -163,3 +163,5 @@ resultset.performance = performance
 ResultSetRepo(project).save(resultset)
 
 print(resultset.performance)
+
+task.optimize_loaded_model()
