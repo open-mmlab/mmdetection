@@ -62,7 +62,7 @@ def create_test_bash_info(commands, model_test_dict, port, script_name,
     command_info += f'{partition} '
     command_info += f'{job_name} '
     command_info += f'{config} '
-    command_info += f'{checkpoint} '
+    command_info += f'$CHECKPOINT_DIR/{checkpoint} '
     command_info += f'--work-dir {work_dir} '
 
     command_info += f'--eval {eval} '
@@ -83,7 +83,7 @@ def main():
          'script) with the argument "--out" or "--run"')
 
     commands = []
-    checkpoint_root = f'export CHECKPOINT_DIR={args.checkpoint_root} '
+    checkpoint_root = 'CHECKPOINT_DIR=$1 '
     commands.append(checkpoint_root)
     commands.append('\n')
 
