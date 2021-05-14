@@ -1,5 +1,6 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
 model = dict(
@@ -91,8 +92,6 @@ data = dict(
 # Based on the default settings of modern detectors, the SGD effect is better
 # than the Adam in the source code, so we use SGD default settings and
 # if you use adam+lr5e-4, the map is 29.1.
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=None)
 
 # learning policy
 # Based on the default settings of modern detectors, we added warmup settings.
@@ -102,7 +101,7 @@ lr_config = dict(
     warmup_iters=1000,
     warmup_ratio=1.0 / 1000,
     step=[90, 120])
-runner = dict(type='EpochBasedRunner', max_epochs=140)
+runner = dict(max_epochs=140)
 
 # Avoid evaluation and saving weights too frequently
 evaluation = dict(interval=5, metric='bbox')

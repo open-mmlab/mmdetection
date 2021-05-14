@@ -46,17 +46,15 @@ class CTResNetNeck(BaseModule):
                 conv_cfg=dict(type='DCNv2') if self.use_dcn else None,
                 norm_cfg=dict(type='BN'))
             layers.append(conv_module)
-            upsample_conv = nn.ConvTranspose2d(
-                in_channels=feat_channel,
-                out_channels=feat_channel,
-                kernel_size=num_deconv_kernels[i],
+            upsample_module = ConvModule(
+                feat_channel,
+                feat_channel,
+                num_deconv_kernels[i],
                 stride=2,
                 padding=1,
-                output_padding=0,
-                bias=False)
-            layers.append(upsample_conv)
-            layers.append(nn.BatchNorm2d(feat_channel))
-            layers.append(nn.ReLU(inplace=True))
+                conv_cfg=dict(type='deconv'),
+                norm_cfg=dict(type='BN'))
+            layers.append(upsample_module)
             self.in_channel = feat_channel
 
         return nn.Sequential(*layers)
@@ -64,6 +62,7 @@ class CTResNetNeck(BaseModule):
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.ConvTranspose2d):
+                # Simulated bilinear upsampling kernel
                 w = m.weight.data
                 f = math.ceil(w.size(2) / 2)
                 c = (2 * f - 1 - f % 2) / (2. * f)

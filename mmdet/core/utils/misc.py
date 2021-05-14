@@ -59,3 +59,26 @@ def mask2ndarray(mask):
     elif not isinstance(mask, np.ndarray):
         raise TypeError(f'Unsupported {type(mask)} data type')
     return mask
+
+
+def flip_tensor(src_tensor, flip_direction):
+    """flip tensor base on flip_direction.
+
+    Args:
+        src_tensor (Tensor): input feature map, shape (B, C, H, W).
+        flip_direction (str): The flipping direction. Options are
+          'horizontal', 'vertical', 'diagonal'.
+
+    Returns:
+        out_tensor (Tensor): Flipped tensor.
+    """
+    assert src_tensor.ndim == 4
+    valid_directions = ['horizontal', 'vertical', 'diagonal']
+    assert flip_direction in valid_directions
+    if flip_direction == 'horizontal':
+        out_tensor = torch.flip(src_tensor, [3])
+    elif flip_direction == 'vertical':
+        out_tensor = torch.flip(src_tensor, [2])
+    else:
+        out_tensor = torch.flip(src_tensor, [2, 3])
+    return out_tensor

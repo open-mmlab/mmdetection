@@ -264,16 +264,27 @@ def test_ct_resnet_neck():
     in_channels = 16
     num_filters = (8, 8)
     num_kernels = (4, 4)
+    feat = torch.rand(1, 16, 4, 4)
     ct_resnet_neck = CTResNetNeck(
         in_channel=in_channels,
         num_deconv_filters=num_filters,
-        num_deconv_kernels=num_kernels)
-    if torch.cuda.is_available():
-        ct_resnet_neck = ct_resnet_neck.cuda()
-        feat = [torch.rand(1, 16, 4, 4).cuda()]
-        # feat must be list or tuple
-        with pytest.raises(AssertionError):
-            ct_resnet_neck(feat[0])
+        num_deconv_kernels=num_kernels,
+        use_dcn=False)
 
-        out_feat = ct_resnet_neck(feat)[0]
+    # feat must be list or tuple
+    with pytest.raises(AssertionError):
+        ct_resnet_neck(feat)
+
+    out_feat = ct_resnet_neck([feat])[0]
+    assert out_feat.shape == (1, num_filters[-1], 16, 16)
+
+    if torch.cuda.is_available():
+        # test dcn
+        ct_resnet_neck = CTResNetNeck(
+            in_channel=in_channels,
+            num_deconv_filters=num_filters,
+            num_deconv_kernels=num_kernels)
+        ct_resnet_neck = ct_resnet_neck.cuda()
+        feat = feat.cuda()
+        out_feat = ct_resnet_neck([feat])[0]
         assert out_feat.shape == (1, num_filters[-1], 16, 16)

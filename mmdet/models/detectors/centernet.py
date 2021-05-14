@@ -2,30 +2,8 @@ import torch
 
 from mmdet.core import bbox2result
 from mmdet.models.builder import DETECTORS
+from ...core.utils import flip_tensor
 from .single_stage import SingleStageDetector
-
-
-def flip_feature_map(src_tensor, flip_direction):
-    """flip feature map base on flip_direction.
-
-    Args:
-        src_tensor (Tensor): input feature map, shape (B, C, H, W).
-        flip_direction (str): The flipping direction. Options are
-          'horizontal', 'vertical', 'diagonal'.
-
-    Returns:
-        out_tensor (Tensor): Flipped feature map.
-    """
-    assert src_tensor.ndim == 4
-    valid_directions = ['horizontal', 'vertical', 'diagonal']
-    assert flip_direction in valid_directions
-    if flip_direction == 'horizontal':
-        out_tensor = torch.flip(src_tensor, [3])
-    elif flip_direction == 'vertical':
-        out_tensor = torch.flip(src_tensor, [2])
-    else:
-        out_tensor = torch.flip(src_tensor, [2, 3])
-    return out_tensor
 
 
 @DETECTORS.register_module()
@@ -103,11 +81,10 @@ class CenterNet(SingleStageDetector):
             center_heatmap_preds, wh_preds, offset_preds = self.bbox_head(x)
 
             # Feature map averaging
-            center_heatmap_preds = (center_heatmap_preds[0:1] +
-                                    flip_feature_map(center_heatmap_preds[1:2],
-                                                     flip_direction)) / 2
+            center_heatmap_preds = (center_heatmap_preds[0:1] + flip_tensor(
+                center_heatmap_preds[1:2], flip_direction)) / 2
             wh_preds = (wh_preds[0:1] +
-                        flip_feature_map(wh_preds[1:2], flip_direction)) / 2
+                        flip_tensor(wh_preds[1:2], flip_direction)) / 2
 
             bbox_list = self.bbox_head.get_bboxes(
                 center_heatmap_preds,

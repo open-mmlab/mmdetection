@@ -46,11 +46,8 @@ class CenterNetHead(BaseDenseHead):
                  init_cfg=None):
         super(CenterNetHead, self).__init__(init_cfg)
         self.num_classes = num_classes
-        self.heatmap_head = self._build_head(
-            in_channel,
-            feat_channel,
-            num_classes,
-        )
+        self.heatmap_head = self._build_head(in_channel, feat_channel,
+                                             num_classes)
         self.wh_head = self._build_head(in_channel, feat_channel, 2)
         self.offset_head = self._build_head(in_channel, feat_channel, 2)
 
@@ -159,6 +156,8 @@ class CenterNetHead(BaseDenseHead):
         offset_target = target_result['offset_target']
         wh_offset_target_weight = target_result['wh_offset_target_weight']
 
+        # Since the channel of wh_target and offset_target is 2, the avg_factor
+        # of loss_center_heatmap is always 1/2 of loss_wh and loss_offset.
         loss_center_heatmap = self.loss_center_heatmap(
             center_heatmap_pred,
             center_heatmap_target,
