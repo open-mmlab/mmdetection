@@ -87,7 +87,7 @@ def main():
     commands.append(checkpoint_root)
     commands.append('\n')
 
-    script_name = osp.join('.dev_scripts', 'slurm_test.sh')
+    script_name = osp.join('tools', 'slurm_test.sh')
     partition = args.partition  # cluster name
     port = args.port
     work_dir = args.work_dir
