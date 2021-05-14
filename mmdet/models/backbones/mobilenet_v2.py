@@ -76,10 +76,9 @@ class MobileNetV2(BaseModule):
 
         self.widen_factor = widen_factor
         self.out_indices = out_indices
-        for index in out_indices:
-            if index not in range(0, 8):
-                raise ValueError('the item in out_indices must in '
-                                 f'range(0, 8). But received {index}')
+        if not set(out_indices).issubset(set(range(0, 8))):
+            raise ValueError('out_indices must be a subset of range'
+                             f'(0, 8). But received {out_indices}')
 
         if frozen_stages not in range(-1, 8):
             raise ValueError('frozen_stages must be in range(-1, 8). '
