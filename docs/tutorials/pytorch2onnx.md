@@ -226,7 +226,7 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 
 Notes:
 
-- *All models above are tested with Pytorch==1.6.0 and onnxruntime==1.5.1*
+- *All models above are tested with Pytorch==1.6.0, onnx==1.7.0 and onnxruntime==1.5.1*
 
 - If the deployed backend platform is TensorRT, please add environment variables before running the file:
 

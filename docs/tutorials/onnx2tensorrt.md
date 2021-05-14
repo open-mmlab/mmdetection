@@ -93,7 +93,7 @@ The table below lists the models that are guaranteed to be convertable to Tensor
 
 Notes:
 
-- *All models above are tested with Pytorch==1.6.0 and TensorRT-7.2.1.6.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn8.0*
+- *All models above are tested with Pytorch==1.6.0, onnx==1.7.0 and TensorRT-7.2.1.6.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn8.0*
 
 ## Reminders
 
