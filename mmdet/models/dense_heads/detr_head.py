@@ -659,9 +659,9 @@ class DETRHead(AnchorFreeHead):
         # exclude background
         if self.loss_cls.use_sigmoid:
             cls_score = cls_score.sigmoid()
-            scores, indexs = cls_score.view(-1).topk(max_per_img)
-            det_labels = indexs % self.num_classes
-            bbox_index = indexs // self.num_classes
+            scores, indexes = cls_score.view(-1).topk(max_per_img)
+            det_labels = indexes % self.num_classes
+            bbox_index = indexes // self.num_classes
             bbox_pred = bbox_pred[bbox_index]
         else:
             scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
