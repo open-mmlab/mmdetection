@@ -1,4 +1,3 @@
-import os
 import os.path as osp
 
 from .task_types import MMDetectionTaskType
@@ -16,8 +15,6 @@ class ConfigMappings(object):
 
         base_task_path = osp.join(osp.abspath(osp.dirname(__file__)), '..', '..')
 
-        default_data_pipeline_path = osp.join(base_task_path, 'configs', 'datasets', 'default_data_pipeline.py')
-
         self.model_file_map = {}
         if task_type == MMDetectionTaskType.OBJECTDETECTION:
             model_directory = osp.join(base_task_path, '..', 'configs', 'ote', 'custom-object-detection')
@@ -29,13 +26,8 @@ class ConfigMappings(object):
                     gradient_clipping=None
                 )
             self.configurable_parameter_type = MMDetectionParameters
-
-        elif task_type == MMDetectionTaskType.INSTANCESEGMENTATION:
+        else:
             raise NotImplementedError()
-            model_directory = osp.join(base_task_path, 'thirdparty', 'models', 'instance_segmentation')
-            self.model_file_map = {'mask-rcnn': dict(filename=osp.join(model_directory, 'mask_rcnn_r101_fpn.py'),
-                                                     data_pipeline=default_data_pipeline_path,
-                                                     gradient_clipping=None)}
 
         # Base dir for the learning rate schedule config files
         schedule_dir = osp.join(base_task_path, 'configs', 'schedules')
