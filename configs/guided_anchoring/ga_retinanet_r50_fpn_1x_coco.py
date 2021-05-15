@@ -40,23 +40,23 @@ model = dict(
             gamma=2.0,
             alpha=0.25,
             loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=0.04, loss_weight=1.0)))
-# training and testing settings
-train_cfg = dict(
-    ga_assigner=dict(
-        type='ApproxMaxIoUAssigner',
-        pos_iou_thr=0.5,
-        neg_iou_thr=0.4,
-        min_pos_iou=0.4,
-        ignore_iof_thr=-1),
-    ga_sampler=dict(
-        type='RandomSampler',
-        num=256,
-        pos_fraction=0.5,
-        neg_pos_ub=-1,
-        add_gt_as_proposals=False),
-    assigner=dict(neg_iou_thr=0.5, min_pos_iou=0.0),
-    center_ratio=0.2,
-    ignore_ratio=0.5)
+        loss_bbox=dict(type='SmoothL1Loss', beta=0.04, loss_weight=1.0)),
+    # training and testing settings
+    train_cfg=dict(
+        ga_assigner=dict(
+            type='ApproxMaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.4,
+            min_pos_iou=0.4,
+            ignore_iof_thr=-1),
+        ga_sampler=dict(
+            type='RandomSampler',
+            num=256,
+            pos_fraction=0.5,
+            neg_pos_ub=-1,
+            add_gt_as_proposals=False),
+        assigner=dict(neg_iou_thr=0.5, min_pos_iou=0.0),
+        center_ratio=0.2,
+        ignore_ratio=0.5))
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

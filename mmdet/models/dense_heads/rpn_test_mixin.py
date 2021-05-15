@@ -12,8 +12,7 @@ class RPNTestMixin(object):
     if sys.version_info >= (3, 7):
 
         async def async_simple_test_rpn(self, x, img_metas):
-            sleep_interval = self.rpn_head.test_cfg.pop(
-                'async_sleep_interval', 0.025)
+            sleep_interval = self.test_cfg.pop('async_sleep_interval', 0.025)
             async with completed(
                     __name__, 'rpn_head_forward',
                     sleep_interval=sleep_interval):

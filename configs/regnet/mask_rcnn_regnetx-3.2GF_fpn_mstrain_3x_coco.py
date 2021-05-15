@@ -60,6 +60,6 @@ data = dict(
     test=dict(pipeline=test_pipeline))
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005)
 lr_config = dict(step=[28, 34])
-total_epochs = 36
+runner = dict(type='EpochBasedRunner', max_epochs=36)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

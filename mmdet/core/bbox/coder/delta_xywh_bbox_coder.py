@@ -1,3 +1,4 @@
+import mmcv
 import numpy as np
 import torch
 
@@ -18,14 +19,27 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
             delta coordinates
         target_stds (Sequence[float]): Denormalizing standard deviation of
             target for delta coordinates
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
+        add_ctr_clamp (bool): Whether to add center clamp, when added, the
+            predicted box is clamped is its center is too far away from
+            the original anchor's center. Only used by YOLOF. Default False.
+        ctr_clamp (int): the maximum pixel shift to clamp. Only used by YOLOF.
+            Default 32.
     """
 
     def __init__(self,
                  target_means=(0., 0., 0., 0.),
-                 target_stds=(1., 1., 1., 1.)):
+                 target_stds=(1., 1., 1., 1.),
+                 clip_border=True,
+                 add_ctr_clamp=False,
+                 ctr_clamp=32):
         super(BaseBBoxCoder, self).__init__()
         self.means = target_means
         self.stds = target_stds
+        self.clip_border = clip_border
+        self.add_ctr_clamp = add_ctr_clamp
+        self.ctr_clamp = ctr_clamp
 
     def encode(self, bboxes, gt_bboxes):
         """Get box regression transformation deltas that can be used to
@@ -53,10 +67,16 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            boxes (torch.Tensor): Basic boxes.
-            pred_bboxes (torch.Tensor): Encoded boxes with shape
-            max_shape (tuple[int], optional): Maximum shape of boxes.
-                Defaults to None.
+            bboxes (torch.Tensor): Basic boxes. Shape (B, N, 4) or (N, 4)
+            pred_bboxes (Tensor): Encoded offsets with respect to each roi.
+               Has shape (B, N, num_classes * 4) or (B, N, 4) or
+               (N, num_classes * 4) or (N, 4). Note N = num_anchors * W * H
+               when rois is a grid of anchors.Offset encoding follows [1]_.
+            max_shape (Sequence[int] or torch.Tensor or Sequence[
+               Sequence[int]],optional): Maximum bounds for boxes, specifies
+               (H, W, C) or (H, W). If bboxes shape is (B, N, 4), then
+               the max_shape should be a Sequence[Sequence[int]]
+               and the length of max_shape should also be B.
             wh_ratio_clip (float, optional): The allowed ratio between
                 width and height.
 
@@ -65,12 +85,16 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         """
 
         assert pred_bboxes.size(0) == bboxes.size(0)
+        if pred_bboxes.ndim == 3:
+            assert pred_bboxes.size(1) == bboxes.size(1)
         decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means, self.stds,
-                                    max_shape, wh_ratio_clip)
+                                    max_shape, wh_ratio_clip, self.clip_border,
+                                    self.add_ctr_clamp, self.ctr_clamp)
 
         return decoded_bboxes
 
 
+@mmcv.jit(coderize=True)
 def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     """Compute deltas of proposals w.r.t. gt.
 
@@ -116,12 +140,16 @@ def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     return deltas
 
 
+@mmcv.jit(coderize=True)
 def delta2bbox(rois,
                deltas,
                means=(0., 0., 0., 0.),
                stds=(1., 1., 1., 1.),
                max_shape=None,
-               wh_ratio_clip=16 / 1000):
+               wh_ratio_clip=16 / 1000,
+               clip_border=True,
+               add_ctr_clamp=False,
+               ctr_clamp=32):
     """Apply deltas to shift/scale base boxes.
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are
@@ -129,19 +157,32 @@ def delta2bbox(rois,
     This is the inverse function of :func:`bbox2delta`.
 
     Args:
-        rois (Tensor): Boxes to be transformed. Has shape (N, 4)
+        rois (Tensor): Boxes to be transformed. Has shape (N, 4) or (B, N, 4)
         deltas (Tensor): Encoded offsets with respect to each roi.
-            Has shape (N, 4 * num_classes). Note N = num_anchors * W * H when
-            rois is a grid of anchors. Offset encoding follows [1]_.
+            Has shape (B, N, num_classes * 4) or (B, N, 4) or
+            (N, num_classes * 4) or (N, 4). Note N = num_anchors * W * H
+            when rois is a grid of anchors.Offset encoding follows [1]_.
         means (Sequence[float]): Denormalizing means for delta coordinates
         stds (Sequence[float]): Denormalizing standard deviation for delta
             coordinates
-        max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
+        max_shape (Sequence[int] or torch.Tensor or Sequence[
+            Sequence[int]],optional): Maximum bounds for boxes, specifies
+            (H, W, C) or (H, W). If rois shape is (B, N, 4), then
+            the max_shape should be a Sequence[Sequence[int]]
+            and the length of max_shape should also be B.
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
+        add_ctr_clamp (bool): Whether to add center clamp, when added, the
+            predicted box is clamped is its center is too far away from
+            the original anchor's center. Only used by YOLOF. Default False.
+        ctr_clamp (int): the maximum pixel shift to clamp. Only used by YOLOF.
+            Default 32.
 
     Returns:
-        Tensor: Boxes with shape (N, 4), where columns represent
-            tl_x, tl_y, br_x, br_y.
+        Tensor: Boxes with shape (B, N, num_classes * 4) or (B, N, 4) or
+           (N, num_classes * 4) or (N, 4), where 4 represent
+           tl_x, tl_y, br_x, br_y.
 
     References:
         .. [1] https://arxiv.org/abs/1311.2524
@@ -155,43 +196,76 @@ def delta2bbox(rois,
         >>>                        [  1.,   1.,   1.,   1.],
         >>>                        [  0.,   0.,   2.,  -1.],
         >>>                        [ 0.7, -1.9, -0.5,  0.3]])
-        >>> delta2bbox(rois, deltas, max_shape=(32, 32))
+        >>> delta2bbox(rois, deltas, max_shape=(32, 32, 3))
         tensor([[0.0000, 0.0000, 1.0000, 1.0000],
                 [0.1409, 0.1409, 2.8591, 2.8591],
                 [0.0000, 0.3161, 4.1945, 0.6839],
                 [5.0000, 5.0000, 5.0000, 5.0000]])
     """
-    means = deltas.new_tensor(means).view(1, -1).repeat(1, deltas.size(1) // 4)
-    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(1) // 4)
+    means = deltas.new_tensor(means).view(1,
+                                          -1).repeat(1,
+                                                     deltas.size(-1) // 4)
+    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(-1) // 4)
     denorm_deltas = deltas * stds + means
-    dx = denorm_deltas[:, 0::4]
-    dy = denorm_deltas[:, 1::4]
-    dw = denorm_deltas[:, 2::4]
-    dh = denorm_deltas[:, 3::4]
-    max_ratio = np.abs(np.log(wh_ratio_clip))
-    dw = dw.clamp(min=-max_ratio, max=max_ratio)
-    dh = dh.clamp(min=-max_ratio, max=max_ratio)
+    dx = denorm_deltas[..., 0::4]
+    dy = denorm_deltas[..., 1::4]
+    dw = denorm_deltas[..., 2::4]
+    dh = denorm_deltas[..., 3::4]
+
+    x1, y1 = rois[..., 0], rois[..., 1]
+    x2, y2 = rois[..., 2], rois[..., 3]
     # Compute center of each roi
-    px = ((rois[:, 0] + rois[:, 2]) * 0.5).unsqueeze(1).expand_as(dx)
-    py = ((rois[:, 1] + rois[:, 3]) * 0.5).unsqueeze(1).expand_as(dy)
+    px = ((x1 + x2) * 0.5).unsqueeze(-1).expand_as(dx)
+    py = ((y1 + y2) * 0.5).unsqueeze(-1).expand_as(dy)
     # Compute width/height of each roi
-    pw = (rois[:, 2] - rois[:, 0]).unsqueeze(1).expand_as(dw)
-    ph = (rois[:, 3] - rois[:, 1]).unsqueeze(1).expand_as(dh)
+    pw = (x2 - x1).unsqueeze(-1).expand_as(dw)
+    ph = (y2 - y1).unsqueeze(-1).expand_as(dh)
+
+    dx_width = pw * dx
+    dy_height = ph * dy
+
+    max_ratio = np.abs(np.log(wh_ratio_clip))
+    if add_ctr_clamp:
+        dx_width = torch.clamp(dx_width, max=ctr_clamp, min=-ctr_clamp)
+        dy_height = torch.clamp(dy_height, max=ctr_clamp, min=-ctr_clamp)
+        dw = torch.clamp(dw, max=max_ratio)
+        dh = torch.clamp(dh, max=max_ratio)
+    else:
+        dw = dw.clamp(min=-max_ratio, max=max_ratio)
+        dh = dh.clamp(min=-max_ratio, max=max_ratio)
     # Use exp(network energy) to enlarge/shrink each roi
     gw = pw * dw.exp()
     gh = ph * dh.exp()
     # Use network energy to shift the center of each roi
-    gx = px + pw * dx
-    gy = py + ph * dy
+    gx = px + dx_width
+    gy = py + dy_height
     # Convert center-xy/width/height to top-left, bottom-right
     x1 = gx - gw * 0.5
     y1 = gy - gh * 0.5
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
-    if max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1])
-        y1 = y1.clamp(min=0, max=max_shape[0])
-        x2 = x2.clamp(min=0, max=max_shape[1])
-        y2 = y2.clamp(min=0, max=max_shape[0])
+
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
+
+    if clip_border and max_shape is not None:
+        # clip bboxes with dynamic `min` and `max` for onnx
+        if torch.onnx.is_in_onnx_export():
+            from mmdet.core.export import dynamic_clip_for_onnx
+            x1, y1, x2, y2 = dynamic_clip_for_onnx(x1, y1, x2, y2, max_shape)
+            bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
+            return bboxes
+        if not isinstance(max_shape, torch.Tensor):
+            max_shape = x1.new_tensor(max_shape)
+        max_shape = max_shape[..., :2].type_as(x1)
+        if max_shape.ndim == 2:
+            assert bboxes.ndim == 3
+            assert max_shape.size(0) == bboxes.size(0)
+
+        min_xy = x1.new_tensor(0)
+        max_xy = torch.cat(
+            [max_shape] * (deltas.size(-1) // 2),
+            dim=-1).flip(-1).unsqueeze(-2)
+        bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
+        bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+
     return bboxes

@@ -29,14 +29,16 @@ model = dict(
             num_classes=80,
             coarse_pred_each_layer=True,
             loss_point=dict(
-                type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))))
-# model training and testing settings
-train_cfg = dict(
-    rcnn=dict(
-        mask_size=7,
-        num_points=14 * 14,
-        oversample_ratio=3,
-        importance_sample_ratio=0.75))
-test_cfg = dict(
-    rcnn=dict(
-        subdivision_steps=5, subdivision_num_points=28 * 28, scale_factor=2))
+                type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))),
+    # model training and testing settings
+    train_cfg=dict(
+        rcnn=dict(
+            mask_size=7,
+            num_points=14 * 14,
+            oversample_ratio=3,
+            importance_sample_ratio=0.75)),
+    test_cfg=dict(
+        rcnn=dict(
+            subdivision_steps=5,
+            subdivision_num_points=28 * 28,
+            scale_factor=2)))

@@ -34,23 +34,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_roi_extractor = self.bbox_roi_extractor
         self.mask_head = build_head(mask_head)
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        if self.with_shared_head:
-            self.shared_head.init_weights(pretrained=pretrained)
-        if self.with_bbox:
-            self.bbox_roi_extractor.init_weights()
-            self.bbox_head.init_weights()
-        if self.with_mask:
-            self.mask_head.init_weights()
-            if not self.share_roi_extractor:
-                self.mask_roi_extractor.init_weights()
-
     def forward_dummy(self, x, proposals):
         """Dummy forward function."""
         # bbox head
@@ -126,9 +109,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_results = self._mask_forward_train(x, sampling_results,
                                                     bbox_results['bbox_feats'],
                                                     gt_masks, img_metas)
-            # TODO: Support empty tensor input. #2280
-            if mask_results['loss_mask'] is not None:
-                losses.update(mask_results['loss_mask'])
+            losses.update(mask_results['loss_mask'])
 
         return losses
 
@@ -166,8 +147,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         training."""
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-            if pos_rois.shape[0] == 0:
-                return dict(loss_mask=None)
             mask_results = self._mask_forward(x, pos_rois)
         else:
             pos_inds = []
@@ -184,8 +163,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                         device=device,
                         dtype=torch.uint8))
             pos_inds = torch.cat(pos_inds)
-            if pos_inds.shape[0] == 0:
-                return dict(loss_mask=None)
+
             mask_results = self._mask_forward(
                 x, pos_inds=pos_inds, bbox_feats=bbox_feats)
 
@@ -251,15 +229,25 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
-        bbox_results = bbox2result(det_bboxes, det_labels,
-                                   self.bbox_head.num_classes)
+        if torch.onnx.is_in_onnx_export():
+            if self.with_mask:
+                segm_results = self.simple_test_mask(
+                    x, img_metas, det_bboxes, det_labels, rescale=rescale)
+                return det_bboxes, det_labels, segm_results
+            return det_bboxes, det_labels
+
+        bbox_results = [
+            bbox2result(det_bboxes[i], det_labels[i],
+                        self.bbox_head.num_classes)
+            for i in range(len(det_bboxes))
+        ]
 
         if not self.with_mask:
             return bbox_results
         else:
             segm_results = self.simple_test_mask(
                 x, img_metas, det_bboxes, det_labels, rescale=rescale)
-            return bbox_results, segm_results
+            return list(zip(bbox_results, segm_results))
 
     def aug_test(self, x, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
@@ -267,7 +255,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
-        # recompute feats to save memory
         det_bboxes, det_labels = self.aug_test_bboxes(x, img_metas,
                                                       proposal_list,
                                                       self.test_cfg)
@@ -285,6 +272,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         if self.with_mask:
             segm_results = self.aug_test_mask(x, img_metas, det_bboxes,
                                               det_labels)
-            return bbox_results, segm_results
+            return [(bbox_results, segm_results)]
         else:
-            return bbox_results
+            return [bbox_results]

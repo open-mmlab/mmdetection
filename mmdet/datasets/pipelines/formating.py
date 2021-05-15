@@ -340,7 +340,7 @@ class WrapFieldsToLists(object):
         >>>    dict(type='Pad', size_divisor=32),
         >>>    dict(type='ImageToTensor', keys=['img']),
         >>>    dict(type='Collect', keys=['img']),
-        >>>    dict(type='WrapIntoLists')
+        >>>    dict(type='WrapFieldsToLists')
         >>> ]
     """
 

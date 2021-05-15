@@ -1,35 +1,10 @@
 from functools import partial
 
-import mmcv
 import numpy as np
 import torch
 from six.moves import map, zip
 
-
-def tensor2imgs(tensor, mean=(0, 0, 0), std=(1, 1, 1), to_rgb=True):
-    """Convert tensor to images.
-
-    Args:
-        tensor (torch.Tensor): Tensor that contains multiple images
-        mean (tuple[float], optional): Mean of images. Defaults to (0, 0, 0).
-        std (tuple[float], optional): Standard deviation of images.
-            Defaults to (1, 1, 1).
-        to_rgb (bool, optional): Whether convert the images to RGB format.
-            Defaults to True.
-
-    Returns:
-        list[np.ndarray]: A list that contains multiple images.
-    """
-    num_imgs = tensor.size(0)
-    mean = np.array(mean, dtype=np.float32)
-    std = np.array(std, dtype=np.float32)
-    imgs = []
-    for img_id in range(num_imgs):
-        img = tensor[img_id, ...].cpu().numpy().transpose(1, 2, 0)
-        img = mmcv.imdenormalize(
-            img, mean, std, to_bgr=to_rgb).astype(np.uint8)
-        imgs.append(np.ascontiguousarray(img))
-    return imgs
+from ..mask.structures import BitmapMasks, PolygonMasks
 
 
 def multi_apply(func, *args, **kwargs):
@@ -65,3 +40,22 @@ def unmap(data, count, inds, fill=0):
         ret = data.new_full(new_size, fill)
         ret[inds.type(torch.bool), :] = data
     return ret
+
+
+def mask2ndarray(mask):
+    """Convert Mask to ndarray..
+
+    Args:
+        mask (:obj:`BitmapMasks` or :obj:`PolygonMasks` or
+        torch.Tensor or np.ndarray): The mask to be converted.
+
+    Returns:
+        np.ndarray: Ndarray mask of shape (n, h, w) that has been converted
+    """
+    if isinstance(mask, (BitmapMasks, PolygonMasks)):
+        mask = mask.to_ndarray()
+    elif isinstance(mask, torch.Tensor):
+        mask = mask.detach().cpu().numpy()
+    elif not isinstance(mask, np.ndarray):
+        raise TypeError(f'Unsupported {type(mask)} data type')
+    return mask

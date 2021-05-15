@@ -1,3 +1,4 @@
+import mmcv
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,6 +7,7 @@ from ..builder import LOSSES
 from .utils import weighted_loss
 
 
+@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def balanced_l1_loss(pred,
                      target,

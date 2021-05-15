@@ -21,20 +21,21 @@ class OHEMSampler(BaseSampler):
                  **kwargs):
         super(OHEMSampler, self).__init__(num, pos_fraction, neg_pos_ub,
                                           add_gt_as_proposals)
-        if not hasattr(context, 'num_stages'):
-            self.bbox_roi_extractor = context.bbox_roi_extractor
-            self.bbox_head = context.bbox_head
+        self.context = context
+        if not hasattr(self.context, 'num_stages'):
+            self.bbox_head = self.context.bbox_head
         else:
-            self.bbox_roi_extractor = context.bbox_roi_extractor[
-                context.current_stage]
-            self.bbox_head = context.bbox_head[context.current_stage]
+            self.bbox_head = self.context.bbox_head[self.context.current_stage]
 
     def hard_mining(self, inds, num_expected, bboxes, labels, feats):
         with torch.no_grad():
             rois = bbox2roi([bboxes])
-            bbox_feats = self.bbox_roi_extractor(
-                feats[:self.bbox_roi_extractor.num_inputs], rois)
-            cls_score, _ = self.bbox_head(bbox_feats)
+            if not hasattr(self.context, 'num_stages'):
+                bbox_results = self.context._bbox_forward(feats, rois)
+            else:
+                bbox_results = self.context._bbox_forward(
+                    self.context.current_stage, feats, rois)
+            cls_score = bbox_results['cls_score']
             loss = self.bbox_head.loss(
                 cls_score=cls_score,
                 bbox_pred=None,

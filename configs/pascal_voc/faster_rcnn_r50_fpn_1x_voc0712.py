@@ -10,4 +10,5 @@ optimizer_config = dict(grad_clip=None)
 # actual epoch = 3 * 3 = 9
 lr_config = dict(policy='step', step=[3])
 # runtime settings
-total_epochs = 4  # actual epoch = 4 * 3 = 12
+runner = dict(
+    type='EpochBasedRunner', max_epochs=4)  # actual epoch = 4 * 3 = 12

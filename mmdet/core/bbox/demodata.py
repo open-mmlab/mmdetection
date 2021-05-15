@@ -1,29 +1,7 @@
 import numpy as np
 import torch
 
-
-def ensure_rng(rng=None):
-    """Simple version of the ``kwarray.ensure_rng``
-
-    Args:
-        rng (int | numpy.random.RandomState | None):
-            if None, then defaults to the global rng. Otherwise this can be an
-            integer or a RandomState class
-    Returns:
-        (numpy.random.RandomState) : rng -
-            a numpy random number generator
-
-    References:
-        https://gitlab.kitware.com/computer-vision/kwarray/blob/master/kwarray/util_random.py#L270
-    """
-
-    if rng is None:
-        rng = np.random.mtrand._rand
-    elif isinstance(rng, int):
-        rng = np.random.RandomState(rng)
-    else:
-        rng = rng
-    return rng
+from mmdet.utils.util_random import ensure_rng
 
 
 def random_boxes(num=1, scale=1, rng=None):

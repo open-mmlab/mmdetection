@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.ops import DeformConv2d
 
 from mmdet.core import (PointGenerator, build_assigner, build_sampler,
@@ -27,6 +27,7 @@ class RepPointsHead(AnchorFreeHead):
         reppoints is represented as grid points on the bounding box.
         center_init (bool): Whether to use center point assignment.
         transform_method (str): The methods to transform RepPoints to bbox.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     def __init__(self,
@@ -51,6 +52,15 @@ class RepPointsHead(AnchorFreeHead):
                  center_init=True,
                  transform_method='moment',
                  moment_mul=0.01,
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='reppoints_cls_out',
+                         std=0.01,
+                         bias_prob=0.01)),
                  **kwargs):
         self.num_points = num_points
         self.point_feat_channels = point_feat_channels
@@ -72,7 +82,12 @@ class RepPointsHead(AnchorFreeHead):
             (-1))
         self.dcn_base_offset = torch.tensor(dcn_base_offset).view(1, -1, 1, 1)
 
-        super().__init__(num_classes, in_channels, loss_cls=loss_cls, **kwargs)
+        super().__init__(
+            num_classes,
+            in_channels,
+            loss_cls=loss_cls,
+            init_cfg=init_cfg,
+            **kwargs)
 
         self.gradient_mul = gradient_mul
         self.point_base_scale = point_base_scale
@@ -148,26 +163,12 @@ class RepPointsHead(AnchorFreeHead):
         self.reppoints_pts_refine_out = nn.Conv2d(self.point_feat_channels,
                                                   pts_out_dim, 1, 1, 0)
 
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.reppoints_cls_conv, std=0.01)
-        normal_init(self.reppoints_cls_out, std=0.01, bias=bias_cls)
-        normal_init(self.reppoints_pts_init_conv, std=0.01)
-        normal_init(self.reppoints_pts_init_out, std=0.01)
-        normal_init(self.reppoints_pts_refine_conv, std=0.01)
-        normal_init(self.reppoints_pts_refine_out, std=0.01)
-
     def points2bbox(self, pts, y_first=True):
         """Converting the points set into bounding box.
 
         :param pts: the input points sets (fields), each points
             set (fields) is represented as 2n scalar.
-        :param y_first: if y_fisrt=True, the point set is represented as
+        :param y_first: if y_first=True, the point set is represented as
             [y1, x1, y2, x2 ... yn, xn], otherwise the point set is
             represented as [x1, y1, x2, y2 ... xn, yn].
         :return: each points set is converting to a bbox [x1, y1, x2, y2].
@@ -292,7 +293,7 @@ class RepPointsHead(AnchorFreeHead):
             pts_out_refine = pts_out_refine + pts_out_init.detach()
         return cls_out, pts_out_init, pts_out_refine
 
-    def get_points(self, featmap_sizes, img_metas):
+    def get_points(self, featmap_sizes, img_metas, device):
         """Get points according to feature map sizes.
 
         Args:
@@ -310,7 +311,7 @@ class RepPointsHead(AnchorFreeHead):
         multi_level_points = []
         for i in range(num_levels):
             points = self.point_generators[i].grid_points(
-                featmap_sizes[i], self.point_strides[i])
+                featmap_sizes[i], self.point_strides[i], device)
             multi_level_points.append(points)
         points_list = [[point.clone() for point in multi_level_points]
                        for _ in range(num_imgs)]
@@ -326,7 +327,7 @@ class RepPointsHead(AnchorFreeHead):
                 valid_feat_h = min(int(np.ceil(h / point_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / point_stride)), feat_w)
                 flags = self.point_generators[i].valid_flags(
-                    (feat_h, feat_w), (valid_feat_h, valid_feat_w))
+                    (feat_h, feat_w), (valid_feat_h, valid_feat_w), device)
                 multi_level_flags.append(flags)
             valid_flag_list.append(multi_level_flags)
 
@@ -402,7 +403,7 @@ class RepPointsHead(AnchorFreeHead):
         pos_proposals = torch.zeros_like(proposals)
         proposals_weights = proposals.new_zeros([num_valid_proposals, 4])
         labels = proposals.new_full((num_valid_proposals, ),
-                                    self.background_label,
+                                    self.num_classes,
                                     dtype=torch.long)
         label_weights = proposals.new_zeros(
             num_valid_proposals, dtype=torch.float)
@@ -415,7 +416,9 @@ class RepPointsHead(AnchorFreeHead):
             pos_proposals[pos_inds, :] = proposals[pos_inds, :]
             proposals_weights[pos_inds, :] = 1.0
             if gt_labels is None:
-                labels[pos_inds] = 1
+                # Only rpn gives gt_labels as None
+                # Foreground is the first class
+                labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]
@@ -534,6 +537,7 @@ class RepPointsHead(AnchorFreeHead):
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
+        cls_score = cls_score.contiguous()
         loss_cls = self.loss_cls(
             cls_score,
             labels,
@@ -572,11 +576,12 @@ class RepPointsHead(AnchorFreeHead):
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.point_generators)
+        device = cls_scores[0].device
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
         # target for initial stage
         center_list, valid_flag_list = self.get_points(featmap_sizes,
-                                                       img_metas)
+                                                       img_metas, device)
         pts_coordinate_preds_init = self.offset_to_pts(center_list,
                                                        pts_preds_init)
         if self.train_cfg.init.assigner['type'] == 'PointAssigner':
@@ -604,7 +609,7 @@ class RepPointsHead(AnchorFreeHead):
 
         # target for refinement stage
         center_list, valid_flag_list = self.get_points(featmap_sizes,
-                                                       img_metas)
+                                                       img_metas, device)
         pts_coordinate_preds_refine = self.offset_to_pts(
             center_list, pts_preds_refine)
         bbox_list = []
@@ -664,8 +669,9 @@ class RepPointsHead(AnchorFreeHead):
                    img_metas,
                    cfg=None,
                    rescale=False,
-                   nms=True):
+                   with_nms=True):
         assert len(cls_scores) == len(pts_preds_refine)
+        device = cls_scores[0].device
         bbox_preds_refine = [
             self.points2bbox(pts_pred_refine)
             for pts_pred_refine in pts_preds_refine
@@ -673,7 +679,7 @@ class RepPointsHead(AnchorFreeHead):
         num_levels = len(cls_scores)
         mlvl_points = [
             self.point_generators[i].grid_points(cls_scores[i].size()[-2:],
-                                                 self.point_strides[i])
+                                                 self.point_strides[i], device)
             for i in range(num_levels)
         ]
         result_list = []
@@ -690,7 +696,7 @@ class RepPointsHead(AnchorFreeHead):
             proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
                                                 mlvl_points, img_shape,
                                                 scale_factor, cfg, rescale,
-                                                nms)
+                                                with_nms)
             result_list.append(proposals)
         return result_list
 
@@ -702,7 +708,7 @@ class RepPointsHead(AnchorFreeHead):
                            scale_factor,
                            cfg,
                            rescale=False,
-                           nms=True):
+                           with_nms=True):
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
@@ -749,7 +755,7 @@ class RepPointsHead(AnchorFreeHead):
             # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        if nms:
+        if with_nms:
             det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                     cfg.score_thr, cfg.nms,
                                                     cfg.max_per_img)

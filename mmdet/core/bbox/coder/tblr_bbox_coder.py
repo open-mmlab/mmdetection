@@ -1,3 +1,4 @@
+import mmcv
 import torch
 
 from ..builder import BBOX_CODERS
@@ -17,11 +18,14 @@ class TBLRBBoxCoder(BaseBBoxCoder):
           divided with when coding the coordinates. If it is a list, it should
           have length of 4 indicating normalization factor in tblr dims.
           Otherwise it is a unified float factor for all dims. Default: 4.0
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
     """
 
-    def __init__(self, normalizer=4.0):
+    def __init__(self, normalizer=4.0, clip_border=True):
         super(BaseBBoxCoder, self).__init__()
         self.normalizer = normalizer
+        self.clip_border = clip_border
 
     def encode(self, bboxes, gt_bboxes):
         """Get box regression transformation deltas that can be used to
@@ -46,24 +50,29 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            boxes (torch.Tensor): Basic boxes.
+            bboxes (torch.Tensor): Basic boxes.Shape (B, N, 4) or (N, 4)
             pred_bboxes (torch.Tensor): Encoded boxes with shape
-            max_shape (tuple[int], optional): Maximum shape of boxes.
-                Defaults to None.
+               (B, N, 4) or (N, 4)
+            max_shape (Sequence[int] or torch.Tensor or Sequence[
+               Sequence[int]],optional): Maximum bounds for boxes, specifies
+               (H, W, C) or (H, W). If bboxes shape is (B, N, 4), then
+               the max_shape should be a Sequence[Sequence[int]]
+               and the length of max_shape should also be B.
 
         Returns:
             torch.Tensor: Decoded boxes.
         """
-        assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = tblr2bboxes(
             bboxes,
             pred_bboxes,
             normalizer=self.normalizer,
-            max_shape=max_shape)
+            max_shape=max_shape,
+            clip_border=self.clip_border)
 
         return decoded_bboxes
 
 
+@mmcv.jit(coderize=True)
 def bboxes2tblr(priors, gts, normalizer=4.0, normalize_by_wh=True):
     """Encode ground truth boxes to tblr coordinate.
 
@@ -110,11 +119,13 @@ def bboxes2tblr(priors, gts, normalizer=4.0, normalize_by_wh=True):
     return loc / normalizer
 
 
+@mmcv.jit(coderize=True)
 def tblr2bboxes(priors,
                 tblr,
                 normalizer=4.0,
                 normalize_by_wh=True,
-                max_shape=None):
+                max_shape=None,
+                clip_border=True):
     """Decode tblr outputs to prediction boxes.
 
     The process includes 3 steps: 1) De-normalize tblr coordinates by
@@ -125,41 +136,70 @@ def tblr2bboxes(priors,
 
     Args:
         priors (Tensor): Prior boxes in point form (x0, y0, x1, y1)
-          Shape: (n,4).
+          Shape: (N,4) or (B, N, 4).
         tblr (Tensor): Coords of network output in tblr form
-          Shape: (n, 4).
+          Shape: (N, 4) or (B, N, 4).
         normalizer (Sequence[float] | float): Normalization parameter of
           encoded boxes. By list, it represents the normalization factors at
           tblr dims. By float, it is the unified normalization factor at all
           dims. Default: 4.0
         normalize_by_wh (bool): Whether the tblr coordinates have been
           normalized by the side length (wh) of prior bboxes.
-        max_shape (tuple, optional): Shape of the image. Decoded bboxes
-          exceeding which will be clamped.
+        max_shape (Sequence[int] or torch.Tensor or Sequence[
+            Sequence[int]],optional): Maximum bounds for boxes, specifies
+            (H, W, C) or (H, W). If priors shape is (B, N, 4), then
+            the max_shape should be a Sequence[Sequence[int]]
+            and the length of max_shape should also be B.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
 
     Return:
-        encoded boxes (Tensor), Shape: (n, 4)
+        encoded boxes (Tensor): Boxes with shape (N, 4) or (B, N, 4)
     """
     if not isinstance(normalizer, float):
         normalizer = torch.tensor(normalizer, device=priors.device)
         assert len(normalizer) == 4, 'Normalizer must have length = 4'
     assert priors.size(0) == tblr.size(0)
+    if priors.ndim == 3:
+        assert priors.size(1) == tblr.size(1)
+
     loc_decode = tblr * normalizer
-    prior_centers = (priors[:, 0:2] + priors[:, 2:4]) / 2
+    prior_centers = (priors[..., 0:2] + priors[..., 2:4]) / 2
     if normalize_by_wh:
-        wh = priors[:, 2:4] - priors[:, 0:2]
-        w, h = torch.split(wh, 1, dim=1)
-        loc_decode[:, :2] *= h  # tb
-        loc_decode[:, 2:] *= w  # lr
-    top, bottom, left, right = loc_decode.split(1, dim=1)
-    xmin = prior_centers[:, 0].unsqueeze(1) - left
-    xmax = prior_centers[:, 0].unsqueeze(1) + right
-    ymin = prior_centers[:, 1].unsqueeze(1) - top
-    ymax = prior_centers[:, 1].unsqueeze(1) + bottom
-    boxes = torch.cat((xmin, ymin, xmax, ymax), dim=1)
-    if max_shape is not None:
-        boxes[:, 0].clamp_(min=0, max=max_shape[1])
-        boxes[:, 1].clamp_(min=0, max=max_shape[0])
-        boxes[:, 2].clamp_(min=0, max=max_shape[1])
-        boxes[:, 3].clamp_(min=0, max=max_shape[0])
-    return boxes
+        wh = priors[..., 2:4] - priors[..., 0:2]
+        w, h = torch.split(wh, 1, dim=-1)
+        # Inplace operation with slice would failed for exporting to ONNX
+        th = h * loc_decode[..., :2]  # tb
+        tw = w * loc_decode[..., 2:]  # lr
+        loc_decode = torch.cat([th, tw], dim=-1)
+    # Cannot be exported using onnx when loc_decode.split(1, dim=-1)
+    top, bottom, left, right = loc_decode.split((1, 1, 1, 1), dim=-1)
+    xmin = prior_centers[..., 0].unsqueeze(-1) - left
+    xmax = prior_centers[..., 0].unsqueeze(-1) + right
+    ymin = prior_centers[..., 1].unsqueeze(-1) - top
+    ymax = prior_centers[..., 1].unsqueeze(-1) + bottom
+
+    bboxes = torch.cat((xmin, ymin, xmax, ymax), dim=-1)
+
+    if clip_border and max_shape is not None:
+        # clip bboxes with dynamic `min` and `max` for onnx
+        if torch.onnx.is_in_onnx_export():
+            from mmdet.core.export import dynamic_clip_for_onnx
+            xmin, ymin, xmax, ymax = dynamic_clip_for_onnx(
+                xmin, ymin, xmax, ymax, max_shape)
+            bboxes = torch.cat([xmin, ymin, xmax, ymax], dim=-1)
+            return bboxes
+        if not isinstance(max_shape, torch.Tensor):
+            max_shape = priors.new_tensor(max_shape)
+        max_shape = max_shape[..., :2].type_as(priors)
+        if max_shape.ndim == 2:
+            assert bboxes.ndim == 3
+            assert max_shape.size(0) == bboxes.size(0)
+
+        min_xy = priors.new_tensor(0)
+        max_xy = torch.cat([max_shape, max_shape],
+                           dim=-1).flip(-1).unsqueeze(-2)
+        bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
+        bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+
+    return bboxes

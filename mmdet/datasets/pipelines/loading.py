@@ -78,6 +78,38 @@ class LoadImageFromFile(object):
 
 
 @PIPELINES.register_module()
+class LoadImageFromWebcam(LoadImageFromFile):
+    """Load an image from webcam.
+
+    Similar with :obj:`LoadImageFromFile`, but the image read from webcam is in
+    ``results['img']``.
+    """
+
+    def __call__(self, results):
+        """Call functions to add image meta information.
+
+        Args:
+            results (dict): Result dict with Webcam read image in
+                ``results['img']``.
+
+        Returns:
+            dict: The dict contains loaded image and meta information.
+        """
+
+        img = results['img']
+        if self.to_float32:
+            img = img.astype(np.float32)
+
+        results['filename'] = None
+        results['ori_filename'] = None
+        results['img'] = img
+        results['img_shape'] = img.shape
+        results['ori_shape'] = img.shape
+        results['img_fields'] = ['img']
+        return results
+
+
+@PIPELINES.register_module()
 class LoadMultiChannelImageFromFiles(object):
     """Load multi-channel images from a list of separate channel files.
 
@@ -162,7 +194,7 @@ class LoadMultiChannelImageFromFiles(object):
 
 @PIPELINES.register_module()
 class LoadAnnotations(object):
-    """Load mutiple types of annotations.
+    """Load multiple types of annotations.
 
     Args:
         with_bbox (bool): Whether to parse and load the bbox annotation.
@@ -346,8 +378,8 @@ class LoadAnnotations(object):
         repr_str += f'(with_bbox={self.with_bbox}, '
         repr_str += f'with_label={self.with_label}, '
         repr_str += f'with_mask={self.with_mask}, '
-        repr_str += f'with_seg={self.with_seg})'
-        repr_str += f'poly2mask={self.poly2mask})'
+        repr_str += f'with_seg={self.with_seg}, '
+        repr_str += f'poly2mask={self.poly2mask}, '
         repr_str += f'poly2mask={self.file_client_args})'
         return repr_str
 
@@ -395,3 +427,32 @@ class LoadProposals(object):
     def __repr__(self):
         return self.__class__.__name__ + \
             f'(num_max_proposals={self.num_max_proposals})'
+
+
+@PIPELINES.register_module()
+class FilterAnnotations(object):
+    """Filter invalid annotations.
+
+    Args:
+        min_gt_bbox_wh (tuple[int]): Minimum width and height of ground truth
+            boxes.
+    """
+
+    def __init__(self, min_gt_bbox_wh):
+        # TODO: add more filter options
+        self.min_gt_bbox_wh = min_gt_bbox_wh
+
+    def __call__(self, results):
+        assert 'gt_bboxes' in results
+        gt_bboxes = results['gt_bboxes']
+        w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+        h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
+        keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
+        if not keep.any():
+            return None
+        else:
+            keys = ('gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg')
+            for key in keys:
+                if key in results:
+                    results[key] = results[key][keep]
+            return results

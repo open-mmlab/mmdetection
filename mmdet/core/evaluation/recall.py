@@ -74,7 +74,7 @@ def eval_recalls(gts,
         proposal_nums (int | Sequence[int]): Top N proposals to be evaluated.
         iou_thrs (float | Sequence[float]): IoU thresholds. Default: 0.5.
         logger (logging.Logger | str | None): The way to print the recall
-            summary. See `mmdet.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details. Default: None.
 
     Returns:
         ndarray: recalls of different ious and proposal nums
@@ -121,7 +121,7 @@ def print_recall_summary(recalls,
         row_idxs (ndarray): which rows(proposal nums) to print
         col_idxs (ndarray): which cols(iou thresholds) to print
         logger (logging.Logger | str | None): The way to print the recall
-            summary. See `mmdet.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details. Default: None.
     """
     proposal_nums = np.array(proposal_nums, dtype=np.int32)
     iou_thrs = np.array(iou_thrs)

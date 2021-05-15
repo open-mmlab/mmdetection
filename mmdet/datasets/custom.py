@@ -1,7 +1,11 @@
 import os.path as osp
+import warnings
+from collections import OrderedDict
 
 import mmcv
 import numpy as np
+from mmcv.utils import print_log
+from terminaltables import AsciiTable
 from torch.utils.data import Dataset
 
 from mmdet.core import eval_map, eval_recalls
@@ -24,7 +28,7 @@ class CustomDataset(Dataset):
                 'width': 1280,
                 'height': 720,
                 'ann': {
-                    'bboxes': <np.ndarray> (n, 4),
+                    'bboxes': <np.ndarray> (n, 4) in (x1, y1, x2, y2) order.
                     'labels': <np.ndarray> (n, ),
                     'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
                     'labels_ignore': <np.ndarray> (k, 4) (optional field)
@@ -42,7 +46,9 @@ class CustomDataset(Dataset):
             ``img_prefix``, ``seg_prefix``, ``proposal_file`` if specified.
         test_mode (bool, optional): If set True, annotation will not be loaded.
         filter_empty_gt (bool, optional): If set true, images without bounding
-            boxes will be filtered out.
+            boxes of the dataset's classes will be filtered out. This option
+            only works when `test_mode=False`, i.e., we never filter images
+            during tests.
     """
 
     CLASSES = None
@@ -80,23 +86,21 @@ class CustomDataset(Dataset):
                                               self.proposal_file)
         # load annotations (and proposals)
         self.data_infos = self.load_annotations(self.ann_file)
-        # filter data infos if classes are customized
-        if self.custom_classes:
-            self.data_infos = self.get_subset_by_classes()
 
         if self.proposal_file is not None:
             self.proposals = self.load_proposals(self.proposal_file)
         else:
             self.proposals = None
-        # filter images too small
+
+        # filter images too small and containing no annotations
         if not test_mode:
             valid_inds = self._filter_imgs()
             self.data_infos = [self.data_infos[i] for i in valid_inds]
             if self.proposals is not None:
                 self.proposals = [self.proposals[i] for i in valid_inds]
-        # set group flag for the sampler
-        if not self.test_mode:
+            # set group flag for the sampler
             self._set_group_flag()
+
         # processing pipeline
         self.pipeline = Compose(pipeline)
 
@@ -147,6 +151,9 @@ class CustomDataset(Dataset):
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small."""
+        if self.filter_empty_gt:
+            warnings.warn(
+                'CustomDataset does not support filtering empty gt images.')
         valid_inds = []
         for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) >= min_size:
@@ -216,8 +223,8 @@ class CustomDataset(Dataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Testing data after pipeline with new keys intorduced by \
-                piepline.
+            dict: Testing data after pipeline with new keys introduced by \
+                pipeline.
         """
 
         img_info = self.data_infos[idx]
@@ -237,12 +244,13 @@ class CustomDataset(Dataset):
                 string, take it as a file name. The file contains the name of
                 classes where each line contains one class name. If classes is
                 a tuple or list, override the CLASSES defined by the dataset.
+
+        Returns:
+            tuple[str] or list[str]: Names of categories of the dataset.
         """
         if classes is None:
-            cls.custom_classes = False
             return cls.CLASSES
 
-        cls.custom_classes = True
         if isinstance(classes, str):
             # take it as a file path
             class_names = mmcv.list_from_file(classes)
@@ -253,12 +261,8 @@ class CustomDataset(Dataset):
 
         return class_names
 
-    def get_subset_by_classes(self):
-        return self.data_infos
-
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
-        pass
 
     def evaluate(self,
                  results,
@@ -277,9 +281,7 @@ class CustomDataset(Dataset):
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.
                 Default: (100, 300, 1000).
-            iou_thr (float | list[float]): IoU threshold. It must be a float
-                when evaluating mAP, and can be a list when evaluating recall.
-                Default: 0.5.
+            iou_thr (float | list[float]): IoU threshold. Default: 0.5.
             scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
                 Default: None.
         """
@@ -291,28 +293,69 @@ class CustomDataset(Dataset):
         if metric not in allowed_metrics:
             raise KeyError(f'metric {metric} is not supported')
         annotations = [self.get_ann_info(i) for i in range(len(self))]
-        eval_results = {}
+        eval_results = OrderedDict()
+        iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
         if metric == 'mAP':
-            assert isinstance(iou_thr, float)
-            mean_ap, _ = eval_map(
-                results,
-                annotations,
-                scale_ranges=scale_ranges,
-                iou_thr=iou_thr,
-                dataset=self.CLASSES,
-                logger=logger)
-            eval_results['mAP'] = mean_ap
+            assert isinstance(iou_thrs, list)
+            mean_aps = []
+            for iou_thr in iou_thrs:
+                print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')
+                mean_ap, _ = eval_map(
+                    results,
+                    annotations,
+                    scale_ranges=scale_ranges,
+                    iou_thr=iou_thr,
+                    dataset=self.CLASSES,
+                    logger=logger)
+                mean_aps.append(mean_ap)
+                eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)
+            eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
         elif metric == 'recall':
             gt_bboxes = [ann['bboxes'] for ann in annotations]
-            if isinstance(iou_thr, float):
-                iou_thr = [iou_thr]
             recalls = eval_recalls(
                 gt_bboxes, results, proposal_nums, iou_thr, logger=logger)
             for i, num in enumerate(proposal_nums):
-                for j, iou in enumerate(iou_thr):
+                for j, iou in enumerate(iou_thrs):
                     eval_results[f'recall@{num}@{iou}'] = recalls[i, j]
             if recalls.shape[1] > 1:
                 ar = recalls.mean(axis=1)
                 for i, num in enumerate(proposal_nums):
                     eval_results[f'AR@{num}'] = ar[i]
         return eval_results
+
+    def __repr__(self):
+        """Print the number of instance number."""
+        dataset_type = 'Test' if self.test_mode else 'Train'
+        result = (f'\n{self.__class__.__name__} {dataset_type} dataset '
+                  f'with number of images {len(self)}, '
+                  f'and instance counts: \n')
+        if self.CLASSES is None:
+            result += 'Category names are not provided. \n'
+            return result
+        instance_count = np.zeros(len(self.CLASSES) + 1).astype(int)
+        # count the instance number in each image
+        for idx in range(len(self)):
+            label = self.get_ann_info(idx)['labels']
+            unique, counts = np.unique(label, return_counts=True)
+            if len(unique) > 0:
+                # add the occurrence number to each class
+                instance_count[unique] += counts
+            else:
+                # background is the last index
+                instance_count[-1] += 1
+        # create a table with category count
+        table_data = [['category', 'count'] * 5]
+        row_data = []
+        for cls, count in enumerate(instance_count):
+            if cls < len(self.CLASSES):
+                row_data += [f'{cls} [{self.CLASSES[cls]}]', f'{count}']
+            else:
+                # add the background number
+                row_data += ['-1 background', f'{count}']
+            if len(row_data) == 10:
+                table_data.append(row_data)
+                row_data = []
+
+        table = AsciiTable(table_data)
+        result += table.table
+        return result

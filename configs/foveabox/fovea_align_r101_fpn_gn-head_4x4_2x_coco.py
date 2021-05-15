@@ -7,4 +7,4 @@ model = dict(
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)))
 # learning policy
 lr_config = dict(step=[16, 22])
-total_epochs = 24
+runner = dict(type='EpochBasedRunner', max_epochs=24)

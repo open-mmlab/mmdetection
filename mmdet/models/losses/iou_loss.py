@@ -1,5 +1,6 @@
 import math
 
+import mmcv
 import torch
 import torch.nn as nn
 
@@ -8,8 +9,9 @@ from ..builder import LOSSES
 from .utils import weighted_loss
 
 
+@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def iou_loss(pred, target, eps=1e-6):
+def iou_loss(pred, target, linear=False, eps=1e-6):
     """IoU loss.
 
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
@@ -19,16 +21,22 @@ def iou_loss(pred, target, eps=1e-6):
         pred (torch.Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
         target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
+        linear (bool, optional): If True, use linear scale of loss instead of
+            log scale. Default: False.
         eps (float): Eps to avoid log(0).
 
     Return:
         torch.Tensor: Loss tensor.
     """
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
-    loss = -ious.log()
+    if linear:
+        loss = 1 - ious
+    else:
+        loss = -ious.log()
     return loss
 
 
+@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
     """BIoULoss.
@@ -74,6 +82,7 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
     return loss
 
 
+@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def giou_loss(pred, target, eps=1e-7):
     r"""`Generalized Intersection over Union: A Metric and A Loss for Bounding
@@ -88,32 +97,12 @@ def giou_loss(pred, target, eps=1e-7):
     Return:
         Tensor: Loss tensor.
     """
-    # overlap
-    lt = torch.max(pred[:, :2], target[:, :2])
-    rb = torch.min(pred[:, 2:], target[:, 2:])
-    wh = (rb - lt).clamp(min=0)
-    overlap = wh[:, 0] * wh[:, 1]
-
-    # union
-    ap = (pred[:, 2] - pred[:, 0]) * (pred[:, 3] - pred[:, 1])
-    ag = (target[:, 2] - target[:, 0]) * (target[:, 3] - target[:, 1])
-    union = ap + ag - overlap + eps
-
-    # IoU
-    ious = overlap / union
-
-    # enclose area
-    enclose_x1y1 = torch.min(pred[:, :2], target[:, :2])
-    enclose_x2y2 = torch.max(pred[:, 2:], target[:, 2:])
-    enclose_wh = (enclose_x2y2 - enclose_x1y1).clamp(min=0)
-    enclose_area = enclose_wh[:, 0] * enclose_wh[:, 1] + eps
-
-    # GIoU
-    gious = ious - (enclose_area - union) / enclose_area
+    gious = bbox_overlaps(pred, target, mode='giou', is_aligned=True, eps=eps)
     loss = 1 - gious
     return loss
 
 
+@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def diou_loss(pred, target, eps=1e-7):
     r"""`Implementation of Distance-IoU Loss: Faster and Better
@@ -168,6 +157,7 @@ def diou_loss(pred, target, eps=1e-7):
     return loss
 
 
+@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def ciou_loss(pred, target, eps=1e-7):
     r"""`Implementation of paper `Enhancing Geometric Factors into
@@ -236,13 +226,20 @@ class IoULoss(nn.Module):
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
 
     Args:
+        linear (bool): If True, use linear scale of loss instead of log scale.
+            Default: False.
         eps (float): Eps to avoid log(0).
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Weight of loss.
     """
 
-    def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
+    def __init__(self,
+                 linear=False,
+                 eps=1e-6,
+                 reduction='mean',
+                 loss_weight=1.0):
         super(IoULoss, self).__init__()
+        self.linear = linear
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
@@ -272,6 +269,8 @@ class IoULoss(nn.Module):
             reduction_override if reduction_override else self.reduction)
         if (weight is not None) and (not torch.any(weight > 0)) and (
                 reduction != 'none'):
+            if pred.dim() == weight.dim() + 1:
+                weight = weight.unsqueeze(1)
             return (pred * weight).sum()  # 0
         if weight is not None and weight.dim() > 1:
             # TODO: remove this in the future
@@ -283,6 +282,7 @@ class IoULoss(nn.Module):
             pred,
             target,
             weight,
+            linear=self.linear,
             eps=self.eps,
             reduction=reduction,
             avg_factor=avg_factor,
@@ -308,6 +308,8 @@ class BoundedIoULoss(nn.Module):
                 reduction_override=None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
+            if pred.dim() == weight.dim() + 1:
+                weight = weight.unsqueeze(1)
             return (pred * weight).sum()  # 0
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
@@ -341,6 +343,8 @@ class GIoULoss(nn.Module):
                 reduction_override=None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
+            if pred.dim() == weight.dim() + 1:
+                weight = weight.unsqueeze(1)
             return (pred * weight).sum()  # 0
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
@@ -379,6 +383,8 @@ class DIoULoss(nn.Module):
                 reduction_override=None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
+            if pred.dim() == weight.dim() + 1:
+                weight = weight.unsqueeze(1)
             return (pred * weight).sum()  # 0
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
@@ -417,6 +423,8 @@ class CIoULoss(nn.Module):
                 reduction_override=None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
+            if pred.dim() == weight.dim() + 1:
+                weight = weight.unsqueeze(1)
             return (pred * weight).sum()  # 0
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (

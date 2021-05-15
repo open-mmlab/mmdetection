@@ -46,9 +46,15 @@ class RandomSampler(BaseSampler):
 
         is_tensor = isinstance(gallery, torch.Tensor)
         if not is_tensor:
-            gallery = torch.tensor(
-                gallery, dtype=torch.long, device=torch.cuda.current_device())
-        perm = torch.randperm(gallery.numel(), device=gallery.device)[:num]
+            if torch.cuda.is_available():
+                device = torch.cuda.current_device()
+            else:
+                device = 'cpu'
+            gallery = torch.tensor(gallery, dtype=torch.long, device=device)
+        # This is a temporary fix. We can revert the following code
+        # when PyTorch fixes the abnormal return of torch.randperm.
+        # See: https://github.com/open-mmlab/mmdetection/pull/5014
+        perm = torch.randperm(gallery.numel())[:num].to(device=gallery.device)
         rand_inds = gallery[perm]
         if not is_tensor:
             rand_inds = rand_inds.cpu().numpy()

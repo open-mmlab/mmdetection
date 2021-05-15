@@ -1,4 +1,6 @@
-## WIDER Face Dataset
+# WIDER Face Dataset
+
+<!-- [DATASET] -->
 
 To use the WIDER Face dataset you need to download it
 and extract to the `data/WIDERFace` folder. Annotation in the VOC format
@@ -30,3 +32,12 @@ mmdetection
 
 After that you can train the SSD300 on WIDER by launching training with the `ssd300_wider_face.py` config or
 create your own config based on the presented one.
+
+```
+@inproceedings{yang2016wider,
+   Author = {Yang, Shuo and Luo, Ping and Loy, Chen Change and Tang, Xiaoou},
+   Booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+   Title = {WIDER FACE: A Face Detection Benchmark},
+   Year = {2016}
+}
+```

@@ -15,4 +15,4 @@ model = dict(
 data = dict(samples_per_gpu=1, workers_per_gpu=1)
 # learning policy
 lr_config = dict(step=[16, 19])
-total_epochs = 20
+runner = dict(type='EpochBasedRunner', max_epochs=20)

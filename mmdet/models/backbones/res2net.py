@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.runner import Sequential
 
 from ..builder import BACKBONES
 from .resnet import Bottleneck as _Bottleneck
@@ -158,7 +159,7 @@ class Bottle2neck(_Bottleneck):
         return out
 
 
-class Res2Layer(nn.Sequential):
+class Res2Layer(Sequential):
     """Res2Layer to build Res2Net style backbone.
 
     Args:
@@ -273,6 +274,9 @@ class Res2Net(ResNet):
             memory while slowing down the training speed.
         zero_init_residual (bool): Whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+        pretrained (str, optional): model pretrained path. Default: None
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
 
     Example:
         >>> from mmdet.models import Res2Net
@@ -301,11 +305,18 @@ class Res2Net(ResNet):
                  style='pytorch',
                  deep_stem=True,
                  avg_down=True,
+                 pretrained=None,
+                 init_cfg=None,
                  **kwargs):
         self.scales = scales
         self.base_width = base_width
         super(Res2Net, self).__init__(
-            style='pytorch', deep_stem=True, avg_down=True, **kwargs)
+            style='pytorch',
+            deep_stem=True,
+            avg_down=True,
+            pretrained=pretrained,
+            init_cfg=init_cfg,
+            **kwargs)
 
     def make_res_layer(self, **kwargs):
         return Res2Layer(

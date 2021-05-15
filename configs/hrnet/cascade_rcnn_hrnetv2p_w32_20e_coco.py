@@ -36,4 +36,4 @@ model = dict(
         out_channels=256))
 # learning policy
 lr_config = dict(step=[16, 19])
-total_epochs = 20
+runner = dict(type='EpochBasedRunner', max_epochs=20)

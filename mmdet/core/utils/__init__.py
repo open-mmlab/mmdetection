@@ -1,7 +1,7 @@
-from .dist_utils import DistOptimizerHook, allreduce_grads
-from .misc import multi_apply, tensor2imgs, unmap
+from .dist_utils import DistOptimizerHook, allreduce_grads, reduce_mean
+from .misc import mask2ndarray, multi_apply, unmap
 
 __all__ = [
-    'allreduce_grads', 'DistOptimizerHook', 'tensor2imgs', 'multi_apply',
-    'unmap'
+    'allreduce_grads', 'DistOptimizerHook', 'reduce_mean', 'multi_apply',
+    'unmap', 'mask2ndarray'
 ]

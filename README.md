@@ -8,10 +8,12 @@ Documentation: https://mmdetection.readthedocs.io/
 
 ## Introduction
 
-MMDetection is an open source object detection toolbox based on PyTorch. It is
-a part of the OpenMMLab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
+English | [简体中文](README_zh-CN.md)
 
-The master branch works with **PyTorch 1.3 to 1.5**.
+MMDetection is an open source object detection toolbox based on PyTorch. It is
+a part of the [OpenMMLab](https://openmmlab.com/) project.
+
+The master branch works with **PyTorch 1.3+**.
 The old v1.x branch works with PyTorch 1.1 to 1.4, but v2.0 is strongly recommended for faster speed, higher performance, better design and more friendly usage.
 
 ![demo image](resources/coco_test_12510.jpg)
@@ -42,7 +44,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.3.0 was released in 5/8/2020.
+v2.12.0 was released in 01/05/2021.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -51,65 +53,82 @@ A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](
 Results and models are available in the [model zoo](docs/model_zoo.md).
 
 Supported backbones:
-- [x] ResNet
-- [x] ResNeXt
-- [x] VGG
-- [x] HRNet
-- [x] RegNet
-- [x] Res2Net
+
+- [x] ResNet (CVPR'2016)
+- [x] ResNeXt (CVPR'2017)
+- [x] VGG (ICLR'2015)
+- [x] HRNet (CVPR'2019)
+- [x] RegNet (CVPR'2020)
+- [x] Res2Net (TPAMI'2020)
+- [x] ResNeSt (ArXiv'2020)
 
 Supported methods:
-- [x] [RPN](configs/rpn)
-- [x] [Fast R-CNN](configs/fast_rcnn)
-- [x] [Faster R-CNN](configs/faster_rcnn)
-- [x] [Mask R-CNN](configs/mask_rcnn)
-- [x] [Cascade R-CNN](configs/cascade_rcnn)
-- [x] [Cascade Mask R-CNN](configs/cascade_rcnn)
-- [x] [SSD](configs/ssd)
-- [x] [RetinaNet](configs/retinanet)
-- [x] [GHM](configs/ghm)
-- [x] [Mask Scoring R-CNN](configs/ms_rcnn)
-- [x] [Double-Head R-CNN](configs/double_heads)
-- [x] [Hybrid Task Cascade](configs/htc)
-- [x] [Libra R-CNN](configs/libra_rcnn)
-- [x] [Guided Anchoring](configs/guided_anchoring)
-- [x] [FCOS](configs/fcos)
-- [x] [RepPoints](configs/reppoints)
-- [x] [Foveabox](configs/foveabox)
-- [x] [FreeAnchor](configs/free_anchor)
-- [x] [NAS-FPN](configs/nas_fpn)
-- [x] [ATSS](configs/atss)
-- [x] [FSAF](configs/fsaf)
-- [x] [PAFPN](configs/pafpn)
-- [x] [Dynamic R-CNN](configs/dynamic_rcnn)
-- [x] [PointRend](configs/point_rend)
-- [x] [CARAFE](configs/carafe/README.md)
-- [x] [DCNv2](configs/dcn/README.md)
-- [x] [Group Normalization](configs/gn/README.md)
-- [x] [Weight Standardization](configs/gn+ws/README.md)
-- [x] [OHEM](configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py)
-- [x] [Soft-NMS](configs/faster_rcnn/faster_rcnn_r50_fpn_soft_nms_1x_coco.py)
-- [x] [Generalized Attention](configs/empirical_attention/README.md)
-- [x] [GCNet](configs/gcnet/README.md)
-- [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
-- [x] [InstaBoost](configs/instaboost/README.md)
-- [x] [GRoIE](configs/groie/README.md)
-- [x] [DetectoRS](configs/detectors/README.md)
-- [x] [Generalized Focal Loss](configs/gfl/README.md)
-- [x] [CornerNet](configs/cornernet/README.md)
+
+- [x] [RPN (NeurIPS'2015)](configs/rpn)
+- [x] [Fast R-CNN (ICCV'2015)](configs/fast_rcnn)
+- [x] [Faster R-CNN (NeurIPS'2015)](configs/faster_rcnn)
+- [x] [Mask R-CNN (ICCV'2017)](configs/mask_rcnn)
+- [x] [Cascade R-CNN (CVPR'2018)](configs/cascade_rcnn)
+- [x] [Cascade Mask R-CNN (CVPR'2018)](configs/cascade_rcnn)
+- [x] [SSD (ECCV'2016)](configs/ssd)
+- [x] [RetinaNet (ICCV'2017)](configs/retinanet)
+- [x] [GHM (AAAI'2019)](configs/ghm)
+- [x] [Mask Scoring R-CNN (CVPR'2019)](configs/ms_rcnn)
+- [x] [Double-Head R-CNN (CVPR'2020)](configs/double_heads)
+- [x] [Hybrid Task Cascade (CVPR'2019)](configs/htc)
+- [x] [Libra R-CNN (CVPR'2019)](configs/libra_rcnn)
+- [x] [Guided Anchoring (CVPR'2019)](configs/guided_anchoring)
+- [x] [FCOS (ICCV'2019)](configs/fcos)
+- [x] [RepPoints (ICCV'2019)](configs/reppoints)
+- [x] [Foveabox (TIP'2020)](configs/foveabox)
+- [x] [FreeAnchor (NeurIPS'2019)](configs/free_anchor)
+- [x] [NAS-FPN (CVPR'2019)](configs/nas_fpn)
+- [x] [ATSS (CVPR'2020)](configs/atss)
+- [x] [FSAF (CVPR'2019)](configs/fsaf)
+- [x] [PAFPN (CVPR'2018)](configs/pafpn)
+- [x] [Dynamic R-CNN (ECCV'2020)](configs/dynamic_rcnn)
+- [x] [PointRend (CVPR'2020)](configs/point_rend)
+- [x] [CARAFE (ICCV'2019)](configs/carafe/README.md)
+- [x] [DCNv2 (CVPR'2019)](configs/dcn/README.md)
+- [x] [Group Normalization (ECCV'2018)](configs/gn/README.md)
+- [x] [Weight Standardization (ArXiv'2019)](configs/gn+ws/README.md)
+- [x] [OHEM (CVPR'2016)](configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py)
+- [x] [Soft-NMS (ICCV'2017)](configs/faster_rcnn/faster_rcnn_r50_fpn_soft_nms_1x_coco.py)
+- [x] [Generalized Attention (ICCV'2019)](configs/empirical_attention/README.md)
+- [x] [GCNet (ICCVW'2019)](configs/gcnet/README.md)
+- [x] [Mixed Precision (FP16) Training (ArXiv'2017)](configs/fp16/README.md)
+- [x] [InstaBoost (ICCV'2019)](configs/instaboost/README.md)
+- [x] [GRoIE (ICPR'2020)](configs/groie/README.md)
+- [x] [DetectoRS (ArXix'2020)](configs/detectors/README.md)
+- [x] [Generalized Focal Loss (NeurIPS'2020)](configs/gfl/README.md)
+- [x] [CornerNet (ECCV'2018)](configs/cornernet/README.md)
+- [x] [Side-Aware Boundary Localization (ECCV'2020)](configs/sabl/README.md)
+- [x] [YOLOv3 (ArXiv'2018)](configs/yolo/README.md)
+- [x] [PAA (ECCV'2020)](configs/paa/README.md)
+- [x] [YOLACT (ICCV'2019)](configs/yolact/README.md)
+- [x] [CentripetalNet (CVPR'2020)](configs/centripetalnet/README.md)
+- [x] [VFNet (ArXix'2020)](configs/vfnet/README.md)
+- [x] [DETR (ECCV'2020)](configs/detr/README.md)
+- [x] [Deformable DETR (ICLR'2021)](configs/deformable_detr/README.md)
+- [x] [CascadeRPN (NeurIPS'2019)](configs/cascade_rpn/README.md)
+- [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
+- [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
+- [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
+
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
 ## Installation
 
-Please refer to [install.md](docs/install.md) for installation and dataset preparation.
-
+Please refer to [get_started.md](docs/get_started.md) for installation.
 
 ## Getting Started
 
-Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection.
-We provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
-There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
+Please see [get_started.md](docs/get_started.md) for the basic usage of MMDetection.
+We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/1_exist_data_model.md) and [with new dataset](docs/2_new_data_model.md) for beginners.
+There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), [customizing runtime settings](docs/tutorials/customize_runtime.md) and [useful tools](docs/useful_tools.md).
+
+Please refer to [FAQ](docs/faq.md) for frequently asked questions.
 
 ## Contributing
 
@@ -119,7 +138,6 @@ We appreciate all contributions to improve MMDetection. Please refer to [CONTRIB
 
 MMDetection is an open source project that is contributed by researchers and engineers from various colleges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
 We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new detectors.
-
 
 ## Citation
 
@@ -139,8 +157,16 @@ If you use this toolbox or benchmark in your research, please cite this project.
 }
 ```
 
+## Projects in OpenMMLab
 
-## Contact
-
-This repo is currently maintained by Kai Chen ([@hellock](http://github.com/hellock)), Yuhang Cao ([@yhcao6](https://github.com/yhcao6)), Wenwei Zhang ([@ZwwWayne](https://github.com/ZwwWayne)),
-Jiarui Xu ([@xvjiarui](https://github.com/xvjiarui)). Other core developers include Jiangmiao Pang ([@OceanPang](https://github.com/OceanPang)) and Jiaqi Wang ([@myownskyW7](https://github.com/myownskyW7)).
+- [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
+- [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab image classification toolbox and benchmark.
+- [MMDetection](https://github.com/open-mmlab/mmdetection): OpenMMLab detection toolbox and benchmark.
+- [MMDetection3D](https://github.com/open-mmlab/mmdetection3d): OpenMMLab's next-generation platform for general 3D object detection.
+- [MMSegmentation](https://github.com/open-mmlab/mmsegmentation): OpenMMLab semantic segmentation toolbox and benchmark.
+- [MMAction2](https://github.com/open-mmlab/mmaction2): OpenMMLab's next-generation action understanding toolbox and benchmark.
+- [MMTracking](https://github.com/open-mmlab/mmtracking): OpenMMLab video perception toolbox and benchmark.
+- [MMPose](https://github.com/open-mmlab/mmpose): OpenMMLab pose estimation toolbox and benchmark.
+- [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab image and video editing toolbox.
+- [MMOCR](https://github.com/open-mmlab/mmocr): A Comprehensive Toolbox for Text Detection, Recognition and Understanding.
+- [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab image and video generative models toolbox.

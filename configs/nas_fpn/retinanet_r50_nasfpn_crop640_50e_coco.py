@@ -18,9 +18,9 @@ model = dict(
         norm_eval=False,
         style='pytorch'),
     neck=dict(type='NASFPN', stack_times=7, norm_cfg=norm_cfg),
-    bbox_head=dict(type='RetinaSepBNHead', num_ins=5, norm_cfg=norm_cfg))
-# training and testing settings
-train_cfg = dict(assigner=dict(neg_iou_thr=0.5))
+    bbox_head=dict(type='RetinaSepBNHead', num_ins=5, norm_cfg=norm_cfg),
+    # training and testing settings
+    train_cfg=dict(assigner=dict(neg_iou_thr=0.5)))
 # dataset settings
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -76,4 +76,4 @@ lr_config = dict(
     warmup_ratio=0.1,
     step=[30, 40])
 # runtime settings
-total_epochs = 50
+runner = dict(type='EpochBasedRunner', max_epochs=50)

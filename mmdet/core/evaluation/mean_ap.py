@@ -47,7 +47,7 @@ def average_precision(recalls, precisions, mode='area'):
                 precs = precisions[i, recalls[i, :] >= thr]
                 prec = precs.max() if precs.size > 0 else 0
                 ap[i] += prec
-            ap /= 11
+        ap /= 11
     else:
         raise ValueError(
             'Unrecognized mode, only "area" and "11points" are supported')
@@ -124,7 +124,7 @@ def tpfp_imagenet(det_bboxes,
             # find best overlapped available gt
             for j in range(num_gts):
                 # different from PASCAL VOC: allow finding other gts if the
-                # best overlaped ones are already matched by other det bboxes
+                # best overlapped ones are already matched by other det bboxes
                 if gt_covered[j]:
                     continue
                 elif ious[i, j] >= iou_thrs[j] and ious[i, j] > max_iou:
@@ -270,6 +270,7 @@ def eval_map(det_results,
              iou_thr=0.5,
              dataset=None,
              logger=None,
+             tpfp_fn=None,
              nproc=4):
     """Evaluate mAP of a dataset.
 
@@ -294,7 +295,12 @@ def eval_map(det_results,
             there are minor differences in metrics for different datsets, e.g.
             "voc07", "imagenet_det", etc. Default: None.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmdet.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details. Default: None.
+        tpfp_fn (callable | None): The function used to determine true/
+            false positives. If None, :func:`tpfp_default` is used as default
+            unless dataset is 'det' or 'vid' (:func:`tpfp_imagenet` in this
+            case). If it is given as a function, then this function is used
+            to evaluate tp & fp. Default None.
         nproc (int): Processes used for computing TP and FP.
             Default: 4.
 
@@ -316,13 +322,18 @@ def eval_map(det_results,
         cls_dets, cls_gts, cls_gts_ignore = get_cls_results(
             det_results, annotations, i)
         # choose proper function according to datasets to compute tp and fp
-        if dataset in ['det', 'vid']:
-            tpfp_func = tpfp_imagenet
-        else:
-            tpfp_func = tpfp_default
+        if tpfp_fn is None:
+            if dataset in ['det', 'vid']:
+                tpfp_fn = tpfp_imagenet
+            else:
+                tpfp_fn = tpfp_default
+        if not callable(tpfp_fn):
+            raise ValueError(
+                f'tpfp_fn has to be a function or None, but got {tpfp_fn}')
+
         # compute tp and fp for each image with multiple processes
         tpfp = pool.starmap(
-            tpfp_func,
+            tpfp_fn,
             zip(cls_dets, cls_gts, cls_gts_ignore,
                 [iou_thr for _ in range(num_imgs)],
                 [area_ranges for _ in range(num_imgs)]))
@@ -406,7 +417,7 @@ def print_map_summary(mean_ap,
         dataset (list[str] | str | None): Dataset name or dataset classes.
         scale_ranges (list[tuple] | None): Range of scales to be evaluated.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmdet.utils.print_log()` for details. Default: None.
+            summary. See `mmcv.utils.print_log()` for details. Default: None.
     """
 
     if logger == 'silent':

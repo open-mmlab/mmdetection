@@ -1,6 +1,8 @@
+import mmcv
 import torch.nn as nn
 
 
+@mmcv.jit(coderize=True)
 def accuracy(pred, target, topk=1, thresh=None):
     """Calculate accuracy according to the prediction and target.
 
@@ -43,7 +45,7 @@ def accuracy(pred, target, topk=1, thresh=None):
         correct = correct & (pred_value > thresh).t()
     res = []
     for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+        correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
         res.append(correct_k.mul_(100.0 / pred.size(0)))
     return res[0] if return_single else res
 

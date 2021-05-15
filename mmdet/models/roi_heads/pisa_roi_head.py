@@ -79,9 +79,7 @@ class PISARoIHead(StandardRoIHead):
             mask_results = self._mask_forward_train(x, sampling_results,
                                                     bbox_results['bbox_feats'],
                                                     gt_masks, img_metas)
-            # TODO: Support empty tensor input. #2280
-            if mask_results['loss_mask'] is not None:
-                losses.update(mask_results['loss_mask'])
+            losses.update(mask_results['loss_mask'])
 
         return losses
 

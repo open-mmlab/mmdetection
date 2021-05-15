@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -22,7 +23,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The rescaled masks.
         """
-        pass
 
     @abstractmethod
     def resize(self, out_shape, interpolation='nearest'):
@@ -35,7 +35,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The resized masks.
         """
-        pass
 
     @abstractmethod
     def flip(self, flip_direction='horizontal'):
@@ -47,7 +46,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The flipped masks.
         """
-        pass
 
     @abstractmethod
     def pad(self, out_shape, pad_val):
@@ -60,7 +58,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The padded masks.
         """
-        pass
 
     @abstractmethod
     def crop(self, bbox):
@@ -72,7 +69,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Return:
             BaseInstanceMasks: The cropped masks.
         """
-        pass
 
     @abstractmethod
     def crop_and_resize(self,
@@ -80,7 +76,8 @@ class BaseInstanceMasks(metaclass=ABCMeta):
                         out_shape,
                         inds,
                         device,
-                        interpolation='bilinear'):
+                        interpolation='bilinear',
+                        binarize=True):
         """Crop and resize masks by the given bboxes.
 
         This function is mainly used in mask targets computation.
@@ -90,25 +87,26 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Args:
             bboxes (Tensor): Bboxes in format [x1, y1, x2, y2], shape (N, 4)
             out_shape (tuple[int]): Target (h, w) of resized mask
-            inds (ndarray): Indexes to assign masks to each bbox
+            inds (ndarray): Indexes to assign masks to each bbox,
+                shape (N,) and values should be between [0, num_masks - 1].
             device (str): Device of bboxes
             interpolation (str): See `mmcv.imresize`
+            binarize (bool): if True fractional values are rounded to 0 or 1
+                after the resize operation. if False and unsupported an error
+                will be raised. Defaults to True.
 
         Return:
             BaseInstanceMasks: the cropped and resized masks.
         """
-        pass
 
     @abstractmethod
     def expand(self, expanded_h, expanded_w, top, left):
         """see :class:`Expand`."""
-        pass
 
     @property
     @abstractmethod
     def areas(self):
         """ndarray: areas of each instance."""
-        pass
 
     @abstractmethod
     def to_ndarray(self):
@@ -117,7 +115,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Return:
             ndarray: Converted masks in the format of ndarray.
         """
-        pass
 
     @abstractmethod
     def to_tensor(self, dtype, device):
@@ -130,7 +127,66 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Tensor: Converted masks in the format of Tensor.
         """
-        pass
+
+    @abstractmethod
+    def translate(self,
+                  out_shape,
+                  offset,
+                  direction='horizontal',
+                  fill_val=0,
+                  interpolation='bilinear'):
+        """Translate the masks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            offset (int | float): The offset for translate.
+            direction (str): The translate direction, either "horizontal"
+                or "vertical".
+            fill_val (int | float): Border value. Default 0.
+            interpolation (str): Same as :func:`mmcv.imtranslate`.
+
+        Returns:
+            Translated masks.
+        """
+
+    def shear(self,
+              out_shape,
+              magnitude,
+              direction='horizontal',
+              border_value=0,
+              interpolation='bilinear'):
+        """Shear the masks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            magnitude (int | float): The magnitude used for shear.
+            direction (str): The shear direction, either "horizontal"
+                or "vertical".
+            border_value (int | tuple[int]): Value used in case of a
+                constant border. Default 0.
+            interpolation (str): Same as in :func:`mmcv.imshear`.
+
+        Returns:
+            ndarray: Sheared masks.
+        """
+
+    @abstractmethod
+    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+        """Rotate the masks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            angle (int | float): Rotation angle in degrees. Positive values
+                mean counter-clockwise rotation.
+            center (tuple[float], optional): Center point (w, h) of the
+                rotation in source image. If not specified, the center of
+                the image will be used.
+            scale (int | float): Isotropic scale factor.
+            fill_val (int | float): Border value. Default 0 for masks.
+
+        Returns:
+            Rotated masks.
+        """
 
 
 class BitmapMasks(BaseInstanceMasks):
@@ -141,6 +197,25 @@ class BitmapMasks(BaseInstanceMasks):
             the number of objects.
         height (int): height of masks
         width (int): width of masks
+
+    Example:
+        >>> from mmdet.core.mask.structures import *  # NOQA
+        >>> num_masks, H, W = 3, 32, 32
+        >>> rng = np.random.RandomState(0)
+        >>> masks = (rng.rand(num_masks, H, W) > 0.1).astype(np.int)
+        >>> self = BitmapMasks(masks, height=H, width=W)
+
+        >>> # demo crop_and_resize
+        >>> num_boxes = 5
+        >>> bboxes = np.array([[0, 0, 30, 10.0]] * num_boxes)
+        >>> out_shape = (14, 14)
+        >>> inds = torch.randint(0, len(self), size=(num_boxes,))
+        >>> device = 'cpu'
+        >>> interpolation = 'bilinear'
+        >>> new = self.crop_and_resize(
+        ...     bboxes, out_shape, inds, device, interpolation)
+        >>> assert len(new) == num_boxes
+        >>> assert new.height, new.width == out_shape
     """
 
     def __init__(self, masks, height, width):
@@ -205,14 +280,15 @@ class BitmapMasks(BaseInstanceMasks):
             resized_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
             resized_masks = np.stack([
-                mmcv.imresize(mask, out_shape, interpolation=interpolation)
+                mmcv.imresize(
+                    mask, out_shape[::-1], interpolation=interpolation)
                 for mask in self.masks
             ])
         return BitmapMasks(resized_masks, *out_shape)
 
     def flip(self, flip_direction='horizontal'):
         """See :func:`BaseInstanceMasks.flip`."""
-        assert flip_direction in ('horizontal', 'vertical')
+        assert flip_direction in ('horizontal', 'vertical', 'diagonal')
 
         if len(self.masks) == 0:
             flipped_masks = self.masks
@@ -258,7 +334,8 @@ class BitmapMasks(BaseInstanceMasks):
                         out_shape,
                         inds,
                         device='cpu',
-                        interpolation='bilinear'):
+                        interpolation='bilinear',
+                        binarize=True):
         """See :func:`BaseInstanceMasks.crop_and_resize`."""
         if len(self.masks) == 0:
             empty_masks = np.empty((0, *out_shape), dtype=np.uint8)
@@ -280,7 +357,10 @@ class BitmapMasks(BaseInstanceMasks):
                 0, inds).to(dtype=rois.dtype)
             targets = roi_align(gt_masks_th[:, None, :, :], rois, out_shape,
                                 1.0, 0, 'avg', True).squeeze(1)
-            resized_masks = (targets >= 0.5).cpu().numpy()
+            if binarize:
+                resized_masks = (targets >= 0.5).cpu().numpy()
+            else:
+                resized_masks = targets.cpu().numpy()
         else:
             resized_masks = []
         return BitmapMasks(resized_masks, *out_shape)
@@ -297,6 +377,123 @@ class BitmapMasks(BaseInstanceMasks):
                           left:left + self.width] = self.masks
         return BitmapMasks(expanded_mask, expanded_h, expanded_w)
 
+    def translate(self,
+                  out_shape,
+                  offset,
+                  direction='horizontal',
+                  fill_val=0,
+                  interpolation='bilinear'):
+        """Translate the BitmapMasks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            offset (int | float): The offset for translate.
+            direction (str): The translate direction, either "horizontal"
+                or "vertical".
+            fill_val (int | float): Border value. Default 0 for masks.
+            interpolation (str): Same as :func:`mmcv.imtranslate`.
+
+        Returns:
+            BitmapMasks: Translated BitmapMasks.
+
+        Example:
+            >>> from mmdet.core.mask.structures import BitmapMasks
+            >>> self = BitmapMasks.random(dtype=np.uint8)
+            >>> out_shape = (32, 32)
+            >>> offset = 4
+            >>> direction = 'horizontal'
+            >>> fill_val = 0
+            >>> interpolation = 'bilinear'
+            >>> # Note, There seem to be issues when:
+            >>> # * out_shape is different than self's shape
+            >>> # * the mask dtype is not supported by cv2.AffineWarp
+            >>> new = self.translate(out_shape, offset, direction, fill_val,
+            >>>                      interpolation)
+            >>> assert len(new) == len(self)
+            >>> assert new.height, new.width == out_shape
+        """
+        if len(self.masks) == 0:
+            translated_masks = np.empty((0, *out_shape), dtype=np.uint8)
+        else:
+            translated_masks = mmcv.imtranslate(
+                self.masks.transpose((1, 2, 0)),
+                offset,
+                direction,
+                border_value=fill_val,
+                interpolation=interpolation)
+            if translated_masks.ndim == 2:
+                translated_masks = translated_masks[:, :, None]
+            translated_masks = translated_masks.transpose(
+                (2, 0, 1)).astype(self.masks.dtype)
+        return BitmapMasks(translated_masks, *out_shape)
+
+    def shear(self,
+              out_shape,
+              magnitude,
+              direction='horizontal',
+              border_value=0,
+              interpolation='bilinear'):
+        """Shear the BitmapMasks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            magnitude (int | float): The magnitude used for shear.
+            direction (str): The shear direction, either "horizontal"
+                or "vertical".
+            border_value (int | tuple[int]): Value used in case of a
+                constant border.
+            interpolation (str): Same as in :func:`mmcv.imshear`.
+
+        Returns:
+            BitmapMasks: The sheared masks.
+        """
+        if len(self.masks) == 0:
+            sheared_masks = np.empty((0, *out_shape), dtype=np.uint8)
+        else:
+            sheared_masks = mmcv.imshear(
+                self.masks.transpose((1, 2, 0)),
+                magnitude,
+                direction,
+                border_value=border_value,
+                interpolation=interpolation)
+            if sheared_masks.ndim == 2:
+                sheared_masks = sheared_masks[:, :, None]
+            sheared_masks = sheared_masks.transpose(
+                (2, 0, 1)).astype(self.masks.dtype)
+        return BitmapMasks(sheared_masks, *out_shape)
+
+    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+        """Rotate the BitmapMasks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            angle (int | float): Rotation angle in degrees. Positive values
+                mean counter-clockwise rotation.
+            center (tuple[float], optional): Center point (w, h) of the
+                rotation in source image. If not specified, the center of
+                the image will be used.
+            scale (int | float): Isotropic scale factor.
+            fill_val (int | float): Border value. Default 0 for masks.
+
+        Returns:
+            BitmapMasks: Rotated BitmapMasks.
+        """
+        if len(self.masks) == 0:
+            rotated_masks = np.empty((0, *out_shape), dtype=self.masks.dtype)
+        else:
+            rotated_masks = mmcv.imrotate(
+                self.masks.transpose((1, 2, 0)),
+                angle,
+                center=center,
+                scale=scale,
+                border_value=fill_val)
+            if rotated_masks.ndim == 2:
+                # case when only one mask, (h, w)
+                rotated_masks = rotated_masks[:, :, None]  # (h, w, 1)
+            rotated_masks = rotated_masks.transpose(
+                (2, 0, 1)).astype(self.masks.dtype)
+        return BitmapMasks(rotated_masks, *out_shape)
+
     @property
     def areas(self):
         """See :py:attr:`BaseInstanceMasks.areas`."""
@@ -309,6 +506,27 @@ class BitmapMasks(BaseInstanceMasks):
     def to_tensor(self, dtype, device):
         """See :func:`BaseInstanceMasks.to_tensor`."""
         return torch.tensor(self.masks, dtype=dtype, device=device)
+
+    @classmethod
+    def random(cls,
+               num_masks=3,
+               height=32,
+               width=32,
+               dtype=np.uint8,
+               rng=None):
+        """Generate random bitmap masks for demo / testing purposes.
+
+        Example:
+            >>> from mmdet.core.mask.structures import BitmapMasks
+            >>> self = BitmapMasks.random()
+            >>> print('self = {}'.format(self))
+            self = BitmapMasks(num_masks=3, height=32, width=32)
+        """
+        from mmdet.utils.util_random import ensure_rng
+        rng = ensure_rng(rng)
+        masks = (rng.rand(num_masks, height, width) > 0.1).astype(dtype)
+        self = cls(masks, height=height, width=width)
+        return self
 
 
 class PolygonMasks(BaseInstanceMasks):
@@ -324,6 +542,31 @@ class PolygonMasks(BaseInstanceMasks):
             compose the object, the third level to the poly coordinates
         height (int): height of masks
         width (int): width of masks
+
+    Example:
+        >>> from mmdet.core.mask.structures import *  # NOQA
+        >>> masks = [
+        >>>     [ np.array([0, 0, 10, 0, 10, 10., 0, 10, 0, 0]) ]
+        >>> ]
+        >>> height, width = 16, 16
+        >>> self = PolygonMasks(masks, height, width)
+
+        >>> # demo translate
+        >>> new = self.translate((16, 16), 4., direction='horizontal')
+        >>> assert np.all(new.masks[0][0][1::2] == masks[0][0][1::2])
+        >>> assert np.all(new.masks[0][0][0::2] == masks[0][0][0::2] + 4)
+
+        >>> # demo crop_and_resize
+        >>> num_boxes = 3
+        >>> bboxes = np.array([[0, 0, 30, 10.0]] * num_boxes)
+        >>> out_shape = (16, 16)
+        >>> inds = torch.randint(0, len(self), size=(num_boxes,))
+        >>> device = 'cpu'
+        >>> interpolation = 'bilinear'
+        >>> new = self.crop_and_resize(
+        ...     bboxes, out_shape, inds, device, interpolation)
+        >>> assert len(new) == num_boxes
+        >>> assert new.height, new.width == out_shape
     """
 
     def __init__(self, masks, height, width):
@@ -355,7 +598,7 @@ class PolygonMasks(BaseInstanceMasks):
             except Exception:
                 raise ValueError(
                     f'Unsupported input of type {type(index)} for indexing!')
-        if isinstance(masks[0], np.ndarray):
+        if len(masks) and isinstance(masks[0], np.ndarray):
             masks = [masks]  # ensure a list of three levels
         return PolygonMasks(masks, self.height, self.width)
 
@@ -403,22 +646,22 @@ class PolygonMasks(BaseInstanceMasks):
 
     def flip(self, flip_direction='horizontal'):
         """see :func:`BaseInstanceMasks.flip`"""
-        assert flip_direction in ('horizontal', 'vertical')
+        assert flip_direction in ('horizontal', 'vertical', 'diagonal')
         if len(self.masks) == 0:
             flipped_masks = PolygonMasks([], self.height, self.width)
         else:
-            if flip_direction == 'horizontal':
-                dim = self.width
-                idx = 0
-            else:
-                dim = self.height
-                idx = 1
             flipped_masks = []
             for poly_per_obj in self.masks:
                 flipped_poly_per_obj = []
                 for p in poly_per_obj:
                     p = p.copy()
-                    p[idx::2] = dim - p[idx::2]
+                    if flip_direction == 'horizontal':
+                        p[0::2] = self.width - p[0::2]
+                    elif flip_direction == 'vertical':
+                        p[1::2] = self.height - p[1::2]
+                    else:
+                        p[0::2] = self.width - p[0::2]
+                        p[1::2] = self.height - p[1::2]
                     flipped_poly_per_obj.append(p)
                 flipped_masks.append(flipped_poly_per_obj)
             flipped_masks = PolygonMasks(flipped_masks, self.height,
@@ -467,11 +710,16 @@ class PolygonMasks(BaseInstanceMasks):
                         out_shape,
                         inds,
                         device='cpu',
-                        interpolation='bilinear'):
+                        interpolation='bilinear',
+                        binarize=True):
         """see :func:`BaseInstanceMasks.crop_and_resize`"""
         out_h, out_w = out_shape
         if len(self.masks) == 0:
             return PolygonMasks([], out_h, out_w)
+
+        if not binarize:
+            raise ValueError('Polygons are always binary, '
+                             'setting binarize=False is unsupported')
 
         resized_masks = []
         for i in range(len(bboxes)):
@@ -497,6 +745,101 @@ class PolygonMasks(BaseInstanceMasks):
                 resized_mask.append(p)
             resized_masks.append(resized_mask)
         return PolygonMasks(resized_masks, *out_shape)
+
+    def translate(self,
+                  out_shape,
+                  offset,
+                  direction='horizontal',
+                  fill_val=None,
+                  interpolation=None):
+        """Translate the PolygonMasks.
+
+        Example:
+            >>> self = PolygonMasks.random(dtype=np.int)
+            >>> out_shape = (self.height, self.width)
+            >>> new = self.translate(out_shape, 4., direction='horizontal')
+            >>> assert np.all(new.masks[0][0][1::2] == self.masks[0][0][1::2])
+            >>> assert np.all(new.masks[0][0][0::2] == self.masks[0][0][0::2] + 4)  # noqa: E501
+        """
+        assert fill_val is None or fill_val == 0, 'Here fill_val is not '\
+            f'used, and defaultly should be None or 0. got {fill_val}.'
+        if len(self.masks) == 0:
+            translated_masks = PolygonMasks([], *out_shape)
+        else:
+            translated_masks = []
+            for poly_per_obj in self.masks:
+                translated_poly_per_obj = []
+                for p in poly_per_obj:
+                    p = p.copy()
+                    if direction == 'horizontal':
+                        p[0::2] = np.clip(p[0::2] + offset, 0, out_shape[1])
+                    elif direction == 'vertical':
+                        p[1::2] = np.clip(p[1::2] + offset, 0, out_shape[0])
+                    translated_poly_per_obj.append(p)
+                translated_masks.append(translated_poly_per_obj)
+            translated_masks = PolygonMasks(translated_masks, *out_shape)
+        return translated_masks
+
+    def shear(self,
+              out_shape,
+              magnitude,
+              direction='horizontal',
+              border_value=0,
+              interpolation='bilinear'):
+        """See :func:`BaseInstanceMasks.shear`."""
+        if len(self.masks) == 0:
+            sheared_masks = PolygonMasks([], *out_shape)
+        else:
+            sheared_masks = []
+            if direction == 'horizontal':
+                shear_matrix = np.stack([[1, magnitude],
+                                         [0, 1]]).astype(np.float32)
+            elif direction == 'vertical':
+                shear_matrix = np.stack([[1, 0], [magnitude,
+                                                  1]]).astype(np.float32)
+            for poly_per_obj in self.masks:
+                sheared_poly = []
+                for p in poly_per_obj:
+                    p = np.stack([p[0::2], p[1::2]], axis=0)  # [2, n]
+                    new_coords = np.matmul(shear_matrix, p)  # [2, n]
+                    new_coords[0, :] = np.clip(new_coords[0, :], 0,
+                                               out_shape[1])
+                    new_coords[1, :] = np.clip(new_coords[1, :], 0,
+                                               out_shape[0])
+                    sheared_poly.append(
+                        new_coords.transpose((1, 0)).reshape(-1))
+                sheared_masks.append(sheared_poly)
+            sheared_masks = PolygonMasks(sheared_masks, *out_shape)
+        return sheared_masks
+
+    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+        """See :func:`BaseInstanceMasks.rotate`."""
+        if len(self.masks) == 0:
+            rotated_masks = PolygonMasks([], *out_shape)
+        else:
+            rotated_masks = []
+            rotate_matrix = cv2.getRotationMatrix2D(center, -angle, scale)
+            for poly_per_obj in self.masks:
+                rotated_poly = []
+                for p in poly_per_obj:
+                    p = p.copy()
+                    coords = np.stack([p[0::2], p[1::2]], axis=1)  # [n, 2]
+                    # pad 1 to convert from format [x, y] to homogeneous
+                    # coordinates format [x, y, 1]
+                    coords = np.concatenate(
+                        (coords, np.ones((coords.shape[0], 1), coords.dtype)),
+                        axis=1)  # [n, 3]
+                    rotated_coords = np.matmul(
+                        rotate_matrix[None, :, :],
+                        coords[:, :, None])[..., 0]  # [n, 2, 1] -> [n, 2]
+                    rotated_coords[:, 0] = np.clip(rotated_coords[:, 0], 0,
+                                                   out_shape[1])
+                    rotated_coords[:, 1] = np.clip(rotated_coords[:, 1], 0,
+                                                   out_shape[0])
+                    rotated_poly.append(rotated_coords.reshape(-1))
+                rotated_masks.append(rotated_poly)
+            rotated_masks = PolygonMasks(rotated_masks, *out_shape)
+        return rotated_masks
 
     def to_bitmap(self):
         """convert polygon masks to bitmap masks."""
@@ -556,6 +899,125 @@ class PolygonMasks(BaseInstanceMasks):
                                device=device)
         ndarray_masks = self.to_ndarray()
         return torch.tensor(ndarray_masks, dtype=dtype, device=device)
+
+    @classmethod
+    def random(cls,
+               num_masks=3,
+               height=32,
+               width=32,
+               n_verts=5,
+               dtype=np.float32,
+               rng=None):
+        """Generate random polygon masks for demo / testing purposes.
+
+        Adapted from [1]_
+
+        References:
+            .. [1] https://gitlab.kitware.com/computer-vision/kwimage/-/blob/928cae35ca8/kwimage/structs/polygon.py#L379  # noqa: E501
+
+        Example:
+            >>> from mmdet.core.mask.structures import PolygonMasks
+            >>> self = PolygonMasks.random()
+            >>> print('self = {}'.format(self))
+        """
+        from mmdet.utils.util_random import ensure_rng
+        rng = ensure_rng(rng)
+
+        def _gen_polygon(n, irregularity, spikeyness):
+            """Creates the polygon by sampling points on a circle around the
+            centre.  Random noise is added by varying the angular spacing
+            between sequential points, and by varying the radial distance of
+            each point from the centre.
+
+            Based on original code by Mike Ounsworth
+
+            Args:
+                n (int): number of vertices
+                irregularity (float): [0,1] indicating how much variance there
+                    is in the angular spacing of vertices. [0,1] will map to
+                    [0, 2pi/numberOfVerts]
+                spikeyness (float): [0,1] indicating how much variance there is
+                    in each vertex from the circle of radius aveRadius. [0,1]
+                    will map to [0, aveRadius]
+
+            Returns:
+                a list of vertices, in CCW order.
+            """
+            from scipy.stats import truncnorm
+            # Generate around the unit circle
+            cx, cy = (0.0, 0.0)
+            radius = 1
+
+            tau = np.pi * 2
+
+            irregularity = np.clip(irregularity, 0, 1) * 2 * np.pi / n
+            spikeyness = np.clip(spikeyness, 1e-9, 1)
+
+            # generate n angle steps
+            lower = (tau / n) - irregularity
+            upper = (tau / n) + irregularity
+            angle_steps = rng.uniform(lower, upper, n)
+
+            # normalize the steps so that point 0 and point n+1 are the same
+            k = angle_steps.sum() / (2 * np.pi)
+            angles = (angle_steps / k).cumsum() + rng.uniform(0, tau)
+
+            # Convert high and low values to be wrt the standard normal range
+            # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
+            low = 0
+            high = 2 * radius
+            mean = radius
+            std = spikeyness
+            a = (low - mean) / std
+            b = (high - mean) / std
+            tnorm = truncnorm(a=a, b=b, loc=mean, scale=std)
+
+            # now generate the points
+            radii = tnorm.rvs(n, random_state=rng)
+            x_pts = cx + radii * np.cos(angles)
+            y_pts = cy + radii * np.sin(angles)
+
+            points = np.hstack([x_pts[:, None], y_pts[:, None]])
+
+            # Scale to 0-1 space
+            points = points - points.min(axis=0)
+            points = points / points.max(axis=0)
+
+            # Randomly place within 0-1 space
+            points = points * (rng.rand() * .8 + .2)
+            min_pt = points.min(axis=0)
+            max_pt = points.max(axis=0)
+
+            high = (1 - max_pt)
+            low = (0 - min_pt)
+            offset = (rng.rand(2) * (high - low)) + low
+            points = points + offset
+            return points
+
+        def _order_vertices(verts):
+            """
+            References:
+                https://stackoverflow.com/questions/1709283/how-can-i-sort-a-coordinate-list-for-a-rectangle-counterclockwise
+            """
+            mlat = verts.T[0].sum() / len(verts)
+            mlng = verts.T[1].sum() / len(verts)
+
+            tau = np.pi * 2
+            angle = (np.arctan2(mlat - verts.T[0], verts.T[1] - mlng) +
+                     tau) % tau
+            sortx = angle.argsort()
+            verts = verts.take(sortx, axis=0)
+            return verts
+
+        # Generate a random exterior for each requested mask
+        masks = []
+        for _ in range(num_masks):
+            exterior = _order_vertices(_gen_polygon(n_verts, 0.9, 0.9))
+            exterior = (exterior * [(width, height)]).astype(dtype)
+            masks.append([exterior.ravel()])
+
+        self = cls(masks, height, width)
+        return self
 
 
 def polygon_to_bitmap(polygons, height, width):

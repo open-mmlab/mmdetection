@@ -1,4 +1,4 @@
-# Tutorial 3: Custom Data Pipelines
+# Tutorial 3: Customize Data Pipelines
 
 ## Design of Data pipelines
 
@@ -20,6 +20,7 @@ We present a classical pipeline in the following figure. The blue blocks are pip
 The operations are categorized into data loading, pre-processing, formatting and test-time augmentation.
 
 Here is a pipeline example for Faster R-CNN.
+
 ```python
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -55,68 +56,87 @@ For each operation, we list the related dict fields that are added/updated/remov
 ### Data loading
 
 `LoadImageFromFile`
+
 - add: img, img_shape, ori_shape
 
 `LoadAnnotations`
+
 - add: gt_bboxes, gt_bboxes_ignore, gt_labels, gt_masks, gt_semantic_seg, bbox_fields, mask_fields
 
 `LoadProposals`
+
 - add: proposals
 
 ### Pre-processing
 
 `Resize`
+
 - add: scale, scale_idx, pad_shape, scale_factor, keep_ratio
 - update: img, img_shape, *bbox_fields, *mask_fields, *seg_fields
 
 `RandomFlip`
+
 - add: flip
 - update: img, *bbox_fields, *mask_fields, *seg_fields
 
 `Pad`
+
 - add: pad_fixed_size, pad_size_divisor
 - update: img, pad_shape, *mask_fields, *seg_fields
 
 `RandomCrop`
+
 - update: img, pad_shape, gt_bboxes, gt_labels, gt_masks, *bbox_fields
 
 `Normalize`
+
 - add: img_norm_cfg
 - update: img
 
 `SegRescale`
+
 - update: gt_semantic_seg
 
 `PhotoMetricDistortion`
+
 - update: img
 
 `Expand`
+
 - update: img, gt_bboxes
 
 `MinIoURandomCrop`
+
 - update: img, gt_bboxes, gt_labels
 
 `Corrupt`
+
 - update: img
 
 ### Formatting
 
 `ToTensor`
+
 - update: specified by `keys`.
 
 `ImageToTensor`
+
 - update: specified by `keys`.
 
 `Transpose`
+
 - update: specified by `keys`.
 
 `ToDataContainer`
+
 - update: specified by `fields`.
 
 `DefaultFormatBundle`
+
 - update: img, proposals, gt_bboxes, gt_bboxes_ignore, gt_labels, gt_masks, gt_semantic_seg
 
 `Collect`
+
 - add: img_meta (the keys of img_meta is specified by `meta_keys`)
 - remove: all other keys except for those specified by `keys`
 

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
+from mmcv.runner import ModuleList, force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, multi_apply)
@@ -20,14 +20,15 @@ class SSDHead(AnchorHead):
             category.
         in_channels (int): Number of channels in the input feature map.
         anchor_generator (dict): Config dict for anchor generator
-        background_label (int | None): Label ID of background, set as 0 for
-            RPN and num_classes for other heads. It will automatically set as
-            num_classes if None is given.
         bbox_coder (dict): Config of bounding box coder.
         reg_decoded_bbox (bool): If true, the regression loss would be
-            applied on decoded bounding boxes. Default: False
+            applied directly on decoded bounding boxes, converting both
+            the predicted boxes and regression targets to absolute
+            coordinates format. Default False. It should be `True` when
+            using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     def __init__(self,
@@ -40,16 +41,21 @@ class SSDHead(AnchorHead):
                      strides=[8, 16, 32, 64, 100, 300],
                      ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                      basesize_ratio_range=(0.1, 0.9)),
-                 background_label=None,
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
+                     clip_border=True,
                      target_means=[.0, .0, .0, .0],
                      target_stds=[1.0, 1.0, 1.0, 1.0],
                  ),
                  reg_decoded_bbox=False,
                  train_cfg=None,
-                 test_cfg=None):
-        super(AnchorHead, self).__init__()
+                 test_cfg=None,
+                 init_cfg=dict(
+                     type='Xavier',
+                     layer='Conv2d',
+                     distribution='uniform',
+                     bias=0)):
+        super(AnchorHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.cls_out_channels = num_classes + 1  # add background class
@@ -71,14 +77,8 @@ class SSDHead(AnchorHead):
                     num_anchors[i] * (num_classes + 1),
                     kernel_size=3,
                     padding=1))
-        self.reg_convs = nn.ModuleList(reg_convs)
-        self.cls_convs = nn.ModuleList(cls_convs)
-
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
+        self.reg_convs = ModuleList(reg_convs)
+        self.cls_convs = ModuleList(cls_convs)
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.reg_decoded_bbox = reg_decoded_bbox
@@ -94,12 +94,6 @@ class SSDHead(AnchorHead):
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform', bias=0)
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -155,9 +149,10 @@ class SSDHead(AnchorHead):
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        pos_inds = ((labels >= 0) &
-                    (labels < self.background_label)).nonzero().reshape(-1)
-        neg_inds = (labels == self.background_label).nonzero().view(-1)
+        pos_inds = ((labels >= 0) & (labels < self.num_classes)).nonzero(
+            as_tuple=False).reshape(-1)
+        neg_inds = (labels == self.num_classes).nonzero(
+            as_tuple=False).view(-1)
 
         num_pos_samples = pos_inds.size(0)
         num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples
@@ -169,6 +164,9 @@ class SSDHead(AnchorHead):
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
 
         if self.reg_decoded_bbox:
+            # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
+            # is applied directly on the decoded bounding boxes, it
+            # decodes the already encoded coordinates to absolute format.
             bbox_pred = self.bbox_coder.decode(anchor, bbox_pred)
 
         loss_bbox = smooth_l1_loss(
@@ -179,6 +177,7 @@ class SSDHead(AnchorHead):
             avg_factor=num_total_samples)
         return loss_cls[None], loss_bbox
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
              cls_scores,
              bbox_preds,

@@ -1,6 +1,6 @@
 from mmcv.cnn.bricks import build_plugin_layer
+from mmcv.runner import force_fp32
 
-from mmdet.core import force_fp32
 from mmdet.models.builder import ROI_EXTRACTORS
 from .base_roi_extractor import BaseRoIExtractor
 

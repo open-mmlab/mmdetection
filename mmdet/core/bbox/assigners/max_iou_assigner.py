@@ -31,7 +31,7 @@ class MaxIoUAssigner(BaseAssigner):
             `bboxes` and `gt_bboxes_ignore`, or the contrary.
         match_low_quality (bool): Whether to allow low quality matches. This is
             usually allowed for RPN and single stage detectors, but not allowed
-            in the second stage. Details are demonetrated in Step 4.
+            in the second stage. Details are demonstrated in Step 4.
         gpu_assign_thr (int): The upper bound of the number of GT for GPU
             assign. When the number of gt is above this threshold, will assign
             on CPU device. Negative values mean not assign on CPU.
@@ -182,7 +182,7 @@ class MaxIoUAssigner(BaseAssigner):
         assigned_gt_inds[pos_inds] = argmax_overlaps[pos_inds] + 1
 
         if self.match_low_quality:
-            # Low-quality matching will overwirte the assigned_gt_inds assigned
+            # Low-quality matching will overwrite the assigned_gt_inds assigned
             # in Step 3. Thus, the assigned gt might not be the best one for
             # prediction.
             # For example, if bbox A has 0.9 and 0.8 iou with GT bbox 1 & 2,

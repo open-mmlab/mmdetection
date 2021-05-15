@@ -19,9 +19,10 @@ class CornerNet(SingleStageDetector):
                  bbox_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
         super(CornerNet, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                        test_cfg, pretrained)
+                                        test_cfg, pretrained, init_cfg)
 
     def merge_aug_results(self, aug_results, img_metas):
         """Merge augmented detection bboxes and score.
@@ -71,7 +72,9 @@ class CornerNet(SingleStageDetector):
             ``imgs`` must including flipped image pairs.
 
         Returns:
-            bbox_results (tuple[np.ndarry]): Detection result of each class.
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
         """
         img_inds = list(range(len(imgs)))
 
@@ -90,4 +93,4 @@ class CornerNet(SingleStageDetector):
         bboxes, labels = self.merge_aug_results(aug_results, img_metas)
         bbox_results = bbox2result(bboxes, labels, self.bbox_head.num_classes)
 
-        return bbox_results
+        return [bbox_results]

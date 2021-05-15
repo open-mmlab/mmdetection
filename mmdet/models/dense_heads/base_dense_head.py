@@ -1,13 +1,13 @@
 from abc import ABCMeta, abstractmethod
 
-import torch.nn as nn
+from mmcv.runner import BaseModule
 
 
-class BaseDenseHead(nn.Module, metaclass=ABCMeta):
+class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     """Base class for DenseHeads."""
 
-    def __init__(self):
-        super(BaseDenseHead, self).__init__()
+    def __init__(self, init_cfg=None):
+        super(BaseDenseHead, self).__init__(init_cfg)
 
     @abstractmethod
     def loss(self, **kwargs):

@@ -1,7 +1,10 @@
 # Fast R-CNN
 
 ## Introduction
-```
+
+<!-- [ALGORITHM] -->
+
+```latex
 @inproceedings{girshick2015fast,
   title={Fast r-cnn},
   author={Girshick, Ross},

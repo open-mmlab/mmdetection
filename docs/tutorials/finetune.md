@@ -1,16 +1,17 @@
-# Tutorial 1: Finetuning Models
+# Tutorial 7: Finetuning Models
 
 Detectors pre-trained on the COCO dataset can serve as a good pre-trained model for other datasets, e.g., CityScapes and KITTI Dataset.
 This tutorial provides instruction for users to use the models provided in the [Model Zoo](../model_zoo.md) for other datasets to obtain better performance.
 
 There are two steps to finetune a model on a new dataset.
-- Add support for the new dataset following [Tutorial 2: Adding New Dataset](new_dataset.md).
-- Modify the configs as will be discussed in this tutorial.
 
+- Add support for the new dataset following [Tutorial 2: Customize Datasets](customize_dataset.md).
+- Modify the configs as will be discussed in this tutorial.
 
 Take the finetuning process on Cityscapes Dataset as an example, the users need to modify five parts in the config.
 
 ## Inherit base configs
+
 To release the burden and reduce bugs in writing the whole configs, MMDetection V2.0 support inheriting configs from multiple existing configs. To finetune a Mask RCNN model, the new config needs to inherit
 `_base_/models/mask_rcnn_r50_fpn.py` to build the basic structure of the model. To use the Cityscapes Dataset, the new config can also simply inherit `_base_/datasets/cityscapes_instance.py`. For runtime settings such as training schedules, the new config needs to inherit `_base_/default_runtime.py`. This configs are in the `configs` directory and the users can also choose to write the whole contents rather than use inheritance.
 
@@ -22,6 +23,7 @@ _base_ = [
 ```
 
 ## Modify head
+
 Then the new config needs to modify the head according to the class numbers of the new datasets. By only changing `num_classes` in the roi_head, the weights of the pre-trained models are mostly reused except the final prediction head.
 
 ```python
@@ -53,9 +55,11 @@ model = dict(
 ```
 
 ## Modify dataset
+
 The users may also need to prepare the dataset and write the configs about dataset. MMDetection V2.0 already support VOC, WIDER FACE, COCO and Cityscapes Dataset.
 
 ## Modify training schedule
+
 The finetuning hyperparameters vary from the default schedule. It usually requires smaller learning rate and less training epochs
 
 ```python
@@ -76,9 +80,10 @@ log_config = dict(interval=100)
 ```
 
 ## Use pre-trained model
+
 To use the pre-trained model, the new config add the link of pre-trained models in the `load_from`. The users might need to download the model weights before training to avoid the download time during training.
 
 ```python
-load_from = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_2x_20181010-41d35c05.pth'  # noqa
+load_from = 'http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'  # noqa
 
 ```
