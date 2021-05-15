@@ -234,7 +234,7 @@ class SeesawLoss(nn.Module):
         if label_weights is not None:
             label_weights = label_weights.float()
         else:
-            label_weights = labels.new_ones(labels.size(), dtype=torch.float32)
+            label_weights = labels.new_ones(labels.size(), dtype=torch.float)
 
         cls_score_classes, cls_score_objectness = self._split_cls_score(
             cls_score)
