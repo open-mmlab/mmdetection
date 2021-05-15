@@ -628,12 +628,12 @@ class StageCascadeRPNHead(RPNHead):
         ids = torch.cat(level_ids)
 
         # Skip nonzero op while exporting to ONNX
-        if cfg.min_bbox_size > 0 and (not torch.onnx.is_in_onnx_export()):
+        if cfg.min_bbox_size >= 0 and (not torch.onnx.is_in_onnx_export()):
             w = proposals[:, 2] - proposals[:, 0]
             h = proposals[:, 3] - proposals[:, 1]
             valid_inds = torch.nonzero(
-                (w >= cfg.min_bbox_size)
-                & (h >= cfg.min_bbox_size),
+                (w > cfg.min_bbox_size)
+                & (h > cfg.min_bbox_size),
                 as_tuple=False).squeeze()
             if valid_inds.sum().item() != len(proposals):
                 proposals = proposals[valid_inds, :]

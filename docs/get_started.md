@@ -116,8 +116,7 @@ Note:
 a. Following the above instructions, MMDetection is installed on `dev` mode
 , any local modifications made to the code will take effect without the need to reinstall it.
 
-b. If you would like to use `opencv-python-headless` instead of `opencv
--python`,
+b. If you would like to use `opencv-python-headless` instead of `opencv-python`,
 you can install it before installing MMCV.
 
 c. Some dependencies are optional. Simply running `pip install -v -e .` will

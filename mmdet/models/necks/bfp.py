@@ -8,7 +8,7 @@ from ..builder import NECKS
 
 @NECKS.register_module()
 class BFP(BaseModule):
-    """BFP (Balanced Feature Pyrmamids)
+    """BFP (Balanced Feature Pyramids)
 
     BFP takes multi-level features as inputs and gather them into a single one,
     then refine the gathered feature and scatter the refined results to
