@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import CONV_LAYERS
@@ -79,5 +80,8 @@ class NormedConv2d(nn.Conv2d):
         if hasattr(self, 'conv2d_forward'):
             x_ = self.conv2d_forward(x_, weight_)
         else:
-            x_ = self._conv_forward(x_, weight_)
+            if torch.__version__ >= '1.8':
+                x_ = self._conv_forward(x_, weight_, self.bias)
+            else:
+                x_ = self._conv_forward(x_, weight_)
         return x_
