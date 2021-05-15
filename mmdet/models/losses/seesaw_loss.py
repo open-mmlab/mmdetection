@@ -236,10 +236,14 @@ class SeesawLoss(nn.Module):
         cls_score_classes, cls_score_objectness = self._split_cls_score(
             cls_score)
         # calculate loss_cls_classes (only need pos samples)
-        loss_cls_classes = self.loss_weight * self.cls_criterion(
-            cls_score_classes[pos_inds], labels[pos_inds],
-            label_weights[pos_inds], self.cum_samples[:self.num_classes],
-            self.num_classes, self.p, self.q, self.eps, reduction, avg_factor)
+        if pos_inds.sum() > 0:
+            loss_cls_classes = self.loss_weight * self.cls_criterion(
+                cls_score_classes[pos_inds], labels[pos_inds],
+                label_weights[pos_inds], self.cum_samples[:self.num_classes],
+                self.num_classes, self.p, self.q, self.eps, reduction,
+                avg_factor)
+        else:
+            loss_cls_classes = cls_score_classes[pos_inds].sum()
         # calculate loss_cls_objectness
         loss_cls_objectness = self.loss_weight * cross_entropy(
             cls_score_objectness, obj_labels, label_weights, reduction,
