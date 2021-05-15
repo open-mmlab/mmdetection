@@ -22,7 +22,6 @@ class DiceLoss(nn.Module):
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
         """
         super(DiceLoss, self).__init__()
-        assert use_sigmoid is True, 'Only sigmoid focal loss supported now.'
         self.use_sigmoid = use_sigmoid
         self.loss_weight = loss_weight
 

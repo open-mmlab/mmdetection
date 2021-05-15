@@ -1,4 +1,5 @@
 import os
+from scipy import ndimage
 import mmcv
 import numpy as np
 import torch
@@ -6,26 +7,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmdet.core import bbox2result, multi_apply
 from mmcv.cnn import ConvModule, build_upsample_layer, bias_init_with_prob
-from mmcv.ops.carafe import CARAFEPack
-from mmcv.runner import BaseModule, ModuleList, auto_fp16, force_fp32
-from torch.nn.modules.utils import _pair
 from .base_dense_head import BaseDenseHead
-from mmdet.core import mask_target
 from mmdet.core import matrix_nms
 from mmdet.models.builder import HEADS, build_loss
 
-
-def center_of_mass(bitmasks):
-    _, h, w = bitmasks.size()
-    ys = torch.arange(0, h, dtype=torch.float32, device=bitmasks.device)
-    xs = torch.arange(0, w, dtype=torch.float32, device=bitmasks.device)
-
-    m00 = bitmasks.sum(dim=-1).sum(dim=-1).clamp(min=1e-6)
-    m10 = (bitmasks * xs).sum(dim=-1).sum(dim=-1)
-    m01 = (bitmasks * ys[:, None]).sum(dim=-1).sum(dim=-1)
-    center_x = m10 / m00
-    center_y = m01 / m00
-    return center_x, center_y
 
 def points_nms(heat, kernel=2):
     # kernel must be 2
@@ -309,16 +294,18 @@ class SOLOHead(BaseDenseHead):
 
             # mass center
             gt_masks_pt = torch.from_numpy(gt_masks).to(device=device)
-            center_ws, center_hs = center_of_mass(gt_masks_pt)
             valid_mask_flags = gt_masks_pt.sum(dim=-1).sum(dim=-1) > 0
 
             output_stride = stride / 2
 
-            for seg_mask, gt_label, half_h, half_w, center_h, center_w, valid_mask_flag in\
-                    zip(gt_masks, gt_labels, half_hs, half_ws, center_hs, center_ws, valid_mask_flags):
+            for seg_mask, gt_label, half_h, half_w, valid_mask_flag in\
+                    zip(gt_masks, gt_labels, half_hs, half_ws, valid_mask_flags):
                 if not valid_mask_flag:
                     continue
                 upsampled_size = (featmap_sizes[0][0] * 4, featmap_sizes[0][1] * 4)
+
+                center_h, center_w = ndimage.measurements.center_of_mass(seg_mask)
+
                 coord_w = int((center_w / upsampled_size[1]) // (1. / num_grid))  # 落在哪个格子
                 coord_h = int((center_h / upsampled_size[0]) // (1. / num_grid))
 
