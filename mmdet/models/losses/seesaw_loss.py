@@ -56,8 +56,9 @@ def seesaw_ce_loss(cls_score,
     # compensation factor
     if q > 0:
         scores = F.softmax(cls_score.detach(), dim=1)
-        self_scores = scores[torch.arange(0, len(scores)).cuda().long(),
-                             labels.long()]
+        self_scores = scores[
+            torch.arange(0, len(scores)).to(scores.device).long(),
+            labels.long()]
         score_matrix = scores / self_scores[:, None].clamp(min=eps)
         index = (score_matrix > 1.0).float()
         compensation_factor = score_matrix.pow(q) * index + (1 - index)
@@ -197,7 +198,7 @@ class SeesawLoss(nn.Module):
     def forward(self,
                 cls_score,
                 labels,
-                label_weights,
+                label_weights=None,
                 avg_factor=None,
                 reduction_override=None):
         """Forward function.
@@ -232,6 +233,8 @@ class SeesawLoss(nn.Module):
 
         if label_weights is not None:
             label_weights = label_weights.float()
+        else:
+            label_weights = labels.new_ones(labels.size(), dtype=torch.float32)
 
         cls_score_classes, cls_score_objectness = self._split_cls_score(
             cls_score)
