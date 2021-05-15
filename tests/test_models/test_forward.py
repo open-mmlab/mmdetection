@@ -252,6 +252,16 @@ def test_two_stage_forward(cfg_file):
     model = _get_detector_cfg(cfg_file)
     model['pretrained'] = None
 
+    # Save cost
+    if cfg_file in [
+            'seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py'  # noqa: E501
+    ]:
+        model.roi_head.bbox_head.num_classes = 80
+        model.roi_head.bbox_head.loss_cls.num_classes = 80
+        model.roi_head.mask_head.num_classes = 80
+        model.test_cfg.rcnn.score_thr = 0.05
+        model.test_cfg.rcnn.max_per_img = 100
+
     from mmdet.models import build_detector
     detector = build_detector(model)
 
