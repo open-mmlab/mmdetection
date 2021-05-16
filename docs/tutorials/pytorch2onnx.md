@@ -193,6 +193,13 @@ python tools/deployment/test.py \
 	    <td align="center">34.7</td>
 	    <td align="center">33.7</td>
 	</tr>
+  <tr >
+	    <td align="center">DETR</td>
+	    <td align="center"><code>configs/detr/detr_r50_8x2_150e_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">40.1</td>
+	    <td align="center">40.1</td>
+	</tr>
 </table>
 
 Notes:
@@ -214,6 +221,7 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 |    YOLOv3    |    `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`    |       Y       |        Y        |       |
 | Faster R-CNN |   `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
 |  Mask R-CNN  |     `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`     |       Y       |        Y        |       |
+|     DETR     |             `configs/detr/detr_r50_8x2_150e_coco.py`     |       Y       |        N        |       |
 
 Notes:
 
