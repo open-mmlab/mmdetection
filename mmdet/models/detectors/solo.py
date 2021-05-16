@@ -23,8 +23,8 @@ class SOLO(SingleStageDetector):
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)
-        bbox_head.update(train_cfg=train_cfg)   # 对字典进行更新
-        bbox_head.update(test_cfg=test_cfg)     # 对字典进行更新
+        bbox_head.update(train_cfg=train_cfg)
+        bbox_head.update(test_cfg=test_cfg)
         self.bbox_head = build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
