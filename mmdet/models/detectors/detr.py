@@ -1,7 +1,8 @@
+import torch
+
 from mmdet.core import bbox2result
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
-import torch
 
 
 @DETECTORS.register_module()
@@ -44,7 +45,7 @@ class DETR(SingleStageDetector):
         outs = self.bbox_head(x, img_metas)
         bbox_list = self.bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
-        
+
         # skip post-processing when exporting to ONNX
         if torch.onnx.is_in_onnx_export():
             return bbox_list

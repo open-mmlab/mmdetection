@@ -245,10 +245,13 @@ class DETRHead(AnchorFreeHead):
             # Note `img_shape` is not dynamically traceable to ONNX,
             # sicne the related augmentation was done with numpy under
             # CPU. Here `img_shape` and 'batch_input_shape' are discarded,
-            # then `masks` is directly created with zeros (valid tag) and the same spatial shape as `x`.
-            # The difference between torch and exported ONNX model may be ignored, since
-            # the same performance is achieved (e.g. 40.1 vs 40.1 for DETR)
-            masks = x.new_zeros(*x.size()[-2:]).unsqueeze(0).repeat(batch_size,1,1)  # [B,h,w]
+            # then `masks` is directly created with zeros (valid tag) and
+            # the same spatial shape as `x`.
+            # The difference between torch and exported ONNX model may be
+            # ignored, since the same performance is achieved (e.g.
+            # 40.1 vs 40.1 for DETR)
+            masks = x.new_zeros(*x.size()[-2:]).unsqueeze(0).repeat(
+                batch_size, 1, 1)  # [B,h,w]
         else:
             input_img_h, input_img_w = img_metas[0]['batch_input_shape']
             masks = x.new_ones((batch_size, input_img_h, input_img_w))
@@ -260,8 +263,9 @@ class DETRHead(AnchorFreeHead):
         # interpolate masks to have the same spatial shape with x
         masks = F.interpolate(
             masks.unsqueeze(1), size=x.shape[-2:]).to(torch.bool).squeeze(1)
-        # For convenience of exporting to ONNX, it's required to convert `masks`
-        # which is then fed into `positional_encoding` from bool to int.
+        # For convenience of exporting to ONNX, it's required to convert
+        # `masks` which is then fed into `positional_encoding` from bool
+        # to int.
         masks = masks.to(torch.int)
         # position encoding
         pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
@@ -639,11 +643,11 @@ class DETRHead(AnchorFreeHead):
                                                 img_shape, scale_factor,
                                                 rescale)
             result_list.append(proposals)
-        
+
         if torch.onnx.is_in_onnx_export():
             assert len(img_metas) == 1, \
                 'Only support one input image while in exporting to ONNX'
-            
+
             # batch_size 1
             det_bboxes, det_labels = result_list[0]
             return det_bboxes.unsqueeze(0), det_labels.unsqueeze(0)
