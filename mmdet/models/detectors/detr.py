@@ -1,6 +1,7 @@
 from mmdet.core import bbox2result
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
+import torch
 
 
 @DETECTORS.register_module()
@@ -36,9 +37,17 @@ class DETR(SingleStageDetector):
         assert batch_size == 1, 'Currently only batch_size 1 for inference ' \
             f'mode is supported. Found batch_size {batch_size}.'
         x = self.extract_feat(img)
+        if torch.onnx.is_in_onnx_export():
+            # get input shape as tensor to support onnx dynamic shape
+            img_shape = torch._shape_as_tensor(img)[2:]
+            img_metas[0]['img_shape_for_onnx'] = img_shape
         outs = self.bbox_head(x, img_metas)
         bbox_list = self.bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
+        
+        # skip post-processing when exporting to ONNX
+        if torch.onnx.is_in_onnx_export():
+            return bbox_list
 
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
