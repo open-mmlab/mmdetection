@@ -59,7 +59,7 @@ class AnchorHead(BaseDenseHead):
                  bbox_post_processes=[
                      dict(type='PreNMS'),
                      dict(type='NaiveNMS'),
-                     dict(type='ResizeResultsToOri', results_types=['bbox'])
+                     dict(type='ResultsToOri', results_types=['bbox'])
                  ],
                  train_cfg=None,
                  test_cfg=None,

@@ -598,7 +598,7 @@ class PAAHead(ATSSHead):
             voting_results_list = []
             for (after_process_results,
                  pre_process_results) in zip(r_results_list, results_list):
-                operation = self.bbox_post_processes.get('ResizeResultsToOri')
+                operation = self.bbox_post_processes.get('ResultsToOri')
                 if operation:
                     pre_process_results = operation([pre_process_results])[0]
                 voting_results_list.append(

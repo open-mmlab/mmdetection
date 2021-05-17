@@ -1,19 +1,21 @@
 import copy
-import warnings
+import sys
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv import ConfigDict
-from mmcv.ops import batched_nms
 
+from mmdet.core import merge_aug_proposals
+from ...core.results.results import InstanceResults
 from ..builder import HEADS
 from .anchor_head import AnchorHead
-from .rpn_test_mixin import RPNTestMixin
+
+if sys.version_info >= (3, 7):
+    from mmdet.utils.contextmanagers import completed
 
 
 @HEADS.register_module()
-class RPNHead(RPNTestMixin, AnchorHead):
+class RPNHead(AnchorHead):
     """RPN head.
 
     Args:
@@ -27,6 +29,18 @@ class RPNHead(RPNTestMixin, AnchorHead):
                  **kwargs):
         super(RPNHead, self).__init__(
             1, in_channels, init_cfg=init_cfg, **kwargs)
+
+    if sys.version_info >= (3, 7):
+
+        async def async_simple_test_rpn(self, x, img_metas):
+            sleep_interval = self.test_cfg.pop('async_sleep_interval', 0.025)
+            async with completed(
+                    __name__, 'rpn_head_forward',
+                    sleep_interval=sleep_interval):
+                rpn_outs = self(x)
+
+            proposal_list = self.get_bboxes(*rpn_outs, img_metas)
+            return proposal_list
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -77,14 +91,8 @@ class RPNHead(RPNTestMixin, AnchorHead):
         return dict(
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
-    def _get_bboxes(self,
-                    cls_scores,
-                    bbox_preds,
-                    mlvl_anchors,
-                    img_shapes,
-                    scale_factors,
-                    cfg,
-                    rescale=False):
+    def _get_bboxes(self, cls_scores, bbox_preds, mlvl_anchors, img_metas,
+                    cfg):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -94,26 +102,31 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 level with shape (N, num_anchors * 4, H, W).
             mlvl_anchors (list[Tensor]): Box reference for each scale level
                 with shape (num_total_anchors, 4).
-            img_shapes (list[tuple[int]]): Shape of the input image,
-                (height, width, 3).
-            scale_factors (list[ndarray]): Scale factor of the image arange as
-                (w_scale, h_scale, w_scale, h_scale).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class labelof the
-                corresponding box.
+             list[obj:`InstanceResults`]: Results of each image after the
+                 post process. In most cases(It depends on the post-processing
+                 you use), results.bboxes is a Tensor with shape (n, 4),
+                 where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                 the number of instance, results.score
+                 is the score between 0 and 1, has shape (n,). results.labels
+                 is the label of corresponding bbox, has shape (n,)
         """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
-        # bboxes from different level should be independent during NMS,
-        # level_ids are used as labels for batched NMS to separate them
+
+        if torch.onnx.is_in_onnx_export():
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+            img_shapes = img_metas[0]['img_shape_for_onnx']
+        else:
+            img_shapes = [img_meta['img_shape'] for img_meta in img_metas]
+
         level_ids = []
         mlvl_scores = []
         mlvl_bbox_preds = []
@@ -186,65 +199,66 @@ class RPNHead(RPNTestMixin, AnchorHead):
             batch_mlvl_anchors, batch_mlvl_rpn_bbox_pred, max_shape=img_shapes)
         batch_mlvl_ids = torch.cat(level_ids, dim=1)
 
-        # deprecate arguments warning
-        if 'nms' not in cfg or 'max_num' in cfg or 'nms_thr' in cfg:
-            warnings.warn(
-                'In rpn_proposal or test_cfg, '
-                'nms_thr has been moved to a dict named nms as '
-                'iou_threshold, max_num has been renamed as max_per_img, '
-                'name of original arguments and the way to specify '
-                'iou_threshold of NMS will be deprecated.')
-        if 'nms' not in cfg:
-            cfg.nms = ConfigDict(dict(type='nms', iou_threshold=cfg.nms_thr))
-        if 'max_num' in cfg:
-            if 'max_per_img' in cfg:
-                assert cfg.max_num == cfg.max_per_img, f'You ' \
-                    f'set max_num and ' \
-                    f'max_per_img at the same time, but get {cfg.max_num} ' \
-                    f'and {cfg.max_per_img} respectively' \
-                    'Please delete max_num which will be deprecated.'
-            else:
-                cfg.max_per_img = cfg.max_num
-        if 'nms_thr' in cfg:
-            assert cfg.nms.iou_threshold == cfg.nms_thr, f'You set' \
-                f' iou_threshold in nms and ' \
-                f'nms_thr at the same time, but get' \
-                f' {cfg.nms.iou_threshold} and {cfg.nms_thr}' \
-                f' respectively. Please delete the nms_thr ' \
-                f'which will be deprecated.'
-
         # Replace batched_nms with ONNX::NonMaxSuppression in deployment
+
         if torch.onnx.is_in_onnx_export():
-            from mmdet.core.export import add_dummy_nms_for_onnx
-            batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
-            score_threshold = cfg.nms.get('score_thr', 0.0)
-            nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
-            dets, _ = add_dummy_nms_for_onnx(batch_mlvl_proposals,
-                                             batch_mlvl_scores,
-                                             cfg.max_per_img,
-                                             cfg.nms.iou_threshold,
-                                             score_threshold, nms_pre,
-                                             cfg.max_per_img)
-            return dets
+            return self.onnx_trace(batch_mlvl_proposals, batch_mlvl_scores,
+                                   cfg)
 
-        result_list = []
-        for (mlvl_proposals, mlvl_scores,
-             mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
-                              batch_mlvl_ids):
+        results_list = []
+        for i, (mlvl_proposals, mlvl_scores, mlvl_ids) in enumerate(
+                zip(batch_mlvl_proposals, batch_mlvl_scores, batch_mlvl_ids)):
             # Skip nonzero op while exporting to ONNX
-            if cfg.min_bbox_size > 0 and (not torch.onnx.is_in_onnx_export()):
-                w = mlvl_proposals[:, 2] - mlvl_proposals[:, 0]
-                h = mlvl_proposals[:, 3] - mlvl_proposals[:, 1]
-                valid_ind = torch.nonzero(
-                    (w >= cfg.min_bbox_size)
-                    & (h >= cfg.min_bbox_size),
-                    as_tuple=False).squeeze()
-                if valid_ind.sum().item() != len(mlvl_proposals):
-                    mlvl_proposals = mlvl_proposals[valid_ind, :]
-                    mlvl_scores = mlvl_scores[valid_ind]
-                    mlvl_ids = mlvl_ids[valid_ind]
+            results = InstanceResults(img_metas[i])
+            results.bboxs = mlvl_proposals
+            results.scores = mlvl_scores
+            # bboxes from different level should be independent during NMS,
+            # level_ids are used as labels for batched NMS to separate them
+            results.labels = mlvl_ids
+            results_list.append(results)
 
-            dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
-                                     cfg.nms)
-            result_list.append(dets[:cfg.max_per_img])
-        return result_list
+        processed_resutls = self.bbox_post_processes(results_list)
+        return processed_resutls
+
+    def simple_test_rpn(self, x, img_metas):
+        """Test without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+            img_metas (list[dict]): Meta info of each image.
+
+        Returns:
+             list[obj:`InstanceResults`]: Results of each image after the
+                 post process. In most cases(It depends on the post-processing
+                 you use), results.bboxes is a Tensor with shape (n, 4),
+                 where 4 represent (tl_x, tl_y, br_x, br_y) and n represent
+                 the number of instance, results.score
+                 is the score between 0 and 1, has shape (n,). results.labels
+                 is the label of corresponding bbox, has shape (n,)
+        """
+        rpn_outs = self(x)
+        proposal_list = self.get_bboxes(*rpn_outs, img_metas)
+        return proposal_list
+
+    def aug_test_rpn(self, feats, img_metas):
+        samples_per_gpu = len(img_metas[0])
+        aug_proposals = [[] for _ in range(samples_per_gpu)]
+        for x, img_meta in zip(feats, img_metas):
+            proposal_list = self.simple_test_rpn(x, img_meta)
+            for i, proposals in enumerate(proposal_list):
+                aug_proposals[i].append(proposals)
+        # reorganize the order of 'img_metas' to match the dimensions
+        # of 'aug_proposals'
+        aug_img_metas = []
+        for i in range(samples_per_gpu):
+            aug_img_meta = []
+            for j in range(len(img_metas)):
+                aug_img_meta.append(img_metas[j][i])
+            aug_img_metas.append(aug_img_meta)
+        # after merging, proposals will be rescaled to the original image size
+        merged_proposals = [
+            merge_aug_proposals(proposals, aug_img_meta, self.test_cfg)
+            for proposals, aug_img_meta in zip(aug_proposals, aug_img_metas)
+        ]
+        return merged_proposals

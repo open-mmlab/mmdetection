@@ -133,7 +133,7 @@ class CornerHead(BaseDenseHead):
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
                  bbox_post_processes=[
                      dict(type='SoftNMS'),
-                     dict(type='ResizeResultsToOri', results_types=['bbox'])
+                     dict(type='ResultsToOri', results_types=['bbox'])
                  ],
                  init_cfg=None):
         assert init_cfg is None, 'To prevent abnormal initialization ' \

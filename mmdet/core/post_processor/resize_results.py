@@ -3,8 +3,8 @@ from mmdet.core.post_processor.builder import POST_PROCESSOR
 
 
 @POST_PROCESSOR.register_module()
-class ResizeResultsToOri(object):
-    """Resize results to the scale of original image.
+class ResultsToOri(object):
+    """Mapping results to the scale of original image.
 
     Args:
         results_types (str | list[str]): Used to specify the
@@ -18,7 +18,7 @@ class ResizeResultsToOri(object):
         for r_type in results_types:
             if r_type not in support_types:
                 raise NotImplementedError(
-                    f'ResizeResultsToOri'
+                    f'ResultsToOri'
                     f' only support resize{support_types}'
                     f' to original image, '
                     f' but get {results_types}')
