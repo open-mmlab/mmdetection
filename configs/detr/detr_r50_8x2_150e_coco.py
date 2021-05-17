@@ -21,7 +21,7 @@ model = dict(
                 sigmoid=False,
                 max_per_img=100,
             ),
-            dict(type='ResizeResultsToOri', results_types=['bbox'])
+            dict(type='ResultsToOri', results_types=['bbox'])
         ],
         num_classes=80,
         in_channels=2048,

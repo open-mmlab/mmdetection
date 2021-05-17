@@ -22,7 +22,7 @@ model = dict(
                 iou_threshold=0.45,
                 class_agnostic=False,
                 max_num=200),
-            dict(type='ResizeResultsToOri', results_types=['bbox'])
+            dict(type='ResultsToOri', results_types=['bbox'])
         ],
         in_channels=(512, 1024, 512, 256, 256, 256),
         num_classes=80,

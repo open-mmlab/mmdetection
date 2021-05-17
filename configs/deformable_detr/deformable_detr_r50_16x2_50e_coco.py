@@ -29,7 +29,7 @@ model = dict(
                 sigmoid=True,
                 max_per_img=100,
             ),
-            dict(type='ResizeResultsToOri', results_types=['bbox'])
+            dict(type='ResultsToOri', results_types=['bbox'])
         ],
         num_query=300,
         num_classes=80,

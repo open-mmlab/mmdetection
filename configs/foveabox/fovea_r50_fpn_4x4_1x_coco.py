@@ -31,7 +31,7 @@ model = dict(
                 iou_threshold=0.5,
                 class_agnostic=False,
                 max_num=100),
-            dict(type='ResizeResultsToOri', results_types=['bbox'])
+            dict(type='ResultsToOri', results_types=['bbox'])
         ],
         num_classes=80,
         in_channels=256,
