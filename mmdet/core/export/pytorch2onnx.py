@@ -1,3 +1,4 @@
+import copy
 from functools import partial
 
 import mmcv
@@ -5,6 +6,8 @@ import numpy as np
 import torch
 from mmcv.runner import load_checkpoint
 
+from mmdet.apis.inference import LoadImage
+from mmdet.datasets.pipelines import Compose
 from ..evaluation import get_classes
 
 
@@ -99,6 +102,38 @@ def build_model_from_cfg(config_path, checkpoint_path, cfg_options=None):
         model.CLASSES = get_classes('coco')
     model.cpu().eval()
     return model
+
+
+def prepare_inputs(img_path,
+                   pipeline,
+                   shape=None,
+                   keep_ratio=False,
+                   rescale=False):
+    test_pipeline = copy.deepcopy(pipeline)
+    # build the data pipeline
+    if shape is not None:
+        test_pipeline[1]['img_scale'] = (shape[1], shape[0])
+
+    if not keep_ratio:
+        # update parameters in transforms
+        for trans in test_pipeline[1]['transforms']:
+            if 'keep_ratio' in trans:
+                trans['keep_ratio'] = False
+            if 'size_divisor' in trans:
+                trans['size_divisor'] = 1
+    test_pipeline = [LoadImage()] + test_pipeline[1:]
+    test_pipeline = Compose(test_pipeline)
+    # prepare data
+    data = dict(img=img_path)
+    data = test_pipeline(data)
+    imgs = data['img']
+    img_metas = [[i.data] for i in data['img_metas']]
+    imgs = [img[None, :] for img in imgs]
+    if not rescale:
+        for img_meta in img_metas:
+            img_meta[0]['scale_factor'] = [1.0] * 4
+            img_meta[0]['flip'] = False
+    return imgs, img_metas
 
 
 def preprocess_example_input(input_config):
