@@ -107,7 +107,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class labelof the
+                (n,) tensor where each item is the predicted class label of the
                 corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
