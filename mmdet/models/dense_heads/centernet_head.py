@@ -159,16 +159,17 @@ class CenterNetHead(BaseDenseHead):
         # Since the channel of wh_target and offset_target is 2, the avg_factor
         # of loss_center_heatmap is always 1/2 of loss_wh and loss_offset.
         loss_center_heatmap = self.loss_center_heatmap(
-            center_heatmap_pred,
-            center_heatmap_target,
-            avg_factor=avg_factor / 2.)
+            center_heatmap_pred, center_heatmap_target, avg_factor=avg_factor)
         loss_wh = self.loss_wh(
-            wh_pred, wh_target, wh_offset_target_weight, avg_factor=avg_factor)
+            wh_pred,
+            wh_target,
+            wh_offset_target_weight,
+            avg_factor=avg_factor * 2)
         loss_offset = self.loss_offset(
             offset_pred,
             offset_target,
             wh_offset_target_weight,
-            avg_factor=avg_factor)
+            avg_factor=avg_factor * 2)
         return dict(
             loss_center_heatmap=loss_center_heatmap,
             loss_wh=loss_wh,
@@ -236,7 +237,7 @@ class CenterNetHead(BaseDenseHead):
 
                 wh_offset_target_weight[batch_id, :, cty_int, ctx_int] = 1
 
-        avg_factor = max(1, wh_offset_target_weight.eq(1).sum())
+        avg_factor = max(1, center_heatmap_target.eq(1).sum())
         target_result = dict(
             center_heatmap_target=center_heatmap_target,
             wh_target=wh_target,

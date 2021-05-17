@@ -92,6 +92,8 @@ data = dict(
 # Based on the default settings of modern detectors, the SGD effect is better
 # than the Adam in the source code, so we use SGD default settings and
 # if you use adam+lr5e-4, the map is 29.1.
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
 # learning policy
 # Based on the default settings of modern detectors, we added warmup settings.
