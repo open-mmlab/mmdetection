@@ -194,13 +194,13 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">38.2</td>
 	    <td align="center">38.1</td>
-	    <td align="center">/</td>
+	    <td align="center">37.7</td>
 	</tr>
 	<tr>
 	    <td align="center">Mask AP</td>
 	    <td align="center">34.7</td>
 	    <td align="center">33.7</td>
-	    <td align="center">/</td>
+	    <td align="center">33.3</td>
 	</tr>
 </table>
 
