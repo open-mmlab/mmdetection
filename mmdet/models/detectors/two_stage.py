@@ -163,7 +163,7 @@ class TwoStageDetector(BaseDetector):
         return await self.roi_head.async_simple_test(
             x, proposal_list, img_meta, rescale=rescale)
 
-    def simple_test(self, img, img_metas, proposals=None, rescale=False):
+    def simple_test(self, img, img_metas, proposals=None):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
 
@@ -179,10 +179,9 @@ class TwoStageDetector(BaseDetector):
         else:
             proposal_list = proposals
 
-        return self.roi_head.simple_test(
-            x, proposal_list, img_metas, rescale=rescale)
+        return self.roi_head.simple_test(x, proposal_list, img_metas)
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, imgs, img_metas):
         """Test with augmentations.
 
         If rescale is False, then returned bboxes and masks will fit the scale
@@ -190,5 +189,4 @@ class TwoStageDetector(BaseDetector):
         """
         x = self.extract_feats(imgs)
         proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
-        return self.roi_head.aug_test(
-            x, proposal_list, img_metas, rescale=rescale)
+        return self.roi_head.aug_test(x, proposal_list, img_metas)
