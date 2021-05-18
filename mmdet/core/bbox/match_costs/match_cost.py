@@ -6,7 +6,7 @@ from .builder import MATCH_COST
 
 
 @MATCH_COST.register_module()
-class BBoxL1Cost(object):
+class BBoxL1Cost:
     """BBoxL1Cost.
 
      Args:
@@ -50,7 +50,7 @@ class BBoxL1Cost(object):
 
 
 @MATCH_COST.register_module()
-class FocalLossCost(object):
+class FocalLossCost:
     """FocalLossCost.
 
      Args:
@@ -99,7 +99,7 @@ class FocalLossCost(object):
 
 
 @MATCH_COST.register_module()
-class ClassificationCost(object):
+class ClassificationCost:
     """ClsSoftmaxCost.
 
      Args:
@@ -143,7 +143,7 @@ class ClassificationCost(object):
 
 
 @MATCH_COST.register_module()
-class IoUCost(object):
+class IoUCost:
     """IoUCost.
 
      Args:

@@ -45,7 +45,7 @@ def bbox_map_eval(det_result, annotation):
     return sum(mean_aps) / len(mean_aps)
 
 
-class ResultVisualizer(object):
+class ResultVisualizer:
     """Display and save evaluation results.
 
     Args:
