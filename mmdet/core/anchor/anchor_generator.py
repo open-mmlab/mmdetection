@@ -7,7 +7,7 @@ from .builder import ANCHOR_GENERATORS
 
 
 @ANCHOR_GENERATORS.register_module()
-class AnchorGenerator(object):
+class AnchorGenerator:
     """Standard anchor generator for 2D anchor-based detectors.
 
     Args:
