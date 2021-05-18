@@ -119,10 +119,12 @@ def test_seesaw_loss():
     loss_cls_cfg = dict(
         type='SeesawLoss', p=0.0, q=0.0, loss_weight=1.0, num_classes=2)
     loss_cls = build_loss(loss_cls_cfg)
+    # the length of fake_pred should be num_classes + 2 = 4
     with pytest.raises(AssertionError):
         fake_pred = torch.Tensor([[-100, 100]])
         fake_label = torch.Tensor([1]).long()
         loss_cls(fake_pred, fake_label)
+    # the length of fake_pred should be num_classes + 2 = 4
     with pytest.raises(AssertionError):
         fake_pred = torch.Tensor([[-100, 100, -100]])
         fake_label = torch.Tensor([1]).long()
