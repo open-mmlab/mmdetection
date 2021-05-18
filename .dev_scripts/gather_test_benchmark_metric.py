@@ -49,7 +49,7 @@ if __name__ == '__main__':
                     log_json_path = list(sorted(json_list))[-1]
 
                     metric = mmcv.load(log_json_path)
-                    if config in metric:
+                    if config in metric.get('config', {}):
 
                         new_metrics = dict()
                         for record_metric_key in record_metrics:
@@ -57,12 +57,12 @@ if __name__ == '__main__':
                             old_metric = record_metrics[record_metric_key]
                             if record_metric_key == 'AR_1000':
                                 record_metric_key = 'AR@1000'
-                            if record_metric_key not in metric[config]:
+                            if record_metric_key not in metric['metric']:
                                 raise KeyError(
                                     'record_metric_key not exist, please '
                                     'check your config')
                             new_metric = round(
-                                metric[config][record_metric_key] * 100, 1)
+                                metric['metric'][record_metric_key] * 100, 1)
                             new_metrics[record_metric_key_bk] = new_metric
 
                         if args.show_all:
