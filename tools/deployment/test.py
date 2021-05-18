@@ -1,5 +1,4 @@
 import argparse
-import os
 
 import mmcv
 from mmcv import Config, DictAction
@@ -22,6 +21,11 @@ def parse_args():
         help='Format the output results without perform evaluation. It is'
         'useful when you want to format the result to a specific format and '
         'submit it to the test server')
+    parser.add_argument(
+        '--backend',
+        required=True,
+        choices=['onnxruntime', 'tensorrt'],
+        help='Backend for input model to run. ')
     parser.add_argument(
         '--eval',
         type=str,
@@ -103,14 +107,11 @@ def main():
         dist=False,
         shuffle=False)
 
-    _, file_ext = os.path.splitext(args.model)
-    assert file_ext in ['.onnx', '.trt']
-
-    if file_ext == '.onnx':
+    if args.backend == 'onnxruntime':
         from mmdet.core.export.model_wrappers import ONNXRuntimeDetector
         model = ONNXRuntimeDetector(
             args.model, class_names=dataset.CLASSES, device_id=0)
-    elif file_ext == '.trt':
+    elif args.backend == 'tensorrt':
         from mmdet.core.export.model_wrappers import TensorRTDetector
         output_names = ['dets', 'labels']
         if len(cfg.evaluation['metric']) == 2:

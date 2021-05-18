@@ -2,7 +2,6 @@ import os.path as osp
 import warnings
 
 import numpy as np
-import onnxruntime as ort
 import torch
 
 from mmdet.core import bbox2result
@@ -82,6 +81,8 @@ class ONNXRuntimeDetector(DeployBaseDetector):
 
     def __init__(self, onnx_file, class_names, device_id):
         super(ONNXRuntimeDetector, self).__init__(class_names, device_id)
+        import onnxruntime as ort
+
         # get the custom op path
         ort_custom_op_path = ''
         try:

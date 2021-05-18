@@ -102,6 +102,8 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
   pip install onnx onnxruntime-gpu
   ```
 
+- Install TensorRT by referring to [how-to-build-tensorrt-plugins-in-mmcv](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv)(optional)
+
 ### Usage
 
 ```bash
@@ -109,6 +111,7 @@ python tools/deployment/test.py \
     ${CONFIG_FILE} \
     ${MODEL_FILE} \
     --out ${OUTPUT_FILE} \
+    --backend ${BACKEND} \
     --format-only ${FORMAT_ONLY} \
     --eval ${EVALUATION_METRICS} \
     --show-dir ${SHOW_DIRECTORY} \
@@ -120,8 +123,9 @@ python tools/deployment/test.py \
 ### Description of all arguments
 
 - `config`: The path of a model config file.
-- `model`: The path of an input model file and it should have extension of `.onnx` or `.trt` .
+- `model`: The path of an input model file.
 - `--out`: The path of output result file in pickle format.
+- `--backend`: Backend for input model to run and should be `onnxruntime` or `tensorrt`.
 - `--format-only` : Format the output results without perform evaluation. It is useful when you want to format the result to a specific format and submit it to the test server. If not specified, it will be set to `False`.
 - `--eval`: Evaluation metrics, which depends on the dataset, e.g., "bbox", "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC.
 - `--show-dir`: Directory where painted images will be saved
