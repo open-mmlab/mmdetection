@@ -1,3 +1,17 @@
+# Copyright (C) 2021 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions
+# and limitations under the License.
+
 import argparse
 import os
 import os.path as osp
@@ -9,21 +23,21 @@ import cv2 as cv
 from tqdm import tqdm
 
 from mmdet.datasets import CocoDataset
-from noussdk.entities.analyse_parameters import AnalyseParameters
-from noussdk.entities.annotation import Annotation, AnnotationKind
-from noussdk.entities.datasets import Dataset, Subset, NullDataset
-from noussdk.entities.id import ID
-from noussdk.entities.image import Image
-from noussdk.entities.label import ScoredLabel
-from noussdk.entities.project import Project, NullProject
-from noussdk.entities.resultset import ResultSet
-from noussdk.entities.shapes.box import Box
-from noussdk.entities.task_environment import TaskEnvironment
-from noussdk.entities.url import URL
-from noussdk.logging import logger_factory
-from noussdk.tests.test_helpers import generate_training_dataset_of_all_annotated_media_in_project
-from noussdk.usecases.repos import *
-from noussdk.utils.project_factory import ProjectFactory
+from sc_sdk.entities.analyse_parameters import AnalyseParameters
+from sc_sdk.entities.annotation import Annotation, AnnotationKind
+from sc_sdk.entities.datasets import Dataset, Subset, NullDataset
+from sc_sdk.entities.id import ID
+from sc_sdk.entities.image import Image
+from sc_sdk.entities.label import ScoredLabel
+from sc_sdk.entities.project import Project, NullProject
+from sc_sdk.entities.resultset import ResultSet
+from sc_sdk.entities.shapes.box import Box
+from sc_sdk.entities.task_environment import TaskEnvironment
+from sc_sdk.entities.url import URL
+from sc_sdk.logging import logger_factory
+from sc_sdk.tests.test_helpers import generate_training_dataset_of_all_annotated_media_in_project
+from sc_sdk.usecases.repos import *
+from sc_sdk.utils.project_factory import ProjectFactory
 
 from nousapi.apis.detection import MMObjectDetectionTask
 
@@ -99,7 +113,7 @@ projectname = "MMObjectDetectionSample"
 project = load_project(projectname, "MMObjectDetectionTask", CocoDataset.CLASSES)
 print('Tasks:', [task.task_name for task in project.tasks])
 
-dataset = load_dataset(project, dataset_id=ID('609bcf64b1760a88fb5d86a9'))
+dataset = load_dataset(project, dataset_id=ID('60a395e50f3cb0a2e333e57e'))
 print(dataset)
 # dataset = create_coco_dataset(project)
 print(f"train dataset: {len(dataset.get_subset(Subset.TRAINING))} items")
@@ -118,7 +132,7 @@ logger.warning(params.learning_architecture.model_architecture.value)
 params.learning_parameters.learning_rate_schedule.value = 'cyclic'
 # params.learning_parameters.learning_rate_warmup_iters.value = 0
 params.learning_parameters.batch_size.value = 64
-params.learning_parameters.num_epochs.value = 2
+params.learning_parameters.num_epochs.value = 1
 environment.set_configurable_parameters(params)
 task.update_configurable_parameters(environment)
 
@@ -138,7 +152,7 @@ logger.warning(params.learning_architecture.model_architecture.value)
 params.learning_parameters.learning_rate_schedule.value = 'cyclic'
 # params.learning_parameters.learning_rate_warmup_iters.value = 0
 params.learning_parameters.batch_size.value = 32
-params.learning_parameters.num_epochs.value = 2
+params.learning_parameters.num_epochs.value = 1
 environment.set_configurable_parameters(params)
 task.update_configurable_parameters(environment)
 

@@ -1,3 +1,17 @@
+# Copyright (C) 2021 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions
+# and limitations under the License.
+
 import os
 import torch
 import tempfile
@@ -13,28 +27,28 @@ from typing import Optional, List, Tuple
 
 import numpy as np
 
-from noussdk.entities.analyse_parameters import AnalyseParameters
-from noussdk.entities.datasets import Dataset
-from noussdk.entities.metrics import CurveMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric, InfoMetric, \
+from sc_sdk.entities.analyse_parameters import AnalyseParameters
+from sc_sdk.entities.datasets import Dataset
+from sc_sdk.entities.metrics import CurveMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric, InfoMetric, \
     VisualizationType, VisualizationInfo
-from noussdk.entities.optimized_model import OptimizedModel, OpenVINOModel, Precision
-from noussdk.entities.task_environment import TaskEnvironment
-from noussdk.entities.train_parameters import TrainParameters
-from noussdk.entities.label_relations import ScoredLabel
-from noussdk.entities.model import Model, NullModel
-from noussdk.entities.shapes.box import Box
-from noussdk.entities.resultset import ResultSetEntity, ResultsetPurpose
+from sc_sdk.entities.optimized_model import OptimizedModel, OpenVINOModel, Precision
+from sc_sdk.entities.task_environment import TaskEnvironment
+from sc_sdk.entities.train_parameters import TrainParameters
+from sc_sdk.entities.label_relations import ScoredLabel
+from sc_sdk.entities.model import Model, NullModel
+from sc_sdk.entities.shapes.box import Box
+from sc_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 
-from noussdk.usecases.evaluation.basic_operations import get_nms_filter
-from noussdk.usecases.evaluation.metrics_helper import MetricsHelper
-from noussdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
-from noussdk.usecases.repos import BinaryRepo
-from noussdk.usecases.tasks.image_deep_learning_task import ImageDeepLearningTask
-from noussdk.usecases.tasks.interfaces.configurable_parameters_interface import IConfigurableParameters
-from noussdk.usecases.tasks.interfaces.model_optimizer import IModelOptimizer
-from noussdk.usecases.tasks.interfaces.unload_interface import IUnload
+from sc_sdk.usecases.evaluation.basic_operations import get_nms_filter
+from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
+from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
+from sc_sdk.usecases.repos import BinaryRepo
+from sc_sdk.usecases.tasks.image_deep_learning_task import ImageDeepLearningTask
+from sc_sdk.usecases.tasks.interfaces.configurable_parameters_interface import IConfigurableParameters
+from sc_sdk.usecases.tasks.interfaces.model_optimizer import IModelOptimizer
+from sc_sdk.usecases.tasks.interfaces.unload_interface import IUnload
 
-from noussdk.logging import logger_factory
+from sc_sdk.logging import logger_factory
 
 from mmdet.apis import train_detector, get_root_logger, set_random_seed, single_gpu_test, \
     inference_detector, export_model
@@ -165,8 +179,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             # TODO: Running this with a dataloader greatly speeds up analysis, however it results in a warning:
             #   UserWarning: MongoClient opened before fork. Create MongoClient only after forking. See PyMongo's
             #   documentation for details: https://pymongo.readthedocs.io/en/stable/faq.html#is-pymongo-fork-safe
-            #   Link to JIRA ticket:
-            #   https://cosmonio.atlassian.net/browse/NI-660?atlOrigin=eyJpIjoiOGJmZjE4M2FmMjY1NDBmY2E0Yzk0N2NiYzk4ZTc5NjIiLCJwIjoiaiJ9
             # FIXME. Why the dataset is always copied and re-created?
             self.inference_model.cfg.data.test.nous_dataset = dataset
             mm_test_dataset = build_dataset(copy.deepcopy(self.inference_model.cfg.data.test))

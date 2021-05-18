@@ -1,3 +1,17 @@
+# Copyright (C) 2021 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions
+# and limitations under the License.
+
 import math
 import os
 from collections import defaultdict
@@ -5,8 +19,8 @@ from collections import defaultdict
 from mmcv.runner.hooks import HOOKS, Hook, LoggerHook
 from mmcv.runner import EpochBasedRunner
 from mmcv.runner.dist_utils import master_only
-from noussdk.logging import logger_factory
-from noussdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
+from sc_sdk.logging import logger_factory
+from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 
 logger = logger_factory.get_logger("MMDetectionTask")
 
