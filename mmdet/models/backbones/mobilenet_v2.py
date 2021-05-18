@@ -16,8 +16,8 @@ class MobileNetV2(BaseModule):
     Args:
         widen_factor (float): Width multiplier, multiply number of
             channels in each layer by this amount. Default: 1.0.
-        out_indices (None or Sequence[int]): Output from which stages.
-            Default: (7, ).
+        out_indices (Sequence[int], optional): Output from which stages.
+            Default: (1, 2, 4, 7).
         frozen_stages (int): Stages to be frozen (all param fixed).
             Default: -1, which means not freezing any parameters.
         conv_cfg (dict, optional): Config dict for convolution layer.
