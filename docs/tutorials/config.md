@@ -215,7 +215,7 @@ model = dict(
             assigner=dict(  # Config of assigner for second stage, this is different for that in rpn
                 type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for all roi_heads for now. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/assigners/max_iou_assigner.py#L10 for more details.
                 pos_iou_thr=0.5,  # IoU >= threshold 0.5 will be taken as positive samples
-                neg_iou_thr=0.5,  # IoU >= threshold 0.5 will be taken as positive samples
+                neg_iou_thr=0.5,  # IoU < threshold 0.5 will be taken as negative samples
                 min_pos_iou=0.5,  # The minimal IoU threshold to take boxes as positive samples
                 match_low_quality=False,  # Whether to match the boxes under low quality (see API doc for more details).
                 ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes

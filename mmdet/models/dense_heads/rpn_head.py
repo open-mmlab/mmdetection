@@ -107,7 +107,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class labelof the
+                (n,) tensor where each item is the predicted class label of the
                 corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
@@ -232,12 +232,12 @@ class RPNHead(RPNTestMixin, AnchorHead):
              mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
                               batch_mlvl_ids):
             # Skip nonzero op while exporting to ONNX
-            if cfg.min_bbox_size > 0 and (not torch.onnx.is_in_onnx_export()):
+            if cfg.min_bbox_size >= 0 and (not torch.onnx.is_in_onnx_export()):
                 w = mlvl_proposals[:, 2] - mlvl_proposals[:, 0]
                 h = mlvl_proposals[:, 3] - mlvl_proposals[:, 1]
                 valid_ind = torch.nonzero(
-                    (w >= cfg.min_bbox_size)
-                    & (h >= cfg.min_bbox_size),
+                    (w > cfg.min_bbox_size)
+                    & (h > cfg.min_bbox_size),
                     as_tuple=False).squeeze()
                 if valid_ind.sum().item() != len(mlvl_proposals):
                     mlvl_proposals = mlvl_proposals[valid_ind, :]
