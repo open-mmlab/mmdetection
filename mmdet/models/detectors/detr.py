@@ -13,9 +13,10 @@ class DETR(SingleStageDetector):
                  bbox_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
         super(DETR, self).__init__(backbone, None, bbox_head, train_cfg,
-                                   test_cfg, pretrained)
+                                   test_cfg, pretrained, init_cfg)
 
     def simple_test(self, img, img_metas, rescale=False):
         """Test function without test time augmentation.

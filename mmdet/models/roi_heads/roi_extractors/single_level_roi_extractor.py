@@ -18,15 +18,18 @@ class SingleRoIExtractor(BaseRoIExtractor):
         out_channels (int): Output channels of RoI layers.
         featmap_strides (List[int]): Strides of input feature maps.
         finest_scale (int): Scale threshold of mapping to level 0. Default: 56.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
                  roi_layer,
                  out_channels,
                  featmap_strides,
-                 finest_scale=56):
+                 finest_scale=56,
+                 init_cfg=None):
         super(SingleRoIExtractor, self).__init__(roi_layer, out_channels,
-                                                 featmap_strides)
+                                                 featmap_strides, init_cfg)
         self.finest_scale = finest_scale
 
     def map_roi_levels(self, rois, num_levels):

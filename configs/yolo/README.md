@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 ```latex
 @misc{redmon2018yolov3,

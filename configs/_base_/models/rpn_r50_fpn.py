@@ -1,5 +1,4 @@
 # model settings
-
 model = dict(
     type='RPN',
     pretrained='torchvision://resnet50',

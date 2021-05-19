@@ -2,19 +2,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, Linear, build_activation_layer
+from mmcv.cnn.bricks.transformer import FFN, build_positional_encoding
 from mmcv.runner import force_fp32
 
 from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply,
                         reduce_mean)
-from mmdet.models.utils import (FFN, build_positional_encoding,
-                                build_transformer)
+from mmdet.models.utils import build_transformer
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
 
 @HEADS.register_module()
-class TransformerHead(AnchorFreeHead):
+class DETRHead(AnchorFreeHead):
     """Implements the DETR transformer head.
 
     See `paper: End-to-End Object Detection with Transformers
@@ -23,45 +23,38 @@ class TransformerHead(AnchorFreeHead):
     Args:
         num_classes (int): Number of categories excluding the background.
         in_channels (int): Number of channels in the input feature map.
-        num_fcs (int, optional): Number of fully-connected layers used in
+        num_query (int): Number of query in Transformer.
+        num_reg_fcs (int, optional): Number of fully-connected layers used in
             `FFN`, which is then used for the regression head. Default 2.
-        transformer (dict, optional): Config for transformer.
-        positional_encoding (dict, optional): Config for position encoding.
-        loss_cls (dict, optional): Config of the classification loss.
-            Default `CrossEntropyLoss`.
-        loss_bbox (dict, optional): Config of the regression loss.
-            Default `L1Loss`.
-        loss_iou (dict, optional): Config of the regression iou loss.
-            Default `GIoULoss`.
-        tran_cfg (dict, optional): Training config of transformer head.
-        test_cfg (dict, optional): Testing config of transformer head.
-
-    Example:
-        >>> import torch
-        >>> self = TransformerHead(80, 2048)
-        >>> x = torch.rand(1, 2048, 32, 32)
-        >>> mask = torch.ones(1, 32, 32).to(x.dtype)
-        >>> mask[:, :16, :15] = 0
-        >>> all_cls_scores, all_bbox_preds = self(x, mask)
+        transformer (obj:`mmcv.ConfigDict`|dict): Config for transformer.
+            Default: None.
+        sync_cls_avg_factor (bool): Whether to sync the avg_factor of
+            all ranks. Default to False.
+        positional_encoding (obj:`mmcv.ConfigDict`|dict):
+            Config for position encoding.
+        loss_cls (obj:`mmcv.ConfigDict`|dict): Config of the
+            classification loss. Default `CrossEntropyLoss`.
+        loss_bbox (obj:`mmcv.ConfigDict`|dict): Config of the
+            regression loss. Default `L1Loss`.
+        loss_iou (obj:`mmcv.ConfigDict`|dict): Config of the
+            regression iou loss. Default `GIoULoss`.
+        tran_cfg (obj:`mmcv.ConfigDict`|dict): Training config of
+            transformer head.
+        test_cfg (obj:`mmcv.ConfigDict`|dict): Testing config of
+            transformer head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
+
+    _version = 2
 
     def __init__(self,
                  num_classes,
                  in_channels,
-                 num_fcs=2,
-                 transformer=dict(
-                     type='Transformer',
-                     embed_dims=256,
-                     num_heads=8,
-                     num_encoder_layers=6,
-                     num_decoder_layers=6,
-                     feedforward_channels=2048,
-                     dropout=0.1,
-                     act_cfg=dict(type='ReLU', inplace=True),
-                     norm_cfg=dict(type='LN'),
-                     num_fcs=2,
-                     pre_norm=False,
-                     return_intermediate_dec=True),
+                 num_query=100,
+                 num_reg_fcs=2,
+                 transformer=None,
+                 sync_cls_avg_factor=False,
                  positional_encoding=dict(
                      type='SinePositionalEncoding',
                      num_feats=128,
@@ -82,26 +75,16 @@ class TransformerHead(AnchorFreeHead):
                          iou_cost=dict(
                              type='IoUCost', iou_mode='giou', weight=2.0))),
                  test_cfg=dict(max_per_img=100),
+                 init_cfg=None,
                  **kwargs):
         # NOTE here use `AnchorFreeHead` instead of `TransformerHead`,
         # since it brings inconvenience when the initialization of
         # `AnchorFreeHead` is called.
-        super(AnchorFreeHead, self).__init__()
-        use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        assert not use_sigmoid_cls, 'setting use_sigmoid_cls as True is ' \
-            'not supported in DETR, since background is needed for the ' \
-            'matching process.'
-        assert 'embed_dims' in transformer \
-            and 'num_feats' in positional_encoding
-        num_feats = positional_encoding['num_feats']
-        embed_dims = transformer['embed_dims']
-        assert num_feats * 2 == embed_dims, 'embed_dims should' \
-            f' be exactly 2 times of num_feats. Found {embed_dims}' \
-            f' and {num_feats}.'
-        assert test_cfg is not None and 'max_per_img' in test_cfg
-
+        super(AnchorFreeHead, self).__init__(init_cfg)
+        self.bg_cls_weight = 0
+        self.sync_cls_avg_factor = sync_cls_avg_factor
         class_weight = loss_cls.get('class_weight', None)
-        if class_weight is not None:
+        if class_weight is not None and (self.__class__ is DETRHead):
             assert isinstance(class_weight, float), 'Expected ' \
                 'class_weight to have type float. Found ' \
                 f'{type(class_weight)}.'
@@ -136,25 +119,33 @@ class TransformerHead(AnchorFreeHead):
             # DETR sampling=False, so use PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
+        self.num_query = num_query
         self.num_classes = num_classes
-        self.cls_out_channels = num_classes + 1
         self.in_channels = in_channels
-        self.num_fcs = num_fcs
+        self.num_reg_fcs = num_reg_fcs
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.use_sigmoid_cls = use_sigmoid_cls
-        self.embed_dims = embed_dims
-        self.num_query = test_cfg['max_per_img']
         self.fp16_enabled = False
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.loss_iou = build_loss(loss_iou)
+
+        if self.loss_cls.use_sigmoid:
+            self.cls_out_channels = num_classes
+        else:
+            self.cls_out_channels = num_classes + 1
         self.act_cfg = transformer.get('act_cfg',
                                        dict(type='ReLU', inplace=True))
         self.activate = build_activation_layer(self.act_cfg)
         self.positional_encoding = build_positional_encoding(
             positional_encoding)
         self.transformer = build_transformer(transformer)
+        self.embed_dims = self.transformer.embed_dims
+        assert 'num_feats' in positional_encoding
+        num_feats = positional_encoding['num_feats']
+        assert num_feats * 2 == self.embed_dims, 'embed_dims should' \
+            f' be exactly 2 times of num_feats. Found {self.embed_dims}' \
+            f' and {num_feats}.'
         self._init_layers()
 
     def _init_layers(self):
@@ -165,14 +156,14 @@ class TransformerHead(AnchorFreeHead):
         self.reg_ffn = FFN(
             self.embed_dims,
             self.embed_dims,
-            self.num_fcs,
+            self.num_reg_fcs,
             self.act_cfg,
             dropout=0.0,
             add_residual=False)
         self.fc_reg = Linear(self.embed_dims, 4)
         self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
 
-    def init_weights(self, distribution='uniform'):
+    def init_weights(self):
         """Initialize weights of the transformer head."""
         # The initialization for transformer is important
         self.transformer.init_weights()
@@ -184,6 +175,23 @@ class TransformerHead(AnchorFreeHead):
         # since `AnchorFreeHead._load_from_state_dict` should not be
         # called here. Invoking the default `Module._load_from_state_dict`
         # is enough.
+
+        # Names of some parameters in has been changed.
+        version = local_metadata.get('version', None)
+        if (version is None or version < 2) and self.__class__ is DETRHead:
+            convert_dict = {
+                '.self_attn.': '.attentions.0.',
+                '.ffn.': '.ffns.0.',
+                '.multihead_attn.': '.attentions.1.',
+                '.decoder.norm.': '.decoder.post_norm.'
+            }
+            for k in state_dict.keys():
+                for ori_key, convert_key in convert_dict.items():
+                    if ori_key in k:
+                        convert_key = k.replace(ori_key, convert_key)
+                        state_dict[convert_key] = state_dict[k]
+                        del state_dict[k]
+
         super(AnchorFreeHead,
               self)._load_from_state_dict(state_dict, prefix, local_metadata,
                                           strict, missing_keys,
@@ -367,6 +375,11 @@ class TransformerHead(AnchorFreeHead):
         # construct weighted avg_factor to match with the official DETR repo
         cls_avg_factor = num_total_pos * 1.0 + \
             num_total_neg * self.bg_cls_weight
+        if self.sync_cls_avg_factor:
+            cls_avg_factor = reduce_mean(
+                cls_scores.new_tensor([cls_avg_factor]))
+        cls_avg_factor = max(cls_avg_factor, 1)
+
         loss_cls = self.loss_cls(
             cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
 
@@ -607,6 +620,7 @@ class TransformerHead(AnchorFreeHead):
                                                 img_shape, scale_factor,
                                                 rescale)
             result_list.append(proposals)
+
         return result_list
 
     def _get_bboxes_single(self,
@@ -641,8 +655,20 @@ class TransformerHead(AnchorFreeHead):
                     shape [num_query].
         """
         assert len(cls_score) == len(bbox_pred)
+        max_per_img = self.test_cfg.get('max_per_img', self.num_query)
         # exclude background
-        scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
+        if self.loss_cls.use_sigmoid:
+            cls_score = cls_score.sigmoid()
+            scores, indexes = cls_score.view(-1).topk(max_per_img)
+            det_labels = indexes % self.num_classes
+            bbox_index = indexes // self.num_classes
+            bbox_pred = bbox_pred[bbox_index]
+        else:
+            scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)
+            scores, bbox_index = scores.topk(max_per_img)
+            bbox_pred = bbox_pred[bbox_index]
+            det_labels = det_labels[bbox_index]
+
         det_bboxes = bbox_cxcywh_to_xyxy(bbox_pred)
         det_bboxes[:, 0::2] = det_bboxes[:, 0::2] * img_shape[1]
         det_bboxes[:, 1::2] = det_bboxes[:, 1::2] * img_shape[0]
@@ -651,4 +677,5 @@ class TransformerHead(AnchorFreeHead):
         if rescale:
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(1)), -1)
+
         return det_bboxes, det_labels

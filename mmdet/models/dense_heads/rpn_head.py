@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv import ConfigDict
-from mmcv.cnn import normal_init
 from mmcv.ops import batched_nms
 
 from ..builder import HEADS
@@ -19,10 +18,15 @@ class RPNHead(RPNTestMixin, AnchorHead):
 
     Args:
         in_channels (int): Number of channels in the input feature map.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
-    def __init__(self, in_channels, **kwargs):
-        super(RPNHead, self).__init__(1, in_channels, **kwargs)
+    def __init__(self,
+                 in_channels,
+                 init_cfg=dict(type='Normal', layer='Conv2d', std=0.01),
+                 **kwargs):
+        super(RPNHead, self).__init__(
+            1, in_channels, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -31,12 +35,6 @@ class RPNHead(RPNTestMixin, AnchorHead):
         self.rpn_cls = nn.Conv2d(self.feat_channels,
                                  self.num_anchors * self.cls_out_channels, 1)
         self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        normal_init(self.rpn_conv, std=0.01)
-        normal_init(self.rpn_cls, std=0.01)
-        normal_init(self.rpn_reg, std=0.01)
 
     def forward_single(self, x):
         """Forward feature map of a single scale level."""
@@ -109,7 +107,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class labelof the
+                (n,) tensor where each item is the predicted class label of the
                 corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
@@ -142,24 +140,26 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 batch_size, -1, 4)
             anchors = mlvl_anchors[idx]
             anchors = anchors.expand_as(rpn_bbox_pred)
-            if nms_pre_tensor > 0:
-                # sort is faster than topk
-                # _, topk_inds = scores.topk(cfg.nms_pre)
-                # keep topk op for dynamic k in onnx model
+            # Get top-k prediction
+            from mmdet.core.export import get_k_for_topk
+            nms_pre = get_k_for_topk(nms_pre_tensor, rpn_bbox_pred.shape[1])
+            if nms_pre > 0:
+                _, topk_inds = scores.topk(nms_pre)
+                batch_inds = torch.arange(batch_size).view(
+                    -1, 1).expand_as(topk_inds)
+                # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
                 if torch.onnx.is_in_onnx_export():
-                    # sort op will be converted to TopK in onnx
-                    # and k<=3480 in TensorRT
-                    scores_shape = torch._shape_as_tensor(scores)
-                    nms_pre = torch.where(scores_shape[1] < nms_pre_tensor,
-                                          scores_shape[1], nms_pre_tensor)
-                    _, topk_inds = scores.topk(nms_pre)
-                    batch_inds = torch.arange(batch_size).view(
-                        -1, 1).expand_as(topk_inds)
-                    scores = scores[batch_inds, topk_inds]
-                    rpn_bbox_pred = rpn_bbox_pred[batch_inds, topk_inds, :]
-                    anchors = anchors[batch_inds, topk_inds, :]
-
-                elif scores.shape[-1] > cfg.nms_pre:
+                    # Mind k<=3480 in TensorRT for TopK
+                    transformed_inds = scores.shape[1] * batch_inds + topk_inds
+                    scores = scores.reshape(-1, 1)[transformed_inds].reshape(
+                        batch_size, -1)
+                    rpn_bbox_pred = rpn_bbox_pred.reshape(
+                        -1, 4)[transformed_inds, :].reshape(batch_size, -1, 4)
+                    anchors = anchors.reshape(-1,
+                                              4)[transformed_inds, :].reshape(
+                                                  batch_size, -1, 4)
+                else:
+                    # sort is faster than topk
                     ranked_scores, rank_inds = scores.sort(descending=True)
                     topk_inds = rank_inds[:, :cfg.nms_pre]
                     scores = ranked_scores[:, :cfg.nms_pre]
@@ -213,17 +213,31 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 f' respectively. Please delete the nms_thr ' \
                 f'which will be deprecated.'
 
+        # Replace batched_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export():
+            from mmdet.core.export import add_dummy_nms_for_onnx
+            batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
+            score_threshold = cfg.nms.get('score_thr', 0.0)
+            nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
+            dets, _ = add_dummy_nms_for_onnx(batch_mlvl_proposals,
+                                             batch_mlvl_scores,
+                                             cfg.max_per_img,
+                                             cfg.nms.iou_threshold,
+                                             score_threshold, nms_pre,
+                                             cfg.max_per_img)
+            return dets
+
         result_list = []
         for (mlvl_proposals, mlvl_scores,
              mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
                               batch_mlvl_ids):
             # Skip nonzero op while exporting to ONNX
-            if cfg.min_bbox_size > 0 and (not torch.onnx.is_in_onnx_export()):
+            if cfg.min_bbox_size >= 0 and (not torch.onnx.is_in_onnx_export()):
                 w = mlvl_proposals[:, 2] - mlvl_proposals[:, 0]
                 h = mlvl_proposals[:, 3] - mlvl_proposals[:, 1]
                 valid_ind = torch.nonzero(
-                    (w >= cfg.min_bbox_size)
-                    & (h >= cfg.min_bbox_size),
+                    (w > cfg.min_bbox_size)
+                    & (h > cfg.min_bbox_size),
                     as_tuple=False).squeeze()
                 if valid_ind.sum().item() != len(mlvl_proposals):
                     mlvl_proposals = mlvl_proposals[valid_ind, :]

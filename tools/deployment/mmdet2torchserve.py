@@ -41,6 +41,8 @@ def mmdet2torchserve(
             If True, if there is an existing `{model_name}.mar`
             file under `output_folder` it will be overwritten.
     """
+    mmcv.mkdir_or_exist(output_folder)
+
     config = mmcv.Config.fromfile(config_file)
 
     with TemporaryDirectory() as tmpdir:

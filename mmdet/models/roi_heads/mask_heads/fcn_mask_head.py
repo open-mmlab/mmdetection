@@ -1,10 +1,12 @@
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Conv2d, ConvModule, build_upsample_layer
+from mmcv.cnn import ConvModule, build_conv_layer, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
-from mmcv.runner import auto_fp16, force_fp32
+from mmcv.runner import BaseModule, ModuleList, auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import mask_target
@@ -17,7 +19,7 @@ GPU_MEM_LIMIT = 1024**3  # 1 GB memory limit
 
 
 @HEADS.register_module()
-class FCNMaskHead(nn.Module):
+class FCNMaskHead(BaseModule):
 
     def __init__(self,
                  num_convs=4,
@@ -30,9 +32,13 @@ class FCNMaskHead(nn.Module):
                  upsample_cfg=dict(type='deconv', scale_factor=2),
                  conv_cfg=None,
                  norm_cfg=None,
+                 predictor_cfg=dict(type='Conv'),
                  loss_mask=dict(
-                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
-        super(FCNMaskHead, self).__init__()
+                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0),
+                 init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
+        super(FCNMaskHead, self).__init__(init_cfg)
         self.upsample_cfg = upsample_cfg.copy()
         if self.upsample_cfg['type'] not in [
                 None, 'deconv', 'nearest', 'bilinear', 'carafe'
@@ -53,10 +59,11 @@ class FCNMaskHead(nn.Module):
         self.class_agnostic = class_agnostic
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.predictor_cfg = predictor_cfg
         self.fp16_enabled = False
         self.loss_mask = build_loss(loss_mask)
 
-        self.convs = nn.ModuleList()
+        self.convs = ModuleList()
         for i in range(self.num_convs):
             in_channels = (
                 self.in_channels if i == 0 else self.conv_out_channels)
@@ -99,11 +106,13 @@ class FCNMaskHead(nn.Module):
         logits_in_channel = (
             self.conv_out_channels
             if self.upsample_method == 'deconv' else upsample_in_channels)
-        self.conv_logits = Conv2d(logits_in_channel, out_channels, 1)
+        self.conv_logits = build_conv_layer(self.predictor_cfg,
+                                            logits_in_channel, out_channels, 1)
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
     def init_weights(self):
+        super(FCNMaskHead, self).init_weights()
         for m in [self.upsample, self.conv_logits]:
             if m is None:
                 continue
@@ -225,33 +234,46 @@ class FCNMaskHead(nn.Module):
                      ]  # BG is not included in num_classes
         bboxes = det_bboxes[:, :4]
         labels = det_labels
-
-        if rescale:
+        # No need to consider rescale and scale_factor while exporting to ONNX
+        if torch.onnx.is_in_onnx_export():
             img_h, img_w = ori_shape[:2]
         else:
-            if isinstance(scale_factor, float):
-                img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
-                img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
+            if rescale:
+                img_h, img_w = ori_shape[:2]
             else:
-                w_scale, h_scale = scale_factor[0], scale_factor[1]
-                img_h = np.round(ori_shape[0] * h_scale.item()).astype(
-                    np.int32)
-                img_w = np.round(ori_shape[1] * w_scale.item()).astype(
-                    np.int32)
-            scale_factor = 1.0
+                if isinstance(scale_factor, float):
+                    img_h = np.round(ori_shape[0] * scale_factor).astype(
+                        np.int32)
+                    img_w = np.round(ori_shape[1] * scale_factor).astype(
+                        np.int32)
+                else:
+                    w_scale, h_scale = scale_factor[0], scale_factor[1]
+                    img_h = np.round(ori_shape[0] * h_scale.item()).astype(
+                        np.int32)
+                    img_w = np.round(ori_shape[1] * w_scale.item()).astype(
+                        np.int32)
+                scale_factor = 1.0
 
-        if not isinstance(scale_factor, (float, torch.Tensor)):
-            scale_factor = bboxes.new_tensor(scale_factor)
-        bboxes = bboxes / scale_factor
+            if not isinstance(scale_factor, (float, torch.Tensor)):
+                scale_factor = bboxes.new_tensor(scale_factor)
+            bboxes = bboxes / scale_factor
 
+        # support exporting to ONNX
         if torch.onnx.is_in_onnx_export():
-            # TODO: Remove after F.grid_sample is supported.
-            from torchvision.models.detection.roi_heads \
-                import paste_masks_in_image
-            masks = paste_masks_in_image(mask_pred, bboxes, ori_shape[:2])
-            thr = rcnn_test_cfg.get('mask_thr_binary', 0)
-            if thr > 0:
-                masks = masks >= thr
+            threshold = rcnn_test_cfg.mask_thr_binary
+            if not self.class_agnostic:
+                box_inds = torch.arange(mask_pred.shape[0])
+                mask_pred = mask_pred[box_inds, labels][:, None]
+            masks, _ = _do_paste_mask(
+                mask_pred, bboxes, img_h, img_w, skip_empty=False)
+            if threshold >= 0:
+                masks = (masks >= threshold).to(dtype=torch.bool)
+            else:
+                # TensorRT backend does not have data type of uint8
+                is_trt_backend = os.environ.get(
+                    'ONNX_BACKEND') == 'MMCVTensorRT'
+                target_dtype = torch.int32 if is_trt_backend else torch.uint8
+                masks = (masks * 255).to(dtype=target_dtype)
             return masks
 
         N = len(mask_pred)
@@ -347,27 +369,24 @@ def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
 
     N = masks.shape[0]
 
-    img_y = torch.arange(
-        y0_int, y1_int, device=device, dtype=torch.float32) + 0.5
-    img_x = torch.arange(
-        x0_int, x1_int, device=device, dtype=torch.float32) + 0.5
+    img_y = torch.arange(y0_int, y1_int, device=device).to(torch.float32) + 0.5
+    img_x = torch.arange(x0_int, x1_int, device=device).to(torch.float32) + 0.5
     img_y = (img_y - y0) / (y1 - y0) * 2 - 1
     img_x = (img_x - x0) / (x1 - x0) * 2 - 1
     # img_x, img_y have shapes (N, w), (N, h)
-    if torch.isinf(img_x).any():
-        inds = torch.where(torch.isinf(img_x))
-        img_x[inds] = 0
-    if torch.isinf(img_y).any():
-        inds = torch.where(torch.isinf(img_y))
-        img_y[inds] = 0
+    # IsInf op is not supported with ONNX<=1.7.0
+    if not torch.onnx.is_in_onnx_export():
+        if torch.isinf(img_x).any():
+            inds = torch.where(torch.isinf(img_x))
+            img_x[inds] = 0
+        if torch.isinf(img_y).any():
+            inds = torch.where(torch.isinf(img_y))
+            img_y[inds] = 0
 
     gx = img_x[:, None, :].expand(N, img_y.size(1), img_x.size(1))
     gy = img_y[:, :, None].expand(N, img_y.size(1), img_x.size(1))
     grid = torch.stack([gx, gy], dim=3)
 
-    if torch.onnx.is_in_onnx_export():
-        raise RuntimeError(
-            'Exporting F.grid_sample from Pytorch to ONNX is not supported.')
     img_masks = F.grid_sample(
         masks.to(dtype=torch.float32), grid, align_corners=False)
 

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[OTHERS]
+<!-- [OTHERS] -->
 
 ```latex
 @article{micikevicius2017mixed,

@@ -32,7 +32,7 @@ The configs that are composed by components from `_base_` are called _primitive_
 
 For all configs under the same folder, it is recommended to have only **one** _primitive_ config. All other configs should inherit from the _primitive_ config. In this way, the maximum of inheritance level is 3.
 
-For easy understanding, we recommend contributors to inherit from exiting methods.
+For easy understanding, we recommend contributors to inherit from existing methods.
 For example, if some modification is made base on Faster R-CNN, user may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`, then modify the necessary fields in the config files.
 
 If you are building an entirely new method that does not share the structure with any of the existing methods, you may create a folder `xxx_rcnn` under `configs`,
@@ -215,7 +215,7 @@ model = dict(
             assigner=dict(  # Config of assigner for second stage, this is different for that in rpn
                 type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for all roi_heads for now. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/assigners/max_iou_assigner.py#L10 for more details.
                 pos_iou_thr=0.5,  # IoU >= threshold 0.5 will be taken as positive samples
-                neg_iou_thr=0.5,  # IoU >= threshold 0.5 will be taken as positive samples
+                neg_iou_thr=0.5,  # IoU < threshold 0.5 will be taken as negative samples
                 min_pos_iou=0.5,  # The minimal IoU threshold to take boxes as positive samples
                 match_low_quality=False,  # Whether to match the boxes under low quality (see API doc for more details).
                 ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes

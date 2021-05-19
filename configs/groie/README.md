@@ -11,7 +11,7 @@ on COCO object detection.
 
 ## Introduction
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 This paper is motivated by the need to overcome to the limitations of existing
 RoI extractors which select only one (the best) layer from FPN.

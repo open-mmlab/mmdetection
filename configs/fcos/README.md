@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 ```latex
 @article{tian2019fcos,

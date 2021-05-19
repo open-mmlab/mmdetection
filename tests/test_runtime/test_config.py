@@ -253,8 +253,13 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             if with_cls:
                 fc_out_channels = bbox_cfg.get('fc_out_channels', 2048)
                 assert (fc_out_channels == bbox_head.fc_cls.in_features)
-                assert (bbox_cfg.num_classes +
-                        1 == bbox_head.fc_cls.out_features)
+                if bbox_head.custom_cls_channels:
+                    assert (bbox_head.loss_cls.get_cls_channels(
+                        bbox_head.num_classes) == bbox_head.fc_cls.out_features
+                            )
+                else:
+                    assert (bbox_cfg.num_classes +
+                            1 == bbox_head.fc_cls.out_features)
             with_reg = bbox_cfg.get('with_reg', True)
             if with_reg:
                 out_dim = (4 if bbox_cfg.reg_class_agnostic else 4 *

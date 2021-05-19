@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 ```latex
 @article{He_2017,

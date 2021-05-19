@@ -2,7 +2,7 @@
 
 ## Support new data format
 
-To support a new data format, you can either convert them to existing formats (COCO format or PASCAL format) or directly convert them to the middle format. You could also choose to convert them offline (before training by a script) or online (implement a new dataset and do the conversion at training). In MMDetection, we recommand to convert the data into COCO formats and do the conversion offline, thus you only need to modify the config's data annotation pathes and classes after the conversion to your data.
+To support a new data format, you can either convert them to existing formats (COCO format or PASCAL format) or directly convert them to the middle format. You could also choose to convert them offline (before training by a script) or online (implement a new dataset and do the conversion at training). In MMDetection, we recommend to convert the data into COCO formats and do the conversion offline, thus you only need to modify the config's data annotation paths and classes after the conversion of your data.
 
 ### Reorganize new data formats to existing format
 

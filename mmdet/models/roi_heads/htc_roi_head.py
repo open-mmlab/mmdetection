@@ -37,17 +37,6 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         self.interleaved = interleaved
         self.mask_info_flow = mask_info_flow
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        super(HybridTaskCascadeRoIHead, self).init_weights(pretrained)
-        if self.with_semantic:
-            self.semantic_head.init_weights()
-
     @property
     def with_semantic(self):
         """bool: whether the head has semantic head"""

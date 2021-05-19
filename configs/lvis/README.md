@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[DATASET]
+<!-- [DATASET] -->
 
 ```latex
 @inproceedings{gupta2019lvis,

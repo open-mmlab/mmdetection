@@ -8,7 +8,7 @@ from mmdet.datasets.pipelines import (LoadImageFromFile, LoadImageFromWebcam,
                                       LoadMultiChannelImageFromFiles)
 
 
-class TestLoading(object):
+class TestLoading:
 
     @classmethod
     def setup_class(cls):
