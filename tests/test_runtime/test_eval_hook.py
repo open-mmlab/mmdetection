@@ -146,11 +146,9 @@ def test_eval_hook(EvalHookCls):
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 8)
 
-        real_path = osp.join(tmpdir, 'epoch_4.pth')
-        link_path = osp.join(tmpdir, 'best_mAP.pth')
+        real_path = osp.join(tmpdir, 'best_mAP_epoch_4.pth')
 
         assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
-        assert osp.exists(link_path)
         assert runner.meta['hook_msgs']['best_score'] == 0.7
 
     loader = DataLoader(EvalDataset(), batch_size=1)
@@ -170,11 +168,9 @@ def test_eval_hook(EvalHookCls):
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 8)
 
-        real_path = osp.join(tmpdir, 'epoch_4.pth')
-        link_path = osp.join(tmpdir, 'best_mAP.pth')
+        real_path = osp.join(tmpdir, 'best_mAP_epoch_4.pth')
 
         assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
-        assert osp.exists(link_path)
         assert runner.meta['hook_msgs']['best_score'] == 0.7
 
     data_loader = DataLoader(EvalDataset(), batch_size=1)
@@ -192,11 +188,9 @@ def test_eval_hook(EvalHookCls):
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 8)
 
-        real_path = osp.join(tmpdir, 'epoch_4.pth')
-        link_path = osp.join(tmpdir, 'best_score.pth')
+        real_path = osp.join(tmpdir, 'best_score_epoch_4.pth')
 
         assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
-        assert osp.exists(link_path)
         assert runner.meta['hook_msgs']['best_score'] == 0.7
 
     data_loader = DataLoader(EvalDataset(), batch_size=1)
@@ -213,11 +207,9 @@ def test_eval_hook(EvalHookCls):
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 8)
 
-        real_path = osp.join(tmpdir, 'epoch_6.pth')
-        link_path = osp.join(tmpdir, 'best_mAP.pth')
+        real_path = osp.join(tmpdir, 'best_mAP_epoch_6.pth')
 
         assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
-        assert osp.exists(link_path)
         assert runner.meta['hook_msgs']['best_score'] == 0.05
 
     data_loader = DataLoader(EvalDataset(), batch_size=1)
@@ -234,11 +226,9 @@ def test_eval_hook(EvalHookCls):
         runner.register_hook(eval_hook)
         runner.run([loader], [('train', 1)], 2)
 
-        real_path = osp.join(tmpdir, 'epoch_2.pth')
-        link_path = osp.join(tmpdir, 'best_mAP.pth')
+        real_path = osp.join(tmpdir, 'best_mAP_epoch_2.pth')
 
         assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
-        assert osp.exists(link_path)
         assert runner.meta['hook_msgs']['best_score'] == 0.4
 
         resume_from = osp.join(tmpdir, 'latest.pth')
@@ -255,9 +245,7 @@ def test_eval_hook(EvalHookCls):
         runner.resume(resume_from)
         runner.run([loader], [('train', 1)], 8)
 
-        real_path = osp.join(tmpdir, 'epoch_4.pth')
-        link_path = osp.join(tmpdir, 'best_mAP.pth')
+        real_path = osp.join(tmpdir, 'best_mAP_epoch_4.pth')
 
         assert runner.meta['hook_msgs']['best_ckpt'] == osp.realpath(real_path)
-        assert osp.exists(link_path)
         assert runner.meta['hook_msgs']['best_score'] == 0.7
