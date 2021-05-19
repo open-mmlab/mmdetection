@@ -120,18 +120,25 @@ print(f"train dataset: {len(dataset.get_subset(Subset.TRAINING))} items")
 print(f"validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items")
 
 environment = TaskEnvironment(project=project, task_node=project.tasks[-1])
+params = MMObjectDetectionTask.get_configurable_parameters(environment)
+model_name = 'mobilenet_v2-2s_ssd-384x384'
+params.algo_backend.model_name.value = model_name
+params.algo_backend.model.value = f'configs/ote/custom-object-detection/{model_name}/model.py'
+params.algo_backend.data_pipeline.value = f'configs/ote/custom-object-detection/{model_name}/nous_data_pipeline.py'
+environment.set_configurable_parameters(params)
+
 task = MMObjectDetectionTask(task_environment=environment)
 
 # Tweak parameters.
 params = task.get_configurable_parameters(environment)
-available_models = params.learning_architecture.available_models
-logger.info('Available models: \n\t' + '\n\t'.join(x['name'] for x in available_models))
-params.learning_architecture.model_architecture.value = available_models[0]['name']
-logger.warning(params.learning_architecture.model_architecture.value)
+# available_models = params.learning_architecture.available_models
+# logger.info('Available models: \n\t' + '\n\t'.join(x['name'] for x in available_models))
+# params.learning_architecture.model_architecture.value = available_models[0]['name']
+# logger.warning(params.learning_architecture.model_architecture.value)
 # params.learning_parameters.learning_rate.value = 1e-3
 params.learning_parameters.learning_rate_schedule.value = 'cyclic'
 # params.learning_parameters.learning_rate_warmup_iters.value = 0
-params.learning_parameters.batch_size.value = 64
+params.learning_parameters.batch_size.value = 32
 params.learning_parameters.num_epochs.value = 1
 environment.set_configurable_parameters(params)
 task.update_configurable_parameters(environment)
@@ -144,12 +151,12 @@ logger.info('Model training finished [ROUND 0]')
 
 # Tweak parameters.
 params = task.get_configurable_parameters(environment)
-available_models = params.learning_architecture.available_models
-logger.info('Available models: \n\t' + '\n\t'.join(x['name'] for x in available_models))
-params.learning_architecture.model_architecture.value = available_models[1]['name']
-logger.warning(params.learning_architecture.model_architecture.value)
-# params.learning_parameters.learning_rate.value = 1e-3
-params.learning_parameters.learning_rate_schedule.value = 'cyclic'
+# available_models = params.learning_architecture.available_models
+# logger.info('Available models: \n\t' + '\n\t'.join(x['name'] for x in available_models))
+# params.learning_architecture.model_architecture.value = available_models[1]['name']
+# logger.warning(params.learning_architecture.model_architecture.value)
+params.learning_parameters.learning_rate.value = 1e-4
+params.learning_parameters.learning_rate_schedule.value = 'fixed'
 # params.learning_parameters.learning_rate_warmup_iters.value = 0
 params.learning_parameters.batch_size.value = 32
 params.learning_parameters.num_epochs.value = 1

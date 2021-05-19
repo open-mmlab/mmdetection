@@ -168,19 +168,42 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
                                                         "epochs, cyclic annealing could result in the best model.",
                                             editable=True)
 
-    class __LearningArchitecture(Group):
-        header = "Learning Architecture"
+    class __AlgoBackend(Group):
+        header = "Internal Algo Backend parameters"
         description = header
         base_models_dir = osp.join(osp.abspath(osp.dirname(__file__)), '..', '..', '..', 'configs', 'ote', 'custom-object-detection')
-        available_models = list_available_models(base_models_dir)
-        model_architecture = Selectable(header="Model architecture",
-                                        default_value=available_models[0]['name'],
-                                        options=[Option(key=x['name'], value=x['name'], description='') for x in available_models],
-                                        description="Specify learning architecture for the the task.",
-                                        editable=True)
+        model_name = Selectable(header="Model name",
+                                  default_value='model',
+                                  options=[Option(key='model', value='model',
+                                                  description='Path to model configuration file')],
+                                  description="Model name.",
+                                  editable=False)
+        model = Selectable(header="Model architecture",
+                                  default_value='model.py',
+                                  options=[Option(key='model.py', value='model.py',
+                                                  description='Path to model configuration file')],
+                                  description="Specify learning architecture for the the task.",
+                                  editable=False)
+        data_pipeline = Selectable(header="Data pipeline",
+                                   default_value='nous_data_pipeline.py',
+                                   options=[Option(key='nous_data_pipeline.py', value='nous_data_pipeline.py',
+                                                   description='Path to data pipeline configuration file')],
+                                   description="Specify data pipeline for the the task.",
+                                   editable=False)
+
+    # class __LearningArchitecture(Group):
+    #     header = "Learning Architecture"
+    #     description = header
+    #     base_models_dir = osp.join(osp.abspath(osp.dirname(__file__)), '..', '..', '..', 'configs', 'ote', 'custom-object-detection')
+    #     available_models = list_available_models(base_models_dir)
+    #     model_architecture = Selectable(header="Model architecture",
+    #                                     default_value=available_models[0]['name'],
+    #                                     options=[Option(key=x['name'], value=x['name'], description='') for x in available_models],
+    #                                     description="Specify learning architecture for the the task.",
+    #                                     editable=True)
 
     learning_parameters: __LearningParameters = Object(__LearningParameters)
     nous_parameters: __NOUSParameters = Object(__NOUSParameters)
     postprocessing: __Postprocessing = Object(__Postprocessing)
-    learning_architecture: __LearningArchitecture = Object(__LearningArchitecture)
+    algo_backend: __AlgoBackend = Object(__AlgoBackend)
 

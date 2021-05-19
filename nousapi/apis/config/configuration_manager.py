@@ -53,9 +53,15 @@ class MMDetectionConfigManager(object):
         )
 
         # Build the config
-        model_name = conf_params.learning_architecture.model_architecture.value
+        model_name = conf_params.algo_backend.model_name.value
+        model_config = conf_params.algo_backend.model.value
+        data_pipeline = conf_params.algo_backend.data_pipeline.value
+        # model_name = conf_params.learning_architecture.model_architecture.value
+        # model_config = conf_params.learning_architecture.model_architecture.value
+        # data_pipeline = conf_params.learning_architecture.model_architecture.value
+
         conf_params.learning_parameters.learning_rate_schedule.value = 'custom'
-        self.custom_lr_schedule, warmup_iters = self._get_custom_lr_schedule(self.config_mapper.get_model_file(model_name))
+        self.custom_lr_schedule, warmup_iters = self._get_custom_lr_schedule(model_config)
         conf_params.learning_parameters.learning_rate_warmup_iters.value = warmup_iters
         custom_lr = self.custom_lr_schedule.get('optimizer', {}).get('lr', None)
         if custom_lr is not None:
@@ -63,9 +69,9 @@ class MMDetectionConfigManager(object):
         task_environment.set_configurable_parameters(conf_params)
 
         self._compose_config(
-            model_file=self.config_mapper.get_model_file(model_name),
+            model_file=model_config,
             schedule_file=None,
-            dataset_file=self.config_mapper.get_data_pipeline_file(model_name),
+            dataset_file=data_pipeline,
             runtime_file=self.config_mapper.get_runtime_file('default')
         )
         # Fix config.
@@ -143,8 +149,12 @@ class MMDetectionConfigManager(object):
         """
         learning_rate_schedule_name = configurable_parameters.learning_parameters.learning_rate_schedule.value
         learning_rate_warmup_iters = configurable_parameters.learning_parameters.learning_rate_warmup_iters.value
-        model_architecture_name = configurable_parameters.learning_architecture.model_architecture.value
+        # model_architecture_name = configurable_parameters.learning_architecture.model_architecture.value
+        model_architecture_name = configurable_parameters.algo_backend.model_name.value
+        # model_config = configurable_parameters.algo_backend.model.value
+
         self._update_learning_rate_schedule(learning_rate_schedule_name, learning_rate_warmup_iters)
+        # TODO. redundant?
         self._update_model_architecture(model_architecture_name)
         self.config.runner.max_epochs = int(configurable_parameters.learning_parameters.num_epochs.value)
         self.config.optimizer.lr = float(configurable_parameters.learning_parameters.learning_rate.value)
