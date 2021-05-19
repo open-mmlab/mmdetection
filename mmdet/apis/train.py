@@ -4,11 +4,12 @@ import warnings
 import numpy as np
 import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import (HOOKS, DistEvalHook, DistSamplerSeedHook,
-                         EpochBasedRunner, EvalHook, Fp16OptimizerHook,
-                         OptimizerHook, build_optimizer, build_runner)
+from mmcv.runner import (HOOKS, DistSamplerSeedHook, EpochBasedRunner,
+                         Fp16OptimizerHook, OptimizerHook, build_optimizer,
+                         build_runner)
 from mmcv.utils import build_from_cfg
 
+from mmdet.core import DistEvalHook, EvalHook
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.utils import get_root_logger
