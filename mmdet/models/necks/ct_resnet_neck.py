@@ -62,6 +62,8 @@ class CTResNetNeck(BaseModule):
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.ConvTranspose2d):
+                # Reset to default parameters
+                m.reset_parameters()
                 # Simulated bilinear upsampling kernel
                 w = m.weight.data
                 f = math.ceil(w.size(2) / 2)
@@ -76,6 +78,9 @@ class CTResNetNeck(BaseModule):
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+            # self.use_dcn is False
+            elif not self.use_dcn and isinstance(m, nn.Conv2d):
+                m.reset_parameters()
 
     @auto_fp16()
     def forward(self, inputs):
