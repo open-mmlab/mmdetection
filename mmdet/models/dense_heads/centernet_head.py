@@ -57,6 +57,7 @@ class CenterNetHead(BaseDenseHead):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.fp16_enabled = False
 
     def _build_head(self, in_channel, feat_channel, out_channel):
         """Build head for each branch."""

@@ -28,6 +28,7 @@ class CTResNetNeck(BaseModule):
                  init_cfg=None):
         super(CTResNetNeck, self).__init__(init_cfg)
         assert len(num_deconv_filters) == len(num_deconv_kernels)
+        self.fp16_enabled = False
         self.use_dcn = use_dcn
         self.in_channel = in_channel
         self.deconv_layers = self._make_deconv_layer(num_deconv_filters,
