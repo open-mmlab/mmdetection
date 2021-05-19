@@ -6,9 +6,9 @@ from mmcv.cnn import build_activation_layer, build_norm_layer, xavier_init
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
                                       TRANSFORMER_LAYER_SEQUENCE)
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
-                                         MultiScaleDeformableAttention,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
+from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttention
 from mmcv.runner.base_module import BaseModule
 from torch.nn.init import normal_
 
