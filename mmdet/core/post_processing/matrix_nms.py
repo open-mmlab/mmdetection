@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 
 def matrix_nms(seg_masks, cate_labels, cate_scores,
@@ -51,9 +52,14 @@ def matrix_nms(seg_masks, cate_labels, cate_scores,
         decay_matrix = (1-decay_iou)/(1-compensate_iou)
         decay_coefficient, _ = decay_matrix.min(0)
     else:
-        raise NotImplementedError('{} kernel is not supported in matrix nms!'.
-                                  format(kernel))
-
+        raise NotImplementedError(f'{kernel} kernel is not supported in matrix nms!')
     # update the score.
     cate_scores_update = cate_scores * decay_coefficient
     return cate_scores_update
+
+def points_nms(heat, kernel=2):
+    # kernel must be 2
+    hmax = nn.functional.max_pool2d(
+        heat, (kernel, kernel), stride=1, padding=1)
+    keep = (hmax[:, :, :-1, :-1] == heat).float()
+    return heat * keep

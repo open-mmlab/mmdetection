@@ -5,19 +5,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmdet.core import bbox2result, multi_apply
-from mmcv.cnn import ConvModule, build_upsample_layer, bias_init_with_prob
+from mmdet.core import multi_apply, points_nms, matrix_nms
+from mmcv.cnn import ConvModule
 from .base_dense_head import BaseDenseHead
-from mmdet.core import matrix_nms
 from mmdet.models.builder import HEADS, build_loss
-
-
-def points_nms(heat, kernel=2):
-    # kernel must be 2
-    hmax = nn.functional.max_pool2d(
-        heat, (kernel, kernel), stride=1, padding=1)
-    keep = (hmax[:, :, :-1, :-1] == heat).float()
-    return heat * keep
+from mmcv.runner import ModuleList
 
 
 @HEADS.register_module()
@@ -40,11 +32,7 @@ class SOLOHead(BaseDenseHead):
                  norm_cfg=None,
                  train_cfg=None,
                  test_cfg=None,
-                 init_cfg=[dict(type='Normal', std=0.01, override=dict(name='ins_convs')),
-                           dict(type='Normal', std=0.01, override=dict(name='cate_convs')),
-                           dict(type='Normal', std=0.01, bias_prob=0.01, override=dict(name='solo_ins_list')),
-                           dict(type='Normal', std=0.01, bias_prob=0.01, override=dict(name='solo_cate')),
-                           ]
+                 init_cfg=dict(type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01)
                  ):
         super(SOLOHead, self).__init__(init_cfg)
         self.num_classes = num_classes
@@ -69,9 +57,8 @@ class SOLOHead(BaseDenseHead):
         self._init_layers()
 
     def _init_layers(self):
-        self.ins_convs = nn.ModuleList()
-        # 被调用多次的模块，是使用同一组 parameters 的，也就是它们的参数是完全一样的，无论你之后怎么更新
-        self.cate_convs = nn.ModuleList()
+        self.ins_convs = ModuleList(init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
+        self.cate_convs = ModuleList(init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
         for i in range(self.stacked_convs):
             chn = self.in_channels + 2 if i == 0 else self.seg_feat_channels
             self.ins_convs.append(
@@ -93,7 +80,7 @@ class SOLOHead(BaseDenseHead):
                     padding=1,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
-        self.solo_ins_list = nn.ModuleList()
+        self.solo_ins_list = ModuleList(init_cfg=dict(type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01))
         for seg_num_grid in self.seg_num_grids:
             self.solo_ins_list.append(
                 nn.Conv2d(
@@ -117,7 +104,7 @@ class SOLOHead(BaseDenseHead):
                 feats[3],
                 F.interpolate(feats[4], size=feats[3].shape[-2:], mode='bilinear'))
 
-    def forward(self, feats, eval=False):
+    def forward(self, feats):
         assert len(feats) == self.num_levels
         new_feats = self.split_feats(feats)
         featmap_sizes = [featmap.size()[-2:] for featmap in new_feats]
@@ -153,7 +140,7 @@ class SOLOHead(BaseDenseHead):
                 cate_feat = cate_layer(cate_feat)
 
             cate_pred = self.solo_cate(cate_feat)
-            if eval:
+            if not self.training:
                 ins_pred = F.interpolate(ins_pred.sigmoid(), size=upsampled_size, mode='bilinear')
                 cate_pred = points_nms(cate_pred.sigmoid(), kernel=2).permute(0, 2, 3, 1)
             ins_pred_maps.append(ins_pred)
@@ -201,49 +188,41 @@ class SOLOHead(BaseDenseHead):
             gt_mask_list,
             featmap_sizes=featmap_sizes)
 
+        ins_labels = [[] for _ in range(len(ins_preds))]
+        ins_pred_temp = [[] for _ in range(len(ins_preds))]
+        ins_ind_labels = [[] for _ in range(len(ins_preds))]
+        cate_labels = [[] for _ in range(len(ins_preds))]
+        for i in range(len(ins_label_list)):
+            assert len(ins_preds) == len(ins_label_list[i])
+            for j in range(len(ins_label_list[i])):
+                ins_labels[j].append(ins_label_list[i][j][ins_ind_label_list[i][j], ...])
+                ins_pred_temp[j].append(ins_preds[j][i, ins_ind_label_list[i][j], ...])
+                ins_ind_labels[j].append(ins_ind_label_list[i][j].flatten())
+                cate_labels[j].append(cate_label_list[i][j].flatten())
+
+        cate_pred_temp = []
+        for i in range(len(ins_labels)):
+            ins_labels[i] = torch.cat(ins_labels[i], dim=0)
+            ins_preds[i] = torch.cat(ins_pred_temp[i], dim=0)
+            ins_ind_labels[i] = torch.cat(ins_ind_labels[i], dim=0)
+            cate_labels[i] = torch.cat(cate_labels[i], dim=0)
+            cate_pred_temp.append(cate_preds[i].permute(0, 2, 3, 1).reshape(-1, self.cate_out_channels))
+        cate_preds = cate_pred_temp
         # ins
-        ins_labels = [torch.cat([ins_labels_level_img[ins_ind_labels_level_img, ...]
-                      for ins_labels_level_img, ins_ind_labels_level_img in
-                      zip(ins_labels_level, ins_ind_labels_level)], 0)
-                      for ins_labels_level, ins_ind_labels_level in
-                      zip(zip(*ins_label_list), zip(*ins_ind_label_list))]
-
-        ins_preds = [torch.cat([ins_preds_level_img[ins_ind_labels_level_img, ...]
-                     for ins_preds_level_img, ins_ind_labels_level_img in
-                     zip(ins_preds_level, ins_ind_labels_level)], 0)
-                     for ins_preds_level, ins_ind_labels_level in
-                     zip(ins_preds, zip(*ins_ind_label_list))]
-
-        ins_ind_labels = [torch.cat([ins_ind_labels_level_img.flatten()
-                          for ins_ind_labels_level_img in ins_ind_labels_level])
-                          for ins_ind_labels_level in zip(*ins_ind_label_list)
-        ]
         flatten_ins_ind_labels = torch.cat(ins_ind_labels)
-
         num_ins = flatten_ins_ind_labels.sum()
 
         # dice loss
         loss_mask = []
-        for input, target in zip(ins_preds, ins_labels):
-            if input.size()[0] == 0:
+        for pred, target in zip(ins_preds, ins_labels):
+            if pred.size()[0] == 0:
                 continue
-            loss_mask.append(self.loss_mask(input, target))
+            loss_mask.append(self.loss_mask(pred, target))
         loss_mask = torch.cat(loss_mask).mean()
 
         # cate
-        cate_labels = [
-            torch.cat([cate_labels_level_img.flatten()
-                       for cate_labels_level_img in cate_labels_level])
-            for cate_labels_level in zip(*cate_label_list)
-        ]
         flatten_cate_labels = torch.cat(cate_labels)
-
-        cate_preds = [
-            cate_pred.permute(0, 2, 3, 1).reshape(-1, self.cate_out_channels)
-            for cate_pred in cate_preds
-        ]
         flatten_cate_preds = torch.cat(cate_preds)
-
         loss_cls = self.loss_cls(flatten_cate_preds, flatten_cate_labels, avg_factor=num_ins + 1)
         return dict(
             loss_ins=loss_mask,
@@ -363,15 +342,12 @@ class SOLOHead(BaseDenseHead):
         return bbox_result_list, segm_result_list
 
     def segm2result(self, result):
+        segm_result = [[] for _ in range(self.num_classes)]
         if result is None:
             bbox_result = [np.zeros((0, 5), dtype=np.float32) for i in
                            range(self.num_classes)]
             # BG is not included in num_classes
-            segm_result = [[] for _ in range(self.num_classes)]
         else:
-            bbox_result = [np.zeros((0, 5), dtype=np.float32) for i in
-                           range(self.num_classes)]
-            segm_result = [[] for _ in range(self.num_classes)]
             seg_pred = result[0].cpu().numpy()
             cate_label = result[1].cpu().numpy()
             cate_score = result[2].cpu().numpy()

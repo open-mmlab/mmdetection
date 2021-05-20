@@ -1,6 +1,7 @@
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .single_stage import SingleStageDetector
 
+
 @DETECTORS.register_module()
 class SOLO(SingleStageDetector):
     def __init__(self,
@@ -61,11 +62,11 @@ class SOLO(SingleStageDetector):
         """Test function without test time augmentation.
         """
         x = self.extract_feat(img)
-        outs = self.bbox_head(x, eval=True)
+        outs = self.bbox_head(x)
 
         seg_inputs = outs + (img_meta, self.test_cfg, rescale)
         bbox_results, segm_results = self.bbox_head.get_seg(*seg_inputs)
-        return bbox_results[0], segm_results[0]
+        return [(bbox_results[0], segm_results[0])]
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError

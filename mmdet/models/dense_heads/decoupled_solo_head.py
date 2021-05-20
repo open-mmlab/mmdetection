@@ -5,23 +5,15 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmdet.core import bbox2result, multi_apply
-from mmcv.cnn import ConvModule, build_upsample_layer, bias_init_with_prob
-from .base_dense_head import BaseDenseHead
-from mmdet.core import matrix_nms
+from mmdet.core import multi_apply, points_nms, matrix_nms
+from mmcv.cnn import ConvModule
+from .solo_head import SOLOHead
 from mmdet.models.builder import HEADS, build_loss
-
-
-def points_nms(heat, kernel=2):
-    # kernel must be 2
-    hmax = nn.functional.max_pool2d(
-        heat, (kernel, kernel), stride=1, padding=1)
-    keep = (hmax[:, :, :-1, :-1] == heat).float()
-    return heat * keep
+from mmcv.runner import ModuleList
 
 
 @HEADS.register_module()
-class DecoupledSOLOHead(BaseDenseHead):
+class DecoupledSOLOHead(SOLOHead):
     def __init__(self,
                  num_classes,
                  in_channels,
@@ -40,40 +32,31 @@ class DecoupledSOLOHead(BaseDenseHead):
                  norm_cfg=None,
                  train_cfg=None,
                  test_cfg=None,
-                 init_cfg=[dict(type='Normal', std=0.01, override=dict(name='ins_convs_x')),
-                           dict(type='Normal', std=0.01, override=dict(name='ins_convs_y')),
-                           dict(type='Normal', std=0.01, override=dict(name='cate_convs')),
-                           dict(type='Normal', std=0.01, bias_prob=0.01, override=dict(name='dsolo_ins_list_x')),
-                           dict(type='Normal', std=0.01, bias_prob=0.01, override=dict(name='dsolo_ins_list_y')),
-                           dict(type='Normal', std=0.01, bias_prob=0.01, override=dict(name='dsolo_cate')),
-                           ]
+                 init_cfg=dict(type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01)
                  ):
-        super(DecoupledSOLOHead, self).__init__(init_cfg)
-        self.num_classes = num_classes
-        self.cate_out_channels = self.num_classes
-        self.in_channels = in_channels
-        self.seg_feat_channels = seg_feat_channels
-        self.stacked_convs = stacked_convs
-        self.strides = strides
-        self.base_edge_list = base_edge_list
-        self.scale_ranges = scale_ranges
-        self.sigma = sigma
-        self.seg_num_grids = num_grids
-        self.cate_down_pos = cate_down_pos
-        self.with_deform = with_deform
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_mask = build_loss(loss_mask)
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.init_cfg = init_cfg
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-        self._init_layers()
+        super(DecoupledSOLOHead, self).__init__(num_classes=num_classes,
+                                                in_channels=in_channels,
+                                                seg_feat_channels=seg_feat_channels,
+                                                stacked_convs=stacked_convs,
+                                                strides=strides,
+                                                base_edge_list=base_edge_list,
+                                                scale_ranges=scale_ranges,
+                                                sigma=sigma,
+                                                num_grids=num_grids,
+                                                cate_down_pos=cate_down_pos,
+                                                with_deform=with_deform,
+                                                loss_mask=loss_mask,
+                                                loss_cls=loss_cls,
+                                                conv_cfg=conv_cfg,
+                                                norm_cfg=norm_cfg,
+                                                train_cfg=train_cfg,
+                                                test_cfg=test_cfg,
+                                                init_cfg=init_cfg)
 
     def _init_layers(self):
-        self.ins_convs_x = nn.ModuleList()
-        self.ins_convs_y = nn.ModuleList()
-        self.cate_convs = nn.ModuleList()
+        self.ins_convs_x = ModuleList(init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
+        self.ins_convs_y = ModuleList(init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
+        self.cate_convs = ModuleList(init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
 
         for i in range(self.stacked_convs):
             chn = self.in_channels + 1 if i == 0 else self.seg_feat_channels
@@ -107,8 +90,8 @@ class DecoupledSOLOHead(BaseDenseHead):
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
 
-        self.dsolo_ins_list_x = nn.ModuleList()
-        self.dsolo_ins_list_y = nn.ModuleList()
+        self.dsolo_ins_list_x = ModuleList(init_cfg=dict(type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01))
+        self.dsolo_ins_list_y = ModuleList(init_cfg=dict(type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01))
         for seg_num_grid in self.seg_num_grids:
             self.dsolo_ins_list_x.append(
                 nn.Conv2d(
@@ -119,22 +102,7 @@ class DecoupledSOLOHead(BaseDenseHead):
         self.dsolo_cate = nn.Conv2d(
             self.seg_feat_channels, self.cate_out_channels, 3, padding=1)
 
-    def get_bboxes(self, **kwargs):
-        """Transform network output for a batch into bbox predictions."""
-        pass
-
-    @property
-    def num_levels(self):
-        return len(self.strides)
-
-    def split_feats(self, feats):
-        return (F.interpolate(feats[0], scale_factor=0.5, mode='bilinear'),
-                feats[1],
-                feats[2],
-                feats[3],
-                F.interpolate(feats[4], size=feats[3].shape[-2:], mode='bilinear'))
-
-    def forward(self, feats, eval=False):
+    def forward(self, feats):
         assert len(feats) == self.num_levels
         new_feats = self.split_feats(feats)
         featmap_sizes = [featmap.size()[-2:] for featmap in new_feats]
@@ -177,7 +145,7 @@ class DecoupledSOLOHead(BaseDenseHead):
                 cate_feat = cate_layer(cate_feat)
 
             cate_pred = self.dsolo_cate(cate_feat)
-            if eval:
+            if not self.training:
                 ins_pred_x = F.interpolate(ins_pred_x.sigmoid(),
                                            size=upsampled_size, mode='bilinear')
                 ins_pred_y = F.interpolate(ins_pred_y.sigmoid(),
@@ -188,29 +156,6 @@ class DecoupledSOLOHead(BaseDenseHead):
             ins_pred_y_maps.append(ins_pred_y)
             cate_pred_maps.append(cate_pred)
         return ins_pred_x_maps, ins_pred_y_maps, cate_pred_maps
-
-    def forward_train(self,
-                      x,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels=None,
-                      gt_bboxes_ignore=None,
-                      gt_mask=None,
-                      proposal_cfg=None,
-                      **kwargs):
-        outs = self(x)
-        if gt_labels and gt_mask is None:
-            loss_inputs = outs + (gt_bboxes, img_metas)
-        elif gt_labels and gt_mask is not None:
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, gt_mask)
-        elif gt_labels is not None and gt_mask is None:
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas)
-        losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-        if proposal_cfg is None:
-            return losses
-        else:
-            proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
-            return losses, proposal_list
 
     def loss(self,
              ins_preds_x,
@@ -234,55 +179,41 @@ class DecoupledSOLOHead(BaseDenseHead):
             featmap_sizes=featmap_sizes)
 
         # ins
-        ins_labels = [torch.cat([ins_labels_level_img[
-                                     ins_ind_labels_level_img, ...]
-                                 for ins_labels_level_img, ins_ind_labels_level_img in
-                                 zip(ins_labels_level, ins_ind_labels_level)], 0)
-                      for ins_labels_level, ins_ind_labels_level in
-                      zip(zip(*ins_label_list), zip(*ins_ind_label_list))]
+        ins_labels = [[] for _ in range(len(ins_preds_x))]
+        ins_preds_x_final = [[] for _ in range(len(ins_preds_x))]
+        ins_preds_y_final = [[] for _ in range(len(ins_preds_x))]
+        cate_labels = [[] for _ in range(len(ins_preds_x))]
+        for i in range(len(ins_label_list)):
+            assert len(ins_preds_x) == len(ins_label_list[i])
+            for j in range(len(ins_label_list[i])):
+                ins_labels[j].append(ins_label_list[i][j][ins_ind_label_list[i][j], ...])
+                ins_preds_x_final[j].append(ins_preds_x[j][i, ins_ind_label_list_xy[i][j][:, 1], ...])
+                ins_preds_y_final[j].append(ins_preds_y[j][i, ins_ind_label_list_xy[i][j][:, 0], ...])
+                cate_labels[j].append(cate_label_list[i][j].flatten())
 
-        ins_preds_x_final = [torch.cat([ins_preds_level_img_x[
-                                            ins_ind_labels_level_img[:, 1], ...]
-                                        for ins_preds_level_img_x,
-                                            ins_ind_labels_level_img in
-                                        zip(ins_preds_level_x, ins_ind_labels_level)], 0)
-                             for ins_preds_level_x, ins_ind_labels_level in
-                             zip(ins_preds_x, zip(*ins_ind_label_list_xy))]
-
-        ins_preds_y_final = [torch.cat([ins_preds_level_img_y[
-                                            ins_ind_labels_level_img[:, 0], ...]
-                                        for ins_preds_level_img_y,
-                                            ins_ind_labels_level_img in
-                                        zip(ins_preds_level_y, ins_ind_labels_level)], 0)
-                             for ins_preds_level_y, ins_ind_labels_level in
-                             zip(ins_preds_y, zip(*ins_ind_label_list_xy))]
+        cate_pred_temp = []
+        for i in range(len(ins_labels)):
+            ins_labels[i] = torch.cat(ins_labels[i], dim=0)
+            ins_preds_x_final[i] = torch.cat(ins_preds_x_final[i], dim=0)
+            ins_preds_y_final[i] = torch.cat(ins_preds_y_final[i], dim=0)
+            cate_labels[i] = torch.cat(cate_labels[i], dim=0)
+            cate_pred_temp.append(cate_preds[i].permute(0, 2, 3, 1).reshape(-1, self.cate_out_channels))
+        cate_preds = cate_pred_temp
 
         num_ins = 0.
-
         # dice loss
         loss_mask = []
-        for input_x, input_y, target in \
+        for pred_x, pred_y, target in \
                 zip(ins_preds_x_final, ins_preds_y_final, ins_labels):
-            mask_n = input_x.size(0)
+            mask_n = pred_x.size(0)
             if mask_n == 0:
                 continue
             num_ins += mask_n
-            input = (input_x.sigmoid()) * (input_y.sigmoid())
-            loss_mask.append(self.loss_mask(input, target))
+            loss_mask.append(self.loss_mask((pred_x, pred_y), target))
         loss_mask = torch.cat(loss_mask).mean()
 
         # cate
-        cate_labels = [
-            torch.cat([cate_labels_level_img.flatten()
-                       for cate_labels_level_img in cate_labels_level])
-            for cate_labels_level in zip(*cate_label_list)
-        ]
         flatten_cate_labels = torch.cat(cate_labels)
-
-        cate_preds = [
-            cate_pred.permute(0, 2, 3, 1).reshape(-1, self.cate_out_channels)
-            for cate_pred in cate_preds
-        ]
         flatten_cate_preds = torch.cat(cate_preds)
 
         loss_cls = self.loss_cls(flatten_cate_preds, flatten_cate_labels,
@@ -432,29 +363,6 @@ class DecoupledSOLOHead(BaseDenseHead):
             bbox_result_list.append(bbox_result)
             segm_result_list.append(segm_result)
         return bbox_result_list, segm_result_list
-
-    def segm2result(self, result):
-        if result is None:
-            bbox_result = [np.zeros((0, 5), dtype=np.float32) for i in
-                           range(self.num_classes)]
-            # BG is not included in num_classes
-            segm_result = [[] for _ in range(self.num_classes)]
-        else:
-            bbox_result = [np.zeros((0, 5), dtype=np.float32) for i in
-                           range(self.num_classes)]
-            segm_result = [[] for _ in range(self.num_classes)]
-            seg_pred = result[0].cpu().numpy()
-            cate_label = result[1].cpu().numpy()
-            cate_score = result[2].cpu().numpy()
-            num_ins = seg_pred.shape[0]
-            # fake bboxes
-            bboxes = np.zeros((num_ins, 5), dtype=np.float32)
-            bboxes[:, -1] = cate_score
-            bbox_result = [bboxes[cate_label == i, :] for i in
-                           range(self.num_classes)]
-            for idx in range(num_ins):
-                segm_result[cate_label[idx]].append(seg_pred[idx])
-        return bbox_result, segm_result
 
     def get_seg_single(self,
                        cate_preds,
