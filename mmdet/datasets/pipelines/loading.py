@@ -9,7 +9,7 @@ from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()
-class LoadImageFromFile(object):
+class LoadImageFromFile:
     """Load an image from file.
 
     Required keys are "img_prefix" and "img_info" (a dict that must contain the
@@ -110,7 +110,7 @@ class LoadImageFromWebcam(LoadImageFromFile):
 
 
 @PIPELINES.register_module()
-class LoadMultiChannelImageFromFiles(object):
+class LoadMultiChannelImageFromFiles:
     """Load multi-channel images from a list of separate channel files.
 
     Required keys are "img_prefix" and "img_info" (a dict that must contain the
@@ -193,7 +193,7 @@ class LoadMultiChannelImageFromFiles(object):
 
 
 @PIPELINES.register_module()
-class LoadAnnotations(object):
+class LoadAnnotations:
     """Load multiple types of annotations.
 
     Args:
@@ -385,7 +385,7 @@ class LoadAnnotations(object):
 
 
 @PIPELINES.register_module()
-class LoadProposals(object):
+class LoadProposals:
     """Load proposal pipeline.
 
     Required key is "proposals". Updated keys are "proposals", "bbox_fields".
@@ -430,7 +430,7 @@ class LoadProposals(object):
 
 
 @PIPELINES.register_module()
-class FilterAnnotations(object):
+class FilterAnnotations:
     """Filter invalid annotations.
 
     Args:
