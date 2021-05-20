@@ -1,0 +1,58 @@
+Collections:
+  - Name: CornerNet
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - Adam
+      Training Resources: 8x NVIDIA V100 GPUs
+      Architecture:
+        - Corner Pooling
+        - Stacked Hourglass Network
+    Paper: https://arxiv.org/abs/1808.01244
+    README: configs/cornernet/README.md
+
+Models:
+  - Name: cornernet_hourglass104_mstest_10x5_210e_coco
+    In Collection: CornerNet
+    Config: configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py
+    Metadata:
+      Batch Size: 10 x 5
+      Training Memory (GB): 13.9
+      inference time (s/im): 0.2381
+      Epochs: 210
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.2
+    Weights: http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco/cornernet_hourglass104_mstest_10x5_210e_coco_20200824_185720-5fefbf1c.pth
+
+  - Name: cornernet_hourglass104_mstest_8x6_210e_coco
+    In Collection: CornerNet
+    Config: configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py
+    Metadata:
+      Batch Size: 8 x 6
+      Training Memory (GB): 15.9
+      inference time (s/im): 0.2381
+      Epochs: 210
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.2
+    Weights: http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco/cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618-79b44c30.pth
+
+  - Name: cornernet_hourglass104_mstest_32x3_210e_coco
+    In Collection: CornerNet
+    Config: configs/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco.py
+    Metadata:
+      Batch Size: 32 x 3
+      Training Memory (GB): 9.5
+      inference time (s/im): 0.25641
+      Epochs: 210
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.4
+    Weights: http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco/cornernet_hourglass104_mstest_32x3_210e_coco_20200819_203110-1efaea91.pth
