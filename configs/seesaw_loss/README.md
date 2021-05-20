@@ -18,7 +18,7 @@ We provide config files to reproduce the instance segmentation performance in th
 
 * Please setup [LVIS dataset](../lvis/README.md) for MMDetection.
 
-* RFS indicates to use oversample strategy [here](../../docs/tutorials/new_dataset.md#class-balanced-dataset) with oversample threshold `1e-3`.
+* RFS indicates to use oversample strategy [here](../../docs/tutorials/customize_dataset.md#class-balanced-dataset) with oversample threshold `1e-3`.
 
 ## Results and models of Seasaw Loss on LVIS v1 dataset
 
