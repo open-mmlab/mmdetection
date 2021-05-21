@@ -28,7 +28,7 @@ def process_checkpoint(in_file, out_file):
 
 def get_final_epoch(config):
     cfg = mmcv.Config.fromfile('./configs/' + config)
-    return cfg.total_epochs
+    return cfg.runner.max_epochs
 
 
 def get_final_results(log_json_path, epoch, results_lut):
