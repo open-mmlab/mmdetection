@@ -288,7 +288,7 @@ class FCNMaskHead(BaseModule):
             # GPU benefits from parallelism for larger chunks,
             # but may have memory issue
             num_chunks = int(
-                np.ceil(N * img_h * img_w * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
+                np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
             assert (num_chunks <=
                     N), 'Default GPU_MEM_LIMIT is too small; try increasing it'
         chunks = torch.chunk(torch.arange(N, device=device), num_chunks)
