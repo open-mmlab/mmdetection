@@ -150,7 +150,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">36.6</td>
 	    <td align="center">36.5</td>
-	    <td align="center">/</td>
+	    <td align="center">36.3</td>
 	</tr>
   <tr >
 	    <td align="center">FSAF</td>
