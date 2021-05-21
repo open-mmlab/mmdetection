@@ -79,17 +79,19 @@ class CenterNet(SingleStageDetector):
             img_pair = torch.cat([imgs[ind], imgs[flip_ind]])
             x = self.extract_feat(img_pair)
             center_heatmap_preds, wh_preds, offset_preds = self.bbox_head(x)
+            assert len(center_heatmap_preds) == len(wh_preds) == len(
+                offset_preds) == 1
 
             # Feature map averaging
-            center_heatmap_preds = (center_heatmap_preds[0:1] + flip_tensor(
-                center_heatmap_preds[1:2], flip_direction)) / 2
-            wh_preds = (wh_preds[0:1] +
-                        flip_tensor(wh_preds[1:2], flip_direction)) / 2
+            center_heatmap_preds[0] = (
+                center_heatmap_preds[0][0:1] +
+                flip_tensor(center_heatmap_preds[0][1:2], flip_direction)) / 2
+            wh_preds[0] = (wh_preds[0][0:1] +
+                           flip_tensor(wh_preds[0][1:2], flip_direction)) / 2
 
             bbox_list = self.bbox_head.get_bboxes(
                 center_heatmap_preds,
-                wh_preds,
-                offset_preds[0:1],
+                wh_preds, [offset_preds[0][0:1]],
                 img_metas[ind],
                 rescale=rescale,
                 with_nms=False)
