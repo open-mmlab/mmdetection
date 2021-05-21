@@ -5,7 +5,7 @@
 <!-- [ALGORITHM] -->
 
 ```latex
-@inproceedings{zhou2019objects,
+@article{zhou2019objects,
   title={Objects as Points},
   author={Zhou, Xingyi and Wang, Dequan and Kr{\"a}henb{\"u}hl, Philipp},
   booktitle={arXiv preprint arXiv:1904.07850},

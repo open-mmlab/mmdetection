@@ -1786,6 +1786,7 @@ class RandomCenterCropPad(object):
         h, w, c = img.shape
         results['img_shape'] = img.shape
         if self.test_pad_mode[0] in ['logical_or']:
+            # self.test_pad_add_pix is only used for centernet
             target_h = (h | self.test_pad_mode[1]) + self.test_pad_add_pix
             target_w = (w | self.test_pad_mode[1]) + self.test_pad_add_pix
         elif self.test_pad_mode[0] in ['size_divisor']:
