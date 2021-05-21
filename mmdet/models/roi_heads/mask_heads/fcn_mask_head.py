@@ -292,6 +292,7 @@ class FCNMaskHead(BaseModule):
             # when the image resolution is large, 
             # the calculation of num_chunks will overflow.
             # so we neet to change the types of img_w and img_h to int.
+            # See https://github.com/open-mmlab/mmdetection/pull/5191
             num_chunks = int(
                 np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
             assert (num_chunks <=
