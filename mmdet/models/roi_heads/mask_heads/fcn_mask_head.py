@@ -287,6 +287,11 @@ class FCNMaskHead(BaseModule):
         else:
             # GPU benefits from parallelism for larger chunks,
             # but may have memory issue
+            # 
+            # the types of img_w and img_h are np.int32, 
+            # when the image resolution is large, 
+            # the calculation of num_chunks will overflow.
+            # so we neet to change the types of img_w and img_h to int.
             num_chunks = int(
                 np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
             assert (num_chunks <=
