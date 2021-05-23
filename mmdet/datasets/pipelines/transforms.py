@@ -1566,6 +1566,7 @@ class RandomCenterCropPad:
             - 'logical_or': final_shape = input_shape | padding_shape_value
             - 'size_divisor': final_shape = int(
               ceil(input_shape / padding_shape_value) * padding_shape_value)
+        test_pad_add_pix (int): Extra padding pixel in test mode. Default 0.
         bbox_clip_border (bool, optional): Whether clip the objects outside
             the border of the image. Defaults to True.
     """
@@ -1579,6 +1580,7 @@ class RandomCenterCropPad:
                  to_rgb=None,
                  test_mode=False,
                  test_pad_mode=('logical_or', 127),
+                 test_pad_add_pix=0,
                  bbox_clip_border=True):
         if test_mode:
             assert crop_size is None, 'crop_size must be None in test mode'
@@ -1612,6 +1614,7 @@ class RandomCenterCropPad:
             self.std = std
         self.test_mode = test_mode
         self.test_pad_mode = test_pad_mode
+        self.test_pad_add_pix = test_pad_add_pix
         self.bbox_clip_border = bbox_clip_border
 
     def _get_border(self, border, size):
@@ -1783,8 +1786,9 @@ class RandomCenterCropPad:
         h, w, c = img.shape
         results['img_shape'] = img.shape
         if self.test_pad_mode[0] in ['logical_or']:
-            target_h = h | self.test_pad_mode[1]
-            target_w = w | self.test_pad_mode[1]
+            # self.test_pad_add_pix is only used for centernet
+            target_h = (h | self.test_pad_mode[1]) + self.test_pad_add_pix
+            target_w = (w | self.test_pad_mode[1]) + self.test_pad_add_pix
         elif self.test_pad_mode[0] in ['size_divisor']:
             divisor = self.test_pad_mode[1]
             target_h = int(np.ceil(h / divisor)) * divisor

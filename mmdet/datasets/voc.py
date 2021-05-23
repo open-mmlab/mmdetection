@@ -82,10 +82,10 @@ class VOCDataset(XMLDataset):
         elif metric == 'recall':
             gt_bboxes = [ann['bboxes'] for ann in annotations]
             recalls = eval_recalls(
-                gt_bboxes, results, proposal_nums, iou_thr, logger=logger)
+                gt_bboxes, results, proposal_nums, iou_thrs, logger=logger)
             for i, num in enumerate(proposal_nums):
-                for j, iou in enumerate(iou_thr):
-                    eval_results[f'recall@{num}@{iou}'] = recalls[i, j]
+                for j, iou_thr in enumerate(iou_thrs):
+                    eval_results[f'recall@{num}@{iou_thr}'] = recalls[i, j]
             if recalls.shape[1] > 1:
                 ar = recalls.mean(axis=1)
                 for i, num in enumerate(proposal_nums):
