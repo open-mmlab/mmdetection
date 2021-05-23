@@ -107,6 +107,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         Args:
             x (Tensor): Features of a single scale level.
+            x (Tensor): Features of a single scale level.
 
         Returns:
             tuple:
