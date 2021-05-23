@@ -275,3 +275,63 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             return [(bbox_results, segm_results)]
         else:
             return [bbox_results]
+
+    def onnx_export(self,
+                    x,
+                    img_metas,
+                    proposals,
+                    rcnn_test_cfg,
+                    rescale=False):
+        """Test only det bboxes without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            proposals (Tensor or List[Tensor]): Region proposals.
+            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+        """
+        # get origin input shape to support onnx dynamic input shape
+        assert len(
+            img_metas
+        ) == 1, 'Only support one input image while in exporting to ONNX'
+        img_shapes = img_metas[0]['img_shape_for_onnx']
+
+        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+
+        rois = proposals
+        batch_index = torch.arange(
+            rois.size(0), device=rois.device).float().view(-1, 1, 1).expand(
+                rois.size(0), rois.size(1), 1)
+        rois = torch.cat([batch_index, rois[..., :4]], dim=-1)
+        batch_size = rois.shape[0]
+        num_proposals_per_img = rois.shape[1]
+
+        # Eliminate the batch dimension
+        rois = rois.view(-1, 5)
+        bbox_results = self._bbox_forward(x, rois)
+        cls_score = bbox_results['cls_score']
+        bbox_pred = bbox_results['bbox_pred']
+
+        # Recover the batch dimension
+        rois = rois.reshape(batch_size, num_proposals_per_img, rois.size(-1))
+        cls_score = cls_score.reshape(batch_size, num_proposals_per_img,
+                                      cls_score.size(-1))
+
+        # bbox_pred would be None in some detector when with_reg is False,
+        # e.g. Grid R-CNN.
+        if bbox_pred is not None:
+            bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img,
+                                          bbox_pred.size(-1))
+            supplement_mask = rois.abs()[..., 1:].sum(dim=-1) == 0
+            bbox_pred[supplement_mask, :] = 0
+
+        return self.bbox_head.onnx_export(
+            rois,
+            cls_score,
+            bbox_pred,
+            img_shapes,
+            scale_factors,
+            rescale=rescale,
+            cfg=rcnn_test_cfg)

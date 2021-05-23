@@ -189,6 +189,9 @@ class TwoStageDetector(BaseDetector):
 
     def onnx_export(self, img, img_metas):
 
+        # TODO add check warning
+        # support_onnx = ()
+        # assert isinstance(self,support_onnx)
         x = self.extract_feat(img)
         proposals = self.rpn_head.onnx_export(x, img_metas)
         return self.roi_head.onnx_export(x, proposals, img_metas)

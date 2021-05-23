@@ -74,27 +74,19 @@ class BBoxTestMixin:
                 The length of both lists should be equal to batch_size.
         """
         # get origin input shape to support onnx dynamic input shape
-        if torch.onnx.is_in_onnx_export():
-            assert len(
-                img_metas
-            ) == 1, 'Only support one input image while in exporting to ONNX'
-            img_shapes = img_metas[0]['img_shape_for_onnx']
-        else:
-            img_shapes = tuple(meta['img_shape'] for meta in img_metas)
+
+        img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         # The length of proposals of different batches may be different.
         # In order to form a batch, a padding operation is required.
-        if isinstance(proposals, list):
-            # padding to form a batch
-            max_size = max([proposal.size(0) for proposal in proposals])
-            for i, proposal in enumerate(proposals):
-                supplement = proposal.new_full(
-                    (max_size - proposal.size(0), proposal.size(1)), 0)
-                proposals[i] = torch.cat((supplement, proposal), dim=0)
-            rois = torch.stack(proposals, dim=0)
-        else:
-            rois = proposals
+        max_size = max([proposal.size(0) for proposal in proposals])
+        # padding to form a batch
+        for i, proposal in enumerate(proposals):
+            supplement = proposal.new_full(
+                (max_size - proposal.size(0), proposal.size(1)), 0)
+            proposals[i] = torch.cat((supplement, proposal), dim=0)
+        rois = torch.stack(proposals, dim=0)
 
         batch_index = torch.arange(
             rois.size(0), device=rois.device).float().view(-1, 1, 1).expand(
@@ -114,10 +106,9 @@ class BBoxTestMixin:
         cls_score = cls_score.reshape(batch_size, num_proposals_per_img,
                                       cls_score.size(-1))
 
-        if not torch.onnx.is_in_onnx_export():
-            # remove padding, ignore batch_index when calculating mask
-            supplement_mask = rois.abs()[..., 1:].sum(dim=-1) == 0
-            cls_score[supplement_mask, :] = 0
+        # remove padding, ignore batch_index when calculating mask
+        supplement_mask = rois.abs()[..., 1:].sum(dim=-1) == 0
+        cls_score[supplement_mask, :] = 0
 
         # bbox_pred would be None in some detector when with_reg is False,
         # e.g. Grid R-CNN.
@@ -127,8 +118,7 @@ class BBoxTestMixin:
                 bbox_pred = bbox_pred.reshape(batch_size,
                                               num_proposals_per_img,
                                               bbox_pred.size(-1))
-                if not torch.onnx.is_in_onnx_export():
-                    bbox_pred[supplement_mask, :] = 0
+                bbox_pred[supplement_mask, :] = 0
             else:
                 # TODO: Looking forward to a better way
                 # For SABL
