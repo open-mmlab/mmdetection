@@ -229,12 +229,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
-        if torch.onnx.is_in_onnx_export():
-            if self.with_mask:
-                segm_results = self.simple_test_mask(
-                    x, img_metas, det_bboxes, det_labels, rescale=rescale)
-                return det_bboxes, det_labels, segm_results
-            return det_bboxes, det_labels
 
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
@@ -276,12 +270,75 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         else:
             return [bbox_results]
 
-    def onnx_export(self,
-                    x,
-                    img_metas,
-                    proposals,
-                    rcnn_test_cfg,
-                    rescale=False):
+    def onnx_export(self, x, proposals, img_metas, rescale=False):
+        """Test without augmentation."""
+        assert self.with_bbox, 'Bbox head must be implemented.'
+        det_bboxes, det_labels = self.bbox_onnx_export(
+            x, img_metas, proposals, self.test_cfg, rescale=rescale)
+        bbox_results = [
+            bbox2result(det_bboxes[i], det_labels[i],
+                        self.bbox_head.num_classes)
+            for i in range(len(det_bboxes))
+        ]
+        if not self.with_mask:
+            return bbox_results
+        else:
+            segm_results = self.mask_onnx_export(
+                x, img_metas, det_bboxes, det_labels, rescale=rescale)
+            return list(zip(bbox_results, segm_results))
+
+    def mask_onnx_export(self,
+                         x,
+                         img_metas,
+                         det_bboxes,
+                         det_labels,
+                         rescale=False):
+        """Simple test for mask head without augmentation."""
+        # image shapes of images in the batch
+
+        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+
+        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
+
+            raise RuntimeError('[ONNX Error] Can not record MaskHead '
+                               'as it has not been executed this time')
+        batch_size = det_bboxes.size(0)
+        # if det_bboxes is rescaled to the original image size, we need to
+        # rescale it back to the testing scale to obtain RoIs.
+        det_bboxes = det_bboxes[..., :4]
+        if rescale:
+            if not isinstance(scale_factors[0], float):
+                scale_factors = det_bboxes.new_tensor(scale_factors)
+            det_bboxes = det_bboxes * scale_factors.unsqueeze(1)
+
+        batch_index = torch.arange(
+            det_bboxes.size(0), device=det_bboxes.device).float().view(
+                -1, 1, 1).expand(det_bboxes.size(0), det_bboxes.size(1), 1)
+        mask_rois = torch.cat([batch_index, det_bboxes], dim=-1)
+        mask_rois = mask_rois.view(-1, 5)
+        mask_results = self._mask_forward(x, mask_rois)
+        mask_pred = mask_results['mask_pred']
+
+        # Support get_seg_masks exporting to ONNX
+
+        max_shape = img_metas[0]['img_shape_for_onnx']
+        num_det = det_bboxes.shape[1]
+        det_bboxes = det_bboxes.reshape(-1, 4)
+        det_labels = det_labels.reshape(-1)
+        segm_results = self.mask_head.get_seg_masks(mask_pred, det_bboxes,
+                                                    det_labels, self.test_cfg,
+                                                    max_shape,
+                                                    scale_factors[0], rescale)
+        segm_results = segm_results.reshape(batch_size, num_det, max_shape[0],
+                                            max_shape[1])
+        return segm_results
+
+    def bbox_onnx_export(self,
+                         x,
+                         img_metas,
+                         proposals,
+                         rcnn_test_cfg,
+                         rescale=False):
         """Test only det bboxes without augmentation.
 
         Args:
@@ -319,15 +376,12 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         cls_score = cls_score.reshape(batch_size, num_proposals_per_img,
                                       cls_score.size(-1))
 
-        # bbox_pred would be None in some detector when with_reg is False,
-        # e.g. Grid R-CNN.
-        if bbox_pred is not None:
-            bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img,
-                                          bbox_pred.size(-1))
-            supplement_mask = rois.abs()[..., 1:].sum(dim=-1) == 0
-            bbox_pred[supplement_mask, :] = 0
+        bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img,
+                                      bbox_pred.size(-1))
+        supplement_mask = rois.abs()[..., 1:].sum(dim=-1) == 0
+        bbox_pred[supplement_mask, :] = 0
 
-        return self.bbox_head.onnx_export(
+        det_bboxes, det_labels = self.bbox_head.onnx_export(
             rois,
             cls_score,
             bbox_pred,
@@ -335,3 +389,5 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             scale_factors,
             rescale=rescale,
             cfg=rcnn_test_cfg)
+
+        return det_bboxes, det_labels

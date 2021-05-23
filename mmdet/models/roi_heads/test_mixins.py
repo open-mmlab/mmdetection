@@ -121,6 +121,7 @@ class BBoxTestMixin:
                 bbox_pred[supplement_mask, :] = 0
             else:
                 # TODO: Looking forward to a better way
+                # TODO move these special process to a corresponding head
                 # For SABL
                 bbox_preds = self.bbox_head.bbox_pred_split(
                     bbox_pred, num_proposals_per_img)
@@ -247,27 +248,23 @@ class MaskTestMixin:
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
-            if torch.onnx.is_in_onnx_export():
-                raise RuntimeError('[ONNX Error] Can not record MaskHead '
-                                   'as it has not been executed this time')
             segm_results = [[[] for _ in range(self.mask_head.num_classes)]
                             for _ in range(len(det_bboxes))]
             return segm_results
 
         # The length of proposals of different batches may be different.
         # In order to form a batch, a padding operation is required.
-        if isinstance(det_bboxes, list):
-            # padding to form a batch
-            max_size = max([bboxes.size(0) for bboxes in det_bboxes])
-            for i, (bbox, label) in enumerate(zip(det_bboxes, det_labels)):
-                supplement_bbox = bbox.new_full(
-                    (max_size - bbox.size(0), bbox.size(1)), 0)
-                supplement_label = label.new_full((max_size - label.size(0), ),
-                                                  0)
-                det_bboxes[i] = torch.cat((supplement_bbox, bbox), dim=0)
-                det_labels[i] = torch.cat((supplement_label, label), dim=0)
-            det_bboxes = torch.stack(det_bboxes, dim=0)
-            det_labels = torch.stack(det_labels, dim=0)
+
+        # padding to form a batch
+        max_size = max([bboxes.size(0) for bboxes in det_bboxes])
+        for i, (bbox, label) in enumerate(zip(det_bboxes, det_labels)):
+            supplement_bbox = bbox.new_full(
+                (max_size - bbox.size(0), bbox.size(1)), 0)
+            supplement_label = label.new_full((max_size - label.size(0), ), 0)
+            det_bboxes[i] = torch.cat((supplement_bbox, bbox), dim=0)
+            det_labels[i] = torch.cat((supplement_label, label), dim=0)
+        det_bboxes = torch.stack(det_bboxes, dim=0)
+        det_labels = torch.stack(det_labels, dim=0)
 
         batch_size = det_bboxes.size(0)
         num_proposals_per_img = det_bboxes.shape[1]
@@ -288,18 +285,6 @@ class MaskTestMixin:
         mask_results = self._mask_forward(x, mask_rois)
         mask_pred = mask_results['mask_pred']
 
-        # Support get_seg_masks exporting to ONNX
-        if torch.onnx.is_in_onnx_export():
-            max_shape = img_metas[0]['img_shape_for_onnx']
-            num_det = det_bboxes.shape[1]
-            det_bboxes = det_bboxes.reshape(-1, 4)
-            det_labels = det_labels.reshape(-1)
-            segm_results = self.mask_head.get_seg_masks(
-                mask_pred, det_bboxes, det_labels, self.test_cfg, max_shape,
-                scale_factors[0], rescale)
-            segm_results = segm_results.reshape(batch_size, num_det,
-                                                max_shape[0], max_shape[1])
-            return segm_results
         # Recover the batch dimension
         mask_preds = mask_pred.reshape(batch_size, num_proposals_per_img,
                                        *mask_pred.shape[1:])
