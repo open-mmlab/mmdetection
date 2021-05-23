@@ -26,10 +26,7 @@ model = dict(
         sigma=0.2,
         num_grids=[40, 36, 24, 16, 12],
         cate_down_pos=0,
-        loss_mask=dict(
-            type='DiceLoss',
-            use_sigmoid=True,
-            loss_weight=3.0),
+        loss_mask=dict(type='DiceLoss', use_sigmoid=True, loss_weight=3.0),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -37,7 +34,7 @@ model = dict(
             alpha=0.25,
             loss_weight=1.0),
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)),
-        # model training and testing settings
+    # model training and testing settings
     test_cfg=dict(
         nms_pre=500,
         score_thr=0.1,
@@ -45,5 +42,4 @@ model = dict(
         update_thr=0.05,
         kernel='gaussian',  # gaussian/linear
         sigma=2.0,
-        max_per_img=100)
-    )
+        max_per_img=100))
