@@ -9,7 +9,6 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert benchmark model list to script')
     parser.add_argument('config', help='test config file path')
-    parser.add_argument('checkpoint_root', help='checkpoint file root dir')
     parser.add_argument(
         '--partition',
         type=str,
