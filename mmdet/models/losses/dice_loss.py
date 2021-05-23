@@ -1,18 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from ..builder import LOSSES
 
 
 @LOSSES.register_module()
 class DiceLoss(nn.Module):
 
-    def __init__(self,
-                 use_sigmoid=True,
-                 loss_weight=1.0):
+    def __init__(self, use_sigmoid=True, loss_weight=1.0):
         """`Dice Loss <https://arxiv.org/abs/1912.04488>`
-
-
 
         Args:
             use_sigmoid (bool, optional): Whether to the prediction is
@@ -23,15 +20,16 @@ class DiceLoss(nn.Module):
         self.use_sigmoid = use_sigmoid
         self.loss_weight = loss_weight
 
-    def forward(self,
-                pred,
-                target):
+    def forward(self, pred, target):
         """Forward function.
 
         Args:
-            pred (torch.Tensor or tuple): The prediction, if torch.Tensor, shape (n, h, w)
+            pred (torch.Tensor or tuple):
+                The prediction,  if torch.Tensor, shape (n, h, w)
                 if tuple, each param is torch.Tensor with shape (n, w, h)
-            target (torch.Tensor): The learning label of the prediction, shape (n, h, w).
+            target (torch.Tensor): The learning label of the prediction,
+                shape (n, h, w).
+
         Returns:
             torch.Tensor: The calculated loss
         """
