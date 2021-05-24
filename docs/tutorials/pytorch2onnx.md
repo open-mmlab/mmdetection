@@ -85,9 +85,7 @@ python tools/deployment/pytorch2onnx.py \
     --verify \
     --dynamic-export \
     --cfg-options \
-      model.test_cfg.nms_pre=200  \
-      model.test_cfg.max_per_img=200  \
-      model.test_cfg.deploy_nms_pre=300 \
+      model.test_cfg.deploy_nms_pre=-1 \
 ```
 
 ## How to evaluate the exported models
