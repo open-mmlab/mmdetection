@@ -316,26 +316,31 @@ class BBoxHead(BaseModule):
                    cfg=None):
         """Transform network output for a batch into bbox predictions.
 
-        If the input rois has batch dimension, the function would be in
-        `batch_mode` and return is a tuple[list[Tensor], list[Tensor]],
-        otherwise, the return is a tuple[Tensor, Tensor].
+        In most case except Cascade R-CNN, HTC, AugTest..,
+        the dimension of input rois, cls_scores, bbox_pred  batch are equal
+        to 3, and batch dimension is first dimension, for example
+        roi has shape (B, num_boxes, 5), return is a
+        tuple[list[Tensor], list[Tensor]],
+        the length of list in tuple is equal to the batch_size.
+        otherwise, the input tensor has only 2 dimension,
+        and return is a tuple[Tensor, Tensor].
 
         Args:
             rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5)
                or (B, num_boxes, 5)
-            cls_score (list[Tensor] or Tensor): Box scores for
-               each scale level, each is a 4D-tensor, the channel number is
-               num_points * num_classes.
-            bbox_pred (Tensor, optional): Box energies / deltas for each scale
-                level, each is a 4D-tensor, the channel number is
-                num_classes * 4.
+            cls_score (Tensor): Box scores, Has shape
+               (B, num_boxes, num_classes + 1) in `batch_model`, otherwise
+                has shape (num_boxes, num_classes + 1).
+            bbox_pred (Tensor, optional): Box energies / deltas. Has shape
+                (B, num_boxes, num_classes * 4) in `batch_model`, otherwise
+                has shape (num_boxes, num_classes * 4).
             img_shape (Sequence[int] or torch.Tensor or Sequence[
                 Sequence[int]], optional): Maximum bounds for boxes, specifies
                 (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
                 the max_shape should be a Sequence[Sequence[int]]
-                and the length of max_shape should also be B.
+                and the length of max_shape should be equal to the batch_size.
             scale_factor (tuple[ndarray] or ndarray): Scale factor of the
-               image arange as (w_scale, h_scale, w_scale, h_scale). In
+               image arrange as (w_scale, h_scale, w_scale, h_scale). In
                `batch_mode`, the scale_factor shape is tuple[ndarray].
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
@@ -365,7 +370,6 @@ class BBoxHead(BaseModule):
         if rois.ndim == 2:
             # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
             batch_mode = False
-
             # add batch dimension
             if scores is not None:
                 scores = scores.unsqueeze(0)
@@ -533,14 +537,12 @@ class BBoxHead(BaseModule):
         """Transform network output for a batch into bbox predictions.
 
         Args:
-            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5)
-               or (B, num_boxes, 5)
-            cls_score (list[Tensor] or Tensor): Box scores for
-               each scale level, each is a 4D-tensor, the channel number is
-               num_points * num_classes.
-            bbox_pred (Tensor, optional): Box energies / deltas for each scale
-                level, each is a 4D-tensor, the channel number is
-                num_classes * 4.
+            rois (Tensor): Boxes to be transformed.
+                Has shape (B, num_boxes, 5)
+                cls_score (Tensor): Box scores. has shape
+                (B, num_boxes, num_classes + 1), 1 represent the background.
+            bbox_pred (Tensor, optional): Box energies / deltas for,
+                has shape (B, num_boxes, num_classes * 4) when.
             img_shape (Sequence[int] or torch.Tensor or Sequence[
                 Sequence[int]], optional): Maximum bounds for boxes, specifies
                 (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
@@ -553,20 +555,15 @@ class BBoxHead(BaseModule):
                 and class labels of shape [N, num_det].
         """
 
+        assert rois.ndim == 3, 'Only support export two stage ' \
+                               'model to ONNX ' \
+                               'with batch dimension. '
+
         if self.custom_cls_channels:
             scores = self.loss_cls.get_activation(cls_score)
         else:
             scores = F.softmax(
                 cls_score, dim=-1) if cls_score is not None else None
-
-        if rois.ndim == 2:
-            # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
-            # add batch dimension
-            if scores is not None:
-                scores = scores.unsqueeze(0)
-            if bbox_pred is not None:
-                bbox_pred = bbox_pred.unsqueeze(0)
-            rois = rois.unsqueeze(0)
 
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
