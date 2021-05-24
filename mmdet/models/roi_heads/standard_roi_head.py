@@ -282,12 +282,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 x, img_metas, det_bboxes, det_labels, rescale=rescale)
             return det_bboxes, det_labels, segm_results
 
-    def mask_onnx_export(self,
-                         x,
-                         img_metas,
-                         det_bboxes,
-                         det_labels,
-                         rescale=False):
+    def mask_onnx_export(self, x, img_metas, det_bboxes, det_labels, **kwargs):
         """Simple test for mask head without augmentation."""
         # image shapes of images in the batch
 
