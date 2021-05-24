@@ -318,10 +318,8 @@ class FCNMaskHead(BaseModule):
         """
 
         mask_pred = mask_pred.sigmoid()
-
         bboxes = det_bboxes[:, :4]
         labels = det_labels
-
         # No need to consider rescale and scale_factor while exporting to ONNX
         img_h, img_w = ori_shape[:2]
         threshold = rcnn_test_cfg.mask_thr_binary
