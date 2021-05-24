@@ -235,46 +235,24 @@ class FCNMaskHead(BaseModule):
         bboxes = det_bboxes[:, :4]
         labels = det_labels
         # No need to consider rescale and scale_factor while exporting to ONNX
-        if torch.onnx.is_in_onnx_export():
+
+        if rescale:
             img_h, img_w = ori_shape[:2]
         else:
-            if rescale:
-                img_h, img_w = ori_shape[:2]
+            if isinstance(scale_factor, float):
+                img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
+                img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
             else:
-                if isinstance(scale_factor, float):
-                    img_h = np.round(ori_shape[0] * scale_factor).astype(
-                        np.int32)
-                    img_w = np.round(ori_shape[1] * scale_factor).astype(
-                        np.int32)
-                else:
-                    w_scale, h_scale = scale_factor[0], scale_factor[1]
-                    img_h = np.round(ori_shape[0] * h_scale.item()).astype(
-                        np.int32)
-                    img_w = np.round(ori_shape[1] * w_scale.item()).astype(
-                        np.int32)
-                scale_factor = 1.0
+                w_scale, h_scale = scale_factor[0], scale_factor[1]
+                img_h = np.round(ori_shape[0] * h_scale.item()).astype(
+                    np.int32)
+                img_w = np.round(ori_shape[1] * w_scale.item()).astype(
+                    np.int32)
+            scale_factor = 1.0
 
-            if not isinstance(scale_factor, (float, torch.Tensor)):
-                scale_factor = bboxes.new_tensor(scale_factor)
-            bboxes = bboxes / scale_factor
-
-        # support exporting to ONNX
-        if torch.onnx.is_in_onnx_export():
-            threshold = rcnn_test_cfg.mask_thr_binary
-            if not self.class_agnostic:
-                box_inds = torch.arange(mask_pred.shape[0])
-                mask_pred = mask_pred[box_inds, labels][:, None]
-            masks, _ = _do_paste_mask(
-                mask_pred, bboxes, img_h, img_w, skip_empty=False)
-            if threshold >= 0:
-                masks = (masks >= threshold).to(dtype=torch.bool)
-            else:
-                # TensorRT backend does not have data type of uint8
-                is_trt_backend = os.environ.get(
-                    'ONNX_BACKEND') == 'MMCVTensorRT'
-                target_dtype = torch.int32 if is_trt_backend else torch.uint8
-                masks = (masks * 255).to(dtype=target_dtype)
-            return masks
+        if not isinstance(scale_factor, (float, torch.Tensor)):
+            scale_factor = bboxes.new_tensor(scale_factor)
+        bboxes = bboxes / scale_factor
 
         N = len(mask_pred)
         # The actual implementation split the input into chunks,
@@ -323,6 +301,43 @@ class FCNMaskHead(BaseModule):
         for i in range(N):
             cls_segms[labels[i]].append(im_mask[i].detach().cpu().numpy())
         return cls_segms
+
+    def onnx_export(self, mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
+                    ori_shape, **kwargs):
+        """Get segmentation masks from mask_pred and bboxes.
+
+        Args:
+            mask_pred (Tensor): shape (n, #class, h, w).
+            det_bboxes (Tensor): shape (n, 4/5)
+            det_labels (Tensor): shape (n, )
+            rcnn_test_cfg (dict): rcnn testing config
+            ori_shape (Tuple): original image height and width, shape (2,)
+
+        Returns:
+            Tensor: a mask of shape (N, img_h, img_w).
+        """
+
+        mask_pred = mask_pred.sigmoid()
+
+        bboxes = det_bboxes[:, :4]
+        labels = det_labels
+
+        # No need to consider rescale and scale_factor while exporting to ONNX
+        img_h, img_w = ori_shape[:2]
+        threshold = rcnn_test_cfg.mask_thr_binary
+        if not self.class_agnostic:
+            box_inds = torch.arange(mask_pred.shape[0])
+            mask_pred = mask_pred[box_inds, labels][:, None]
+        masks, _ = _do_paste_mask(
+            mask_pred, bboxes, img_h, img_w, skip_empty=False)
+        if threshold >= 0:
+            masks = (masks >= threshold).to(dtype=torch.bool)
+        else:
+            # TensorRT backend does not have data type of uint8
+            is_trt_backend = os.environ.get('ONNX_BACKEND') == 'MMCVTensorRT'
+            target_dtype = torch.int32 if is_trt_backend else torch.uint8
+            masks = (masks * 255).to(dtype=target_dtype)
+        return masks
 
 
 def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
