@@ -21,15 +21,16 @@ train_pipeline = [
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 
-data = dict(train=dict(
-    _delete_=True,
-    type='RepeatDataset',
-    times=3,
-    dataset=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
-        pipeline=train_pipeline)))
+data = dict(
+    train=dict(
+        _delete_=True,
+        type='RepeatDataset',
+        times=3,
+        dataset=dict(
+            type=dataset_type,
+            ann_file=data_root + 'annotations/instances_train2017.json',
+            img_prefix=data_root + 'train2017/',
+            pipeline=train_pipeline)))
 
 # learning policy
 lr_config = dict(step=[9, 11])
