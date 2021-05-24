@@ -192,6 +192,9 @@ class TwoStageDetector(BaseDetector):
         # TODO add check warning
         # support_onnx = ()
         # assert isinstance(self,support_onnx)
+        img_shape = torch._shape_as_tensor(img)[2:]
+        img_metas[0]['img_shape_for_onnx'] = img_shape
+
         x = self.extract_feat(img)
         proposals = self.rpn_head.onnx_export(x, img_metas)
         return self.roi_head.onnx_export(x, proposals, img_metas)

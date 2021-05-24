@@ -274,17 +274,13 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         assert self.with_bbox, 'Bbox head must be implemented.'
         det_bboxes, det_labels = self.bbox_onnx_export(
             x, img_metas, proposals, self.test_cfg, rescale=rescale)
-        bbox_results = [
-            bbox2result(det_bboxes[i], det_labels[i],
-                        self.bbox_head.num_classes)
-            for i in range(len(det_bboxes))
-        ]
+
         if not self.with_mask:
-            return bbox_results
+            return det_bboxes, det_labels
         else:
             segm_results = self.mask_onnx_export(
                 x, img_metas, det_bboxes, det_labels, rescale=rescale)
-            return list(zip(bbox_results, segm_results))
+            return det_bboxes, det_labels, segm_results
 
     def mask_onnx_export(self,
                          x,
@@ -329,12 +325,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                             max_shape[1])
         return segm_results
 
-    def bbox_onnx_export(self,
-                         x,
-                         img_metas,
-                         proposals,
-                         rcnn_test_cfg,
-                         rescale=False):
+    def bbox_onnx_export(self, x, img_metas, proposals, rcnn_test_cfg,
+                         **kwargs):
         """Test only det bboxes without augmentation.
 
         Args:
@@ -354,8 +346,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             img_metas
         ) == 1, 'Only support one input image while in exporting to ONNX'
         img_shapes = img_metas[0]['img_shape_for_onnx']
-
-        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         rois = proposals
         batch_index = torch.arange(
@@ -382,12 +372,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         bbox_pred[supplement_mask, :] = 0
 
         det_bboxes, det_labels = self.bbox_head.onnx_export(
-            rois,
-            cls_score,
-            bbox_pred,
-            img_shapes,
-            scale_factors,
-            rescale=rescale,
-            cfg=rcnn_test_cfg)
+            rois, cls_score, bbox_pred, img_shapes, cfg=rcnn_test_cfg)
 
         return det_bboxes, det_labels
