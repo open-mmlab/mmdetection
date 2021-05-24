@@ -200,6 +200,10 @@ Please refer to [YOLOF](https://github.com/open-mmlab/mmdetection/blob/master/co
 
 Please refer to [Seesaw Loss](https://github.com/open-mmlab/mmdetection/blob/master/configs/seesaw_loss) for details.
 
+### CenterNet
+
+Please refer to [CenterNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/centernet) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).

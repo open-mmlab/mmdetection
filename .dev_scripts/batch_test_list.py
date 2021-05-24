@@ -335,4 +335,10 @@ yolof = dict(
     eval='bbox',
     metric=dict(bbox_mAP=37.5),
 )
+centernet = dict(
+    config='configs/centernet/centernet_resnet18_dcnv2_140e_coco.py',
+    checkpoint='centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth', # noqa
+    eval='bbox',
+    metric=dict(bbox_mAP=29.5),
+)
 # yapf: enable
