@@ -14,4 +14,3 @@ model = dict(
         in_channels=[64, 128, 288, 672],
         out_channels=256,
         num_outs=5))
-
