@@ -1,4 +1,6 @@
-_base_ = ['../common/mstrain_3x_coco.py', './faster_rcnn_r50_fpn_1x_coco.py']
+_base_ = [
+    '../common/mstrain_3x_coco.py', '../_base_/models/faster_rcnn_r50_fpn.py'
+]
 model = dict(
     pretrained='open-mmlab://detectron2/resnext101_32x8d',
     backbone=dict(
