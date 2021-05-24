@@ -6,6 +6,7 @@ _base_ = [
 model = dict(
     pretrained='open-mmlab://regnetx_4.0gf',
     backbone=dict(
+        _delete_=True,
         type='RegNet',
         arch='regnetx_4.0gf',
         out_indices=(0, 1, 2, 3),
