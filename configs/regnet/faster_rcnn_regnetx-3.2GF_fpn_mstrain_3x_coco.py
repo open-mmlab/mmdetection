@@ -53,7 +53,7 @@ test_pipeline = [
 ]
 
 dataset_type = 'CocoDataset'
-data_root = '/home/SENSETIME/huanghaian/dataset/coco/'
+data_root = 'data/coco/'
 data = dict(
     train=dict(
         _delete_=True,
