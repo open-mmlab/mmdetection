@@ -354,8 +354,6 @@ class BBoxHead(BaseModule):
                 boxes with scores, the second tensor is the labels, both
                 have the same shape as the first case.
         """
-        if isinstance(cls_score, list):
-            cls_score = sum(cls_score) / float(len(cls_score))
 
         if self.custom_cls_channels:
             scores = self.loss_cls.get_activation(cls_score)
@@ -559,6 +557,10 @@ class BBoxHead(BaseModule):
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
+
+        Returns:
+            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
+                and class labels of shape [N, num_det].
         """
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))

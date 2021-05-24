@@ -199,6 +199,10 @@ class RPNHead(RPNTestMixin, AnchorHead):
             x (tuple[Tensor]): Features from the upstream network, each is
                 a 4D-tensor.
             img_metas (list[dict]): Meta info of each image.
+
+        Returns:
+            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
+                and class labels of shape [N, num_det].
         """
         cls_scores, bbox_preds = self(x)
 
@@ -272,22 +276,13 @@ class RPNHead(RPNTestMixin, AnchorHead):
             batch_mlvl_anchors, batch_mlvl_rpn_bbox_pred, max_shape=img_shapes)
 
         # Use ONNX::NonMaxSuppression in deployment
-        if cfg.deploy.get('with_nms', True):
-            from mmdet.core.export import add_dummy_nms_for_onnx
-            batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
-            score_threshold = cfg.nms.get('score_thr', 0.0)
-            nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
-            dets, _ = add_dummy_nms_for_onnx(batch_mlvl_proposals,
-                                             batch_mlvl_scores,
-                                             cfg.max_per_img,
-                                             cfg.nms.iou_threshold,
-                                             score_threshold, nms_pre,
-                                             cfg.max_per_img)
-            return dets
-
-        else:
-            det_results = [
-                tuple(mlvl_bs)
-                for mlvl_bs in zip(batch_mlvl_proposals, batch_mlvl_scores)
-            ]
-        return det_results
+        from mmdet.core.export import add_dummy_nms_for_onnx
+        batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
+        score_threshold = cfg.nms.get('score_thr', 0.0)
+        nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
+        dets, _ = add_dummy_nms_for_onnx(batch_mlvl_proposals,
+                                         batch_mlvl_scores, cfg.max_per_img,
+                                         cfg.nms.iou_threshold,
+                                         score_threshold, nms_pre,
+                                         cfg.max_per_img)
+        return dets
