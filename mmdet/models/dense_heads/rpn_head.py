@@ -279,7 +279,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
         from mmdet.core.export import add_dummy_nms_for_onnx
         batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
         score_threshold = cfg.nms.get('score_thr', 0.0)
-        nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
+        nms_pre = cfg.get('deploy_nms_pre', -1)
         dets, _ = add_dummy_nms_for_onnx(batch_mlvl_proposals,
                                          batch_mlvl_scores, cfg.max_per_img,
                                          cfg.nms.iou_threshold,
