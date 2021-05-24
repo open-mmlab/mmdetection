@@ -96,6 +96,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             else:
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
+        self.fp16_enabled = False
 
         self.one_hot_smoother = one_hot_smoother
 

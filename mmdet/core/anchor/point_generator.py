@@ -4,7 +4,7 @@ from .builder import ANCHOR_GENERATORS
 
 
 @ANCHOR_GENERATORS.register_module()
-class PointGenerator(object):
+class PointGenerator:
 
     def _meshgrid(self, x, y, row_major=True):
         xx = x.repeat(len(y))

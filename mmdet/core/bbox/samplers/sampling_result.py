@@ -97,7 +97,7 @@ class SamplingResult(util_mixins.NiceRepr):
             kwargs (keyword arguments):
                 - num_preds: number of predicted boxes
                 - num_gts: number of true boxes
-                - p_ignore (float): probability of a predicted box assinged to \
+                - p_ignore (float): probability of a predicted box assigned to \
                     an ignored truth.
                 - p_assigned (float): probability of a predicted box not being \
                     assigned.

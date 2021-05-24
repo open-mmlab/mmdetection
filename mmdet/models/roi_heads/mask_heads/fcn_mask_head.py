@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Conv2d, ConvModule, build_upsample_layer
+from mmcv.cnn import ConvModule, build_conv_layer, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
 from mmcv.runner import BaseModule, ModuleList, auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
@@ -30,6 +30,7 @@ class FCNMaskHead(BaseModule):
                  upsample_cfg=dict(type='deconv', scale_factor=2),
                  conv_cfg=None,
                  norm_cfg=None,
+                 predictor_cfg=dict(type='Conv'),
                  loss_mask=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0),
                  init_cfg=None):
@@ -56,6 +57,7 @@ class FCNMaskHead(BaseModule):
         self.class_agnostic = class_agnostic
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.predictor_cfg = predictor_cfg
         self.fp16_enabled = False
         self.loss_mask = build_loss(loss_mask)
 
@@ -102,7 +104,8 @@ class FCNMaskHead(BaseModule):
         logits_in_channel = (
             self.conv_out_channels
             if self.upsample_method == 'deconv' else upsample_in_channels)
-        self.conv_logits = Conv2d(logits_in_channel, out_channels, 1)
+        self.conv_logits = build_conv_layer(self.predictor_cfg,
+                                            logits_in_channel, out_channels, 1)
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
