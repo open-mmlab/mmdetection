@@ -6,7 +6,8 @@ _base_ = [
 model = dict(
     pretrained='open-mmlab://detectron2/resnet101_caffe',
     backbone=dict(
-        norm_cfg=dict(depth=101, requires_grad=False),
+        depth=101,
+        norm_cfg=dict(requires_grad=False),
         norm_eval=True,
         style='caffe'))
 # use caffe img_norm
