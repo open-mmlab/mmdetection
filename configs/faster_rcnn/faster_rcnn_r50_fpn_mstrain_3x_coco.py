@@ -8,9 +8,8 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Resize',
-        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                   (1333, 768), (1333, 800)],
-        multiscale_mode='value',
+        img_scale=[(1333, 640), (1333, 800)],
+        multiscale_mode='range',
         keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
@@ -19,8 +18,19 @@ train_pipeline = [
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
 
-data = dict(train=dict(pipeline=train_pipeline))
+dataset_type = 'CocoDataset'
+data_root = 'data/coco/'
+
+data = dict(train=dict(
+    _delete_=True,
+    type='RepeatDataset',
+    times=3,
+    dataset=dict(
+        type=dataset_type,
+        ann_file=data_root + 'annotations/instances_train2017.json',
+        img_prefix=data_root + 'train2017/',
+        pipeline=train_pipeline)))
 
 # learning policy
-lr_config = dict(step=[28, 34])
-runner = dict(max_epochs=36)
+lr_config = dict(step=[9, 11])
+runner = dict(max_epochs=12)
