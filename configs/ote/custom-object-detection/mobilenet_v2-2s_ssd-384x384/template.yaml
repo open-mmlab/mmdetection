@@ -1,5 +1,5 @@
 # Description.
-name: Custom Object Detection 256x256
+name: Custom Object Detection 384x384
 domain: Object Detection
 summary: Fast and lightweight object detector (based on MobileNet SSD).
 
@@ -30,19 +30,11 @@ hyper_parameters:
   params:
     learning_parameters:
       learning_rate_schedule: custom
-      learning_rate:
-        value: 0.0001
-        max_value: 0.001
+      learning_rate: 0.0001
       learning_rate_warmup_iters: 100
     algo_backend:
       model: model.py
       data_pipeline: ote_data_pipeline.py
-    # learning_parameters.learning_rate_schedule: custom
-    # learning_parameters.learning_rate: 0.001
-    # learning_parameters.learning_rate_warmup_iters: 100
-    # algo_backend.model: model.py
-    # algo_backend.data_pipeline: ote_data_pipeline.py
-    # etc.
 
 # Available model optimizations and their configuration.
 optimization:
@@ -84,4 +76,4 @@ metrics:
   - display_name: Complexity​
     key: complexity​
     unit: GFLOPs​
-    value: 0.86
+    value: 1.92

@@ -27,6 +27,7 @@ from typing import Optional, List, Tuple
 
 import numpy as np
 
+from sc_sdk.configuration.configurable_parameters import ConfigurableParameter
 from sc_sdk.entities.analyse_parameters import AnalyseParameters
 from sc_sdk.entities.datasets import Dataset
 from sc_sdk.entities.metrics import CurveMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric, InfoMetric, \
@@ -636,8 +637,20 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
     @staticmethod
     def apply_template_configurable_parameters(params: MMDetectionParameters, template: dict):
-        for k, v in template['hyper_parameters']['params'].items():
-            MMObjectDetectionTask._xsetattr(params, k + '.value', v)
+
+        def xset(obj: ConfigurableParameter, d: dict):
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    xset(obj[k], v)
+                else:
+                    if hasattr(getattr(obj, k), 'value'):
+                        getattr(obj, k).value = v
+                    else:
+                        setattr(obj, k, v)
+
+        hyper_params = template['hyper_parameters']['params']
+        xset(params, hyper_params)
+
         params.algo_backend.model_name.value = template['name']
         return params
 

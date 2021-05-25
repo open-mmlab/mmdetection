@@ -176,7 +176,7 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
                               options=[Option(key='template', value='template',
                                               description='Path to model template file')],
                               description="Model template.",
-                             editable=False)
+                              editable=False)
         model_name = Selectable(header="Model name",
                                 default_value='model',
                                 options=[Option(key='model', value='model',
@@ -184,11 +184,11 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
                                 description="Specify model name.",
                                 editable=False)
         model = Selectable(header="Model architecture",
-                                  default_value='model.py',
-                                  options=[Option(key='model.py', value='model.py',
-                                                  description='Path to model configuration file')],
-                                  description="Specify learning architecture for the the task.",
-                                  editable=False)
+                           default_value='model.py',
+                           options=[Option(key='model.py', value='model.py',
+                                           description='Path to model configuration file')],
+                           description="Specify learning architecture for the the task.",
+                           editable=False)
         data_pipeline = Selectable(header="Data pipeline",
                                    default_value='ote_data_pipeline.py',
                                    options=[Option(key='ote_data_pipeline.py', value='ote_data_pipeline.py',

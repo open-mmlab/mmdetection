@@ -49,7 +49,7 @@ logger = logger_factory.get_logger("Sample")
 
 def parse_args():
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--template_file_path', default='/home/paul/programs/otedetection/configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml', help='path to template file')
+    parser.add_argument('template_file_path', help='path to template file')
     args = parser.parse_args()
     return args
 
@@ -132,7 +132,7 @@ def get_task_class(path):
 
 def main(args):
     template = load_template(args.template_file_path)
-    template['hyper_parameters']['params']['algo_backend.template'] = args.template_file_path
+    template['hyper_parameters']['params'].setdefault('algo_backend', {})['template'] = args.template_file_path
     task_impl_path = template['task']['impl']
     task_cls = get_task_class(task_impl_path)
 

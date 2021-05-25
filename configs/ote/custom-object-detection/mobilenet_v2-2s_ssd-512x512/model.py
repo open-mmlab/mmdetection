@@ -1,6 +1,6 @@
-_base_ = [
-    './coco_data_pipeline.py'
-]
+# _base_ = [
+#     './coco_data_pipeline.py'
+# ]
 # model settings
 width_mult = 1.0
 model = dict(
