@@ -16,6 +16,7 @@ Models:
     In Collection: CenterNet
     Config: configs/centernet/centernet_resnet18_dcnv2_140e_coco.py
     Metadata:
+      Batch Size: 16
       Training Memory (GB): 3.47
       Epochs: 140
     Results:
@@ -29,6 +30,7 @@ Models:
     In Collection: CenterNet
     Config: configs/centernet/centernet_resnet18_140e_coco.py
     Metadata:
+      Batch Size: 16
       Training Memory (GB): 3.45
       Epochs: 140
     Results:
