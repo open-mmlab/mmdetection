@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -342,6 +343,7 @@ class BBoxHead(BaseModule):
             scale_factor (tuple[ndarray] or ndarray): Scale factor of the
                image arrange as (w_scale, h_scale, w_scale, h_scale). In
                `batch_mode`, the scale_factor shape is tuple[ndarray].
+               the length should be equal to
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
@@ -378,11 +380,14 @@ class BBoxHead(BaseModule):
             if bbox_pred is not None:
                 bbox_pred = bbox_pred.unsqueeze(0)
             rois = rois.unsqueeze(0)
-            scale_factor = tuple([scale_factor])
+
+            assert isinstance(scale_factor, np.ndarray)
+            scale_factor = (scale_factor, )
 
         elif rois.ndim == 3:
             # all input tensor have batch dimension
             batch_mode = True
+            assert isinstance(scale_factor, tuple)
         else:
             raise NotImplementedError(f'Unexpect shape of roi {rois.shape}')
 
@@ -422,10 +427,13 @@ class BBoxHead(BaseModule):
             det_labels.append(det_label)
 
         if not batch_mode:
-            det_bboxes = det_bboxes[0]
-            det_labels = det_labels[0]
-
-        return det_bboxes, det_labels
+            single_det_bboxes = det_bboxes[0]
+            single_det_labels = det_labels[0]
+            # tuple[Tensor, Tensor]
+            return single_det_bboxes, single_det_labels
+        else:
+            # tuple[list[Tensor], list[Tensor]]
+            return det_bboxes, det_labels
 
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
