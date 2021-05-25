@@ -7,7 +7,6 @@ from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 
 logger = logging.getLogger(__name__)
-
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
 
@@ -22,8 +21,7 @@ class BBoxTestMixin:
                                     proposals,
                                     rcnn_test_cfg,
                                     rescale=False,
-                                    bbox_semaphore=None,
-                                    global_lock=None):
+                                    **kwargs):
             """Asynchronized test for box head without augmentation."""
             rois = bbox2roi(proposals)
             roi_feats = self.bbox_roi_extractor(
@@ -209,8 +207,7 @@ class MaskTestMixin:
             if det_bboxes.shape[0] == 0:
                 segm_result = [[] for _ in range(self.mask_head.num_classes)]
             else:
-                if rescale and not isinstance(scale_factor,
-                                              (float, torch.Tensor)):
+                if rescale:
                     scale_factor = det_bboxes.new_tensor(scale_factor)
                 _bboxes = (
                     det_bboxes[:, :4] *
@@ -273,8 +270,7 @@ class MaskTestMixin:
         # rescale it back to the testing scale to obtain RoIs.
         det_bboxes = det_bboxes[..., :4]
         if rescale:
-            if not isinstance(scale_factors[0], float):
-                scale_factors = det_bboxes.new_tensor(scale_factors)
+            scale_factors = det_bboxes.new_tensor(scale_factors)
             det_bboxes = det_bboxes * scale_factors.unsqueeze(1)
 
         batch_index = torch.arange(
@@ -334,12 +330,13 @@ class MaskTestMixin:
             merged_masks = merge_aug_masks(aug_masks, img_metas, self.test_cfg)
 
             ori_shape = img_metas[0][0]['ori_shape']
+            scale_factor = det_bboxes.new_ones(4)
             segm_result = self.mask_head.get_seg_masks(
                 merged_masks,
                 det_bboxes,
                 det_labels,
                 self.test_cfg,
                 ori_shape,
-                scale_factor=1.0,
+                scale_factor=scale_factor,
                 rescale=False)
         return segm_result

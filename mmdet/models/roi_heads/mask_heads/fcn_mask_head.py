@@ -188,7 +188,7 @@ class FCNMaskHead(BaseModule):
             det_labels (Tensor): shape (n, )
             rcnn_test_cfg (dict): rcnn testing config
             ori_shape (Tuple): original image height and width, shape (2,)
-            scale_factor(float | Tensor): If ``rescale is True``, box
+            scale_factor(ndarry | Tensor): If ``rescale is True``, box
                 coordinates are divided by this scale factor to fit
                 ``ori_shape``.
             rescale (bool): If True, the resulting masks will be rescaled to
@@ -227,6 +227,7 @@ class FCNMaskHead(BaseModule):
         if isinstance(mask_pred, torch.Tensor):
             mask_pred = mask_pred.sigmoid()
         else:
+            # In AugTest, has been activated before
             mask_pred = det_bboxes.new_tensor(mask_pred)
 
         device = mask_pred.device
@@ -234,25 +235,19 @@ class FCNMaskHead(BaseModule):
                      ]  # BG is not included in num_classes
         bboxes = det_bboxes[:, :4]
         labels = det_labels
-        # No need to consider rescale and scale_factor while exporting to ONNX
+
+        # In most cases, scale_factor shoule have been
+        # converted to Tensor when rescale the bbox
+        if not isinstance(scale_factor, torch.Tensor):
+            assert isinstance(scale_factor, np.ndarray)
+            scale_factor = torch.from_numpy(scale_factor)
 
         if rescale:
             img_h, img_w = ori_shape[:2]
         else:
-            if isinstance(scale_factor, float):
-                img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
-                img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
-            else:
-                w_scale, h_scale = scale_factor[0], scale_factor[1]
-                img_h = np.round(ori_shape[0] * h_scale.item()).astype(
-                    np.int32)
-                img_w = np.round(ori_shape[1] * w_scale.item()).astype(
-                    np.int32)
-            scale_factor = 1.0
-
-        if not isinstance(scale_factor, (float, torch.Tensor)):
-            scale_factor = bboxes.new_tensor(scale_factor)
-        bboxes = bboxes / scale_factor
+            w_scale, h_scale = scale_factor[0], scale_factor[1]
+            img_h = np.round(ori_shape[0] * h_scale.item()).astype(np.int32)
+            img_w = np.round(ori_shape[1] * w_scale.item()).astype(np.int32)
 
         N = len(mask_pred)
         # The actual implementation split the input into chunks,
