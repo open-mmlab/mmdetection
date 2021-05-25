@@ -188,7 +188,6 @@ class TwoStageDetector(BaseDetector):
             x, proposal_list, img_metas, rescale=rescale)
 
     def onnx_export(self, img, img_metas):
-
         # TODO Check if supports exporting `self.__class__` to onnx
 
         img_shape = torch._shape_as_tensor(img)[2:]

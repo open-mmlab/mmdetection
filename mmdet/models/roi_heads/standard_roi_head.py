@@ -283,7 +283,20 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             return det_bboxes, det_labels, segm_results
 
     def mask_onnx_export(self, x, img_metas, det_bboxes, det_labels, **kwargs):
-        """Simple test for mask head without augmentation."""
+        """Export mask branch to onnx which supports batch inference.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            det_bboxes (Tensor): Bboxes and corresponding scores.
+                has shape [N, num_bboxes, 5].
+            det_labels (Tensor): class labels of
+                shape [N, num_bboxes].
+
+        Returns:
+            tuple[Tensor, Tensor]: bboxes of shape [N, num_bboxes, 5]
+                and class labels of shape [N, num_bboxes].
+        """
         # image shapes of images in the batch
 
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
@@ -313,19 +326,20 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def bbox_onnx_export(self, x, img_metas, proposals, rcnn_test_cfg,
                          **kwargs):
-        """Test only det bboxes without augmentation.
+        """Export bbox branch to onnx which supports batch inference.
 
         Args:
             x (tuple[Tensor]): Feature maps of all scale level.
             img_metas (list[dict]): Image meta info.
-            proposals (Tensor): Region proposals.
+            proposals (Tensor): Region proposals with
+                batch dimension, has shape [N, num_bboxes, 5].
             rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
 
         Returns:
-            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
-                and class labels of shape [N, num_det].
+            tuple[Tensor, Tensor]: bboxes of shape [N, num_bboxes, 5]
+                and class labels of shape [N, num_bboxes].
         """
         # get origin input shape to support onnx dynamic input shape
         assert len(
