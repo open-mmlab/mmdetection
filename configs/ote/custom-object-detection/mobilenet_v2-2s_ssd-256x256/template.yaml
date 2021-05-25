@@ -7,7 +7,7 @@ summary: Fast and lightweight object detector (based on MobileNet SSD).
 # Would be better to have something more precise and self-contained, e.g.:  docker image or path to Python venv activation script?
 framework: OTEDetection v2.9.1
 
-#Should be revisited?
+# Should be revisited?
 applications:
   ~
 
@@ -21,7 +21,6 @@ task:
 
 # Task and hyperparameters.
 hyper_parameters:
-  # FIXME. Is it used?
   impl: mmdet.apis.ote.apis.detection.MMDetectionParameters
   # Would be good to have different groups of parameters:
   # - Basic: Shown to the user in the first place and editable by him.
@@ -37,12 +36,6 @@ hyper_parameters:
     algo_backend:
       model: model.py
       data_pipeline: ote_data_pipeline.py
-    # learning_parameters.learning_rate_schedule: custom
-    # learning_parameters.learning_rate: 0.001
-    # learning_parameters.learning_rate_warmup_iters: 100
-    # algo_backend.model: model.py
-    # algo_backend.data_pipeline: ote_data_pipeline.py
-    # etc.
 
 # Available model optimizations and their configuration.
 optimization:

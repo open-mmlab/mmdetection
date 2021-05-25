@@ -96,6 +96,7 @@ class MMDetectionConfigManager(object):
 
         # Finally, update the config to make sure the model heads have the correct number of classes, and the values
         # set in the configurable parameters are reflected in the config
+        self._update_model_classification_heads()
         self.update_project_configuration(conf_params)
 
     def _get_custom_lr_schedule(self, model_file: str):

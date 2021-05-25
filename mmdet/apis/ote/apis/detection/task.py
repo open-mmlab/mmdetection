@@ -628,14 +628,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         return task_environment.get_configurable_parameters(instance_of=MMDetectionParameters)
 
     @staticmethod
-    def _xsetattr(obj, attr, val):
-        attrs = attr.split('.')
-        x = obj
-        for a in attrs[:-1]:
-            x = getattr(x, a)
-        setattr(x, attrs[-1], val)
-
-    @staticmethod
     def apply_template_configurable_parameters(params: MMDetectionParameters, template: dict):
 
         def xset(obj: ConfigurableParameter, d: dict):
@@ -663,7 +655,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         new_conf_params = self.get_configurable_parameters(task_environment)
         self.task_environment = task_environment
         self.config_manager.update_project_configuration(new_conf_params)
-
 
     def _get_confidence_and_nms_thresholds(self, is_evaluation: bool) -> Tuple[float, float, bool]:
         """
