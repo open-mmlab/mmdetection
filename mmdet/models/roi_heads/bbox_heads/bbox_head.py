@@ -334,7 +334,7 @@ class BBoxHead(BaseModule):
             bbox_pred (Tensor, optional): Box energies / deltas. Has shape
                 (B, num_boxes, num_classes * 4) in `batch_model`, otherwise
                 has shape (num_boxes, num_classes * 4).
-            img_shape (Sequence[int] or torch.Tensor or Sequence[
+            img_shape (Sequence[int] or Sequence[
                 Sequence[int]], optional): Maximum bounds for boxes, specifies
                 (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
                 the max_shape should be a Sequence[Sequence[int]]
@@ -360,13 +360,15 @@ class BBoxHead(BaseModule):
                 have the same shape as the first case.
         """
 
+        # TODO: revert to single image inference
+
+        # some loss (Seesaw loss..) may have custom activation
         if self.custom_cls_channels:
             scores = self.loss_cls.get_activation(cls_score)
         else:
             scores = F.softmax(
                 cls_score, dim=-1) if cls_score is not None else None
 
-        batch_mode = True
         if rois.ndim == 2:
             # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
             batch_mode = False
@@ -376,7 +378,16 @@ class BBoxHead(BaseModule):
             if bbox_pred is not None:
                 bbox_pred = bbox_pred.unsqueeze(0)
             rois = rois.unsqueeze(0)
+            scale_factor = tuple([scale_factor])
 
+        elif rois.ndim == 3:
+            # all input tensor have batch dimension
+            batch_mode = True
+        else:
+            raise NotImplementedError(f'Unexpect shape of roi {rois.shape}')
+
+        # bbox_pred would be None in some detector when with_reg is False,
+        # e.g. Grid R-CNN.
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
                 rois[..., 1:], bbox_pred, max_shape=img_shape)
@@ -390,9 +401,8 @@ class BBoxHead(BaseModule):
                 bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
                 bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 
-        if rescale and bboxes.size(-2) > 0:
-            if not isinstance(scale_factor, tuple):
-                scale_factor = tuple([scale_factor])
+        num_bboxes = bboxes.size(-2)
+        if rescale and num_bboxes > 0:
             # B, 1, bboxes.size(-1)
             scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(1).repeat(
                 1, 1,
@@ -414,6 +424,7 @@ class BBoxHead(BaseModule):
         if not batch_mode:
             det_bboxes = det_bboxes[0]
             det_labels = det_labels[0]
+
         return det_bboxes, det_labels
 
     @force_fp32(apply_to=('bbox_preds', ))
@@ -543,11 +554,7 @@ class BBoxHead(BaseModule):
                 (B, num_boxes, num_classes + 1), 1 represent the background.
             bbox_pred (Tensor, optional): Box energies / deltas for,
                 has shape (B, num_boxes, num_classes * 4) when.
-            img_shape (Sequence[int] or torch.Tensor or Sequence[
-                Sequence[int]], optional): Maximum bounds for boxes, specifies
-                (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
-                the max_shape should be a Sequence[Sequence[int]]
-                and the length of max_shape should also be B.
+            img_shape (torch.Tensor): .
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
 
         Returns:
