@@ -244,6 +244,7 @@ class FCNMaskHead(BaseModule):
 
         if rescale:
             img_h, img_w = ori_shape[:2]
+            bboxes = bboxes / scale_factor
         else:
             w_scale, h_scale = scale_factor[0], scale_factor[1]
             img_h = np.round(ori_shape[0] * h_scale.item()).astype(np.int32)

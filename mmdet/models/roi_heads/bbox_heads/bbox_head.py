@@ -318,8 +318,8 @@ class BBoxHead(BaseModule):
         """Transform network output for a batch into bbox predictions.
 
         In most case except Cascade R-CNN, HTC, AugTest..,
-        the dimension of input rois, cls_scores, bbox_pred  batch are equal
-        to 3, and batch dimension is first dimension, for example
+        the dimensions of input rois, cls_scores, bbox_pred  batch are equal
+        to 3, and batch dimension is the first dimension, for example
         roi has shape (B, num_boxes, 5), return is a
         tuple[list[Tensor], list[Tensor]],
         the length of list in tuple is equal to the batch_size.
@@ -343,7 +343,7 @@ class BBoxHead(BaseModule):
             scale_factor (tuple[ndarray] or ndarray): Scale factor of the
                image arrange as (w_scale, h_scale, w_scale, h_scale). In
                `batch_mode`, the scale_factor shape is tuple[ndarray].
-               the length should be equal to
+               the length should be equal to the batch size.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
