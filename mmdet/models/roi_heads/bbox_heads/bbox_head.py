@@ -545,7 +545,6 @@ class BBoxHead(BaseModule):
 
         return new_rois
 
-    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def onnx_export(self,
                     rois,
                     cls_score,

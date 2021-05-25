@@ -188,7 +188,7 @@ class FCNMaskHead(BaseModule):
             det_labels (Tensor): shape (n, )
             rcnn_test_cfg (dict): rcnn testing config
             ori_shape (Tuple): original image height and width, shape (2,)
-            scale_factor(ndarry | Tensor): If ``rescale is True``, box
+            scale_factor(ndarray | Tensor): If ``rescale is True``, box
                 coordinates are divided by this scale factor to fit
                 ``ori_shape``.
             rescale (bool): If True, the resulting masks will be rescaled to
