@@ -1,5 +1,4 @@
 import argparse
-import copy
 import os.path as osp
 import warnings
 from functools import partial
@@ -7,42 +6,13 @@ from functools import partial
 import mmcv
 import numpy as np
 import onnx
-import onnxruntime as rt
 import torch
 from mmcv import Config, DictAction
 from mmcv.runner import load_checkpoint
 
-from mmdet.apis.inference import LoadImage
-from mmdet.datasets.pipelines import Compose
+from mmdet.core.export import prepare_inputs
+from mmdet.core.export.model_wrappers import ONNXRuntimeDetector
 from mmdet.models import build_detector
-
-
-def _prepare_inputs(img_path, pipeline, shape=None, update_params=True):
-    test_pipeline = copy.deepcopy(pipeline)
-    # build the data pipeline
-    if shape is not None:
-        test_pipeline[1]['img_scale'] = (shape[1], shape[0])
-
-    if update_params:
-        # update parameters in transforms
-        for trans in test_pipeline[1]['transforms']:
-            if 'keep_ratio' in trans:
-                trans['keep_ratio'] = False
-            if 'size_divisor' in trans:
-                trans['size_divisor'] = 1
-    test_pipeline = [LoadImage()] + test_pipeline[1:]
-    test_pipeline = Compose(test_pipeline)
-    # prepare data
-    data = dict(img=img_path)
-    data = test_pipeline(data)
-    imgs = data['img']
-    img_metas = [[i.data] for i in data['img_metas']]
-    imgs = [img[None, :] for img in imgs]
-    if update_params:
-        for img_meta in img_metas:
-            img_meta[0]['scale_factor'] = 1.0
-            img_meta[0]['flip'] = False
-    return imgs, img_metas
 
 
 def pytorch2onnx(model,
@@ -58,7 +28,7 @@ def pytorch2onnx(model,
                  dynamic_export=None):
 
     model.cpu().eval()
-    img_list, img_meta_list = _prepare_inputs(
+    img_list, img_meta_list = prepare_inputs(
         input_img, test_pipeline, shape=input_shape)
 
     # replace original forward function
@@ -117,8 +87,9 @@ def pytorch2onnx(model,
             you may have to build mmcv with ONNXRuntime from source.')
 
     if do_simplify:
-        from mmdet import digit_version
         import onnxsim
+
+        from mmdet import digit_version
 
         min_required_version = '0.3.0'
         assert digit_version(onnxsim.__version__) >= digit_version(
@@ -131,11 +102,12 @@ def pytorch2onnx(model,
     print(f'Successfully exported ONNX model: {output_file}')
 
     if verify:
-        from mmdet.core import bbox2result
-        from mmdet.apis import show_result_pyplot
         # check by onnx
         onnx_model = onnx.load(output_file)
         onnx.checker.check_model(onnx_model)
+
+        # wrap onnx model
+        onnx_model = ONNXRuntimeDetector(output_file, model.CLASSES, 0)
         if dynamic_export:
             # scale up to test dynamic shape
             input_shape = [int((_ * 1.5) // 32 * 32) for _ in input_shape]
@@ -143,50 +115,29 @@ def pytorch2onnx(model,
         if test_img is None:
             test_img = input_img
 
-        # prepare test inputs
-        img_list, img_meta_list = _prepare_inputs(
-            test_img, test_pipeline, shape=input_shape)
+        # prepare test inputs, keep_ratio if dynamic export, rescale=True
+        img_list, img_meta_list = prepare_inputs(
+            test_img,
+            test_pipeline,
+            shape=input_shape,
+            keep_ratio=dynamic_export,
+            rescale=True)
 
         # get pytorch output
         pytorch_results = model(
-            img_list, img_metas=img_meta_list, return_loss=False)[0]
+            img_list, img_metas=img_meta_list, return_loss=False,
+            rescale=True)[0]
         # get onnx output
-        input_all = [node.name for node in onnx_model.graph.input]
-        input_initializer = [
-            node.name for node in onnx_model.graph.initializer
-        ]
-        net_feed_input = list(set(input_all) - set(input_initializer))
-        assert (len(net_feed_input) == 1)
-        session_options = rt.SessionOptions()
-        # register custom op for ONNX Runtime
-        if osp.exists(ort_custom_op_path):
-            session_options.register_custom_ops_library(ort_custom_op_path)
-        feed_input_img = img_list[0].detach().numpy()
+        img_list = [_.cuda().contiguous() for _ in img_list]
         if dynamic_export:
-            # test batch with two input images
-            feed_input_img = np.vstack([feed_input_img, feed_input_img])
-        sess = rt.InferenceSession(output_file, session_options)
-        onnx_outputs = sess.run(None, {net_feed_input[0]: feed_input_img})
-        output_names = [_.name for _ in sess.get_outputs()]
-        output_shapes = [_.shape for _ in onnx_outputs]
-        print(f'ONNX Runtime output names: {output_names}, \
-            output shapes: {output_shapes}')
-        # get last image's outputs
-        onnx_outputs = [_[-1] for _ in onnx_outputs]
-        ort_dets, ort_labels = onnx_outputs[:2]
-        num_classes = len(model.CLASSES)
-        onnx_results = bbox2result(ort_dets, ort_labels, num_classes)
-        if model.with_mask:
-            segm_results = onnx_outputs[2]
-            cls_segms = [[] for _ in range(num_classes)]
-            for i in range(ort_dets.shape[0]):
-                cls_segms[ort_labels[i]].append(segm_results[i])
-            onnx_results = (onnx_results, cls_segms)
+            img_list = img_list + [_.flip(-1).contiguous() for _ in img_list]
+            img_meta_list = img_meta_list * 2
+        onnx_results = onnx_model(
+            img_list, img_metas=img_meta_list, return_loss=False)[0]
         # visualize predictions
         if show:
+            from mmdet.apis import show_result_pyplot
             show_img = mmcv.imread(test_img)
-            h, w = img_meta_list[0][0]['img_shape'][:2]
-            show_img = mmcv.imresize(show_img, (w, h))
             show_result_pyplot(
                 model, show_img, pytorch_results, title='Pytorch')
             show_result_pyplot(
@@ -287,8 +238,9 @@ if __name__ == '__main__':
     if 'CLASSES' in checkpoint.get('meta', {}):
         model.CLASSES = checkpoint['meta']['CLASSES']
     else:
-        from mmdet.datasets import *  # noqa: F401, F403
-        dataset = eval(cfg.data.test['type'])
+        from mmdet.datasets import DATASETS
+        dataset = DATASETS.get(cfg.data.test['type'])
+        assert (dataset is not None)
         model.CLASSES = dataset.CLASSES
 
     if not args.input_img:

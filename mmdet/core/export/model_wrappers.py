@@ -53,7 +53,7 @@ class ONNXRuntimeDetector(BaseDetector):
         raise NotImplementedError('This method is not implemented.')
 
     def forward_test(self, imgs, img_metas, **kwargs):
-        input_data = imgs[0]
+        input_data = imgs[0].contiguous()
         img_metas = img_metas[0]
         batch_size = input_data.shape[0]
         # set io binding for inputs/outputs
@@ -75,6 +75,86 @@ class ONNXRuntimeDetector(BaseDetector):
         ort_outputs = self.io_binding.copy_outputs_to_cpu()
         batch_dets, batch_labels = ort_outputs[:2]
         batch_masks = ort_outputs[2] if len(ort_outputs) == 3 else None
+
+        results = []
+        for i in range(batch_size):
+            scale_factor = img_metas[i]['scale_factor']
+            dets, labels = batch_dets[i], batch_labels[i]
+            dets[:, :4] /= scale_factor
+            dets_results = bbox2result(dets, labels, len(self.CLASSES))
+            if batch_masks is not None:
+                masks = batch_masks[i]
+                img_h, img_w = img_metas[i]['img_shape'][:2]
+                ori_h, ori_w = img_metas[i]['ori_shape'][:2]
+                masks = masks[:, :img_h, :img_w]
+                mask_dtype = masks.dtype
+                masks = masks.astype(np.float32)
+                masks = torch.from_numpy(masks)
+                masks = torch.nn.functional.interpolate(
+                    masks.unsqueeze(0), size=(ori_h, ori_w))
+                masks = masks.squeeze(0).detach().numpy()
+                # convert mask to range(0,1)
+                if mask_dtype != np.bool:
+                    masks /= 255
+                masks = masks >= 0.5
+                segms_results = [[] for _ in range(len(self.CLASSES))]
+                for j in range(len(dets)):
+                    segms_results[labels[j]].append(masks[j])
+                results.append((dets_results, segms_results))
+            else:
+                results.append(dets_results)
+        return results
+
+
+class TensorRTDetector(BaseDetector):
+    """Wrapper for detector's inference with TensorRT."""
+
+    def __init__(self, trt_file, class_names, device_id):
+        super(TensorRTDetector, self).__init__()
+        from mmcv.tensorrt import TRTWraper, load_tensorrt_plugin
+        try:
+            load_tensorrt_plugin()
+        except (ImportError, ModuleNotFoundError):
+            warnings.warn('If input model has custom op from mmcv, \
+                you may have to build mmcv with TensorRT from source.')
+
+        assert (device_id >= 0)
+
+        output_names = ['dets', 'labels']
+        model = TRTWraper(
+            trt_file, input_names=['input'], output_names=output_names)
+
+        with_masks = False
+        if len(model.engine) == 4:
+            model.output_names = output_names + ['masks']
+            with_masks = True
+
+        self.model = model
+        self.device_id = device_id
+        self.CLASSES = class_names
+        self.with_masks = with_masks
+
+    def simple_test(self, img, img_metas, **kwargs):
+        raise NotImplementedError('This method is not implemented.')
+
+    def aug_test(self, imgs, img_metas, **kwargs):
+        raise NotImplementedError('This method is not implemented.')
+
+    def extract_feat(self, imgs):
+        raise NotImplementedError('This method is not implemented.')
+
+    def forward_test(self, imgs, img_metas, **kwargs):
+        input_data = imgs[0].contiguous()
+        img_metas = img_metas[0]
+        batch_size = input_data.shape[0]
+        with torch.cuda.device(self.device_id), torch.no_grad():
+            trt_outputs = self.model({'input': input_data})
+            batch_dets = trt_outputs['dets'].detach().cpu().numpy()
+            batch_labels = trt_outputs['labels'].detach().cpu().numpy()
+            if self.with_mask:
+                batch_masks = trt_outputs['masks'].detach().cpu().numpy()
+            else:
+                batch_masks = None
 
         results = []
         for i in range(batch_size):
