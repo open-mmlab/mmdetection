@@ -1,4 +1,5 @@
 import os
+from warnings import warn
 
 import numpy as np
 import torch
@@ -239,8 +240,12 @@ class FCNMaskHead(BaseModule):
         # In most cases, scale_factor should have been
         # converted to Tensor when rescale the bbox
         if not isinstance(scale_factor, torch.Tensor):
+            if isinstance(scale_factor, float):
+                scale_factor = np.array([scale_factor] * 4)
+                warn('Scale_factor should be a Tensor or ndarray '
+                     'with shape (4,), float would be deprecated. ')
             assert isinstance(scale_factor, np.ndarray)
-            scale_factor = torch.from_numpy(scale_factor)
+            scale_factor = torch.Tensor(scale_factor)
 
         if rescale:
             img_h, img_w = ori_shape[:2]
