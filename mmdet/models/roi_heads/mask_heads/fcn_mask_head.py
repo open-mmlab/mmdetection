@@ -236,7 +236,7 @@ class FCNMaskHead(BaseModule):
         bboxes = det_bboxes[:, :4]
         labels = det_labels
 
-        # In most cases, scale_factor shoule have been
+        # In most cases, scale_factor should have been
         # converted to Tensor when rescale the bbox
         if not isinstance(scale_factor, torch.Tensor):
             assert isinstance(scale_factor, np.ndarray)
