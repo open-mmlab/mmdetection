@@ -47,26 +47,20 @@ class MMDetectionConfigManager(object):
         :param random_seed: Optional int to seed random generators.
         """
         # Initialize configuration mappings for the task type and get configurable parameters
-        self.config_mapper = ConfigMappings(task_type)
-        conf_params = task_environment.get_configurable_parameters(
-            instance_of=self.config_mapper.configurable_parameter_type
-        )
+        self.config_mapper = ConfigMappings()
+        conf_params = task_environment.get_configurable_parameters(instance_of=MMDetectionParameters)
 
         # Build the config
-        model_name = conf_params.algo_backend.model_name.value
-        model_config = conf_params.algo_backend.model.value
-        data_pipeline = conf_params.algo_backend.data_pipeline.value
-        # model_name = conf_params.learning_architecture.model_architecture.value
-        # model_config = conf_params.learning_architecture.model_architecture.value
-        # data_pipeline = conf_params.learning_architecture.model_architecture.value
+        template = conf_params.algo_backend.template.value
+        self.model_name = conf_params.algo_backend.model_name.value
+        base_dir = os.path.abspath(os.path.dirname(template))
+        model_config = os.path.join(base_dir, conf_params.algo_backend.model.value)
+        data_pipeline = os.path.join(base_dir, conf_params.algo_backend.data_pipeline.value)
 
-        conf_params.learning_parameters.learning_rate_schedule.value = 'custom'
-        self.custom_lr_schedule, warmup_iters = self._get_custom_lr_schedule(model_config)
-        conf_params.learning_parameters.learning_rate_warmup_iters.value = warmup_iters
-        custom_lr = self.custom_lr_schedule.get('optimizer', {}).get('lr', None)
-        if custom_lr is not None:
-            conf_params.learning_parameters.learning_rate.value = custom_lr
-        task_environment.set_configurable_parameters(conf_params)
+        self.custom_lr_schedule = self._get_custom_lr_schedule(model_config)
+
+        logger.warning(f'model config {model_config}')
+        logger.warning(f'data pipeline {data_pipeline}')
 
         self._compose_config(
             model_file=model_config,
@@ -74,13 +68,12 @@ class MMDetectionConfigManager(object):
             dataset_file=data_pipeline,
             runtime_file=self.config_mapper.get_runtime_file('default')
         )
+
         # Fix config.
         if hasattr(self.config, 'total_epochs'):
             self.config.runner.max_epochs = self.config.total_epochs
 
         # Assign additional parameters
-        # self.model_name = model_name
-        self.config.model_name = model_name
         # FIXME.
         self.config.gpu_ids = range(1)
 
@@ -99,7 +92,6 @@ class MMDetectionConfigManager(object):
         self.label_names = [lab.name for lab in labels]
         # FIXME. What for?
         self.config.labels = labels
-        self.project_name = task_environment.project.name
         self.set_data_classes()
 
         # Finally, update the config to make sure the model heads have the correct number of classes, and the values
@@ -113,9 +105,7 @@ class MMDetectionConfigManager(object):
         for section in schedule_sections:
             if section in model_config:
                 schedule_config[section] = model_config[section]
-        warmup_iters = model_config.get('lr_config', {}).get('warmup_iters', 0)
-        return schedule_config, warmup_iters
-
+        return schedule_config
     def _compose_config(self, model_file: str, schedule_file: str, dataset_file: str, runtime_file: str):
         """
         Constructs the full mmdetection configuration from files containing the different config sections
@@ -149,13 +139,7 @@ class MMDetectionConfigManager(object):
         """
         learning_rate_schedule_name = configurable_parameters.learning_parameters.learning_rate_schedule.value
         learning_rate_warmup_iters = configurable_parameters.learning_parameters.learning_rate_warmup_iters.value
-        # model_architecture_name = configurable_parameters.learning_architecture.model_architecture.value
-        model_architecture_name = configurable_parameters.algo_backend.model_name.value
-        # model_config = configurable_parameters.algo_backend.model.value
-
         self._update_learning_rate_schedule(learning_rate_schedule_name, learning_rate_warmup_iters)
-        # TODO. redundant?
-        self._update_model_architecture(model_architecture_name)
         self.config.runner.max_epochs = int(configurable_parameters.learning_parameters.num_epochs.value)
         self.config.optimizer.lr = float(configurable_parameters.learning_parameters.learning_rate.value)
         self.config.data.samples_per_gpu = int(configurable_parameters.learning_parameters.batch_size.value)
@@ -175,9 +159,9 @@ class MMDetectionConfigManager(object):
         else:
             cfg_to_change = model.cfg.data
 
-        cfg_to_change.test.nous_dataset = dataset.get_subset(Subset.TESTING)
-        cfg_to_change.train.nous_dataset = dataset.get_subset(Subset.TRAINING)
-        cfg_to_change.val.nous_dataset = dataset.get_subset(Subset.VALIDATION)
+        cfg_to_change.test.ote_dataset = dataset.get_subset(Subset.TESTING)
+        cfg_to_change.train.ote_dataset = dataset.get_subset(Subset.TRAINING)
+        cfg_to_change.val.ote_dataset = dataset.get_subset(Subset.VALIDATION)
         return model
 
     @property
@@ -200,9 +184,9 @@ class MMDetectionConfigManager(object):
         """
         config_copy = copy.deepcopy(config)
         # Clean config up by removing dataset and label entities as this causes the pretty text parsing to fail
-        config_copy.data.test.nous_dataset = None
-        config_copy.data.train.nous_dataset = None
-        config_copy.data.val.nous_dataset = None
+        config_copy.data.test.ote_dataset = None
+        config_copy.data.train.ote_dataset = None
+        config_copy.data.val.ote_dataset = None
         config_copy.labels = [label.name for label in config.labels]
         return Config(config_copy).pretty_text
 
@@ -226,22 +210,6 @@ class MMDetectionConfigManager(object):
         with open(filepath, 'w') as f:
             f.write(config_string)
 
-    @property
-    def input_image_dimensions(self):
-        """
-        Input dimensions expected by the model
-
-        :return scale: tuple (width: int, height: int) of model input dimensions
-        """
-        pipeline = self.config.data.test.pipeline
-        scale = None
-        for transform in pipeline:
-            if (transform.type == 'Resize') or (transform.type == 'MultiScaleFlipAug'):
-                scale = transform.img_scale
-        if scale is None:
-            raise LookupError('Image scale could not be deduced from config.')
-        return scale
-
     def _replace_config_section_from_file(self, file) -> Config:
         """
         Replace part of the configuration by a config file.
@@ -254,23 +222,6 @@ class MMDetectionConfigManager(object):
         new_config = Config._merge_a_into_b(config_section, config)
         self.config = Config(new_config)
         return config_section
-
-    def _replace_config_section(self, name, config_section) -> Config:
-        config = self.config_copy
-        config.pop(name)
-        config[name] = config_section
-        self.config = config
-
-    @staticmethod
-    def _print_config(config):
-        cfg = copy.deepcopy(config)
-        cfg.pop('labels')
-        if not isinstance(cfg, Config):
-            cfg = Config(cfg)
-        cfg.data.train.nous_dataset = None
-        cfg.data.val.nous_dataset = None
-        cfg.data.test.nous_dataset = None
-        print(cfg.pretty_text)
 
     def _update_learning_rate_schedule(self, schedule_name: str, warmup_iters: int):
         """
@@ -295,37 +246,13 @@ class MMDetectionConfigManager(object):
             self._replace_config_section_from_file(schedule_file)
 
         # Set gradient clipping if required for the model in config
-        self._update_gradient_clipping()
+        # self._update_gradient_clipping()
 
         # Set learning rate warmup settings.
         if warmup_iters > 0:
             self.config.lr_config.warmup = 'linear'
             self.config.lr_config.warmup_ratio = 1.0 / 3
             self.config.lr_config.warmup_iters = warmup_iters
-
-    def _update_model_architecture(self, model_name: str):
-        """
-        Update the model config section in the current configuration
-
-        :param model_name: Name of the model architecture to use
-        """
-        self.config.model_name = model_name
-        model_file = self.config_mapper.get_model_file(model_name)
-        pipeline_file = self.config_mapper.get_data_pipeline_file(model_name)
-
-        # Remove old model section and load new one
-        model_config_section = Config.fromfile(model_file).model
-        self._replace_config_section('model', model_config_section)
-
-        self._update_model_classification_heads()
-        self._update_max_iou_assigner()
-
-        # Update pipeline section. Note that this will also overwrite the data subsets, so it has to be called before
-        # update_dataset_subsets
-        self.config.pop('data')
-        self._replace_config_section_from_file(pipeline_file)
-        self.set_data_classes()
-        self._update_gradient_clipping()
 
     def _update_model_classification_heads(self):
         """ Modify the number of classes of the model in the box heads """
@@ -337,25 +264,6 @@ class MMDetectionConfigManager(object):
                 self.config.model.roi_head.bbox_head.num_classes = len(self.label_names)
         elif 'bbox_head' in self.config.model.keys():
             self.config.model.bbox_head.num_classes = len(self.label_names)
-
-    def _update_gradient_clipping(self):
-        """ Sets config section for gradient clipping for the current model in the config """
-        grad_clipping_config = self.config_mapper.model_file_map[self.config.model_name]['gradient_clipping']
-        self.config.pop('optimizer_config')
-        self.config.optimizer_config = dict(grad_clip=grad_clipping_config)
-
-    def _update_max_iou_assigner(self):
-        """
-        Sets a threshold for the max number of ground truth boxes processed on GPU. If the number of ground truths in
-        an image is too large, this can lead to cuda out of memory errors
-        """
-        search_results = self._search_in_config_dict(self.config.model, 'assigner')
-        for assigner_section, assigner_key_path in search_results:
-            key_path = [str(x) for x in assigner_key_path]
-            if assigner_section.type == 'MaxIoUAssigner':
-                assigner_section.gpu_assign_thr = self._max_number_gt_bbox_per_image_on_gpu
-                # logger.info(f'Set ground truth gpu assign threshold in model.{".".join(key_path)} to '
-                #             f'{self._max_number_gt_bbox_per_image_on_gpu}')
 
     def get_lr_schedule_friendly_name(self, lr_policy_type: str):
         """

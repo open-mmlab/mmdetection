@@ -13,6 +13,8 @@
 # and limitations under the License.
 
 import argparse
+import yaml
+import importlib
 import os
 import os.path as osp
 import sys
@@ -39,10 +41,23 @@ from sc_sdk.tests.test_helpers import generate_training_dataset_of_all_annotated
 from sc_sdk.usecases.repos import *
 from sc_sdk.utils.project_factory import ProjectFactory
 
-from nousapi.apis.detection import MMObjectDetectionTask
+from mmdet.apis.ote.apis.detection import MMObjectDetectionTask
 
 
 logger = logger_factory.get_logger("Sample")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--template_file_path', default='/home/paul/programs/otedetection/configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml', help='path to template file')
+    args = parser.parse_args()
+    return args
+
+
+def load_template(path):
+    with open(path) as f:
+        template = yaml.full_load(f)
+    return template
 
 
 def create_project(projectname, taskname, classes):
@@ -109,80 +124,69 @@ def load_dataset(project, dataset_id=None):
     return dataset
 
 
-projectname = "MMObjectDetectionSample"
-project = load_project(projectname, "MMObjectDetectionTask", CocoDataset.CLASSES)
-print('Tasks:', [task.task_name for task in project.tasks])
-
-dataset = load_dataset(project, dataset_id=ID('60a395e50f3cb0a2e333e57e'))
-print(dataset)
-# dataset = create_coco_dataset(project)
-print(f"train dataset: {len(dataset.get_subset(Subset.TRAINING))} items")
-print(f"validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items")
-
-environment = TaskEnvironment(project=project, task_node=project.tasks[-1])
-params = MMObjectDetectionTask.get_configurable_parameters(environment)
-model_name = 'mobilenet_v2-2s_ssd-384x384'
-params.algo_backend.model_name.value = model_name
-params.algo_backend.model.value = f'configs/ote/custom-object-detection/{model_name}/model.py'
-params.algo_backend.data_pipeline.value = f'configs/ote/custom-object-detection/{model_name}/nous_data_pipeline.py'
-environment.set_configurable_parameters(params)
-
-task = MMObjectDetectionTask(task_environment=environment)
-
-# Tweak parameters.
-params = task.get_configurable_parameters(environment)
-# available_models = params.learning_architecture.available_models
-# logger.info('Available models: \n\t' + '\n\t'.join(x['name'] for x in available_models))
-# params.learning_architecture.model_architecture.value = available_models[0]['name']
-# logger.warning(params.learning_architecture.model_architecture.value)
-# params.learning_parameters.learning_rate.value = 1e-3
-params.learning_parameters.learning_rate_schedule.value = 'cyclic'
-# params.learning_parameters.learning_rate_warmup_iters.value = 0
-params.learning_parameters.batch_size.value = 32
-params.learning_parameters.num_epochs.value = 1
-environment.set_configurable_parameters(params)
-task.update_configurable_parameters(environment)
-
-logger.info('Start model training... [ROUND 0]')
-model = task.train(dataset=dataset)
-ModelRepo(project).save(model)
-logger.info('Model training finished [ROUND 0]')
+def get_task_class(path):
+    module_name, class_name = path.rsplit('.', 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)
 
 
-# Tweak parameters.
-params = task.get_configurable_parameters(environment)
-# available_models = params.learning_architecture.available_models
-# logger.info('Available models: \n\t' + '\n\t'.join(x['name'] for x in available_models))
-# params.learning_architecture.model_architecture.value = available_models[1]['name']
-# logger.warning(params.learning_architecture.model_architecture.value)
-params.learning_parameters.learning_rate.value = 1e-4
-params.learning_parameters.learning_rate_schedule.value = 'fixed'
-# params.learning_parameters.learning_rate_warmup_iters.value = 0
-params.learning_parameters.batch_size.value = 32
-params.learning_parameters.num_epochs.value = 1
-environment.set_configurable_parameters(params)
-task.update_configurable_parameters(environment)
+def main(args):
+    template = load_template(args.template_file_path)
+    template['hyper_parameters']['params']['algo_backend.template'] = args.template_file_path
+    task_impl_path = template['task']['impl']
+    task_cls = get_task_class(task_impl_path)
 
-logger.info('Start model training... [ROUND 1]')
-model = task.train(dataset=dataset)
-ModelRepo(project).save(model)
-logger.info('Model training finished [ROUND 1]')
+    projectname = 'otedet-sample-project'
+    taskname = 'otedet-task'
+    project = load_project(projectname, taskname, CocoDataset.CLASSES)
+    print('Tasks:', [task.task_name for task in project.tasks])
 
-validation_dataset = dataset.get_subset(Subset.VALIDATION)
-predicted_validation_dataset = task.analyse(
-    validation_dataset.with_empty_annotations(),
-    AnalyseParameters(is_evaluation=True))
-resultset = ResultSet(
-    model=model,
-    ground_truth_dataset=validation_dataset,
-    prediction_dataset=predicted_validation_dataset,
-)
-ResultSetRepo(project).save(resultset)
+    dataset = load_dataset(project, dataset_id=ID('60ac24a07f5af5273658a814'))
+    print(dataset)
+    # dataset = create_coco_dataset(project)
+    print(f"train dataset: {len(dataset.get_subset(Subset.TRAINING))} items")
+    print(f"validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items")
 
-performance = task.compute_performance(resultset)
-resultset.performance = performance
-ResultSetRepo(project).save(resultset)
+    environment = TaskEnvironment(project=project, task_node=project.tasks[-1])
+    params = task_cls.get_configurable_parameters(environment)
+    task_cls.apply_template_configurable_parameters(params, template)
+    params.algo_backend.template.value = args.template_file_path
+    environment.set_configurable_parameters(params)
 
-print(resultset.performance)
+    task = task_cls(task_environment=environment)
 
-task.optimize_loaded_model()
+    # Tweak parameters.
+    params = task.get_configurable_parameters(environment)
+    # params.learning_parameters.learning_rate.value = 1e-3
+    params.learning_parameters.learning_rate_schedule.value = 'cyclic'
+    # params.learning_parameters.learning_rate_warmup_iters.value = 0
+    params.learning_parameters.batch_size.value = 32
+    params.learning_parameters.num_epochs.value = 1
+    environment.set_configurable_parameters(params)
+    task.update_configurable_parameters(environment)
+
+    logger.info('Start model training... [ROUND 0]')
+    model = task.train(dataset=dataset)
+    logger.info('Model training finished [ROUND 0]')
+
+    validation_dataset = dataset.get_subset(Subset.VALIDATION)
+    predicted_validation_dataset = task.analyse(
+        validation_dataset.with_empty_annotations(),
+        AnalyseParameters(is_evaluation=True))
+    resultset = ResultSet(
+        model=model,
+        ground_truth_dataset=validation_dataset,
+        prediction_dataset=predicted_validation_dataset,
+    )
+
+    performance = task.compute_performance(resultset)
+    resultset.performance = performance
+
+    print(resultset.performance)
+
+    task.optimize_loaded_model()
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    sys.exit(main(args) or 0)

@@ -81,7 +81,7 @@ class EnsureCorrectBestCheckpointHook(Hook):
 
 
 @HOOKS.register_module()
-class NOUSLoggerHook(LoggerHook):
+class OTELoggerHook(LoggerHook):
 
     class Curve:
         def __init__(self):
@@ -113,7 +113,7 @@ class NOUSLoggerHook(LoggerHook):
 
 
 @HOOKS.register_module()
-class NOUSETAHook(Hook):
+class OTEProgressHook(Hook):
     def __init__(self, time_monitor, verbose=False):
         super().__init__()
         self.time_monitor = time_monitor

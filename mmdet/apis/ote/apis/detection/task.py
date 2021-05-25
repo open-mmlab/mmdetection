@@ -61,9 +61,9 @@ from mmcv.runner import load_checkpoint
 
 from .configurable_parameters import MMDetectionParameters
 from ..config import MMDetectionConfigManager, MMDetectionTaskType
-from nousapi.extension.utils.hooks import NOUSLoggerHook
+from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook, OTEProgressHook
 
-# The following imports are needed to register the custom datasets and hooks for NOUS as modules in the
+# The following imports are needed to register the custom datasets and hooks as modules in the
 # mmdetection framework. They are not used directly in this file, but they have to be here for the registration to work
 # from ...extension import *
 
@@ -98,7 +98,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         logger.info(f"Loading MMDetection task of type 'Detection' with task ID {task_environment.task_node.id}.")
 
         # Temp directory to store logs and model checkpoints
-        self.scratch_space = tempfile.mkdtemp(prefix="nous-scratch-")
+        self.scratch_space = tempfile.mkdtemp(prefix="ote-scratch-")
         logger.info(f"Scratch space created at {self.scratch_space}")
         self.mmdet_logger = get_root_logger(log_file=os.path.join(self.scratch_space, 'mmdet.log'))
 
@@ -122,7 +122,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         # Model initialization.
         self.train_model = None
         self.inference_model = None
-        self.learning_curves = defaultdict(NOUSLoggerHook.Curve)
+        self.learning_curves = defaultdict(OTELoggerHook.Curve)
         self.time_monitor = TimeMonitorCallback(0, 0, 0, 0)
         self.load_model(self.task_environment)
 
@@ -137,7 +137,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         model_cfg = copy.deepcopy(config.model)
 
-        self.learning_curves = defaultdict(NOUSLoggerHook.Curve)
+        self.learning_curves = defaultdict(OTELoggerHook.Curve)
 
         init_from = config.get('init_from', None)
         if from_scratch:
@@ -174,13 +174,9 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         else:
             # For larger datasets, build a data_loader to perform the analysis. This is much faster than one by one
             # inference.
-            # First, update the dataset in the model config. Regardless of NOUS DatasetPurpose, the dataset is always
-            # set to the mmdetection test dataset
-            # TODO: Running this with a dataloader greatly speeds up analysis, however it results in a warning:
-            #   UserWarning: MongoClient opened before fork. Create MongoClient only after forking. See PyMongo's
-            #   documentation for details: https://pymongo.readthedocs.io/en/stable/faq.html#is-pymongo-fork-safe
+            # First, update the dataset in the model config. The dataset is always set to the mmdetection test dataset.
             # FIXME. Why the dataset is always copied and re-created?
-            self.inference_model.cfg.data.test.nous_dataset = dataset
+            self.inference_model.cfg.data.test.ote_dataset = dataset
             mm_test_dataset = build_dataset(copy.deepcopy(self.inference_model.cfg.data.test))
             # Use a single gpu for testing. Set in both mm_test_dataloader and prediction_model
             mm_test_dataloader = build_dataloader(mm_test_dataset, samples_per_gpu=batch_size, num_gpus=1, dist=False,
@@ -191,7 +187,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                                               device_ids=self.config_manager.config.gpu_ids)
             prediction_results = single_gpu_test(prediction_model, mm_test_dataloader, show=False)
 
-        # Loop over dataset again to assign predictions. Convert from MMdetection format to NOUS format
+        # Loop over dataset again to assign predictions. Convert from MMdetection format to OTE format
         for dataset_item, output in zip(dataset, prediction_results):
             width = dataset_item.width
             height = dataset_item.height
@@ -266,25 +262,18 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                     from ex
 
             self.inference_model = torch_model
-            if model_config.model_name == self.config_manager.config.model_name:
-                # If the model architecture hasn't changed in the configurable parameters, train model builds upon
-                # the loaded inference model weights and we can just copy the inference model to train_model
-                self.train_model = copy.deepcopy(self.inference_model)
-            else:
-                # If the model architecture has changed, then we start training a model with the desired architecture
-                self.train_model = self._create_model(config=self.config_manager.config, from_scratch=False)
-                logger.info(f"Model architecture has changed in configurable parameters. Initialized train model with "
-                            f"{self.config_manager.config.model_name} architecture.")
+            self.train_model = copy.deepcopy(self.inference_model)
+
         else:
             # If there is no trained model yet, create model with pretrained weights as defined in the model config
             # file. These are ImageNet pretrained
             model_config = self.config_manager.config_copy
-            logger.info(model_config)
+            logger.info(self.config_manager.config_to_string(model_config))
             # logger.info(Config(model_config).pretty_text)
             torch_model = self._create_model(config=model_config, from_scratch=False)
             self.train_model = torch_model
             self.inference_model = copy.deepcopy(self.train_model)
-            logger.info(f"No trained model in project yet. Created new model with {self.config_manager.config.model_name} "
+            logger.info(f"No trained model in project yet. Created new model with {self.config_manager.model_name} "
                         f"architecture and ImageNet pretrained weights.")
 
         # Set the model configs. Inference always uses the config that came with the model, while training uses the
@@ -381,24 +370,19 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         # Length of the training dataset is required for progress reporting, hence it is passed to the task class
         self.n_samples_in_current_training_set = len(mm_train_dataset)
 
-        # Replace all logger hooks by the NOUSLoggerHook.
+        # Replace all logger hooks by the OTELoggerHook.
         config = self.config_manager.config_copy
-        config.log_config.hooks = [{'type': 'NOUSLoggerHook', 'curves': self.learning_curves}]
+        config.log_config.hooks = [{'type': 'OTELoggerHook', 'curves': self.learning_curves}]
         if config.get('custom_hooks', None) is None:
             config.custom_hooks = []
-        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0) # It will be initialized properly inside the NOUSETAHook before training.
-        config.custom_hooks.append({'type': 'NOUSETAHook', 'time_monitor': self.time_monitor, 'verbose': True})
-        # hooks = [hook for hook in config.log_config.hooks if hook.type == 'NOUSLoggerHook']
-        # if hooks:
-        #     hooks[0].curves = self.learning_curves
-        # else:
-        #     logger.warning('Failed to find NOUSLoggerHook')
+        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0) # It will be initialized properly inside the OTEProgressHook before training.
+        config.custom_hooks.append({'type': 'OTEProgressHook', 'time_monitor': self.time_monitor, 'verbose': True})
 
         # Set model config to the most up to date version. Not 100% sure if this is even needed, setting just in case
         self.train_model.cfg = self.config_manager.config_copy
 
-        logger.warning('Training model config')
-        self.config_manager._print_config(self.train_model.cfg)
+        # logger.warning('Training model config')
+        # self.config_manager._print_config(self.train_model.cfg)
 
         # Train the model. Training modifies mmdet config in place, so make a deepcopy
         self.is_training = True
@@ -439,9 +423,9 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
     def _persist_new_model(self, dataset: Dataset, performance: Performance, training_duration: float):
         """
-        Convert mmdetection model to NOUS model and persist into database. Also update inference model for task
+        Convert mmdetection model to OTE model and persist into database. Also update inference model for task
 
-        :param dataset: NOUS dataset that was used for training
+        :param dataset: OTE dataset that was used for training
         :param performance: performance metrics of the model
         :param training_duration: duration of the training round
         """
@@ -515,7 +499,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             if improved:
                 logger.info("Training finished, and it has an improved model")
             else:
-                logger.info("First training round, NOUS is saving the model.")
+                logger.info("First training round, saving the model.")
             # Add mAP metric and loss curves
             performance = Performance(score=ScoreMetric(value=best_score, name="mAP"),
                                       dashboard_metrics=self._generate_training_metrics_group())
@@ -595,7 +579,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         output: List[MetricsGroup] = []
 
         # Model architecture
-        architecture = InfoMetric(name='Model architecture', value=self.train_model.cfg.model_name)
+        architecture = InfoMetric(name='Model architecture', value=self.config_manager.model_name)
         visualization_info_architecture = VisualizationInfo(name="Model architecture",
                                                             visualisation_type=VisualizationType.TEXT)
         output.append(MetricsGroup(metrics=[architecture],
@@ -642,6 +626,21 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         return task_environment.get_configurable_parameters(instance_of=MMDetectionParameters)
 
+    @staticmethod
+    def _xsetattr(obj, attr, val):
+        attrs = attr.split('.')
+        x = obj
+        for a in attrs[:-1]:
+            x = getattr(x, a)
+        setattr(x, attrs[-1], val)
+
+    @staticmethod
+    def apply_template_configurable_parameters(params: MMDetectionParameters, template: dict):
+        for k, v in template['hyper_parameters']['params'].items():
+            MMObjectDetectionTask._xsetattr(params, k + '.value', v)
+        params.algo_backend.model_name.value = template['name']
+        return params
+
     def update_configurable_parameters(self, task_environment: TaskEnvironment):
         """
         Called when the user changes the configurable parameters in the UI.
@@ -649,17 +648,9 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         :param task_environment: New task environment with updated configurable parameters
         """
         new_conf_params = self.get_configurable_parameters(task_environment)
-
         self.task_environment = task_environment
         self.config_manager.update_project_configuration(new_conf_params)
 
-        # Check whether model architecture has changed, because then models have to be loaded again
-        prev_model_name = self.train_model.cfg.model_name
-        new_model_name = self.config_manager.config.model_name
-        logger.warning(f'prev model name: {prev_model_name}')
-        logger.warning(f'new  model name: {new_model_name}')
-        if prev_model_name != new_model_name:
-            self.load_model(task_environment)
 
     def _get_confidence_and_nms_thresholds(self, is_evaluation: bool) -> Tuple[float, float, bool]:
         """

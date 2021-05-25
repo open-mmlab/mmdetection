@@ -71,12 +71,12 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
         )
 
     class __NOUSParameters(Group):
-        header = "NOUS Active Learning Parameters"
+        header = "Active Learning Parameters"
         description = header
 
         auto_training = Boolean(
             header="Auto-training",
-            description="Set to True to allow NOUS start training automatically when it is ready "
+            description="Set to True to start training automatically when it is ready "
             "to train. In a pipeline, the auto-training parameter for the first "
             "deep learning task will be considered.",
             default_value=True,
@@ -171,13 +171,18 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
     class __AlgoBackend(Group):
         header = "Internal Algo Backend parameters"
         description = header
-        base_models_dir = osp.join(osp.abspath(osp.dirname(__file__)), '..', '..', '..', 'configs', 'ote', 'custom-object-detection')
+        template = Selectable(header="Model template file",
+                              default_value='template',
+                              options=[Option(key='template', value='template',
+                                              description='Path to model template file')],
+                              description="Model template.",
+                             editable=False)
         model_name = Selectable(header="Model name",
-                                  default_value='model',
-                                  options=[Option(key='model', value='model',
-                                                  description='Path to model configuration file')],
-                                  description="Model name.",
-                                  editable=False)
+                                default_value='model',
+                                options=[Option(key='model', value='model',
+                                                description='Model name')],
+                                description="Specify model name.",
+                                editable=False)
         model = Selectable(header="Model architecture",
                                   default_value='model.py',
                                   options=[Option(key='model.py', value='model.py',
@@ -185,25 +190,13 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
                                   description="Specify learning architecture for the the task.",
                                   editable=False)
         data_pipeline = Selectable(header="Data pipeline",
-                                   default_value='nous_data_pipeline.py',
-                                   options=[Option(key='nous_data_pipeline.py', value='nous_data_pipeline.py',
+                                   default_value='ote_data_pipeline.py',
+                                   options=[Option(key='ote_data_pipeline.py', value='ote_data_pipeline.py',
                                                    description='Path to data pipeline configuration file')],
                                    description="Specify data pipeline for the the task.",
                                    editable=False)
-
-    # class __LearningArchitecture(Group):
-    #     header = "Learning Architecture"
-    #     description = header
-    #     base_models_dir = osp.join(osp.abspath(osp.dirname(__file__)), '..', '..', '..', 'configs', 'ote', 'custom-object-detection')
-    #     available_models = list_available_models(base_models_dir)
-    #     model_architecture = Selectable(header="Model architecture",
-    #                                     default_value=available_models[0]['name'],
-    #                                     options=[Option(key=x['name'], value=x['name'], description='') for x in available_models],
-    #                                     description="Specify learning architecture for the the task.",
-    #                                     editable=True)
 
     learning_parameters: __LearningParameters = Object(__LearningParameters)
     nous_parameters: __NOUSParameters = Object(__NOUSParameters)
     postprocessing: __Postprocessing = Object(__Postprocessing)
     algo_backend: __AlgoBackend = Object(__AlgoBackend)
-

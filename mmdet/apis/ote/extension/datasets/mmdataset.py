@@ -27,8 +27,8 @@ from sc_sdk.entities.shapes.box import Box
 
 def get_annotation_mmdet_format(dataset_item: DatasetItem, label_list: List[str]) -> dict:
     """
-    Function to convert a NOUS annotation to mmdetection format. This is used both in the NOUSDataset class defined in
-    this file as in the custom pipeline element 'LoadAnnotationFromNOUSDataset'
+    Function to convert a OTE annotation to mmdetection format. This is used both in the OTEDataset class defined in
+    this file as in the custom pipeline element 'LoadAnnotationFromOTEDataset'
 
     :param dataset_item: DatasetItem for which to get annotations
     :param label_list: List of label names in the project
@@ -67,10 +67,10 @@ def get_annotation_mmdet_format(dataset_item: DatasetItem, label_list: List[str]
 
 
 @DATASETS.register_module()
-class NOUSDataset(CustomDataset):
+class OTEDataset(CustomDataset):
     """
-    Wrapper that allows using a NOUS dataset to train mmdetection models. This wrapper is not based on the filesystem,
-    but instead loads the items here directly from the NOUS Dataset object.
+    Wrapper that allows using a OTE dataset to train mmdetection models. This wrapper is not based on the filesystem,
+    but instead loads the items here directly from the OTE Dataset object.
 
     The wrapper overwrites some methods of the CustomDataset class: prepare_train_img, prepare_test_img and prepipeline
     Naming of certain attributes might seem a bit peculiar but this is due to the conventions set in CustomDataset. For
@@ -78,12 +78,12 @@ class NOUSDataset(CustomDataset):
     named like that and not dataset_items.
 
     """
-    def __init__(self, nous_dataset: Dataset, pipeline, classes=None, test_mode: bool = False):
-        self.nous_dataset = nous_dataset
+    def __init__(self, ote_dataset: Dataset, pipeline, classes=None, test_mode: bool = False):
+        self.ote_dataset = ote_dataset
         self.test_mode = test_mode
         self.CLASSES = self.get_classes(classes)
         self.data_infos = self.load_dataset_items()
-        self.proposals = None  # Attribute expected by mmdet but not used for nous datasets
+        self.proposals = None  # Attribute expected by mmdet but not used for OTE datasets
 
         if not test_mode:
             self._set_group_flag()
@@ -124,7 +124,7 @@ class NOUSDataset(CustomDataset):
         :return data_infos: dictionary that contains the image and image metadata, as well as the labels of the objects
             in the image
         """
-        dataset = self.nous_dataset
+        dataset = self.ote_dataset
         dataset_items = []
 
         for ii, item in enumerate(dataset):
@@ -144,6 +144,6 @@ class NOUSDataset(CustomDataset):
         :param idx: index of the dataset item for which to get the annotations
         :return ann_info: dict that contains the coordinates of the bboxes and their corresponding labels
         """
-        dataset_item = self.nous_dataset[idx]
+        dataset_item = self.ote_dataset[idx]
         label_list = self.CLASSES
         return get_annotation_mmdet_format(dataset_item, label_list)

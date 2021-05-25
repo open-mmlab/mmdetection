@@ -1,10 +1,10 @@
 input_size = 256
 # dataset settings
-dataset_type = 'NOUSDataset'
+dataset_type = 'OTEDataset'
 img_norm_cfg = dict(mean=[0, 0, 0], std=[255, 255, 255], to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImageFromNOUSDataset', to_float32=True),
-    dict(type='LoadAnnotationFromNOUSDataset', with_bbox=True, with_label=True),
+    dict(type='LoadImageFromOTEDataset', to_float32=True),
+    dict(type='LoadAnnotationFromOTEDataset', with_bbox=True, with_label=True),
     dict(
         type='PhotoMetricDistortion',
         brightness_delta=32,
@@ -22,7 +22,7 @@ train_pipeline = [
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
 test_pipeline = [
-    dict(type='LoadImageFromNOUSDataset'),
+    dict(type='LoadImageFromOTEDataset'),
     dict(
         type='MultiScaleFlipAug',
         img_scale=(input_size, input_size),
@@ -39,15 +39,15 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
-        nous_dataset=None,
+        ote_dataset=None,
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        nous_dataset=None,
+        ote_dataset=None,
         test_mode=True,
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        nous_dataset=None,
+        ote_dataset=None,
         test_mode=True,
         pipeline=test_pipeline))
