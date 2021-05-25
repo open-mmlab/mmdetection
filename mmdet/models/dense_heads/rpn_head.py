@@ -117,8 +117,6 @@ class RPNHead(RPNTestMixin, AnchorHead):
         mlvl_bbox_preds = []
         mlvl_valid_anchors = []
         batch_size = cls_scores[0].shape[0]
-        nms_pre_tensor = torch.tensor(
-            cfg.nms_pre, device=cls_scores[0].device, dtype=torch.long)
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
@@ -138,11 +136,8 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 batch_size, -1, 4)
             anchors = mlvl_anchors[idx]
             anchors = anchors.expand_as(rpn_bbox_pred)
-            # Get top-k prediction
-            from mmdet.core.export import get_k_for_topk
-            nms_pre = get_k_for_topk(nms_pre_tensor, rpn_bbox_pred.shape[1])
-            if nms_pre > 0:
-                _, topk_inds = scores.topk(nms_pre)
+
+            if cfg.get('nms_pre', 1000) > 0:
                 # sort is faster than topk
                 ranked_scores, rank_inds = scores.sort(descending=True)
                 topk_inds = rank_inds[:, :cfg.nms_pre]
