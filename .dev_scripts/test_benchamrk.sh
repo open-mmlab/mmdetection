@@ -110,3 +110,5 @@ echo 'configs/yolo/yolov3_d53_320_273e_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh openmmlab yolov3_d53_320_273e_coco configs/yolo/yolov3_d53_320_273e_coco.py $CHECKPOINT_DIR/yolov3_d53_320_273e_coco-421362b6.pth --work-dir tools/batch_test/yolov3_d53_320_273e_coco --eval bbox --cfg-option dist_params.port=29719  &
 echo 'configs/yolof/yolof_r50_c5_8x8_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh openmmlab yolof_r50_c5_8x8_1x_coco configs/yolof/yolof_r50_c5_8x8_1x_coco.py $CHECKPOINT_DIR/yolof_r50_c5_8x8_1x_coco_20210425_024427-8e864411.pth --work-dir tools/batch_test/yolof_r50_c5_8x8_1x_coco --eval bbox --cfg-option dist_params.port=29720  &
+echo 'configs/centernet/centernet_resnet18_dcnv2_140e_coco.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh openmmlab centernet_resnet18_dcnv2_140e_coco configs/centernet/centernet_resnet18_dcnv2_140e_coco.py $CHECKPOINT_DIR/centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth --work-dir tools/batch_test/centernet_resnet18_dcnv2_140e_coco --eval bbox --cfg-option dist_params.port=29721  &
