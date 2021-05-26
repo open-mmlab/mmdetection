@@ -1,5 +1,3 @@
-import copy
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -181,20 +179,20 @@ class DETRHead(AnchorFreeHead):
         # Names of some parameters in has been changed.
         version = local_metadata.get('version', None)
         if (version is None or version < 2) and self.__class__ is DETRHead:
-            converted_state_dict = copy.deepcopy(state_dict)
             convert_dict = {
                 '.self_attn.': '.attentions.0.',
                 '.ffn.': '.ffns.0.',
                 '.multihead_attn.': '.attentions.1.',
                 '.decoder.norm.': '.decoder.post_norm.'
             }
-            for k in state_dict.keys():
+            state_dict_keys = list(state_dict.keys())
+            for k in state_dict_keys:
                 for ori_key, convert_key in convert_dict.items():
                     if ori_key in k:
                         convert_key = k.replace(ori_key, convert_key)
-                        converted_state_dict[convert_key] = state_dict[k]
-                        del converted_state_dict[k]
-            state_dict = converted_state_dict
+                        state_dict[convert_key] = state_dict[k]
+                        del state_dict[k]
+
         super(AnchorFreeHead,
               self)._load_from_state_dict(state_dict, prefix, local_metadata,
                                           strict, missing_keys,
