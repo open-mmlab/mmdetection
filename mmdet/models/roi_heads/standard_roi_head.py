@@ -334,8 +334,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             proposals (Tensor): Region proposals with
                 batch dimension, has shape [N, num_bboxes, 5].
             rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
 
         Returns:
             tuple[Tensor, Tensor]: bboxes of shape [N, num_bboxes, 5]

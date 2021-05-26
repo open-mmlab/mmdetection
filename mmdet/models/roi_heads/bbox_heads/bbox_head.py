@@ -318,12 +318,12 @@ class BBoxHead(BaseModule):
         """Transform network output for a batch into bbox predictions.
 
         In most case except Cascade R-CNN, HTC, AugTest..,
-        the dimensions of input rois, cls_scores, bbox_pred  batch are equal
+        the dimensions of input rois, cls_score, bbox_pred are equal
         to 3, and batch dimension is the first dimension, for example
         roi has shape (B, num_boxes, 5), return is a
         tuple[list[Tensor], list[Tensor]],
         the length of list in tuple is equal to the batch_size.
-        otherwise, the input tensor has only 2 dimension,
+        otherwise, the input tensor has only 2 dimensions,
         and return is a tuple[Tensor, Tensor].
 
         Args:
@@ -557,7 +557,7 @@ class BBoxHead(BaseModule):
         Args:
             rois (Tensor): Boxes to be transformed.
                 Has shape (B, num_boxes, 5)
-                cls_score (Tensor): Box scores. has shape
+            cls_score (Tensor): Box scores. has shape
                 (B, num_boxes, num_classes + 1), 1 represent the background.
             bbox_pred (Tensor, optional): Box energies / deltas for,
                 has shape (B, num_boxes, num_classes * 4) when.
@@ -593,7 +593,6 @@ class BBoxHead(BaseModule):
                 bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
 
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
-
         from mmdet.core.export import add_dummy_nms_for_onnx
         batch_size = scores.shape[0]
         # ignore background class

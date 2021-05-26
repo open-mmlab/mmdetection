@@ -135,8 +135,6 @@ class SingleStageDetector(BaseDetector):
         Args:
             imgs (list[torch.Tensor]): List of multiple images
             img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
 
         Returns:
             tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
