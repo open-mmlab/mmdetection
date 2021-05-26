@@ -109,7 +109,8 @@ class YOLOV3Neck(BaseModule):
         self.detect1 = DetectionBlock(in_channels[0], out_channels[0], **cfg)
         for i in range(1, self.num_scales):
             in_c, out_c = self.in_channels[i], self.out_channels[i]
-            self.add_module(f'conv{i}', ConvModule(out_channels[i - 1], out_c, 1, **cfg))
+            inter_c = out_channels[i - 1]
+            self.add_module(f'conv{i}', ConvModule(inter_c, out_c, 1, **cfg))
             # in_c + out_c : High-lvl feats will be cat with low-lvl feats
             self.add_module(f'detect{i+1}',
                             DetectionBlock(in_c + out_c, out_c, **cfg))
