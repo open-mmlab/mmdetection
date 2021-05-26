@@ -318,7 +318,12 @@ class LoadAnnotations:
 
         h, w = results['img_info']['height'], results['img_info']['width']
         gt_masks = results['ann_info']['masks']
-        if self.poly2mask:
+
+        if len(gt_masks) > 0 and isinstance(gt_masks[0], np.ndarray):
+            # original mask split from the panoptic map.
+            gt_masks = BitmapMasks([mask for mask in gt_masks], h, w)
+        # polygons loaded from json file.
+        elif self.poly2mask:
             gt_masks = BitmapMasks(
                 [self._poly2mask(mask, h, w) for mask in gt_masks], h, w)
         else:
@@ -338,6 +343,11 @@ class LoadAnnotations:
         Returns:
             dict: The dict contains loaded semantic segmentation annotations.
         """
+        # For panoptic datasets, seg_map is already loaded
+        if isinstance(results['ann_info']['seg_map'], np.ndarray):
+            results['gt_semantic_seg'] = results['ann_info']['seg_map']
+            results['seg_fields'].append('gt_semantic_seg')
+            return results
 
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
