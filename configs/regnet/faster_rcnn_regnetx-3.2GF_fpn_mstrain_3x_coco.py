@@ -52,17 +52,9 @@ test_pipeline = [
         ])
 ]
 
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
 data = dict(
-    train=dict(
-        _delete_=True,
-        type='RepeatDataset',
-        times=3,
-        dataset=dict(
-            type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
-            pipeline=train_pipeline)))
+    train=dict(dataset=dict(pipeline=train_pipeline)),
+    val=dict(pipeline=test_pipeline),
+    test=dict(pipeline=test_pipeline))
 
 optimizer = dict(weight_decay=0.00005)
