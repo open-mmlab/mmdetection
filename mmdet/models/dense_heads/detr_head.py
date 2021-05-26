@@ -193,6 +193,7 @@ class DETRHead(AnchorFreeHead):
                     if ori_key in k:
                         convert_key = k.replace(ori_key, convert_key)
                         converted_state_dict[convert_key] = state_dict[k]
+                        del converted_state_dict[k]
             state_dict = converted_state_dict
         super(AnchorFreeHead,
               self)._load_from_state_dict(state_dict, prefix, local_metadata,
