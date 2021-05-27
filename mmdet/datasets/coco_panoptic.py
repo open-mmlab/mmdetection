@@ -5,8 +5,8 @@ from collections import defaultdict
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
-from panopticapi.evaluation import OFFSET, VOID, PQStat, rgb2id
-from panopticapi.utils import IdGenerator
+from panopticapi.evaluation import OFFSET, VOID, PQStat
+from panopticapi.utils import IdGenerator, rgb2id
 
 from .api_wrappers import COCO as _COCO
 from .builder import DATASETS
@@ -45,9 +45,7 @@ class COCO(_COCO):
                     if seg_ann['id'] in anns.keys():
                         anns[seg_ann['id']].append(seg_ann)
                     else:
-                        anns[seg_ann['id']] = [
-                            seg_ann,
-                        ]
+                        anns[seg_ann['id']] = [seg_ann]
 
         if 'images' in self.dataset:
             for img in self.dataset['images']:
@@ -227,29 +225,12 @@ class CocoPanoptic(CocoDataset):
         ann_info = [i for i in ann_info if i['image_id'] == img_id]
         return self._parse_ann_info(img_id, ann_info)
 
-    def _rgb_to_pan_id(self, png, bgr=True):
-        """Convert rgb to the annotation id.
-
-        Args:
-            png (numpy.ndarray): the ground truth map
-            bgr: whether the format of the color channel is 'bgr'.
-
-        Returns:
-            numpy.ndarray: the id map matched with the annotation file.
-        """
-        if bgr:
-            png = png[:, :, ::-1]
-        pan_id = png.astype(np.int32)
-        pan_id *= np.array([1, 256, 256 * 256]).reshape([1, 1, 3])
-        pan_id = np.sum(pan_id, axis=2)
-        return pan_id
-
-    def _parse_ann_info(self, image_id, ann_info):
+    def _parse_ann_info(self, img_id, ann_info):
         """Parse annotations and load panoptic gts.
 
         Args:
             ann_info (list[dict]): Annotation info of an image.
-            image_id (int): The index of an image.
+            img_id (int): The index of an image.
 
         Returns:
             dict: A dict containing the following keys: bboxes, bboxes_ignore,
@@ -260,12 +241,12 @@ class CocoPanoptic(CocoDataset):
         gt_bboxes_ignore = []
         gt_masks = []
 
-        pan_path = os.path.join(self.seg_prefix,
-                                self.formator.format(image_id))
+        pan_path = os.path.join(self.seg_prefix, self.formator.format(img_id))
         assert os.path.isfile(pan_path), f'cannot find {pan_path}'
         # todo: whether to use fileClient.
         pan_png = mmcv.imread(pan_path)
-        pan_png = self._rgb_to_pan_id(pan_png)  # convert to segments_id
+        pan_png = pan_png[:, :, ::-1]  # bgr to rgb
+        pan_png = rgb2id(pan_png)  # convert to segments_id
         # todo: the start of semantic label
         gt_seg = np.zeros_like(pan_png)  # 0 as ignore
 
@@ -281,7 +262,7 @@ class CocoPanoptic(CocoDataset):
             x1, y1, w, h = ann['bbox']
             if ann['area'] <= 0 or w < 1 or h < 1:
                 continue
-            bbox = [x1, y1, x1 + w - 1, y1 + h - 1]
+            bbox = [x1, y1, x1 + w, y1 + h]
 
             is_thing = self.coco.load_cats(ids=category_id)[0]['isthing']
             if not is_thing:
@@ -353,21 +334,20 @@ class CocoPanoptic(CocoDataset):
             pan_format = np.zeros((pan.shape[0], pan.shape[1], 3),
                                   dtype=np.uint8)
 
-            pan_ids = np.unique(pan)
+            pan_labels = np.unique(pan)
             segm_info = []
-            for el in pan_ids:
-                sem = el % INSTANCE_OFFSET
-                # convert sem to json label
-                if sem == len(self.CLASSES):  # 133
+            for pan_label in pan_labels:
+                sem_label = pan_label % INSTANCE_OFFSET
+                # convert sem_label to json label
+                if sem_label == len(self.CLASSES):  # 133
                     continue
-                # print('{} => {}'.format(sem, label2cat[sem]))
-                sem = label2cat[sem]
-                mask = pan == el
-                segment_id, color = id_generator.get_id_and_color(sem)
+                cat_id = label2cat[sem_label]
+                segment_id, color = id_generator.get_id_and_color(cat_id)
+                mask = pan == pan_label
                 area = mask.sum()
                 segm_info.append({
                     'id': segment_id,
-                    'category_id': sem,
+                    'category_id': cat_id,
                     'area': int(area)
                 })
                 pan_format[mask] = color
@@ -509,12 +489,12 @@ class CocoPanoptic(CocoDataset):
 
         assert len(gt_json) == len(pred_json)
         PQStat_ = PQStat()
-        for image_id, pan_pred in zip(pred_json.keys(), self.pano_buffer):
+        for img_id, pan_pred in zip(pred_json.keys(), self.pano_buffer):
             pan_gt_path = os.path.join(self.seg_prefix,
-                                       self.formator.format(image_id))
+                                       self.formator.format(img_id))
             pan_gt = mmcv.imread(pan_gt_path)[..., ::-1]  # convert to rgb
-            self.pq_compute_single(PQStat_, pan_gt, pan_pred,
-                                   gt_json[image_id], pred_json[image_id])
+            self.pq_compute_single(PQStat_, pan_gt, pan_pred, gt_json[img_id],
+                                   pred_json[img_id])
 
         eval_results = {}
 
