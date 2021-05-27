@@ -133,7 +133,7 @@ class SingleStageDetector(BaseDetector):
         """Test function without test time augmentation.
 
         Args:
-            imgs (list[torch.Tensor]): List of multiple images
+            img (torch.Tensor): input images.
             img_metas (list[dict]): List of image information.
 
         Returns:
@@ -148,6 +148,6 @@ class SingleStageDetector(BaseDetector):
         img_shape = torch._shape_as_tensor(img)[2:]
         img_metas[0]['img_shape_for_onnx'] = img_shape
         # TODO:move all onnx related code in bbox_head to onnx_export function
-        bbox_list = self.bbox_head.get_bboxes(*outs, img_metas)
+        det_bboxes, det_labels = self.bbox_head.get_bboxes(*outs, img_metas)
 
-        return bbox_list
+        return det_bboxes, det_labels
