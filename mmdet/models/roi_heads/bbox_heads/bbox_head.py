@@ -561,7 +561,7 @@ class BBoxHead(BaseModule):
                 (B, num_boxes, num_classes + 1), 1 represent the background.
             bbox_pred (Tensor, optional): Box energies / deltas for,
                 has shape (B, num_boxes, num_classes * 4) when.
-            img_shape (torch.Tensor): .
+            img_shape (torch.Tensor): Shape of image.
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
 
         Returns:

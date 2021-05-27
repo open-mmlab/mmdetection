@@ -136,8 +136,8 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 batch_size, -1, 4)
             anchors = mlvl_anchors[idx]
             anchors = anchors.expand_as(rpn_bbox_pred)
-
-            if cfg.get('nms_pre', 1000) > 0:
+            nms_pre = cfg.get('nms_pre', -1)
+            if nms_pre > 0 and rpn_bbox_pred.size(1) > nms_pre:
                 # sort is faster than topk
                 ranked_scores, rank_inds = scores.sort(descending=True)
                 topk_inds = rank_inds[:, :cfg.nms_pre]
@@ -186,7 +186,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
             result_list.append(dets[:cfg.max_per_img])
         return result_list
 
-    # TODO: waiting for refactor the anchor_head and anchor_free head @haian
+    # TODO: waiting for refactor the anchor_head and anchor_free head
     def onnx_export(self, x, img_metas):
         """Test without augmentation.
 
