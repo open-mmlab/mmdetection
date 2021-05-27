@@ -162,7 +162,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """ Analyzes a dataset using the latest inference model. """
         is_evaluation = analyse_parameters is not None and analyse_parameters.is_evaluation
         confidence_threshold, nms_threshold, cross_class_nms = self._get_confidence_and_nms_thresholds(is_evaluation)
-        confidence_threshold = 0.3
 
         batch_size = self.config_manager.config.data.samples_per_gpu
 
@@ -180,7 +179,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             self.inference_model.cfg.data.test.ote_dataset = dataset
             mm_test_dataset = build_dataset(copy.deepcopy(self.inference_model.cfg.data.test))
             # Use a single gpu for testing. Set in both mm_test_dataloader and prediction_model
-            mm_test_dataloader = build_dataloader(mm_test_dataset, samples_per_gpu=batch_size, num_gpus=1, dist=False,
+            mm_test_dataloader = build_dataloader(mm_test_dataset, samples_per_gpu=1, num_gpus=1, dist=False,
                                                   workers_per_gpu=self.config_manager.config.data.workers_per_gpu,
                                                   shuffle=False)
             # TODO. Support multi-gpu distributed setup.
@@ -249,8 +248,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         if model != NullModel():
             # If a model has been trained and saved for the task already, create empty model and load weights here
-            model_data_bytes = io.BytesIO(model.data)
-            model_data = torch.load(model_data_bytes)
+            model_data = self._get_model_from_bytes(model.data)
             model_config = self.config_manager.config_from_string(model_data['config'])
             torch_model = self._create_model(config=model_config, from_scratch=True)
 
@@ -617,6 +615,10 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                    buffer)
         return bytes(buffer.getbuffer())
 
+    def _get_model_from_bytes(self, blob: bytes) -> dict:
+        buffer = io.BytesIO(blob)
+        return torch.load(buffer)
+
     @staticmethod
     def get_configurable_parameters(task_environment: TaskEnvironment) -> MMDetectionParameters:
         """
@@ -737,9 +739,9 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                 raise RuntimeError("Optimization was unsuccessful.") from ex
 
         return OpenVINOModel(model=self.task_environment.model,
-                            openvino_bin_url=openvino_bin_url,
-                            openvino_xml_url=openvino_xml_url,
-                            precision=optimized_model_precision)
+                             openvino_bin_url=openvino_bin_url,
+                             openvino_xml_url=openvino_xml_url,
+                             precision=optimized_model_precision)
 
     def _delete_scratch_space(self):
         """
