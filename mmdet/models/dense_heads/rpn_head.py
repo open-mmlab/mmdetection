@@ -191,7 +191,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
         """Test without augmentation.
 
         Args:
-            x (tuple[Tensor]): Features from the upstream network, each is
+            x (Tensor): Features from the upstream network, each is
                 a 4D-tensor.
             img_metas (list[dict]): Meta info of each image.
 
