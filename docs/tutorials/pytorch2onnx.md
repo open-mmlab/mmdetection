@@ -230,6 +230,8 @@ Notes:
 
 - *All models above are tested with Pytorch==1.6.0, onnx==1.7.0 and onnxruntime==1.5.1*
 
+- Minimum required version of MMCV is `1.3.5`
+
 - If the deployed backend platform is TensorRT, please add environment variables before running the file:
 
   ```bash

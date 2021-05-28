@@ -115,6 +115,7 @@ Supported methods:
 - [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
 - [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
 - [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
+- [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
