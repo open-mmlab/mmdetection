@@ -544,11 +544,11 @@ class DeformableDetrTransformer(Transformer):
             reg_branches (obj:`nn.ModuleList`): Regression heads for
                 feature maps from each decoder layer. Only would
                 be passed when
-                `with_box_refine` is Ture. Default to None.
+                `with_box_refine` is True. Default to None.
             cls_branches (obj:`nn.ModuleList`): Classification heads
                 for feature maps from each decoder layer. Only would
                  be passed when `as_two_stage`
-                 is Ture. Default to None.
+                 is True. Default to None.
 
 
         Returns:

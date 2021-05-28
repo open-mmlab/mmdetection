@@ -6,7 +6,7 @@ if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
 
 
-class RPNTestMixin(object):
+class RPNTestMixin:
     """Test methods of RPN."""
 
     if sys.version_info >= (3, 7):

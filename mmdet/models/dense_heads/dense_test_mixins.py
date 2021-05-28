@@ -5,7 +5,7 @@ import torch
 from mmdet.core import bbox2result, bbox_mapping_back, multiclass_nms
 
 
-class BBoxTestMixin(object):
+class BBoxTestMixin:
     """Mixin class for test time augmentation of bboxes."""
 
     def merge_aug_bboxes(self, aug_bboxes, aug_scores, img_metas):

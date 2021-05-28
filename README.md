@@ -114,6 +114,8 @@ Supported methods:
 - [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
 - [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
 - [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
+- [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
+- [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
@@ -126,7 +128,7 @@ Please refer to [get_started.md](docs/get_started.md) for installation.
 
 Please see [get_started.md](docs/get_started.md) for the basic usage of MMDetection.
 We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/1_exist_data_model.md) and [with new dataset](docs/2_new_data_model.md) for beginners.
-There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), [customizing runtime settings](docs/tutorials/customize_runtime.md) and [useful tools](docs/useful_tools.md).
+There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/customize_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), [customizing runtime settings](docs/tutorials/customize_runtime.md) and [useful tools](docs/useful_tools.md).
 
 Please refer to [FAQ](docs/faq.md) for frequently asked questions.
 

@@ -87,10 +87,13 @@ class SingleRoIExtractor(BaseRoIExtractor):
             if torch.onnx.is_in_onnx_export():
                 # To keep all roi_align nodes exported to onnx
                 # and skip nonzero op
-                mask = mask.float().unsqueeze(-1).expand(*expand_dims).reshape(
-                    roi_feats.shape)
-                roi_feats_t = self.roi_layers[i](feats[i], rois)
-                roi_feats_t *= mask
+                mask = mask.float().unsqueeze(-1)
+                # select target level rois and reset the rest rois to zero.
+                rois_i = rois.clone().detach()
+                rois_i *= mask
+                mask_exp = mask.expand(*expand_dims).reshape(roi_feats.shape)
+                roi_feats_t = self.roi_layers[i](feats[i], rois_i)
+                roi_feats_t *= mask_exp
                 roi_feats += roi_feats_t
                 continue
             inds = mask.nonzero(as_tuple=False).squeeze(1)

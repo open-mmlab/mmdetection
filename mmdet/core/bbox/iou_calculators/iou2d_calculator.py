@@ -19,7 +19,7 @@ def fp16_clamp(x, min=None, max=None):
 
 
 @IOU_CALCULATORS.register_module()
-class BboxOverlaps2D(object):
+class BboxOverlaps2D:
     """2D Overlaps (e.g. IoUs, GIoUs) Calculator."""
 
     def __init__(self, scale=1., dtype=None):

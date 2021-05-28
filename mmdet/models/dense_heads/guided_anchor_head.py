@@ -346,8 +346,8 @@ class GuidedAnchorHead(AnchorHead):
 
         Args:
             square (tensor): Squares of a single level.
-            shape_pred (tensor): Shape predections of a single level.
-            loc_pred (tensor): Loc predections of a single level.
+            shape_pred (tensor): Shape predictions of a single level.
+            loc_pred (tensor): Loc predictions of a single level.
             use_loc_filter (list[tensor]): Use loc filter or not.
 
         Returns:

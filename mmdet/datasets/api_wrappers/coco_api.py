@@ -26,8 +26,20 @@ class COCO(_COCO):
     def get_ann_ids(self, img_ids=[], cat_ids=[], area_rng=[], iscrowd=None):
         return self.getAnnIds(img_ids, cat_ids, area_rng, iscrowd)
 
-    def get_cat_ids(self, cat_names=[], sup_names=[], cat_ids=[]):
-        return self.getCatIds(cat_names, sup_names, cat_ids)
+    def get_cat_ids(self,
+                    cat_names=[],
+                    sup_names=[],
+                    cat_ids=[],
+                    keep_order=True):
+        if keep_order:
+            keep_order_cat_ids = []
+            # make cat_ids consistent with the order of class_name
+            for name in cat_names:
+                keep_order_cat_ids.append(
+                    self.getCatIds(name, sup_names, cat_ids)[0])
+            return keep_order_cat_ids
+        else:
+            return self.getCatIds(cat_names, sup_names, cat_ids)
 
     def get_img_ids(self, img_ids=[], cat_ids=[]):
         return self.getImgIds(img_ids, cat_ids)
