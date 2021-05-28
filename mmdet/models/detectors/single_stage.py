@@ -93,13 +93,6 @@ class SingleStageDetector(BaseDetector):
                 The outer list corresponds to each image. The inner list
                 corresponds to each class.
         """
-        if torch.onnx.is_in_onnx_export():
-            # get origin input shape as tensor to support onnx dynamic shape
-            img_shape = torch._shape_as_tensor(img)[2:]
-            img_metas[0]['img_shape_for_onnx'] = img_shape
-            # skip post-processing when exporting to ONNX
-            postprocess = False
-
         feat = self.extract_feat(img)
         return self.bbox_head.simple_test(
             feat, img_metas, rescale=rescale, postprocess=postprocess)
@@ -128,3 +121,26 @@ class SingleStageDetector(BaseDetector):
 
         feats = self.extract_feats(imgs)
         return [self.bbox_head.aug_test(feats, img_metas, rescale=rescale)]
+
+    def onnx_export(self, img, img_metas):
+        """Test function without test time augmentation.
+
+        Args:
+            img (torch.Tensor): input images.
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
+                and class labels of shape [N, num_det].
+        """
+        x = self.extract_feat(img)
+        outs = self.bbox_head(x)
+        # get origin input shape to support onnx dynamic shape
+
+        # get shape as tensor
+        img_shape = torch._shape_as_tensor(img)[2:]
+        img_metas[0]['img_shape_for_onnx'] = img_shape
+        # TODO:move all onnx related code in bbox_head to onnx_export function
+        det_bboxes, det_labels = self.bbox_head.get_bboxes(*outs, img_metas)
+
+        return det_bboxes, det_labels

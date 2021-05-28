@@ -1,4 +1,5 @@
 import mmcv
+import numpy as np
 import pytest
 import torch
 
@@ -73,7 +74,8 @@ def test_bbox_head_get_bboxes(num_sample, num_batch):
     rois = torch.rand((num_sample, 5))
     cls_score = torch.rand((num_sample, num_class))
     bbox_pred = torch.rand((num_sample, 4))
-    scale_factor = 2.0
+
+    scale_factor = np.array([2.0, 2.0, 2.0, 2.0])
     det_bboxes, det_labels = self.get_bboxes(
         rois, cls_score, bbox_pred, None, scale_factor, rescale=True)
     if num_sample == 0:
@@ -85,6 +87,7 @@ def test_bbox_head_get_bboxes(num_sample, num_batch):
     rois = torch.rand((num_batch, num_sample, 5))
     cls_score = torch.rand((num_batch, num_sample, num_class))
     bbox_pred = torch.rand((num_batch, num_sample, 4))
+    scale_factor = (np.array([2.0, 2.0, 2.0, 2.0]), ) * num_batch
     det_bboxes, det_labels = self.get_bboxes(
         rois, cls_score, bbox_pred, None, scale_factor, rescale=True)
     assert len(det_bboxes) == num_batch and len(det_labels) == num_batch

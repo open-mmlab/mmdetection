@@ -11,7 +11,8 @@ The compatible MMDetection and MMCV versions are as below. Please install the co
 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
-| master              | mmcv-full>=1.3.2, <1.4.0 |
+| master              | mmcv-full>=1.3.3, <1.4.0 |
+| 2.12.0              | mmcv-full>=1.3.3, <1.4.0 |
 | 2.11.0              | mmcv-full>=1.2.4, <1.4.0 |
 | 2.10.0              | mmcv-full>=1.2.4, <1.4.0 |
 | 2.9.0               | mmcv-full>=1.2.4, <1.4.0 |
@@ -115,8 +116,7 @@ Note:
 a. Following the above instructions, MMDetection is installed on `dev` mode
 , any local modifications made to the code will take effect without the need to reinstall it.
 
-b. If you would like to use `opencv-python-headless` instead of `opencv
--python`,
+b. If you would like to use `opencv-python-headless` instead of `opencv-python`,
 you can install it before installing MMCV.
 
 c. Some dependencies are optional. Simply running `pip install -v -e .` will
