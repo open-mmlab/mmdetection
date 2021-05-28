@@ -937,7 +937,30 @@ class YOLACTProtonet(BaseModule):
                     det_coeffs,
                     img_metas,
                     rescale=False):
-        """Test function without test-time augmentation."""
+        """Test function without test-time augmentation.
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+               upstream network, each is a 4D-tensor.
+            det_bboxes (list[Tensor]): BBox results of each image. each
+               element is (n, 5) tensor, where 5 represent
+               (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+            det_labels (list[Tensor]): BBox results of each image. each
+               element is (n, ) tensor, each element represents the class
+               label of the corresponding box.
+            det_coeffs (list[Tensor]): BBox coefficient of each image. each
+               element is (n, m) tensor, m is vector length.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[list]: encoded masks. The c-th item in the outer list
+                corresponds to the c-th class. Given the c-th outer list, the
+                i-th item in that inner list is the mask for the i-th box with
+                class label c.
+        """
         num_imgs = len(img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
