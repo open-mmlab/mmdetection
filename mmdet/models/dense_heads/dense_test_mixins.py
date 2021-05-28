@@ -136,20 +136,8 @@ class BBoxTestMixin(object):
         bbox_results = bbox2result(_det_bboxes, det_labels, self.num_classes)
         return bbox_results
 
-    if sys.version_info >= (3, 7):
-
-        async def async_simple_test_rpn(self, x, img_metas):
-            sleep_interval = self.test_cfg.pop('async_sleep_interval', 0.025)
-            async with completed(
-                    __name__, 'rpn_head_forward',
-                    sleep_interval=sleep_interval):
-                rpn_outs = self(x)
-
-            proposal_list = self.get_bboxes(*rpn_outs, img_metas)
-            return proposal_list
-
     def simple_test_rpn(self, x, img_metas):
-        """Test without augmentation.
+        """Test without augmentation for RPN.
 
         Args:
             x (tuple[Tensor]): Features from the upstream network, each is
@@ -164,6 +152,16 @@ class BBoxTestMixin(object):
         return proposal_list
 
     def aug_test_rpn(self, feats, img_metas):
+        """Test with augmentation for RPN.
+
+        Args:
+           feats (tuple[Tensor]): Features from the upstream network, each is
+                        a 4D-tensor.
+           img_metas (list[dict]): Meta info of each image.
+
+        Returns:
+            list[Tensor]: Proposals of each image.
+        """
         samples_per_gpu = len(img_metas[0])
         aug_proposals = [[] for _ in range(samples_per_gpu)]
         for x, img_meta in zip(feats, img_metas):
@@ -184,3 +182,15 @@ class BBoxTestMixin(object):
             for proposals, aug_img_meta in zip(aug_proposals, aug_img_metas)
         ]
         return merged_proposals
+
+    if sys.version_info >= (3, 7):
+
+        async def async_simple_test_rpn(self, x, img_metas):
+            sleep_interval = self.test_cfg.pop('async_sleep_interval', 0.025)
+            async with completed(
+                    __name__, 'rpn_head_forward',
+                    sleep_interval=sleep_interval):
+                rpn_outs = self(x)
+
+            proposal_list = self.get_bboxes(*rpn_outs, img_metas)
+            return proposal_list
