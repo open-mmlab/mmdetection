@@ -30,7 +30,7 @@ class COCO(_COCO):
                     cat_names=[],
                     sup_names=[],
                     cat_ids=[],
-                    keep_order=True):
+                    keep_order=False):
         if keep_order:
             keep_order_cat_ids = []
             # make cat_ids consistent with the order of class_name

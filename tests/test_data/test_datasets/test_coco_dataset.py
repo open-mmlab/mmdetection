@@ -5,6 +5,7 @@ import mmcv
 import pytest
 
 from mmdet.datasets import CocoDataset
+from mmdet.datasets.api_wrappers import COCO
 
 
 def _create_ids_error_coco_json(json_name):
@@ -116,9 +117,10 @@ def test_coco_ids_consisitent_with_name():
     tmp_dir = tempfile.TemporaryDirectory()
     three_class_json_file = osp.join(tmp_dir.name, 'three_class.json')
     _create_three_class(three_class_json_file)
-    cat_names1 = CocoDataset(
-        ann_file=three_class_json_file, classes=names1, pipeline=[])
-    cat_names2 = CocoDataset(
-        ann_file=three_class_json_file, classes=names2, pipeline=[])
-    assert cat_names1.cat_ids == [0, 1, 2]
-    assert cat_names2.cat_ids == [1, 2, 0]
+    coco_data = COCO(three_class_json_file)
+    cat_names1 = coco_data.get_cat_ids(cat_names=names1)
+    not_order_cat_names2 = coco_data.get_cat_ids(cat_names=names2)
+    order_cat_names2 = coco_data.get_cat_ids(cat_names=names2, keep_order=True)
+    assert cat_names1 == [0, 1, 2]
+    assert not_order_cat_names2 == [0, 1, 2]
+    assert order_cat_names2 == [1, 2, 0]
