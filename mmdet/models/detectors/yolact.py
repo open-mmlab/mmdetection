@@ -112,4 +112,5 @@ class YOLACT(SingleStageDetector):
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test with augmentations."""
-        raise NotImplementedError
+        raise NotImplementedError(
+            'YOLACT does not support test-time augmentation')
