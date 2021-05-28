@@ -36,7 +36,9 @@ class COCO(_COCO):
             # make cat_ids consistent with the order of class_name
             for name in cat_names:
                 keep_order_cat_ids.append(
-                    self.getCatIds(name, sup_names, cat_ids)[0])
+                    # pass tuple of str is necessary
+                    # Otherwise would get same id for 'bear' and 'teddy bear'
+                    self.getCatIds((name, ), sup_names, cat_ids)[0])
             return keep_order_cat_ids
         else:
             return self.getCatIds(cat_names, sup_names, cat_ids)
