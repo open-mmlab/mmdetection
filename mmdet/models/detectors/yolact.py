@@ -102,11 +102,11 @@ class YOLACT(SingleStageDetector):
 
         segm_results = self.mask_head.simple_test(
             feat,
+            det_bboxes,
+            det_labels,
+            det_coeffs,
             img_metas,
-            rescale=rescale,
-            det_bboxes=det_bboxes,
-            det_labels=det_labels,
-            det_coeffs=det_coeffs)
+            rescale=rescale)
 
         return list(zip(bbox_results, segm_results))
 
