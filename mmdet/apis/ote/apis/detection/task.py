@@ -638,7 +638,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                     xset(obj[k], v)
                 else:
                     if hasattr(getattr(obj, k), 'value'):
-                        getattr(obj, k).value = v
+                        getattr(obj, k).value = type(getattr(obj, k).value)(v)
                     else:
                         setattr(obj, k, v)
 
