@@ -59,7 +59,7 @@ model = dict(
 # dataset settings
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '/youtu_mot/datasets/coco/'
+data_root = './datasets/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
@@ -145,7 +145,7 @@ evaluation = dict(interval=1, metric=['bbox','segm'])
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/apdcephfs/private_zhengkjiang/model_logs/VisFCN/work_dirs/pretrain/vis_fcn_anchor-free_coco_r50_pytorch_fpn_gn_mstrain_640-800_1x/'
+work_dir = './condinst_coco_r50_pytorch_fpn_gn_mstrain_640-800_1x/'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
