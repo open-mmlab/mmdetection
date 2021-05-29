@@ -165,7 +165,7 @@ def aligned_bilinear(tensor, factor):
 
 @HEADS.register_module()
 class CondInstHead(AnchorFreeHead):
-    """VisFCN: Fully Convolutional Network for Video Instance Segmentation
+    """Conditional Convolutions for Instance Segmentation
     """
     def __init__(self,
                  num_classes,
