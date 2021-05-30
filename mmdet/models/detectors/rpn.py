@@ -1,6 +1,6 @@
 import mmcv
 import torch
-from mmcv.image import tensor2imgs
+from mmcv.image import tensor2imgs,imwrite
 
 from mmdet.core import bbox_mapping
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
@@ -133,7 +133,7 @@ class RPN(BaseDetector):
                                                 flip_direction)
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
-    def show_result(self, data, result, top_k=20, **kwargs):
+    def show_result(self, data, result, top_k=20, out_file = None, **kwargs):
         """Show RPN proposals on the image.
 
         Args:
@@ -146,4 +146,4 @@ class RPN(BaseDetector):
         Returns:
             np.ndarray: The image with bboxes drawn on it.
         """
-        mmcv.imshow_bboxes(data, result, top_k=top_k)
+        mmcv.imshow_bboxes(data, result, top_k=top_k, out_file = out_file)
