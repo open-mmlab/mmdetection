@@ -1,6 +1,7 @@
 import logging
 import sys
 
+import numpy as np
 import torch
 
 from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
@@ -86,6 +87,7 @@ class BBoxTestMixin:
 
         # some detector with_reg is False, bbox_pred will be None
         if bbox_pred is not None:
+            # TODO move this to a sabl_roi_head
             # the bbox prediction of some detectors like SABL is not Tensor
             if isinstance(bbox_pred, torch.Tensor):
                 bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
@@ -164,7 +166,9 @@ class MaskTestMixin:
             if det_bboxes.shape[0] == 0:
                 segm_result = [[] for _ in range(self.mask_head.num_classes)]
             else:
-                if rescale:
+                # TODO: check this @haian
+                if rescale and not isinstance(scale_factor,
+                                              (float, torch.Tensor)):
                     scale_factor = det_bboxes.new_tensor(scale_factor)
                 _bboxes = (
                     det_bboxes[:, :4] *
@@ -200,6 +204,15 @@ class MaskTestMixin:
         # image shapes of images in the batch
         ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+
+        if isinstance(scale_factors, float):
+            logger.warning(
+                'Scale factor in img_metas should be a '
+                'ndarray with shape (4,) '
+                'arrange as (factor_w, factor_h, factor_w, factor_h), '
+                'The scale_factor with float type has been deprecated. ')
+            scale_factors = np.array([scale_factors] * 4)
+
         num_imgs = len(det_bboxes)
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
             segm_results = [[[] for _ in range(self.mask_head.num_classes)]
@@ -207,7 +220,7 @@ class MaskTestMixin:
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
-            if rescale and not isinstance(scale_factors[0], float):
+            if rescale:
                 scale_factors = [
                     torch.from_numpy(scale_factor).to(det_bboxes[0].device)
                     for scale_factor in scale_factors
