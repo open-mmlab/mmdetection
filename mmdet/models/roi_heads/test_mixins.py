@@ -205,7 +205,7 @@ class MaskTestMixin:
         ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
-        if isinstance(scale_factors, float):
+        if isinstance(scale_factors[0], float):
             logger.warning(
                 'Scale factor in img_metas should be a '
                 'ndarray with shape (4,) '

@@ -356,12 +356,10 @@ class BBoxHead(BaseModule):
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
         if rescale and bboxes.size(0) > 0:
-            if isinstance(scale_factor, float):
-                bboxes /= scale_factor
-            else:
-                scale_factor = bboxes.new_tensor(scale_factor)
-                bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
-                          scale_factor).view(bboxes.size()[0], -1)
+
+            scale_factor = bboxes.new_tensor(scale_factor)
+            bboxes = (bboxes.view(bboxes.size(0), -1, 4) / scale_factor).view(
+                bboxes.size()[0], -1)
 
         if cfg is None:
             return bboxes, scores
