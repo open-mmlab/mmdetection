@@ -213,6 +213,7 @@ def show_result_pyplot(model,
                        img,
                        result,
                        score_thr=0.3,
+                       out_file = None,
                        title='result',
                        wait_time=0):
     """Visualize the detection results on the image.
@@ -232,8 +233,9 @@ def show_result_pyplot(model,
     model.show_result(
         img,
         result,
+        out_file = out_file,
         score_thr=score_thr,
-        show=True,
+        show= out_file is not None,
         wait_time=wait_time,
         win_name=title,
         bbox_color=(72, 101, 241),
