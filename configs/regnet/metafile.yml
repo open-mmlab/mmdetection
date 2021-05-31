@@ -208,3 +208,71 @@ Models:
         Metrics:
           mask AP: 38.7
     Weights: http://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco_20200521_202221-99879813.pth
+
+  - Name: mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco.py
+    Metadata:
+      Training Memory (GB): 2.5
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 35.7
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 32.8
+    Weights: http://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco_20210524_202832-85cf5e32.pth
+
+  - Name: mask_rcnn_regnetx-800MF_fpn_mstrain-poly_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/mask_rcnn_regnetx-800MF_fpn_mstrain-poly_3x_coco.py
+    Metadata:
+      Training Memory (GB):
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:
+    Weights:
+
+  - Name: mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB):
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:
+    Weights:
+
+  - Name: mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB):
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP:
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:
+    Weights:

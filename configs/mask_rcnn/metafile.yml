@@ -246,6 +246,57 @@ Models:
           mask AP: 37.0
     Weights: http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth
 
+  - Name: mask_rcnn_r50_fpn_mstrain-poly_3x_coco
+    In Collection: Mask R-CNN
+    Config: configs/mask_rcnn/mask_rcnn_r50_fpn_mstrain-poly_3x_coco.py
+    Metadata:
+      Training Memory (GB): 4.1
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.9
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 37.1
+    Weights: http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_fpn_mstrain-poly_3x_coco_20210524_201154-21b550bb.pth
+
+  - Name: mask_rcnn_r101_fpn_mstrain-poly_3x_coco
+    In Collection: Mask R-CNN
+    Config: configs/mask_rcnn/mask_rcnn_r101_fpn_mstrain-poly_3x_coco.py
+    Metadata:
+      Training Memory (GB): 6.1
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.7
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.5
+    Weights: http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r101_fpn_mstrain-poly_3x_coco/mask_rcnn_r101_fpn_mstrain-poly_3x_coco_20210524_200244-5675c317.pth
+
+  - Name: mask_rcnn_x101_32x4d_fpn_mstrain-poly_3x_coco
+    In Collection: Mask R-CNN
+    Config: configs/mask_rcnn/mask_rcnn_x101_32x4d_fpn_mstrain-poly_3x_coco.py
+    Metadata:
+      Training Memory (GB): 7.3
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.6
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.0
+    Weights: http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_32x4d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_32x4d_fpn_mstrain-poly_3x_coco_20210524_201410-abcd7859.pth
+
   - Name: mask_rcnn_x101_32x8d_fpn_mstrain-poly_1x_coco
     In Collection: Mask R-CNN
     Config: configs/mask_rcnn/mask_rcnn_x101_32x8d_fpn_mstrain-poly_1x_coco.py
