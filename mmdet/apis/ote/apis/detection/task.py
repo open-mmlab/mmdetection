@@ -692,10 +692,12 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         :return bool: True if task runs in docker
         """
         path = '/proc/self/cgroup'
-        return (
-                os.path.exists('/.dockerenv') or
-                os.path.isfile(path) and any('docker' in line for line in open(path))
-        )
+        is_in_docker = False
+        if os.path.isfile(path):
+            with open(path) as f:
+                is_in_docker = is_in_docker or any('docker' in line for line in f)
+        is_in_docker = is_in_docker or os.path.exists('/.dockerenv')
+        return is_in_docker
 
     def unload(self):
         """
