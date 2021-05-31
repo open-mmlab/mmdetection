@@ -77,9 +77,9 @@ def multiclass_nms(multi_bboxes,
             raise RuntimeError('[ONNX Error] Can not record NMS '
                                'as it has not been executed this time')
         if return_inds:
-            return bboxes, labels, inds
+            return bboxes.new_zeros(0, 5), labels, inds
         else:
-            return bboxes, labels
+            return bboxes.new_zeros(0, 5), labels
 
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
 
