@@ -11,12 +11,14 @@ class SSDNeck(BaseModule):
     """Extra layers of SSD backbone to generate multi-scale feature maps.
 
     Args:
-        in_channels (List[int]): Number of input channels per scale.
-        out_channels (List[int]): Number of output channels per scale.
-        level_strides (List[int]): Stride of 3x3 conv per level.
-        level_paddings (List[int]): Padding size of 3x3 conv per level.
+        in_channels (Sequence[int]): Number of input channels per scale.
+        out_channels (Sequence[int]): Number of output channels per scale.
+        level_strides (Sequence[int]): Stride of 3x3 conv per level.
+        level_paddings (Sequence[int]): Padding size of 3x3 conv per level.
         l2_norm_scale (float): L2 normalization layer init scale.
             If None, not use L2 normalization on the first input feature.
+        last_kernel_size (int):
+        is_vgg_neck (bool):
         use_depthwise (bool): Whether to use DepthwiseSeparableConv.
             Default: False
         conv_cfg (dict): Config dict for convolution layer. Default: None.
@@ -29,12 +31,13 @@ class SSDNeck(BaseModule):
     """
 
     def __init__(self,
-                 in_channels=[512, 1024],
-                 out_channels=[512, 1024, 512, 256, 256, 256],
-                 level_strides=[2, 2, 1, 1],
-                 level_paddings=[1, 1, 0, 0],
+                 in_channels,
+                 out_channels,
+                 level_strides,
+                 level_paddings,
                  l2_norm_scale=20.,
                  last_kernel_size=3,
+                 is_vgg_neck=True,
                  use_depthwise=False,
                  conv_cfg=None,
                  norm_cfg=None,
@@ -45,12 +48,37 @@ class SSDNeck(BaseModule):
                      dict(type='Normal', std=0.01, layer='Linear')
                  ]):
         super(SSDNeck, self).__init__(init_cfg)
+        assert len(out_channels) - len(in_channels) == len(level_strides)
+        assert len(level_strides) == len(level_paddings)
+
         if l2_norm_scale:
             self.l2_norm = L2Norm(in_channels[0], l2_norm_scale)
 
+        if is_vgg_neck:
+            self.vgg_features = nn.Sequential(
+                nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
+                ConvModule(
+                    in_channels[-1],
+                    out_channels[len(in_channels) - 1],
+                    kernel_size=3,
+                    padding=6,
+                    dilation=6,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg),
+                ConvModule(
+                    out_channels[len(in_channels) - 1],
+                    out_channels[len(in_channels) - 1],
+                    kernel_size=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg))
+
         self.extra_layers = nn.ModuleList()
         extra_layer_channels = out_channels[len(in_channels):]
-        Conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
+        second_conv = DepthwiseSeparableConvModule if \
+            use_depthwise else ConvModule
+
         for i, (out_channel, stride, padding) in enumerate(
                 zip(extra_layer_channels, level_strides, level_paddings)):
             kernel_size = last_kernel_size \
@@ -63,7 +91,7 @@ class SSDNeck(BaseModule):
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     act_cfg=act_cfg),
-                Conv(
+                second_conv(
                     out_channel // 2,
                     out_channel,
                     kernel_size,
@@ -79,8 +107,10 @@ class SSDNeck(BaseModule):
         outs = [feat for feat in inputs]
         if hasattr(self, 'l2_norm'):
             outs[0] = self.l2_norm(outs[0])
+        if hasattr(self, 'vgg_features'):
+            outs[-1] = self.vgg_features(outs[-1])
 
-        feat = inputs[-1]
+        feat = outs[-1]
         for layer in self.extra_layers:
             feat = layer(feat)
             outs.append(feat)
