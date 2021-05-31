@@ -287,14 +287,14 @@ class FCNMaskHead(BaseModule):
         else:
             # GPU benefits from parallelism for larger chunks,
             # but may have memory issue
-            # 
-            # the types of img_w and img_h are np.int32, 
-            # when the image resolution is large, 
+            # the types of img_w and img_h are np.int32,
+            # when the image resolution is large,
             # the calculation of num_chunks will overflow.
             # so we neet to change the types of img_w and img_h to int.
             # See https://github.com/open-mmlab/mmdetection/pull/5191
             num_chunks = int(
-                np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
+                np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT /
+                        GPU_MEM_LIMIT))
             assert (num_chunks <=
                     N), 'Default GPU_MEM_LIMIT is too small; try increasing it'
         chunks = torch.chunk(torch.arange(N, device=device), num_chunks)
