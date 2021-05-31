@@ -40,7 +40,6 @@ from sc_sdk.entities.model import Model, NullModel
 from sc_sdk.entities.shapes.box import Box
 from sc_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 
-from sc_sdk.usecases.evaluation.basic_operations import get_nms_filter
 from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from sc_sdk.usecases.repos import BinaryRepo
@@ -161,7 +160,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
     def analyse(self, dataset: Dataset, analyse_parameters: Optional[AnalyseParameters] = None) -> Dataset:
         """ Analyzes a dataset using the latest inference model. """
         is_evaluation = analyse_parameters is not None and analyse_parameters.is_evaluation
-        confidence_threshold, nms_threshold, cross_class_nms = self._get_confidence_and_nms_thresholds(is_evaluation)
+        confidence_threshold = self._get_confidence(is_evaluation)
 
         batch_size = self.config_manager.config.data.samples_per_gpu
 
@@ -192,8 +191,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             width = dataset_item.width
             height = dataset_item.height
             image = dataset_item.numpy
-            # logger.warning(f'image shape {image.shape}, width {width}, height {height}')
-            # import cv2
 
             shapes = []
             for label_idx, detections in enumerate(output):
@@ -211,22 +208,11 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                     if coords[3] - coords[1] <= 0 or coords[2] - coords[0] <= 0:
                         continue
 
-                    # x1, y1, x2, y2 = detections[i, :4]
-                    # color = assigned_label[0].color.bgr_tuple
-                    # cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
-
                     shapes.append(Box(x1=coords[0],
                                       y1=coords[1],
                                       x2=coords[2],
                                       y2=coords[3],
                                       labels=assigned_label))
-            # cv2.imshow('image', image)
-            # cv2.waitKey(0)
-
-            # FIXME. What is it done for?
-            if nms_threshold < 1.0:
-                nms_filter = get_nms_filter(shapes, nms_threshold, cross_class_nms)
-                shapes = list(compress(shapes, nms_filter))
 
             dataset_item.append_shapes(shapes)
 
@@ -268,7 +254,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             # file. These are ImageNet pretrained
             model_config = self.config_manager.config_copy
             logger.info(self.config_manager.config_to_string(model_config))
-            # logger.info(Config(model_config).pretty_text)
             torch_model = self._create_model(config=model_config, from_scratch=False)
             self.train_model = torch_model
             self.inference_model = copy.deepcopy(self.train_model)
@@ -379,9 +364,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         # Set model config to the most up to date version. Not 100% sure if this is even needed, setting just in case
         self.train_model.cfg = self.config_manager.config_copy
-
-        # logger.warning('Training model config')
-        # self.config_manager._print_config(self.train_model.cfg)
 
         # Train the model. Training modifies mmdet config in place, so make a deepcopy
         self.is_training = True
@@ -538,13 +520,11 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         params = self.get_configurable_parameters(self.task_environment)
 
         result_based_confidence_threshold = params.postprocessing.result_based_confidence_threshold.value
-        result_based_nms_threshold = params.postprocessing.result_based_nms_threshold.value
-        cross_class_nms = params.postprocessing.cross_class_nms.value
 
         f_measure_metrics = MetricsHelper.compute_f_measure(resultset,
                                                             result_based_confidence_threshold,
-                                                            result_based_nms_threshold,
-                                                            cross_class_nms)
+                                                            False,
+                                                            False)
 
         if resultset.purpose is ResultsetPurpose.EVALUATION:
             # only set configurable params based on validation result set
@@ -556,13 +536,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                 else:
                     raise ValueError(f"Cannot compute metrics: Invalid confidence threshold!")
 
-            if result_based_nms_threshold:
-                best_nms_threshold = f_measure_metrics.best_nms_threshold
-                if best_nms_threshold is not None:
-                    logger.info(f"Setting nms_threshold to {best_nms_threshold.value} based on results")
-                    params.postprocessing.nms_threshold.value = best_nms_threshold.value
-                else:
-                    raise ValueError(f"Cannot compute metrics: Invalid confidence threshold!")
             self.task_environment.set_configurable_parameters(params)
 
         logger.info(f"F-measure after evaluation: {f_measure_metrics.f_measure.value}")
@@ -658,31 +631,23 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         self.task_environment = task_environment
         self.config_manager.update_project_configuration(new_conf_params)
 
-    def _get_confidence_and_nms_thresholds(self, is_evaluation: bool) -> Tuple[float, float, bool]:
+    def _get_confidence(self, is_evaluation: bool) -> Tuple[float, float, bool]:
         """
-        Retrieves the thresholds for confidence and non maximum suppression (nms) from the configurable parameters. If
-        is_evaluation is True, the confidence threshold is set to 0 and nms threshold is set to 1, since in that case
-        all detections are accepted in order to compute optimum values for the thresholds. Also returns whether or not
-        to perform nms across objects of different classes.
+        Retrieves the thresholds for confidence from the configurable parameters. If
+        is_evaluation is True, the confidence threshold is set to 0 in order to compute optimum values
+        for the thresholds. Also returns whether or not to perform nms across objects of different classes.
 
         :param is_evaluation: bool, True in case analysis is requested for evaluation
 
         :return confidence_threshold: float, threshold for prediction confidence
-        :return nms_threshold: float, threshold for non maximum suppression
-        :return cross_class_nms: bool, True in case cross_class_nms should be performed
         """
         conf_params = self.get_configurable_parameters(self.task_environment)
         confidence_threshold = conf_params.postprocessing.confidence_threshold.value
-        nms_threshold = conf_params.postprocessing.nms_threshold.value
         result_based_confidence_threshold = conf_params.postprocessing.result_based_confidence_threshold.value
-        result_based_nms_threshold = conf_params.postprocessing.result_based_nms_threshold.value
-        cross_class_nms = conf_params.postprocessing.cross_class_nms.value
         if is_evaluation:
             if result_based_confidence_threshold:
                 confidence_threshold = 0.0
-            if result_based_nms_threshold:
-                nms_threshold = 1.0
-        return confidence_threshold, nms_threshold, cross_class_nms
+        return confidence_threshold
 
     @staticmethod
     def _is_docker():

@@ -37,11 +37,6 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
         header = "Postprocessing"
         description = header
 
-        cross_class_nms = Boolean(
-            header="Cross class non-maximum suppression",
-            default_value=False
-        )
-
         result_based_confidence_threshold = Boolean(
             header="Result based confidence threshold",
             description="Confidence threshold is derived from the results",
@@ -56,19 +51,6 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
             max_value=1
         )
 
-        result_based_nms_threshold = Boolean(
-            header="Result based NMS threshold",
-            description="The NMS threshold is derived from the results",
-            default_value=False
-        )
-
-        nms_threshold = Float(
-            header="NMS threshold",
-            description="The NMS threshold used to match the detections and ground truths",
-            default_value=0.5,
-            min_value=0.1,
-            max_value=1
-        )
 
     class __NOUSParameters(Group):
         header = "Active Learning Parameters"
