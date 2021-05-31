@@ -228,12 +228,14 @@ class SOLOHead(BaseDenseHead):
         loss_mask = []
         for pred, target in zip(ins_preds, ins_labels):
             if pred.size()[0] == 0:
+                # make sure can get grad
+                loss_mask.append(pred.sum().unsqueeze(0))
                 continue
             loss_mask.append(self.loss_mask(pred, target))
         if num_ins > 0:
-            loss_mask = torch.cat(loss_mask).mean()
+            loss_mask = torch.cat(loss_mask).sum() / num_ins
         else:
-            loss_mask = ins_preds[0].sum() * 0
+            loss_mask = torch.cat(loss_mask).mean()
 
         # cate
         flatten_cate_labels = torch.cat(cate_labels)
