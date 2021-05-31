@@ -64,6 +64,9 @@ class SinePositionalEncoding(BaseModule):
             pos (Tensor): Returned position embedding with shape
                 [bs, num_feats*2, h, w].
         """
+        # For convenience of exporting to ONNX, it's required to convert
+        # `masks` from bool to int.
+        mask = mask.to(torch.int)
         not_mask = 1 - mask  # logical_not
         y_embed = not_mask.cumsum(1, dtype=torch.float32)
         x_embed = not_mask.cumsum(2, dtype=torch.float32)

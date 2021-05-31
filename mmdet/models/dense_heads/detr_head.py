@@ -250,8 +250,8 @@ class DETRHead(AnchorFreeHead):
             # The difference between torch and exported ONNX model may be
             # ignored, since the same performance is achieved (e.g.
             # 40.1 vs 40.1 for DETR)
-            masks = x.new_zeros(*x.size()[-2:]).unsqueeze(0).repeat(
-                batch_size, 1, 1)  # [B,h,w]
+            h, w = x.size()[-2:]
+            masks = x.new_zeros((batch_size, h, w))  # [B,h,w]
         else:
             input_img_h, input_img_w = img_metas[0]['batch_input_shape']
             masks = x.new_ones((batch_size, input_img_h, input_img_w))
@@ -263,14 +263,8 @@ class DETRHead(AnchorFreeHead):
         # interpolate masks to have the same spatial shape with x
         masks = F.interpolate(
             masks.unsqueeze(1), size=x.shape[-2:]).to(torch.bool).squeeze(1)
-        # For convenience of exporting to ONNX, it's required to convert
-        # `masks` which is then fed into `positional_encoding` from bool
-        # to int.
-        masks = masks.to(torch.int)
         # position encoding
         pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
-        # convert `masks` back to 'bool', which is required for `transformer`
-        masks = masks.to(torch.bool)
         # outs_dec: [nb_dec, bs, num_query, embed_dim]
         outs_dec, _ = self.transformer(x, masks, self.query_embedding.weight,
                                        pos_embed)
