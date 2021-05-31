@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.ops import batched_nms
+from mmcv.runner import force_fp32
 
 from ..builder import HEADS
 from .anchor_head import AnchorHead
@@ -75,38 +76,104 @@ class RPNHead(RPNTestMixin, AnchorHead):
         return dict(
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
-    def _get_bboxes(self,
-                    cls_scores,
-                    bbox_preds,
-                    mlvl_anchors,
-                    img_shapes,
-                    scale_factors,
-                    cfg,
-                    rescale=False):
-        """Transform outputs for a single batch item into bbox predictions.
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
+    def get_bboxes(self,
+                   cls_scores,
+                   bbox_preds,
+                   img_metas,
+                   cfg=None,
+                   rescale=False,
+                   with_nms=True):
+        """Transform network output for a batch into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W).
+                Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W).
-            mlvl_anchors (list[Tensor]): Box reference for each scale level
-                with shape (num_total_anchors, 4).
-            img_shapes (list[tuple[int]]): Shape of the input image,
-                (height, width, 3).
-            scale_factors (list[ndarray]): Scale factor of the image arange as
-                (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
+                level with shape (N, num_anchors * 4, H, W)
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
+                if None, test_cfg would be used
             rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
                 The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of the
+                (n,) tensor where each item is the predicted class labelof the
                 corresponding box.
+        """
+        assert len(cls_scores) == len(bbox_preds)
+        num_levels = len(cls_scores)
+
+        device = cls_scores[0].device
+        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
+        mlvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
+
+        result_list = []
+        for img_id in range(len(img_metas)):
+            cls_score_list = [
+                cls_scores[i][img_id].detach() for i in range(num_levels)
+            ]
+            bbox_pred_list = [
+                bbox_preds[i][img_id].detach() for i in range(num_levels)
+            ]
+
+            img_shape = img_metas[img_id]['img_shape']
+            scale_factor = img_metas[img_id]['scale_factor']
+            if with_nms:
+                # some heads don't support with_nms argument
+                proposals = self._get_bboxes_single(cls_score_list,
+                                                    bbox_pred_list,
+                                                    mlvl_anchors, img_shape,
+                                                    scale_factor, cfg, rescale)
+            else:
+                proposals = self._get_bboxes_single(cls_score_list,
+                                                    bbox_pred_list,
+                                                    mlvl_anchors, img_shape,
+                                                    scale_factor, cfg, rescale,
+                                                    with_nms)
+            result_list.append(proposals)
+        return result_list
+
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           mlvl_anchors,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
+        """Transform outputs for a single batch item into bbox predictions.
+
+          Args:
+            cls_score_list (list[Tensor]): Box scores of all scale level
+                each item has shape (num_anchors * num_classes, H, W).
+            bbox_pred_list (list[Tensor]): Box energies / deltas of all
+                scale level, each item has shape (num_anchors * 4, H, W).
+            mlvl_anchors (list[Tensor]): Anchors of all scale level
+                each item has shape (num_total_anchors, 4).
+            img_shape (tuple[int]): Shape of the input image,
+                (height, width, 3).
+            scale_factor (ndarray): Scale factor of the image arrange as
+                (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1.
         """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
@@ -116,77 +183,59 @@ class RPNHead(RPNTestMixin, AnchorHead):
         mlvl_scores = []
         mlvl_bbox_preds = []
         mlvl_valid_anchors = []
-        batch_size = cls_scores[0].shape[0]
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
             assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
-            rpn_cls_score = rpn_cls_score.permute(0, 2, 3, 1)
+            rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
             if self.use_sigmoid_cls:
-                rpn_cls_score = rpn_cls_score.reshape(batch_size, -1)
+                rpn_cls_score = rpn_cls_score.reshape(-1)
                 scores = rpn_cls_score.sigmoid()
             else:
-                rpn_cls_score = rpn_cls_score.reshape(batch_size, -1, 2)
+                rpn_cls_score = rpn_cls_score.reshape(-1, 2)
                 # We set FG labels to [0, num_class-1] and BG label to
                 # num_class in RPN head since mmdet v2.5, which is unified to
                 # be consistent with other head since mmdet v2.0. In mmdet v2.0
                 # to v2.4 we keep BG label as 0 and FG label as 1 in rpn head.
-                scores = rpn_cls_score.softmax(-1)[..., 0]
-            rpn_bbox_pred = rpn_bbox_pred.permute(0, 2, 3, 1).reshape(
-                batch_size, -1, 4)
+                scores = rpn_cls_score.softmax(dim=1)[:, 0]
+            rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
-            anchors = anchors.expand_as(rpn_bbox_pred)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and rpn_bbox_pred.size(1) > nms_pre:
+            if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
                 # sort is faster than topk
+                # _, topk_inds = scores.topk(cfg.nms_pre)
                 ranked_scores, rank_inds = scores.sort(descending=True)
-                topk_inds = rank_inds[:, :cfg.nms_pre]
-                scores = ranked_scores[:, :cfg.nms_pre]
-                batch_inds = torch.arange(batch_size).view(
-                    -1, 1).expand_as(topk_inds)
-                rpn_bbox_pred = rpn_bbox_pred[batch_inds, topk_inds, :]
-                anchors = anchors[batch_inds, topk_inds, :]
-
+                topk_inds = rank_inds[:cfg.nms_pre]
+                scores = ranked_scores[:cfg.nms_pre]
+                rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
+                anchors = anchors[topk_inds, :]
             mlvl_scores.append(scores)
             mlvl_bbox_preds.append(rpn_bbox_pred)
             mlvl_valid_anchors.append(anchors)
             level_ids.append(
-                scores.new_full((
-                    batch_size,
-                    scores.size(1),
-                ),
-                                idx,
-                                dtype=torch.long))
+                scores.new_full((scores.size(0), ), idx, dtype=torch.long))
 
-        batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
-        batch_mlvl_anchors = torch.cat(mlvl_valid_anchors, dim=1)
-        batch_mlvl_rpn_bbox_pred = torch.cat(mlvl_bbox_preds, dim=1)
-        batch_mlvl_proposals = self.bbox_coder.decode(
-            batch_mlvl_anchors, batch_mlvl_rpn_bbox_pred, max_shape=img_shapes)
-        batch_mlvl_ids = torch.cat(level_ids, dim=1)
+        scores = torch.cat(mlvl_scores)
+        anchors = torch.cat(mlvl_valid_anchors)
+        rpn_bbox_pred = torch.cat(mlvl_bbox_preds)
+        proposals = self.bbox_coder.decode(
+            anchors, rpn_bbox_pred, max_shape=img_shape)
+        ids = torch.cat(level_ids)
 
-        result_list = []
-        for (mlvl_proposals, mlvl_scores,
-             mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
-                              batch_mlvl_ids):
-            if cfg.min_bbox_size >= 0:
-                w = mlvl_proposals[:, 2] - mlvl_proposals[:, 0]
-                h = mlvl_proposals[:, 3] - mlvl_proposals[:, 1]
-                valid_ind = torch.nonzero(
-                    (w > cfg.min_bbox_size)
-                    & (h > cfg.min_bbox_size),
-                    as_tuple=False).squeeze()
-                if valid_ind.sum().item() != len(mlvl_proposals):
-                    mlvl_proposals = mlvl_proposals[valid_ind, :]
-                    mlvl_scores = mlvl_scores[valid_ind]
-                    mlvl_ids = mlvl_ids[valid_ind]
+        if cfg.min_bbox_size > 0:
+            w = proposals[:, 2] - proposals[:, 0]
+            h = proposals[:, 3] - proposals[:, 1]
+            valid_inds = torch.nonzero(
+                (w >= cfg.min_bbox_size)
+                & (h >= cfg.min_bbox_size),
+                as_tuple=False).squeeze()
+            if valid_inds.sum().item() != len(proposals):
+                proposals = proposals[valid_inds, :]
+                scores = scores[valid_inds]
+                ids = ids[valid_inds]
 
-            dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
-                                     cfg.nms)
-            result_list.append(dets[:cfg.max_per_img])
-        return result_list
+        dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+        return dets[:cfg.max_per_img]
 
-    # TODO: waiting for refactor the anchor_head and anchor_free head
     def onnx_export(self, x, img_metas):
         """Test without augmentation.
 
