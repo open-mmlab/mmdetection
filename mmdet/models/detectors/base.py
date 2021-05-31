@@ -163,6 +163,10 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
         """
+        if torch.onnx.is_in_onnx_export():
+            assert len(img_metas) == 1
+            return self.onnx_export(img[0], img_metas[0])
+
         if return_loss:
             return self.forward_train(img, img_metas, **kwargs)
         else:
@@ -339,3 +343,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
         if not (show or out_file):
             return img
+
+    def onnx_export(self, img, img_metas):
+        raise NotImplementedError(f'{self.__class__.__name__} does '
+                                  f'not support ONNX EXPORT')

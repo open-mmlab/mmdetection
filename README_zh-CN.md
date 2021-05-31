@@ -114,6 +114,8 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 - [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
 - [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
 - [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
+- [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
+- [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 
 我们在[基于 MMDetection 的项目](./docs/projects.md)中列举了一些其他的支持的算法。
 

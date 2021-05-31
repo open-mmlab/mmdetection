@@ -185,7 +185,8 @@ class DETRHead(AnchorFreeHead):
                 '.multihead_attn.': '.attentions.1.',
                 '.decoder.norm.': '.decoder.post_norm.'
             }
-            for k in state_dict.keys():
+            state_dict_keys = list(state_dict.keys())
+            for k in state_dict_keys:
                 for ori_key, convert_key in convert_dict.items():
                     if ori_key in k:
                         convert_key = k.replace(ori_key, convert_key)
