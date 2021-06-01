@@ -3,7 +3,6 @@ from math import ceil, log
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import ConvModule, bias_init_with_prob
 from mmcv.ops import CornerPool, batched_nms
 from mmcv.runner import BaseModule
@@ -11,6 +10,9 @@ from mmcv.runner import BaseModule
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
+from ..utils.gaussian_target import (gather_feat, get_local_maximum,
+                                     get_topk_from_heatmap,
+                                     transpose_and_gather_feat)
 from .base_dense_head import BaseDenseHead
 
 
@@ -692,6 +694,15 @@ class CornerHead(BaseDenseHead):
                     rescale=rescale,
                     with_nms=with_nms))
 
+        if torch.onnx.is_in_onnx_export():
+            assert len(
+                img_metas
+            ) == 1, 'Only support one input image while in exporting to ONNX'
+
+            detections, labels = result_list[0]
+            # batch_size 1 here, [1, num_det, 5], [1, num_det]
+            return detections.unsqueeze(0), labels.unsqueeze(0)
+
         return result_list
 
     def _get_bboxes_single(self,
@@ -756,9 +767,11 @@ class CornerHead(BaseDenseHead):
         scores = batch_scores.view([-1, 1])
         clses = batch_clses.view([-1, 1])
 
-        idx = scores.argsort(dim=0, descending=True)
+        # use `sort` instead of `argsort` here, since currently exporting
+        # `argsort` to ONNX opset version 11 is not supported
+        scores, idx = scores.sort(dim=0, descending=True)
         bboxes = bboxes[idx].view([-1, 4])
-        scores = scores[idx].view(-1)
+        scores = scores.view(-1)
         clses = clses[idx].view(-1)
 
         detections = torch.cat([bboxes, scores.unsqueeze(-1)], -1)
@@ -787,89 +800,19 @@ class CornerHead(BaseDenseHead):
         out_labels = labels[keep]
 
         if len(out_bboxes) > 0:
-            idx = torch.argsort(out_bboxes[:, -1], descending=True)
-            idx = idx[:cfg.max_per_img]
+            # use `sort` to replace with `argsort` here
+            _, idx = torch.sort(out_bboxes[:, -1], descending=True)
+            max_per_img = out_bboxes.new_tensor(cfg.max_per_img).to(torch.long)
+            nms_after = max_per_img
+            if torch.onnx.is_in_onnx_export():
+                # Always keep topk op for dynamic input in onnx
+                from mmdet.core.export import get_k_for_topk
+                nms_after = get_k_for_topk(max_per_img, out_bboxes.shape[0])
+            idx = idx[:nms_after]
             out_bboxes = out_bboxes[idx]
             out_labels = out_labels[idx]
 
         return out_bboxes, out_labels
-
-    def _gather_feat(self, feat, ind, mask=None):
-        """Gather feature according to index.
-
-        Args:
-            feat (Tensor): Target feature map.
-            ind (Tensor): Target coord index.
-            mask (Tensor | None): Mask of featuremap. Default: None.
-
-        Returns:
-            feat (Tensor): Gathered feature.
-        """
-        dim = feat.size(2)
-        ind = ind.unsqueeze(2).repeat(1, 1, dim)
-        feat = feat.gather(1, ind)
-        if mask is not None:
-            mask = mask.unsqueeze(2).expand_as(feat)
-            feat = feat[mask]
-            feat = feat.view(-1, dim)
-        return feat
-
-    def _local_maximum(self, heat, kernel=3):
-        """Extract local maximum pixel with given kernel.
-
-        Args:
-            heat (Tensor): Target heatmap.
-            kernel (int): Kernel size of max pooling. Default: 3.
-
-        Returns:
-            heat (Tensor): A heatmap where local maximum pixels maintain its
-                own value and other positions are 0.
-        """
-        pad = (kernel - 1) // 2
-        hmax = F.max_pool2d(heat, kernel, stride=1, padding=pad)
-        keep = (hmax == heat).float()
-        return heat * keep
-
-    def _transpose_and_gather_feat(self, feat, ind):
-        """Transpose and gather feature according to index.
-
-        Args:
-            feat (Tensor): Target feature map.
-            ind (Tensor): Target coord index.
-
-        Returns:
-            feat (Tensor): Transposed and gathered feature.
-        """
-        feat = feat.permute(0, 2, 3, 1).contiguous()
-        feat = feat.view(feat.size(0), -1, feat.size(3))
-        feat = self._gather_feat(feat, ind)
-        return feat
-
-    def _topk(self, scores, k=20):
-        """Get top k positions from heatmap.
-
-        Args:
-            scores (Tensor): Target heatmap with shape
-                [batch, num_classes, height, width].
-            k (int): Target number. Default: 20.
-
-        Returns:
-            tuple[torch.Tensor]: Scores, indexes, categories and coords of
-                topk keypoint. Containing following Tensors:
-
-            - topk_scores (Tensor): Max scores of each topk keypoint.
-            - topk_inds (Tensor): Indexes of each topk keypoint.
-            - topk_clses (Tensor): Categories of each topk keypoint.
-            - topk_ys (Tensor): Y-coord of each topk keypoint.
-            - topk_xs (Tensor): X-coord of each topk keypoint.
-        """
-        batch, _, height, width = scores.size()
-        topk_scores, topk_inds = torch.topk(scores.view(batch, -1), k)
-        topk_clses = topk_inds // (height * width)
-        topk_inds = topk_inds % (height * width)
-        topk_ys = topk_inds // width
-        topk_xs = (topk_inds % width).int().float()
-        return topk_scores, topk_inds, topk_clses, topk_ys, topk_xs
 
     def decode_heatmap(self,
                        tl_heat,
@@ -927,14 +870,19 @@ class CornerHead(BaseDenseHead):
             and br_centripetal_shift is not None)
         assert with_embedding + with_centripetal_shift == 1
         batch, _, height, width = tl_heat.size()
-        inp_h, inp_w, _ = img_meta['pad_shape']
+        if torch.onnx.is_in_onnx_export():
+            inp_h, inp_w = img_meta['pad_shape_for_onnx'][:2]
+        else:
+            inp_h, inp_w, _ = img_meta['pad_shape']
 
         # perform nms on heatmaps
-        tl_heat = self._local_maximum(tl_heat, kernel=kernel)
-        br_heat = self._local_maximum(br_heat, kernel=kernel)
+        tl_heat = get_local_maximum(tl_heat, kernel=kernel)
+        br_heat = get_local_maximum(br_heat, kernel=kernel)
 
-        tl_scores, tl_inds, tl_clses, tl_ys, tl_xs = self._topk(tl_heat, k=k)
-        br_scores, br_inds, br_clses, br_ys, br_xs = self._topk(br_heat, k=k)
+        tl_scores, tl_inds, tl_clses, tl_ys, tl_xs = get_topk_from_heatmap(
+            tl_heat, k=k)
+        br_scores, br_inds, br_clses, br_ys, br_xs = get_topk_from_heatmap(
+            br_heat, k=k)
 
         # We use repeat instead of expand here because expand is a
         # shallow-copy function. Thus it could cause unexpected testing result
@@ -945,9 +893,9 @@ class CornerHead(BaseDenseHead):
         br_ys = br_ys.view(batch, 1, k).repeat(1, k, 1)
         br_xs = br_xs.view(batch, 1, k).repeat(1, k, 1)
 
-        tl_off = self._transpose_and_gather_feat(tl_off, tl_inds)
+        tl_off = transpose_and_gather_feat(tl_off, tl_inds)
         tl_off = tl_off.view(batch, k, 1, 2)
-        br_off = self._transpose_and_gather_feat(br_off, br_inds)
+        br_off = transpose_and_gather_feat(br_off, br_inds)
         br_off = br_off.view(batch, 1, k, 2)
 
         tl_xs = tl_xs + tl_off[..., 0]
@@ -956,9 +904,9 @@ class CornerHead(BaseDenseHead):
         br_ys = br_ys + br_off[..., 1]
 
         if with_centripetal_shift:
-            tl_centripetal_shift = self._transpose_and_gather_feat(
+            tl_centripetal_shift = transpose_and_gather_feat(
                 tl_centripetal_shift, tl_inds).view(batch, k, 1, 2).exp()
-            br_centripetal_shift = self._transpose_and_gather_feat(
+            br_centripetal_shift = transpose_and_gather_feat(
                 br_centripetal_shift, br_inds).view(batch, 1, k, 2).exp()
 
             tl_ctxs = tl_xs + tl_centripetal_shift[..., 0]
@@ -978,18 +926,31 @@ class CornerHead(BaseDenseHead):
             br_ctxs *= (inp_w / width)
             br_ctys *= (inp_h / height)
 
-        x_off = img_meta['border'][2]
-        y_off = img_meta['border'][0]
+        x_off, y_off = 0, 0  # no crop
+        if not torch.onnx.is_in_onnx_export():
+            # since `RandomCenterCropPad` is done on CPU with numpy and it's
+            # not dynamic traceable when exporting to ONNX, thus 'border'
+            # does not appears as key in 'img_meta'. As a tmp solution,
+            # we move this 'border' handle part to the postprocess after
+            # finished exporting to ONNX, which is handle in
+            # `mmdet/core/export/model_wrappers.py`. Though difference between
+            # pytorch and exported onnx model, it might be ignored since
+            # comparable performance is achieved between them (e.g. 40.4 vs
+            # 40.6 on COCO val2017, for CornerNet without test-time flip)
+            if 'border' in img_meta:
+                x_off = img_meta['border'][2]
+                y_off = img_meta['border'][0]
 
         tl_xs -= x_off
         tl_ys -= y_off
         br_xs -= x_off
         br_ys -= y_off
 
-        tl_xs *= tl_xs.gt(0.0).type_as(tl_xs)
-        tl_ys *= tl_ys.gt(0.0).type_as(tl_ys)
-        br_xs *= br_xs.gt(0.0).type_as(br_xs)
-        br_ys *= br_ys.gt(0.0).type_as(br_ys)
+        zeros = tl_xs.new_zeros(*tl_xs.size())
+        tl_xs = torch.where(tl_xs > 0.0, tl_xs, zeros)
+        tl_ys = torch.where(tl_ys > 0.0, tl_ys, zeros)
+        br_xs = torch.where(br_xs > 0.0, br_xs, zeros)
+        br_ys = torch.where(br_ys > 0.0, br_ys, zeros)
 
         bboxes = torch.stack((tl_xs, tl_ys, br_xs, br_ys), dim=3)
         area_bboxes = ((br_xs - tl_xs) * (br_ys - tl_ys)).abs()
@@ -1038,9 +999,9 @@ class CornerHead(BaseDenseHead):
                 ct_bboxes[..., 3] >= rcentral[..., 3])
 
         if with_embedding:
-            tl_emb = self._transpose_and_gather_feat(tl_emb, tl_inds)
+            tl_emb = transpose_and_gather_feat(tl_emb, tl_inds)
             tl_emb = tl_emb.view(batch, k, 1)
-            br_emb = self._transpose_and_gather_feat(br_emb, br_inds)
+            br_emb = transpose_and_gather_feat(br_emb, br_inds)
             br_emb = br_emb.view(batch, 1, k)
             dists = torch.abs(tl_emb - br_emb)
 
@@ -1061,10 +1022,16 @@ class CornerHead(BaseDenseHead):
         width_inds = (br_xs <= tl_xs)
         height_inds = (br_ys <= tl_ys)
 
-        scores[cls_inds] = -1
-        scores[width_inds] = -1
-        scores[height_inds] = -1
-        scores[dist_inds] = -1
+        # No use `scores[cls_inds]`, instead we use `torch.where` here.
+        # Since only 1-D indices with type 'tensor(bool)' are supported
+        # when exporting to ONNX, any other bool indices with more dimensions
+        # (e.g. 2-D bool tensor) as input parameter in node is invalid
+        negative_scores = -1 * torch.ones_like(scores)
+        scores = torch.where(cls_inds, negative_scores, scores)
+        scores = torch.where(width_inds, negative_scores, scores)
+        scores = torch.where(height_inds, negative_scores, scores)
+        scores = torch.where(dist_inds, negative_scores, scores)
+
         if with_centripetal_shift:
             scores[tl_ctx_inds] = -1
             scores[tl_cty_inds] = -1
@@ -1076,9 +1043,9 @@ class CornerHead(BaseDenseHead):
         scores = scores.unsqueeze(2)
 
         bboxes = bboxes.view(batch, -1, 4)
-        bboxes = self._gather_feat(bboxes, inds)
+        bboxes = gather_feat(bboxes, inds)
 
         clses = tl_clses.contiguous().view(batch, -1, 1)
-        clses = self._gather_feat(clses, inds).float()
+        clses = gather_feat(clses, inds).float()
 
         return bboxes, scores, clses

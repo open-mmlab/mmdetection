@@ -149,11 +149,11 @@ def add_dummy_nms_for_onnx(boxes,
     box_inds = torch.randint(num_box, (num_fake_det, 1))
     indices = torch.cat([batch_inds, cls_inds, box_inds], dim=1)
     output = indices
-    setattr(DymmyONNXNMSop, 'output', output)
+    setattr(DummyONNXNMSop, 'output', output)
 
     # open tracing
     torch._C._set_tracing_state(state)
-    selected_indices = DymmyONNXNMSop.apply(boxes, scores,
+    selected_indices = DummyONNXNMSop.apply(boxes, scores,
                                             max_output_boxes_per_class,
                                             iou_threshold, score_threshold)
 
@@ -197,8 +197,8 @@ def add_dummy_nms_for_onnx(boxes,
     return dets, labels
 
 
-class DymmyONNXNMSop(torch.autograd.Function):
-    """DymmyONNXNMSop.
+class DummyONNXNMSop(torch.autograd.Function):
+    """DummyONNXNMSop.
 
     This class is only for creating onnx::NonMaxSuppression.
     """
@@ -207,7 +207,7 @@ class DymmyONNXNMSop(torch.autograd.Function):
     def forward(ctx, boxes, scores, max_output_boxes_per_class, iou_threshold,
                 score_threshold):
 
-        return DymmyONNXNMSop.output
+        return DummyONNXNMSop.output
 
     @staticmethod
     def symbolic(g, boxes, scores, max_output_boxes_per_class, iou_threshold,

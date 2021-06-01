@@ -131,7 +131,7 @@ def prepare_inputs(img_path,
     imgs = [img[None, :] for img in imgs]
     if not rescale:
         for img_meta in img_metas:
-            img_meta[0]['scale_factor'] = [1.0] * 4
+            img_meta[0]['scale_factor'] = np.ones(4)
             img_meta[0]['flip'] = False
     return imgs, img_metas
 
@@ -187,7 +187,7 @@ def preprocess_example_input(input_config):
         'ori_shape': (H, W, C),
         'pad_shape': (H, W, C),
         'filename': '<demo>.png',
-        'scale_factor': 1.0,
+        'scale_factor': np.ones(4),
         'flip': False,
         'show_img': show_img,
     }

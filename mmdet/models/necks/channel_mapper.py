@@ -23,7 +23,7 @@ class ChannelMapper(BaseModule):
         act_cfg (dict, optional): Config dict for activation layer in
             ConvModule. Default: dict(type='ReLU').
         num_outs (int, optional): Number of output feature maps. There
-            would be extra_convs when num_outs larger than the lenghth
+            would be extra_convs when num_outs larger than the length
             of in_channels.
         init_cfg (dict or list[dict], optional): Initialization config dict.
     Example:

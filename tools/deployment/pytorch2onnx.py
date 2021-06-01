@@ -42,10 +42,11 @@ def pytorch2onnx(model,
     output_names = ['dets', 'labels']
     if model.with_mask:
         output_names.append('masks')
+    input_name = 'input'
     dynamic_axes = None
     if dynamic_export:
         dynamic_axes = {
-            'input': {
+            input_name: {
                 0: 'batch',
                 2: 'width',
                 3: 'height'
@@ -66,7 +67,7 @@ def pytorch2onnx(model,
         model,
         img_list,
         output_file,
-        input_names=['input'],
+        input_names=[input_name],
         output_names=output_names,
         export_params=True,
         keep_initializers_as_inputs=True,
@@ -127,21 +128,36 @@ def pytorch2onnx(model,
         pytorch_results = model(
             img_list, img_metas=img_meta_list, return_loss=False,
             rescale=True)[0]
-        # get onnx output
+
         img_list = [_.cuda().contiguous() for _ in img_list]
         if dynamic_export:
             img_list = img_list + [_.flip(-1).contiguous() for _ in img_list]
             img_meta_list = img_meta_list * 2
+        # get onnx output
         onnx_results = onnx_model(
             img_list, img_metas=img_meta_list, return_loss=False)[0]
         # visualize predictions
+        score_thr = 0.3
         if show:
-            from mmdet.apis import show_result_pyplot
-            show_img = mmcv.imread(test_img)
-            show_result_pyplot(
-                model, show_img, pytorch_results, title='Pytorch')
-            show_result_pyplot(
-                model, show_img, onnx_results, title='ONNXRuntime')
+            out_file_ort, out_file_pt = None, None
+        else:
+            out_file_ort, out_file_pt = 'show-ort.png', 'show-pt.png'
+
+        show_img = mmcv.imread(test_img)
+        model.show_result(
+            show_img,
+            pytorch_results,
+            score_thr=score_thr,
+            show=True,
+            win_name='PyTorch',
+            out_file=out_file_pt)
+        onnx_model.show_result(
+            show_img,
+            onnx_results,
+            score_thr=score_thr,
+            show=True,
+            win_name='ONNXRuntime',
+            out_file=out_file_ort)
 
         # compare a part of result
         if model.with_mask:
