@@ -4,42 +4,39 @@
 
 #### Highlights
 
-- Support new methods: [CenterNet](https://arxiv.org/abs/1904.07850),[Seesaw Loss](https://arxiv.org/abs/2008.10032)
-- Support MobileNetV2 backbone and inverted residual block (#5122)
+- Support new methods: [CenterNet](https://arxiv.org/abs/1904.07850),[Seesaw Loss](https://arxiv.org/abs/2008.10032),[MobileNetV2](https://arxiv.org/abs/1801.04381)
 
 #### New Features
 
 - Support paper [Objects as Points](https://arxiv.org/abs/1904.07850) (#4602)
 - Support paper [Seesaw Loss for Long-Tailed Instance Segmentation (CVPR 2021)](https://arxiv.org/abs/2008.10032) (#5128)
-- Support MobileNetV2 backbone and inverted residual block(#5122)
-- Support MIN (#5143)
+- Support [MobileNetV2]((https://arxiv.org/abs/1801.04381)) backbone and inverted residual block (#5122)
+- Support MIM (#5143)
 - Supports ONNX dynamic shapes for CornerNet (#5136)
-- Add mask_soft config option to allow non-binary masks (#4615)
+- Add `mask_soft` config option to allow non-binary masks (#4615)
 - Adding PWC metafile (#5135)
 
 #### Bug Fixes
 
-- Fix YOLOv3 FP16 error (#5172)
-- Fix Cacscade R-CNN aug test error when `det_bboxes` length is 0  (#5221)
-- Fix VOC recall iou_thr name error (#5195)
+- Fix YOLOv3 FP16 training error (#5172)
+- Fix Cacscade R-CNN TTA test error when `det_bboxes` length is 0  (#5221)
+- Fix `iou_thr` variable naming errors in VOC recall calculation  function (#5195)
 - Fix Faster R-CNN performance dropped in ONNX Runtime (#5197)
 - Fix DETR dict changed error when using python 3.8 during iteration  (#5226)
 
 #### Improvements
 
 - Refactor ONNX export of two stage (#5205)
-- Use MMCV's EvalHook  (#4806)
-- Update roi extractor for ONNX (#5194)
-- Update YOLOv3 head parameter initialization (#5181)
-- Update YOLOv3 models (#5229)
+- Replace MMDetection's EvalHook with MMCV's EvalHook for consistency  (#4806)
+- Update RoI extractor for ONNX (#5194)
+- Use better parameter initialization in YOLOv3 head for higher performance (#5181)
 - Release new FP16 DCN models of Mask R-CNN (#5201)
-
-- Discard bboxes with sizes equals to min_bbox_size (#5011)
+- Discard bboxes with sizes equals to `min_bbox_size` (#5011)
 - Remove duplicate code in DETR head (#5129)
-- Add detectors ResNet-101 COCO dataset weights (#4960)
-- Remove unnecessary (object) in class definition (#5180)
+- Update YOLOv3 model weights (#5229)
+- Add Detectors ResNet-101 model weights (#4960)
+- Remove unnecessary object in class definition (#5180)
 - Fix doc link (#5192)
-- Fix typo error (#5134, #5163)
 
 ### v2.12.0 (01/5/2021)
 
