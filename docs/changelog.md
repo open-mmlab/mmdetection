@@ -11,10 +11,10 @@
 - Support paper [Objects as Points](https://arxiv.org/abs/1904.07850) (#4602)
 - Support paper [Seesaw Loss for Long-Tailed Instance Segmentation (CVPR 2021)](https://arxiv.org/abs/2008.10032) (#5128)
 - Support [MobileNetV2](https://arxiv.org/abs/1801.04381) backbone and inverted residual block (#5122)
-- Support MIM (#5143)
+- Support [MIM](https://github.com/open-mmlab/mim) (#5143)
 - Supports ONNX dynamic shapes for CornerNet (#5136)
 - Add `mask_soft` config option to allow non-binary masks (#4615)
-- Adding PWC metafile (#5135)
+- Add PWC metafile (#5135)
 
 #### Bug Fixes
 
@@ -26,7 +26,7 @@
 
 #### Improvements
 
-- Refactor ONNX export of two stage (#5205)
+- Refactor ONNX export of two stage detector (#5205)
 - Replace MMDetection's EvalHook with MMCV's EvalHook for consistency  (#4806)
 - Update RoI extractor for ONNX (#5194)
 - Use better parameter initialization in YOLOv3 head for higher performance (#5181)
