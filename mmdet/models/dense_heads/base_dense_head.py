@@ -57,3 +57,20 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         else:
             proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
             return losses, proposal_list
+
+    def simple_test(self, feats, img_metas, rescale=False):
+        """Test function without test-time augmentation.
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
+        """
+        return self.simple_test_bboxes(feats, img_metas, rescale=rescale)
