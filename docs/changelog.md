@@ -1,6 +1,6 @@
 ## Changelog
 
-### v2.13.0 (31/5/2021)
+### v2.13.0 (01/6/2021)
 
 #### Highlights
 
@@ -12,7 +12,7 @@
 - Support paper [Seesaw Loss for Long-Tailed Instance Segmentation (CVPR 2021)](https://arxiv.org/abs/2008.10032) (#5128)
 - Support [MobileNetV2](https://arxiv.org/abs/1801.04381) backbone and inverted residual block (#5122)
 - Support [MIM](https://github.com/open-mmlab/mim) (#5143)
-- Supports ONNX dynamic shapes for CornerNet (#5136)
+- ONNX exportation with dynamic shapes of CornerNet (#5136)
 - Add `mask_soft` config option to allow non-binary masks (#4615)
 - Add PWC metafile (#5135)
 
@@ -30,11 +30,11 @@
 - Replace MMDetection's EvalHook with MMCV's EvalHook for consistency  (#4806)
 - Update RoI extractor for ONNX (#5194)
 - Use better parameter initialization in YOLOv3 head for higher performance (#5181)
-- Release new FP16 DCN models of Mask R-CNN (#5201)
+- Release new DCN models of Mask R-CNN by mixed-precision training (#5201)
 - Update YOLOv3 model weights (#5229)
-- Add Detectors ResNet-101 model weights (#4960)
+- Add DetectoRS ResNet-101 model weights (#4960)
 - Discard bboxes with sizes equals to `min_bbox_size` (#5011)
-- Remove duplicate code in DETR head (#5129)
+- Remove duplicated code in DETR head (#5129)
 - Remove unnecessary object in class definition (#5180)
 - Fix doc link (#5192)
 
