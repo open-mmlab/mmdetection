@@ -17,17 +17,18 @@ class SSDNeck(BaseModule):
         level_paddings (Sequence[int]): Padding size of 3x3 conv per level.
         l2_norm_scale (float): L2 normalization layer init scale.
             If None, not use L2 normalization on the first input feature.
-        last_kernel_size (int):
-        is_vgg_neck (bool):
+        last_kernel_size (int): Kernel size of the last conv layer.
+            Default: 3.
+        is_vgg_neck (bool): Whether to add more vgg layers after backbone.
+            Default: False.
         use_depthwise (bool): Whether to use DepthwiseSeparableConv.
-            Default: False
+            Default: False.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True)
+            Default: None.
         act_cfg (dict): Config dict for activation layer.
-            Default: dict(type='LeakyReLU', negative_slope=0.1).
+            Default: dict(type='ReLU').
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
     """
 
     def __init__(self,
@@ -37,15 +38,16 @@ class SSDNeck(BaseModule):
                  level_paddings,
                  l2_norm_scale=20.,
                  last_kernel_size=3,
-                 is_vgg_neck=True,
+                 is_vgg_neck=False,
                  use_depthwise=False,
                  conv_cfg=None,
                  norm_cfg=None,
                  act_cfg=dict(type='ReLU'),
                  init_cfg=[
-                     dict(type='Kaiming', layer='Conv2d'),
+                     dict(
+                         type='Xavier', distribution='uniform',
+                         layer='Conv2d'),
                      dict(type='Constant', val=1, layer='BatchNorm2d'),
-                     dict(type='Normal', std=0.01, layer='Linear')
                  ]):
         super(SSDNeck, self).__init__(init_cfg)
         assert len(out_channels) - len(in_channels) == len(level_strides)
