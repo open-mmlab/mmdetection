@@ -221,13 +221,15 @@ class DecoupledSOLOHead(SOLOHead):
                 zip(ins_preds_x_final, ins_preds_y_final, ins_labels):
             mask_n = pred_x.size(0)
             if mask_n == 0:
+                # make sure can get grad
+                loss_mask.append((pred_x.sum() + pred_y.sum()).unsqueeze(0))
                 continue
             num_ins += mask_n
             loss_mask.append(self.loss_mask((pred_x, pred_y), target))
         if num_ins > 0:
-            loss_mask = torch.cat(loss_mask).mean()
+            loss_mask = torch.cat(loss_mask).sum() / num_ins
         else:
-            loss_mask = ins_preds_x_final[0].sum() * 0
+            loss_mask = torch.cat(loss_mask).mean()
 
         # cate
         flatten_cate_labels = torch.cat(cate_labels)
