@@ -66,8 +66,10 @@ class TestOTEDetection(unittest.TestCase):
                 if isinstance(shape, Box):
                     continue
                 elif isinstance(shape, Ellipse):
-                    shapes[shape_index] = Box(x1=shape.x1, y1=shape.y1,
-                                              x2=shape.x2, y2=shape.y2,
+                    shapes[shape_index] = Box(x1=max(min(shape.x1, 1), 0),
+                                              y1=max(min(shape.y1, 1), 0),
+                                              x2=max(min(shape.x2, 1), 0),
+                                              y2=max(min(shape.y2, 1), 0),
                                               labels=labels)
                 elif isinstance(shape, Polygon):
                     shapes[shape_index] = Box(x1=max(min(shape.min_x, 1), 0),
@@ -118,8 +120,8 @@ class TestOTEDetection(unittest.TestCase):
                                                               task_name="MMDetection", number_of_images=20,
                                                               image_width=480, image_height=360, max_shapes=100,
                                                               configurable_parameters=configurable_parameters)
-        generate_and_save_random_annotated_video(project=detection_project,
-                                                 video_name="Video for Detection", width=480, height=360)
+        # generate_and_save_random_annotated_video(project=detection_project,
+        #                                          video_name="Video for Detection", width=480, height=360)
 
         # Convert annotations to detection format
         self.convert_annotation_shapes_in_project_to_bounding_boxes(detection_project)
@@ -179,8 +181,8 @@ class TestOTEDetection(unittest.TestCase):
                                                               task_name="OTEDetectionTask", max_shapes=100,
                                                               number_of_images=100, image_width=1080, image_height=720,
                                                               configurable_parameters=configurable_parameters)
-        generate_and_save_random_annotated_video(project=detection_project, number_of_frames=25,
-                                                 video_name="Video for Detection tests", width=480, height=360)
+        # generate_and_save_random_annotated_video(project=detection_project, number_of_frames=25,
+        #                                          video_name="Video for Detection tests", width=480, height=360)
         # Convert annotations to detection format
         self.convert_annotation_shapes_in_project_to_bounding_boxes(detection_project)
         print(f"Project {project_name} created and populated.")
