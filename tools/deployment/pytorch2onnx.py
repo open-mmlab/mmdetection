@@ -150,6 +150,8 @@ def pytorch2onnx(config_path,
         onnx_results = bbox2result(ort_dets, ort_labels, num_classes)
         if model.with_mask:
             segm_results = onnx_outputs[2]
+            if segm_results.dtype != np.bool:
+                segm_results = (segm_results * 255).astype(np.uint8)
             cls_segms = [[] for _ in range(num_classes)]
             for i in range(ort_dets.shape[0]):
                 cls_segms[ort_labels[i]].append(segm_results[i])
