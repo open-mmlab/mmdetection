@@ -52,8 +52,24 @@ class DeployBaseDetector(BaseDetector):
             dets, labels = batch_dets[i], batch_labels[i]
             if rescale:
                 scale_factor = img_metas[i]['scale_factor']
+
+                if isinstance(scale_factor, (list, tuple, np.ndarray)):
+                    assert len(scale_factor) == 4
+                    scale_factor = np.array(scale_factor)[None, :]  # [1,4]
                 dets[:, :4] /= scale_factor
+
+            if 'border' in img_metas[i]:
+                # offset pixel of the top-left corners between original image
+                # and padded/enlarged image, 'border' is used when exporting
+                # CornerNet and CentripetalNet to onnx
+                x_off = img_metas[i]['border'][2]
+                y_off = img_metas[i]['border'][0]
+                dets[:, [0, 2]] -= x_off
+                dets[:, [1, 3]] -= y_off
+                dets[:, :4] *= (dets[:, :4] > 0).astype(dets.dtype)
+
             dets_results = bbox2result(dets, labels, len(self.CLASSES))
+
             if batch_masks is not None:
                 masks = batch_masks[i]
                 img_h, img_w = img_metas[i]['img_shape'][:2]
