@@ -69,8 +69,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Defaults to False.
 
         Returns:
-            list[list[np.ndarray]]: BBox results of each image and classes.
-                The outer list corresponds to each image. The inner list
-                corresponds to each class.
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is bboxes with shape (n, 5), where 5 represent
+                (tl_x, tl_y, br_x, br_y, score).
+                The shape of the second tensor in the tuple is labels
+                with shape (n,)
         """
         return self.simple_test_bboxes(feats, img_metas, rescale=rescale)
