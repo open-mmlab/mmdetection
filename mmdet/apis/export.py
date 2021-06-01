@@ -236,9 +236,10 @@ def export_model(model, output_dir, target='openvino', onnx_opset=11,
                 with_text = True
 
     if target == 'openvino':
-        input_shape = list(fake_data['img'][0].shape)
         if input_shape:
             input_shape = [1, 3, *input_shape]
+        else:
+            input_shape = list(fake_data['img'][0].shape)
         export_to_openvino(cfg, onnx_model_path, output_dir, input_shape, input_format, precision,
                            with_text=with_text)
     else:
