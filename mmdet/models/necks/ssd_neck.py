@@ -55,6 +55,12 @@ class SSDNeck(BaseModule):
 
         if l2_norm_scale:
             self.l2_norm = L2Norm(in_channels[0], l2_norm_scale)
+            self.init_cfg += [
+                dict(
+                    type='Constant',
+                    val=self.l2_norm.scale,
+                    override=dict(name='l2_norm'))
+            ]
 
         if is_vgg_neck:
             self.vgg_features = nn.Sequential(
