@@ -11,7 +11,7 @@ from flaky import flaky
 from sc_sdk.entities.media_identifier import ImageIdentifier, VideoFrameIdentifier
 from sc_sdk.entities.project import Project
 from sc_sdk.entities.shapes.box import Box
-from sc_sdk.entities.shapes.circle import Circle
+from sc_sdk.entities.shapes.ellipse import Ellipse
 from sc_sdk.entities.shapes.polygon import Polygon
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.tests.test_helpers import generate_random_annotated_project, generate_and_save_random_annotated_video, \
@@ -65,21 +65,16 @@ class TestOTEDetection(unittest.TestCase):
                 labels = shape.get_labels(include_empty=True)
                 if isinstance(shape, Box):
                     continue
-                elif isinstance(shape, Circle):
-                    r, x, y = shape.r, shape.x, shape.y
-                    aspect_ratio = media.width / media.height
-                    height_r = aspect_ratio * r
-                    shapes[shape_index] = Box(x1=max(min(x - r, 1), 0),
-                                            y1=max(min(y - height_r, 1), 0),
-                                            x2=max(min(x + r, 1), 0),
-                                            y2=max(min(y + height_r, 1), 0),
-                                            labels=labels)
+                elif isinstance(shape, Ellipse):
+                    shapes[shape_index] = Box(x1=shape.x1, y1=shape.y1,
+                                              x2=shape.x2, y2=shape.y2,
+                                              labels=labels)
                 elif isinstance(shape, Polygon):
                     shapes[shape_index] = Box(x1=max(min(shape.min_x, 1), 0),
-                                            y1=max(min(shape.min_y, 1), 0),
-                                            x2=max(min(shape.max_x, 1), 0),
-                                            y2=max(min(shape.max_y, 1), 0),
-                                            labels=labels)
+                                              y1=max(min(shape.min_y, 1), 0),
+                                              x2=max(min(shape.max_x, 1), 0),
+                                              y2=max(min(shape.max_y, 1), 0),
+                                              labels=labels)
 
             # Update annotation and persist in repo
             annotation.append_shapes(shapes)
