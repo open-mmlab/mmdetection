@@ -166,7 +166,6 @@ class MaskTestMixin:
             if det_bboxes.shape[0] == 0:
                 segm_result = [[] for _ in range(self.mask_head.num_classes)]
             else:
-                # TODO: check this @haian
                 if rescale and not isinstance(scale_factor,
                                               (float, torch.Tensor)):
                     scale_factor = det_bboxes.new_tensor(scale_factor)
