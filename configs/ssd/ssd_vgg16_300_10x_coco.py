@@ -1,24 +1,13 @@
-_base_ = 'ssd300_coco.py'
-input_size = 512
-model = dict(
-    neck=dict(
-        out_channels=(512, 1024, 512, 256, 256, 256, 256),
-        level_strides=(2, 2, 2, 2, 1),
-        level_paddings=(1, 1, 1, 1, 1),
-        last_kernel_size=4),
-    bbox_head=dict(
-        in_channels=(512, 1024, 512, 256, 256, 256, 256),
-        anchor_generator=dict(
-            type='SSDAnchorGenerator',
-            scale_major=False,
-            input_size=input_size,
-            basesize_ratio_range=(0.1, 0.9),
-            strides=[8, 16, 32, 64, 128, 256, 512],
-            ratios=[[2], [2, 3], [2, 3], [2, 3], [2, 3], [2], [2]])))
+_base_ = [
+    '../_base_/models/ssd300.py', '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
+]
+model = dict(pretrained='mmcls://vgg16')
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
-img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -37,7 +26,7 @@ train_pipeline = [
         type='MinIoURandomCrop',
         min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
         min_crop_size=0.3),
-    dict(type='Resize', img_scale=(512, 512), keep_ratio=False),
+    dict(type='Resize', img_scale=(300, 300), keep_ratio=False),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='DefaultFormatBundle'),
@@ -47,7 +36,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(512, 512),
+        img_scale=(300, 300),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=False),

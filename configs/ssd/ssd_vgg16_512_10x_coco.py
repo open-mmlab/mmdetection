@@ -1,6 +1,7 @@
-_base_ = 'ssd300_coco.py'
+_base_ = './ssd_vgg16_300_10x_coco.py'
 input_size = 512
 model = dict(
+    pretrained='mmcls://vgg16',
     neck=dict(
         out_channels=(512, 1024, 512, 256, 256, 256, 256),
         level_strides=(2, 2, 2, 2, 1),
@@ -18,7 +19,8 @@ model = dict(
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
-img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
