@@ -241,7 +241,7 @@ regnet = dict(
     config='configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_1x_coco.py',
     checkpoint='mask_rcnn_regnetx-3.2GF_fpn_1x_coco_20200520_163141-2a9d1814.pth',  # noqa
     eval='bbox segm',
-    metric=dict(bbox_mAP=40.4, segm_mAP=36.6),
+    metric=dict(bbox_mAP=40.4, segm_mAP=36.7),
 )
 reppoints = dict(
     config='configs/reppoints/reppoints_moment_r50_fpn_1x_coco.py',
@@ -321,7 +321,7 @@ yolact = dict(
     config='configs/yolact/yolact_r50_1x8_coco.py',
     checkpoint='yolact_r50_1x8_coco_20200908-f38d58df.pth',
     eval='bbox segm',
-    metric=dict(bbox_mAP=31.2, segm_mAP=0),
+    metric=dict(bbox_mAP=31.2, segm_mAP=29.0),
 )
 yolo = dict(
     config='configs/yolo/yolov3_d53_320_273e_coco.py',
