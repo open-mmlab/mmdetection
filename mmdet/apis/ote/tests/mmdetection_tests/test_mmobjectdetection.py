@@ -170,8 +170,6 @@ class TestOTEDetection(unittest.TestCase):
             difference between the original and the reloaded model is smaller than 1e-4. Ideally there should be no
             difference at all.
         """
-        # import warnings
-        # print = warnings.warn
         project_name = 'test_training_and_analyse'
         configurable_parameters = self.setup_configurable_parameters()
 
@@ -191,18 +189,19 @@ class TestOTEDetection(unittest.TestCase):
         detection_task_node = detection_project.tasks[-1]
         detection_environment = TaskEnvironment(project=detection_project, task_node=detection_task_node)
         task = MMObjectDetectionTask(task_environment=detection_environment)
-        self.addCleanup(task.unload)
+        self.addCleanup(task._delete_scratch_space)
 
         print("MMDetection task initialized, model training starts.")
         # Train the task.
         # train_task checks that the returned model is not a NullModel, that the task returns an OptimizedModel and that
-        # validation f-measure is higher than 0.5, which is a pretty low bar considering that the dataset is so easy
-        validation_performance = train_task(self, task, detection_project, add_video_to_project=False)
+        # validation f-measure is higher than 0.1, which is a pretty low bar considering that the dataset is so easy
+        validation_performance = train_task(self, task, detection_project, add_video_to_project=False, f1_threshold=0.1)
 
         print("Reloading model.")
         # Re-load the model
         task.load_model(task.task_environment)
 
+        print("Reevaluating model.")
         # Performance should be the same after reloading
         performance_after_reloading = compute_validation_performance(task, task.task_environment)
         performance_delta = performance_after_reloading.score.value - validation_performance.score.value
