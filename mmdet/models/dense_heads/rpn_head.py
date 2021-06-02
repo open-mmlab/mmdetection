@@ -1,10 +1,8 @@
 import copy
-import warnings
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv import ConfigDict
 from mmcv.ops import batched_nms
 
 from ..builder import HEADS
@@ -119,6 +117,112 @@ class RPNHead(RPNTestMixin, AnchorHead):
         mlvl_bbox_preds = []
         mlvl_valid_anchors = []
         batch_size = cls_scores[0].shape[0]
+        for idx in range(len(cls_scores)):
+            rpn_cls_score = cls_scores[idx]
+            rpn_bbox_pred = bbox_preds[idx]
+            assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
+            rpn_cls_score = rpn_cls_score.permute(0, 2, 3, 1)
+            if self.use_sigmoid_cls:
+                rpn_cls_score = rpn_cls_score.reshape(batch_size, -1)
+                scores = rpn_cls_score.sigmoid()
+            else:
+                rpn_cls_score = rpn_cls_score.reshape(batch_size, -1, 2)
+                # We set FG labels to [0, num_class-1] and BG label to
+                # num_class in RPN head since mmdet v2.5, which is unified to
+                # be consistent with other head since mmdet v2.0. In mmdet v2.0
+                # to v2.4 we keep BG label as 0 and FG label as 1 in rpn head.
+                scores = rpn_cls_score.softmax(-1)[..., 0]
+            rpn_bbox_pred = rpn_bbox_pred.permute(0, 2, 3, 1).reshape(
+                batch_size, -1, 4)
+            anchors = mlvl_anchors[idx]
+            anchors = anchors.expand_as(rpn_bbox_pred)
+            nms_pre = cfg.get('nms_pre', -1)
+            if nms_pre > 0 and rpn_bbox_pred.size(1) > nms_pre:
+                # sort is faster than topk
+                ranked_scores, rank_inds = scores.sort(descending=True)
+                topk_inds = rank_inds[:, :cfg.nms_pre]
+                scores = ranked_scores[:, :cfg.nms_pre]
+                batch_inds = torch.arange(batch_size).view(
+                    -1, 1).expand_as(topk_inds)
+                rpn_bbox_pred = rpn_bbox_pred[batch_inds, topk_inds, :]
+                anchors = anchors[batch_inds, topk_inds, :]
+
+            mlvl_scores.append(scores)
+            mlvl_bbox_preds.append(rpn_bbox_pred)
+            mlvl_valid_anchors.append(anchors)
+            level_ids.append(
+                scores.new_full((
+                    batch_size,
+                    scores.size(1),
+                ),
+                                idx,
+                                dtype=torch.long))
+
+        batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
+        batch_mlvl_anchors = torch.cat(mlvl_valid_anchors, dim=1)
+        batch_mlvl_rpn_bbox_pred = torch.cat(mlvl_bbox_preds, dim=1)
+        batch_mlvl_proposals = self.bbox_coder.decode(
+            batch_mlvl_anchors, batch_mlvl_rpn_bbox_pred, max_shape=img_shapes)
+        batch_mlvl_ids = torch.cat(level_ids, dim=1)
+
+        result_list = []
+        for (mlvl_proposals, mlvl_scores,
+             mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
+                              batch_mlvl_ids):
+            if cfg.min_bbox_size >= 0:
+                w = mlvl_proposals[:, 2] - mlvl_proposals[:, 0]
+                h = mlvl_proposals[:, 3] - mlvl_proposals[:, 1]
+                valid_ind = torch.nonzero(
+                    (w > cfg.min_bbox_size)
+                    & (h > cfg.min_bbox_size),
+                    as_tuple=False).squeeze()
+                if valid_ind.sum().item() != len(mlvl_proposals):
+                    mlvl_proposals = mlvl_proposals[valid_ind, :]
+                    mlvl_scores = mlvl_scores[valid_ind]
+                    mlvl_ids = mlvl_ids[valid_ind]
+
+            dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
+                                     cfg.nms)
+            result_list.append(dets[:cfg.max_per_img])
+        return result_list
+
+    # TODO: waiting for refactor the anchor_head and anchor_free head
+    def onnx_export(self, x, img_metas):
+        """Test without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+            img_metas (list[dict]): Meta info of each image.
+
+        Returns:
+            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
+                and class labels of shape [N, num_det].
+        """
+        cls_scores, bbox_preds = self(x)
+
+        assert len(cls_scores) == len(bbox_preds)
+        num_levels = len(cls_scores)
+
+        device = cls_scores[0].device
+        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
+        mlvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
+
+        cls_scores = [cls_scores[i].detach() for i in range(num_levels)]
+        bbox_preds = [bbox_preds[i].detach() for i in range(num_levels)]
+
+        assert len(
+            img_metas
+        ) == 1, 'Only support one input image while in exporting to ONNX'
+        img_shapes = img_metas[0]['img_shape_for_onnx']
+
+        cfg = copy.deepcopy(self.test_cfg)
+
+        mlvl_scores = []
+        mlvl_bbox_preds = []
+        mlvl_valid_anchors = []
+        batch_size = cls_scores[0].shape[0]
         nms_pre_tensor = torch.tensor(
             cfg.nms_pre, device=cls_scores[0].device, dtype=torch.long)
         for idx in range(len(cls_scores)):
@@ -148,103 +252,32 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds)
                 # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
-                if torch.onnx.is_in_onnx_export():
-                    # Mind k<=3480 in TensorRT for TopK
-                    transformed_inds = scores.shape[1] * batch_inds + topk_inds
-                    scores = scores.reshape(-1, 1)[transformed_inds].reshape(
-                        batch_size, -1)
-                    rpn_bbox_pred = rpn_bbox_pred.reshape(
-                        -1, 4)[transformed_inds, :].reshape(batch_size, -1, 4)
-                    anchors = anchors.reshape(-1,
-                                              4)[transformed_inds, :].reshape(
-                                                  batch_size, -1, 4)
-                else:
-                    # sort is faster than topk
-                    ranked_scores, rank_inds = scores.sort(descending=True)
-                    topk_inds = rank_inds[:, :cfg.nms_pre]
-                    scores = ranked_scores[:, :cfg.nms_pre]
-                    batch_inds = torch.arange(batch_size).view(
-                        -1, 1).expand_as(topk_inds)
-                    rpn_bbox_pred = rpn_bbox_pred[batch_inds, topk_inds, :]
-                    anchors = anchors[batch_inds, topk_inds, :]
-
+                # Mind k<=3480 in TensorRT for TopK
+                transformed_inds = scores.shape[1] * batch_inds + topk_inds
+                scores = scores.reshape(-1, 1)[transformed_inds].reshape(
+                    batch_size, -1)
+                rpn_bbox_pred = rpn_bbox_pred.reshape(
+                    -1, 4)[transformed_inds, :].reshape(batch_size, -1, 4)
+                anchors = anchors.reshape(-1, 4)[transformed_inds, :].reshape(
+                    batch_size, -1, 4)
             mlvl_scores.append(scores)
             mlvl_bbox_preds.append(rpn_bbox_pred)
             mlvl_valid_anchors.append(anchors)
-            level_ids.append(
-                scores.new_full((
-                    batch_size,
-                    scores.size(1),
-                ),
-                                idx,
-                                dtype=torch.long))
 
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
         batch_mlvl_anchors = torch.cat(mlvl_valid_anchors, dim=1)
         batch_mlvl_rpn_bbox_pred = torch.cat(mlvl_bbox_preds, dim=1)
         batch_mlvl_proposals = self.bbox_coder.decode(
             batch_mlvl_anchors, batch_mlvl_rpn_bbox_pred, max_shape=img_shapes)
-        batch_mlvl_ids = torch.cat(level_ids, dim=1)
 
-        # deprecate arguments warning
-        if 'nms' not in cfg or 'max_num' in cfg or 'nms_thr' in cfg:
-            warnings.warn(
-                'In rpn_proposal or test_cfg, '
-                'nms_thr has been moved to a dict named nms as '
-                'iou_threshold, max_num has been renamed as max_per_img, '
-                'name of original arguments and the way to specify '
-                'iou_threshold of NMS will be deprecated.')
-        if 'nms' not in cfg:
-            cfg.nms = ConfigDict(dict(type='nms', iou_threshold=cfg.nms_thr))
-        if 'max_num' in cfg:
-            if 'max_per_img' in cfg:
-                assert cfg.max_num == cfg.max_per_img, f'You ' \
-                    f'set max_num and ' \
-                    f'max_per_img at the same time, but get {cfg.max_num} ' \
-                    f'and {cfg.max_per_img} respectively' \
-                    'Please delete max_num which will be deprecated.'
-            else:
-                cfg.max_per_img = cfg.max_num
-        if 'nms_thr' in cfg:
-            assert cfg.nms.iou_threshold == cfg.nms_thr, f'You set' \
-                f' iou_threshold in nms and ' \
-                f'nms_thr at the same time, but get' \
-                f' {cfg.nms.iou_threshold} and {cfg.nms_thr}' \
-                f' respectively. Please delete the nms_thr ' \
-                f'which will be deprecated.'
-
-        # Replace batched_nms with ONNX::NonMaxSuppression in deployment
-        if torch.onnx.is_in_onnx_export():
-            from mmdet.core.export import add_dummy_nms_for_onnx
-            batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
-            score_threshold = cfg.nms.get('score_thr', 0.0)
-            nms_pre = cfg.get('deploy_nms_pre', cfg.max_per_img)
-            dets, _ = add_dummy_nms_for_onnx(batch_mlvl_proposals,
-                                             batch_mlvl_scores,
-                                             cfg.max_per_img,
-                                             cfg.nms.iou_threshold,
-                                             score_threshold, nms_pre,
-                                             cfg.max_per_img)
-            return dets
-
-        result_list = []
-        for (mlvl_proposals, mlvl_scores,
-             mlvl_ids) in zip(batch_mlvl_proposals, batch_mlvl_scores,
-                              batch_mlvl_ids):
-            # Skip nonzero op while exporting to ONNX
-            if cfg.min_bbox_size >= 0 and (not torch.onnx.is_in_onnx_export()):
-                w = mlvl_proposals[:, 2] - mlvl_proposals[:, 0]
-                h = mlvl_proposals[:, 3] - mlvl_proposals[:, 1]
-                valid_ind = torch.nonzero(
-                    (w > cfg.min_bbox_size)
-                    & (h > cfg.min_bbox_size),
-                    as_tuple=False).squeeze()
-                if valid_ind.sum().item() != len(mlvl_proposals):
-                    mlvl_proposals = mlvl_proposals[valid_ind, :]
-                    mlvl_scores = mlvl_scores[valid_ind]
-                    mlvl_ids = mlvl_ids[valid_ind]
-
-            dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
-                                     cfg.nms)
-            result_list.append(dets[:cfg.max_per_img])
-        return result_list
+        # Use ONNX::NonMaxSuppression in deployment
+        from mmdet.core.export import add_dummy_nms_for_onnx
+        batch_mlvl_scores = batch_mlvl_scores.unsqueeze(2)
+        score_threshold = cfg.nms.get('score_thr', 0.0)
+        nms_pre = cfg.get('deploy_nms_pre', -1)
+        dets, _ = add_dummy_nms_for_onnx(batch_mlvl_proposals,
+                                         batch_mlvl_scores, cfg.max_per_img,
+                                         cfg.nms.iou_threshold,
+                                         score_threshold, nms_pre,
+                                         cfg.max_per_img)
+        return dets

@@ -6,6 +6,8 @@ echo 'configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab cascade_mask_rcnn_r50_fpn_1x_coco configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py ./tools/work_dir/cascade_mask_rcnn_r50_fpn_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/cascade_rpn/crpn_faster_rcnn_r50_caffe_fpn_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab crpn_faster_rcnn_r50_caffe_fpn_1x_coco configs/cascade_rpn/crpn_faster_rcnn_r50_caffe_fpn_1x_coco.py ./tools/work_dir/crpn_faster_rcnn_r50_caffe_fpn_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
+echo 'configs/centernet/centernet_resnet18_dcnv2_140e_coco.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab centernet_resnet18_dcnv2_140e_coco configs/centernet/centernet_resnet18_dcnv2_140e_coco.py ./tools/work_dir/centernet_resnet18_dcnv2_140e_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py' &
 GPUS=16  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab centripetalnet_hourglass104_mstest_16x6_210e_coco configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py ./tools/work_dir/centripetalnet_hourglass104_mstest_16x6_210e_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py' &
