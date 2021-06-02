@@ -233,7 +233,7 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 | Faster R-CNN |        `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`         |       Y       |        Y        |                                                                               |
 |  Mask R-CNN  |          `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`           |       Y       |        Y        |                                                                               |
 |  CornerNet   | `configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py` |       Y       |        N        | no flip, no batch inference, tested with torch==1.7.0 and onnxruntime==1.5.1. |
-|  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py`    |       N       |        Y        |                                                                               |
+|  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py`    |       Y       |        Y        |                                                                               |
 
 Notes:
 
