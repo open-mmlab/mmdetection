@@ -98,13 +98,15 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
   pip install onnx onnxruntime==1.5.1
   ```
 - If you want to use onnxruntime-gpu, remove the CPU version before using the GPU version.
-  Note: onnxruntime-gpu is version-dependent on CUDA and CUDNN, please note that whether your
-  environment meets the requirements.
 
   ```shell
   pip uninstall onnxruntime
   pip install onnxruntime-gpu
   ```
+
+  Note: onnxruntime-gpu is version-dependent on CUDA and CUDNN, please note that whether your
+  environment meets the requirements.
+
 - Install TensorRT by referring to [how-to-build-tensorrt-plugins-in-mmcv](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv)(optional)
 
 ### Usage
