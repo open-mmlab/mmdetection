@@ -21,6 +21,7 @@ from ...core.bbox.coder.delta_xywh_bbox_coder import delta2bbox
 from ...core.anchor.anchor_generator import SSDAnchorGeneratorClustered
 
 from mmdet.utils.deployment.operations_domain import add_domain
+from mmdet.integration.nncf import no_nncf_trace
 
 
 def get_proposals(img_metas, cls_scores, bbox_preds, priors,
@@ -173,15 +174,25 @@ class DetectionOutput(torch.autograd.Function):
         return output
 
 
-def onnx_export(self, img, img_metas, export_name='', **kwargs):
+def save_img_metas(self, img_metas):
     self._export_mode = True
     self.img_metas = img_metas
+
+
+def onnx_export(self, img, img_metas, export_name='', **kwargs):
+    # Note that this saving img_metas should be done using this method
+    # `save_img_metas` (not using direct access to a field) to be sure
+    # that for NNCF-wrapped models this method is called for original model,
+    # not for NNCF-wrapper of the model.
+    # To make this trick the method `save_img_metas` should be created
+    # (using `obj.save_img_metas = save_img_metas.__get__(obj)`) for the original model.
+    self.save_img_metas(img_metas)
     torch.onnx.export(self, img, export_name, **kwargs)
 
 
 def forward(self, img, img_meta=[None], return_loss=True,
             **kwargs):  # passing None here is a hack to fool the jit engine
-    if self._export_mode:
+    if self._export_mode or kwargs.get('forward_export', False):
         return self.forward_export(img)
     if return_loss:
         return self.forward_train(img, img_meta, **kwargs)
@@ -192,8 +203,9 @@ def forward(self, img, img_meta=[None], return_loss=True,
 def forward_export_detector(self, img):
     x = self.extract_feat(img)
     outs = self.bbox_head(x)
-    bbox_result = self.bbox_head.export_forward(*outs, self.test_cfg, True,
-                                                self.img_metas, x, img)
+    with no_nncf_trace():
+        bbox_result = self.bbox_head.export_forward(*outs, self.test_cfg, True,
+                                                    self.img_metas, x, img)
     return bbox_result
 
 

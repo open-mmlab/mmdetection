@@ -28,7 +28,8 @@ from mmdet.apis import get_fake_input, init_detector
 from mmdet.integration.nncf import (check_nncf_is_enabled,
                                     get_nncf_config_from_meta,
                                     is_checkpoint_nncf,
-                                    wrap_nncf_model)
+                                    wrap_nncf_model,
+                                    get_uncompressed_model)
 from mmdet.models import detectors
 from mmdet.utils import ExtendedDictAction
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
@@ -38,6 +39,20 @@ from mmdet.utils.deployment.symbolic import (
 
 def get_min_opset_version():
     return 10 if version.parse(torch.__version__) < version.parse('1.7.0') else 11
+
+
+def patch_model_for_alt_ssd_export(model):
+    model._export_mode = False
+    model.onnx_export = onnx_export.__get__(model)
+    model.save_img_metas = save_img_metas.__get__(model)
+    model.forward = forward.__get__(model)
+    model.forward_export = forward_export_detector.__get__(model)
+    model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
+    model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
+
+
+def patch_nncf_model_for_alt_ssd_export(model):
+    model.onnx_export = onnx_export.__get__(model)
 
 
 def export_to_onnx(model,
@@ -57,14 +72,7 @@ def export_to_onnx(model,
         kwargs['enable_onnx_checker'] = False
 
     if alt_ssd_export:
-        assert isinstance(model, detectors.SingleStageDetector)
-
-        model.onnx_export = onnx_export.__get__(model)
-        model.forward = forward.__get__(model)
-        model.forward_export = forward_export_detector.__get__(model)
-        model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
-        model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
-
+        assert isinstance(get_uncompressed_model(model), detectors.SingleStageDetector)
         model.onnx_export(img=data['img'][0],
                           img_metas=data['img_metas'][0],
                           export_name=export_name,
@@ -232,15 +240,19 @@ def main(args):
         for k, v in nncf_part.items():
             cfg[k] = v
 
+    is_alt_ssd_export = getattr(args, 'alt_ssd_export', False)
+    if is_alt_ssd_export:
+        patch_model_for_alt_ssd_export(model)
+
     if cfg.get('nncf_config'):
-        alt_ssd_export = getattr(args, 'alt_ssd_export', False)
-        assert not alt_ssd_export, \
-                'Export of NNCF-compressed model is incompatible with --alt_ssd_export'
         check_nncf_is_enabled()
         cfg.load_from = args.checkpoint
         cfg.resume_from = None
-        compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
+        compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input,
+                                                  is_alt_ssd_export=is_alt_ssd_export)
         compression_ctrl.prepare_for_export()
+        if is_alt_ssd_export:
+            patch_nncf_model_for_alt_ssd_export(model)
     # END nncf part
 
     mmcv.mkdir_or_exist(osp.abspath(args.output_dir))
@@ -249,7 +261,7 @@ def main(args):
 
     with torch.no_grad():
         export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=args.opset,
-                       alt_ssd_export=getattr(args, 'alt_ssd_export', False),
+                       alt_ssd_export=is_alt_ssd_export,
                        target=args.target, verbose=False)
         add_node_names(onnx_model_path)
         print(f'ONNX model has been saved to "{onnx_model_path}"')
