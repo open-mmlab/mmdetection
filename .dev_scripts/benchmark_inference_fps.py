@@ -21,9 +21,10 @@ def parse_args():
     parser.add_argument('checkpoint_root', help='Checkpoint file root path')
     parser.add_argument(
         '--out', type=str, help='output path of gathered fps to be stored')
-    parser.add_argument('--max-iter', default=400, help='num of max iter')
     parser.add_argument(
-        '--log-interval', default=40, help='interval of logging')
+        '--max-iter', type=int, default=400, help='num of max iter')
+    parser.add_argument(
+        '--log-interval', type=int, default=40, help='interval of logging')
     parser.add_argument(
         '--fuse-conv-bn',
         action='store_true',
@@ -88,6 +89,7 @@ def calc_inference_fps(cfg_path, checkpoint, args):
     # the first several iterations may be very slow so skip them
     num_warmup = 5
     pure_inf_time = 0
+    fps = 0
 
     # benchmark with args.max_iter image and take the average
     for i, data in enumerate(data_loader):
@@ -114,8 +116,9 @@ def calc_inference_fps(cfg_path, checkpoint, args):
             pure_inf_time += elapsed
             fps = (i + 1 - num_warmup) / pure_inf_time
             print(f'{cfg_path} overall fps: {fps:.1f} img / s', flush=True)
-            return fps
-    return 0
+            break
+
+    return fps
 
 
 if __name__ == '__main__':
