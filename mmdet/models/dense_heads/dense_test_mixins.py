@@ -14,7 +14,8 @@ class BBoxTestMixin(object):
 
     def simple_test_bboxes(self, feats, img_metas, rescale=False):
         """Test det bboxes without test-time augmentation, can be applied in
-        DenseHead except for RPNHead and its variants(GuidedRPN etc.)
+        DenseHead except for ``RPNHead`` and its variants, e.g., ``GARPNHead``,
+        etc.
 
         Args:
             feats (tuple[torch.Tensor]): Multi-level features from the
@@ -25,9 +26,9 @@ class BBoxTestMixin(object):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is bboxes with shape (n, 5), where 5 represent
-                (tl_x, tl_y, br_x, br_y, score).
-                The shape of the second tensor in the tuple is labels
+                The first item is ``bboxes`` with shape (n, 5),
+                where 5 represent (tl_x, tl_y, br_x, br_y, score).
+                The shape of the second tensor in the tuple is ``labels``
                 with shape (n,)
         """
         outs = self.forward(feats)
@@ -36,7 +37,8 @@ class BBoxTestMixin(object):
 
     def aug_test_bboxes(self, feats, img_metas, rescale=False):
         """Test det bboxes with test time augmentation, can be applied in
-        DenseHead except for RPNHead and its variants(GuidedRPN etc.)
+        DenseHead except for ``RPNHead`` and its variants, e.g., ``GARPNHead``,
+        etc.
 
         Args:
             feats (list[Tensor]): the outer list indicates test-time
@@ -50,10 +52,10 @@ class BBoxTestMixin(object):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is bboxes with shape (n, 5), where 5 represent
-                (tl_x, tl_y, br_x, br_y, score).
-                The shape of the second tensor in the tuple is labels
-                with shape (n,), Length of list should always be 1.
+                The first item is ``bboxes`` with shape (n, 5),
+                where 5 represent (tl_x, tl_y, br_x, br_y, score).
+                The shape of the second tensor in the tuple is ``labels``
+                with shape (n,). The length of list should always be 1.
         """
         # check with_nms argument
         gb_sig = signature(self.get_bboxes)
@@ -106,8 +108,8 @@ class BBoxTestMixin(object):
         ]
 
     def simple_test_rpn(self, x, img_metas):
-        """Test without augmentation, only for RPNHead and its
-        variants(GuidedRPN etc.)
+        """Test without augmentation, only for ``RPNHead`` and its variants,
+        e.g., ``GARPNHead``, etc.
 
         Args:
             x (tuple[Tensor]): Features from the upstream network, each is
@@ -123,8 +125,9 @@ class BBoxTestMixin(object):
         return proposal_list
 
     def aug_test_rpn(self, feats, img_metas):
-        """Test with augmentation for only for RPNHead and
-        its variants(GuidedRPN etc.)
+        """Test with augmentation for only for ``RPNHead`` and its variants,
+        e.g., ``GARPNHead``, etc.
+
         Args:
             feats (tuple[Tensor]): Features from the upstream network, each is
                         a 4D-tensor.
@@ -176,7 +179,9 @@ class BBoxTestMixin(object):
             img_shapes (list[Tensor]): shape (3, ).
 
         Returns:
-            tuple: (bboxes, scores)
+            tuple[Tensor]: ``bboxes`` with shape (n,4), where
+            4 represent (tl_x, tl_y, br_x, br_y)
+            and ``scores`` with shape (n,).
         """
         recovered_bboxes = []
         for bboxes, img_info in zip(aug_bboxes, img_metas):
