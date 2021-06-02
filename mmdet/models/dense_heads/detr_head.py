@@ -185,7 +185,8 @@ class DETRHead(AnchorFreeHead):
                 '.multihead_attn.': '.attentions.1.',
                 '.decoder.norm.': '.decoder.post_norm.'
             }
-            for k in state_dict.keys():
+            state_dict_keys = list(state_dict.keys())
+            for k in state_dict_keys:
                 for ori_key, convert_key in convert_dict.items():
                     if ori_key in k:
                         convert_key = k.replace(ori_key, convert_key)
@@ -380,7 +381,6 @@ class DETRHead(AnchorFreeHead):
                 cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)
 
-        cls_avg_factor = max(cls_avg_factor, 1)
         loss_cls = self.loss_cls(
             cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
 
@@ -660,9 +660,9 @@ class DETRHead(AnchorFreeHead):
         # exclude background
         if self.loss_cls.use_sigmoid:
             cls_score = cls_score.sigmoid()
-            scores, indexs = cls_score.view(-1).topk(max_per_img)
-            det_labels = indexs % self.num_classes
-            bbox_index = indexs // self.num_classes
+            scores, indexes = cls_score.view(-1).topk(max_per_img)
+            det_labels = indexes % self.num_classes
+            bbox_index = indexes // self.num_classes
             bbox_pred = bbox_pred[bbox_index]
         else:
             scores, det_labels = F.softmax(cls_score, dim=-1)[..., :-1].max(-1)

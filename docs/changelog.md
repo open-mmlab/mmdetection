@@ -1,5 +1,43 @@
 ## Changelog
 
+### v2.13.0 (01/6/2021)
+
+#### Highlights
+
+- Support new methods: [CenterNet](https://arxiv.org/abs/1904.07850), [Seesaw Loss](https://arxiv.org/abs/2008.10032), [MobileNetV2](https://arxiv.org/abs/1801.04381)
+
+#### New Features
+
+- Support paper [Objects as Points](https://arxiv.org/abs/1904.07850) (#4602)
+- Support paper [Seesaw Loss for Long-Tailed Instance Segmentation (CVPR 2021)](https://arxiv.org/abs/2008.10032) (#5128)
+- Support [MobileNetV2](https://arxiv.org/abs/1801.04381) backbone and inverted residual block (#5122)
+- Support [MIM](https://github.com/open-mmlab/mim) (#5143)
+- ONNX exportation with dynamic shapes of CornerNet (#5136)
+- Add `mask_soft` config option to allow non-binary masks (#4615)
+- Add PWC metafile (#5135)
+
+#### Bug Fixes
+
+- Fix YOLOv3 FP16 training error (#5172)
+- Fix Cacscade R-CNN TTA test error when `det_bboxes` length is 0  (#5221)
+- Fix `iou_thr` variable naming errors in VOC recall calculation function (#5195)
+- Fix Faster R-CNN performance dropped in ONNX Runtime (#5197)
+- Fix DETR dict changed error when using python 3.8 during iteration  (#5226)
+
+#### Improvements
+
+- Refactor ONNX export of two stage detector (#5205)
+- Replace MMDetection's EvalHook with MMCV's EvalHook for consistency  (#4806)
+- Update RoI extractor for ONNX (#5194)
+- Use better parameter initialization in YOLOv3 head for higher performance (#5181)
+- Release new DCN models of Mask R-CNN by mixed-precision training (#5201)
+- Update YOLOv3 model weights (#5229)
+- Add DetectoRS ResNet-101 model weights (#4960)
+- Discard bboxes with sizes equals to `min_bbox_size` (#5011)
+- Remove duplicated code in DETR head (#5129)
+- Remove unnecessary object in class definition (#5180)
+- Fix doc link (#5192)
+
 ### v2.12.0 (01/5/2021)
 
 #### Highlights
@@ -12,7 +50,7 @@
 MMDetection is going through big refactoring for more general and convenient usages during the releases from v2.12.0 to v2.15.0 (maybe longer).
 In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV dependency, model initialization, model registry, and mask AP evaluation.
 
-- MMCV version. MMDetection v2.12.0 relies on the newest features in MMCV 1.3.3, including `BaseModule` for unified parameter initialization, model registry, and the CUDA operator `MultiScaleDeformableAttn` for [Deformable DETR](https://arxiv.org/abs/2010.04159). Note that MMCV 1.3.2 already contains all the features used by MMDet but has known issues. Therefore, we recommend users skip MMCV v1.3.2 and use v1.3.2, though v1.3.2 might work for most cases.
+- MMCV version. MMDetection v2.12.0 relies on the newest features in MMCV 1.3.3, including `BaseModule` for unified parameter initialization, model registry, and the CUDA operator `MultiScaleDeformableAttn` for [Deformable DETR](https://arxiv.org/abs/2010.04159). Note that MMCV 1.3.2 already contains all the features used by MMDet but has known issues. Therefore, we recommend users skip MMCV v1.3.2 and use v1.3.3, though v1.3.2 might work for most cases.
 - Unified model initialization (#4750). To unify the parameter initialization in OpenMMLab projects, MMCV supports `BaseModule` that accepts `init_cfg` to allow the modules' parameters initialized in a flexible and unified manner. Now the users need to explicitly call `model.init_weights()` in the training script to initialize the model (as in [here](https://github.com/open-mmlab/mmdetection/blob/master/tools/train.py#L162), previously this was handled by the detector. The models in MMDetection have been re-benchmarked to ensure accuracy based on PR #4750. **The downstream projects should update their code accordingly to use MMDetection v2.12.0**.
 - Unified model registry (#5059). To easily use backbones implemented in other OpenMMLab projects, MMDetection migrates to inherit the model registry created in MMCV (#760). In this way, as long as the backbone is supported in an OpenMMLab project and that project also uses the registry in MMCV, users can use that backbone in MMDetection by simply modifying the config without copying the code of that backbone into MMDetection.
 - Mask AP evaluation (#4898). Previous versions calculate the areas of masks through the bounding boxes when calculating the mask AP of small, medium, and large instances. To indeed use the areas of masks, we pop the key `bbox` during mask AP calculation. This change does not affect the overall mask AP evaluation and aligns the mask AP of similar models in other projects like Detectron2.
