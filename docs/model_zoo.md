@@ -13,6 +13,26 @@ You can replace `https://s3.ap-northeast-2.amazonaws.com/open-mmlab` with `https
 - For fair comparison with other codebases, we report the GPU memory as the maximum value of `torch.cuda.max_memory_allocated()` for all 8 GPUs. Note that this value is usually less than what `nvidia-smi` shows.
 - We report the inference time as the total time of network forwarding and post-processing, excluding the data loading time. Results are obtained with the script [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) which computes the average time on 2000 images.
 
+## ImageNet Pretrained Models
+
+It's common to initialize from backbone models pre-trained on ImageNet classification tasks. All pre-trained  model weight links can be found at [open_mmlab](https://github.com/open-mmlab/mmcv/blob/master/mmcv/model_zoo/open_mmlab.json). The following commonly used backbone models are available:
+
+- [ResNet50](https://download.pytorch.org/models/resnet50-19c8e357.pth):  from torchvision's ResNet-50.
+- [ResNet50 Caffe](https://download.openmmlab.com/pretrain/third_party/resnet50_msra-5891d200.pth):  converted copy of [MSRA's original ResNet-50](https://github.com/KaimingHe/deep-residual-networks) model.
+- [ResNet101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth):  from torchvision's ResNet-101.
+- [ResNet101 Caffe](https://download.openmmlab.com/pretrain/third_party/resnet101_msra-6cc46731.pth):  converted copy of [MSRA's original ResNet-101](https://github.com/KaimingHe/deep-residual-networks) model.
+- [ResNext101_32x8d](https://download.openmmlab.com/pretrain/third_party/resnext101_32x8d-1516f1aa.pth):  ResNeXt-101-32x8d model trained with Caffe2 at FB.
+- [ResNext101_32x4d](https://download.openmmlab.com/pretrain/third_party/resnext101_32x4d-a5af3160.pth)
+- [ResNext101_64x4d](https://download.openmmlab.com/pretrain/third_party/resnext101_64x4d-ee2c6f71.pth)
+- [RegNetX_3.2gf](https://download.openmmlab.com/pretrain/third_party/regnetx_3.2gf-c2599b0f.pth)
+
+According to `img_norm_cfg`,we can divide all the imagenet pretrained model weights into four cases:
+
+- TorchVision style:  corresponding to torchvision weight. E.g ResNet50 and ResNet101.
+- MSRA style: corresponding to MSRA weight. E.g ResNet50_Caffe and ResNet101_Caffe.
+- Caffe2 style:  currently only contains ResNext101_32x8d.
+- Other style
+
 ## Baselines
 
 ### RPN
