@@ -274,7 +274,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
         Args:
             img (str or Tensor): The image to be displayed.
-            result (Tensor or tuple): The results to draw over `img`
+            result (Tensor or np.ndarray): The results to draw over `img`
                 bbox_result or (bbox_result, segm_result).
             score_thr (float, optional): Minimum score of bboxes to be shown.
                 Default: 0.3.
@@ -304,13 +304,40 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             bbox_result, segm_result = result
             if isinstance(segm_result, tuple):
                 segm_result = segm_result[0]  # ms rcnn
+            if bbox_result[0].shape[1] == 5:  # bbox-segm two stage
+                bboxes = np.vstack(bbox_result)
+                labels = [
+                    np.full(bbox.shape[0], i, dtype=np.int32)
+                    for i, bbox in enumerate(bbox_result)
+                ]
+            else:  # segm only
+                # estimte bbox through segm_result
+                for scores, segms in \
+                        zip(bbox_result, segm_result):
+                    assert len(scores) == len(segms)
+                    if len(segms) == 0:
+                        continue
+                    for score, segm in zip(scores, segms):
+                        bboxes.append(
+                            np.array([
+                                np.where(segm == 1)[1].min(),
+                                np.where(segm == 1)[0].min(),
+                                np.where(segm == 1)[1].max(),
+                                np.where(segm == 1)[0].max(),
+                                float(score)
+                            ]))
+                bboxes = np.vstack(bboxes)
+                labels = [
+                    np.full(len(segm), i, dtype=np.int32)
+                    for i, segm in enumerate(segm_result)
+                ]
         else:
             bbox_result, segm_result = result, None
-        bboxes = np.vstack(bbox_result)
-        labels = [
-            np.full(bbox.shape[0], i, dtype=np.int32)
-            for i, bbox in enumerate(bbox_result)
-        ]
+            bboxes = np.vstack(bbox_result)
+            labels = [
+                np.full(bbox.shape[0], i, dtype=np.int32)
+                for i, bbox in enumerate(bbox_result)
+            ]
         labels = np.concatenate(labels)
         # draw segmentation masks
         segms = None
