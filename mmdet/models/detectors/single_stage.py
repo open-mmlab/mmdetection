@@ -94,17 +94,8 @@ class SingleStageDetector(BaseDetector):
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
-        # get origin input shape to support onnx dynamic shape
-        if torch.onnx.is_in_onnx_export():
-            # get shape as tensor
-            img_shape = torch._shape_as_tensor(img)[2:]
-            img_metas[0]['img_shape_for_onnx'] = img_shape
         bbox_list = self.bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
-        # skip post-processing when exporting to ONNX
-        if torch.onnx.is_in_onnx_export():
-            return bbox_list
-
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
@@ -135,3 +126,30 @@ class SingleStageDetector(BaseDetector):
 
         feats = self.extract_feats(imgs)
         return [self.bbox_head.aug_test(feats, img_metas, rescale=rescale)]
+
+    def onnx_export(self, img, img_metas):
+        """Test function without test time augmentation.
+
+        Args:
+            img (torch.Tensor): input images.
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
+                and class labels of shape [N, num_det].
+        """
+        x = self.extract_feat(img)
+        outs = self.bbox_head(x)
+        # get origin input shape to support onnx dynamic shape
+
+        # get shape as tensor
+        img_shape = torch._shape_as_tensor(img)[2:]
+        img_metas[0]['img_shape_for_onnx'] = img_shape
+        # get pad input shape to support onnx dynamic shape for exporting
+        # `CornerNet` and `CentripetalNet`, which 'pad_shape' is used
+        # for inference
+        img_metas[0]['pad_shape_for_onnx'] = img_shape
+        # TODO:move all onnx related code in bbox_head to onnx_export function
+        det_bboxes, det_labels = self.bbox_head.get_bboxes(*outs, img_metas)
+
+        return det_bboxes, det_labels

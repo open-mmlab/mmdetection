@@ -43,10 +43,11 @@ def pytorch2onnx(config_path,
     output_names = ['dets', 'labels']
     if model.with_mask:
         output_names.append('masks')
+    input_name = 'input'
     dynamic_axes = None
     if dynamic_export:
         dynamic_axes = {
-            'input': {
+            input_name: {
                 0: 'batch',
                 2: 'width',
                 3: 'height'
@@ -67,7 +68,7 @@ def pytorch2onnx(config_path,
         model,
         tensor_data,
         output_file,
-        input_names=['input'],
+        input_names=[input_name],
         output_names=output_names,
         export_params=True,
         keep_initializers_as_inputs=True,
@@ -149,6 +150,8 @@ def pytorch2onnx(config_path,
         onnx_results = bbox2result(ort_dets, ort_labels, num_classes)
         if model.with_mask:
             segm_results = onnx_outputs[2]
+            if segm_results.dtype != np.bool:
+                segm_results = (segm_results * 255).astype(np.uint8)
             cls_segms = [[] for _ in range(num_classes)]
             for i in range(ort_dets.shape[0]):
                 cls_segms[ort_labels[i]].append(segm_results[i])

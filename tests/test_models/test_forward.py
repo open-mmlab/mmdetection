@@ -228,14 +228,17 @@ def test_faster_rcnn_ohem_forward():
     assert float(loss.item()) > 0
 
 
-@pytest.mark.parametrize('cfg_file', [
-    'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
-    'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-    'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
-    'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py',
-    'htc/htc_r50_fpn_1x_coco.py',
-    'scnet/scnet_r50_fpn_20e_coco.py',
-])
+@pytest.mark.parametrize(
+    'cfg_file',
+    [
+        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
+        'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
+        'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py',
+        'htc/htc_r50_fpn_1x_coco.py',
+        'scnet/scnet_r50_fpn_20e_coco.py',
+        'seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py'  # noqa: E501
+    ])
 def test_two_stage_forward(cfg_file):
     models_with_semantic = [
         'htc/htc_r50_fpn_1x_coco.py',
@@ -248,6 +251,16 @@ def test_two_stage_forward(cfg_file):
 
     model = _get_detector_cfg(cfg_file)
     model['pretrained'] = None
+
+    # Save cost
+    if cfg_file in [
+            'seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py'  # noqa: E501
+    ]:
+        model.roi_head.bbox_head.num_classes = 80
+        model.roi_head.bbox_head.loss_cls.num_classes = 80
+        model.roi_head.mask_head.num_classes = 80
+        model.test_cfg.rcnn.score_thr = 0.05
+        model.test_cfg.rcnn.max_per_img = 100
 
     from mmdet.models import build_detector
     detector = build_detector(model)
@@ -352,7 +365,7 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
         'ori_shape': (H, W, C),
         'pad_shape': (H, W, C),
         'filename': '<demo>.png',
-        'scale_factor': 1.0,
+        'scale_factor': np.array([1.1, 1.2, 1.1, 1.2]),
         'flip': False,
         'flip_direction': None,
     } for _ in range(N)]
