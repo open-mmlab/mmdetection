@@ -78,7 +78,7 @@ class SingleStageDetector(BaseDetector):
                                               gt_labels, gt_bboxes_ignore)
         return losses
 
-    def simple_test(self, img, img_metas, rescale=False, postprocess=True):
+    def simple_test(self, img, img_metas, rescale=False):
         """Test function without test-time augmentation.
 
         Args:

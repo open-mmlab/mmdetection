@@ -572,7 +572,7 @@ class YOLACTSegmHead(BaseModule):
                     downsampled_masks[obj_idx])
             return segm_targets
 
-    def simple_test(self, feats, img_metas, rescale=False, postprocess=True):
+    def simple_test(self, feats, img_metas, rescale=False):
         """Test function without test-time augmentation."""
         raise NotImplementedError(
             'simple_test of YOLACTSegmHead is not implemented '

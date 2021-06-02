@@ -94,7 +94,7 @@ class YOLACT(SingleStageDetector):
         """Test function without test-time augmentation."""
         feat = self.extract_feat(img)
         det_bboxes, det_labels, det_coeffs = self.bbox_head.simple_test(
-            feat, img_metas, rescale=rescale, postprocess=False)
+            feat, img_metas, rescale=rescale)
         bbox_results = [
             bbox2result(det_bbox, det_label, self.bbox_head.num_classes)
             for det_bbox, det_label in zip(det_bboxes, det_labels)
