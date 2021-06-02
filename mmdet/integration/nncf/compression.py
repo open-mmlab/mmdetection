@@ -183,14 +183,14 @@ def wrap_nncf_model(model,
     def wrap_inputs(args, kwargs):
         # during dummy_forward
         if not len(kwargs):
-            if not is_alt_ssd_export:
+            if is_alt_ssd_export:
+                if not isinstance(args[0], TracedTensor):
+                    nncf_input = nncf_model_input(args[0])
+                return (nncf_input,), kwargs
+            else:
                 if not isinstance(args[0][0], TracedTensor):
                     args[0][0] = nncf_model_input(args[0][0])
                 return args, kwargs
-            else:
-                if not isinstance(args[0], TracedTensor):
-                    nnc_input = nncf_model_input(args[0])
-                return (nnc_input,), kwargs
 
         # during building original graph
         if not kwargs.get('return_loss') and kwargs.get('forward_export'):
