@@ -60,26 +60,19 @@ class TestOTEDetection(unittest.TestCase):
                 raise NotImplementedError(f"Annotation conversion for media type with identifier {media_identifier} is not "
                                         f"implemented yet.")
 
-            for shape_index, shape in enumerate(shapes):
+            updated_shapes = []
+            for shape in shapes:
                 # Convert all shapes to bounding boxes
                 labels = shape.get_labels(include_empty=True)
-                if isinstance(shape, Box):
-                    continue
-                elif isinstance(shape, Ellipse):
-                    shapes[shape_index] = Box(x1=max(min(shape.x1, 1), 0),
-                                              y1=max(min(shape.y1, 1), 0),
-                                              x2=max(min(shape.x2, 1), 0),
-                                              y2=max(min(shape.y2, 1), 0),
-                                              labels=labels)
+                if isinstance(shape, (Box, Ellipse)):
+                    box = np.array([shape.x1, shape.y1, shape.x2, shape.y2], dtype=float)
                 elif isinstance(shape, Polygon):
-                    shapes[shape_index] = Box(x1=max(min(shape.min_x, 1), 0),
-                                              y1=max(min(shape.min_y, 1), 0),
-                                              x2=max(min(shape.max_x, 1), 0),
-                                              y2=max(min(shape.max_y, 1), 0),
-                                              labels=labels)
+                    box = np.array([shape.min_x, shape.min_y, shape.max_x, shape.max_y], dtype=float)
+                box = box.clip(0, 1)
+                updated_shapes.append(Box(x1=box[0], y1=box[1], x2=box[2], y2=box[3], labels=labels))
 
             # Update annotation and persist in repo
-            annotation.append_shapes(shapes)
+            annotation.append_shapes(updated_shapes)
             anno_repo.save(annotation)
 
         print(f"Converted shapes for {image_annotation_count} image annotations and {video_annotation_count} video "
@@ -156,7 +149,7 @@ class TestOTEDetection(unittest.TestCase):
         self.assertLess(time.time() - start_time, 25)  # stopping process has to happen in less than 25 seconds
         train_future.result()
 
-    @flaky(max_runs=3, rerun_filter=rerun_on_flaky_assert())
+    @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def test_training_and_analyse(self):
         """
         Tests for training, analysis, evaluation, model optimization for the task
@@ -176,8 +169,8 @@ class TestOTEDetection(unittest.TestCase):
         # Initialize and populate project
         detection_project = generate_random_annotated_project(self, name=project_name,
                                                               description="test training and analyse",
-                                                              task_name="OTEDetectionTask", max_shapes=100,
-                                                              number_of_images=100, image_width=1080, image_height=720,
+                                                              task_name="OTEDetectionTask", max_shapes=20,
+                                                              number_of_images=250, image_width=640, image_height=480,
                                                               configurable_parameters=configurable_parameters)
         # generate_and_save_random_annotated_video(project=detection_project, number_of_frames=25,
         #                                          video_name="Video for Detection tests", width=480, height=360)
@@ -195,7 +188,7 @@ class TestOTEDetection(unittest.TestCase):
         # Train the task.
         # train_task checks that the returned model is not a NullModel, that the task returns an OptimizedModel and that
         # validation f-measure is higher than 0.1, which is a pretty low bar considering that the dataset is so easy
-        validation_performance = train_task(self, task, detection_project, add_video_to_project=False, f1_threshold=0.1)
+        validation_performance = train_task(self, task, detection_project, add_video_to_project=False, f1_threshold=0.5)
 
         print("Reloading model.")
         # Re-load the model
@@ -208,7 +201,8 @@ class TestOTEDetection(unittest.TestCase):
         perf_delta_tolerance = 0.0001
 
         self.assertLess(np.abs(performance_delta), perf_delta_tolerance,
-                        msg=f"Expected no or very small performance difference after reloading. Performance delta was "
+                        msg=f"Expected no or very small performance difference after reloading. Performance delta "
+                            f"({validation_performance.score.value} vs {performance_after_reloading.score.value}) was "
                             f"larger than the tolerance of {perf_delta_tolerance}")
 
         print(f"Performance: {validation_performance.score.value:.4f}")

@@ -7,6 +7,9 @@ import unittest
 from typing import Optional
 from unittest.case import TestCase
 
+import cv2
+import numpy as np
+
 from sc_sdk.entities.datasets import Subset
 from sc_sdk.entities.metrics import Performance
 from sc_sdk.entities.model import NullModel
@@ -20,6 +23,37 @@ from sc_sdk.usecases.repos import ModelRepo, DatasetRepo
 from sc_sdk.usecases.tasks.image_deep_learning_task import ImageDeepLearningTask
 from sc_sdk.usecases.tasks.interfaces.model_optimizer import IModelOptimizer
 from sc_sdk.utils.gpu_utils import GPUMonitor
+from sc_sdk.entities.shapes.box import Box
+from sc_sdk.entities.shapes.ellipse import Ellipse
+from sc_sdk.entities.shapes.polygon import Polygon
+
+
+def visualize_dataset(dataset, confidence_threshold=0.1, window_name='image', delay=0):
+    for dataset_item in dataset:
+        width = dataset_item.width
+        height = dataset_item.height
+        image = dataset_item.numpy
+
+        shapes = dataset_item.get_shapes()
+        for shape in shapes:
+            labels = shape.get_labels(include_empty=True)
+            if labels[0].probability < confidence_threshold:
+                continue
+            box = []
+            if isinstance(shape, (Box, Ellipse)):
+                box = np.array([shape.x1, shape.y1, shape.x2, shape.y2], dtype=float)
+            elif isinstance(shape, Polygon):
+                box = np.array([shape.min_x, shape.min_y, shape.max_x, shape.max_y], dtype=float)
+            color = labels[0].color.bgr_tuple
+
+            box = np.clip(box, 0, 1)
+            box *= np.array([width, height, width, height], dtype=float)
+
+            cv2.rectangle(image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), color, 2)
+
+        cv2.imshow(window_name, image)
+        cv2.waitKey(delay)
+    cv2.destroyAllWindows()
 
 
 def train_task(
