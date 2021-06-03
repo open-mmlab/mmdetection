@@ -288,11 +288,11 @@ class FoveaHead(AnchorFreeHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self._get_bboxes_single(cls_score_list,
+            det_result = self._get_bboxes_single(cls_score_list,
                                                  bbox_pred_list, featmap_sizes,
                                                  points, img_shape,
                                                  scale_factor, cfg, rescale)
-            result_list.append(det_bboxes)
+            result_list.append(det_result)
         return result_list
 
     def _get_bboxes_single(self,
