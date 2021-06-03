@@ -345,7 +345,8 @@ class BBoxHead(BaseModule):
         else:
             scores = F.softmax(
                 cls_score, dim=-1) if cls_score is not None else None
-
+        # bbox_pred would be None in some detector when with_reg is False,
+        # e.g. Grid R-CNN.
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
                 rois[:, 1:], bbox_pred, max_shape=img_shape)

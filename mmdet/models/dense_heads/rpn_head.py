@@ -104,12 +104,12 @@ class RPNHead(AnchorHead):
                 The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class labelof the
+                (n,) tensor where each item is the predicted class label of the
                 corresponding box.
         """
+        assert with_nms, '``with_nms`` in RPNHead should always True'
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
-
         device = cls_scores[0].device
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
         mlvl_anchors = self.anchor_generator.grid_anchors(
@@ -123,21 +123,11 @@ class RPNHead(AnchorHead):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
-
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            if with_nms:
-                # some heads don't support with_nms argument
-                proposals = self._get_bboxes_single(cls_score_list,
-                                                    bbox_pred_list,
-                                                    mlvl_anchors, img_shape,
-                                                    scale_factor, cfg, rescale)
-            else:
-                proposals = self._get_bboxes_single(cls_score_list,
-                                                    bbox_pred_list,
-                                                    mlvl_anchors, img_shape,
-                                                    scale_factor, cfg, rescale,
-                                                    with_nms)
+            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                mlvl_anchors, img_shape,
+                                                scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
@@ -152,9 +142,9 @@ class RPNHead(AnchorHead):
         """Transform outputs for a single batch item into bbox predictions.
 
           Args:
-            cls_score_list (list[Tensor]): Box scores of all scale level
+            cls_scores (list[Tensor]): Box scores of all scale level
                 each item has shape (num_anchors * num_classes, H, W).
-            bbox_pred_list (list[Tensor]): Box energies / deltas of all
+            bbox_preds (list[Tensor]): Box energies / deltas of all
                 scale level, each item has shape (num_anchors * 4, H, W).
             mlvl_anchors (list[Tensor]): Anchors of all scale level
                 each item has shape (num_total_anchors, 4).
@@ -166,8 +156,6 @@ class RPNHead(AnchorHead):
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
 
         Returns:
             Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
