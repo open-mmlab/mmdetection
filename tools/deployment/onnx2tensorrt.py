@@ -2,14 +2,13 @@ import argparse
 import os
 import os.path as osp
 
-import mmcv
 import numpy as np
 import onnx
 import torch
 from mmcv import Config
 from mmcv.tensorrt import is_tensorrt_plugin_loaded, onnx2trt, save_trt_engine
 
-from mmdet.core.export import prepare_inputs
+from mmdet.core.export import preprocess_example_input
 from mmdet.core.export.model_wrappers import (ONNXRuntimeDetector,
                                               TensorRTDetector)
 from mmdet.datasets import DATASETS
@@ -22,9 +21,7 @@ def get_GiB(x: int):
 
 def onnx2tensorrt(onnx_file,
                   trt_file,
-                  input_img,
                   input_config,
-                  test_pipeline,
                   verify=False,
                   show=False,
                   workspace_size=1,
@@ -34,7 +31,7 @@ def onnx2tensorrt(onnx_file,
     max_shape = input_config['max_shape']
     min_shape = input_config['min_shape']
     opt_shape = input_config['opt_shape']
-    fp16_mode = input_config['fp16_mode']
+    fp16_mode = False
     # create trt engine and wraper
     opt_shape_dict = {'input': [min_shape, opt_shape, max_shape]}
     max_workspace_size = get_GiB(workspace_size)
@@ -51,13 +48,9 @@ def onnx2tensorrt(onnx_file,
     print(f'Successfully created TensorRT engine: {trt_file}')
 
     if verify:
-        # prepare inputs
-        img_list, img_meta_list = prepare_inputs(
-            input_img,
-            test_pipeline,
-            shape=opt_shape[2:],
-            keep_ratio=False,
-            rescale=True)
+        # prepare input
+        one_img, one_meta = preprocess_example_input(input_config)
+        img_list, img_meta_list = [one_img], [[one_meta]]
         img_list = [_.cuda().contiguous() for _ in img_list]
 
         # wrap ONNX and TensorRT model
@@ -75,7 +68,7 @@ def onnx2tensorrt(onnx_file,
             out_file_ort, out_file_trt = None, None
         else:
             out_file_ort, out_file_trt = 'show-ort.png', 'show-trt.png'
-        show_img = mmcv.imread(input_img)
+        show_img = one_meta['show_img']
         score_thr = 0.3
         onnx_model.show_result(
             show_img,
@@ -156,12 +149,17 @@ def parse_args():
         type=int,
         default=1,
         help='Max workspace size in GiB')
-    parser.add_argument(
-        '--fp16',
-        action='store_true',
-        help='Whether to use fp16 mode. Defaults to False.')
+
     args = parser.parse_args()
     return args
+
+
+def parse_normalize_cfg(test_pipeline):
+    transforms = test_pipeline[1]['transforms']
+    norm_config_li = [_ for _ in transforms if _['type'] == 'Normalize']
+    assert len(norm_config_li) == 1
+    norm_config = norm_config_li[0]
+    return norm_config
 
 
 if __name__ == '__main__':
@@ -183,7 +181,11 @@ if __name__ == '__main__':
             raise ValueError('invalid input shape')
         return shape
 
-    input_shape = parse_shape(args.shape)
+    if args.shape:
+        input_shape = parse_shape(args.shape)
+    else:
+        img_scale = cfg.test_pipeline[1]['img_scale']
+        input_shape = (1, 3, img_scale[1], img_scale[0])
 
     if not args.max_shape:
         max_shape = input_shape
@@ -198,21 +200,21 @@ if __name__ == '__main__':
     dataset = DATASETS.get(cfg.data.test['type'])
     assert (dataset is not None)
     CLASSES = dataset.CLASSES
+    normalize_cfg = parse_normalize_cfg(cfg.test_pipeline)
 
     input_config = {
         'min_shape': min_shape,
         'opt_shape': input_shape,
         'max_shape': max_shape,
-        'fp16_mode': args.fp16
+        'input_shape': input_shape,
+        'input_path': args.input_img,
+        'normalize_cfg': normalize_cfg
     }
-
     # Create TensorRT engine
     onnx2tensorrt(
         args.model,
         args.trt_file,
-        args.input_img,
         input_config,
-        cfg.test_pipeline,
         verify=args.verify,
         show=args.show,
         workspace_size=args.workspace_size,

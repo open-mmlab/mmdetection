@@ -3,22 +3,19 @@ import os.path as osp
 import warnings
 from functools import partial
 
-import mmcv
 import numpy as np
 import onnx
 import torch
 from mmcv import Config, DictAction
-from mmcv.runner import load_checkpoint
 
-from mmdet.core.export import prepare_inputs
+from mmdet.core.export import build_model_from_cfg, preprocess_example_input
 from mmdet.core.export.model_wrappers import ONNXRuntimeDetector
-from mmdet.models import build_detector
 
 
 def pytorch2onnx(model,
                  input_img,
                  input_shape,
-                 test_pipeline,
+                 normalize_cfg,
                  opset_version=11,
                  show=False,
                  output_file='tmp.onnx',
@@ -27,10 +24,14 @@ def pytorch2onnx(model,
                  do_simplify=False,
                  dynamic_export=None):
 
-    model.cpu().eval()
-    img_list, img_meta_list = prepare_inputs(
-        input_img, test_pipeline, shape=input_shape)
-
+    input_config = {
+        'input_shape': input_shape,
+        'input_path': input_img,
+        'normalize_cfg': normalize_cfg
+    }
+    # prepare input
+    one_img, one_meta = preprocess_example_input(input_config)
+    img_list, img_meta_list = [one_img], [[one_meta]]
     # replace original forward function
     origin_forward = model.forward
     model.forward = partial(
@@ -111,18 +112,16 @@ def pytorch2onnx(model,
         onnx_model = ONNXRuntimeDetector(output_file, model.CLASSES, 0)
         if dynamic_export:
             # scale up to test dynamic shape
-            input_shape = [int((_ * 1.5) // 32 * 32) for _ in input_shape]
+            h, w = [int((_ * 1.5) // 32 * 32) for _ in input_shape[2:]]
+            h, w = min(1344, h), min(1344, w)
+            input_config['input_shape'] = (1, 3, h, w)
 
         if test_img is None:
-            test_img = input_img
+            input_config['input_path'] = input_img
 
-        # prepare test inputs, keep_ratio if dynamic export, rescale=True
-        img_list, img_meta_list = prepare_inputs(
-            test_img,
-            test_pipeline,
-            shape=input_shape,
-            keep_ratio=dynamic_export,
-            rescale=True)
+        # prepare input once again
+        one_img, one_meta = preprocess_example_input(input_config)
+        img_list, img_meta_list = [one_img], [[one_meta]]
 
         # get pytorch output
         pytorch_results = model(
@@ -143,7 +142,7 @@ def pytorch2onnx(model,
         else:
             out_file_ort, out_file_pt = 'show-ort.png', 'show-pt.png'
 
-        show_img = mmcv.imread(test_img)
+        show_img = one_meta['show_img']
         model.show_result(
             show_img,
             pytorch_results,
@@ -173,6 +172,14 @@ def pytorch2onnx(model,
                 np.testing.assert_allclose(
                     o_res, p_res, rtol=1e-03, atol=1e-05, err_msg=err_msg)
         print('The numerical values are the same between Pytorch and ONNX')
+
+
+def parse_normalize_cfg(test_pipeline):
+    transforms = test_pipeline[1]['transforms']
+    norm_config_li = [_ for _ in transforms if _['type'] == 'Normalize']
+    assert len(norm_config_li) == 1
+    norm_config = norm_config_li[0]
+    return norm_config
 
 
 def parse_args():
@@ -238,36 +245,29 @@ if __name__ == '__main__':
 
     if args.shape is None:
         img_scale = cfg.test_pipeline[1]['img_scale']
-        input_shape = (img_scale[1], img_scale[0])
+        input_shape = (1, 3, img_scale[1], img_scale[0])
     elif len(args.shape) == 1:
-        input_shape = (args.shape[0], args.shape[0])
+        input_shape = (1, 3, args.shape[0], args.shape[0])
     elif len(args.shape) == 2:
-        input_shape = args.shape
+        input_shape = (1, 3) + tuple(args.shape)
     else:
         raise ValueError('invalid input shape')
 
     # build the model and load checkpoint
-    cfg.model.pretrained = None
-    cfg.model.train_cfg = None
-    model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
-    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
-    if 'CLASSES' in checkpoint.get('meta', {}):
-        model.CLASSES = checkpoint['meta']['CLASSES']
-    else:
-        from mmdet.datasets import DATASETS
-        dataset = DATASETS.get(cfg.data.test['type'])
-        assert (dataset is not None)
-        model.CLASSES = dataset.CLASSES
+    model = build_model_from_cfg(args.config, args.checkpoint,
+                                 args.cfg_options)
 
     if not args.input_img:
         args.input_img = osp.join(osp.dirname(__file__), '../../demo/demo.jpg')
+
+    normalize_cfg = parse_normalize_cfg(cfg.test_pipeline)
 
     # convert model to onnx file
     pytorch2onnx(
         model,
         args.input_img,
         input_shape,
-        cfg.test_pipeline,
+        normalize_cfg,
         opset_version=args.opset_version,
         show=args.show,
         output_file=args.output_file,
