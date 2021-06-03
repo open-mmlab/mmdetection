@@ -449,7 +449,7 @@ class ATSSHead(AnchorHead):
                 anchors = anchors.expand_as(bbox_pred)
 
             bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shapes)
+                anchors, bbox_pred, max_shape=torch.tensor(img_shapes[0][:2]))
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
