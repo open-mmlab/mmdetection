@@ -35,7 +35,8 @@ class FCNMaskHead(BaseModule):
                  predictor_cfg=dict(type='Conv'),
                  loss_mask=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0),
-                 init_cfg=None):
+                 init_cfg=None,
+                 rescale_mask_to_input_shape=True):
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
         super(FCNMaskHead, self).__init__(init_cfg)
@@ -62,6 +63,7 @@ class FCNMaskHead(BaseModule):
         self.predictor_cfg = predictor_cfg
         self.fp16_enabled = False
         self.loss_mask = build_loss(loss_mask)
+        self.rescale_mask_to_input_shape = rescale_mask_to_input_shape
 
         self.convs = ModuleList()
         for i in range(self.num_convs):
@@ -332,8 +334,11 @@ class FCNMaskHead(BaseModule):
         if not self.class_agnostic:
             box_inds = torch.arange(mask_pred.shape[0])
             mask_pred = mask_pred[box_inds, labels][:, None]
-        masks, _ = _do_paste_mask(
-            mask_pred, bboxes, img_h, img_w, skip_empty=False)
+        if self.rescale_mask_to_input_shape:
+            masks, _ = _do_paste_mask(
+                mask_pred, bboxes, img_h, img_w, skip_empty=False)
+        else:
+            masks = mask_pred.squeeze()
         if threshold >= 0:
             masks = (masks >= threshold).to(dtype=torch.bool)
         return masks
