@@ -50,7 +50,6 @@ Description of all arguments:
 - `--show`: Determines whether to show the outputs of the model. If not specified, it will be set to `False`.
 - `--verify`: Determines whether to verify the correctness of models between ONNXRuntime and TensorRT. If not specified, it will be set to `False`.
 - `--verbose`: Determines whether to print logging messages. It's useful for debugging. If not specified, it will be set to `False`.
-- `--fp16`: Determines whether to use FP16 mode with TensorRT. If not specified, it will be set to `False`.
 
 Example:
 
