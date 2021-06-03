@@ -322,7 +322,13 @@ class FCNMaskHead(BaseModule):
             ori_shape (Tuple): original image height and width, shape (2,)
 
         Returns:
-            Tensor: a mask of shape (N, img_h, img_w).
+            Tensor: tensor with masks.
+            If self.rescale_mask_to_input_shape == True,
+                then masks will be returned with the shape of the input image.
+                It will return masks with shape (N, img_h, img_w).
+            If self.rescale_mask_to_input_shape == False,
+                then post-processing will not be applied to masks.
+                It will return masks with shape (N, 28, 28).
         """
 
         mask_pred = mask_pred.sigmoid()
