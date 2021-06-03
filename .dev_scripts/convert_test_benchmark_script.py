@@ -29,7 +29,11 @@ def process_model_info(model_info, work_dir):
     job_name = fname
     work_dir = osp.join(work_dir, fname)
     checkpoint = model_info['checkpoint'].strip()
-    eval = model_info['eval'].strip()
+    if not isinstance(model_info['eval'], list):
+        evals = [model_info['eval']]
+    else:
+        evals = model_info['eval']
+    eval = ' '.join(evals)
     return dict(
         config=config,
         job_name=job_name,

@@ -27,7 +27,7 @@ cascade_rcnn = [
     dict(
         config='configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
         checkpoint='cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth',
-        eval='bbox segm',
+        eval=['bbox', 'segm'],
         metric=dict(bbox_mAP=41.2, segm_mAP=35.9),
     ),
 ]
@@ -64,7 +64,7 @@ deformable_detr = dict(
 detectors = dict(
     config='configs/detectors/detectors_htc_r50_1x_coco.py',
     checkpoint='detectors_htc_r50_1x_coco-329b1453.pth',
-    eval='bbox segm',
+    eval=['bbox', 'segm'],
     metric=dict(bbox_mAP=49.1, segm_mAP=42.6),
 )
 detr = dict(
@@ -124,7 +124,7 @@ fsaf = dict(
 gcnet = dict(
     config='configs/gcnet/mask_rcnn_r50_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco.py',  # noqa
     checkpoint='mask_rcnn_r50_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200202-587b99aa.pth',  # noqa
-    eval='bbox segm',
+    eval=['bbox', 'segm'],
     metric=dict(bbox_mAP=40.4, segm_mAP=36.2),
 )
 gfl = dict(
@@ -136,7 +136,7 @@ gfl = dict(
 gn = dict(
     config='configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py',
     checkpoint='mask_rcnn_r50_fpn_gn-all_2x_coco_20200206-8eee02a6.pth',
-    eval='bbox segm',
+    eval=['bbox', 'segm'],
     metric=dict(bbox_mAP=40.1, segm_mAP=36.4),
 )
 gn_ws = dict(
@@ -180,7 +180,7 @@ hrnet = dict(
 htc = dict(
     config='configs/htc/htc_r50_fpn_1x_coco.py',
     checkpoint='htc_r50_fpn_1x_coco_20200317-7332cf16.pth',
-    eval='bbox segm',
+    eval=['bbox', 'segm'],
     metric=dict(bbox_mAP=42.3, segm_mAP=37.4),
 )
 libra_rcnn = dict(
@@ -192,13 +192,13 @@ libra_rcnn = dict(
 mask_rcnn = dict(
     config='configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
     checkpoint='mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth',
-    eval='bbox segm',
+    eval=['bbox', 'segm'],
     metric=dict(bbox_mAP=38.2, segm_mAP=34.7),
 )
 ms_rcnn = dict(
     config='configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x_coco.py',
     checkpoint='ms_rcnn_r50_caffe_fpn_1x_coco_20200702_180848-61c9355e.pth',
-    eval='bbox segm',
+    eval=['bbox', 'segm'],
     metric=dict(bbox_mAP=38.2, segm_mAP=36.0),
 )
 nas_fcos = dict(
@@ -234,13 +234,13 @@ pisa = dict(
 point_rend = dict(
     config='configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py',
     checkpoint='point_rend_r50_caffe_fpn_mstrain_1x_coco-1bcb5fb4.pth',
-    eval='bbox segm',
+    eval=['bbox', 'segm'],
     metric=dict(bbox_mAP=38.4, segm_mAP=36.3),
 )
 regnet = dict(
     config='configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_1x_coco.py',
     checkpoint='mask_rcnn_regnetx-3.2GF_fpn_1x_coco_20200520_163141-2a9d1814.pth',  # noqa
-    eval='bbox segm',
+    eval=['bbox', 'segm'],
     metric=dict(bbox_mAP=40.4, segm_mAP=36.7),
 )
 reppoints = dict(
@@ -320,7 +320,7 @@ vfnet = dict(
 yolact = dict(
     config='configs/yolact/yolact_r50_1x8_coco.py',
     checkpoint='yolact_r50_1x8_coco_20200908-f38d58df.pth',
-    eval='bbox segm',
+    eval=['bbox', 'segm'],
     metric=dict(bbox_mAP=31.2, segm_mAP=29.0),
 )
 yolo = dict(
