@@ -1,6 +1,7 @@
 import os
 import pathlib
 import tempfile
+from functools import partial
 
 import mmcv
 import torch
@@ -89,10 +90,9 @@ def wrap_nncf_model(model,
     """
 
     check_nncf_is_enabled()
-
     from nncf import (NNCFConfig, create_compressed_model,
                       register_default_init_args)
-    from nncf.dynamic_graph.io_handling import nncf_model_input
+    from nncf.dynamic_graph.io_handling import nncf_model_input, wrap_nncf_model_outputs_with_objwalk
     from nncf.dynamic_graph.trace_tensor import TracedTensor
     from nncf.initialization import InitializingDataLoader
 
@@ -101,6 +101,8 @@ def wrap_nncf_model(model,
             # redefined InitializingDataLoader because
             # of DataContainer format in mmdet
             kwargs = {k: v.data[0] for k, v in dataloader_output.items()}
+            kwargs['img'] = [kwargs['img']]
+            kwargs['img_metas'] = [kwargs['img_metas']]
             return (), kwargs
 
     pathlib.Path(cfg.work_dir).mkdir(parents=True, exist_ok=True)
@@ -178,7 +180,8 @@ def wrap_nncf_model(model,
             ctx = model.forward_dummy_context(img_metas)
             logger.debug(f"NNCF will NOT compress a postprocessing part of the model")
         with ctx:
-            model(img)
+            wrap_nncf_model_outputs_with_objwalk(model(img))
+
 
     def wrap_inputs(args, kwargs):
         # during dummy_forward
@@ -209,7 +212,9 @@ def wrap_nncf_model(model,
         kwargs['img'] = img
         return args, kwargs
 
+    original_forward = model.forward
     model.dummy_forward_fn = dummy_forward
+    model.forward = partial(model.forward, return_loss=False, forward_export=True)
     export_method = type(model).export
 
     if 'log_dir' in nncf_config:
@@ -220,6 +225,7 @@ def wrap_nncf_model(model,
                                                       wrap_inputs_fn=wrap_inputs,
                                                       resuming_state_dict=resuming_state_dict)
     model.export = export_method.__get__(model)
+    model.forward = original_forward
 
     return compression_ctrl, model
 

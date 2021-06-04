@@ -147,7 +147,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if kwargs.get('forward_export'):
             logger = get_root_logger()
             logger.info('Calling forward_export inside forward_test')
-            return self.forward_export(imgs)
+            return self.forward_export(imgs, img_metas)
 
         if kwargs.get('dummy_forward'):
             return self.forward_dummy(imgs[0])
@@ -213,8 +213,10 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         else:
             return self.forward_test(img, img_metas, **kwargs)
 
-    def forward_export(self, imgs):
+    def forward_export(self, imgs, img_metas=None):
         from torch.onnx.operators import shape_as_tensor
+        if img_metas is not None:
+                self.img_metas = img_metas
         assert self.img_metas, 'Error: forward_export should be called inside forward_export_context'
 
         img_shape = shape_as_tensor(imgs[0])
@@ -223,7 +225,10 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         assert len(self.img_metas[0]) == imgs_per_gpu, f'self.img_metas={self.img_metas}'
         self.img_metas[0][0]['img_shape'] = img_shape[2:4]
 
-        return self.simple_test(imgs[0], self.img_metas[0], postprocess=False)
+        retval = self.simple_test(imgs[0], self.img_metas[0], postprocess=False)
+        if img_metas is not None:
+                self.img_metas = None
+        return retval
 
     @contextmanager
     def forward_export_context(self, img_metas):
