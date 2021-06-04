@@ -1,8 +1,8 @@
-# Designing Network Design Spaces
+# Backbones Trained by Self-Supervise Algorithms
 
 ## Introduction
 
-[BACKBONE]
+<!-- [BACKBONE] -->
 
 We support to apply the backbone models pre-trained by different self-supervised methods in detection systems and provide their results on Mask R-CNN.
 
