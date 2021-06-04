@@ -91,7 +91,7 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
 
 ### Prerequisite
 
-- Build custom operators for ONNX Runtime refer to [Custom operators for ONNX Runtime in MMCV](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/)
+- Build custom operators for ONNX Runtime following [Custom operators for ONNX Runtime in MMCV](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/)
 - Install onnx and onnxruntime (CPU version)
 
   ```shell
