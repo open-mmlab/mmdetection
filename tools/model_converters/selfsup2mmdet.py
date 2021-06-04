@@ -29,17 +29,12 @@ def main():
     parser.add_argument('src', help='src detectron model path')
     parser.add_argument('dst', help='save path')
     parser.add_argument(
-        '--selfsup',
-        type=str,
-        choices=['moco', 'byol', 'swav'],
-        help='save path')
+        '--selfsup', type=str, choices=['moco', 'swav'], help='save path')
     args = parser.parse_args()
     if args.selfsup == 'moco':
         moco_convert(args.src, args.dst)
-    elif args.selfsup == 'byol':
-        byol_convert(args.src, args.dst)
     elif args.selfsup == 'swav':
-        swav_convert(args.src, args.dst)
+        print('SWAV does not need to convert the keys')
 
 
 if __name__ == '__main__':
