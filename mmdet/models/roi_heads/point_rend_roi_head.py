@@ -191,7 +191,7 @@ class PointRendRoIHead(StandardRoIHead):
                 mask_results = self._mask_forward(x, mask_rois)
                 mask_results['mask_pred'] = self._mask_point_forward_test(
                     x, mask_rois, det_labels, mask_results['mask_pred'],
-                    img_metas)
+                    img_meta)
                 # convert to numpy array to save memory
                 aug_masks.append(
                     mask_results['mask_pred'].sigmoid().cpu().numpy())
