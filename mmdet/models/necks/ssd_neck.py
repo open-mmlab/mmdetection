@@ -19,8 +19,6 @@ class SSDNeck(BaseModule):
             If None, not use L2 normalization on the first input feature.
         last_kernel_size (int): Kernel size of the last conv layer.
             Default: 3.
-        is_vgg_neck (bool): Whether to add more vgg layers after backbone.
-            Default: False.
         use_depthwise (bool): Whether to use DepthwiseSeparableConv.
             Default: False.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
@@ -38,7 +36,6 @@ class SSDNeck(BaseModule):
                  level_paddings,
                  l2_norm_scale=20.,
                  last_kernel_size=3,
-                 is_vgg_neck=False,
                  use_depthwise=False,
                  conv_cfg=None,
                  norm_cfg=None,
@@ -61,26 +58,6 @@ class SSDNeck(BaseModule):
                     val=self.l2_norm.scale,
                     override=dict(name='l2_norm'))
             ]
-
-        if is_vgg_neck:
-            self.vgg_features = nn.Sequential(
-                nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
-                ConvModule(
-                    in_channels[-1],
-                    out_channels[len(in_channels) - 1],
-                    kernel_size=3,
-                    padding=6,
-                    dilation=6,
-                    conv_cfg=conv_cfg,
-                    norm_cfg=norm_cfg,
-                    act_cfg=act_cfg),
-                ConvModule(
-                    out_channels[len(in_channels) - 1],
-                    out_channels[len(in_channels) - 1],
-                    kernel_size=1,
-                    conv_cfg=conv_cfg,
-                    norm_cfg=norm_cfg,
-                    act_cfg=act_cfg))
 
         self.extra_layers = nn.ModuleList()
         extra_layer_channels = out_channels[len(in_channels):]
@@ -115,8 +92,6 @@ class SSDNeck(BaseModule):
         outs = [feat for feat in inputs]
         if hasattr(self, 'l2_norm'):
             outs[0] = self.l2_norm(outs[0])
-        if hasattr(self, 'vgg_features'):
-            outs[-1] = self.vgg_features(outs[-1])
 
         feat = outs[-1]
         for layer in self.extra_layers:
