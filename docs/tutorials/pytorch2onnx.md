@@ -23,7 +23,7 @@
 
 ### Prerequisite
 
-1. Install the prerequisites following steps 1-3 in [get_started.md/Installation](../get_started.md). (we do not install MMCV and MMDetection because we will do it manually).
+1. Install the prerequisites following steps 1-3 in [get_started.md/Installation](../get_started.md). (We do not install MMCV and MMDetection because we will do it manually).
 2. Build custom operators for ONNX Runtime and install MMCV following [Custom operators for ONNX Runtime in MMCV](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/)
 3. Install MMdetection and its requirements following steps 5-6 in [get_started.md/Installation](../get_started.md).
 
