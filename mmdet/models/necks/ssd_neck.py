@@ -15,7 +15,7 @@ class SSDNeck(BaseModule):
         out_channels (Sequence[int]): Number of output channels per scale.
         level_strides (Sequence[int]): Stride of 3x3 conv per level.
         level_paddings (Sequence[int]): Padding size of 3x3 conv per level.
-        l2_norm_scale (float): L2 normalization layer init scale.
+        l2_norm_scale (float|None): L2 normalization layer init scale.
             If None, not use L2 normalization on the first input feature.
         last_kernel_size (int): Kernel size of the last conv layer.
             Default: 3.
@@ -47,8 +47,10 @@ class SSDNeck(BaseModule):
                      dict(type='Constant', val=1, layer='BatchNorm2d'),
                  ]):
         super(SSDNeck, self).__init__(init_cfg)
+        assert len(out_channels) > len(in_channels)
         assert len(out_channels) - len(in_channels) == len(level_strides)
         assert len(level_strides) == len(level_paddings)
+        assert in_channels == out_channels[:len(in_channels)]
 
         if l2_norm_scale:
             self.l2_norm = L2Norm(in_channels[0], l2_norm_scale)
