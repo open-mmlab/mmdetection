@@ -23,9 +23,9 @@
 
 ### Prerequisite
 
-1. Please install the prerequisites except for MMCV and MMDetection refer to steps 1-3 in [get_started.md/Installation](../get_started.md).
-2. Build custom operators for ONNX Runtime and install MMCV refer to [Custom operators for ONNX Runtime in MMCV](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/)
-3. Install MMdetection and its requirements refer to steps 5-6 in [get_started.md/Installation](../get_started.md).
+1. Install the prerequisites following steps 1-3 in [get_started.md/Installation](../get_started.md). (we do not install MMCV and MMDetection because we will do it manually).
+2. Build custom operators for ONNX Runtime and install MMCV following [Custom operators for ONNX Runtime in MMCV](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/)
+3. Install MMdetection and its requirements following steps 5-6 in [get_started.md/Installation](../get_started.md).
 
 ### Usage
 
@@ -97,7 +97,7 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
   ```shell
   pip install onnx onnxruntime==1.5.1
   ```
-- If you want to use onnxruntime-gpu, remove the CPU version before using the GPU version.
+- If you want to run the model on GPU, please remove the CPU version before using the GPU version.
 
   ```shell
   pip uninstall onnxruntime
