@@ -65,10 +65,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.sampling = loss_cls['type'] not in [
             'FocalLoss', 'GHMC', 'QualityFocalLoss'
         ]
-        if self.use_sigmoid_cls:
-            self.cls_out_channels = num_classes
-        else:
-            self.cls_out_channels = num_classes + 1
+        self.cls_out_channels = num_classes
 
         if self.cls_out_channels <= 0:
             raise ValueError(f'num_classes={num_classes} is too small')
