@@ -24,7 +24,7 @@ class DETR(SingleStageDetector):
     # (2) the different behavior (e.g. construction of `masks`) between
     # torch and ONNX model, during the forward of bbox_head
     def onnx_export(self, img, img_metas):
-        """Test function without test time augmentation.
+        """Test function for exporting to ONNX, without test time augmentation.
 
         Args:
             img (torch.Tensor): input images.

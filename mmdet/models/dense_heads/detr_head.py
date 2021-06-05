@@ -752,7 +752,7 @@ class DETRHead(AnchorFreeHead):
                 Shape [nb_dec, bs, num_query, 4].
         """
         # Note `img_shape` is not dynamically traceable to ONNX,
-        # sicne the related augmentation was done with numpy under
+        # since the related augmentation was done with numpy under
         # CPU. Thus `masks` is directly created with zeros (valid tag)
         # and the same spatial shape as `x`.
         # The difference between torch and exported ONNX model may be
@@ -776,7 +776,8 @@ class DETRHead(AnchorFreeHead):
         return all_cls_scores, all_bbox_preds
 
     def onnx_export(self, all_cls_scores_list, all_bbox_preds_list, img_metas):
-        """Transform network outputs for a batch into bbox predictions.
+        """Transform network outputs into bbox predictions, with ONNX
+        exportation.
 
         Args:
             all_cls_scores_list (list[Tensor]): Classification outputs
