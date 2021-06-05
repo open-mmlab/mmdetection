@@ -698,10 +698,6 @@ class DETRHead(AnchorFreeHead):
                 The shape of the second tensor in the tuple is ``labels``
                 with shape (n,)
         """
-        batch_size = len(img_metas)
-        assert batch_size == 1, 'Currently only batch_size 1 for inference ' \
-            f'mode is supported. Found batch_size {batch_size}.'
-
         # forward of this head requires img_metas
         outs = self.forward(feats, img_metas)
         results_list = self.get_bboxes(*outs, img_metas, rescale=rescale)
@@ -800,7 +796,9 @@ class DETRHead(AnchorFreeHead):
         bbox_preds = all_bbox_preds_list[-1][-1]
 
         det_bboxes_list, det_labels_list = [], []
-        for img_id in range(len(img_metas)):
+        batch_size = cls_scores.size(0)
+        batch_size_tensor = torch.arange(batch_size).to(cls_scores.device)
+        for img_id in batch_size_tensor:
             cls_score = cls_scores[img_id]
             bbox_pred = bbox_preds[img_id]
             # Note `img_shape` is not dynamically traceable to ONNX,
