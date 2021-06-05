@@ -14,6 +14,7 @@ from ..utils.gaussian_target import (gather_feat, get_local_maximum,
                                      get_topk_from_heatmap,
                                      transpose_and_gather_feat)
 from .base_dense_head import BaseDenseHead
+from .dense_test_mixins import BBoxTestMixin
 
 
 class BiCornerPool(BaseModule):
@@ -80,7 +81,7 @@ class BiCornerPool(BaseModule):
 
 
 @HEADS.register_module()
-class CornerHead(BaseDenseHead):
+class CornerHead(BaseDenseHead, BBoxTestMixin):
     """Head of CornerNet: Detecting Objects as Paired Keypoints.
 
     Code is modified from the `official github repo

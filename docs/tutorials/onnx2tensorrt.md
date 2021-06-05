@@ -6,6 +6,7 @@
   - [How to convert models from ONNX to TensorRT](#how-to-convert-models-from-onnx-to-tensorrt)
     - [Prerequisite](#prerequisite)
     - [Usage](#usage)
+  - [How to evaluate the exported models](#how-to-evaluate-the-exported-models)
   - [List of supported models convertable to TensorRT](#list-of-supported-models-convertable-to-tensorrt)
   - [Reminders](#reminders)
   - [FAQs](#faqs)
@@ -28,6 +29,7 @@ python tools/deployment/onnx2tensorrt.py \
     --trt-file ${TRT_FILE} \
     --input-img ${INPUT_IMAGE_PATH} \
     --shape ${IMAGE_SHAPE} \
+    --max-shape ${MAX_IMAGE_SHAPE} \
     --mean ${IMAGE_MEAN} \
     --std ${IMAGE_STD} \
     --dataset ${DATASET_NAME} \
@@ -42,6 +44,7 @@ Description of all arguments:
 - `--trt-file`: The Path of output TensorRT engine file. If not specified, it will be set to `tmp.trt`.
 - `--input-img` : The path of an input image for tracing and conversion. By default, it will be set to `demo/demo.jpg`.
 - `--shape`: The height and width of model input. If not specified, it will be set to `400 600`.
+- `--max-shape`: The maximum height and width of model input. If not specified, it will be set to the same as `--shape`.
 - `--mean` : Three mean values for the input image. If not specified, it will be set to `123.675 116.28 103.53`.
 - `--std` : Three std values for the input image. If not specified, it will be set to `58.395 57.12 57.375`.
 - `--dataset` : The dataset name for the input model. If not specified, it will be set to `coco`.
@@ -65,23 +68,32 @@ python tools/deployment/onnx2tensorrt.py \
     --verify \
 ```
 
+## How to evaluate the exported models
+
+We prepare a tool `tools/deplopyment/test.py` to evaluate TensorRT models.
+
+Please refer to following links for more information.
+
+- [how-to-evaluate-the-exported-models](pytorch2onnx.md#how-to-evaluate-the-exported-models)
+- [results-and-models](pytorch2onnx.md#results-and-models)
+
 ## List of supported models convertable to TensorRT
 
 The table below lists the models that are guaranteed to be convertable to TensorRT.
 
-|    Model     |                        Config                        | Status |
-| :----------: | :--------------------------------------------------: | :----: |
-|     SSD      |             `configs/ssd/ssd300_coco.py`             |   Y    |
-|     FSAF     |        `configs/fsaf/fsaf_r50_fpn_1x_coco.py`        |   Y    |
-|     FCOS     |   `configs/fcos/fcos_r50_caffe_fpn_4x4_1x_coco.py`   |   Y    |
-|    YOLOv3    |  `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`  |   Y    |
-|  RetinaNet   |   `configs/retinanet/retinanet_r50_fpn_1x_coco.py`   |   Y    |
-| Faster R-CNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |   Y    |
-|  Mask R-CNN  |   `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`   |   Y    |
+|    Model     |                        Config                        | Dynamic Shape | Batch Inference | Note  |
+| :----------: | :--------------------------------------------------: | :-----------: | :-------------: | :---: |
+|     SSD      |             `configs/ssd/ssd300_coco.py`             |       Y       |        Y        |       |
+|     FSAF     |        `configs/fsaf/fsaf_r50_fpn_1x_coco.py`        |       Y       |        Y        |       |
+|     FCOS     |   `configs/fcos/fcos_r50_caffe_fpn_4x4_1x_coco.py`   |       Y       |        Y        |       |
+|    YOLOv3    |  `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`  |       Y       |        Y        |       |
+|  RetinaNet   |   `configs/retinanet/retinanet_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
+| Faster R-CNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |       Y       |        Y        |       |
+|  Mask R-CNN  |   `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
 
 Notes:
 
-- *All models above are tested with Pytorch==1.6.0 and TensorRT-7.2.1.6.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn8.0*
+- *All models above are tested with Pytorch==1.6.0, onnx==1.7.0 and TensorRT-7.2.1.6.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn8.0*
 
 ## Reminders
 
