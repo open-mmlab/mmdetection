@@ -1,6 +1,6 @@
 name: build_pat
 
-on: push
+on: [push, pull_request]
 
 jobs:
   build_parrots:
@@ -22,3 +22,8 @@ jobs:
           pip install -r requirements.txt
       - name: Build and install
         run: rm -rf .eggs && pip install -e .
+      - name: Run unittests and generate coverage report
+        run: |
+          coverage run --branch --source mmdet -m pytest tests/
+          coverage xml
+          coverage report -m
