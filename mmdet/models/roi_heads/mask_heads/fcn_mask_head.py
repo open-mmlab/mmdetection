@@ -1,4 +1,3 @@
-import os
 from warnings import warn
 
 import numpy as np
@@ -266,8 +265,14 @@ class FCNMaskHead(BaseModule):
         else:
             # GPU benefits from parallelism for larger chunks,
             # but may have memory issue
+            # the types of img_w and img_h are np.int32,
+            # when the image resolution is large,
+            # the calculation of num_chunks will overflow.
+            # so we neet to change the types of img_w and img_h to int.
+            # See https://github.com/open-mmlab/mmdetection/pull/5191
             num_chunks = int(
-                np.ceil(N * img_h * img_w * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
+                np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT /
+                        GPU_MEM_LIMIT))
             assert (num_chunks <=
                     N), 'Default GPU_MEM_LIMIT is too small; try increasing it'
         chunks = torch.chunk(torch.arange(N, device=device), num_chunks)
@@ -331,11 +336,6 @@ class FCNMaskHead(BaseModule):
             mask_pred, bboxes, img_h, img_w, skip_empty=False)
         if threshold >= 0:
             masks = (masks >= threshold).to(dtype=torch.bool)
-        else:
-            # TensorRT backend does not have data type of uint8
-            is_trt_backend = os.environ.get('ONNX_BACKEND') == 'MMCVTensorRT'
-            target_dtype = torch.int32 if is_trt_backend else torch.uint8
-            masks = (masks * 255).to(dtype=target_dtype)
         return masks
 
 
