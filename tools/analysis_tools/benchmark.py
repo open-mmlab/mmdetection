@@ -5,7 +5,7 @@ import time
 import torch
 from mmcv import Config, DictAction
 from mmcv.cnn import fuse_conv_bn
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmcv.parallel import MMDistributedDataParallel
 from mmcv.runner import init_dist, load_checkpoint, wrap_fp16_model
 
 from mmdet.datasets import (build_dataloader, build_dataset,
@@ -49,7 +49,7 @@ def parse_args():
 
 
 def calc_inference_fps(cfg, checkpoint, max_iter, log_interval,
-                       is_fuse_conv_bn, distributed):
+                       is_fuse_conv_bn):
     # import modules from string list.
     if cfg.get('custom_imports', None):
         from mmcv.utils import import_modules_from_strings
@@ -70,7 +70,7 @@ def calc_inference_fps(cfg, checkpoint, max_iter, log_interval,
         dataset,
         samples_per_gpu=1,
         workers_per_gpu=cfg.data.workers_per_gpu,
-        dist=distributed,
+        dist=True,
         shuffle=False)
 
     # build the model and load checkpoint
@@ -83,13 +83,10 @@ def calc_inference_fps(cfg, checkpoint, max_iter, log_interval,
     if is_fuse_conv_bn:
         model = fuse_conv_bn(model)
 
-    if not distributed:
-        model = MMDataParallel(model, device_ids=[0])
-    else:
-        model = MMDistributedDataParallel(
-            model.cuda(),
-            device_ids=[torch.cuda.current_device()],
-            broadcast_buffers=False)
+    model = MMDistributedDataParallel(
+        model.cuda(),
+        device_ids=[torch.cuda.current_device()],
+        broadcast_buffers=False)
     model.eval()
 
     # the first several iterations may be very slow so skip them
@@ -119,7 +116,6 @@ def calc_inference_fps(cfg, checkpoint, max_iter, log_interval,
                     flush=True)
 
         if (i + 1) == max_iter:
-            pure_inf_time += elapsed
             fps = (i + 1 - num_warmup) / pure_inf_time
             print(f'Overall fps: {fps:.1f} img / s', flush=True)
             break
@@ -134,13 +130,12 @@ def main():
         cfg.merge_from_dict(args.cfg_options)
 
     if args.launcher == 'none':
-        distributed = False
+        raise NotImplementedError('Only supports distributed mode')
     else:
-        distributed = True
         init_dist(args.launcher, **cfg.dist_params)
 
     calc_inference_fps(cfg, args.checkpoint, args.max_iter, args.log_interval,
-                       args.fuse_conv_bn, distributed)
+                       args.fuse_conv_bn)
 
 
 if __name__ == '__main__':

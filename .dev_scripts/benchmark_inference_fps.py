@@ -52,9 +52,8 @@ if __name__ == '__main__':
     config = Config.fromfile(args.config)
 
     if args.launcher == 'none':
-        distributed = False
+        raise NotImplementedError('Only supports distributed mode')
     else:
-        distributed = True
         init_dist(args.launcher)
 
     result_dict = {}
@@ -70,8 +69,7 @@ if __name__ == '__main__':
                                   model_info['checkpoint'].strip())
             try:
                 fps = calc_inference_fps(cfg, checkpoint, args.max_iter,
-                                         args.log_interval, args.fuse_conv_bn,
-                                         distributed)
+                                         args.log_interval, args.fuse_conv_bn)
                 print(f'{cfg_path} fps : {fps}', flush=True)
                 result_dict[cfg_path] = fps
             except Exception as e:
