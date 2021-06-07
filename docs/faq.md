@@ -80,3 +80,9 @@ We list some common troubles faced by many users and their corresponding solutio
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
     1. This error indicates that your module has parameters that were not used in producing loss. This phenomenon may be caused by running different branches in your code in DDP mode.
     2. You can set ` find_unused_parameters = True` in the config to solve the above problems or find those unused parameters manually.
+
+## Evaluation
+
+- COCO Dataset, AP or AR = -1
+    1. According to COCO dataset definition, small area < 32^2^, 32^2^ < medium area < 96^2^, large area > 96^2^.
+    2. If the corresponding area has no object, the result of AP and AR will set to -1. [#4494](https://github.com/open-mmlab/mmdetection/issues/4494)
