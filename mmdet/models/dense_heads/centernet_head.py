@@ -247,6 +247,7 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
             wh_offset_target_weight=wh_offset_target_weight)
         return target_result, avg_factor
 
+    @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
     def get_bboxes(self,
                    center_heatmap_preds,
                    wh_preds,
@@ -280,37 +281,71 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         """
         assert len(center_heatmap_preds) == len(wh_preds) == len(
             offset_preds) == 1
-        scale_factors = [img_meta['scale_factor'] for img_meta in img_metas]
-        border_pixs = [img_meta['border'] for img_meta in img_metas]
+        result_list = []
+        for img_id in range(len(img_metas)):
+            result_list.append(
+                self._get_bboxes_single(
+                    center_heatmap_preds[0][img_id:img_id + 1, ...],
+                    wh_preds[0][img_id:img_id + 1, ...],
+                    offset_preds[0][img_id:img_id + 1, ...],
+                    img_metas[img_id],
+                    rescale=rescale,
+                    with_nms=with_nms))
+        return result_list
 
+    def _get_bboxes_single(self,
+                           center_heatmap_pred,
+                           wh_pred,
+                           offset_pred,
+                           img_meta,
+                           rescale=False,
+                           with_nms=True):
+        """Transform outputs for a single batch item into bbox predictions.
+
+        Args:
+            center_heatmap_pred (Tensor): center heatmap for current level with
+                shape (N, num_classes, H, W).
+            wh_pred (Tensor): wh heatmap for current level with shape
+                (N, num_classes, H, W).
+            offset_pred (Tensor): offset for current level with shape
+                (N, corner_offset_channels, H, W).
+            img_meta (dict): Meta information of current image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            tuple[Tensor, Tensor]: The first item is an (n, 5) tensor, where
+                5 represent (tl_x, tl_y, br_x, br_y, score) and the score
+                between 0 and 1. The shape of the second tensor in the tuple
+                is (n,), and each element represents the class label of the
+                corresponding box.
+        """
         batch_det_bboxes, batch_labels = self.decode_heatmap(
-            center_heatmap_preds[0],
-            wh_preds[0],
-            offset_preds[0],
-            img_metas[0]['batch_input_shape'],
+            center_heatmap_pred,
+            wh_pred,
+            offset_pred,
+            img_meta['batch_input_shape'],
             k=self.test_cfg.topk,
             kernel=self.test_cfg.local_maximum_kernel)
 
-        batch_border = batch_det_bboxes.new_tensor(
-            border_pixs)[:, [2, 0, 2, 0]].unsqueeze(1)
-        batch_det_bboxes[..., :4] -= batch_border
+        det_bboxes = batch_det_bboxes.view([-1, 5])
+        det_labels = batch_labels.view(-1)
+
+        batch_border = det_bboxes.new_tensor(
+            img_meta['border'])[None][..., [2, 0, 2, 0]]
+        det_bboxes[..., :4] -= batch_border
 
         if rescale:
-            batch_det_bboxes[..., :4] /= batch_det_bboxes.new_tensor(
-                scale_factors).unsqueeze(1)
+            det_bboxes[..., :4] /= det_bboxes.new_tensor(
+                img_meta['scale_factor'])[None]
 
         if with_nms:
-            det_results = []
-            for (det_bboxes, det_labels) in zip(batch_det_bboxes,
-                                                batch_labels):
-                det_bbox, det_label = self._bboxes_nms(det_bboxes, det_labels,
-                                                       self.test_cfg)
-                det_results.append(tuple([det_bbox, det_label]))
-        else:
-            det_results = [
-                tuple(bs) for bs in zip(batch_det_bboxes, batch_labels)
-            ]
-        return det_results
+            det_bboxes, det_labels = self._bboxes_nms(det_bboxes, det_labels,
+                                                      self.test_cfg)
+        return det_bboxes, det_labels
 
     def decode_heatmap(self,
                        center_heatmap_pred,

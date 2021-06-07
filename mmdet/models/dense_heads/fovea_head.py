@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops import DeformConv2d
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, force_fp32
 
 from mmdet.core import multi_apply, multiclass_nms
 from ..builder import HEADS
@@ -264,6 +264,7 @@ class FoveaHead(AnchorFreeHead):
             bbox_target_list.append(torch.log(bbox_targets))
         return label_list, bbox_target_list
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def get_bboxes(self,
                    cls_scores,
                    bbox_preds,
@@ -316,7 +317,7 @@ class FoveaHead(AnchorFreeHead):
                 -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).exp()
             nms_pre = cfg.get('nms_pre', -1)
-            if (nms_pre > 0) and (scores.shape[0] > nms_pre):
+            if 0 < nms_pre < scores.shape[0]:
                 max_scores, _ = scores.max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 bbox_pred = bbox_pred[topk_inds, :]

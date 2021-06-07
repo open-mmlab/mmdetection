@@ -214,28 +214,30 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 each element represents the class label of the corresponding
                 box.
         """
+        result_list = []
         num_levels = len(pred_maps)
-        pred_maps_list = [pred_maps[i].detach() for i in range(num_levels)]
-        scale_factors = [
-            img_metas[i]['scale_factor']
-            for i in range(pred_maps_list[0].shape[0])
-        ]
-        result_list = self._get_bboxes(pred_maps_list, scale_factors, cfg,
-                                       rescale, with_nms)
+        for img_id in range(len(img_metas)):
+            pred_maps_list = [
+                pred_maps[i][img_id].detach() for i in range(num_levels)
+            ]
+            scale_factor = img_metas[img_id]['scale_factor']
+            proposals = self._get_bboxes_single(pred_maps_list, scale_factor,
+                                                cfg, rescale, with_nms)
+            result_list.append(proposals)
         return result_list
 
-    def _get_bboxes(self,
-                    pred_maps_list,
-                    scale_factors,
-                    cfg,
-                    rescale=False,
-                    with_nms=True):
+    def _get_bboxes_single(self,
+                           pred_maps_list,
+                           scale_factor,
+                           cfg,
+                           rescale=False,
+                           with_nms=True):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
             pred_maps_list (list[Tensor]): Prediction maps for different scales
                 of each single image in the batch.
-            scale_factors (list(ndarray)): Scale factor of the image arrange as
+            scale_factor (ndarray): Scale factor of the image arrange as
                 (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -245,170 +247,93 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 Default: True.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
+            tuple(Tensor):
+                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
+                    the first 4 columns are bounding box positions
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                    between 0 and 1.
+                det_labels (Tensor): A (n,) tensor where each item is the
+                    predicted class label of the corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(pred_maps_list) == self.num_levels
-
-        device = pred_maps_list[0].device
-        batch_size = pred_maps_list[0].shape[0]
-
-        featmap_sizes = [
-            pred_maps_list[i].shape[-2:] for i in range(self.num_levels)
-        ]
-        multi_lvl_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes, device)
-        # convert to tensor to keep tracing
-        nms_pre_tensor = torch.tensor(
-            cfg.get('nms_pre', -1), device=device, dtype=torch.long)
-
         multi_lvl_bboxes = []
         multi_lvl_cls_scores = []
         multi_lvl_conf_scores = []
+        num_levels = len(pred_maps_list)
+        featmap_sizes = [
+            pred_maps_list[i].shape[-2:] for i in range(num_levels)
+        ]
+        multi_lvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, pred_maps_list[0][0].device)
         for i in range(self.num_levels):
             # get some key info for current scale
             pred_map = pred_maps_list[i]
             stride = self.featmap_strides[i]
-            # (b,h, w, num_anchors*num_attrib) ->
-            # (b,h*w*num_anchors, num_attrib)
-            pred_map = pred_map.permute(0, 2, 3,
-                                        1).reshape(batch_size, -1,
-                                                   self.num_attrib)
-            # Inplace operation like
-            # ```pred_map[..., :2] = \torch.sigmoid(pred_map[..., :2])```
-            # would create constant tensor when exporting to onnx
-            pred_map_conf = torch.sigmoid(pred_map[..., :2])
-            pred_map_rest = pred_map[..., 2:]
-            pred_map = torch.cat([pred_map_conf, pred_map_rest], dim=-1)
-            pred_map_boxes = pred_map[..., :4]
-            multi_lvl_anchor = multi_lvl_anchors[i]
-            multi_lvl_anchor = multi_lvl_anchor.expand_as(pred_map_boxes)
-            bbox_pred = self.bbox_coder.decode(multi_lvl_anchor,
-                                               pred_map_boxes, stride)
+
+            # (h, w, num_anchors*num_attrib) -> (h*w*num_anchors, num_attrib)
+            pred_map = pred_map.permute(1, 2, 0).reshape(-1, self.num_attrib)
+
+            pred_map[..., :2] = torch.sigmoid(pred_map[..., :2])
+            bbox_pred = self.bbox_coder.decode(multi_lvl_anchors[i],
+                                               pred_map[..., :4], stride)
             # conf and cls
-            conf_pred = torch.sigmoid(pred_map[..., 4])
+            conf_pred = torch.sigmoid(pred_map[..., 4]).view(-1)
             cls_pred = torch.sigmoid(pred_map[..., 5:]).view(
-                batch_size, -1, self.num_classes)  # Cls pred one-hot.
+                -1, self.num_classes)  # Cls pred one-hot.
+
+            # Filtering out all predictions with conf < conf_thr
+            conf_thr = cfg.get('conf_thr', -1)
+            if conf_thr > 0:
+                conf_inds = conf_pred.ge(conf_thr).nonzero(
+                    as_tuple=False).squeeze(1)
+                bbox_pred = bbox_pred[conf_inds, :]
+                cls_pred = cls_pred[conf_inds, :]
+                conf_pred = conf_pred[conf_inds]
 
             # Get top-k prediction
-            from mmdet.core.export import get_k_for_topk
-            nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
-            if nms_pre > 0:
+            nms_pre = cfg.get('nms_pre', -1)
+            if 0 < nms_pre < conf_pred.size(0):
                 _, topk_inds = conf_pred.topk(nms_pre)
-                batch_inds = torch.arange(batch_size).view(
-                    -1, 1).expand_as(topk_inds).long()
-                # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
-                if torch.onnx.is_in_onnx_export():
-                    transformed_inds = (
-                        bbox_pred.shape[1] * batch_inds + topk_inds)
-                    bbox_pred = bbox_pred.reshape(
-                        -1, 4)[transformed_inds, :].reshape(batch_size, -1, 4)
-                    cls_pred = cls_pred.reshape(
-                        -1, self.num_classes)[transformed_inds, :].reshape(
-                            batch_size, -1, self.num_classes)
-                    conf_pred = conf_pred.reshape(-1,
-                                                  1)[transformed_inds].reshape(
-                                                      batch_size, -1)
-                else:
-                    bbox_pred = bbox_pred[batch_inds, topk_inds, :]
-                    cls_pred = cls_pred[batch_inds, topk_inds, :]
-                    conf_pred = conf_pred[batch_inds, topk_inds]
+                bbox_pred = bbox_pred[topk_inds, :]
+                cls_pred = cls_pred[topk_inds, :]
+                conf_pred = conf_pred[topk_inds]
+
             # Save the result of current scale
             multi_lvl_bboxes.append(bbox_pred)
             multi_lvl_cls_scores.append(cls_pred)
             multi_lvl_conf_scores.append(conf_pred)
 
         # Merge the results of different scales together
-        batch_mlvl_bboxes = torch.cat(multi_lvl_bboxes, dim=1)
-        batch_mlvl_scores = torch.cat(multi_lvl_cls_scores, dim=1)
-        batch_mlvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
+        multi_lvl_bboxes = torch.cat(multi_lvl_bboxes)
+        multi_lvl_cls_scores = torch.cat(multi_lvl_cls_scores)
+        multi_lvl_conf_scores = torch.cat(multi_lvl_conf_scores)
 
-        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
-        if torch.onnx.is_in_onnx_export() and with_nms:
-            from mmdet.core.export import add_dummy_nms_for_onnx
-            conf_thr = cfg.get('conf_thr', -1)
-            score_thr = cfg.get('score_thr', -1)
-            # follow original pipeline of YOLOv3
-            if conf_thr > 0:
-                mask = (batch_mlvl_conf_scores >= conf_thr).float()
-                batch_mlvl_conf_scores *= mask
-            if score_thr > 0:
-                mask = (batch_mlvl_scores > score_thr).float()
-                batch_mlvl_scores *= mask
-            batch_mlvl_conf_scores = batch_mlvl_conf_scores.unsqueeze(
-                2).expand_as(batch_mlvl_scores)
-            batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_conf_scores
-            max_output_boxes_per_class = cfg.nms.get(
-                'max_output_boxes_per_class', 200)
-            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
-            # keep aligned with original pipeline, improve
-            # mAP by 1% for YOLOv3 in ONNX
-            score_threshold = 0
-            nms_pre = cfg.get('deploy_nms_pre', -1)
-            return add_dummy_nms_for_onnx(
-                batch_mlvl_bboxes,
-                batch_mlvl_scores,
-                max_output_boxes_per_class,
-                iou_threshold,
-                score_threshold,
-                nms_pre,
-                cfg.max_per_img,
-            )
-
-        if with_nms and (batch_mlvl_conf_scores.size(0) == 0):
+        if with_nms and (multi_lvl_conf_scores.size(0) == 0):
             return torch.zeros((0, 5)), torch.zeros((0, ))
 
         if rescale:
-            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
-                scale_factors).unsqueeze(1)
+            multi_lvl_bboxes /= multi_lvl_bboxes.new_tensor(scale_factor)
 
         # In mmdet 2.x, the class_id for background is num_classes.
         # i.e., the last column.
-        padding = batch_mlvl_scores.new_zeros(batch_size,
-                                              batch_mlvl_scores.shape[1], 1)
-        batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
+        padding = multi_lvl_cls_scores.new_zeros(multi_lvl_cls_scores.shape[0],
+                                                 1)
+        multi_lvl_cls_scores = torch.cat([multi_lvl_cls_scores, padding],
+                                         dim=1)
 
-        # Support exporting to onnx without nms
-        if with_nms and cfg.get('nms', None) is not None:
-            det_results = []
-            for (mlvl_bboxes, mlvl_scores,
-                 mlvl_conf_scores) in zip(batch_mlvl_bboxes, batch_mlvl_scores,
-                                          batch_mlvl_conf_scores):
-                # Filtering out all predictions with conf < conf_thr
-                conf_thr = cfg.get('conf_thr', -1)
-                if conf_thr > 0 and (not torch.onnx.is_in_onnx_export()):
-                    # TensorRT not support NonZero
-                    # add as_tuple=False for compatibility in Pytorch 1.6
-                    # flatten would create a Reshape op with constant values,
-                    # and raise RuntimeError when doing inference in ONNX
-                    # Runtime with a different input image (#4221).
-                    conf_inds = mlvl_conf_scores.ge(conf_thr).nonzero(
-                        as_tuple=False).squeeze(1)
-                    mlvl_bboxes = mlvl_bboxes[conf_inds, :]
-                    mlvl_scores = mlvl_scores[conf_inds, :]
-                    mlvl_conf_scores = mlvl_conf_scores[conf_inds]
-
-                det_bboxes, det_labels = multiclass_nms(
-                    mlvl_bboxes,
-                    mlvl_scores,
-                    cfg.score_thr,
-                    cfg.nms,
-                    cfg.max_per_img,
-                    score_factors=mlvl_conf_scores)
-                det_results.append(tuple([det_bboxes, det_labels]))
-
+        if with_nms:
+            det_bboxes, det_labels = multiclass_nms(
+                multi_lvl_bboxes,
+                multi_lvl_cls_scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=multi_lvl_conf_scores)
+            return det_bboxes, det_labels
         else:
-            det_results = [
-                tuple(mlvl_bs)
-                for mlvl_bs in zip(batch_mlvl_bboxes, batch_mlvl_scores,
-                                   batch_mlvl_conf_scores)
-            ]
-        return det_results
+            return (multi_lvl_bboxes, multi_lvl_cls_scores,
+                    multi_lvl_conf_scores)
 
     @force_fp32(apply_to=('pred_maps', ))
     def loss(self,
