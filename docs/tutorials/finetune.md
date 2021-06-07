@@ -73,9 +73,9 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=0.001,
-    # [7] yields higher performance than [6]
     step=[7])
-total_epochs = 8  # actual epoch = 8 * 8 = 64
+# the max_epochs and step in lr_config need specifically tuned for the customized dataset
+runner = dict(max_epochs=8)
 log_config = dict(interval=100)
 ```
 
