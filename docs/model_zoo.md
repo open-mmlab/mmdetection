@@ -17,21 +17,23 @@ You can replace `https://s3.ap-northeast-2.amazonaws.com/open-mmlab` with `https
 
 It's common to initialize from backbone models pre-trained on ImageNet classification tasks. All pre-trained  model weight links can be found at [open_mmlab](https://github.com/open-mmlab/mmcv/blob/master/mmcv/model_zoo/open_mmlab.json). The following commonly used backbone models are available:
 
-- [ResNet50](https://download.pytorch.org/models/resnet50-19c8e357.pth):  from torchvision's ResNet-50.
-- [ResNet50 Caffe](https://download.openmmlab.com/pretrain/third_party/resnet50_msra-5891d200.pth):  converted copy of [MSRA's original ResNet-50](https://github.com/KaimingHe/deep-residual-networks) model.
-- [ResNet101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth):  from torchvision's ResNet-101.
-- [ResNet101 Caffe](https://download.openmmlab.com/pretrain/third_party/resnet101_msra-6cc46731.pth):  converted copy of [MSRA's original ResNet-101](https://github.com/KaimingHe/deep-residual-networks) model.
-- [ResNext101_32x8d](https://download.openmmlab.com/pretrain/third_party/resnext101_32x8d-1516f1aa.pth):  ResNeXt-101-32x8d model trained with Caffe2 at FB.
+- [ResNet50](https://download.pytorch.org/models/resnet50-19c8e357.pth): From [torchvision's ResNet-50]((https://download.pytorch.org/models/resnet50-19c8e357.pth)).
+- [ResNet50 Caffe](https://download.openmmlab.com/pretrain/third_party/resnet50_msra-5891d200.pth): Converted copy of [Detectron2's R-50.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-50.pkl) model. The original weight comes from [MSRA's original ResNet-50](https://github.com/KaimingHe/deep-residual-networks).
+- [ResNet101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth): From [torchvision's ResNet-101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth).
+- [ResNet101 Caffe](https://download.openmmlab.com/pretrain/third_party/resnet101_msra-6cc46731.pth): Converted copy of [Detectron2's R-101.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-101.pkl) model. The original weight comes from [MSRA's original ResNet-101](https://github.com/KaimingHe/deep-residual-networks).
+- [ResNext101_32x8d](https://download.openmmlab.com/pretrain/third_party/resnext101_32x8d-1516f1aa.pth): Converted copy of [Detectron2's X-101-32x8d.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/FAIR/X-101-32x8d.pkl). The ResNeXt-101-32x8d model trained with Caffe2 at FB.
 - [ResNext101_32x4d](https://download.openmmlab.com/pretrain/third_party/resnext101_32x4d-a5af3160.pth)
 - [ResNext101_64x4d](https://download.openmmlab.com/pretrain/third_party/resnext101_64x4d-ee2c6f71.pth)
 - [RegNetX_3.2gf](https://download.openmmlab.com/pretrain/third_party/regnetx_3.2gf-c2599b0f.pth)
 
-According to `img_norm_cfg`,we can divide all the imagenet pretrained model weights into four cases:
+According to `img_norm_cfg`, we can divide all the ImageNet  pre-trained  model weights into four cases:
 
-- TorchVision style:  corresponding to torchvision weight. E.g ResNet50 and ResNet101.
-- MSRA style: corresponding to MSRA weight. E.g ResNet50_Caffe and ResNet101_Caffe.
-- Caffe2 style:  currently only contains ResNext101_32x8d.
-- Other style
+- TorchVision style:  Corresponding to torchvision weight. E.g ResNet50 and ResNet101. The `img_norm_cfg` is `dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)`.
+- MSRA style: Corresponding to MSRA weight. E.g ResNet50_Caffe and ResNet101_Caffe. The `img_norm_cfg` is `dict(
+    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)`.
+- Caffe2 style:  Currently only contains ResNext101_32x8d. The `img_norm_cfg` is `dict(mean=[103.530, 116.280, 123.675], std=[57.375, 57.120, 58.395], to_rgb=False)`.
+- Other style: E.g SSD which corresponds to `img_norm_cfg` is `dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)` and YOLOv3 which corresponds to `img_norm_cfg` is `dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)`.
 
 ## Baselines
 
