@@ -58,11 +58,11 @@ def get_annotation_mmdet_format(dataset_item: DatasetItem, label_list: List[str]
     if not ((len(gt_bboxes) == 1) and is_empty_label):
         ann_info = dict(
             bboxes=np.array(gt_bboxes, dtype=np.float32).reshape(-1, 4),
-            labels=np.array(gt_labels, dtype=np.long)
+            labels=np.array(gt_labels, dtype=int)
         )
     else:
         ann_info = dict(bboxes=np.array([0, 0, 0, 0], dtype=np.float32).reshape(-1, 4),
-                        labels=np.array([-1], dtype=np.long))
+                        labels=np.array([-1], dtype=int))
     return ann_info
 
 
@@ -106,7 +106,9 @@ class OTEDataset(CustomDataset):
         :param idx: int, Index of data.
         :return dict: Testing data after pipeline with new keys introduced by pipeline.
         """
-        item = copy.deepcopy(self.data_infos[idx])
+        # FIXME.
+        # item = copy.deepcopy(self.data_infos[idx])
+        item = self.data_infos[idx]
         self.pre_pipeline(item)
         return self.pipeline(item)
 

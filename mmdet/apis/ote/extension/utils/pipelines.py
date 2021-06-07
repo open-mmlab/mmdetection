@@ -42,6 +42,9 @@ class LoadImageFromOTEDataset:
         img = dataset_item.numpy
         shape = img.shape
 
+        assert img.shape[0] == results['height'], f"{img.shape[0]} != {results['height']}"
+        assert img.shape[1] == results['width'], f"{img.shape[1]} != {results['width']}"
+
         filename = f"Dataset {results['dataset_id']}: Index {results['index']}"
         results['filename'] = filename
         results['ori_filename'] = filename

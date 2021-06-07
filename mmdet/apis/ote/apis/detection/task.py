@@ -82,9 +82,9 @@ def safe_inference_detector(model: torch.nn.Module, image: np.ndarray) -> List[n
     :param image: image to infer
     :return results: list of detection results
     """
-    model_cfg = copy.deepcopy(model.cfg)
+    # model_cfg = copy.deepcopy(model.cfg)
     output = inference_detector(model, image)
-    model.cfg = model_cfg
+    # model.cfg = model_cfg
     return output
 
 
@@ -162,7 +162,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         is_evaluation = analyse_parameters is not None and analyse_parameters.is_evaluation
         confidence_threshold = self._get_confidence(is_evaluation)
 
-        batch_size = self.config_manager.config.data.samples_per_gpu
+        batch_size = 1
 
         prediction_results = []
         if len(dataset) <= batch_size:
@@ -178,7 +178,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             self.inference_model.cfg.data.test.ote_dataset = dataset
             mm_test_dataset = build_dataset(copy.deepcopy(self.inference_model.cfg.data.test))
             # Use a single gpu for testing. Set in both mm_test_dataloader and prediction_model
-            mm_test_dataloader = build_dataloader(mm_test_dataset, samples_per_gpu=1, num_gpus=1, dist=False,
+            mm_test_dataloader = build_dataloader(mm_test_dataset, samples_per_gpu=batch_size, num_gpus=1, dist=False,
                                                   workers_per_gpu=self.config_manager.config.data.workers_per_gpu,
                                                   shuffle=False)
             # TODO. Support multi-gpu distributed setup.
