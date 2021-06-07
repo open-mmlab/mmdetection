@@ -5,6 +5,7 @@ from mmcv.cnn import VGG
 from mmcv.runner import BaseModule
 
 from ..builder import BACKBONES
+from ..necks import ssd_neck
 
 
 @BACKBONES.register_module()
@@ -97,3 +98,12 @@ class SSDVGG(VGG, BaseModule):
             return outs[0]
         else:
             return tuple(outs)
+
+
+class L2Norm(ssd_neck.L2Norm):
+
+    def __init__(self, **kwargs):
+        super(L2Norm, self).__init__(**kwargs)
+        warnings.warn('DeprecationWarning: L2Norm in ssd_vgg.py '
+                      'is deprecated, please use L2Norm in '
+                      'mmdet/models/necks/ssd_neck.py instead')
