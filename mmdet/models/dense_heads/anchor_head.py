@@ -622,11 +622,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         assert len(mlvl_cls_scores) == len(mlvl_bbox_preds) == len(
             mlvl_anchors)
         batch_size = mlvl_cls_scores[0].shape[0]
+        # convert to tensor to keep tracing
+        nms_pre_tensor = torch.tensor(
+            cfg.get('nms_pre', -1),
+            device=mlvl_cls_scores[0].device,
+            dtype=torch.long)
+
         mlvl_bboxes = []
         mlvl_scores = []
-
-        nms_pre = cfg.get('nms_pre', -1),
-
         for cls_score, bbox_pred, anchors in zip(mlvl_cls_scores,
                                                  mlvl_bbox_preds,
                                                  mlvl_anchors):
@@ -641,7 +644,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_pred = bbox_pred.permute(0, 2, 3,
                                           1).reshape(batch_size, -1, 4)
             anchors = anchors.expand_as(bbox_pred)
-            if nms_pre > bbox_pred.size(1):
+            # Always keep topk op for dynamic input in onnx
+            from mmdet.core.export import get_k_for_topk
+            nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
+            if nms_pre > 0:
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(-1)
@@ -669,6 +675,22 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scale_factors).unsqueeze(1)
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
 
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export() and with_nms:
+            from mmdet.core.export import add_dummy_nms_for_onnx
+            # ignore background class
+            if not self.use_sigmoid_cls:
+                num_classes = batch_mlvl_scores.shape[2] - 1
+                batch_mlvl_scores = batch_mlvl_scores[..., :num_classes]
+            max_output_boxes_per_class = cfg.nms.get(
+                'max_output_boxes_per_class', 200)
+            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+            score_threshold = cfg.score_thr
+            nms_pre = cfg.get('deploy_nms_pre', -1)
+            return add_dummy_nms_for_onnx(batch_mlvl_bboxes, batch_mlvl_scores,
+                                          max_output_boxes_per_class,
+                                          iou_threshold, score_threshold,
+                                          nms_pre, cfg.max_per_img)
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
             # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
@@ -718,7 +740,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
     def onnx_export(self,
                     cls_scores,
                     bbox_preds,
-                    img_metas,
+                    img_metas=None,
+                    score_factors=None,
                     cfg=None,
                     rescale=False,
                     with_nms=True):
@@ -731,6 +754,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_preds (list[Tensor]): Box energies / deltas for each
                 level in the feature pyramid, has shape
                 (N, num_anchors * 4, H, W).
+            score_factors (list[tensor] | None): The re-weight factors
+                for cls_scores, e.g. ``centerness`` of ``fcos_head`` and
+                ``iou_preds`` of `paa_head`.
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             cfg (mmcv.Config | None): Test / postprocessing configuration,
@@ -753,6 +779,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             each element represents the class label of the corresponding
             box.
         """
+        if score_factors is None:
+            # e.g. Retina, FreeAnchor, etc.
+            with_score_factors = False
+        else:
+            # e.g. FCOS, PAA, ATSS, etc.
+            with_score_factors = False
+
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
@@ -761,8 +794,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         mlvl_anchors = self.anchor_generator.grid_anchors(
             featmap_sizes, device=device)
 
-        mlvl_cls_scores = [cls_scores[i].detach() for i in range(num_levels)]
-        mlvl_bbox_preds = [bbox_preds[i].detach() for i in range(num_levels)]
+        mlvl_cls_scores = [cls_scores[i] for i in range(num_levels)]
+        mlvl_bbox_preds = [bbox_preds[i] for i in range(num_levels)]
+
+        if with_score_factors:
+            mlvl_score_factors = [score_factors[i] for i in range(num_levels)]
+        else:
+            mlvl_score_factors = [None for _ in range(num_levels)]
 
         assert len(
             img_metas
@@ -781,13 +819,19 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         mlvl_bboxes = []
         mlvl_scores = []
-        for cls_score, bbox_pred, anchors in zip(mlvl_cls_scores,
-                                                 mlvl_bbox_preds,
-                                                 mlvl_anchors):
+        mlvl_cls_score_factors = []
+        for cls_score, bbox_pred, score_factor, anchors in zip(
+                mlvl_cls_scores, mlvl_bbox_preds, mlvl_score_factors,
+                mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             cls_score = cls_score.permute(0, 2, 3,
                                           1).reshape(batch_size, -1,
                                                      self.cls_out_channels)
+            if with_score_factors:
+                score_factor = score_factor.permute(0, 2, 3,
+                                                    1).reshape(batch_size,
+                                                               -1).sigmoid()
+
             if self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
             else:
@@ -811,18 +855,33 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 _, topk_inds = max_scores.topk(nms_pre)
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds)
-                anchors = anchors[batch_inds, topk_inds, :]
-                bbox_pred = bbox_pred[batch_inds, topk_inds, :]
-                scores = scores[batch_inds, topk_inds, :]
+                # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
+                # Mind k<=3480 in TensorRT for TopK
+                transformed_inds = scores.shape[1] * batch_inds + topk_inds
+                scores = scores.reshape(
+                    -1, self.num_classes)[transformed_inds].reshape(
+                        batch_size, -1, self.num_classes)
+                bbox_pred = bbox_pred.reshape(-1, 4)[transformed_inds].reshape(
+                    batch_size, -1, 4)
+                anchors = anchors.reshape(-1, 4)[transformed_inds].reshape(
+                    batch_size, -1, 4)
+                if with_score_factors:
+                    score_factor = score_factor.reshape(
+                        -1, 1)[transformed_inds].reshape(batch_size, -1)
 
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
+            if with_score_factors:
+                mlvl_cls_score_factors.append(score_factor)
+
         batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
-
+        if with_score_factors:
+            batch_score_factors = torch.cat(mlvl_cls_score_factors, dim=1)
+            batch_mlvl_scores = batch_mlvl_scores * batch_score_factors
         # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
         if with_nms:
             from mmdet.core.export import add_dummy_nms_for_onnx
