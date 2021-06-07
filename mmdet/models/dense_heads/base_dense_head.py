@@ -81,7 +81,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     def onnx_export(self,
                     cls_scores,
                     bbox_preds,
-                    score_factors=None,
+                    score_factors,
                     img_metas=None,
                     cfg=None,
                     rescale=False,
