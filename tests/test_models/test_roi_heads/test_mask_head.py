@@ -80,15 +80,18 @@ def test_can_skip_post_processing_in_onnx():
     det_bboxes = torch.rand([num_bboxes, 4], dtype=torch.float32)
     det_labels = torch.randint(0, num_classes, [num_bboxes], dtype=torch.int64)
     from mmcv.utils.config import ConfigDict
-    rcnn_test_cfg = ConfigDict({'mask_thr_binary': 0.5})
+    rcnn_test_cfg = ConfigDict({
+        'mask_thr_binary': 0.5,
+        'rescale_mask_to_input_shape': True
+    })
     ori_shape = torch.tensor(original_shape, dtype=torch.int64)
 
-    self.rescale_mask_to_input_shape = True
+    rcnn_test_cfg.rescale_mask_to_input_shape = True
     masks = self.onnx_export(mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
                              ori_shape)
     assert masks.shape[1:] == torch.Size(original_shape)
 
-    self.rescale_mask_to_input_shape = False
+    rcnn_test_cfg.rescale_mask_to_input_shape = False
     masks = self.onnx_export(mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
                              ori_shape)
     assert masks.shape[1:] == torch.Size(mask_shape)
