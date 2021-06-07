@@ -23,7 +23,7 @@ class FPN(BaseModule):
             build the feature pyramid. Default: -1, which means the last level.
         add_extra_convs (bool | str): If bool, it decides whether to add conv
             layers on top of the original feature maps. Default to False.
-            If True, its actual mode is specified by `extra_convs_on_inputs`.
+            If True, it is equivalent to `add_extra_convs='on_input'`.
             If str, it specifies the source feature map of the extra convs.
             Only the following options are allowed
 
