@@ -5,7 +5,8 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule
+from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
+                      normal_init)
 from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
@@ -96,6 +97,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             else:
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
+        self.fp16_enabled = False
 
         self.one_hot_smoother = one_hot_smoother
 
@@ -145,6 +147,22 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
             self.convs_bridge.append(conv_bridge)
             self.convs_pred.append(conv_pred)
+
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                normal_init(m, mean=0, std=0.01)
+            if is_norm(m):
+                constant_init(m, 1)
+
+        # Use prior in model initialization to improve stability
+        for conv_pred, stride in zip(self.convs_pred, self.featmap_strides):
+            bias = conv_pred.bias.reshape(self.num_anchors, -1)
+            # init objectness with prior of 8 objects per feature map
+            # refer to https://github.com/ultralytics/yolov3
+            nn.init.constant_(bias.data[:, 4],
+                              bias_init_with_prob(8 / (608 / stride)**2))
+            nn.init.constant_(bias.data[:, 5:], bias_init_with_prob(0.01))
 
     def forward(self, feats):
         """Forward features from the upstream network.

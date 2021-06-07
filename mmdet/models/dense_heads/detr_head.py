@@ -185,7 +185,8 @@ class DETRHead(AnchorFreeHead):
                 '.multihead_attn.': '.attentions.1.',
                 '.decoder.norm.': '.decoder.post_norm.'
             }
-            for k in state_dict.keys():
+            state_dict_keys = list(state_dict.keys())
+            for k in state_dict_keys:
                 for ori_key, convert_key in convert_dict.items():
                     if ori_key in k:
                         convert_key = k.replace(ori_key, convert_key)
@@ -679,3 +680,29 @@ class DETRHead(AnchorFreeHead):
         det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(1)), -1)
 
         return det_bboxes, det_labels
+
+    def simple_test_bboxes(self, feats, img_metas, rescale=False):
+        """Test det bboxes without test-time augmentation.
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is ``bboxes`` with shape (n, 5),
+                where 5 represent (tl_x, tl_y, br_x, br_y, score).
+                The shape of the second tensor in the tuple is ``labels``
+                with shape (n,)
+        """
+        batch_size = len(img_metas)
+        assert batch_size == 1, 'Currently only batch_size 1 for inference ' \
+            f'mode is supported. Found batch_size {batch_size}.'
+
+        # forward of this head requires img_metas
+        outs = self.forward(feats, img_metas)
+        results_list = self.get_bboxes(*outs, img_metas, rescale=rescale)
+        return results_list

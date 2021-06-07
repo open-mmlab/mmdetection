@@ -9,7 +9,7 @@ from mmdet.models.dense_heads.paa_head import levels_to_images
 def test_paa_head_loss():
     """Tests paa head loss when truth is empty and non-empty."""
 
-    class mock_skm(object):
+    class mock_skm:
 
         def GaussianMixture(self, *args, **kwargs):
             return self

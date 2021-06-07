@@ -125,7 +125,7 @@ class ConcatDataset(_ConcatDataset):
 
 
 @DATASETS.register_module()
-class RepeatDataset(object):
+class RepeatDataset:
     """A wrapper of repeated dataset.
 
     The length of repeated dataset will be `times` larger than the original
@@ -169,7 +169,7 @@ class RepeatDataset(object):
 
 # Modified from https://github.com/facebookresearch/detectron2/blob/41d475b75a230221e21d9cac5d69655e3415e3a4/detectron2/data/samplers/distributed_sampler.py#L57 # noqa
 @DATASETS.register_module()
-class ClassBalancedDataset(object):
+class ClassBalancedDataset:
     """A wrapper of repeated dataset with repeat factor.
 
     Suitable for training on class imbalanced datasets like LVIS. Following
