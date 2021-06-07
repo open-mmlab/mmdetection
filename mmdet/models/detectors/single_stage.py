@@ -155,7 +155,7 @@ class SingleStageDetector(BaseDetector):
         # for inference
         img_metas[0]['pad_shape_for_onnx'] = img_shape
         if len(outs) == 2:
-            # add a dummy score_factor
+            # add a dummy score_factors
             outs = list(outs)
             outs.append(None)
         det_bboxes, det_labels = self.bbox_head.onnx_export(*outs, img_metas)

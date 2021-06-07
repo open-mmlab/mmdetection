@@ -81,7 +81,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     def onnx_export(self,
                     cls_scores,
                     bbox_preds,
-                    score_factors=None,
+                    score_factors,
                     img_metas=None,
                     cfg=None,
                     rescale=False,
@@ -126,13 +126,18 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         else:
             # e.g. FCOS, PAA, ATSS, etc.
             with_score_factors = True
+            len(cls_scores) == len(score_factors)
 
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
         device = cls_scores[0].device
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.anchor_generator.grid_anchors(
+
+        # TODO: @Haian Huang, a unified priori_generator, This func can
+        #  be used in both
+        #  anchor_free_head and anchor_head
+        mlvl_prioris = self.anchor_generator.grid_anchors(
             featmap_sizes, device=device)
 
         mlvl_cls_scores = [cls_scores[i] for i in range(num_levels)]
@@ -150,7 +155,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         cfg = self.test_cfg if cfg is None else cfg
         assert len(mlvl_cls_scores) == len(mlvl_bbox_preds) == len(
-            mlvl_anchors)
+            mlvl_prioris)
         batch_size = mlvl_cls_scores[0].shape[0]
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
@@ -161,9 +166,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_cls_score_factors = []
-        for cls_score, bbox_pred, score_factor, anchors in zip(
+        for cls_score, bbox_pred, score_factor, prioris in zip(
                 mlvl_cls_scores, mlvl_bbox_preds, mlvl_score_factors,
-                mlvl_anchors):
+                mlvl_prioris):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             cls_score = cls_score.permute(0, 2, 3,
                                           1).reshape(batch_size, -1,
@@ -172,14 +177,13 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 score_factor = score_factor.permute(0, 2, 3,
                                                     1).reshape(batch_size,
                                                                -1).sigmoid()
-
             if self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
             else:
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(0, 2, 3,
                                           1).reshape(batch_size, -1, 4)
-            anchors = anchors.expand_as(bbox_pred)
+            prioris = prioris.expand_as(bbox_pred)
             # Always keep topk op for dynamic input in onnx
             from mmdet.core.export import get_k_for_topk
             nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
@@ -204,14 +208,17 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                         batch_size, -1, self.num_classes)
                 bbox_pred = bbox_pred.reshape(-1, 4)[transformed_inds].reshape(
                     batch_size, -1, 4)
-                anchors = anchors.reshape(-1, 4)[transformed_inds].reshape(
-                    batch_size, -1, 4)
+                # prioris has shape (batch, num_prioris, 2) in FCOS, FOVEA etc. # noqa: E501
+                # prioris has shape (batch, num_prioris, 4) in Retina, ATSS etc. # noqa: E501
+                prioris = prioris.reshape(
+                    -1, prioris.size(-1))[transformed_inds].reshape(
+                        batch_size, -1, prioris.size(-1))
                 if with_score_factors:
                     score_factor = score_factor.reshape(
                         -1, 1)[transformed_inds].reshape(batch_size, -1, 1)
 
             bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shapes)
+                prioris, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
