@@ -349,7 +349,7 @@ class BBoxHead(BaseModule):
         # e.g. Grid R-CNN.
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=img_shape)
+                rois[..., 1:], bbox_pred, max_shape=img_shape)
         else:
             bboxes = rois[:, 1:].clone()
             if img_shape is not None:
