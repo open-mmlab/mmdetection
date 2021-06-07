@@ -9,11 +9,12 @@ from mmdet.core import (build_anchor_generator, build_assigner,
                         multi_apply, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
+from .dense_test_mixins import BBoxTestMixin
 from .guided_anchor_head import GuidedAnchorHead
 
 
 @HEADS.register_module()
-class SABLRetinaHead(BaseDenseHead):
+class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
     """Side-Aware Boundary Localization (SABL) for RetinaNet.
 
     The anchor generation, assigning and sampling in SABLRetinaHead
