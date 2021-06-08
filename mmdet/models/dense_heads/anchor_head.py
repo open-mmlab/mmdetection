@@ -210,7 +210,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
         if not inside_flags.any():
-            return (None, ) * 7
+            return (None,) * 7
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 
@@ -223,7 +223,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
-        labels = anchors.new_full((num_valid_anchors, ),
+        labels = anchors.new_full((num_valid_anchors,),
                                   self.num_classes,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
@@ -362,7 +362,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         res = (labels_list, label_weights_list, bbox_targets_list,
                bbox_weights_list, num_total_pos, num_total_neg)
         if return_sampling_results:
-            res = res + (sampling_results_list, )
+            res = res + (sampling_results_list,)
         for i, r in enumerate(rest_results):  # user-added return values
             rest_results[i] = images_to_levels(r, num_level_anchors)
 
@@ -513,15 +513,15 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 device=device)
         return prioris
 
-    def get_preds_single(self,
-                         cls_score_list,
-                         bbox_pred_list,
-                         score_factor_list,
-                         img_meta,
-                         cfg,
-                         rescale=False,
-                         with_nms=True,
-                         **kwargs):
+    def get_bboxes_single(self,
+                          cls_score_list,
+                          bbox_pred_list,
+                          score_factor_list,
+                          img_meta,
+                          cfg,
+                          rescale=False,
+                          with_nms=True,
+                          **kwargs):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
