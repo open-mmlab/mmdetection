@@ -4,7 +4,8 @@ import torch.nn.functional as F
 from mmcv.cnn import Scale
 from mmcv.runner import force_fp32
 
-from mmdet.core import distance2bbox, multi_apply, multiclass_nms, reduce_mean
+from mmdet.core import (build_bbox_coder, distance2bbox, multi_apply,
+                        multiclass_nms, reduce_mean)
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -64,6 +65,7 @@ class FCOSHead(AnchorFreeHead):
                  center_sample_radius=1.5,
                  norm_on_bbox=False,
                  centerness_on_reg=False,
+                 bbox_coder=dict(type='PointBBoxCoder'),
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -91,6 +93,7 @@ class FCOSHead(AnchorFreeHead):
         self.center_sample_radius = center_sample_radius
         self.norm_on_bbox = norm_on_bbox
         self.centerness_on_reg = centerness_on_reg
+        self.bbox_coder = build_bbox_coder(bbox_coder)
         super().__init__(
             num_classes,
             in_channels,
@@ -381,7 +384,8 @@ class FCOSHead(AnchorFreeHead):
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 centerness = centerness[topk_inds]
-            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
+            bboxes = self.bbox_coder.decode(
+                points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)

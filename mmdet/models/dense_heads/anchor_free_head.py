@@ -246,15 +246,14 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
 
         raise NotImplementedError
 
-    def get_preds_single(self,
-                         cls_score_list,
-                         bbox_pred_list,
-                         score_factor_list,
-                         img_meta,
-                         cfg,
-                         rescale=False,
-                         with_nms=True,
-                         **kwargs):
+    @abstractmethod
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
+    def get_bboxes(self,
+                   cls_scores,
+                   bbox_preds,
+                   img_metas,
+                   cfg=None,
+                   rescale=None):
         """Transform network output for a batch into bbox predictions.
 
         Args:
@@ -268,7 +267,8 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                 if None, test_cfg would be used
             rescale (bool): If True, return boxes in original image space
         """
-        pass
+
+        raise NotImplementedError
 
     @abstractmethod
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
