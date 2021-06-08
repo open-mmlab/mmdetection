@@ -65,6 +65,8 @@ def imshow_det_bboxes(img,
         wait_time (float): Value of waitKey param. Default: 0.
         out_file (str, optional): The filename to write the image.
             Default: None
+        show_bbox (bool): Whether to show the bounding box in the image,
+            Default: True
 
     Returns:
         ndarray: The image with bboxes drawn on it.
@@ -157,10 +159,10 @@ def imshow_det_bboxes(img,
             img[mask] = img[mask] * 0.5 + color_mask * 0.5
 
     plt.imshow(img)
-
-    p = PatchCollection(
-        polygons, facecolor='none', edgecolors=color, linewidths=thickness)
-    ax.add_collection(p)
+    if show_bbox:
+        p = PatchCollection(
+            polygons, facecolor='none', edgecolors=color, linewidths=thickness)
+        ax.add_collection(p)
 
     stream, _ = canvas.print_to_buffer()
     buffer = np.frombuffer(stream, dtype='uint8')
