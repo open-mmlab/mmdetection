@@ -109,6 +109,7 @@ class SSDHead(AnchorHead):
         """Initialize layers of the head."""
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
+        # TODO: Use registry to choose ConvModule type
         conv = DepthwiseSeparableConvModule \
             if self.use_depthwise else ConvModule
 
