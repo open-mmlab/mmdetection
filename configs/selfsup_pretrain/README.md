@@ -89,9 +89,11 @@ We also train some models with longer schedules and multi-scale training. The us
 
 |    Method   |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
 | :-----: | :-----: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |  :--------: |
-|Mask RCNN |[R50 by MoCo v2](./mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco.py)| pytorch |   1x    | |||[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco.pyy) | [model]() &#124; [log]()|
-|Mask RCNN |[R50 by SWAV](./mask_rcnn_r50_fpn_swav-pretrain_1x_coco.py)| pytorch |   1x    | |||[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_1x_coco.py) | [model]() &#124; [log]()|
+|Mask RCNN |[R50 by MoCo v2](./mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco.py)| pytorch |1x| |38.0|34.3|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco.pyy) | [model]() &#124; [log]()|
+|Mask RCNN |[R50 by MoCo v2](./mask_rcnn_r50_fpn_mocov2-pretrain_ms-2x_coco.py)| pytorch | multi-scale 2x | |40.8|36.8|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_mocov2-pretrain_ms-2x_coco.pyy) | [model]() &#124; [log]()|
+|Mask RCNN |[R50 by SWAV](./mask_rcnn_r50_fpn_swav-pretrain_1x_coco.py)| pytorch | 1x | |39.1 | 35.7|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_1x_coco.py) | [model]() &#124; [log]()|
+|Mask RCNN |[R50 by SWAV](./mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco.py)| pytorch | multi-scale 2x | |41.3|37.3|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco.py) | [model]() &#124; [log]()|
 
 ### Notice
 
-1. We only provide single-scale 1x configs as examples for now. We will try to reproduce the results in their corresponding paper using the released backbone in the future. Please stay tuned.
+1. We only provide single-scale 1x and multi-scale 2x configs as examples to show how to use backbones trained by self-supervised algorithms. We will try to reproduce the results in their corresponding paper using the released backbone in the future. Please stay tuned.
