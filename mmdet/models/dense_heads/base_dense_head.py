@@ -137,8 +137,19 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         # TODO: @Haian Huang, a unified priori_generator, This func can
         #  be used in both
         #  anchor_free_head and anchor_head
-        mlvl_prioris = self.anchor_generator.grid_anchors(
-            featmap_sizes, device=device)
+
+        # remove all these code
+
+        if hasattr(self, 'get_points'):
+            mlvl_prioris = self.get_points(featmap_sizes, bbox_preds[0].dtype,
+                                           bbox_preds[0].device)
+        elif hasattr(self, 'anchor_generator'):
+            mlvl_prioris = self.anchor_generator.grid_anchors(
+                featmap_sizes, device=device)
+        else:
+            raise NotImplementedError(
+                f'Please implement `onnx_export` for {self.__class__.__name__}'
+            )
 
         mlvl_cls_scores = [cls_scores[i] for i in range(num_levels)]
         mlvl_bbox_preds = [bbox_preds[i] for i in range(num_levels)]
