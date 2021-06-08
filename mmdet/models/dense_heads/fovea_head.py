@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.ops import DeformConv2d
+from mmcv.runner import BaseModule
 
 from mmdet.core import multi_apply, multiclass_nms
 from ..builder import HEADS
@@ -10,14 +11,20 @@ from .anchor_free_head import AnchorFreeHead
 INF = 1e8
 
 
-class FeatureAlign(nn.Module):
+class FeatureAlign(BaseModule):
 
     def __init__(self,
                  in_channels,
                  out_channels,
                  kernel_size=3,
-                 deform_groups=4):
-        super(FeatureAlign, self).__init__()
+                 deform_groups=4,
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.1,
+                     override=dict(
+                         type='Normal', name='conv_adaption', std=0.01))):
+        super(FeatureAlign, self).__init__(init_cfg)
         offset_channels = kernel_size * kernel_size * 2
         self.conv_offset = nn.Conv2d(
             4, deform_groups * offset_channels, 1, bias=False)
@@ -28,10 +35,6 @@ class FeatureAlign(nn.Module):
             padding=(kernel_size - 1) // 2,
             deform_groups=deform_groups)
         self.relu = nn.ReLU(inplace=True)
-
-    def init_weights(self):
-        normal_init(self.conv_offset, std=0.1)
-        normal_init(self.conv_adaption, std=0.01)
 
     def forward(self, x, shape):
         offset = self.conv_offset(shape)
@@ -54,13 +57,22 @@ class FoveaHead(AnchorFreeHead):
                  sigma=0.4,
                  with_deform=False,
                  deform_groups=4,
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='conv_cls',
+                         std=0.01,
+                         bias_prob=0.01)),
                  **kwargs):
         self.base_edge_list = base_edge_list
         self.scale_ranges = scale_ranges
         self.sigma = sigma
         self.with_deform = with_deform
         self.deform_groups = deform_groups
-        super().__init__(num_classes, in_channels, **kwargs)
+        super().__init__(num_classes, in_channels, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
         # box branch
@@ -101,11 +113,6 @@ class FoveaHead(AnchorFreeHead):
                 self.cls_out_channels,
                 3,
                 padding=1)
-
-    def init_weights(self):
-        super().init_weights()
-        if self.with_deform:
-            self.feature_adaption.init_weights()
 
     def forward_single(self, x):
         cls_feat = x
@@ -229,16 +236,16 @@ class FoveaHead(AnchorFreeHead):
             half_h = 0.5 * (gt_bboxes[:, 3] - gt_bboxes[:, 1])
             # valid fovea area: left, right, top, down
             pos_left = torch.ceil(
-                gt_bboxes[:, 0] + (1 - self.sigma) * half_w - 0.5).long().\
+                gt_bboxes[:, 0] + (1 - self.sigma) * half_w - 0.5).long(). \
                 clamp(0, featmap_size[1] - 1)
             pos_right = torch.floor(
-                gt_bboxes[:, 0] + (1 + self.sigma) * half_w - 0.5).long().\
+                gt_bboxes[:, 0] + (1 + self.sigma) * half_w - 0.5).long(). \
                 clamp(0, featmap_size[1] - 1)
             pos_top = torch.ceil(
-                gt_bboxes[:, 1] + (1 - self.sigma) * half_h - 0.5).long().\
+                gt_bboxes[:, 1] + (1 - self.sigma) * half_h - 0.5).long(). \
                 clamp(0, featmap_size[0] - 1)
             pos_down = torch.floor(
-                gt_bboxes[:, 1] + (1 + self.sigma) * half_h - 0.5).long().\
+                gt_bboxes[:, 1] + (1 + self.sigma) * half_h - 0.5).long(). \
                 clamp(0, featmap_size[0] - 1)
             for px1, py1, px2, py2, label, (gt_x1, gt_y1, gt_x2, gt_y2) in \
                     zip(pos_left, pos_top, pos_right, pos_down, gt_labels,
@@ -316,13 +323,13 @@ class FoveaHead(AnchorFreeHead):
                 scores = scores[topk_inds, :]
                 y = y[topk_inds]
                 x = x[topk_inds]
-            x1 = (stride * x - base_len * bbox_pred[:, 0]).\
+            x1 = (stride * x - base_len * bbox_pred[:, 0]). \
                 clamp(min=0, max=img_shape[1] - 1)
-            y1 = (stride * y - base_len * bbox_pred[:, 1]).\
+            y1 = (stride * y - base_len * bbox_pred[:, 1]). \
                 clamp(min=0, max=img_shape[0] - 1)
-            x2 = (stride * x + base_len * bbox_pred[:, 2]).\
+            x2 = (stride * x + base_len * bbox_pred[:, 2]). \
                 clamp(min=0, max=img_shape[1] - 1)
-            y2 = (stride * y + base_len * bbox_pred[:, 3]).\
+            y2 = (stride * y + base_len * bbox_pred[:, 3]). \
                 clamp(min=0, max=img_shape[0] - 1)
             bboxes = torch.stack([x1, y1, x2, y2], -1)
             det_bboxes.append(bboxes)

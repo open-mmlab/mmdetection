@@ -7,7 +7,7 @@ We provide config files to reproduce the results in the paper for
 
 ## Introduction
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 **GCNet** is initially described in [arxiv](https://arxiv.org/abs/1904.11492). Via absorbing advantages of Non-Local Networks (NLNet) and Squeeze-Excitation Networks (SENet),  GCNet provides a simple, fast and effective approach for global context modeling, which generally outperforms both NLNet and SENet on major benchmarks for various recognition tasks.
 

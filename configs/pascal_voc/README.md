@@ -1,6 +1,6 @@
 # PASCAL VOC Dataset
 
-[DATASET]
+<!-- [DATASET] -->
 
 ```
 @Article{Everingham10,

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Scale, normal_init
+from mmcv.cnn import Scale
 from mmcv.runner import force_fp32
 
 from mmdet.core import distance2bbox, multi_apply, multiclass_nms, reduce_mean
@@ -46,6 +46,7 @@ class FCOSHead(AnchorFreeHead):
         loss_centerness (dict): Config of centerness loss.
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: norm_cfg=dict(type='GN', num_groups=32, requires_grad=True).
+        init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
         >>> self = FCOSHead(11, 7)
@@ -75,6 +76,15 @@ class FCOSHead(AnchorFreeHead):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='conv_cls',
+                         std=0.01,
+                         bias_prob=0.01)),
                  **kwargs):
         self.regress_ranges = regress_ranges
         self.center_sampling = center_sampling
@@ -87,6 +97,7 @@ class FCOSHead(AnchorFreeHead):
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
             norm_cfg=norm_cfg,
+            init_cfg=init_cfg,
             **kwargs)
         self.loss_centerness = build_loss(loss_centerness)
 
@@ -95,11 +106,6 @@ class FCOSHead(AnchorFreeHead):
         super()._init_layers()
         self.conv_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        super().init_weights()
-        normal_init(self.conv_centerness, std=0.01)
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -381,23 +387,34 @@ class FCOSHead(AnchorFreeHead):
 
             bbox_pred = bbox_pred.permute(0, 2, 3,
                                           1).reshape(batch_size, -1, 4)
-            # Always keep topk op for dynamic input in onnx
-            if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
-                                       or scores.shape[-2] > nms_pre_tensor):
-                from torch import _shape_as_tensor
-                # keep shape as tensor and get k
-                num_anchor = _shape_as_tensor(scores)[-2].to(device)
-                nms_pre = torch.where(nms_pre_tensor < num_anchor,
-                                      nms_pre_tensor, num_anchor)
-
+            points = points.expand(batch_size, -1, 2)
+            # Get top-k prediction
+            from mmdet.core.export import get_k_for_topk
+            nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
+            if nms_pre > 0:
                 max_scores, _ = (scores * centerness[..., None]).max(-1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                points = points[topk_inds, :]
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds).long()
-                bbox_pred = bbox_pred[batch_inds, topk_inds, :]
-                scores = scores[batch_inds, topk_inds, :]
-                centerness = centerness[batch_inds, topk_inds]
+                # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
+                if torch.onnx.is_in_onnx_export():
+                    transformed_inds = bbox_pred.shape[
+                        1] * batch_inds + topk_inds
+                    points = points.reshape(-1,
+                                            2)[transformed_inds, :].reshape(
+                                                batch_size, -1, 2)
+                    bbox_pred = bbox_pred.reshape(
+                        -1, 4)[transformed_inds, :].reshape(batch_size, -1, 4)
+                    scores = scores.reshape(
+                        -1, self.num_classes)[transformed_inds, :].reshape(
+                            batch_size, -1, self.num_classes)
+                    centerness = centerness.reshape(
+                        -1, 1)[transformed_inds].reshape(batch_size, -1)
+                else:
+                    points = points[batch_inds, topk_inds, :]
+                    bbox_pred = bbox_pred[batch_inds, topk_inds, :]
+                    scores = scores[batch_inds, topk_inds, :]
+                    centerness = centerness[batch_inds, topk_inds]
 
             bboxes = distance2bbox(points, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
@@ -411,21 +428,20 @@ class FCOSHead(AnchorFreeHead):
         batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
         batch_mlvl_centerness = torch.cat(mlvl_centerness, dim=1)
 
-        # Set max number of box to be feed into nms in deployment
-        deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
-        if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            batch_mlvl_scores, _ = (
-                batch_mlvl_scores *
-                batch_mlvl_centerness.unsqueeze(2).expand_as(batch_mlvl_scores)
-            ).max(-1)
-            _, topk_inds = batch_mlvl_scores.topk(deploy_nms_pre)
-            batch_inds = torch.arange(batch_mlvl_scores.shape[0]).view(
-                -1, 1).expand_as(topk_inds)
-            batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds, :]
-            batch_mlvl_bboxes = batch_mlvl_bboxes[batch_inds, topk_inds, :]
-            batch_mlvl_centerness = batch_mlvl_centerness[batch_inds,
-                                                          topk_inds]
-
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export() and with_nms:
+            from mmdet.core.export import add_dummy_nms_for_onnx
+            batch_mlvl_scores = batch_mlvl_scores * (
+                batch_mlvl_centerness.unsqueeze(2))
+            max_output_boxes_per_class = cfg.nms.get(
+                'max_output_boxes_per_class', 200)
+            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+            score_threshold = cfg.score_thr
+            nms_pre = cfg.get('deploy_nms_pre', -1)
+            return add_dummy_nms_for_onnx(batch_mlvl_bboxes, batch_mlvl_scores,
+                                          max_output_boxes_per_class,
+                                          iou_threshold, score_threshold,
+                                          nms_pre, cfg.max_per_img)
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         padding = batch_mlvl_scores.new_zeros(batch_size,

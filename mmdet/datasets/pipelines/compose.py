@@ -6,7 +6,7 @@ from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()
-class Compose(object):
+class Compose:
     """Compose multiple transforms sequentially.
 
     Args:

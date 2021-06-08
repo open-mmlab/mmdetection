@@ -21,13 +21,16 @@ class RetinaSepBNHead(AnchorHead):
                  stacked_convs=4,
                  conv_cfg=None,
                  norm_cfg=None,
+                 init_cfg=None,
                  **kwargs):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.num_ins = num_ins
-        super(RetinaSepBNHead, self).__init__(num_classes, in_channels,
-                                              **kwargs)
+        super(RetinaSepBNHead, self).__init__(
+            num_classes, in_channels, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -73,6 +76,7 @@ class RetinaSepBNHead(AnchorHead):
 
     def init_weights(self):
         """Initialize weights of the head."""
+        super(RetinaSepBNHead, self).init_weights()
         for m in self.cls_convs[0]:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs[0]:

@@ -5,7 +5,8 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, normal_init
+from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
+                      normal_init)
 from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
@@ -42,6 +43,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         loss_wh (dict): Config of wh coordinate loss.
         train_cfg (dict): Training config of YOLOV3 head. Default: None.
         test_cfg (dict): Testing config of YOLOV3 head. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -74,8 +76,11 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                      loss_weight=1.0),
                  loss_wh=dict(type='MSELoss', loss_weight=1.0),
                  train_cfg=None,
-                 test_cfg=None):
-        super(YOLOV3Head, self).__init__()
+                 test_cfg=None,
+                 init_cfg=dict(
+                     type='Normal', std=0.01,
+                     override=dict(name='convs_pred'))):
+        super(YOLOV3Head, self).__init__(init_cfg)
         # Check params
         assert (len(in_channels) == len(out_channels) == len(featmap_strides))
 
@@ -92,6 +97,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             else:
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
+        self.fp16_enabled = False
 
         self.one_hot_smoother = one_hot_smoother
 
@@ -143,9 +149,20 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             self.convs_pred.append(conv_pred)
 
     def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.convs_pred:
-            normal_init(m, std=0.01)
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                normal_init(m, mean=0, std=0.01)
+            if is_norm(m):
+                constant_init(m, 1)
+
+        # Use prior in model initialization to improve stability
+        for conv_pred, stride in zip(self.convs_pred, self.featmap_strides):
+            bias = conv_pred.bias.reshape(self.num_anchors, -1)
+            # init objectness with prior of 8 objects per feature map
+            # refer to https://github.com/ultralytics/yolov3
+            nn.init.constant_(bias.data[:, 4],
+                              bias_init_with_prob(8 / (608 / stride)**2))
+            nn.init.constant_(bias.data[:, 5:], bias_init_with_prob(0.01))
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -279,21 +296,28 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 batch_size, -1, self.num_classes)  # Cls pred one-hot.
 
             # Get top-k prediction
-            # Always keep topk op for dynamic input in onnx
-            if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
-                                       or conf_pred.shape[1] > nms_pre_tensor):
-                from torch import _shape_as_tensor
-                # keep shape as tensor and get k
-                num_anchor = _shape_as_tensor(conf_pred)[1].to(device)
-                nms_pre = torch.where(nms_pre_tensor < num_anchor,
-                                      nms_pre_tensor, num_anchor)
+            from mmdet.core.export import get_k_for_topk
+            nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
+            if nms_pre > 0:
                 _, topk_inds = conf_pred.topk(nms_pre)
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds).long()
-                bbox_pred = bbox_pred[batch_inds, topk_inds, :]
-                cls_pred = cls_pred[batch_inds, topk_inds, :]
-                conf_pred = conf_pred[batch_inds, topk_inds]
-
+                # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
+                if torch.onnx.is_in_onnx_export():
+                    transformed_inds = (
+                        bbox_pred.shape[1] * batch_inds + topk_inds)
+                    bbox_pred = bbox_pred.reshape(
+                        -1, 4)[transformed_inds, :].reshape(batch_size, -1, 4)
+                    cls_pred = cls_pred.reshape(
+                        -1, self.num_classes)[transformed_inds, :].reshape(
+                            batch_size, -1, self.num_classes)
+                    conf_pred = conf_pred.reshape(-1,
+                                                  1)[transformed_inds].reshape(
+                                                      batch_size, -1)
+                else:
+                    bbox_pred = bbox_pred[batch_inds, topk_inds, :]
+                    cls_pred = cls_pred[batch_inds, topk_inds, :]
+                    conf_pred = conf_pred[batch_inds, topk_inds]
             # Save the result of current scale
             multi_lvl_bboxes.append(bbox_pred)
             multi_lvl_cls_scores.append(cls_pred)
@@ -304,16 +328,37 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         batch_mlvl_scores = torch.cat(multi_lvl_cls_scores, dim=1)
         batch_mlvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
 
-        # Set max number of box to be feed into nms in deployment
-        deploy_nms_pre = cfg.get('deploy_nms_pre', -1)
-        if deploy_nms_pre > 0 and torch.onnx.is_in_onnx_export():
-            _, topk_inds = batch_mlvl_conf_scores.topk(deploy_nms_pre)
-            batch_inds = torch.arange(batch_size).view(
-                -1, 1).expand_as(topk_inds).long()
-            batch_mlvl_bboxes = batch_mlvl_bboxes[batch_inds, topk_inds, :]
-            batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds, :]
-            batch_mlvl_conf_scores = batch_mlvl_conf_scores[batch_inds,
-                                                            topk_inds]
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        if torch.onnx.is_in_onnx_export() and with_nms:
+            from mmdet.core.export import add_dummy_nms_for_onnx
+            conf_thr = cfg.get('conf_thr', -1)
+            score_thr = cfg.get('score_thr', -1)
+            # follow original pipeline of YOLOv3
+            if conf_thr > 0:
+                mask = (batch_mlvl_conf_scores >= conf_thr).float()
+                batch_mlvl_conf_scores *= mask
+            if score_thr > 0:
+                mask = (batch_mlvl_scores > score_thr).float()
+                batch_mlvl_scores *= mask
+            batch_mlvl_conf_scores = batch_mlvl_conf_scores.unsqueeze(
+                2).expand_as(batch_mlvl_scores)
+            batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_conf_scores
+            max_output_boxes_per_class = cfg.nms.get(
+                'max_output_boxes_per_class', 200)
+            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+            # keep aligned with original pipeline, improve
+            # mAP by 1% for YOLOv3 in ONNX
+            score_threshold = 0
+            nms_pre = cfg.get('deploy_nms_pre', -1)
+            return add_dummy_nms_for_onnx(
+                batch_mlvl_bboxes,
+                batch_mlvl_scores,
+                max_output_boxes_per_class,
+                iou_threshold,
+                score_threshold,
+                nms_pre,
+                cfg.max_per_img,
+            )
 
         if with_nms and (batch_mlvl_conf_scores.size(0) == 0):
             return torch.zeros((0, 5)), torch.zeros((0, ))

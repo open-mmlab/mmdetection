@@ -1,21 +1,25 @@
+import warnings
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import VGG, constant_init, kaiming_init, normal_init, xavier_init
-from mmcv.runner import load_checkpoint
+from mmcv.cnn import VGG
+from mmcv.runner import BaseModule, Sequential
 
-from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 
 
 @BACKBONES.register_module()
-class SSDVGG(VGG):
+class SSDVGG(VGG, BaseModule):
     """VGG Backbone network for single-shot-detection.
 
     Args:
         input_size (int): width and height of input, from {300, 512}.
         depth (int): Depth of vgg, from {11, 13, 16, 19}.
         out_indices (Sequence[int]): Output from which stages.
+        pretrained (str, optional): model pretrained path. Default: None
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
 
     Example:
         >>> self = SSDVGG(input_size=300, depth=11)
@@ -42,7 +46,9 @@ class SSDVGG(VGG):
                  ceil_mode=True,
                  out_indices=(3, 4),
                  out_feature_indices=(22, 34),
-                 l2_norm_scale=20.):
+                 l2_norm_scale=20.,
+                 pretrained=None,
+                 init_cfg=None):
         # TODO: in_channels for mmcv.VGG
         super(SSDVGG, self).__init__(
             depth,
@@ -72,32 +78,36 @@ class SSDVGG(VGG):
             self.features[out_feature_indices[0] - 1].out_channels,
             l2_norm_scale)
 
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in backbone.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
         if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
+            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+                          'please use "init_cfg" instead')
+            self.init_cfg = [dict(type='Pretrained', checkpoint=pretrained)]
         elif pretrained is None:
-            for m in self.features.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, nn.BatchNorm2d):
-                    constant_init(m, 1)
-                elif isinstance(m, nn.Linear):
-                    normal_init(m, std=0.01)
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(type='Constant', val=1, layer='BatchNorm2d'),
+                    dict(type='Normal', std=0.01, layer='Linear'),
+                ]
         else:
             raise TypeError('pretrained must be a str or None')
 
-        for m in self.extra.modules():
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
+        if init_cfg is None:
+            self.init_cfg += [
+                dict(
+                    type='Xavier',
+                    distribution='uniform',
+                    override=dict(name='extra')),
+                dict(
+                    type='Constant',
+                    val=self.l2_norm.scale,
+                    override=dict(name='l2_norm'))
+            ]
 
-        constant_init(self.l2_norm, self.l2_norm.scale)
+    def init_weights(self, pretrained=None):
+        super(VGG, self).init_weights()
 
     def forward(self, x):
         """Forward function."""
@@ -140,7 +150,7 @@ class SSDVGG(VGG):
         if self.input_size == 512:
             layers.append(nn.Conv2d(self.inplanes, 256, 4, padding=1))
 
-        return nn.Sequential(*layers)
+        return Sequential(*layers)
 
 
 class L2Norm(nn.Module):

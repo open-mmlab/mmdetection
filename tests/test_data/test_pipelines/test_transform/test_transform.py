@@ -750,3 +750,43 @@ def test_cutout():
     cutout_module = build_from_cfg(transform, PIPELINES)
     cutout_result = cutout_module(copy.deepcopy(results))
     assert cutout_result['img'].sum() > img.sum()
+
+
+def test_random_shift():
+    # test assertion for invalid shift_ratio
+    with pytest.raises(AssertionError):
+        transform = dict(type='RandomShift', shift_ratio=1.5)
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid max_shift_px
+    with pytest.raises(AssertionError):
+        transform = dict(type='RandomShift', max_shift_px=-1)
+        build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
+    results['img'] = img
+    # TODO: add img_fields test
+    results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
+
+    def create_random_bboxes(num_bboxes, img_w, img_h):
+        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
+        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
+        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
+        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
+            np.int)
+        return bboxes
+
+    h, w, _ = img.shape
+    gt_bboxes = create_random_bboxes(8, w, h)
+    gt_bboxes_ignore = create_random_bboxes(2, w, h)
+    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_bboxes'] = gt_bboxes
+    results['gt_bboxes_ignore'] = gt_bboxes_ignore
+    transform = dict(type='RandomShift', shift_ratio=1.0)
+    random_shift_module = build_from_cfg(transform, PIPELINES)
+    results = random_shift_module(results)
+
+    assert results['img'].shape[:2] == (h, w)
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]

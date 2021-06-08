@@ -1,6 +1,6 @@
 # Cityscapes Dataset
 
-[DATASET]
+<!-- [DATASET] -->
 
 ```
 @inproceedings{Cordts2016Cityscapes,

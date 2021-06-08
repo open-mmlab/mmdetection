@@ -39,6 +39,8 @@ class CentripetalHead(CornerHead):
             SmoothL1Loss.
         loss_centripetal_shift (dict): Config of centripetal shift loss.
             Default: SmoothL1Loss.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -50,7 +52,10 @@ class CentripetalHead(CornerHead):
                      type='SmoothL1Loss', beta=1.0, loss_weight=0.05),
                  loss_centripetal_shift=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
+                 init_cfg=None,
                  **kwargs):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         assert centripetal_shift_channels == 2, (
             'CentripetalHead only support centripetal_shift_channels == 2')
         self.centripetal_shift_channels = centripetal_shift_channels
@@ -58,7 +63,8 @@ class CentripetalHead(CornerHead):
             'CentripetalHead only support guiding_shift_channels == 2')
         self.guiding_shift_channels = guiding_shift_channels
         self.feat_adaption_conv_kernel = feat_adaption_conv_kernel
-        super(CentripetalHead, self).__init__(*args, **kwargs)
+        super(CentripetalHead, self).__init__(
+            *args, init_cfg=init_cfg, **kwargs)
         self.loss_guiding_shift = build_loss(loss_guiding_shift)
         self.loss_centripetal_shift = build_loss(loss_centripetal_shift)
 
@@ -131,8 +137,7 @@ class CentripetalHead(CornerHead):
         self._init_centripetal_layers()
 
     def init_weights(self):
-        """Initialize weights of the head."""
-        super().init_weights()
+        super(CentripetalHead, self).init_weights()
         for i in range(self.num_feat_levels):
             normal_init(self.tl_feat_adaption[i], std=0.01)
             normal_init(self.br_feat_adaption[i], std=0.01)
