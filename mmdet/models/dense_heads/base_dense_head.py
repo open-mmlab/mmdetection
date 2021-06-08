@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, force_fp32
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
@@ -14,9 +14,55 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """Compute losses of the head."""
         pass
 
-    @abstractmethod
-    def get_bboxes(self, **kwargs):
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
+    def get_preds(self,
+                  cls_scores,
+                  bbox_preds,
+                  score_factors=None,
+                  img_metas=None,
+                  rescale=False,
+                  with_nms=True,
+                  cfg=None,
+                  **kwargs):
         """Transform network output for a batch into bbox predictions."""
+        assert len(cls_scores) == len(bbox_preds)
+        if score_factors is not None:
+            assert len(cls_scores) == len(score_factors)
+
+        num_levels = len(cls_scores)
+
+        result_list = []
+        for img_id in range(len(img_metas)):
+            img_meta = img_metas[img_id]
+            cls_score_list = [
+                cls_scores[i][img_id].detach() for i in range(num_levels)
+            ]
+            bbox_pred_list = [
+                bbox_preds[i][img_id].detach() for i in range(num_levels)
+            ]
+            if score_factors is not None:
+                score_factor_list = [
+                    score_factors[i][img_id].detach()
+                    for i in range(num_levels)
+                ]
+            else:
+                score_factor_list = [None for _ in range(num_levels)]
+
+            results = self.get_preds_single(cls_score_list, bbox_pred_list,
+                                            score_factor_list, img_meta, cfg,
+                                            rescale, with_nms, **kwargs)
+            result_list.append(results)
+        return result_list
+
+    def get_preds_single(self,
+                         cls_score_list,
+                         bbox_pred_list,
+                         score_factor_list,
+                         img_meta,
+                         cfg=None,
+                         rescale=False,
+                         with_nms=True,
+                         **kwargs):
         pass
 
     def forward_train(self,

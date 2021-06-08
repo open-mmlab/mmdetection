@@ -488,109 +488,40 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             num_total_samples=num_total_samples)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   img_metas,
-                   cfg=None,
-                   rescale=False,
-                   with_nms=True):
-        """Transform network output for a batch into bbox predictions.
+    def get_selected_priori(self,
+                            level_idx,
+                            width,
+                            height,
+                            device,
+                            topk_inds=None):
+        # recover the grid index in feature map from topk_inds
+        # only generate anchors on the filtered grids to reduce latency
+        if topk_inds is not None:
+            num_anchors = self.anchor_generator.num_base_anchors[level_idx]
+            anchor_id = topk_inds % num_anchors
+            x = (topk_inds // num_anchors) % width
+            y = (topk_inds // width // num_anchors) % height
+            prioris = torch.stack([x, y, x, y], 1) \
+                      * self.anchor_generator.strides[level_idx][0] \
+                      + self.anchor_generator.base_anchors[
+                            level_idx][anchor_id, :].to(device)
+        else:
+            prioris = self.anchor_generator.single_level_grid_anchors(
+                self.anchor_generator.base_anchors[level_idx].to(device),
+                [height, width],
+                self.anchor_generator.strides[level_idx],
+                device=device)
+        return prioris
 
-        Args:
-            cls_scores (list[Tensor]): Box scores for each level in the
-                feature pyramid, has shape
-                (N, num_anchors * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box energies / deltas for each
-                level in the feature pyramid, has shape
-                (N, num_anchors * 4, H, W).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
-                if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
-
-        Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
-
-        Example:
-            >>> import mmcv
-            >>> self = AnchorHead(
-            >>>     num_classes=9,
-            >>>     in_channels=1,
-            >>>     anchor_generator=dict(
-            >>>         type='AnchorGenerator',
-            >>>         scales=[8],
-            >>>         ratios=[0.5, 1.0, 2.0],
-            >>>         strides=[4,]))
-            >>> img_metas = [{'img_shape': (32, 32, 3),
-            >>>              'scale_factor': np.ones(1)}]
-            >>> cfg = mmcv.Config(dict(
-            >>>     score_thr=0.00,
-            >>>     nms=dict(type='nms', iou_thr=1.0),
-            >>>     max_per_img=10))
-            >>> feat = torch.rand(1, 1, 3, 3)
-            >>> cls_score, bbox_pred = self.forward_single(feat)
-            >>> # note the input lists are over different levels, not images
-            >>> cls_scores, bbox_preds = [cls_score], [bbox_pred]
-            >>> result_list = self.get_bboxes(cls_scores, bbox_preds,
-            >>>                               img_metas, cfg)
-            >>> det_bboxes, det_labels = result_list[0]
-            >>> assert len(result_list) == 1
-            >>> assert det_bboxes.shape[1] == 5
-            >>> assert len(det_bboxes) == len(det_labels) == cfg.max_per_img
-        """
-        assert len(cls_scores) == len(bbox_preds)
-        num_levels = len(cls_scores)
-
-        device = cls_scores[0].device
-        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes, device=device)
-
-        result_list = []
-        for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            if with_nms:
-                # some heads don't support with_nms argument
-                proposals = self._get_bboxes_single(cls_score_list,
-                                                    bbox_pred_list,
-                                                    mlvl_anchors, img_shape,
-                                                    scale_factor, cfg, rescale)
-            else:
-                proposals = self._get_bboxes_single(cls_score_list,
-                                                    bbox_pred_list,
-                                                    mlvl_anchors, img_shape,
-                                                    scale_factor, cfg, rescale,
-                                                    with_nms)
-            result_list.append(proposals)
-        return result_list
-
-    def _get_bboxes_single(self,
-                           cls_score_list,
-                           bbox_pred_list,
-                           mlvl_anchors,
-                           img_shape,
-                           scale_factor,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
+    def get_preds_single(self,
+                         cls_score_list,
+                         bbox_pred_list,
+                         score_factor_list,
+                         img_meta,
+                         cfg,
+                         rescale=False,
+                         with_nms=True,
+                         **kwargs):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -617,14 +548,20 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 5-th column is a score between 0 and 1.
         """
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
+        img_shape = img_meta['img_shape']
+        scale_factor = img_meta['scale_factor']
+
         nms_pre = cfg.get('nms_pre', -1)
 
         mlvl_bboxes = []
         mlvl_scores = []
-        for cls_score, bbox_pred, anchors in zip(cls_score_list,
-                                                 bbox_pred_list, mlvl_anchors):
+        mlvl_score_factor = []
+        for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
+                zip(cls_score_list, bbox_pred_list, score_factor_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            height, width = cls_score.shape[-2:]
+            device = cls_score.device
+
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
@@ -632,27 +569,46 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             else:
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            if score_factor:
+                score_factor = score_factor.permute(1, 2,
+                                                    0).reshape(-1).sigmoid()
+            else:
+                score_factor = torch.ones_like(bbox_pred[:, 0])
+
             if 0 < nms_pre < scores.shape[0]:
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
-                    max_scores, _ = scores.max(dim=1)
+                    max_scores, _ = (scores * score_factor[:, None]).max(dim=1)
                 else:
                     # remind that we set FG labels to [0, num_class-1]
                     # since mmdet v2.0
                     # BG cat_id: num_class
-                    max_scores, _ = scores[:, :-1].max(dim=1)
+                    max_scores, _ = (scores[:, :-1] *
+                                     score_factor[:, None]).max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
+
+                anchors = self.get_selected_priori(level_idx, width, height,
+                                                   device, topk_inds)
+
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
+                score_factor = score_factor[topk_inds]
+            else:
+                anchors = self.get_selected_priori(level_idx, width, height,
+                                                   device)
+
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
+            mlvl_score_factor.append(score_factor)
+
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
+        mlvl_score_factor = torch.cat(mlvl_score_factor)
+
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
             # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
@@ -661,12 +617,19 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
 
         if with_nms:
-            det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
+            det_bboxes, det_labels = multiclass_nms(
+                mlvl_bboxes,
+                mlvl_scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=mlvl_score_factor)
             return det_bboxes, det_labels
         else:
-            return mlvl_bboxes, mlvl_scores
+            if score_factor_list[0] is None:
+                return mlvl_bboxes, mlvl_scores
+            else:
+                return mlvl_bboxes, mlvl_scores, mlvl_score_factor
 
     def aug_test(self, feats, img_metas, rescale=False):
         """Test function with test time augmentation.
