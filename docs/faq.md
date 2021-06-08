@@ -84,5 +84,5 @@ We list some common troubles faced by many users and their corresponding solutio
 ## Evaluation
 
 - COCO Dataset, AP or AR = -1
-    1. According to COCO dataset definition, small area < 32x32, 32x32 < medium area < 96x96, large area > 96x96.
-    2. If the corresponding area has no object, the result of AP and AR will set to -1. [#4494](https://github.com/open-mmlab/mmdetection/issues/4494)
+    1. According to the definition of COCO dataset, the small and medium areas in an image are less than 1024 (32\*32), 9216 (96\*96), respectively.
+    2. If the corresponding area has no object, the result of AP and AR will set to -1.
