@@ -3,6 +3,8 @@ from abc import ABCMeta, abstractmethod
 import torch
 from mmcv.runner import BaseModule
 
+from mmdet.core import distance2bbox
+
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     """Base class for DenseHeads."""
@@ -137,14 +139,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         # TODO: @Haian Huang, a unified priori_generator, This func can
         #  be used in both
         #  anchor_free_head and anchor_head
-
         # remove all these code
-
         if hasattr(self, 'get_points'):
-            mlvl_prioris = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                           bbox_preds[0].device)
+            mlvl_priors = self.get_points(featmap_sizes, bbox_preds[0].dtype,
+                                          bbox_preds[0].device)
         elif hasattr(self, 'anchor_generator'):
-            mlvl_prioris = self.anchor_generator.grid_anchors(
+            mlvl_priors = self.anchor_generator.grid_anchors(
                 featmap_sizes, device=device)
         else:
             raise NotImplementedError(
@@ -165,8 +165,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         img_shapes = img_metas[0]['img_shape_for_onnx']
 
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(mlvl_cls_scores) == len(mlvl_bbox_preds) == len(
-            mlvl_prioris)
+        assert len(mlvl_cls_scores) == len(mlvl_bbox_preds) == len(mlvl_priors)
         batch_size = mlvl_cls_scores[0].shape[0]
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
@@ -179,7 +178,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         mlvl_cls_score_factors = []
         for cls_score, bbox_pred, score_factor, prioris in zip(
                 mlvl_cls_scores, mlvl_bbox_preds, mlvl_score_factors,
-                mlvl_prioris):
+                mlvl_priors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             cls_score = cls_score.permute(0, 2, 3,
                                           1).reshape(batch_size, -1,
@@ -188,19 +187,20 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 score_factor = score_factor.permute(0, 2, 3,
                                                     1).reshape(batch_size,
                                                                -1).sigmoid()
-            if self.use_sigmoid_cls:
+            if self.loss_cls.use_sigmoid:
                 scores = cls_score.sigmoid()
             else:
                 scores = cls_score.softmax(-1)
+
             bbox_pred = bbox_pred.permute(0, 2, 3,
                                           1).reshape(batch_size, -1, 4)
-            prioris = prioris.expand_as(bbox_pred)
+            prioris = prioris.expand(batch_size, -1, prioris.size(-1))
             # Always keep topk op for dynamic input in onnx
             from mmdet.core.export import get_k_for_topk
             nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
             if nms_pre > 0:
                 # Get maximum scores for foreground classes.
-                if self.use_sigmoid_cls:
+                if self.loss_cls.use_sigmoid:
                     max_scores, _ = scores.max(-1)
                 else:
                     # remind that we set FG labels to [0, num_class-1]
@@ -227,9 +227,14 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 if with_score_factors:
                     score_factor = score_factor.reshape(
                         -1, 1)[transformed_inds].reshape(batch_size, -1, 1)
+            # TODO @haian distance2bbox coder
+            if hasattr(self, 'bbox_coder'):
+                bboxes = self.bbox_coder.decode(
+                    prioris, bbox_pred, max_shape=img_shapes)
+            else:
+                bboxes = distance2bbox(
+                    prioris, bbox_pred, max_shape=img_shapes)
 
-            bboxes = self.bbox_coder.decode(
-                prioris, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
@@ -245,7 +250,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         if with_nms:
             from mmdet.core.export import add_dummy_nms_for_onnx
             # ignore background class
-            if not self.use_sigmoid_cls:
+            if not self.loss_cls.use_sigmoid:
                 num_classes = batch_mlvl_scores.shape[2] - 1
                 batch_mlvl_scores = batch_mlvl_scores[..., :num_classes]
             max_output_boxes_per_class = cfg.nms.get(
