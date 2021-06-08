@@ -103,7 +103,7 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
   pip install onnxruntime-gpu
   ```
 
-  Note: onnxruntime-gpu is version-dependent on CUDA and CUDNN, please note that whether your
+  Note: onnxruntime-gpu is version-dependent on CUDA and CUDNN, please ensure that your
   environment meets the requirements.
 
 - Build custom operators for ONNX Runtime following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
