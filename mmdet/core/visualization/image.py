@@ -39,7 +39,8 @@ def imshow_det_bboxes(img,
                       win_name='',
                       show=True,
                       wait_time=0,
-                      out_file=None):
+                      out_file=None,
+                      show_bbox=True):
     """Draw bboxes and class labels (with scores) on an image.
 
     Args:

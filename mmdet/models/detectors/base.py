@@ -269,7 +269,8 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                     win_name='',
                     show=False,
                     wait_time=0,
-                    out_file=None):
+                    out_file=None,
+                    show_bbox=True):
         """Draw `result` over `img`.
 
         Args:
@@ -294,6 +295,8 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                 Default: False.
             out_file (str or None): The filename to write the image.
                 Default: None.
+            show_bbox (bool): Whether to show bounding box in the image.
+                Default: True
 
         Returns:
             img (Tensor): Only if not `show` or `out_file`
@@ -311,26 +314,27 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                     for i, bbox in enumerate(bbox_result)
                 ]
             else:  # segm only
-                # estimte bbox through segm_result
+                # estimate center of mask through segm_result
                 for scores, segms in \
                         zip(bbox_result, segm_result):
                     assert len(scores) == len(segms)
                     if len(segms) == 0:
                         continue
                     for score, segm in zip(scores, segms):
+                        mask_idx = np.where(segm == 1)
+                        width = mask_idx[1].max() - mask_idx[1].min()
+                        height = mask_idx[0].max() - mask_idx[0].min()
+                        center_x = mask_idx[1].min() + width * 0.5
+                        center_y = mask_idx[0].min() + height * 0.5
                         bboxes.append(
-                            np.array([
-                                np.where(segm == 1)[1].min(),
-                                np.where(segm == 1)[0].min(),
-                                np.where(segm == 1)[1].max(),
-                                np.where(segm == 1)[0].max(),
-                                float(score)
-                            ]))
+                            np.array([center_x, center_y, 0, 0,
+                                      float(score)]))
                 bboxes = np.vstack(bboxes)
                 labels = [
                     np.full(len(segm), i, dtype=np.int32)
                     for i, segm in enumerate(segm_result)
                 ]
+                show_bbox = False
         else:
             bbox_result, segm_result = result, None
             bboxes = np.vstack(bbox_result)
@@ -366,7 +370,8 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             win_name=win_name,
             show=show,
             wait_time=wait_time,
-            out_file=out_file)
+            out_file=out_file,
+            show_bbox=show_bbox)
 
         if not (show or out_file):
             return img
