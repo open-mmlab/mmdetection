@@ -68,7 +68,11 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                          bias_prob=0.01))):
         super(AnchorFreeHead, self).__init__(init_cfg)
         self.num_classes = num_classes
-        self.cls_out_channels = num_classes
+        self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
+        if self.use_sigmoid_cls:
+            self.cls_out_channels = num_classes
+        else:
+            self.cls_out_channels = num_classes + 1
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
@@ -247,30 +251,6 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         raise NotImplementedError
 
     @abstractmethod
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   img_metas,
-                   cfg=None,
-                   rescale=None):
-        """Transform network output for a batch into bbox predictions.
-
-        Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_points * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_points * 4, H, W)
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
         """Compute regression, classification and centerness targets for points
         in multiple images.
@@ -320,6 +300,27 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                 self._get_points_single(featmap_sizes[i], self.strides[i],
                                         dtype, device, flatten))
         return mlvl_points
+
+    def get_selected_priori(self,
+                            level_idx,
+                            featmap_size,
+                            dtype,
+                            device,
+                            topk_inds=None):
+        height, width = featmap_size
+        if topk_inds is not None:
+            x = topk_inds % width
+            y = (topk_inds // width) % height
+            prioris = torch.stack([x, y],
+                                  1).to(dtype) * self.strides[level_idx] + (
+                                      self.strides[level_idx] // 2)
+            prioris = prioris.to(device)
+        else:
+            prioris = self._get_points_single([height, width],
+                                              self.strides[level_idx], dtype,
+                                              device)
+
+        return prioris
 
     def aug_test(self, feats, img_metas, rescale=False):
         """Test function with test time augmentation.
