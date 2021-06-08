@@ -490,18 +490,19 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
     def get_selected_priori(self,
                             level_idx,
-                            width,
-                            height,
+                            featmap_size,
+                            dtype,
                             device,
                             topk_inds=None):
         # recover the grid index in feature map from topk_inds
         # only generate anchors on the filtered grids to reduce latency
+        height, width = featmap_size
         if topk_inds is not None:
             num_anchors = self.anchor_generator.num_base_anchors[level_idx]
             anchor_id = topk_inds % num_anchors
             x = (topk_inds // num_anchors) % width
             y = (topk_inds // width // num_anchors) % height
-            prioris = torch.stack([x, y, x, y], 1) \
+            prioris = torch.stack([x, y, x, y], 1).to(dtype) \
                       * self.anchor_generator.strides[level_idx][0] \
                       + self.anchor_generator.base_anchors[
                             level_idx][anchor_id, :].to(device)
@@ -559,9 +560,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
                 zip(cls_score_list, bbox_pred_list, score_factor_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            height, width = cls_score.shape[-2:]
-            device = cls_score.device
-
+            featmap_size_hw = cls_score.shape[-2:]
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
@@ -587,15 +586,17 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                      score_factor[:, None]).max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
 
-                anchors = self.get_selected_priori(level_idx, width, height,
-                                                   device, topk_inds)
+                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
+                                                   scores.dtype,
+                                                   cls_score.device, topk_inds)
 
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 score_factor = score_factor[topk_inds]
             else:
-                anchors = self.get_selected_priori(level_idx, width, height,
-                                                   device)
+                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
+                                                   scores.dtype,
+                                                   cls_score.device)
 
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shape)

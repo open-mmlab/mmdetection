@@ -322,6 +322,27 @@ class FCOSHead(AnchorFreeHead):
             result_list.append(det_bboxes)
         return result_list
 
+    def get_selected_priori(self,
+                            level_idx,
+                            featmap_size,
+                            dtype,
+                            device,
+                            topk_inds=None):
+        height, width = featmap_size
+        if topk_inds is not None:
+            x = topk_inds % width
+            y = (topk_inds // width) % height
+            prioris = torch.stack([x, y], 1).to(dtype) \
+                      * self.strides[level_idx] \
+                      + (self.strides[level_idx] // 2)
+            prioris = prioris.to(device)
+        else:
+            prioris = self._get_points_single([height, width],
+                                              self.strides[level_idx], dtype,
+                                              device)
+
+        return prioris
+
     def _get_bboxes_single(self,
                            cls_scores,
                            bbox_preds,
@@ -368,9 +389,10 @@ class FCOSHead(AnchorFreeHead):
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_centerness = []
-        for cls_score, bbox_pred, centerness, points in zip(
-                cls_scores, bbox_preds, centernesses, mlvl_points):
+        for level_idx, (cls_score, bbox_pred, centerness) in enumerate(
+                zip(cls_scores, bbox_preds, centernesses)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
             centerness = centerness.permute(1, 2, 0).reshape(-1).sigmoid()
@@ -380,10 +402,19 @@ class FCOSHead(AnchorFreeHead):
             if 0 < nms_pre < scores.shape[0]:
                 max_scores, _ = (scores * centerness[:, None]).max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                points = points[topk_inds, :]
+
+                points = self.get_selected_priori(level_idx,
+                                                  cls_score.shape[-2:],
+                                                  scores.dtype,
+                                                  cls_score.device, topk_inds)
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 centerness = centerness[topk_inds]
+            else:
+                points = self.get_selected_priori(level_idx,
+                                                  cls_score.shape[-2:],
+                                                  scores.dtype,
+                                                  cls_score.device)
             bboxes = self.bbox_coder.decode(
                 points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
