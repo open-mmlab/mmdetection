@@ -2,7 +2,8 @@ import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.necks import FPN, ChannelMapper, CTResNetNeck, DilatedEncoder
+from mmdet.models.necks import (FPN, ChannelMapper, CTResNetNeck,
+                                DilatedEncoder, YOLOV3Neck)
 
 
 def test_fpn():
@@ -288,3 +289,52 @@ def test_ct_resnet_neck():
         feat = feat.cuda()
         out_feat = ct_resnet_neck([feat])[0]
         assert out_feat.shape == (1, num_filters[-1], 16, 16)
+
+
+def test_yolov3_neck():
+    # num_scales, in_channels, out_channels must be same length
+    with pytest.raises(AssertionError):
+        YOLOV3Neck(num_scales=3, in_channels=[16, 8, 4], out_channels=[8, 4])
+
+    # len(feats) must equal to num_scales
+    with pytest.raises(AssertionError):
+        neck = YOLOV3Neck(
+            num_scales=3, in_channels=[16, 8, 4], out_channels=[8, 4, 2])
+        feats = (torch.rand(1, 4, 16, 16), torch.rand(1, 8, 16, 16))
+        neck(feats)
+
+    # test normal channels
+    s = 32
+    in_channels = [16, 8, 4]
+    out_channels = [8, 4, 2]
+    feat_sizes = [s // 2**i for i in range(len(in_channels) - 1, -1, -1)]
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels) - 1, -1, -1)
+    ]
+    neck = YOLOV3Neck(
+        num_scales=3, in_channels=in_channels, out_channels=out_channels)
+    outs = neck(feats)
+
+    assert len(outs) == len(feats)
+    for i in range(len(outs)):
+        assert outs[i].shape == \
+               (1, out_channels[i], feat_sizes[i], feat_sizes[i])
+
+    # test more flexible setting
+    s = 32
+    in_channels = [32, 8, 16]
+    out_channels = [8, 16, 4]
+    feat_sizes = [s // 2**i for i in range(len(in_channels) - 1, -1, -1)]
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels) - 1, -1, -1)
+    ]
+    neck = YOLOV3Neck(
+        num_scales=3, in_channels=in_channels, out_channels=out_channels)
+    outs = neck(feats)
+
+    assert len(outs) == len(feats)
+    for i in range(len(outs)):
+        assert outs[i].shape == \
+               (1, out_channels[i], feat_sizes[i], feat_sizes[i])
