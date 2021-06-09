@@ -34,9 +34,6 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
 ## Installation
 
-0. You can simply install mmdetection with the following commands:
-    `pip install mmdet`
-
 1. Create a conda virtual environment and activate it.
 
     ```shell
@@ -110,6 +107,12 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
     ```shell
     pip install -r requirements/build.txt
     pip install -v -e .  # or "python setup.py develop"
+    ```
+
+    Or, you can simply install mmdetection with the following commands:
+
+    ```shell
+    pip install mmdet
     ```
 
 Note:
