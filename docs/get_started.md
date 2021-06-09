@@ -34,6 +34,8 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
 ## Installation
 
+### Prepare environment
+
 1. Create a conda virtual environment and activate it.
 
     ```shell
@@ -67,7 +69,21 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
     If you build PyTorch from source instead of installing the prebuilt pacakge,
     you can use more CUDA versions such as 9.0.
 
-3. Install mmcv-full, we recommend you to install the pre-build package as below.
+
+### Install MMDetection
+
+We recommend you to install MMDetection with [MIM](https://github.com/open-mmlab/mim).
+
+```shell
+pip install openmim
+mim install mmdet
+```
+
+MIM can automatically install OpenMMLab projects and their requirements.
+
+Or, you can install MMDetection manually:
+
+1. Install mmcv-full, we recommend you to install the pre-build package as below.
 
     ```shell
     pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
@@ -95,14 +111,14 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
     pip install mmcv-full
     ```
 
-4. Clone the MMDetection repository.
+2. Clone the MMDetection repository.
 
     ```shell
     git clone https://github.com/open-mmlab/mmdetection.git
     cd mmdetection
     ```
 
-5. Install build requirements and then install MMDetection.
+3. Install build requirements and then install MMDetection.
 
     ```shell
     pip install -r requirements/build.txt
