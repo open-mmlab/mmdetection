@@ -76,12 +76,13 @@ class YOLOV3Neck(BaseModule):
 
     Args:
         num_scales (int): The number of scales / stages.
-        in_channels (int): The number of input channels.
-        out_channels (int): The number of output channels.
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True)
-        act_cfg (dict): Config dict for activation layer.
+        in_channels (List[int]): The number of input channels  per scale.
+        out_channels (List[int]): The number of output channels  per scale.
+        conv_cfg (dict, optional): Config dict for convolution layer.
+            Default: None.
+        norm_cfg (dict, optional): Dictionary to construct and config norm
+            layer. Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict, optional): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None
