@@ -4,9 +4,24 @@ import json
 import os.path as osp
 import shutil
 import subprocess
+from collections import OrderedDict
 
 import mmcv
 import torch
+import yaml
+
+
+def ordered_yaml_dump(data, stream=None, Dumper=yaml.SafeDumper, **kwds):
+
+    class OrderedDumper(Dumper):
+        pass
+
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    return yaml.dump(data, stream, OrderedDumper, **kwds)
 
 
 def process_checkpoint(in_file, out_file):
@@ -48,6 +63,61 @@ def get_final_results(log_json_path, epoch, results_lut):
                     for key in results_lut if key in log_line
                 })
                 return result_dict
+
+
+def get_dataset_name(config):
+    # If there are more dataset, add here.
+    name_map = dict(
+        CityscapesDataset='Cityscapes',
+        CocoDataset='COCO',
+        DeepFashionDataset='Deep Fashion',
+        LVISV05Dataset='LVIS v0.5',
+        LVISV1Dataset='LVIS v1',
+        VOCDataset='Pascal VOC',
+        WIDERFaceDataset='WIDER Face')
+    cfg = mmcv.Config.fromfile('./configs/' + config)
+    return name_map[cfg.dataset_type]
+
+
+def convert_model_info_to_pwc(model_infos):
+    pwc_infos = []
+    for model in model_infos:
+        pwc_model_info = OrderedDict()
+        pwc_model_info['Name'] = osp.split(model['config'])[-1].split('.')[0]
+
+        # get metadata
+        memory = round(model['results']['memory'] / 1024, 1)
+        epochs = model['epochs']
+        meta_data = OrderedDict()
+        meta_data['Training Memory (GB)'] = memory
+        meta_data['Epochs'] = epochs
+        pwc_model_info['Metadata'] = meta_data
+
+        # get dataset name
+        dataset_name = get_dataset_name(model['config'])
+
+        # get results
+        results = []
+        # if there are more metrics, add here.
+        if 'bbox_mAP' in model['results']:
+            metric = model['results']['bbox_mAP'] * 10
+            results.append(
+                OrderedDict(
+                    Task='Object Detection',
+                    Dataset=dataset_name,
+                    Metrics={'box AP': metric}))
+        if 'segm_mAP ' in model['results']:
+            metric = model['results']['segm_mAP'] * 10
+            results.append(
+                OrderedDict(
+                    Task='Instance Segmentation',
+                    Dataset=dataset_name,
+                    Metrics={'mask AP': metric}))
+
+        pwc_model_info['Results'] = results
+        pwc_model_info['Weights'] = 'Need to fill in after upload'
+        pwc_infos.append(pwc_model_info)
+    return pwc_infos
 
 
 def parse_args():
@@ -159,6 +229,10 @@ def main():
     models = dict(models=publish_model_infos)
     print(f'Totally gathered {len(publish_model_infos)} models')
     mmcv.dump(models, osp.join(models_out, 'model_info.json'))
+
+    pwc_infos = convert_model_info_to_pwc(model_infos)
+    with open(osp.join(models_out, 'metafile.yml'), 'w') as f:
+        ordered_yaml_dump(pwc_infos, f, encoding='utf-8')
 
 
 if __name__ == '__main__':
