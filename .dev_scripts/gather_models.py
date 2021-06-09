@@ -43,7 +43,10 @@ def process_checkpoint(in_file, out_file):
 
 def get_final_epoch(config):
     cfg = mmcv.Config.fromfile('./configs/' + config)
-    return cfg.runner.max_epochs
+    epoch = cfg.runner.max_epochs
+    if cfg.data.train.type == 'RepeatDataset':
+        epoch *= cfg.data.train.times
+    return epoch
 
 
 def get_final_results(log_json_path, epoch, results_lut):
@@ -100,14 +103,14 @@ def convert_model_info_to_pwc(model_infos):
         results = []
         # if there are more metrics, add here.
         if 'bbox_mAP' in model['results']:
-            metric = model['results']['bbox_mAP'] * 10
+            metric = round(model['results']['bbox_mAP'] * 100, 1)
             results.append(
                 OrderedDict(
                     Task='Object Detection',
                     Dataset=dataset_name,
                     Metrics={'box AP': metric}))
         if 'segm_mAP ' in model['results']:
-            metric = model['results']['segm_mAP'] * 10
+            metric = round(model['results']['segm_mAP'] * 100, 1)
             results.append(
                 OrderedDict(
                     Task='Instance Segmentation',
