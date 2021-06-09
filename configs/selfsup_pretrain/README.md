@@ -6,9 +6,9 @@
 
 We support to apply the backbone models pre-trained by different self-supervised methods in detection systems and provide their results on Mask R-CNN.
 
-The pre-trained modles are converted from [MoCo](https://github.com/facebookresearch/moco) and downloaded from [SWAV](https://github.com/facebookresearch/swav).
+The pre-trained models are converted from [MoCo](https://github.com/facebookresearch/moco) and downloaded from [SwAV](https://github.com/facebookresearch/swav).
 
-For SWAV, please cite
+For SwAV, please cite
 
 ```latex
 @article{caron2020unsupervised,
@@ -45,8 +45,6 @@ To use a self-supervisely pretrained backbone, there are two steps to do:
 
 ### Convert model
 
-We already prepare models of FLOPs from 400M to 12G in our model zoo.
-
 For more general usage, we also provide script `selfsup2mmdet.py` in the tools directory to convert the key of models pretrained by different self-supervised methods to PyTorch-style checkpoints used in MMDetection.
 
 ```bash
@@ -61,7 +59,7 @@ For example, to use a ResNet-50 backbone released by MoCo, you can download it f
 python -u tools/model_converters/selfsup2mmdet.py ./moco_v2_800ep_pretrain.pth.tar mocov2_r50_800ep_pretrain.pth --selfsup moco
 ```
 
-To use the ResNet-50 backbone released by SWAV, you can download it from [here](https://dl.fbaipublicfiles.com/deepcluster/swav_800ep_pretrain.pth.tar)
+To use the ResNet-50 backbone released by SwAV, you can download it from [here](https://dl.fbaipublicfiles.com/deepcluster/swav_800ep_pretrain.pth.tar)
 
 ### Modify config
 
@@ -85,14 +83,12 @@ model = dict(
 
 ## Results
 
-We also train some models with longer schedules and multi-scale training. The users could finetune them for downstream tasks.
-
 |    Method   |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
 | :-----: | :-----: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |  :--------: |
 |Mask RCNN |[R50 by MoCo v2](./mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco.py)| pytorch |1x|| |38.0|34.3|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco/mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco_20210604_114614-a8b63483.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco/mask_rcnn_r50_fpn_mocov2-pretrain_1x_coco_20210604_114614.log.json)|
 |Mask RCNN |[R50 by MoCo v2](./mask_rcnn_r50_fpn_mocov2-pretrain_ms-2x_coco.py)| pytorch | multi-scale 2x || |40.8|36.8|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_mocov2-pretrain_ms-2x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_mocov2-pretrain_ms-2x_coco/mask_rcnn_r50_fpn_mocov2-pretrain_ms-2x_coco_20210605_163717-d95df20a.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_mocov2-pretrain_ms-2x_coco/mask_rcnn_r50_fpn_mocov2-pretrain_ms-2x_coco_20210605_163717.log.json)|
-|Mask RCNN |[R50 by SWAV](./mask_rcnn_r50_fpn_swav-pretrain_1x_coco.py)| pytorch | 1x || |39.1 | 35.7|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_1x_coco/mask_rcnn_r50_fpn_swav-pretrain_1x_coco_20210604_114640-7b9baf28.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_1x_coco/mask_rcnn_r50_fpn_swav-pretrain_1x_coco_20210604_114640.log.json)|
-|Mask RCNN |[R50 by SWAV](./mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco.py)| pytorch | multi-scale 2x || |41.3|37.3|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco_20210605_163717-08e26fca.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco_20210605_163717.log.json)|
+|Mask RCNN |[R50 by SwAV](./mask_rcnn_r50_fpn_swav-pretrain_1x_coco.py)| pytorch | 1x || |39.1 | 35.7|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_1x_coco/mask_rcnn_r50_fpn_swav-pretrain_1x_coco_20210604_114640-7b9baf28.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_1x_coco/mask_rcnn_r50_fpn_swav-pretrain_1x_coco_20210604_114640.log.json)|
+|Mask RCNN |[R50 by SwAV](./mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco.py)| pytorch | multi-scale 2x || |41.3|37.3|[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco_20210605_163717-08e26fca.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/selfsup_pretrain/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco/mask_rcnn_r50_fpn_swav-pretrain_ms-2x_coco_20210605_163717.log.json)|
 
 ### Notice
 
