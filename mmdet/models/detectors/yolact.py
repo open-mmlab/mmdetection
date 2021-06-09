@@ -91,51 +91,26 @@ class YOLACT(SingleStageDetector):
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
-        """Test function without test time augmentation."""
-        x = self.extract_feat(img)
-
-        cls_score, bbox_pred, coeff_pred = self.bbox_head(x)
-
-        bbox_inputs = (cls_score, bbox_pred,
-                       coeff_pred) + (img_metas, self.test_cfg, rescale)
-        det_bboxes, det_labels, det_coeffs = self.bbox_head.get_bboxes(
-            *bbox_inputs)
+        """Test function without test-time augmentation."""
+        feat = self.extract_feat(img)
+        det_bboxes, det_labels, det_coeffs = self.bbox_head.simple_test(
+            feat, img_metas, rescale=rescale)
         bbox_results = [
             bbox2result(det_bbox, det_label, self.bbox_head.num_classes)
             for det_bbox, det_label in zip(det_bboxes, det_labels)
         ]
 
-        num_imgs = len(img_metas)
-        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
-        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
-            segm_results = [[[] for _ in range(self.mask_head.num_classes)]
-                            for _ in range(num_imgs)]
-        else:
-            # if det_bboxes is rescaled to the original image size, we need to
-            # rescale it back to the testing scale to obtain RoIs.
-            if rescale and not isinstance(scale_factors[0], float):
-                scale_factors = [
-                    torch.from_numpy(scale_factor).to(det_bboxes[0].device)
-                    for scale_factor in scale_factors
-                ]
-            _bboxes = [
-                det_bboxes[i][:, :4] *
-                scale_factors[i] if rescale else det_bboxes[i][:, :4]
-                for i in range(len(det_bboxes))
-            ]
-            mask_preds = self.mask_head(x[0], det_coeffs, _bboxes, img_metas)
-            # apply mask post-processing to each image individually
-            segm_results = []
-            for i in range(num_imgs):
-                if det_bboxes[i].shape[0] == 0:
-                    segm_results.append(
-                        [[] for _ in range(self.mask_head.num_classes)])
-                else:
-                    segm_result = self.mask_head.get_seg_masks(
-                        mask_preds[i], det_labels[i], img_metas[i], rescale)
-                    segm_results.append(segm_result)
+        segm_results = self.mask_head.simple_test(
+            feat,
+            det_bboxes,
+            det_labels,
+            det_coeffs,
+            img_metas,
+            rescale=rescale)
+
         return list(zip(bbox_results, segm_results))
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test with augmentations."""
-        raise NotImplementedError
+        raise NotImplementedError(
+            'YOLACT does not support test-time augmentation')

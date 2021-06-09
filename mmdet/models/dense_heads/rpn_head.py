@@ -7,11 +7,10 @@ from mmcv.ops import batched_nms
 
 from ..builder import HEADS
 from .anchor_head import AnchorHead
-from .rpn_test_mixin import RPNTestMixin
 
 
 @HEADS.register_module()
-class RPNHead(RPNTestMixin, AnchorHead):
+class RPNHead(AnchorHead):
     """RPN head.
 
     Args:
