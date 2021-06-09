@@ -9,3 +9,5 @@ pytest
 ubelt
 xdoctest>=0.10.0
 yapf
+testfixtures>=6.14.2
+flaky
