@@ -190,7 +190,6 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         for dataset_item, output in zip(dataset, prediction_results):
             width = dataset_item.width
             height = dataset_item.height
-            image = dataset_item.numpy
 
             shapes = []
             for label_idx, detections in enumerate(output):

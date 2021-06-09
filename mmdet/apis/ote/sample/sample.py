@@ -13,35 +13,20 @@
 # and limitations under the License.
 
 import argparse
-import yaml
 import importlib
-import os
-import os.path as osp
 import sys
-import random
-from typing import Tuple
+import yaml
 
-import cv2 as cv
-from tqdm import tqdm
-
-from mmdet.datasets import CocoDataset
 from sc_sdk.entities.analyse_parameters import AnalyseParameters
-from sc_sdk.entities.annotation import Annotation, AnnotationKind
-from sc_sdk.entities.datasets import Dataset, Subset, NullDataset
-from sc_sdk.entities.id import ID
-from sc_sdk.entities.image import Image
-from sc_sdk.entities.label import ScoredLabel
-from sc_sdk.entities.project import Project, NullProject
+from sc_sdk.entities.datasets import Subset
+from sc_sdk.entities.label import Label
 from sc_sdk.entities.resultset import ResultSet
-from sc_sdk.entities.shapes.box import Box
 from sc_sdk.entities.task_environment import TaskEnvironment
-from sc_sdk.entities.url import URL
 from sc_sdk.logging import logger_factory
-from sc_sdk.tests.test_helpers import generate_training_dataset_of_all_annotated_media_in_project
-from sc_sdk.usecases.repos import *
 from sc_sdk.utils.project_factory import ProjectFactory
 
-from mmdet.apis.ote.apis.detection import MMObjectDetectionTask
+from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
+from mmdet.datasets import CocoDataset
 
 
 logger = logger_factory.get_logger("Sample")
@@ -53,82 +38,19 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
 def load_template(path):
     with open(path) as f:
         template = yaml.full_load(f)
     return template
 
-
-def create_project(projectname, taskname, classes):
-    project = ProjectFactory().create_project_single_task(name=projectname, description="",
-        label_names=classes, task_name=taskname)
-    ProjectRepo().save(project)
-    logger.info(f'New project created {str(project)}')
-    return project
-
-def load_project(projectname, taskname, classes):
-    project = ProjectRepo().get_latest_by_name(projectname)
-    if isinstance(project, NullProject):
-        project = create_project(projectname, taskname, classes)
-    else:
-        logger.info(f'Existing project loaded {str(project)}')
-    return project
-
 def get_label(x, all_labels):
     label_name = CocoDataset.CLASSES[x]
     return [label for label in all_labels if label.name == label_name][0]
-
-def create_coco_dataset(project, cfg=None):
-    pipeline = [dict(type='LoadImageFromFile'), dict(type='LoadAnnotations', with_bbox=True)]
-    coco_dataset = CocoDataset(ann_file='data/coco/annotations/instances_val2017.json',
-        img_prefix='data/coco/val2017/', pipeline=pipeline)
-
-    logger.info(f'Loading images and annotation from {str(coco_dataset)} to repos')
-
-    for datum in tqdm(coco_dataset):
-        imdata = datum['img']
-        imshape = imdata.shape
-        image = Image(name=datum['ori_filename'], project=project, numpy=imdata)
-        ImageRepo(project).save(image)
-
-        gt_bboxes = datum['gt_bboxes']
-        gt_labels = datum['gt_labels']
-
-        shapes = []
-        for label, bbox in zip(gt_labels, gt_bboxes):
-            project_label = get_label(label, project.get_labels())
-            shapes.append(
-                Box(x1=float(bbox[0] / imshape[1]),
-                    y1=float(bbox[1] / imshape[0]),
-                    x2=float(bbox[2] / imshape[1]),
-                    y2=float(bbox[3] / imshape[0]),
-                    labels=[ScoredLabel(project_label)]))
-        annotation = Annotation(kind=AnnotationKind.ANNOTATION, media_identifier=image.media_identifier, shapes=shapes)
-        AnnotationRepo(project).save(annotation)
-
-    dataset = generate_training_dataset_of_all_annotated_media_in_project(project)
-    DatasetRepo(project).save(dataset)
-    logger.info(f'New dataset created {dataset}')
-    return dataset
-
-
-def load_dataset(project, dataset_id=None):
-    dataset = NullDataset()
-    if dataset_id is not None:
-        dataset = DatasetRepo(project).get_by_id(dataset_id)
-    if isinstance(dataset, NullDataset):
-        dataset = create_coco_dataset(project)
-    else:
-        logger.info(f'Existing dataset loaded {str(dataset)}')
-    return dataset
-
 
 def get_task_class(path):
     module_name, class_name = path.rsplit('.', 1)
     module = importlib.import_module(module_name)
     return getattr(module, class_name)
-
 
 def main(args):
     template = load_template(args.template_file_path)
@@ -136,14 +58,22 @@ def main(args):
     task_impl_path = template['task']['impl']
     task_cls = get_task_class(task_impl_path)
 
-    projectname = 'otedet-sample-project'
-    taskname = 'otedet-task'
-    project = load_project(projectname, taskname, CocoDataset.CLASSES)
-    print('Tasks:', [task.task_name for task in project.tasks])
+    project = ProjectFactory().create_project_single_task(
+        name='otedet-sample-project',
+        description='otedet-sample-project',
+        label_names=CocoDataset.CLASSES,
+        task_name='otedet-task')
 
-    dataset = load_dataset(project, dataset_id=ID('60ac24a07f5af5273658a814'))
-    print(dataset)
-    # dataset = create_coco_dataset(project)
+    dataset = MMDatasetAdapter(
+        train_ann_file='data/coco/annotations/instances_val2017.json',
+        train_data_root='data/coco/val2017/',
+        val_ann_file='data/coco/annotations/instances_val2017.json',
+        val_data_root='data/coco/val2017/',
+        test_ann_file='data/coco/annotations/instances_val2017.json',
+        test_data_root='data/coco/val2017/')
+    dataset.get_subset(Subset.VALIDATION)
+    dataset.set_project_labels(project.get_labels())
+
     print(f"train dataset: {len(dataset.get_subset(Subset.TRAINING))} items")
     print(f"validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items")
 
@@ -157,11 +87,13 @@ def main(args):
 
     # Tweak parameters.
     params = task.get_configurable_parameters(environment)
-    # params.learning_parameters.learning_rate.value = 1e-3
+    params.learning_parameters.learning_rate.value = 1e-5
     params.learning_parameters.learning_rate_schedule.value = 'cyclic'
     # params.learning_parameters.learning_rate_warmup_iters.value = 0
     params.learning_parameters.batch_size.value = 32
     params.learning_parameters.num_epochs.value = 1
+    params.postprocessing.result_based_confidence_threshold.value = False
+    params.postprocessing.confidence_threshold.value = 0.025
     environment.set_configurable_parameters(params)
     task.update_configurable_parameters(environment)
 

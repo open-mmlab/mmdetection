@@ -1,25 +1,28 @@
-import copy
 import numpy as np
 import os.path as osp
+import random
 import time
 import unittest
-
 from concurrent.futures import ThreadPoolExecutor
 
 from flaky import flaky
-
-from sc_sdk.entities.media_identifier import ImageIdentifier, VideoFrameIdentifier
-from sc_sdk.entities.project import Project
+from sc_sdk.entities.annotation import Annotation, AnnotationKind
+from sc_sdk.entities.dataset_item import DatasetItem
+from sc_sdk.entities.datasets import Dataset, Subset
+from sc_sdk.entities.image import Image
+from sc_sdk.entities.media_identifier import ImageIdentifier
+from sc_sdk.entities.model import NullModel
+from sc_sdk.entities.optimized_model import OptimizedModel
+from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.shapes.box import Box
 from sc_sdk.entities.shapes.ellipse import Ellipse
 from sc_sdk.entities.shapes.polygon import Polygon
 from sc_sdk.entities.task_environment import TaskEnvironment
-from sc_sdk.tests.test_helpers import generate_random_annotated_project, generate_and_save_random_annotated_video, \
-    generate_training_dataset_of_all_annotated_media_in_project, rerun_on_flaky_assert
-from sc_sdk.usecases.repos import AnnotationRepo, ImageRepo, VideoRepo
+from sc_sdk.tests.test_helpers import generate_random_annotated_image, rerun_on_flaky_assert
+from sc_sdk.usecases.tasks.interfaces.model_optimizer import IModelOptimizer
+from sc_sdk.utils.project_factory import ProjectFactory
 
 from mmdet.apis.ote.apis.detection import MMObjectDetectionTask, MMDetectionParameters, configurable_parameters
-from mmdet.apis.ote.tests.test_helpers import train_task, compute_validation_performance
 
 
 class TestOTEDetection(unittest.TestCase):
@@ -27,56 +30,57 @@ class TestOTEDetection(unittest.TestCase):
     Collection of OTEDetection tests for the MMObjectDetectionTask
     """
 
-    @staticmethod
-    def convert_annotation_shapes_in_project_to_bounding_boxes(project: Project = None):
-        """
-        Converts the shapes for all annotations in a project to bounding boxes, so that they can be used to train a
-        detection project.
+    def init_environment(self, configurable_parameters, number_of_images=500):
+        project = ProjectFactory.create_project_single_task(name='OTEDetectionTestProject',
+                                                            description='OTEDetectionTestProject',
+                                                            label_names=["rectangle", "ellipse", "triangle"],
+                                                            task_name="OTEDetectionTestTask",
+                                                            configurable_parameters=configurable_parameters)
+        self.addCleanup(lambda: ProjectFactory.delete_project_with_id(project.id))
+        labels = project.get_labels()
 
-        :param project: Project to convert shapes for
-
-        """
-        anno_repo = AnnotationRepo(project)
-        image_repo = ImageRepo(project)
-        video_repo = VideoRepo(project)
-
-        image_annotation_count = 0
-        video_annotation_count = 0
-
-        # Loop over annotations in the project and convert their shapes to bounding boxes
-        for annotation in anno_repo.get_all_annotations():
-            shapes = copy.deepcopy(annotation.shapes)
-            annotation.shapes.clear()
-            # Get media belonging to the annotation, in order to be able to extract media dimensions for circle conversion
-            media_identifier = annotation.media_identifier
-
-            if isinstance(media_identifier, ImageIdentifier):
-                media = image_repo.get_by_id(media_identifier.media_id)
-                image_annotation_count += 1
-            elif isinstance(media_identifier, VideoFrameIdentifier):
-                media = video_repo.get_by_id(media_identifier.media_id)
-                video_annotation_count += 1
-            else:
-                raise NotImplementedError(f"Annotation conversion for media type with identifier {media_identifier} is not "
-                                        f"implemented yet.")
-
-            updated_shapes = []
+        items = []
+        for i in range(0, number_of_images):
+            image_numpy, shapes = generate_random_annotated_image(image_width=640,
+                                                                  image_height=480,
+                                                                  labels=labels,
+                                                                  max_shapes=20,
+                                                                  min_size=50,
+                                                                  max_size=100,
+                                                                  random_seed=None)
+            # Convert all shapes to bounding boxes
+            box_shapes = []
             for shape in shapes:
-                # Convert all shapes to bounding boxes
-                labels = shape.get_labels(include_empty=True)
+                shape_labels = shape.get_labels(include_empty=True)
                 if isinstance(shape, (Box, Ellipse)):
                     box = np.array([shape.x1, shape.y1, shape.x2, shape.y2], dtype=float)
                 elif isinstance(shape, Polygon):
                     box = np.array([shape.min_x, shape.min_y, shape.max_x, shape.max_y], dtype=float)
                 box = box.clip(0, 1)
-                updated_shapes.append(Box(x1=box[0], y1=box[1], x2=box[2], y2=box[3], labels=labels))
+                box_shapes.append(Box(x1=box[0], y1=box[1], x2=box[2], y2=box[3], labels=shape_labels))
 
-            # Update annotation and persist in repo
-            annotation.append_shapes(updated_shapes)
-            anno_repo.save(annotation)
+            image = Image(name=f"image_{i}", project=project, numpy=image_numpy)
+            image_identifier = ImageIdentifier(image.id)
+            annotation = Annotation(kind=AnnotationKind.ANNOTATION, media_identifier=image_identifier)
+            annotation.append_shapes(box_shapes)
+            items.append(DatasetItem(media=image, annotation=annotation))
 
-        print(f"Converted shapes for {image_annotation_count} image annotations and {video_annotation_count} video "
-            f"annotations to bounding boxes.")
+        rng = random.Random()
+        rng.shuffle(items)
+        for i, _ in enumerate(items):
+            subset_region = i / number_of_images
+            if subset_region >= 0.8:
+                subset = Subset.TESTING
+            elif subset_region >= 0.6:
+                subset = Subset.VALIDATION
+            else:
+                subset = Subset.TRAINING
+            items[i].subset = subset
+
+        dataset = Dataset(items)
+        task_node = project.tasks[-1]
+        environment = TaskEnvironment(project=project, task_node=task_node)
+        return project, environment, dataset
 
     @staticmethod
     def setup_configurable_parameters(num_epochs=10):
@@ -105,34 +109,15 @@ class TestOTEDetection(unittest.TestCase):
 
         This test should be finished in under one minute on a workstation.
         """
-        project_name = "test_cancel_training_detection"
-        # Initialize and populate project
         configurable_parameters = self.setup_configurable_parameters(num_epochs=100)
-        detection_project = generate_random_annotated_project(test_case=self, name=project_name,
-                                                              description="test cancel training detection",
-                                                              task_name="MMDetection", number_of_images=20,
-                                                              image_width=480, image_height=360, max_shapes=100,
-                                                              configurable_parameters=configurable_parameters)
-        # generate_and_save_random_annotated_video(project=detection_project,
-        #                                          video_name="Video for Detection", width=480, height=360)
-
-        # Convert annotations to detection format
-        self.convert_annotation_shapes_in_project_to_bounding_boxes(detection_project)
-        print(f"Project {project_name} created and populated.")
-
-        # Create training dataset and initialize task
-        training_dataset = generate_training_dataset_of_all_annotated_media_in_project(detection_project)
-        detection_task_node = detection_project.tasks[1]
-        detection_environment = TaskEnvironment(project=detection_project,
-                                                task_node=detection_task_node,
-                                                hardware_resource_configuration=None)
+        _, detection_environment, dataset = self.init_environment(configurable_parameters, 250)
         detection_task = MMObjectDetectionTask(task_environment=detection_environment)
 
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="train_thread")
 
         # Test stopping after some time
         start_time = time.time()
-        train_future = executor.submit(detection_task.train, training_dataset)
+        train_future = executor.submit(detection_task.train, dataset)
         time.sleep(10)  # give train_thread some time to initialize the model
         detection_task.cancel_training()
 
@@ -142,14 +127,28 @@ class TestOTEDetection(unittest.TestCase):
 
         # Test stopping immediately
         start_time = time.time()
-        train_future = executor.submit(detection_task.train, training_dataset)
+        train_future = executor.submit(detection_task.train, dataset)
         time.sleep(1.0)
         detection_task.cancel_training()
 
         self.assertLess(time.time() - start_time, 25)  # stopping process has to happen in less than 25 seconds
         train_future.result()
 
-    @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
+    @staticmethod
+    def eval(task, environment, dataset):
+        start_time = time.time()
+        result_dataset = task.analyse(dataset.with_empty_annotations())
+        end_time = time.time()
+        print(f"{len(dataset)} analysed in {end_time - start_time} seconds")
+        result_set = ResultSet(
+            model=environment.model,
+            ground_truth_dataset=dataset,
+            prediction_dataset=result_dataset
+        )
+        performance = task.compute_performance(result_set)
+        return performance
+
+    @flaky(max_runs=1, rerun_filter=rerun_on_flaky_assert())
     def test_training_and_analyse(self):
         """
         Tests for training, analysis, evaluation, model optimization for the task
@@ -163,32 +162,30 @@ class TestOTEDetection(unittest.TestCase):
             difference between the original and the reloaded model is smaller than 1e-4. Ideally there should be no
             difference at all.
         """
-        project_name = 'test_training_and_analyse'
         configurable_parameters = self.setup_configurable_parameters()
-
-        # Initialize and populate project
-        detection_project = generate_random_annotated_project(self, name=project_name,
-                                                              description="test training and analyse",
-                                                              task_name="OTEDetectionTask", max_shapes=20,
-                                                              number_of_images=250, image_width=640, image_height=480,
-                                                              configurable_parameters=configurable_parameters)
-        # generate_and_save_random_annotated_video(project=detection_project, number_of_frames=25,
-        #                                          video_name="Video for Detection tests", width=480, height=360)
-        # Convert annotations to detection format
-        self.convert_annotation_shapes_in_project_to_bounding_boxes(detection_project)
-        print(f"Project {project_name} created and populated.")
-
-        # Initialize task
-        detection_task_node = detection_project.tasks[-1]
-        detection_environment = TaskEnvironment(project=detection_project, task_node=detection_task_node)
+        _, detection_environment, dataset = self.init_environment(configurable_parameters, 250)
         task = MMObjectDetectionTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print("MMDetection task initialized, model training starts.")
         # Train the task.
         # train_task checks that the returned model is not a NullModel, that the task returns an OptimizedModel and that
-        # validation f-measure is higher than 0.1, which is a pretty low bar considering that the dataset is so easy
-        validation_performance = train_task(self, task, detection_project, add_video_to_project=False, f1_threshold=0.5)
+        # validation f-measure is higher than 0.5, which is a pretty low bar considering that the dataset is so easy
+
+        model = task.train(dataset=dataset)
+        self.assertFalse(isinstance(model, NullModel))
+
+        if isinstance(task, IModelOptimizer):
+            optimized_models = task.optimize_loaded_model()
+            self.assertGreater(len(optimized_models), 0, "Task must return an Optimised model.")
+            for m in optimized_models:
+                self.assertIsInstance(m, OptimizedModel,
+                                      "Optimised model must be an Openvino or DeployableTensorRT model.")
+
+        # Run inference
+        validation_performance = self.eval(task, detection_environment, dataset)
+        print(f"Evaluated model to have a performance of {validation_performance}")
+        self.assertGreater(validation_performance.score.value, 0.5, "Expected F-measure to be higher than 0.5 [flaky]")
 
         print("Reloading model.")
         # Re-load the model
@@ -196,7 +193,7 @@ class TestOTEDetection(unittest.TestCase):
 
         print("Reevaluating model.")
         # Performance should be the same after reloading
-        performance_after_reloading = compute_validation_performance(task, task.task_environment)
+        performance_after_reloading = self.eval(task, detection_environment, dataset)
         performance_delta = performance_after_reloading.score.value - validation_performance.score.value
         perf_delta_tolerance = 0.0001
 
