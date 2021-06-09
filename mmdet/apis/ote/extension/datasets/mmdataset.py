@@ -12,25 +12,22 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import copy
 import json
 import os
 from copy import deepcopy
-
-import numpy as np
 from typing import List
 
-from mmdet.datasets import CocoDataset
-from mmdet.datasets.builder import DATASETS, build_dataset
-from mmdet.datasets.custom import CustomDataset
-from mmdet.datasets.pipelines import Compose
-
+import numpy as np
 from sc_sdk.entities.annotation import Annotation, AnnotationKind, NullMediaIdentifier
 from sc_sdk.entities.datasets import Dataset, DatasetItem, NullDataset, Subset
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.label import ScoredLabel
 from sc_sdk.entities.shapes.box import Box
 
+from mmdet.datasets import CocoDataset
+from mmdet.datasets.builder import DATASETS
+from mmdet.datasets.custom import CustomDataset
+from mmdet.datasets.pipelines import Compose
 
 
 def get_annotation_mmdet_format(dataset_item: DatasetItem, label_list: List[str]) -> dict:
@@ -104,7 +101,7 @@ class OTEDataset(CustomDataset):
         :param idx: int, Index of data.
         :return dict: Training data and annotation after pipeline with new keys introduced by pipeline.
         """
-        item = copy.deepcopy(self.data_infos[idx])
+        item = deepcopy(self.data_infos[idx])
         self.pre_pipeline(item)
         return self.pipeline(item)
 
@@ -115,7 +112,7 @@ class OTEDataset(CustomDataset):
         :return dict: Testing data after pipeline with new keys introduced by pipeline.
         """
         # FIXME.
-        # item = copy.deepcopy(self.data_infos[idx])
+        # item = deepcopy(self.data_infos[idx])
         item = self.data_infos[idx]
         self.pre_pipeline(item)
         return self.pipeline(item)

@@ -14,38 +14,36 @@
 
 import argparse
 import importlib
+import os.path as osp
 import sys
 import yaml
 
 from sc_sdk.entities.analyse_parameters import AnalyseParameters
 from sc_sdk.entities.datasets import Subset
-from sc_sdk.entities.label import Label
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.logging import logger_factory
 from sc_sdk.utils.project_factory import ProjectFactory
 
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
-from mmdet.datasets import CocoDataset
 
 
-logger = logger_factory.get_logger("Sample")
+logger = logger_factory.get_logger('Sample')
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description='Sample showcasing the new API')
     parser.add_argument('template_file_path', help='path to template file')
+    parser.add_argument('--data-dir', default='data')
     args = parser.parse_args()
     return args
 
 def load_template(path):
     with open(path) as f:
         template = yaml.full_load(f)
+    # Save path to template file, to resolve relative paths later.
+    template['hyper_parameters']['params'].setdefault('algo_backend', {})['template'] = args.template_file_path
     return template
-
-def get_label(x, all_labels):
-    label_name = CocoDataset.CLASSES[x]
-    return [label for label in all_labels if label.name == label_name][0]
 
 def get_task_class(path):
     module_name, class_name = path.rsplit('.', 1)
@@ -54,33 +52,32 @@ def get_task_class(path):
 
 def main(args):
     template = load_template(args.template_file_path)
-    template['hyper_parameters']['params'].setdefault('algo_backend', {})['template'] = args.template_file_path
     task_impl_path = template['task']['impl']
     task_cls = get_task_class(task_impl_path)
+
+    dataset = MMDatasetAdapter(
+        train_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
+        train_data_root=osp.join(args.data_dir, 'coco/val2017/'),
+        val_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
+        val_data_root=osp.join(args.data_dir, 'coco/val2017/'),
+        test_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
+        test_data_root=osp.join(args.data_dir, 'coco/val2017/'))
+    dataset.get_subset(Subset.VALIDATION)
 
     project = ProjectFactory().create_project_single_task(
         name='otedet-sample-project',
         description='otedet-sample-project',
-        label_names=CocoDataset.CLASSES,
+        label_names=dataset.get_labels(),
         task_name='otedet-task')
 
-    dataset = MMDatasetAdapter(
-        train_ann_file='data/coco/annotations/instances_val2017.json',
-        train_data_root='data/coco/val2017/',
-        val_ann_file='data/coco/annotations/instances_val2017.json',
-        val_data_root='data/coco/val2017/',
-        test_ann_file='data/coco/annotations/instances_val2017.json',
-        test_data_root='data/coco/val2017/')
-    dataset.get_subset(Subset.VALIDATION)
     dataset.set_project_labels(project.get_labels())
 
-    print(f"train dataset: {len(dataset.get_subset(Subset.TRAINING))} items")
-    print(f"validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items")
+    print(f'train dataset: {len(dataset.get_subset(Subset.TRAINING))} items')
+    print(f'validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items')
 
     environment = TaskEnvironment(project=project, task_node=project.tasks[-1])
     params = task_cls.get_configurable_parameters(environment)
     task_cls.apply_template_configurable_parameters(params, template)
-    params.algo_backend.template.value = args.template_file_path
     environment.set_configurable_parameters(params)
 
     task = task_cls(task_environment=environment)
@@ -110,13 +107,12 @@ def main(args):
         ground_truth_dataset=validation_dataset,
         prediction_dataset=predicted_validation_dataset,
     )
-
     performance = task.compute_performance(resultset)
-    resultset.performance = performance
-
-    print(resultset.performance)
+    print(performance)
 
     task.optimize_loaded_model()
+
+    ProjectFactory.delete_project_with_id(project.id)
 
 
 if __name__ == '__main__':
