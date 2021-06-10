@@ -226,6 +226,10 @@ def main(args):
     cfg = model.cfg
     fake_data = get_fake_input(cfg, device=device)
 
+    is_alt_ssd_export = getattr(args, 'alt_ssd_export', False)
+    if is_alt_ssd_export:
+        patch_model_for_alt_ssd_export(model)
+
     # BEGIN nncf part
     was_model_compressed = is_checkpoint_nncf(args.checkpoint)
     cfg_contains_nncf = cfg.get('nncf_config')
@@ -240,10 +244,6 @@ def main(args):
         for k, v in nncf_part.items():
             cfg[k] = v
 
-    is_alt_ssd_export = getattr(args, 'alt_ssd_export', False)
-    if is_alt_ssd_export:
-        patch_model_for_alt_ssd_export(model)
-
     if cfg.get('nncf_config'):
         check_nncf_is_enabled()
         cfg.load_from = args.checkpoint
@@ -251,6 +251,7 @@ def main(args):
         compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input,
                                                   is_alt_ssd_export=is_alt_ssd_export)
         compression_ctrl.prepare_for_export()
+
         if is_alt_ssd_export:
             patch_nncf_model_for_alt_ssd_export(model)
     # END nncf part
