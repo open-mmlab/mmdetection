@@ -88,8 +88,9 @@ def get_dataset_name(config):
 
 
 def convert_model_info_to_pwc(model_infos):
-    pwc_infos = []
+    pwc_files = {}
     for model in model_infos:
+        cfg_folder_name = osp.split(model['config'])[-2]
         pwc_model_info = OrderedDict()
         pwc_model_info['Name'] = osp.split(model['config'])[-1].split('.')[0]
         pwc_model_info['In Collection'] = 'Please fill in Collection name'
@@ -128,8 +129,11 @@ def convert_model_info_to_pwc(model_infos):
         link_string += '{}/{}'.format(model['config'].rstrip('.py'),
                                       osp.split(model['model_path'])[-1])
         pwc_model_info['Weights'] = link_string
-        pwc_infos.append(pwc_model_info)
-    return pwc_infos
+        if cfg_folder_name in pwc_files:
+            pwc_files[cfg_folder_name].append(pwc_model_info)
+        else:
+            pwc_files[cfg_folder_name] = [pwc_model_info]
+    return pwc_files
 
 
 def parse_args():
@@ -242,9 +246,10 @@ def main():
     print(f'Totally gathered {len(publish_model_infos)} models')
     mmcv.dump(models, osp.join(models_out, 'model_info.json'))
 
-    pwc_infos = convert_model_info_to_pwc(publish_model_infos)
-    with open(osp.join(models_out, 'metafile.yml'), 'w') as f:
-        ordered_yaml_dump(pwc_infos, f, encoding='utf-8')
+    pwc_files = convert_model_info_to_pwc(publish_model_infos)
+    for name in pwc_files:
+        with open(osp.join(models_out, name + '_metafile.yml'), 'w') as f:
+            ordered_yaml_dump(pwc_files[name], f, encoding='utf-8')
 
 
 if __name__ == '__main__':
