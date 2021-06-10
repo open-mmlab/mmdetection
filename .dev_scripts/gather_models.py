@@ -43,6 +43,11 @@ def process_checkpoint(in_file, out_file):
 
 def get_final_epoch(config):
     cfg = mmcv.Config.fromfile('./configs/' + config)
+    return cfg.runner.max_epochs
+
+
+def get_real_epoch(config):
+    cfg = mmcv.Config.fromfile('./configs/' + config)
     epoch = cfg.runner.max_epochs
     if cfg.data.train.type == 'RepeatDataset':
         epoch *= cfg.data.train.times
@@ -87,10 +92,11 @@ def convert_model_info_to_pwc(model_infos):
     for model in model_infos:
         pwc_model_info = OrderedDict()
         pwc_model_info['Name'] = osp.split(model['config'])[-1].split('.')[0]
+        pwc_model_info['In Collection'] = 'Please fill in Collection name'
 
         # get metadata
         memory = round(model['results']['memory'] / 1024, 1)
-        epochs = model['epochs']
+        epochs = get_real_epoch(model['config'])
         meta_data = OrderedDict()
         meta_data['Training Memory (GB)'] = memory
         meta_data['Epochs'] = epochs
@@ -116,9 +122,12 @@ def convert_model_info_to_pwc(model_infos):
                     Task='Instance Segmentation',
                     Dataset=dataset_name,
                     Metrics={'mask AP': metric}))
-
         pwc_model_info['Results'] = results
-        pwc_model_info['Weights'] = 'Need to fill in after upload'
+
+        link_string = 'https://download.openmmlab.com/mmdetection/v2.0/'
+        link_string += '{}/{}'.format(model['config'].rstrip('.py'),
+                                      osp.split(model['model_path'])[-1])
+        pwc_model_info['Weights'] = link_string
         pwc_infos.append(pwc_model_info)
     return pwc_infos
 
@@ -233,7 +242,7 @@ def main():
     print(f'Totally gathered {len(publish_model_infos)} models')
     mmcv.dump(models, osp.join(models_out, 'model_info.json'))
 
-    pwc_infos = convert_model_info_to_pwc(model_infos)
+    pwc_infos = convert_model_info_to_pwc(publish_model_infos)
     with open(osp.join(models_out, 'metafile.yml'), 'w') as f:
         ordered_yaml_dump(pwc_infos, f, encoding='utf-8')
 
