@@ -214,33 +214,30 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             return self.forward_test(img, img_metas, **kwargs)
 
     def forward_export(self, imgs, img_metas=None):
+        if img_metas is not None and self.img_metas is not None:
+            raise RuntimeError('forward_export is called with non-zero img_metas inside forward_export_context')
         from torch.onnx.operators import shape_as_tensor
-        if img_metas is not None:
-                self.img_metas = img_metas
-        assert self.img_metas, 'Error: forward_export should be called inside forward_export_context'
+        if img_metas is None:
+                img_metas = self.img_metas
 
         img_shape = shape_as_tensor(imgs[0])
         imgs_per_gpu = int(imgs[0].size(0))
         assert imgs_per_gpu == 1
-        assert len(self.img_metas[0]) == imgs_per_gpu, f'self.img_metas={self.img_metas}'
-        self.img_metas[0][0]['img_shape'] = img_shape[2:4]
+        assert len(img_metas[0]) == imgs_per_gpu, f'img_metas={img_metas}'
+        img_metas[0][0]['img_shape'] = img_shape[2:4]
 
-        retval = self.simple_test(imgs[0], self.img_metas[0], postprocess=False)
-        if img_metas is not None:
-                self.img_metas = None
+        retval = self.simple_test(imgs[0], img_metas[0], postprocess=False)
         return retval
 
     @contextmanager
     def forward_export_context(self, img_metas):
-        assert self.img_metas is None and self.forward_backup is None, 'Error: one forward context inside another forward context'
-
+        prev_img_metas = self.img_metas
         self.img_metas = img_metas
-        self.forward_backup = self.forward
+        forward_backup = self.forward
         self.forward = partial(self.forward, return_loss=False, forward_export=True, img_metas=None)
         yield
-        self.forward = self.forward_backup
-        self.forward_backup = None
-        self.img_metas = None
+        self.forward = forward_backup
+        self.img_metas = prev_img_metas
 
     @contextmanager
     def forward_dummy_context(self, img_metas):
@@ -253,6 +250,16 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         self.forward = self.forward_backup
         self.forward_backup = None
         self.img_metas = None
+
+    @contextmanager
+    def forward_nncf_initialization_context(self):
+        prev_img_metas = self.img_metas
+        self.img_metas = None
+        forward_backup = self.forward
+        self.forward = partial(self.forward, return_loss=False, forward_export=True)
+        yield
+        self.forward = forward_backup
+        self.img_metas = prev_img_metas
 
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.
