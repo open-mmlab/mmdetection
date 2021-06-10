@@ -1,6 +1,7 @@
 import argparse
 import os
 import os.path as osp
+import warnings
 
 import numpy as np
 import onnx
@@ -127,11 +128,27 @@ def parse_args():
         help='Whether to verbose logging messages while creating \
                 TensorRT engine. Defaults to False.')
     parser.add_argument(
+        '--to-rgb',
+        action='store_false',
+        help='Feed model with RGB or BGR image. Default is RGB.')
+    parser.add_argument(
         '--shape',
         type=int,
         nargs='+',
         default=[400, 600],
         help='Input size of the model')
+    parser.add_argument(
+        '--mean',
+        type=float,
+        nargs='+',
+        default=[123.675, 116.28, 103.53],
+        help='Mean value used for preprocess input data')
+    parser.add_argument(
+        '--std',
+        type=float,
+        nargs='+',
+        default=[58.395, 57.12, 57.375],
+        help='Variance value used for preprocess input data')
     parser.add_argument(
         '--min-shape',
         type=int,
@@ -166,7 +183,9 @@ if __name__ == '__main__':
 
     assert is_tensorrt_plugin_loaded(), 'TensorRT plugin should be compiled.'
     args = parse_args()
-
+    warnings.warn(
+        'Arguments like `--to-rgb`, `--mean`, `--std`, `--dataset` are '
+        'deprecated and will be removed in future releases.')
     if not args.input_img:
         args.input_img = osp.join(osp.dirname(__file__), '../demo/demo.jpg')
 

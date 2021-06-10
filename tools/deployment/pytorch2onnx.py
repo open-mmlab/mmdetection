@@ -197,6 +197,8 @@ def parse_args():
     parser.add_argument(
         '--test-img', type=str, default=None, help='Images for test')
     parser.add_argument(
+        '--dataset', type=str, default='coco', help='Dataset name')
+    parser.add_argument(
         '--verify',
         action='store_true',
         help='verify the onnx model output against pytorch output')
@@ -210,6 +212,18 @@ def parse_args():
         nargs='+',
         default=[800, 1216],
         help='input image size')
+    parser.add_argument(
+        '--mean',
+        type=float,
+        nargs='+',
+        default=[123.675, 116.28, 103.53],
+        help='mean value used for preprocess input data')
+    parser.add_argument(
+        '--std',
+        type=float,
+        nargs='+',
+        default=[58.395, 57.12, 57.375],
+        help='variance value used for preprocess input data')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -230,6 +244,8 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
+    warnings.warn('Arguments like `--mean`, `--std`, `--dataset` are '
+                  'deprecated and will be removed in future releases.')
 
     assert args.opset_version == 11, 'MMDet only support opset 11 now'
 

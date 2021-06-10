@@ -151,8 +151,10 @@ class ONNXRuntimeDetector(DeployBaseDetector):
 class TensorRTDetector(DeployBaseDetector):
     """Wrapper for detector's inference with TensorRT."""
 
-    def __init__(self, engine_file, class_names, device_id):
+    def __init__(self, engine_file, class_names, device_id, output_names=None):
         super(TensorRTDetector, self).__init__(class_names, device_id)
+        warnings.warn('`output_names` is deprecated and will be removed in '
+                      'future releases.')
         from mmcv.tensorrt import TRTWraper, load_tensorrt_plugin
         try:
             load_tensorrt_plugin()
