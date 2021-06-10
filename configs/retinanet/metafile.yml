@@ -26,7 +26,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 36.3
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531-f11027c5.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531-f11027c5.pth
 
   - Name: retinanet_r50_fpn_1x_coco
     In Collection: RetinaNet
@@ -40,7 +40,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 36.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth
 
   - Name: retinanet_r50_fpn_2x_coco
     In Collection: RetinaNet
@@ -52,7 +52,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 37.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_2x_coco/retinanet_r50_fpn_2x_coco_20200131-fdb43119.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_2x_coco/retinanet_r50_fpn_2x_coco_20200131-fdb43119.pth
 
   - Name: retinanet_r101_caffe_fpn_1x_coco
     In Collection: RetinaNet
@@ -66,7 +66,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_caffe_fpn_1x_coco/retinanet_r101_caffe_fpn_1x_coco_20200531-b428fa0f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_caffe_fpn_1x_coco/retinanet_r101_caffe_fpn_1x_coco_20200531-b428fa0f.pth
 
   - Name: retinanet_r101_fpn_1x_coco
     In Collection: RetinaNet
@@ -80,7 +80,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_1x_coco/retinanet_r101_fpn_1x_coco_20200130-7a93545f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_1x_coco/retinanet_r101_fpn_1x_coco_20200130-7a93545f.pth
 
   - Name: retinanet_r101_fpn_2x_coco
     In Collection: RetinaNet
@@ -92,7 +92,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_2x_coco/retinanet_r101_fpn_2x_coco_20200131-5560aee8.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_2x_coco/retinanet_r101_fpn_2x_coco_20200131-5560aee8.pth
 
   - Name: retinanet_x101_32x4d_fpn_1x_coco
     In Collection: RetinaNet
@@ -106,7 +106,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 39.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_32x4d_fpn_1x_coco/retinanet_x101_32x4d_fpn_1x_coco_20200130-5c8b7ec4.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_32x4d_fpn_1x_coco/retinanet_x101_32x4d_fpn_1x_coco_20200130-5c8b7ec4.pth
 
   - Name: retinanet_x101_32x4d_fpn_2x_coco
     In Collection: RetinaNet
@@ -118,7 +118,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.1
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_32x4d_fpn_2x_coco/retinanet_x101_32x4d_fpn_2x_coco_20200131-237fc5e1.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_32x4d_fpn_2x_coco/retinanet_x101_32x4d_fpn_2x_coco_20200131-237fc5e1.pth
 
   - Name: retinanet_x101_64x4d_fpn_1x_coco
     In Collection: RetinaNet
@@ -132,7 +132,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_1x_coco/retinanet_x101_64x4d_fpn_1x_coco_20200130-366f5af1.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_1x_coco/retinanet_x101_64x4d_fpn_1x_coco_20200130-366f5af1.pth
 
   - Name: retinanet_x101_64x4d_fpn_2x_coco
     In Collection: RetinaNet
@@ -144,4 +144,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.8
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_2x_coco/retinanet_x101_64x4d_fpn_2x_coco_20200131-bca068ab.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_2x_coco/retinanet_x101_64x4d_fpn_2x_coco_20200131-bca068ab.pth

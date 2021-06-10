@@ -31,7 +31,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  35.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_r16_gcb_c3-c5_1x_coco/mask_rcnn_r50_fpn_r16_gcb_c3-c5_1x_coco_20200515_211915-187da160.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_r16_gcb_c3-c5_1x_coco/mask_rcnn_r50_fpn_r16_gcb_c3-c5_1x_coco_20200515_211915-187da160.pth
 
   - Name: mask_rcnn_r50_fpn_r4_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -49,7 +49,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  36.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_r4_gcb_c3-c5_1x_coco/mask_rcnn_r50_fpn_r4_gcb_c3-c5_1x_coco_20200204-17235656.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_r4_gcb_c3-c5_1x_coco/mask_rcnn_r50_fpn_r4_gcb_c3-c5_1x_coco_20200204-17235656.pth
 
   - Name: mask_rcnn_r101_fpn_r16_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -67,7 +67,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  37.2
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_r16_gcb_c3-c5_1x_coco/mask_rcnn_r101_fpn_r16_gcb_c3-c5_1x_coco_20200205-e58ae947.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_r16_gcb_c3-c5_1x_coco/mask_rcnn_r101_fpn_r16_gcb_c3-c5_1x_coco_20200205-e58ae947.pth
 
   - Name: mask_rcnn_r101_fpn_r4_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -85,7 +85,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  37.8
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_r4_gcb_c3-c5_1x_coco/mask_rcnn_r101_fpn_r4_gcb_c3-c5_1x_coco_20200206-af22dc9d.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_r4_gcb_c3-c5_1x_coco/mask_rcnn_r101_fpn_r4_gcb_c3-c5_1x_coco_20200206-af22dc9d.pth
 
   - Name: mask_rcnn_r50_fpn_syncbn-backbone_1x_coco
     In Collection: GCNet
@@ -103,7 +103,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  34.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_syncbn-backbone_1x_coco/mask_rcnn_r50_fpn_syncbn-backbone_1x_coco_20200202-bb3eb55c.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_syncbn-backbone_1x_coco/mask_rcnn_r50_fpn_syncbn-backbone_1x_coco_20200202-bb3eb55c.pth
 
   - Name: mask_rcnn_r50_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -121,7 +121,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  36.2
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/mask_rcnn_r50_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200202-587b99aa.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/mask_rcnn_r50_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200202-587b99aa.pth
 
   - Name: mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -139,7 +139,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  36.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco/mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco_20200202-50b90e5c.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco/mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco_20200202-50b90e5c.pth
 
   - Name: mask_rcnn_r101_fpn_syncbn-backbone_1x_coco
     In Collection: GCNet
@@ -157,7 +157,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  36.3
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_syncbn-backbone_1x_coco/mask_rcnn_r101_fpn_syncbn-backbone_1x_coco_20200210-81658c8a.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_syncbn-backbone_1x_coco/mask_rcnn_r101_fpn_syncbn-backbone_1x_coco_20200210-81658c8a.pth
 
   - Name: mask_rcnn_r101_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -175,7 +175,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  37.8
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/mask_rcnn_r101_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200207-945e77ca.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/mask_rcnn_r101_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200207-945e77ca.pth
 
   - Name: mask_rcnn_r101_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -193,7 +193,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  37.8
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco/mask_rcnn_r101_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco_20200206-8407a3f0.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_r101_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco/mask_rcnn_r101_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco_20200206-8407a3f0.pth
 
   - Name: mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco
     In Collection: GCNet
@@ -211,7 +211,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  37.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco_20200211-7584841c.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco_20200211-7584841c.pth
 
   - Name: mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -229,7 +229,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  38.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200211-cbed3d2c.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200211-cbed3d2c.pth
 
   - Name: mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -247,7 +247,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  39.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco_20200212-68164964.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco/mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco_20200212-68164964.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco
     In Collection: GCNet
@@ -265,7 +265,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  38.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco_20200310-d5ad2a5e.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco_20200310-d5ad2a5e.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -283,7 +283,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  39.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200211-10bf2463.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200211-10bf2463.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -300,7 +300,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:    40.1
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco_20200703_180653-ed035291.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco_20200703_180653-ed035291.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_1x_coco
     In Collection: GCNet
@@ -316,7 +316,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:    38.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_1x_coco_20200516_182249-680fc3f2.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_1x_coco_20200516_182249-680fc3f2.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -328,7 +328,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 44.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco_20200516_015634-08f56b56.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco_20200516_015634-08f56b56.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -344,4 +344,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:   39.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco_20200518_041145-24cabcfd.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco_20200518_041145-24cabcfd.pth

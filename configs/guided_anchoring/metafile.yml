@@ -25,7 +25,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 39.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_faster_r50_caffe_fpn_1x_coco/ga_faster_r50_caffe_fpn_1x_coco_20200702_000718-a11ccfe6.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_faster_r50_caffe_fpn_1x_coco/ga_faster_r50_caffe_fpn_1x_coco_20200702_000718-a11ccfe6.pth
 
   - Name: ga_faster_r101_caffe_fpn_1x_coco
     In Collection: Guided Anchoring
@@ -38,7 +38,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_faster_r101_caffe_fpn_1x_coco/ga_faster_r101_caffe_fpn_1x_coco_bbox_mAP-0.415_20200505_115528-fb82e499.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_faster_r101_caffe_fpn_1x_coco/ga_faster_r101_caffe_fpn_1x_coco_bbox_mAP-0.415_20200505_115528-fb82e499.pth
 
   - Name: ga_faster_x101_32x4d_fpn_1x_coco
     In Collection: Guided Anchoring
@@ -52,7 +52,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 43.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_faster_x101_32x4d_fpn_1x_coco/ga_faster_x101_32x4d_fpn_1x_coco_20200215-1ded9da3.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_faster_x101_32x4d_fpn_1x_coco/ga_faster_x101_32x4d_fpn_1x_coco_20200215-1ded9da3.pth
 
   - Name: ga_faster_x101_64x4d_fpn_1x_coco
     In Collection: Guided Anchoring
@@ -66,7 +66,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 43.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_faster_x101_64x4d_fpn_1x_coco/ga_faster_x101_64x4d_fpn_1x_coco_20200215-0fa7bde7.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_faster_x101_64x4d_fpn_1x_coco/ga_faster_x101_64x4d_fpn_1x_coco_20200215-0fa7bde7.pth
 
   - Name: ga_retinanet_r50_caffe_fpn_1x_coco
     In Collection: Guided Anchoring
@@ -94,7 +94,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 39.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_r101_caffe_fpn_1x_coco/ga_retinanet_r101_caffe_fpn_1x_coco_20200531-6266453c.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_r101_caffe_fpn_1x_coco/ga_retinanet_r101_caffe_fpn_1x_coco_20200531-6266453c.pth
 
   - Name: ga_retinanet_x101_32x4d_fpn_1x_coco
     In Collection: Guided Anchoring
@@ -108,7 +108,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219-40c56caa.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219-40c56caa.pth
 
   - Name: ga_retinanet_x101_64x4d_fpn_1x_coco
     In Collection: Guided Anchoring
@@ -122,4 +122,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.3
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226-ef9f7f1f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226-ef9f7f1f.pth

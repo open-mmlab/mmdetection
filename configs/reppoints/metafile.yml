@@ -27,7 +27,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 36.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/reppoints/bbox_r50_grid_fpn_gn-neck%2Bhead_1x_coco/bbox_r50_grid_fpn_gn-neck%2Bhead_1x_coco_20200329-c98bfa96.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/reppoints/bbox_r50_grid_fpn_gn-neck%2Bhead_1x_coco/bbox_r50_grid_fpn_gn-neck%2Bhead_1x_coco_20200329-c98bfa96.pth
 
   - Name: bbox_r50_grid_center_fpn_gn-neck+Bhead_1x_coco
     In Collection: RepPoints
@@ -41,7 +41,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 37.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/reppoints/bbox_r50_grid_center_fpn_gn-neck%2Bhead_1x_coco/bbox_r50_grid_center_fpn_gn-neck%2Bhead_1x_coco_20200330-00f73d58.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/reppoints/bbox_r50_grid_center_fpn_gn-neck%2Bhead_1x_coco/bbox_r50_grid_center_fpn_gn-neck%2Bhead_1x_coco_20200330-00f73d58.pth
 
   - Name: reppoints_moment_r50_fpn_1x_coco
     In Collection: RepPoints
@@ -55,7 +55,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 37.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_1x_coco/reppoints_moment_r50_fpn_1x_coco_20200330-b73db8d1.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_1x_coco/reppoints_moment_r50_fpn_1x_coco_20200330-b73db8d1.pth
 
   - Name: reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco
     In Collection: RepPoints
@@ -69,7 +69,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.1
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco/reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco_20200329-4b38409a.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco/reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco_20200329-4b38409a.pth
 
   - Name: reppoints_moment_r50_fpn_gn-neck+head_2x_coco
     In Collection: RepPoints
@@ -82,7 +82,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_gn-neck%2Bhead_2x_coco/reppoints_moment_r50_fpn_gn-neck%2Bhead_2x_coco_20200329-91babaa2.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_gn-neck%2Bhead_2x_coco/reppoints_moment_r50_fpn_gn-neck%2Bhead_2x_coco_20200329-91babaa2.pth
 
   - Name: reppoints_moment_r101_fpn_gn-neck+head_2x_coco
     In Collection: RepPoints
@@ -96,7 +96,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r101_fpn_gn-neck%2Bhead_2x_coco/reppoints_moment_r101_fpn_gn-neck%2Bhead_2x_coco_20200329-4fbc7310.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r101_fpn_gn-neck%2Bhead_2x_coco/reppoints_moment_r101_fpn_gn-neck%2Bhead_2x_coco_20200329-4fbc7310.pth
 
   - Name: reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck+head_2x_coco
     In Collection: RepPoints
@@ -110,7 +110,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco/reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco_20200329-3309fbf2.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco/reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco_20200329-3309fbf2.pth
 
   - Name: reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck+head_2x_coco
     In Collection: RepPoints
@@ -124,4 +124,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 44.2
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco/reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco_20200329-f87da1ea.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/reppoints/reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco/reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco_20200329-f87da1ea.pth
