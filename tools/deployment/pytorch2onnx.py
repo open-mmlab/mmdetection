@@ -179,7 +179,7 @@ def pytorch2onnx(config_path,
         print('The numerical values are the same between Pytorch and ONNX')
 
 
-def parse_args():
+def parse_args(args_list=None):
     parser = argparse.ArgumentParser(
         description='Convert MMDetection models to ONNX')
     parser.add_argument('config', help='test config file path')
@@ -235,13 +235,11 @@ def parse_args():
         '--dynamic-export',
         action='store_true',
         help='Whether to export onnx with dynamic axis.')
-    args = parser.parse_args()
+    args = parser.parse_args(args=args_list)
     return args
 
 
-if __name__ == '__main__':
-    args = parse_args()
-
+def main(args):
     assert args.opset_version == 11, 'MMDet only support opset 11 now'
 
     if not args.input_img:
@@ -276,3 +274,7 @@ if __name__ == '__main__':
         do_simplify=args.simplify,
         cfg_options=args.cfg_options,
         dynamic_export=args.dynamic_export)
+
+
+if __name__ == '__main__':
+    main(parse_args())
