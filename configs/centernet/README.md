@@ -17,8 +17,8 @@
 
 | Backbone        | DCN |  Mem (GB) | Box AP | Flip box AP| Config | Download |
 | :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :----: |
-| ResNet-18 | N | 3.45 | 26.0 | 27.4 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/centernet/centernet_resnet18_140e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_140e_coco/centernet_resnet18_140e_coco_20210519_092334-eafe8ccd.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_140e_coco/centernet_resnet18_140e_coco_20210519_092334.log.json) |
-| ResNet-18 | Y | 3.47 | 29.5 | 31.0 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/centernet/centernet_resnet18_dcnv2_140e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_dcnv2_140e_coco/centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_dcnv2_140e_coco/centernet_resnet18_dcnv2_140e_coco_20210520_101209.log.json) |
+| ResNet-18 | N | 3.45 | 26.0 | 27.4 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/centernet/centernet_resnet18_140e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_140e_coco/centernet_resnet18_140e_coco_20210519_092334-eafe8ccd.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_140e_coco/centernet_resnet18_140e_coco_20210519_092334.log.json) |
+| ResNet-18 | Y | 3.47 | 29.5 | 31.0 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/centernet/centernet_resnet18_dcnv2_140e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_dcnv2_140e_coco/centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_dcnv2_140e_coco/centernet_resnet18_dcnv2_140e_coco_20210520_101209.log.json) |
 
 Note:
 
