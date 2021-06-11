@@ -324,7 +324,7 @@ def test_yolov3_neck():
     # test more flexible setting
     s = 32
     in_channels = [32, 8, 16]
-    out_channels = [8, 16, 4]
+    out_channels = [19, 21, 5]
     feat_sizes = [s // 2**i for i in range(len(in_channels) - 1, -1, -1)]
     feats = [
         torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
