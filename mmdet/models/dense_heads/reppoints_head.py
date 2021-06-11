@@ -8,6 +8,7 @@ from mmdet.core import (PointGenerator, build_assigner, build_sampler,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
+from .base_dense_head import bbox_post_process
 
 
 @HEADS.register_module()
@@ -175,9 +176,9 @@ class RepPointsHead(AnchorFreeHead):
         """
         pts_reshape = pts.view(pts.shape[0], -1, 2, *pts.shape[2:])
         pts_y = pts_reshape[:, :, 0, ...] if y_first else pts_reshape[:, :, 1,
-                                                                      ...]
+                                                          ...]
         pts_x = pts_reshape[:, :, 1, ...] if y_first else pts_reshape[:, :, 0,
-                                                                      ...]
+                                                          ...]
         if self.transform_method == 'minmax':
             bbox_left = pts_x.min(dim=1, keepdim=True)[0]
             bbox_right = pts_x.max(dim=1, keepdim=True)[0]
@@ -200,7 +201,7 @@ class RepPointsHead(AnchorFreeHead):
             pts_y_std = torch.std(pts_y - pts_y_mean, dim=1, keepdim=True)
             pts_x_std = torch.std(pts_x - pts_x_mean, dim=1, keepdim=True)
             moment_transfer = (self.moment_transfer * self.moment_mul) + (
-                self.moment_transfer.detach() * (1 - self.moment_mul))
+                    self.moment_transfer.detach() * (1 - self.moment_mul))
             moment_width_transfer = moment_transfer[0]
             moment_height_transfer = moment_transfer[1]
             half_width = pts_x_std * torch.exp(moment_width_transfer)
@@ -209,7 +210,7 @@ class RepPointsHead(AnchorFreeHead):
                 pts_x_mean - half_width, pts_y_mean - half_height,
                 pts_x_mean + half_width, pts_y_mean + half_height
             ],
-                             dim=1)
+                dim=1)
         else:
             raise NotImplementedError
         return bbox
@@ -383,7 +384,7 @@ class RepPointsHead(AnchorFreeHead):
                              unmap_outputs=True):
         inside_flags = valid_flags
         if not inside_flags.any():
-            return (None, ) * 7
+            return (None,) * 7
         # assign gt and sample proposals
         proposals = flat_proposals[inside_flags, :]
 
@@ -402,7 +403,7 @@ class RepPointsHead(AnchorFreeHead):
         bbox_gt = proposals.new_zeros([num_valid_proposals, 4])
         pos_proposals = torch.zeros_like(proposals)
         proposals_weights = proposals.new_zeros([num_valid_proposals, 4])
-        labels = proposals.new_full((num_valid_proposals, ),
+        labels = proposals.new_full((num_valid_proposals,),
                                     self.num_classes,
                                     dtype=torch.long)
         label_weights = proposals.new_zeros(
@@ -503,15 +504,15 @@ class RepPointsHead(AnchorFreeHead):
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_labels, all_label_weights, all_bbox_gt, all_proposals,
          all_proposal_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self._point_target_single,
-             proposals_list,
-             valid_flag_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             gt_labels_list,
-             stage=stage,
-             label_channels=label_channels,
-             unmap_outputs=unmap_outputs)
+            self._point_target_single,
+            proposals_list,
+            valid_flag_list,
+            gt_bboxes_list,
+            gt_bboxes_ignore_list,
+            gt_labels_list,
+            stage=stage,
+            label_channels=label_channels,
+            unmap_outputs=unmap_outputs)
         # no valid points
         if any([labels is None for labels in all_labels]):
             return None
@@ -724,7 +725,7 @@ class RepPointsHead(AnchorFreeHead):
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+            if 0 < nms_pre < scores.shape[0]:
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
@@ -745,20 +746,5 @@ class RepPointsHead(AnchorFreeHead):
             bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        if self.use_sigmoid_cls:
-            # Add a dummy background class to the backend when using sigmoid
-            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-            # BG cat_id: num_class
-            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        if with_nms:
-            det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-            return det_bboxes, det_labels
-        else:
-            return mlvl_bboxes, mlvl_scores
+        return bbox_post_process(mlvl_scores, mlvl_bboxes, dict(scale_factor=scale_factor), cfg, self.use_sigmoid_cls,
+                                 rescale, with_nms)
