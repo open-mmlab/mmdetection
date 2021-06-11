@@ -122,7 +122,7 @@ class BBoxTestMixin(object):
                 where 5 represent (tl_x, tl_y, br_x, br_y, score).
         """
         rpn_outs = self(x)
-        proposal_list = self.get_bboxes(*rpn_outs, img_metas)
+        proposal_list = self.get_bboxes(*rpn_outs, img_metas=img_metas)
         return proposal_list
 
     def aug_test_rpn(self, feats, img_metas):

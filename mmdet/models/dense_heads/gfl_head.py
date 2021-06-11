@@ -6,10 +6,10 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
                         build_assigner, build_sampler, distance2bbox,
-                        images_to_levels, multi_apply, multiclass_nms,
-                        reduce_mean, unmap)
+                        images_to_levels, multi_apply, reduce_mean, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
+from .base_dense_head import bbox_post_process
 
 
 class Integral(nn.Module):
@@ -370,14 +370,14 @@ class GFLHead(AnchorHead):
             loss_cls=losses_cls, loss_bbox=losses_bbox, loss_dfl=losses_dfl)
 
     def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_anchors,
-                           img_shape,
-                           scale_factor,
+                           cls_score_list,
+                           bbox_pred_list,
+                           score_factor_list,
+                           img_meta,
                            cfg,
                            rescale=False,
-                           with_nms=True):
+                           with_nms=True,
+                           **kwargs):
         """Transform outputs for a single batch item into labeled boxes.
 
         Args:
@@ -409,14 +409,16 @@ class GFLHead(AnchorHead):
                     predicted class label of the corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
+        img_shape = img_meta['img_shape']
+
         mlvl_bboxes = []
         mlvl_scores = []
-        for cls_score, bbox_pred, stride, anchors in zip(
-                cls_scores, bbox_preds, self.anchor_generator.strides,
-                mlvl_anchors):
+        for level_idx, (cls_score, bbox_pred, stride) in enumerate(
+                zip(cls_score_list, bbox_pred_list,
+                    self.anchor_generator.strides)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             assert stride[0] == stride[1]
+            featmap_size_hw = cls_score.shape[-2:]
 
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
@@ -427,33 +429,29 @@ class GFLHead(AnchorHead):
             if 0 < nms_pre < scores.shape[0]:
                 max_scores, _ = scores.max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
+                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
+                                                   scores.dtype,
+                                                   cls_score.device, topk_inds)
+            else:
+                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
+                                                   scores.dtype,
+                                                   cls_score.device)
 
             bboxes = distance2bbox(
                 self.anchor_center(anchors), bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-
-        mlvl_scores = torch.cat(mlvl_scores)
-        # Add a dummy background class to the backend when using sigmoid
-        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-        # BG cat_id: num_class
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-
-        if with_nms:
-            det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-            return det_bboxes, det_labels
-        else:
-            return mlvl_bboxes, mlvl_scores
+        return bbox_post_process(
+            mlvl_scores,
+            mlvl_bboxes,
+            img_meta,
+            cfg,
+            use_sigmoid_cls=True,
+            rescale=rescale,
+            with_nms=with_nms)
 
     def get_targets(self,
                     anchor_list,

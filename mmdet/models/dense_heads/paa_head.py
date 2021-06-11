@@ -505,7 +505,7 @@ class PAAHead(ATSSHead):
         This method is same as `AnchorHead._get_targets_single()`.
         """
         assert unmap_outputs, 'We must map outputs back to the original' \
-            'set of anchors in PAAhead'
+                              'set of anchors in PAAhead'
         return super(ATSSHead, self)._get_targets_single(
             flat_anchors,
             valid_flags,
@@ -520,9 +520,7 @@ class PAAHead(ATSSHead):
                            cls_scores,
                            bbox_preds,
                            iou_preds,
-                           mlvl_anchors,
-                           img_shape,
-                           scale_factor,
+                           img_meta,
                            cfg,
                            rescale=False,
                            with_nms=True):
@@ -536,13 +534,17 @@ class PAAHead(ATSSHead):
         assert with_nms, 'PAA only supports "with_nms=True" now and it ' \
                          'means PAAHead does not support ' \
                          'test-time augmentation'
-        assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
+        cfg = self.test_cfg if cfg is None else cfg
+        img_shape = img_meta['img_shape']
+        scale_factor = img_meta['scale_factor']
+
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_iou_preds = []
-        for cls_score, bbox_pred, iou_preds, anchors in zip(
-                cls_scores, bbox_preds, iou_preds, mlvl_anchors):
+        for level_idx, (cls_score, bbox_pred, iou_preds) in enumerate(
+                zip(cls_scores, bbox_preds, iou_preds)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            featmap_size_hw = cls_score.shape[-2:]
 
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
@@ -552,10 +554,16 @@ class PAAHead(ATSSHead):
             if 0 < nms_pre < scores.shape[0]:
                 max_scores, _ = (scores * iou_preds[:, None]).sqrt().max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 iou_preds = iou_preds[topk_inds]
+                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
+                                                   scores.dtype,
+                                                   cls_score.device, topk_inds)
+            else:
+                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
+                                                   scores.dtype,
+                                                   cls_score.device)
 
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shape)
@@ -617,7 +625,7 @@ class PAAHead(ATSSHead):
                     after voting, with shape (num_anchors,).
         """
         candidate_mask = mlvl_nms_scores > score_thr
-        candidate_mask_nonzeros = candidate_mask.nonzero()
+        candidate_mask_nonzeros = candidate_mask.nonzero(as_tuple=False)
         candidate_inds = candidate_mask_nonzeros[:, 0]
         candidate_labels = candidate_mask_nonzeros[:, 1]
         candidate_bboxes = mlvl_bboxes[candidate_inds]

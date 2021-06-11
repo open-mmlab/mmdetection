@@ -75,13 +75,14 @@ class RPNHead(AnchorHead):
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
     def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_anchors,
-                           img_shape,
-                           scale_factor,
+                           cls_score_list,
+                           bbox_pred_list,
+                           score_factor_list,
+                           img_meta,
                            cfg,
-                           rescale=False):
+                           rescale=False,
+                           with_nms=True,
+                           **kwargs):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -106,6 +107,8 @@ class RPNHead(AnchorHead):
         """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
+        img_shape = img_meta['img_shape']
+
         # bboxes from different level should be independent during NMS,
         # level_ids are used as labels for batched NMS to separate them
         level_ids = []
@@ -113,9 +116,10 @@ class RPNHead(AnchorHead):
         mlvl_bbox_preds = []
         mlvl_valid_anchors = []
         nms_pre = cfg.get('nms_pre', -1)
-        for idx in range(len(cls_scores)):
-            rpn_cls_score = cls_scores[idx]
-            rpn_bbox_pred = bbox_preds[idx]
+        for level_idx in range(len(cls_score_list)):
+            rpn_cls_score = cls_score_list[level_idx]
+            featmap_size_hw = rpn_cls_score.shape[-2:]
+            rpn_bbox_pred = bbox_pred_list[level_idx]
             assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
             rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
             if self.use_sigmoid_cls:
@@ -129,7 +133,6 @@ class RPNHead(AnchorHead):
                 # to v2.4 we keep BG label as 0 and FG label as 1 in rpn head.
                 scores = rpn_cls_score.softmax(dim=1)[:, 0]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            anchors = mlvl_anchors[idx]
 
             if 0 < nms_pre < scores.shape[0]:
                 # sort is faster than topk
@@ -138,12 +141,21 @@ class RPNHead(AnchorHead):
                 topk_inds = rank_inds[:nms_pre]
                 scores = ranked_scores[:nms_pre]
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
-                anchors = anchors[topk_inds, :]
+                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
+                                                   scores.dtype,
+                                                   rpn_cls_score.device,
+                                                   topk_inds)
+            else:
+                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
+                                                   scores.dtype,
+                                                   rpn_cls_score.device)
             mlvl_scores.append(scores)
             mlvl_bbox_preds.append(rpn_bbox_pred)
             mlvl_valid_anchors.append(anchors)
             level_ids.append(
-                scores.new_full((scores.size(0), ), idx, dtype=torch.long))
+                scores.new_full((scores.size(0), ),
+                                level_idx,
+                                dtype=torch.long))
 
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
