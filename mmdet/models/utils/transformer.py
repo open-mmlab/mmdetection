@@ -1,4 +1,5 @@
 import math
+import warnings
 
 import torch
 import torch.nn as nn
@@ -8,11 +9,19 @@ from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
-from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttention
 from mmcv.runner.base_module import BaseModule
 from torch.nn.init import normal_
 
 from mmdet.models.utils.builder import TRANSFORMER
+
+try:
+    from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttention
+
+except ImportError:
+    warnings.warn(
+        '`MultiScaleDeformableAttention` in MMCV has been moved to '
+        '`mmcv.ops.multi_scale_deform_attn`, please update your MMCV')
+    from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
 
 
 def inverse_sigmoid(x, eps=1e-5):
