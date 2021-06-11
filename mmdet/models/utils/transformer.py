@@ -6,9 +6,9 @@ from mmcv.cnn import build_activation_layer, build_norm_layer, xavier_init
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
                                       TRANSFORMER_LAYER_SEQUENCE)
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
-                                         MultiScaleDeformableAttention,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
+from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttention
 from mmcv.runner.base_module import BaseModule
 from torch.nn.init import normal_
 
@@ -384,7 +384,7 @@ class DeformableDetrTransformer(Transformer):
                 nn.init.xavier_uniform_(p)
         for m in self.modules():
             if isinstance(m, MultiScaleDeformableAttention):
-                m.init_weight()
+                m.init_weights()
         if not self.as_two_stage:
             xavier_init(self.reference_points, distribution='uniform', bias=0.)
         normal_(self.level_embeds)
