@@ -251,7 +251,7 @@ lr_config = dict(
 total_epochs = 10
 
 # We can use the COCO pretrained Cascade Mask R-CNN R50 model for more stable performance initialization
-load_from = 'http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco/cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth'
+load_from = 'https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco/cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth'
 ```
 
 ## Train a new model

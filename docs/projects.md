@@ -42,5 +42,5 @@ Methods already supported and maintained by MMDetection are not listed.
 - Dense Peppoints: Representing Visual Objects with Dense Point Sets. [[paper]](https://arxiv.org/abs/1912.11473)[[github]](https://github.com/justimyhxu/Dense-RepPoints)
 - IterDet: Iterative Scheme for Object Detection in Crowded Environments. [[paper]](https://arxiv.org/abs/2005.05708)[[github]](https://github.com/saic-vul/iterdet)
 - Cross-Iteration Batch Normalization. [[paper]](https://arxiv.org/abs/2002.05712)[[github]](https://github.com/Howal/Cross-iterationBatchNorm)
-- Pedestrian Detection: The Elephant In The Room. [[paper]](https://arxiv.org/abs/2003.08799)[[github]](https://github.com/hasanirtiza/Pedestron)
+- Generalizable Pedestrian Detection: The Elephant In The Room, CVPR2021. [[paper]](https://arxiv.org/abs/2003.08799)[[github]](https://github.com/hasanirtiza/Pedestron)
 - A Ranking-based, Balanced Loss Function Unifying Classification and Localisation in Object Detection, NeurIPS2020 [[paper]](https://arxiv.org/abs/2009.13592)[[github]](https://github.com/kemaloksuz/aLRPLoss)
