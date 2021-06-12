@@ -19,7 +19,7 @@ class DETR(SingleStageDetector):
         super(DETR, self).__init__(backbone, None, bbox_head, train_cfg,
                                    test_cfg, pretrained, init_cfg)
 
-    # over-write `onnx_export` bacause:
+    # over-write `onnx_export` because:
     # (1) the forward of bbox_head requires img_metas
     # (2) the different behavior (e.g. construction of `masks`) between
     # torch and ONNX model, during the forward of bbox_head
