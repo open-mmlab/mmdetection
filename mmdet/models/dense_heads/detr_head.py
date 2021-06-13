@@ -795,24 +795,46 @@ class DETRHead(AnchorFreeHead):
         cls_scores = all_cls_scores_list[-1][-1]
         bbox_preds = all_bbox_preds_list[-1][-1]
 
-        det_bboxes_list, det_labels_list = [], []
+        # Note `img_shape` is not dynamically traceable to ONNX,
+        # here `img_shape_for_onnx` (padded shape of image tensor)
+        # is used.
+        img_shape = img_metas[0]['img_shape_for_onnx']
+        max_per_img = self.test_cfg.get('max_per_img', self.num_query)
         batch_size = cls_scores.size(0)
-        batch_size_tensor = torch.arange(batch_size).to(cls_scores.device)
-        for img_id in batch_size_tensor:
-            cls_score = cls_scores[img_id]
-            bbox_pred = bbox_preds[img_id]
-            # Note `img_shape` is not dynamically traceable to ONNX,
-            # here `img_shape_for_onnx` (padded shape of image tensor)
-            # is used.
-            img_shape = img_metas[0]['img_shape_for_onnx']
-            # `scale_factor` is unsed when exporting to ONNX
-            det_bboxes, det_labels = self._get_bboxes_single(
-                cls_score,
-                bbox_pred,
-                img_shape,
-                scale_factor=None,
-                rescale=False)
-            det_bboxes_list.append(det_bboxes)
-            det_labels_list.append(det_labels)
+        # `batch_index_offset` is used for the gather of concatenated tensor
+        batch_index_offset = torch.arange(batch_size).to(
+            cls_scores.device) * max_per_img
+        batch_index_offset = batch_index_offset.unsqueeze(1).expand(
+            batch_size, max_per_img)
 
-        return torch.stack(det_bboxes_list, 0), torch.stack(det_labels_list, 0)
+        # supports dynamical batch inference
+        if self.loss_cls.use_sigmoid:
+            cls_scores = cls_scores.sigmoid()
+            scores, indexes = cls_scores.view(batch_size, -1).topk(
+                max_per_img, dim=1)
+            det_labels = indexes % self.num_classes
+            bbox_index = indexes // self.num_classes
+            bbox_index = (bbox_index + batch_index_offset).view(-1)
+            bbox_preds = bbox_preds.view(-1, 4)[bbox_index]
+            bbox_preds = bbox_preds.view(batch_size, -1, 4)
+        else:
+            scores, det_labels = F.softmax(
+                cls_scores, dim=-1)[..., :-1].max(-1)
+            scores, bbox_index = scores.topk(max_per_img, dim=1)
+            bbox_index = (bbox_index + batch_index_offset).view(-1)
+            bbox_preds = bbox_preds.view(-1, 4)[bbox_index]
+            det_labels = det_labels.view(-1)[bbox_index]
+            bbox_preds = bbox_preds.view(batch_size, -1, 4)
+            det_labels = det_labels.view(batch_size, -1)
+
+        det_bboxes = bbox_cxcywh_to_xyxy(bbox_preds)
+        # use `img_shape_tensor` for dynamically exporting to ONNX
+        img_shape_tensor = img_shape.flip(0).repeat(2)  # [w,h,w,h]
+        img_shape_tensor = img_shape_tensor.unsqueeze(0).unsqueeze(0).expand(
+            batch_size, det_bboxes.size(1), 4)
+        det_bboxes = det_bboxes * img_shape_tensor
+        det_bboxes[..., 0::2].clamp_(min=0, max=img_shape[1])
+        det_bboxes[..., 1::2].clamp_(min=0, max=img_shape[0])
+        det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(-1)), -1)
+
+        return det_bboxes, det_labels
