@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 import torch
+from torch.nn.modules.utils import _pair
 
 from .builder import PRIORS_GENERATORS
 
@@ -68,7 +69,7 @@ class MlvlPointGenerator:
             strides (list[int] | list[tuple[int, int]]): Strides of anchors
                 in multiple feature levels in order (w, h).
         """
-        self.strides = strides
+        self.strides = [_pair(stride) for stride in strides]
 
     @property
     def num_levels(self):
@@ -83,13 +84,15 @@ class MlvlPointGenerator:
         else:
             return yy, xx
 
-    def grid_priors(self, featmap_sizes, device='cuda'):
+    def grid_priors(self, featmap_sizes, device='cuda', with_stride=False):
         """Generate grid anchors in multiple feature levels.
 
         Args:
             featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels.
             device (str): Device where the anchors will be put on.
+            with_stride (bool): Concate the stride to the last dimension
+                of points.
 
         Return:
             list[torch.Tensor]: Anchors in multiple feature levels. \
@@ -102,14 +105,18 @@ class MlvlPointGenerator:
         multi_level_priors = []
         for i in range(self.num_levels):
             priors = self.single_level_grid_priors(
-                featmap_sizes[i], self.strides[i], device=device)
+                featmap_sizes[i],
+                self.strides[i],
+                device=device,
+                with_stride=with_stride)
             multi_level_priors.append(priors)
         return multi_level_priors
 
     def single_level_grid_priors(self,
                                  featmap_size,
                                  stride=(16, 16),
-                                 device='cuda'):
+                                 device='cuda',
+                                 with_stride=False):
         """Generate grid anchors of a single level.
 
         Note:
@@ -122,6 +129,8 @@ class MlvlPointGenerator:
                 in order (w, h). Defaults to (16, 16).
             device (str, optional): Device the tensor will be put on.
                 Defaults to 'cuda'.
+            with_stride (bool): Concate the stride to the last dimension
+                of points.
 
         Returns:
             torch.Tensor: Anchors in the overall feature maps.
@@ -131,8 +140,13 @@ class MlvlPointGenerator:
         shift_x = torch.arange(0., feat_w, device=device) * stride_w
         shift_y = torch.arange(0., feat_h, device=device) * stride_h
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
-        stride = shift_x.new_full((shift_xx.shape[0], ), stride)
-        shifts = torch.stack([shift_xx, shift_yy, stride], dim=-1)
+        if not with_stride:
+            shifts = torch.stack([shift_xx, shift_yy], dim=-1)
+        else:
+            stride_w = shift_xx.new_full((len(shift_xx), ), stride_w)
+            stride_h = shift_xx.new_full((len(shift_yy), ), stride_h)
+            shifts = torch.stack([shift_xx, shift_yy, stride_w, stride_h],
+                                 dim=-1)
         all_points = shifts.to(device)
         return all_points
 

@@ -239,25 +239,6 @@ class AnchorGenerator:
         return self.grid_priors(
             self, featmap_size=featmap_size, stride=stride, device=device)
 
-    def sparse_priors(self, prior_indexs, featmap_size, level_idx, dtype,
-                      device):
-        """
-        Args:
-            prior_indexs (Tensor): .
-
-        """
-
-        height, width = featmap_size
-        num_anchors = self.num_base_anchors[level_idx]
-        anchor_id = prior_indexs % num_anchors
-        x = (prior_indexs // num_anchors) % width
-        y = (prior_indexs // width // num_anchors) % height
-        priors = torch.stack([x, y, x, y], 1).to(
-            dtype) * self.strides[level_idx][0] + self.base_anchors[level_idx][
-                anchor_id, :].to(device)
-
-        return priors
-
     def single_level_grid_anchors(self,
                                   base_anchors,
                                   featmap_size,
@@ -388,6 +369,25 @@ class AnchorGenerator:
         repr_str += f'{indent_str}centers={self.centers},\n'
         repr_str += f'{indent_str}center_offset={self.center_offset})'
         return repr_str
+
+    def sparse_priors(self, prior_indexs, featmap_size, level_idx, dtype,
+                      device):
+        """
+        Args:
+            prior_indexs (Tensor): .
+
+        """
+
+        height, width = featmap_size
+        num_anchors = self.num_base_anchors[level_idx]
+        anchor_id = prior_indexs % num_anchors
+        x = (prior_indexs // num_anchors) % width
+        y = (prior_indexs // width // num_anchors) % height
+        priors = torch.stack([x, y, x, y], 1).to(
+            dtype) * self.strides[level_idx][0] + self.base_anchors[level_idx][
+                anchor_id, :].to(device)
+
+        return priors
 
 
 @PRIORS_GENERATORS.register_module()
