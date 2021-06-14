@@ -80,3 +80,9 @@ We list some common troubles faced by many users and their corresponding solutio
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
     1. This error indicates that your module has parameters that were not used in producing loss. This phenomenon may be caused by running different branches in your code in DDP mode.
     2. You can set ` find_unused_parameters = True` in the config to solve the above problems or find those unused parameters manually.
+
+## Evaluation
+
+- COCO Dataset, AP or AR = -1
+    1. According to the definition of COCO dataset, the small and medium areas in an image are less than 1024 (32\*32), 9216 (96\*96), respectively.
+    2. If the corresponding area has no object, the result of AP and AR will set to -1.
