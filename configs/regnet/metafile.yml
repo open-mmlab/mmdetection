@@ -179,18 +179,70 @@ Models:
           box AP: 39.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/retinanet_regnetx-3.2GF_fpn_1x_coco/retinanet_regnetx-3.2GF_fpn_1x_coco_20200520_163141-cb1509e8.pth
 
-  - Name: faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+  - Name: faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco
     In Collection: RegNet
-    Config: configs/regnet/faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco.py
     Metadata:
-      Training Memory (GB): 5.0
+      Training Memory (GB): 2.3
       Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 42.2
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco_20200520_224253-bf85ae3e.pth
+          box AP: 37.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco_20210526_095112-e1967c37.pth
+
+  - Name: faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 2.8
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco_20210526_095118-a2c70b20.pth
+
+  - Name: faster_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/faster_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 3.4
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-1_20210526_095325-94aa46cc.pth
+
+  - Name: faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 4.4
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-3_20210526_095152-e16a5227.pth
+
+  - Name: faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 4.9
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco_20210526_095201-65eaf841.pth
 
   - Name: mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
     In Collection: RegNet

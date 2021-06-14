@@ -1,12 +1,28 @@
-_base_ = 'faster_rcnn_r50_fpn_mstrain_3x_coco.py'
+_base_ = [
+    '../common/mstrain_3x_coco.py', '../_base_/models/faster_rcnn_r50_fpn.py'
+]
 model = dict(
-    pretrained='open-mmlab://detectron2/resnet50_caffe',
+    pretrained='open-mmlab://detectron2/resnext101_32x8d',
     backbone=dict(
-        norm_cfg=dict(requires_grad=False), norm_eval=True, style='caffe'))
+        type='ResNeXt',
+        depth=101,
+        groups=32,
+        base_width=8,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
+        frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=False),
+        style='pytorch'))
 
-# use caffe img_norm
+# ResNeXt-101-32x8d model trained with Caffe2 at FB,
+# so the mean and std need to be changed.
 img_norm_cfg = dict(
-    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[103.530, 116.280, 123.675],
+    std=[57.375, 57.120, 58.395],
+    to_rgb=False)
+
+# In mstrain 3x config, img_scale=[(1333, 640), (1333, 800)],
+# multiscale_mode='range'
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -37,6 +53,7 @@ test_pipeline = [
         ])
 ]
 
+# Use RepeatDataset to speed up training
 data = dict(
     train=dict(dataset=dict(pipeline=train_pipeline)),
     val=dict(pipeline=test_pipeline),
