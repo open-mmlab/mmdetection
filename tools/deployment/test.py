@@ -5,7 +5,6 @@ from mmcv import Config, DictAction
 from mmcv.parallel import MMDataParallel
 
 from mmdet.apis import single_gpu_test
-from mmdet.core.export.model_wrappers import ONNXRuntimeDetector
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 
@@ -22,6 +21,11 @@ def parse_args():
         help='Format the output results without perform evaluation. It is'
         'useful when you want to format the result to a specific format and '
         'submit it to the test server')
+    parser.add_argument(
+        '--backend',
+        required=True,
+        choices=['onnxruntime', 'tensorrt'],
+        help='Backend for input model to run. ')
     parser.add_argument(
         '--eval',
         type=str,
@@ -103,8 +107,20 @@ def main():
         dist=False,
         shuffle=False)
 
-    model = ONNXRuntimeDetector(
-        args.model, class_names=dataset.CLASSES, device_id=0)
+    if args.backend == 'onnxruntime':
+        from mmdet.core.export.model_wrappers import ONNXRuntimeDetector
+        model = ONNXRuntimeDetector(
+            args.model, class_names=dataset.CLASSES, device_id=0)
+    elif args.backend == 'tensorrt':
+        from mmdet.core.export.model_wrappers import TensorRTDetector
+        output_names = ['dets', 'labels']
+        if len(cfg.evaluation['metric']) == 2:
+            output_names.append('masks')
+        model = TensorRTDetector(
+            args.model,
+            class_names=dataset.CLASSES,
+            device_id=0,
+            output_names=output_names)
 
     model = MMDataParallel(model, device_ids=[0])
     outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,

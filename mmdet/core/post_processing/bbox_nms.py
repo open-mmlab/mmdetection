@@ -28,8 +28,8 @@ def multiclass_nms(multi_bboxes,
             bboxes. Default to False.
 
     Returns:
-        tuple: (bboxes, labels, indices (optional)), tensors of shape (k, 5),
-            (k), and (k). Labels are 0-based.
+        tuple: (dets, labels, indices (optional)), tensors of shape (k, 5),
+            (k), and (k). Dets are boxes with scores. Labels are 0-based.
     """
     num_classes = multi_scores.size(1) - 1
     # exclude background category
@@ -76,10 +76,11 @@ def multiclass_nms(multi_bboxes,
         if torch.onnx.is_in_onnx_export():
             raise RuntimeError('[ONNX Error] Can not record NMS '
                                'as it has not been executed this time')
+        dets = torch.cat([bboxes, scores[:, None]], -1)
         if return_inds:
-            return bboxes, labels, inds
+            return dets, labels, inds
         else:
-            return bboxes, labels
+            return dets, labels
 
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
 
@@ -122,8 +123,9 @@ def fast_nms(multi_bboxes,
             Default: -1.
 
     Returns:
-        tuple: (bboxes, labels, coefficients), tensors of shape (k, 5), (k, 1),
-            and (k, coeffs_dim). Labels are 0-based.
+        tuple: (dets, labels, coefficients), tensors of shape (k, 5), (k, 1),
+            and (k, coeffs_dim). Dets are boxes with scores.
+            Labels are 0-based.
     """
 
     scores = multi_scores[:, :-1].t()  # [#class, n]

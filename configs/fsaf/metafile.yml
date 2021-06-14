@@ -26,7 +26,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 37.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_r50_fpn_1x_coco/fsaf_r50_fpn_1x_coco-94ccc51f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_r50_fpn_1x_coco/fsaf_r50_fpn_1x_coco-94ccc51f.pth
 
   - Name: fsaf_r101_fpn_1x_coco
     In Collection: FSAF
@@ -40,7 +40,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 39.3 (37.9)
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_r101_fpn_1x_coco/fsaf_r101_fpn_1x_coco-9e71098f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_r101_fpn_1x_coco/fsaf_r101_fpn_1x_coco-9e71098f.pth
 
   - Name: fsaf_x101_64x4d_fpn_1x_coco
     In Collection: FSAF
@@ -54,4 +54,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.4 (41.0)
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_x101_64x4d_fpn_1x_coco/fsaf_x101_64x4d_fpn_1x_coco-e3f6e6fd.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_x101_64x4d_fpn_1x_coco/fsaf_x101_64x4d_fpn_1x_coco-e3f6e6fd.pth

@@ -316,143 +316,60 @@ class BBoxHead(BaseModule):
                    cfg=None):
         """Transform network output for a batch into bbox predictions.
 
-        If the input rois has batch dimension, the function would be in
-        `batch_mode` and return is a tuple[list[Tensor], list[Tensor]],
-        otherwise, the return is a tuple[Tensor, Tensor].
-
         Args:
-            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5)
-               or (B, num_boxes, 5)
-            cls_score (list[Tensor] or Tensor): Box scores for
-               each scale level, each is a 4D-tensor, the channel number is
-               num_points * num_classes.
-            bbox_pred (Tensor, optional): Box energies / deltas for each scale
-                level, each is a 4D-tensor, the channel number is
-                num_classes * 4.
-            img_shape (Sequence[int] or torch.Tensor or Sequence[
-                Sequence[int]], optional): Maximum bounds for boxes, specifies
-                (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
-                the max_shape should be a Sequence[Sequence[int]]
-                and the length of max_shape should also be B.
-            scale_factor (tuple[ndarray] or ndarray): Scale factor of the
-               image arange as (w_scale, h_scale, w_scale, h_scale). In
-               `batch_mode`, the scale_factor shape is tuple[ndarray].
+            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5).
+                last dimension 5 arrange as (batch_index, x1, y1, x2, y2).
+            cls_score (Tensor): Box scores, has shape
+                (num_boxes, num_classes + 1).
+            bbox_pred (Tensor, optional): Box energies / deltas.
+                has shape (num_boxes, num_classes * 4).
+            img_shape (Sequence[int], optional): Maximum bounds for boxes,
+                specifies (H, W, C) or (H, W).
+            scale_factor (ndarray): Scale factor of the
+               image arrange as (w_scale, h_scale, w_scale, h_scale).
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
 
         Returns:
-            tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor]:
-                If the input has a batch dimension, the return value is
-                a tuple of the list. The first list contains the boxes of
-                the corresponding image in a batch, each tensor has the
-                shape (num_boxes, 5) and last dimension 5 represent
-                (tl_x, tl_y, br_x, br_y, score). Each Tensor in the second
-                list is the labels with shape (num_boxes, ). The length of
-                both lists should be equal to batch_size. Otherwise return
-                value is a tuple of two tensors, the first tensor is the
-                boxes with scores, the second tensor is the labels, both
-                have the same shape as the first case.
+            tuple[Tensor, Tensor]:
+                Fisrt tensor is `det_bboxes`, has the shape
+                (num_boxes, 5) and last
+                dimension 5 represent (tl_x, tl_y, br_x, br_y, score).
+                Second tensor is the labels with shape (num_boxes, ).
         """
-        if isinstance(cls_score, list):
-            cls_score = sum(cls_score) / float(len(cls_score))
 
+        # some loss (Seesaw loss..) may have custom activation
         if self.custom_cls_channels:
             scores = self.loss_cls.get_activation(cls_score)
         else:
             scores = F.softmax(
                 cls_score, dim=-1) if cls_score is not None else None
-
-        batch_mode = True
-        if rois.ndim == 2:
-            # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
-            batch_mode = False
-
-            # add batch dimension
-            if scores is not None:
-                scores = scores.unsqueeze(0)
-            if bbox_pred is not None:
-                bbox_pred = bbox_pred.unsqueeze(0)
-            rois = rois.unsqueeze(0)
-
+        # bbox_pred would be None in some detector when with_reg is False,
+        # e.g. Grid R-CNN.
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
                 rois[..., 1:], bbox_pred, max_shape=img_shape)
         else:
-            bboxes = rois[..., 1:].clone()
+            bboxes = rois[:, 1:].clone()
             if img_shape is not None:
-                max_shape = bboxes.new_tensor(img_shape)[..., :2]
-                min_xy = bboxes.new_tensor(0)
-                max_xy = torch.cat(
-                    [max_shape] * 2, dim=-1).flip(-1).unsqueeze(-2)
-                bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
-                bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
+                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
-        if rescale and bboxes.size(-2) > 0:
-            if not isinstance(scale_factor, tuple):
-                scale_factor = tuple([scale_factor])
-            # B, 1, bboxes.size(-1)
-            scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(1).repeat(
-                1, 1,
-                bboxes.size(-1) // 4)
-            bboxes /= scale_factor
+        if rescale and bboxes.size(0) > 0:
 
-        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
-        if torch.onnx.is_in_onnx_export():
-            from mmdet.core.export import add_dummy_nms_for_onnx
-            batch_size = scores.shape[0]
-            # ignore background class
-            scores = scores[..., :self.num_classes]
-            labels = torch.arange(
-                self.num_classes, dtype=torch.long).to(scores.device)
-            labels = labels.view(1, 1, -1).expand_as(scores)
-            labels = labels.reshape(batch_size, -1)
-            scores = scores.reshape(batch_size, -1)
-            bboxes = bboxes.reshape(batch_size, -1, 4)
+            scale_factor = bboxes.new_tensor(scale_factor)
+            bboxes = (bboxes.view(bboxes.size(0), -1, 4) / scale_factor).view(
+                bboxes.size()[0], -1)
 
-            max_size = torch.max(img_shape)
-            # Offset bboxes of each class so that bboxes of different labels
-            #  do not overlap.
-            offsets = (labels * max_size + 1).unsqueeze(2)
-            bboxes_for_nms = bboxes + offsets
-            max_output_boxes_per_class = cfg.nms.get(
-                'max_output_boxes_per_class', cfg.max_per_img)
-            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
-            score_threshold = cfg.score_thr
-            nms_pre = cfg.get('deploy_nms_pre', -1)
-            batch_dets, labels = add_dummy_nms_for_onnx(
-                bboxes_for_nms,
-                scores.unsqueeze(2),
-                max_output_boxes_per_class,
-                iou_threshold,
-                score_threshold,
-                pre_top_k=nms_pre,
-                after_top_k=cfg.max_per_img,
-                labels=labels)
-            # Offset the bboxes back after dummy nms.
-            offsets = (labels * max_size + 1).unsqueeze(2)
-            # Indexing + inplace operation fails with dynamic shape in ONNX
-            # original style: batch_dets[..., :4] -= offsets
-            bboxes, scores = batch_dets[..., 0:4], batch_dets[..., 4:5]
-            bboxes -= offsets
-            batch_dets = torch.cat([bboxes, scores], dim=2)
-            return batch_dets, labels
-        det_bboxes = []
-        det_labels = []
-        for (bbox, score) in zip(bboxes, scores):
-            if cfg is not None:
-                det_bbox, det_label = multiclass_nms(bbox, score,
-                                                     cfg.score_thr, cfg.nms,
-                                                     cfg.max_per_img)
-            else:
-                det_bbox, det_label = bbox, score
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
+        if cfg is None:
+            return bboxes, scores
+        else:
+            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
+                                                    cfg.score_thr, cfg.nms,
+                                                    cfg.max_per_img)
 
-        if not batch_mode:
-            det_bboxes = det_bboxes[0]
-            det_labels = det_labels[0]
-        return det_bboxes, det_labels
+            return det_bboxes, det_labels
 
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
@@ -563,3 +480,90 @@ class BBoxHead(BaseModule):
             new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
 
         return new_rois
+
+    def onnx_export(self,
+                    rois,
+                    cls_score,
+                    bbox_pred,
+                    img_shape,
+                    cfg=None,
+                    **kwargs):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            rois (Tensor): Boxes to be transformed.
+                Has shape (B, num_boxes, 5)
+            cls_score (Tensor): Box scores. has shape
+                (B, num_boxes, num_classes + 1), 1 represent the background.
+            bbox_pred (Tensor, optional): Box energies / deltas for,
+                has shape (B, num_boxes, num_classes * 4) when.
+            img_shape (torch.Tensor): Shape of image.
+            cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
+
+        Returns:
+            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
+                and class labels of shape [N, num_det].
+        """
+
+        assert rois.ndim == 3, 'Only support export two stage ' \
+                               'model to ONNX ' \
+                               'with batch dimension. '
+
+        if self.custom_cls_channels:
+            scores = self.loss_cls.get_activation(cls_score)
+        else:
+            scores = F.softmax(
+                cls_score, dim=-1) if cls_score is not None else None
+
+        if bbox_pred is not None:
+            bboxes = self.bbox_coder.decode(
+                rois[..., 1:], bbox_pred, max_shape=img_shape)
+        else:
+            bboxes = rois[..., 1:].clone()
+            if img_shape is not None:
+                max_shape = bboxes.new_tensor(img_shape)[..., :2]
+                min_xy = bboxes.new_tensor(0)
+                max_xy = torch.cat(
+                    [max_shape] * 2, dim=-1).flip(-1).unsqueeze(-2)
+                bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
+                bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        from mmdet.core.export import add_dummy_nms_for_onnx
+        batch_size = scores.shape[0]
+        # ignore background class
+        scores = scores[..., :self.num_classes]
+        labels = torch.arange(
+            self.num_classes, dtype=torch.long).to(scores.device)
+        labels = labels.view(1, 1, -1).expand_as(scores)
+        labels = labels.reshape(batch_size, -1)
+        scores = scores.reshape(batch_size, -1)
+        bboxes = bboxes.reshape(batch_size, -1, 4)
+
+        max_size = torch.max(img_shape)
+        # Offset bboxes of each class so that bboxes of different labels
+        #  do not overlap.
+        offsets = (labels * max_size + 1).unsqueeze(2)
+        bboxes_for_nms = bboxes + offsets
+        max_output_boxes_per_class = cfg.nms.get('max_output_boxes_per_class',
+                                                 cfg.max_per_img)
+        iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+        score_threshold = cfg.score_thr
+        nms_pre = cfg.get('deploy_nms_pre', -1)
+        batch_dets, labels = add_dummy_nms_for_onnx(
+            bboxes_for_nms,
+            scores.unsqueeze(2),
+            max_output_boxes_per_class,
+            iou_threshold,
+            score_threshold,
+            pre_top_k=nms_pre,
+            after_top_k=cfg.max_per_img,
+            labels=labels)
+        # Offset the bboxes back after dummy nms.
+        offsets = (labels * max_size + 1).unsqueeze(2)
+        # Indexing + inplace operation fails with dynamic shape in ONNX
+        # original style: batch_dets[..., :4] -= offsets
+        bboxes, scores = batch_dets[..., 0:4], batch_dets[..., 4:5]
+        bboxes -= offsets
+        batch_dets = torch.cat([bboxes, scores], dim=2)
+        return batch_dets, labels

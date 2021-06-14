@@ -105,3 +105,11 @@ class EmbeddingRPNHead(BaseModule):
     def simple_test_rpn(self, img, img_metas):
         """Forward function in testing stage."""
         return self._decode_init_proposals(img, img_metas)
+
+    def simple_test(self, img, img_metas):
+        """Forward function in testing stage."""
+        raise NotImplementedError
+
+    def aug_test_rpn(self, feats, img_metas):
+        raise NotImplementedError(
+            'EmbeddingRPNHead does not support test-time augmentation')

@@ -165,15 +165,9 @@ class TwoStageDetector(BaseDetector):
 
     def simple_test(self, img, img_metas, proposals=None, rescale=False):
         """Test without augmentation."""
+
         assert self.with_bbox, 'Bbox head must be implemented.'
-
         x = self.extract_feat(img)
-
-        # get origin input shape to onnx dynamic input shape
-        if torch.onnx.is_in_onnx_export():
-            img_shape = torch._shape_as_tensor(img)[2:]
-            img_metas[0]['img_shape_for_onnx'] = img_shape
-
         if proposals is None:
             proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         else:
@@ -192,3 +186,11 @@ class TwoStageDetector(BaseDetector):
         proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)
+
+    def onnx_export(self, img, img_metas):
+
+        img_shape = torch._shape_as_tensor(img)[2:]
+        img_metas[0]['img_shape_for_onnx'] = img_shape
+        x = self.extract_feat(img)
+        proposals = self.rpn_head.onnx_export(x, img_metas)
+        return self.roi_head.onnx_export(x, proposals, img_metas)

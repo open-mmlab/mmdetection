@@ -25,7 +25,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.2
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r50_fpn_1x_coco/gfl_r50_fpn_1x_coco_20200629_121244-25944287.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r50_fpn_1x_coco/gfl_r50_fpn_1x_coco_20200629_121244-25944287.pth
 
   - Name: gfl_r50_fpn_mstrain_2x_coco
     In Collection: Generalized Focal Loss
@@ -38,7 +38,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r50_fpn_mstrain_2x_coco/gfl_r50_fpn_mstrain_2x_coco_20200629_213802-37bb1edc.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r50_fpn_mstrain_2x_coco/gfl_r50_fpn_mstrain_2x_coco_20200629_213802-37bb1edc.pth
 
   - Name: gfl_r101_fpn_mstrain_2x_coco
     In Collection: Generalized Focal Loss
@@ -51,7 +51,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 44.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r101_fpn_mstrain_2x_coco/gfl_r101_fpn_mstrain_2x_coco_20200629_200126-dd12f847.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r101_fpn_mstrain_2x_coco/gfl_r101_fpn_mstrain_2x_coco_20200629_200126-dd12f847.pth
 
   - Name: gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco
     In Collection: Generalized Focal Loss
@@ -64,7 +64,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 47.1
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco_20200630_102002-134b07df.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco_20200630_102002-134b07df.pth
 
   - Name: gfl_x101_32x4d_fpn_mstrain_2x_coco
     In Collection: Generalized Focal Loss
@@ -77,7 +77,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 45.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_x101_32x4d_fpn_mstrain_2x_coco/gfl_x101_32x4d_fpn_mstrain_2x_coco_20200630_102002-50c1ffdb.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_x101_32x4d_fpn_mstrain_2x_coco/gfl_x101_32x4d_fpn_mstrain_2x_coco_20200630_102002-50c1ffdb.pth
 
   - Name: gfl_x101_32x4d_fpn_dconv_c4-c5_mstrain_2x_coco
     In Collection: Generalized Focal Loss
@@ -90,4 +90,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 48.1
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_x101_32x4d_fpn_dconv_c4-c5_mstrain_2x_coco/gfl_x101_32x4d_fpn_dconv_c4-c5_mstrain_2x_coco_20200630_102002-14a2bf25.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_x101_32x4d_fpn_dconv_c4-c5_mstrain_2x_coco/gfl_x101_32x4d_fpn_dconv_c4-c5_mstrain_2x_coco_20200630_102002-14a2bf25.pth

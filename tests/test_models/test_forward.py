@@ -365,7 +365,7 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
         'ori_shape': (H, W, C),
         'pad_shape': (H, W, C),
         'filename': '<demo>.png',
-        'scale_factor': 1.0,
+        'scale_factor': np.array([1.1, 1.2, 1.1, 1.2]),
         'flip': False,
         'flip_direction': None,
     } for _ in range(N)]
