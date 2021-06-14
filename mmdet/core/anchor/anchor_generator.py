@@ -1,12 +1,14 @@
+import warnings
+
 import mmcv
 import numpy as np
 import torch
 from torch.nn.modules.utils import _pair
 
-from .builder import ANCHOR_GENERATORS
+from .builder import PROIRS_GENERATORS
 
 
-@ANCHOR_GENERATORS.register_module()
+@PROIRS_GENERATORS.register_module()
 class AnchorGenerator:
     """Standard anchor generator for 2D anchor-based detectors.
 
@@ -204,7 +206,7 @@ class AnchorGenerator:
         else:
             return yy, xx
 
-    def grid_anchors(self, featmap_sizes, device='cuda'):
+    def grid_priors(self, featmap_sizes, device='cuda'):
         """Generate grid anchors in multiple feature levels.
 
         Args:
@@ -229,6 +231,29 @@ class AnchorGenerator:
                 device=device)
             multi_level_anchors.append(anchors)
         return multi_level_anchors
+
+    def grid_anchors(self, featmap_size, stride=16, device='cuda'):
+
+        warnings.warn('``grid_anchors`` would be deprecated soon. Please use '
+                      '``grid_priors``')
+        return self.grid_priors(
+            self, featmap_size=featmap_size, stride=stride, device=device)
+
+    def sparse_priors(self, level_idx, featmap_size, dtype, device, topk_inds):
+        # recover the grid index in feature map from topk_inds
+        # only generate anchors on the filtered grids to reduce latency
+
+        height, width = featmap_size
+        num_anchors = self.num_base_anchors[level_idx]
+        anchor_id = topk_inds % num_anchors
+        x = (topk_inds // num_anchors) % width
+        y = (topk_inds // width // num_anchors) % height
+        priors = torch.stack(
+            [x, y, x, y], 1).to(dtype) * self.anchor_generator.strides[
+                level_idx][0] + self.anchor_generator.base_anchors[level_idx][
+                    anchor_id, :].to(device)
+
+        return priors
 
     def single_level_grid_anchors(self,
                                   base_anchors,
@@ -346,7 +371,7 @@ class AnchorGenerator:
         return repr_str
 
 
-@ANCHOR_GENERATORS.register_module()
+@PROIRS_GENERATORS.register_module()
 class SSDAnchorGenerator(AnchorGenerator):
     """Anchor generator for SSD.
 
@@ -470,7 +495,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         return repr_str
 
 
-@ANCHOR_GENERATORS.register_module()
+@PROIRS_GENERATORS.register_module()
 class LegacyAnchorGenerator(AnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x.
 
@@ -569,7 +594,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
         return base_anchors
 
 
-@ANCHOR_GENERATORS.register_module()
+@PROIRS_GENERATORS.register_module()
 class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x.
 
@@ -591,7 +616,7 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
         self.base_anchors = self.gen_base_anchors()
 
 
-@ANCHOR_GENERATORS.register_module()
+@PROIRS_GENERATORS.register_module()
 class YOLOAnchorGenerator(AnchorGenerator):
     """Anchor generator for YOLO.
 

@@ -1,9 +1,11 @@
+import warnings
+
 import torch
 
-from .builder import ANCHOR_GENERATORS
+from .builder import PROIRS_GENERATORS
 
 
-@ANCHOR_GENERATORS.register_module()
+@PROIRS_GENERATORS.register_module()
 class PointGenerator:
 
     def _meshgrid(self, x, y, row_major=True):
@@ -15,6 +17,12 @@ class PointGenerator:
             return yy, xx
 
     def grid_points(self, featmap_size, stride=16, device='cuda'):
+        warnings.warn('``grid_points`` would be deprecated soon. Please use'
+                      ' ``grid_priors``')
+        return self.grid_priors(
+            self, featmap_size=featmap_size, stride=stride, device=device)
+
+    def grid_priors(self, featmap_size, stride=16, device='cuda'):
         feat_h, feat_w = featmap_size
         shift_x = torch.arange(0., feat_w, device=device) * stride
         shift_y = torch.arange(0., feat_h, device=device) * stride
@@ -35,3 +43,14 @@ class PointGenerator:
         valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
         valid = valid_xx & valid_yy
         return valid
+
+    def spares_priors(self, level_idx, featmap_size, dtype, device, topk_inds):
+        height, width = featmap_size
+
+        x = topk_inds % width
+        y = (topk_inds // width) % height
+        prioris = torch.stack([x, y],
+                              1).to(dtype) * self.strides[level_idx] + (
+                                  self.strides[level_idx] // 2)
+        prioris = prioris.to(device)
+        return prioris
