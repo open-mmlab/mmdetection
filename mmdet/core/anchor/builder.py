@@ -2,9 +2,9 @@ import warnings
 
 from mmcv.utils import Registry, build_from_cfg
 
-PROIRS_GENERATORS = Registry('Priors generator')
+PRIORS_GENERATORS = Registry('Priors generator')
 
-ANCHOR_GENERATORS = PROIRS_GENERATORS
+ANCHOR_GENERATORS = PRIORS_GENERATORS
 
 
 def build_priors_generator(cfg, default_args=None):

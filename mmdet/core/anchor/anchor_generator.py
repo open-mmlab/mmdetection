@@ -5,10 +5,10 @@ import numpy as np
 import torch
 from torch.nn.modules.utils import _pair
 
-from .builder import PROIRS_GENERATORS
+from .builder import PRIORS_GENERATORS
 
 
-@PROIRS_GENERATORS.register_module()
+@PRIORS_GENERATORS.register_module()
 class AnchorGenerator:
     """Standard anchor generator for 2D anchor-based detectors.
 
@@ -239,19 +239,22 @@ class AnchorGenerator:
         return self.grid_priors(
             self, featmap_size=featmap_size, stride=stride, device=device)
 
-    def sparse_priors(self, level_idx, featmap_size, dtype, device, topk_inds):
-        # recover the grid index in feature map from topk_inds
-        # only generate anchors on the filtered grids to reduce latency
+    def sparse_priors(self, prior_indexs, featmap_size, level_idx, dtype,
+                      device):
+        """
+        Args:
+            prior_indexs (Tensor): .
+
+        """
 
         height, width = featmap_size
         num_anchors = self.num_base_anchors[level_idx]
-        anchor_id = topk_inds % num_anchors
-        x = (topk_inds // num_anchors) % width
-        y = (topk_inds // width // num_anchors) % height
-        priors = torch.stack(
-            [x, y, x, y], 1).to(dtype) * self.anchor_generator.strides[
-                level_idx][0] + self.anchor_generator.base_anchors[level_idx][
-                    anchor_id, :].to(device)
+        anchor_id = prior_indexs % num_anchors
+        x = (prior_indexs // num_anchors) % width
+        y = (prior_indexs // width // num_anchors) % height
+        priors = torch.stack([x, y, x, y], 1).to(
+            dtype) * self.strides[level_idx][0] + self.base_anchors[level_idx][
+                anchor_id, :].to(device)
 
         return priors
 
@@ -260,10 +263,26 @@ class AnchorGenerator:
                                   featmap_size,
                                   stride=(16, 16),
                                   device='cuda'):
+        warnings.warn(
+            '``single_level_grid_anchors`` would be deprecated soon. '
+            'Please use ``single_level_grid_priors`` ')
+
+        return self.single_level_grid_anchors(
+            self,
+            base_anchors=base_anchors,
+            featmap_size=featmap_size,
+            stride=stride,
+            device=device)
+
+    def single_level_grid_priors(self,
+                                 base_anchors,
+                                 featmap_size,
+                                 stride=(16, 16),
+                                 device='cuda'):
         """Generate grid anchors of a single level.
 
         Note:
-            This function is usually called by method ``self.grid_anchors``.
+            This function is usually called by method ``self.grid_priors``.
 
         Args:
             base_anchors (torch.Tensor): The base anchors of a feature grid.
@@ -371,7 +390,7 @@ class AnchorGenerator:
         return repr_str
 
 
-@PROIRS_GENERATORS.register_module()
+@PRIORS_GENERATORS.register_module()
 class SSDAnchorGenerator(AnchorGenerator):
     """Anchor generator for SSD.
 
@@ -495,7 +514,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         return repr_str
 
 
-@PROIRS_GENERATORS.register_module()
+@PRIORS_GENERATORS.register_module()
 class LegacyAnchorGenerator(AnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x.
 
@@ -594,7 +613,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
         return base_anchors
 
 
-@PROIRS_GENERATORS.register_module()
+@PRIORS_GENERATORS.register_module()
 class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x.
 
@@ -616,7 +635,7 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
         self.base_anchors = self.gen_base_anchors()
 
 
-@PROIRS_GENERATORS.register_module()
+@PRIORS_GENERATORS.register_module()
 class YOLOAnchorGenerator(AnchorGenerator):
     """Anchor generator for YOLO.
 
