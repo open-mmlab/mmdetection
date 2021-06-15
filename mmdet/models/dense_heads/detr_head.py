@@ -833,8 +833,11 @@ class DETRHead(AnchorFreeHead):
         img_shape_tensor = img_shape_tensor.unsqueeze(0).unsqueeze(0).expand(
             batch_size, det_bboxes.size(1), 4)
         det_bboxes = det_bboxes * img_shape_tensor
-        det_bboxes[..., 0::2].clamp_(min=0, max=img_shape[1])
-        det_bboxes[..., 1::2].clamp_(min=0, max=img_shape[0])
+        # dynamically clip bboxes
+        x1, y1, x2, y2 = det_bboxes.split((1, 1, 1, 1), dim=-1)
+        from mmdet.core.export import dynamic_clip_for_onnx
+        x1, y1, x2, y2 = dynamic_clip_for_onnx(x1, y1, x2, y2, img_shape)
+        det_bboxes = torch.cat([x1, y1, x2, y2], dim=-1)
         det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(-1)), -1)
 
         return det_bboxes, det_labels
