@@ -76,7 +76,7 @@ class YOLOV3Neck(BaseModule):
 
     Args:
         num_scales (int): The number of scales / stages.
-        in_channels (List[int]): The number of input channels  per scale.
+        in_channels (List[int]): The number of input channels per scale.
         out_channels (List[int]): The number of output channels  per scale.
         conv_cfg (dict, optional): Config dict for convolution layer.
             Default: None.
