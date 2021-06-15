@@ -25,7 +25,7 @@ class TwoStageDetector(BaseDetector):
                  init_cfg=None):
         super(TwoStageDetector, self).__init__(init_cfg)
         if pretrained:
-            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
             backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
