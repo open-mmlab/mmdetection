@@ -94,7 +94,7 @@ def convert_model_info_to_pwc(model_infos):
         pwc_model_info = OrderedDict()
         pwc_model_info['Name'] = osp.split(model['config'])[-1].split('.')[0]
         pwc_model_info['In Collection'] = 'Please fill in Collection name'
-        pwc_model_info['Config'] = model['config']
+        pwc_model_info['Config'] = osp.join('configs', model['config'])
 
         # get metadata
         memory = round(model['results']['memory'] / 1024, 1)
