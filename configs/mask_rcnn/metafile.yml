@@ -261,7 +261,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 37.1
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_fpn_mstrain-poly_3x_coco_20210524_201154-21b550bb.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_fpn_mstrain-poly_3x_coco_20210524_201154-21b550bb.pth
 
   - Name: mask_rcnn_r101_fpn_mstrain-poly_3x_coco
     In Collection: Mask R-CNN
@@ -278,7 +278,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 38.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r101_fpn_mstrain-poly_3x_coco/mask_rcnn_r101_fpn_mstrain-poly_3x_coco_20210524_200244-5675c317.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r101_fpn_mstrain-poly_3x_coco/mask_rcnn_r101_fpn_mstrain-poly_3x_coco_20210524_200244-5675c317.pth
 
   - Name: mask_rcnn_r101_caffe_fpn_mstrain-poly_3x_coco
     In Collection: Mask R-CNN
@@ -295,7 +295,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 38.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r101_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r101_caffe_fpn_mstrain-poly_3x_coco_20210526_132339-3c33ce02.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r101_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r101_caffe_fpn_mstrain-poly_3x_coco_20210526_132339-3c33ce02.pth
 
   - Name: mask_rcnn_x101_32x4d_fpn_mstrain-poly_3x_coco
     In Collection: Mask R-CNN
@@ -312,7 +312,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 39.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_32x4d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_32x4d_fpn_mstrain-poly_3x_coco_20210524_201410-abcd7859.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_32x4d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_32x4d_fpn_mstrain-poly_3x_coco_20210524_201410-abcd7859.pth
 
   - Name: mask_rcnn_x101_32x8d_fpn_mstrain-poly_1x_coco
     In Collection: Mask R-CNN
@@ -331,18 +331,16 @@ Models:
 
   - Name: mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco
     In Collection: Mask R-CNN
-    Config: configs/mask_rcnn/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco.py
+    Config: configs/mask_rcnn/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco
     Metadata:
+      Training Memory (GB): 10.3
       Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 44.0
-      - Task: Instance Segmentation
-        Dataset: COCO
-        Metrics:
-          mask AP: 39.3
+          box AP: 44.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco_20210607_161042-8bd2c639.pth
 
   - Name: mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco
     In Collection: Mask R-CNN
@@ -359,4 +357,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 39.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco_20210526_120447-c376f129.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco_20210526_120447-c376f129.pth
