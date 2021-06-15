@@ -94,6 +94,7 @@ def convert_model_info_to_pwc(model_infos):
         pwc_model_info = OrderedDict()
         pwc_model_info['Name'] = osp.split(model['config'])[-1].split('.')[0]
         pwc_model_info['In Collection'] = 'Please fill in Collection name'
+        pwc_model_info['Config'] = osp.join('configs', model['config'])
 
         # get metadata
         memory = round(model['results']['memory'] / 1024, 1)
@@ -116,7 +117,7 @@ def convert_model_info_to_pwc(model_infos):
                     Task='Object Detection',
                     Dataset=dataset_name,
                     Metrics={'box AP': metric}))
-        if 'segm_mAP ' in model['results']:
+        if 'segm_mAP' in model['results']:
             metric = round(model['results']['segm_mAP'] * 100, 1)
             results.append(
                 OrderedDict(
