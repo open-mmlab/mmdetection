@@ -82,8 +82,9 @@ def multiclass_nms(multi_bboxes,
         else:
             return dets, labels
 
-    nms_cfg['score_threshold'] = score_thr if score_factors is None else 0
-    nms_cfg['max_num'] = max_num
+    if nms_cfg.type == 'nms':
+        nms_cfg.score_threshold = score_thr if score_factors is None else 0
+        nms_cfg.max_num = max_num
 
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
 

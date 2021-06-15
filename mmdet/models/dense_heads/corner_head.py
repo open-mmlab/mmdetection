@@ -795,8 +795,6 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                          'Please rename it as nms')
         if 'nms' not in cfg:
             cfg.nms = cfg.nms_cfg
-        if 'max_per_img' in cfg:
-            cfg.nms.max_num = cfg.max_per_img
 
         out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
                                        cfg.nms)
