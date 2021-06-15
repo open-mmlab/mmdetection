@@ -14,6 +14,7 @@
 
 import os
 import copy
+import glob
 import tempfile
 import torch
 
@@ -28,7 +29,12 @@ from .config_mapper import ConfigMappings
 from .task_types import MMDetectionTaskType
 
 from mmcv import Config
+from mmcv.utils import get_git_hash
+from mmdet import __version__ as mmdet_version
 from mmdet.apis import set_random_seed
+from mmdet.integration.nncf import get_nncf_metadata
+from mmdet.integration.nncf.config import load_nncf_config, compose_nncf_config
+
 
 logger = logger_factory.get_logger("MMDetectionTask")
 
@@ -58,6 +64,7 @@ class MMDetectionConfigManager(object):
         data_pipeline = os.path.join(base_dir, conf_params.algo_backend.data_pipeline.value)
 
         self.custom_lr_schedule = self._get_custom_lr_schedule(model_config)
+        self.nncf_config = load_nncf_config(os.path.join(base_dir, conf_params.learning_parameters.nncf_config.value))
 
         logger.warning(f'model config {model_config}')
         logger.warning(f'data pipeline {data_pipeline}')
@@ -99,6 +106,38 @@ class MMDetectionConfigManager(object):
         self._update_model_classification_heads()
         self.update_project_configuration(conf_params)
 
+    def _update_nncf_config_section(self, configurable_parameters: MMDetectionParameters):
+        enabled_nncf_options = []
+        AVAILABLE_NNCF_OPTIONS = ('nncf_quantization', 'nncf_sparsity', 'nncf_pruning', 'nncf_binarization')
+        for option in AVAILABLE_NNCF_OPTIONS:
+            flag = configurable_parameters.learning_parameters[option].value
+            if flag:
+                enabled_nncf_options.append(option)
+
+        if 'nncf_config' in self.config:
+            del self.config.nncf_config
+        if len(enabled_nncf_options) > 0:
+            nncf_config = compose_nncf_config(self.nncf_config, enabled_nncf_options)
+            # FIXME. NNCF configuration may override some training parameters, like number of epochs.
+            config = Config._merge_a_into_b(nncf_config, self.config)
+            self.config = Config(config)
+
+            if self.config.checkpoint_config is not None:
+                # save mmdet version, config file content and class names in
+                # checkpoints as meta data
+                self.config.checkpoint_config.meta = dict(
+                    mmdet_version=mmdet_version + get_git_hash()[:7],
+                    CLASSES=self.label_names)
+                # also save nncf status in the checkpoint -- it is important,
+                # since it is used in wrap_nncf_model for loading NNCF-compressed models
+                nncf_metadata = get_nncf_metadata()
+                self.config.checkpoint_config.meta.update(nncf_metadata)
+            else:
+                # cfg.checkpoint_config is None
+                assert not self.config.get('nncf_config'), (
+                        "NNCF is enabled, but checkpoint_config is not set -- "
+                        "cannot store NNCF metainfo into checkpoints")
+
     def _get_custom_lr_schedule(self, model_file: str):
         schedule_sections = ('optimizer', 'optimizer_config', 'lr_config', 'momentum_config')
         model_config = Config.fromfile(model_file)
@@ -107,6 +146,7 @@ class MMDetectionConfigManager(object):
             if section in model_config:
                 schedule_config[section] = model_config[section]
         return schedule_config
+
     def _compose_config(self, model_file: str, schedule_file: str, dataset_file: str, runtime_file: str):
         """
         Constructs the full mmdetection configuration from files containing the different config sections
@@ -144,6 +184,7 @@ class MMDetectionConfigManager(object):
         self.config.runner.max_epochs = int(configurable_parameters.learning_parameters.num_epochs.value)
         self.config.optimizer.lr = float(configurable_parameters.learning_parameters.learning_rate.value)
         self.config.data.samples_per_gpu = int(configurable_parameters.learning_parameters.batch_size.value)
+        self._update_nncf_config_section(configurable_parameters)
 
     def update_dataset_subsets(self, dataset: Dataset, model: torch.nn.Module = None):
         """
@@ -210,6 +251,22 @@ class MMDetectionConfigManager(object):
         config_string = self.config_to_string(self.config)
         with open(filepath, 'w') as f:
             f.write(config_string)
+
+    def prepare_work_dir(self, base_work_dir) -> str:
+        """
+        Create directory to store checkpoints for next training run. Also sets experiment name and updates config
+
+        :return train_round_checkpoint_dir: str, path to checkpoint dir
+        """
+        checkpoint_dirs = glob.glob(os.path.join(base_work_dir, "checkpoints_round_*"))
+        train_round_checkpoint_dir = os.path.join(base_work_dir, f"checkpoints_round_{len(checkpoint_dirs)}")
+        os.makedirs(train_round_checkpoint_dir)
+        logger.info(f"Checkpoints and logs for this training run are stored in {train_round_checkpoint_dir}")
+        self.config.work_dir = train_round_checkpoint_dir
+        self.config.runner.meta.exp_name = f"train_round_{len(checkpoint_dirs)}"
+        # Save training config for debugging. It is saved in the checkpoint dir for this training round
+        self.save_config_to_file()
+        return train_round_checkpoint_dir
 
     def _replace_config_section_from_file(self, file) -> Config:
         """

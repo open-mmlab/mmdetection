@@ -14,7 +14,10 @@ log_level = 'INFO'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-custom_hooks = [dict(type='CancelTrainingHook', interval=5), dict(type='EnsureCorrectBestCheckpointHook')]
+custom_hooks = [
+    dict(type='CancelTrainingHook', interval=5),
+    # dict(type='EnsureCorrectBestCheckpointHook')
+]
 runner = dict(meta=dict(exp_name='train'),
               max_epochs=0,  # Set via configurable parameters by the user.
               type='EpochRunnerWithCancel')

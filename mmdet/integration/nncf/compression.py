@@ -256,10 +256,14 @@ def change_export_func_first_conv(model):
     return model
 
 
-def get_uncompressed_model(module):
+def is_compressed_model(module):
     if not is_nncf_enabled():
-        return module
+        return False
     from nncf.nncf_network import NNCFNetwork
-    if isinstance(module, NNCFNetwork):
+    return isinstance(module, NNCFNetwork)
+
+
+def get_uncompressed_model(module):
+    if is_compressed_model(module):
         return module.get_nncf_wrapped_model()
     return module

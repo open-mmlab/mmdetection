@@ -209,12 +209,12 @@ def export_model(model, output_dir, target='openvino', onnx_opset=11,
     fake_data = get_fake_input(cfg, device=device)
 
     # BEGIN nncf part
-    if cfg.get('nncf_config'):
-        assert not alt_ssd_export, \
-                'Export of NNCF-compressed model is incompatible with --alt_ssd_export'
-        check_nncf_is_enabled()
-        compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
-        compression_ctrl.prepare_for_export()
+    # if cfg.get('nncf_config'):
+    #     assert not alt_ssd_export, \
+    #             'Export of NNCF-compressed model is incompatible with --alt_ssd_export'
+    #     check_nncf_is_enabled()
+    #     compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
+    #     compression_ctrl.prepare_for_export()
     # END nncf part
 
     mmcv.mkdir_or_exist(osp.abspath(output_dir))

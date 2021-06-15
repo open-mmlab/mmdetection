@@ -162,7 +162,7 @@ class TestOTEAPI(unittest.TestCase):
             difference between the original and the reloaded model is smaller than 1e-4. Ideally there should be no
             difference at all.
         """
-        configurable_parameters = self.setup_configurable_parameters(template_dir)
+        configurable_parameters = self.setup_configurable_parameters(template_dir, num_epochs=5)
         _, detection_environment, dataset = self.init_environment(configurable_parameters, 250)
         task = MMObjectDetectionTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)

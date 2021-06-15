@@ -150,6 +150,37 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
                                                         "epochs, cyclic annealing could result in the best model.",
                                             editable=True)
 
+        nncf_config = Selectable(header="NNCF config file",
+                                 default_value='compression_config.json',
+                                 options=[Option(key='compression_config.json', value='compression_config.json',
+                                                 description='Path to NNCF config file')],
+                                 description="NNCF config file.",
+                                 editable=False)
+
+        nncf_quantization = Boolean(
+            header="Enable NNCF quantization",
+            description="Enable NNCF quantization.",
+            default_value=False
+        )
+
+        nncf_sparsity = Boolean(
+            header="Enable NNCF sparsification",
+            description="Enable NNCF sparsification.",
+            default_value=False
+        )
+
+        nncf_pruning = Boolean(
+            header="Enable NNCF pruning",
+            description="Enable NNCF pruning.",
+            default_value=False
+        )
+
+        nncf_binarization = Boolean(
+            header="Enable NNCF binarization",
+            description="Enable NNCF binarization.",
+            default_value=False
+        )
+
     class __AlgoBackend(Group):
         header = "Internal Algo Backend parameters"
         description = header

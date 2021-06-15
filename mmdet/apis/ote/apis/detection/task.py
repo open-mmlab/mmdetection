@@ -12,21 +12,18 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import os
-import torch
-import tempfile
 import copy
 import io
-import glob
+import os
 import shutil
+import tempfile
 import time
-
+import torch
+import warnings
 from collections import defaultdict
-from itertools import compress
 from typing import Optional, List, Tuple
 
 import numpy as np
-
 from sc_sdk.configuration.configurable_parameters import ConfigurableParameter
 from sc_sdk.entities.analyse_parameters import AnalyseParameters
 from sc_sdk.entities.datasets import Dataset
@@ -47,7 +44,6 @@ from sc_sdk.usecases.tasks.image_deep_learning_task import ImageDeepLearningTask
 from sc_sdk.usecases.tasks.interfaces.configurable_parameters_interface import IConfigurableParameters
 from sc_sdk.usecases.tasks.interfaces.model_optimizer import IModelOptimizer
 from sc_sdk.usecases.tasks.interfaces.unload_interface import IUnload
-
 from sc_sdk.logging import logger_factory
 
 from mmdet.apis import train_detector, get_root_logger, set_random_seed, single_gpu_test, \
@@ -62,40 +58,31 @@ from mmcv.runner import load_checkpoint
 from .configurable_parameters import MMDetectionParameters
 from ..config import MMDetectionConfigManager, MMDetectionTaskType
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook, OTEProgressHook
+from mmdet.integration.nncf import wrap_nncf_model
+from mmdet.apis import get_fake_input
 
 # The following imports are needed to register the custom datasets and hooks as modules in the
 # mmdetection framework. They are not used directly in this file, but they have to be here for the registration to work
 # from ...extension import *
 
 
-logger = logger_factory.get_logger("MMDetectionTask")
-
-
-def safe_inference_detector(model: torch.nn.Module, image: np.ndarray) -> List[np.array]:
-    """
-    Wrapper function to perform inference without breaking the model config.
-    The mmdetection function 'inference_detector' modifies model.cfg in place, causing subsequent evaluation calls to
-    single_gpu_test to break.
-    To avoid this, we make a copy of the config and restore after inference.
-
-    :param model: model to use for inference
-    :param image: image to infer
-    :return results: list of detection results
-    """
-    # model_cfg = copy.deepcopy(model.cfg)
-    output = inference_detector(model, image)
-    # model.cfg = model_cfg
-    return output
+logger = logger_factory.get_logger("OTEDetectionTask")
+try:
+    import logging
+    from nncf.common.utils.logger import set_log_level
+    set_log_level(logging.ERROR)
+except ImportError:
+    pass
 
 
 class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IModelOptimizer, IUnload):
 
     def __init__(self, task_environment: TaskEnvironment):
         """"
-        Task for training object detection models using the MMDetection framework.
+        Task for training object detection models using OTEDetection.
 
         """
-        logger.info(f"Loading MMDetection task of type 'Detection' with task ID {task_environment.task_node.id}.")
+        logger.info(f"Loading OTEDetection task of type 'Detection' with task ID {task_environment.task_node.id}.")
 
         # Temp directory to store logs and model checkpoints
         self.scratch_space = tempfile.mkdtemp(prefix="ote-scratch-")
@@ -113,15 +100,10 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         self.should_stop = False
         self.is_training = False
 
-        # Always use 3 channels for now
-        self.in_channels = 3
-
-        # n_samples is needed for progress estimation
-        self.n_samples_in_current_training_set = 0
-
         # Model initialization.
         self.train_model = None
         self.inference_model = None
+        self.compression_ctx = None
         self.learning_curves = defaultdict(OTELoggerHook.Curve)
         self.time_monitor = TimeMonitorCallback(0, 0, 0, 0)
         self.load_model(self.task_environment)
@@ -168,7 +150,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         if len(dataset) <= batch_size:
             # For small datasets,  just loop over the dataset_items and perform inference one by one
             for dataset_item in dataset:
-                output = safe_inference_detector(self.inference_model, dataset_item.numpy)
+                output = inference_detector(self.inference_model, dataset_item.numpy)
                 prediction_results.append(output)
         else:
             # For larger datasets, build a data_loader to perform the analysis. This is much faster than one by one
@@ -266,153 +248,38 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         self.inference_model.eval()
 
-    def _create_training_checkpoint_dirs(self) -> str:
+    def _do_evaluation(self, model: torch.nn.Module, dataset: Dataset) -> float:
         """
-        Create directory to store checkpoints for next training run. Also sets experiment name and updates config
+        Performs evaluation of model using internal mAP metric.
 
-        :return train_round_checkpoint_dir: str, path to checkpoint dir
+        :return pretraining_performance (float): The performance score of the model
         """
-        # Create new directory for checkpoints
-        # FIXME. This is somewhat out of context here. The task accepts the Dataset and TrainParameters and produce a model.
-        #   It's not responsible for storing or managing the artifacts.
-        checkpoint_dirs = glob.glob(os.path.join(self.scratch_space, "checkpoints_round_*"))
-        train_round_checkpoint_dir = os.path.join(self.scratch_space, f"checkpoints_round_{len(checkpoint_dirs)}")
-        os.makedirs(train_round_checkpoint_dir)
-        logger.info(f"Checkpoints and logs for this training run are stored in {train_round_checkpoint_dir}")
-        self.config_manager.config.work_dir = train_round_checkpoint_dir
-        self.config_manager.config.runner.meta.exp_name = f"train_round_{len(checkpoint_dirs)}"
-
-        # Save training config for debugging. It is saved in the checkpoint dir for this training round
-        self.config_manager.save_config_to_file()
-
-        return train_round_checkpoint_dir
-
-    def _is_train_from_scratch(self, train_parameters: TrainParameters) -> Tuple[torch.nn.Module, bool]:
-        """
-        Checks whether to train a model from scratch.
-
-        :param train_parameters: parameters with which training has been called.
-        :return (old_train_model, train_from_scratch): old_train_model holds the old training model.
-            train_from_scratch is True in case training from scratch, False otherwise
-        """
-        # FIXME. OTE models have multiple initialization options:
-        #   1. Random init (from scratch),
-        #   2. ImageNet-pretrained backbone with random init of the remaining parts,
-        #   3. COCO-pretrained weights for the whole model, maybe except the final layers, that depend on the number of classes.
-        #   It should be supported by train_parameters in the first place.
-        old_train_model = copy.deepcopy(self.train_model)
-        if train_parameters is not None and train_parameters.train_on_empty_model:
-            logger.info("Training from scratch, created new model")
-            self.train_model = self._create_model(config=self.config_manager.config, from_scratch=True)
-            train_from_scratch = True
-        else:
-            train_from_scratch = False
-        return old_train_model, train_from_scratch
-
-    def _do_pre_evaluation(self, dataset: Dataset) -> Tuple[float, bool]:
-        """
-        Performs evaluation of model before training.
-
-        :return pretraining_performance, compare_pre_and_post_training_performance (float, bool): The performance score
-            of the model before training, and whether or not to compare performance before and after training
-        """
-        # Pre-evaluation
-        if self.inference_model is not None:
-            logger.info("Pre-evaluating inference model.")
+        if model is not None:
+            logger.info("Evaluating model.")
             # Build the dataset with the correct data configuration. Config has to come from the model, not the
             # config_manager, because architecture might have changed
-            self.inference_model = self.config_manager.update_dataset_subsets(dataset=dataset,
-                                                                              model=self.inference_model)
-            mm_val_dataset = build_dataset(copy.deepcopy(self.inference_model.cfg.data.val))
-            # Use a single gpu for testing. Set in both mm_val_dataloader and eval_model
+            model = self.config_manager.update_dataset_subsets(dataset, model)
+            mm_val_dataset = build_dataset(model.cfg.data.test)
+            batch_size = 1
             mm_val_dataloader = build_dataloader(mm_val_dataset,
-                                                 samples_per_gpu=self.config_manager.config.data.samples_per_gpu,
+                                                 samples_per_gpu=batch_size,
                                                  workers_per_gpu=self.config_manager.config.data.workers_per_gpu,
                                                  num_gpus=1,
                                                  dist=False,
                                                  shuffle=False)
-            eval_model = MMDataParallel(self.inference_model.cuda(self.config_manager.config.gpu_ids[0]),
+            eval_model = MMDataParallel(model.cuda(self.config_manager.config.gpu_ids[0]),
                                         device_ids=self.config_manager.config.gpu_ids)
-            pre_eval_predictions = single_gpu_test(eval_model, mm_val_dataloader, show=False)
-            pre_eval_results = mm_val_dataset.evaluate(pre_eval_predictions, metric='mAP')
-            pretraining_performance = pre_eval_results['mAP']
-            logger.info(f"Pre-training model performance: mAP = {pretraining_performance}")
-            compare_pre_and_post_training_performance = True
+            # Use a single gpu for testing. Set in both mm_val_dataloader and eval_model
+            eval_predictions = single_gpu_test(eval_model, mm_val_dataloader, show=False)
+            eval_results = mm_val_dataset.evaluate(eval_predictions, metric='mAP')
+            pretraining_performance = eval_results['mAP']
         else:
-            compare_pre_and_post_training_performance = False
             pretraining_performance = 0.0
-        return pretraining_performance, compare_pre_and_post_training_performance
+        logger.info(f"Model performance: mAP = {pretraining_performance}")
+        return pretraining_performance
 
-    def _do_model_training(self, mm_train_dataset):
-        """
-        Trains the model.
-
-        :param mm_train_dataset: training dataset in mmdetection format
-        :return training_duration: Duration of the training round.
-        """
-        # Length of the training dataset is required for progress reporting, hence it is passed to the task class
-        self.n_samples_in_current_training_set = len(mm_train_dataset)
-
-        # Replace all logger hooks by the OTELoggerHook.
-        config = self.config_manager.config_copy
-        config.log_config.hooks = [{'type': 'OTELoggerHook', 'curves': self.learning_curves}]
-        if config.get('custom_hooks', None) is None:
-            config.custom_hooks = []
-        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0) # It will be initialized properly inside the OTEProgressHook before training.
-        config.custom_hooks.append({'type': 'OTEProgressHook', 'time_monitor': self.time_monitor, 'verbose': True})
-
-        # Set model config to the most up to date version. Not 100% sure if this is even needed, setting just in case
-        self.train_model.cfg = self.config_manager.config_copy
-
-        # Train the model. Training modifies mmdet config in place, so make a deepcopy
-        self.is_training = True
-        start_train_time = time.time()
-        train_detector(model=self.train_model,
-                       dataset=[mm_train_dataset],
-                       cfg=config,
-                       validate=True)
-        training_duration = time.time() - start_train_time
-        return training_duration
-
-    def _load_best_model_and_check_if_model_improved(self, pretraining_performance: float,
-                                                     compare_pre_and_post_training_performance: bool):
-        """
-        Load the best model from the best_mAP checkpoint, and checks if the model has improved if necessary
-
-        :param pretraining_performance: float, performance of the model on the validation set before training
-        :param compare_pre_and_post_training_performance: bool, whether or not to compare performance
-        :return (best_score, best_checkpoint, improved): (float, str, bool)
-            best_score: the best score of the model after training
-            improved: whether or not the score is higher than the before-training model
-        """
-        # Load the best model from the best_mAP checkpoint
-        last_checkpoint = torch.load(os.path.join(self.config_manager.config.work_dir, 'latest.pth'))
-        best_checkpoint = torch.load(os.path.join(self.config_manager.config.work_dir,
-                                                  last_checkpoint['meta']['hook_msgs']['best_ckpt']))
-        best_score = last_checkpoint['meta']['hook_msgs']['best_score']
-
-        # Check whether model has improved
-        improved = False
-        if compare_pre_and_post_training_performance:
-            if best_score > pretraining_performance:
-                improved = True
-
-        # Load the best weights
-        self.train_model.load_state_dict(best_checkpoint['state_dict'])
-        return best_score, improved
-
-    def _persist_new_model(self, dataset: Dataset, performance: Performance, training_duration: float):
-        """
-        Convert mmdetection model to OTE model and persist into database. Also update inference model for task
-
-        :param dataset: OTE dataset that was used for training
-        :param performance: performance metrics of the model
-        :param training_duration: duration of the training round
-        """
-        # First make sure train_model.cfg is up to date, then load state_dict and config to bytes in model_data
-        self.train_model.cfg = self.config_manager.config_copy
-        model_data = self._get_model_bytes()
-        # FIXME. What about the link to the previous model?
+    def _persist_inference_model(self, dataset: Dataset, performance: Performance, training_duration: float):
+        model_data = self._get_model_bytes(self.inference_model)
         model = Model(project=self.task_environment.project,
                       task_node=self.task_environment.task_node,
                       configuration=self.task_environment.get_model_configuration(),
@@ -421,10 +288,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                       performance=performance,
                       train_dataset=dataset,
                       training_duration=training_duration)
-
         self.task_environment.model = model
-        self.inference_model = copy.deepcopy(self.train_model)
-        self.inference_model.eval()
 
     def train(self, dataset: Dataset, train_parameters: Optional[TrainParameters] = None) -> Model:
         """ Trains a model on a dataset """
@@ -437,31 +301,54 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         # 5. Evaluate the best obtained model and check if it improved. (see 3).
         # 6. If model improved (over what?), replace it in task_environment. (this is a side-effect which, IMO, better be ommited here).
 
-        # Configure datasets
-        self.config_manager.update_dataset_subsets(dataset=dataset, model=None)
-        # Dataset building modifies the config in place, so use a copy
-        mm_train_dataset = build_dataset(self.config_manager.config_copy.data.train)
+        if self.train_model is None:
+            raise ValueError("Training model is not initialized. Please load the trainable model to the task before training.")
 
         # Create a directory to store model checkpoints for this training round. Also writes the model config to a file
         # 'config.py' in that directory, for debugging purposes.
-        train_round_checkpoint_dir = self._create_training_checkpoint_dirs()
+        self.config_manager.prepare_work_dir(self.scratch_space)
 
-        # Create new train_model if training from scratch
-        old_train_model, train_from_scratch = self._is_train_from_scratch(train_parameters)
+        # Create new train_model if training from scratch.
+        old_train_model = copy.deepcopy(self.train_model)
+        if train_parameters is not None and train_parameters.train_on_empty_model:
+            logger.info("Training from scratch, created new model")
+            self.train_model = self._create_model(config=self.config_manager.config, from_scratch=True)
 
-        # Evaluate model performance before training
-        pretraining_performance, compare_performance = self._do_pre_evaluation(dataset)
+        # Evaluate model performance before training.
+        logger.warning('PREEVALUATION')
+        initial_performance = self._do_evaluation(self.inference_model, dataset)
 
-        # Check for stop signal between pre-eval and training. If training is cancelled at this point, old_train_model
-        # should be restored when training from scratch.
+        # Check for stop signal between pre-eval and training. If training is cancelled at this point,
+        # old_train_model should be restored.
         if self.should_stop:
             self.should_stop = False
-            if train_from_scratch:
-                self.train_model = old_train_model
+            logger.info('Training cancelled.')
+            self.train_model = old_train_model
             return self.task_environment.model
 
-        # Train the model
-        training_duration = self._do_model_training(mm_train_dataset)
+        # Create inference model as a copy of a train one.
+        # FIXME.
+        self.train_model.cfg = self.config_manager.config_copy
+        inference_model = copy.deepcopy(self.train_model)
+        inference_model.eval()
+
+        self.config_manager.update_dataset_subsets(dataset)
+        mm_train_dataset = build_dataset(self.config_manager.config.data.train)
+        config = self.config_manager.config_copy
+        config.log_config.hooks = [{'type': 'OTELoggerHook', 'curves': self.learning_curves}]
+        if config.get('custom_hooks', None) is None:
+            config.custom_hooks = []
+        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0) # It will be initialized properly inside the OTEProgressHook before training.
+        config.custom_hooks.append({'type': 'OTEProgressHook', 'time_monitor': self.time_monitor, 'verbose': True})
+
+        # Train the model. Training modifies mmdet config in place, so make a deepcopy
+        self.is_training = True
+        start_train_time = time.time()
+        train_detector(model=self.train_model,
+                       dataset=[mm_train_dataset],
+                       cfg=config,
+                       validate=True)
+        training_duration = time.time() - start_train_time
 
         # Check for stop signal when training has stopped. If should_stop is true, training was cancelled and no new
         # model should be returned. Old train model is restored.
@@ -472,8 +359,24 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             return self.task_environment.model
 
         # Load the best weights and check if model has improved
-        best_score, improved = self._load_best_model_and_check_if_model_improved(pretraining_performance,
-                                                                                 compare_performance)
+        training_metrics = self._generate_training_metrics_group()
+        best_checkpoint_path = os.path.join(self.train_model.cfg.work_dir, 'latest.pth')
+        if self.train_model.cfg.get('nncf_config'):
+            self.train_model = None
+            cfg = inference_model.cfg
+            cfg.load_from = best_checkpoint_path
+            self.compression_ctx, inference_model = wrap_nncf_model(inference_model, cfg, None, get_fake_input)
+            cfg.load_from = None
+            inference_model.cfg = cfg
+        else:
+            best_checkpoint = torch.load(best_checkpoint_path)
+            inference_model.load_state_dict(best_checkpoint['state_dict'])
+
+        # Evaluate model performance after training.
+        logger.warning('POSTEVALUATION')
+        final_performance = self._do_evaluation(inference_model, dataset)
+        improved = final_performance > initial_performance
+
         # Return a new model if model has improved, or there is no model yet.
         if improved or isinstance(self.task_environment.model, NullModel):
             if improved:
@@ -481,15 +384,15 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             else:
                 logger.info("First training round, saving the model.")
             # Add mAP metric and loss curves
-            performance = Performance(score=ScoreMetric(value=best_score, name="mAP"),
-                                      dashboard_metrics=self._generate_training_metrics_group())
+            performance = Performance(score=ScoreMetric(value=final_performance, name="mAP"),
+                                      dashboard_metrics=training_metrics)
             logger.info('FINAL MODEL PERFORMANCE\n' + str(performance))
-            self._persist_new_model(dataset, performance, training_duration)
+            self.inference_model = inference_model
+            self._persist_inference_model(dataset, performance, training_duration)
         else:
             logger.info("Model performance has not improved while training. No new model has been saved.")
-            if train_from_scratch:
-                # Restore old training model if training from scratch and not improved
-                self.train_model = old_train_model
+            # Restore old training model if training from scratch and not improved
+            self.train_model = old_train_model
 
         self.is_training = False
         return self.task_environment.model
@@ -574,7 +477,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         return output
 
-    def _get_model_bytes(self) -> bytes:
+    def _get_model_bytes(self, model: torch.nn.Module = None) -> bytes:
         """
         Returns the data of the current model. We store both the state_dict and the configuration to make the model
         self-contained.
@@ -582,8 +485,11 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         :return: {'state_dict': data of current model in bytes, 'config': mmdetection config string used for training}
         """
         buffer = io.BytesIO()
-        config_str = self.config_manager.config_to_string(self.train_model.cfg)
-        torch.save({'state_dict': self.train_model.state_dict(), 'config': config_str},
+        if model is None:
+            model = self.train_model
+        config_str = self.config_manager.config_to_string(model.cfg)
+        meta = model.cfg.checkpoint_config.get('meta', {})
+        torch.save({'state_dict': model.state_dict(), 'config': config_str, 'meta': meta},
                    buffer)
         return bytes(buffer.getbuffer())
 
@@ -683,10 +589,10 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         Create list of optimized models. Currently only OpenVINO models are supported.
         """
-        optimized_models = [self._generate_openvino_model()]
+        optimized_models = [self._optimize_model_openvino()]
         return optimized_models
 
-    def _generate_openvino_model(self) -> OpenVINOModel:
+    def _optimize_model_openvino(self, params: dict = {}) -> OpenVINOModel:
         optimized_model_precision = Precision.FP32
 
         with tempfile.TemporaryDirectory() as tempdir:
@@ -694,6 +600,10 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             logger.info(f'Optimized model will be temporarily saved to "{optimized_model_dir}"')
             os.makedirs(optimized_model_dir, exist_ok=True)
             try:
+                if self.compression_ctx:
+                    self.compression_ctx.prepare_for_export()
+                from torch.jit._trace import TracerWarning
+                warnings.filterwarnings("ignore", category=TracerWarning)
                 export_model(self.inference_model, tempdir, target='openvino', precision=optimized_model_precision.name)
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
                 openvino_bin_url = BinaryRepo(self.task_environment.project).save_file_at_path(
