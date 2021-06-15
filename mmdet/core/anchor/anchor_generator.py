@@ -232,12 +232,11 @@ class AnchorGenerator:
             multi_level_anchors.append(anchors)
         return multi_level_anchors
 
-    def grid_anchors(self, featmap_size, stride=16, device='cuda'):
+    def grid_anchors(self, featmap_size, device='cuda'):
 
         warnings.warn('``grid_anchors`` would be deprecated soon. Please use '
                       '``grid_priors``')
-        return self.grid_priors(
-            featmap_size=featmap_size, stride=stride, device=device)
+        return self.grid_priors(featmap_size=featmap_size, device=device)
 
     def single_level_grid_anchors(self,
                                   base_anchors,
