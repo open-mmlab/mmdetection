@@ -237,7 +237,7 @@ class AnchorGenerator:
         warnings.warn('``grid_anchors`` would be deprecated soon. Please use '
                       '``grid_priors``')
         return self.grid_priors(
-            self, featmap_size=featmap_size, stride=stride, device=device)
+            featmap_size=featmap_size, stride=stride, device=device)
 
     def single_level_grid_anchors(self,
                                   base_anchors,
@@ -249,7 +249,6 @@ class AnchorGenerator:
             'Please use ``single_level_grid_priors`` ')
 
         return self.single_level_grid_priors(
-            self,
             base_anchors=base_anchors,
             featmap_size=featmap_size,
             stride=stride,
