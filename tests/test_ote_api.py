@@ -7,7 +7,7 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 
 from flaky import flaky
-from sc_sdk.entities.annotation import Annotation, AnnotationKind
+from sc_sdk.entities.annotation import Annotation, AnnotationScene, AnnotationSceneKind
 from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, Subset
 from sc_sdk.entities.image import Image
@@ -54,18 +54,22 @@ class TestOTEAPI(unittest.TestCase):
             box_shapes = []
             for shape in shapes:
                 shape_labels = shape.get_labels(include_empty=True)
+                shape = shape.shape
                 if isinstance(shape, (Box, Ellipse)):
                     box = np.array([shape.x1, shape.y1, shape.x2, shape.y2], dtype=float)
                 elif isinstance(shape, Polygon):
                     box = np.array([shape.min_x, shape.min_y, shape.max_x, shape.max_y], dtype=float)
                 box = box.clip(0, 1)
-                box_shapes.append(Box(x1=box[0], y1=box[1], x2=box[2], y2=box[3], labels=shape_labels))
+                box_shapes.append(Annotation(Box(x1=box[0], y1=box[1], x2=box[2], y2=box[3]),
+                                             labels=shape_labels))
 
             image = Image(name=f'image_{i}', project=project, numpy=image_numpy)
             image_identifier = ImageIdentifier(image.id)
-            annotation = Annotation(kind=AnnotationKind.ANNOTATION, media_identifier=image_identifier)
-            annotation.append_shapes(box_shapes)
-            items.append(DatasetItem(media=image, annotation=annotation))
+            annotation = AnnotationScene(
+                kind=AnnotationSceneKind.ANNOTATION,
+                media_identifier=image_identifier,
+                annotations=box_shapes)
+            items.append(DatasetItem(media=image, annotation_scene=annotation))
         warnings.resetwarnings()
 
         rng = random.Random()

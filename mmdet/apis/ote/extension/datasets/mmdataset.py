@@ -18,7 +18,7 @@ from copy import deepcopy
 from typing import List
 
 import numpy as np
-from sc_sdk.entities.annotation import Annotation, AnnotationKind, NullMediaIdentifier
+from sc_sdk.entities.annotation import Annotation, AnnotationScene, AnnotationSceneKind, NullMediaIdentifier
 from sc_sdk.entities.datasets import Dataset, DatasetItem, NullDataset, Subset
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.label import ScoredLabel
@@ -45,15 +45,16 @@ def get_annotation_mmdet_format(dataset_item: DatasetItem, label_list: List[str]
     gt_bboxes = []
     gt_labels = []
 
-    for box in dataset_item.annotation.shapes:
+    for ann in dataset_item.get_annotations():
+        box = ann.shape
         if not isinstance(box, Box):
             continue
 
         gt_bboxes.append([box.x1 * width, box.y1 * height, box.x2 * width, box.y2 * height])
 
-        if box.get_labels():
+        if ann.get_labels():
             # Label is not empty, add it to the gt labels
-            label = box.get_labels()[0]
+            label = ann.get_labels()[0]
             class_name = label.name
             gt_labels.append(label_list.index(class_name))
             is_empty_label = False
@@ -226,7 +227,8 @@ class MMDatasetAdapter(Dataset):
             return ScoredLabel(label=self.label_name_to_project_label(label_name))
 
         def create_gt_box(x1, y1, x2, y2, label):
-            return Box(x1=x1, y1=y1, x2=x2, y2=y2, labels=[create_gt_scored_label(label)])
+            return Annotation(Box(x1=x1, y1=y1, x2=x2, y2=y2),
+                              labels=[create_gt_scored_label(label)])
 
         item = self.coco_dataset[indx]
         divisor = np.tile([item['ori_shape'][:2][::-1]], 2)
@@ -236,10 +238,10 @@ class MMDatasetAdapter(Dataset):
         shapes = [create_gt_box(*coords, self.labels[label_id]) for coords, label_id in zip(bboxes, labels)]
 
         image = Image(name=None, project=None, numpy=item['img'])
-        annotation = Annotation(kind=AnnotationKind.ANNOTATION,
-                                media_identifier=NullMediaIdentifier(),
-                                shapes=shapes)
-        datset_item = DatasetItem(image, annotation)
+        annotation_scene = AnnotationScene(kind=AnnotationSceneKind.ANNOTATION,
+                                           media_identifier=NullMediaIdentifier(),
+                                           annotations=shapes)
+        datset_item = DatasetItem(image, annotation_scene)
         return datset_item
 
     def __len__(self) -> int:

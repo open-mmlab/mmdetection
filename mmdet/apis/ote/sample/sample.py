@@ -109,6 +109,15 @@ def main(args):
     performance = task.compute_performance(resultset)
     print(performance)
 
+    # Tweak parameters.
+    params = task.get_configurable_parameters(environment)
+    params.learning_parameters.nncf_quantization.value = True
+    environment.set_configurable_parameters(params)
+    task.update_configurable_parameters(environment)
+    logger.info('Start NNCF compression...')
+    model = task.train(dataset=dataset)
+    logger.info('NNCF compression completed')
+
     task.optimize_loaded_model()
 
     ProjectFactory.delete_project_with_id(project.id)

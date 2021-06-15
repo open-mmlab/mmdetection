@@ -24,6 +24,7 @@ from collections import defaultdict
 from typing import Optional, List, Tuple
 
 import numpy as np
+from sc_sdk.entities.annotation import Annotation
 from sc_sdk.configuration.configurable_parameters import ConfigurableParameter
 from sc_sdk.entities.analyse_parameters import AnalyseParameters
 from sc_sdk.entities.datasets import Dataset
@@ -189,13 +190,11 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                     if coords[3] - coords[1] <= 0 or coords[2] - coords[0] <= 0:
                         continue
 
-                    shapes.append(Box(x1=coords[0],
-                                      y1=coords[1],
-                                      x2=coords[2],
-                                      y2=coords[3],
-                                      labels=assigned_label))
+                    shapes.append(Annotation(
+                        Box(x1=coords[0], y1=coords[1], x2=coords[2], y2=coords[3]),
+                        labels=assigned_label))
 
-            dataset_item.append_shapes(shapes)
+            dataset_item.append_annotations(shapes)
 
         return dataset
 
