@@ -48,12 +48,8 @@ def parse_args():
     return args
 
 
-def calc_inference_fps(cfg, checkpoint, max_iter, log_interval,
-                       is_fuse_conv_bn):
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
+def measure_inferense_speed(cfg, checkpoint, max_iter, log_interval,
+                            is_fuse_conv_bn):
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -112,14 +108,18 @@ def calc_inference_fps(cfg, checkpoint, max_iter, log_interval,
                 fps = (i + 1 - num_warmup) / pure_inf_time
                 print(
                     f'Done image [{i + 1:<3}/ {max_iter}], '
-                    f'fps: {fps:.1f} img / s',
+                    f'fps: {fps:.1f} img / s, '
+                    f'times per image: {1000 / fps:.1f} ms / img',
                     flush=True)
 
         if (i + 1) == max_iter:
             fps = (i + 1 - num_warmup) / pure_inf_time
-            print(f'Overall fps: {fps:.1f} img / s', flush=True)
+            print(
+                f'Overall fps: {fps:.1f} img / s, '
+                f'times per image: {1000 / fps:.1f} ms / img',
+                flush=True)
             break
-    return round(fps, 1)
+    return fps
 
 
 def main():
@@ -134,8 +134,8 @@ def main():
     else:
         init_dist(args.launcher, **cfg.dist_params)
 
-    calc_inference_fps(cfg, args.checkpoint, args.max_iter, args.log_interval,
-                       args.fuse_conv_bn)
+    measure_inferense_speed(cfg, args.checkpoint, args.max_iter,
+                            args.log_interval, args.fuse_conv_bn)
 
 
 if __name__ == '__main__':

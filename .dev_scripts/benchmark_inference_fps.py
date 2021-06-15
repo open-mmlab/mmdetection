@@ -5,7 +5,7 @@ import os.path as osp
 import mmcv
 from mmcv import Config, DictAction
 from mmcv.runner import init_dist
-from tools.analysis_tools.benchmark import calc_inference_fps
+from tools.analysis_tools.benchmark import measure_inferense_speed
 
 
 def parse_args():
@@ -13,6 +13,11 @@ def parse_args():
         description='MMDet benchmark a model of FPS')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint_root', help='Checkpoint file root path')
+    parser.add_argument(
+        '--round-num',
+        type=int,
+        default=1,
+        help='round a number to a given precision in decimal digits')
     parser.add_argument(
         '--out', type=str, help='output path of gathered fps to be stored')
     parser.add_argument(
@@ -48,6 +53,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
+    assert args.round_num >= 0
 
     config = Config.fromfile(args.config)
 
@@ -68,10 +74,16 @@ if __name__ == '__main__':
             checkpoint = osp.join(args.checkpoint_root,
                                   model_info['checkpoint'].strip())
             try:
-                fps = calc_inference_fps(cfg, checkpoint, args.max_iter,
-                                         args.log_interval, args.fuse_conv_bn)
-                print(f'{cfg_path} fps : {fps}', flush=True)
-                result_dict[cfg_path] = fps
+                fps = measure_inferense_speed(cfg, checkpoint, args.max_iter,
+                                              args.log_interval,
+                                              args.fuse_conv_bn)
+                print(
+                    f'{cfg_path} fps : {fps:.{args.round_num}f} img / s, '
+                    f'times per image: {1000/fps:.{args.round_num}f} ms / img',
+                    flush=True)
+                result_dict[cfg_path] = dict(
+                    fps=round(fps, args.round_num),
+                    ms_times_pre_image=round(1000 / fps, args.round_num))
             except Exception as e:
                 print(f'{config} error: {repr(e)}')
                 result_dict[cfg_path] = 0
