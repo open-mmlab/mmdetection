@@ -367,7 +367,6 @@ class RepPointsHead(AnchorFreeHead):
                              gt_bboxes,
                              gt_bboxes_ignore,
                              gt_labels,
-                             label_channels=1,
                              stage='init',
                              unmap_outputs=True):
         inside_flags = valid_flags
@@ -499,7 +498,6 @@ class RepPointsHead(AnchorFreeHead):
              gt_bboxes_ignore_list,
              gt_labels_list,
              stage=stage,
-             label_channels=label_channels,
              unmap_outputs=unmap_outputs)
         # no valid points
         if any([labels is None for labels in all_labels]):
