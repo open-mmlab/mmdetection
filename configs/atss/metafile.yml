@@ -26,7 +26,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 39.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209-985f7bd0.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209-985f7bd0.pth
 
   - Name: atss_r101_fpn_1x_coco
     In Collection: ATSS
@@ -40,4 +40,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/atss/atss_r101_fpn_1x_coco/atss_r101_fpn_1x_20200825-dfcadd6f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/atss/atss_r101_fpn_1x_coco/atss_r101_fpn_1x_20200825-dfcadd6f.pth

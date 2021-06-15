@@ -23,7 +23,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 25.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth
 
   - Name: ssd512_coco
     In Collection: SSD
@@ -36,4 +36,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 29.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20200308-038c5591.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20200308-038c5591.pth
