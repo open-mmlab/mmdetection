@@ -2,7 +2,6 @@ _base_ = [
     '../common/mstrain_3x_coco.py', '../_base_/models/faster_rcnn_r50_fpn.py'
 ]
 model = dict(
-    pretrained='open-mmlab://regnetx_3.2gf',
     backbone=dict(
         _delete_=True,
         type='RegNet',
@@ -11,7 +10,9 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(
+            type='Pretrained', checkpoint='open-mmlab://regnetx_3.2gf')),
     neck=dict(
         type='FPN',
         in_channels=[96, 192, 432, 1008],

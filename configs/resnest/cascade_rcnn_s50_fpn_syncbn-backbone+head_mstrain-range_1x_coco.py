@@ -1,7 +1,6 @@
 _base_ = '../cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
-    pretrained='open-mmlab://resnest50',
     backbone=dict(
         type='ResNeSt',
         stem_channels=64,
@@ -14,7 +13,8 @@ model = dict(
         frozen_stages=1,
         norm_cfg=norm_cfg,
         norm_eval=False,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='open-mmlab://resnest50')),
     roi_head=dict(
         bbox_head=[
             dict(
