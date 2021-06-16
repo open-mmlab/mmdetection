@@ -212,7 +212,7 @@ class AnchorGenerator:
         Args:
             featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels.
-            device (str): Device where the anchors will be put on.
+            device (str): The device where the anchors will be put on.
 
         Return:
             list[torch.Tensor]: Anchors in multiple feature levels. \
@@ -267,8 +267,8 @@ class AnchorGenerator:
             base_anchors (torch.Tensor): The base anchors of a feature grid.
             featmap_size (tuple[int]): Size of the feature maps.
             stride (tuple[int], optional): Stride of the feature map in order
-                (w, h). Defaults to (16, 16).
-            device (str, optional): Device the tensor will be put on.
+                (h, w). Defaults to (16, 16).
+            device (str, optional): The device the tensor will be put on.
                 Defaults to 'cuda'.
 
         Returns:
@@ -276,8 +276,9 @@ class AnchorGenerator:
         """
         # keep as Tensor, so that we can covert to ONNX correctly
         feat_h, feat_w = featmap_size
-        shift_x = torch.arange(0, feat_w, device=device) * stride[0]
-        shift_y = torch.arange(0, feat_h, device=device) * stride[1]
+        stride_w, stride_h = stride
+        shift_x = torch.arange(0, feat_w, device=device) * stride_w
+        shift_y = torch.arange(0, feat_h, device=device) * stride_h
 
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
@@ -299,7 +300,7 @@ class AnchorGenerator:
             featmap_sizes (list(tuple)): List of feature map sizes in
                 multiple feature levels.
             pad_shape (tuple): The padded shape of the image.
-            device (str): Device where the anchors will be put on.
+            device (str): The device where the anchors will be put on.
 
         Return:
             list(torch.Tensor): Valid flags of anchors in multiple levels.
@@ -327,10 +328,11 @@ class AnchorGenerator:
         """Generate the valid flags of anchor in a single feature map.
 
         Args:
-            featmap_size (tuple[int]): The size of feature maps.
+            featmap_size (tuple[int]): The size of feature maps, arrange
+                as (h, w).
             valid_size (tuple[int]): The valid size of the feature maps.
             num_base_anchors (int): The number of base anchors.
-            device (str, optional): Device where the flags will be put on.
+            device (str, optional): The device where the flags will be put on.
                 Defaults to 'cuda'.
 
         Returns:
@@ -361,11 +363,11 @@ class AnchorGenerator:
         Args:
             prior_indexs (Tensor): The index of corresponding anchors
                 in the feature map.
-            featmap_size (tuple[int]): feature map size arrange as (w, h).
+            featmap_size (tuple[int]): feature map size arrange as (h, w).
             level_idx (int): The level index of corresponding feature
                 map.
             dtype (obj:`torch.dtype`): Date type of points.
-            device (obj:`torch.device`): The Device where the points is
+            device (obj:`torch.device`): The device where the points is
                 located.
         Returns:
             Tensor: Anchor with shape (N, 4), N should be equal to
