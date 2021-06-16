@@ -375,13 +375,14 @@ class AnchorGenerator:
         """
 
         height, width = featmap_size
-        num_anchors = self.num_base_anchors[level_idx]
-        anchor_id = prior_indexs % num_anchors
-        x = (prior_indexs // num_anchors) % width
-        y = (prior_indexs // width // num_anchors) % height
+        num_base_anchors = self.num_base_anchors[level_idx]
+        base_anchor_id = prior_indexs % num_base_anchors
+        x = (prior_indexs //
+             num_base_anchors) % width * self.strides[level_idx][0]
+        y = (prior_indexs // width //
+             num_base_anchors) % height * self.strides[level_idx][1]
         priors = torch.stack([x, y, x, y], 1).to(
-            dtype) * self.strides[level_idx][0] + self.base_anchors[level_idx][
-                anchor_id, :].to(device)
+            dtype) + self.base_anchors[level_idx][base_anchor_id, :].to(device)
 
         return priors
 
