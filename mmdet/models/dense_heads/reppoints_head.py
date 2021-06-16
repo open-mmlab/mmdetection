@@ -309,7 +309,7 @@ class RepPointsHead(AnchorFreeHead):
         # since feature map sizes of all images are the same, we only compute
         # points center for one time
         multi_level_points = self.point_generator.grid_priors(
-            featmap_sizes, device, with_stride=True)
+            featmap_sizes, device, with_stride=True, offset=0.)
         points_list = [[point.clone() for point in multi_level_points]
                        for _ in range(num_imgs)]
 

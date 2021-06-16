@@ -42,14 +42,17 @@ class PointGenerator:
 @PRIORS_GENERATORS.register_module()
 class MlvlPointGenerator:
 
-    def __init__(self, strides):
+    def __init__(self, strides, offset=0.5):
         """Standard points generator for 2D points-based detectors.
 
         Args:
             strides (list[int] | list[tuple[int, int]]): Strides of anchors
                 in multiple feature levels in order (w, h).
+            offset (float): The offset of points, the value is normalized with
+                corresponding stride. Defaults to 0.5.
         """
         self.strides = [_pair(stride) for stride in strides]
+        self.offset = offset
 
     @property
     def num_levels(self):
@@ -90,7 +93,7 @@ class MlvlPointGenerator:
         for i in range(self.num_levels):
             priors = self.single_level_grid_priors(
                 featmap_sizes[i],
-                self.strides[i],
+                stride=self.strides[i],
                 device=device,
                 with_stride=with_stride)
             multi_level_priors.append(priors)
@@ -128,8 +131,10 @@ class MlvlPointGenerator:
         """
         feat_h, feat_w = featmap_size
         stride_w, stride_h = stride
-        shift_x = torch.arange(0., feat_w, device=device) * stride_w
-        shift_y = torch.arange(0., feat_h, device=device) * stride_h
+        shift_x = (torch.arange(0., feat_w, device=device) +
+                   self.offset) * stride_w
+        shift_y = (torch.arange(0., feat_h, device=device) +
+                   self.offset) * stride_h
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         if not with_stride:
             shifts = torch.stack([shift_xx, shift_yy], dim=-1)
@@ -220,10 +225,9 @@ class MlvlPointGenerator:
             2 represent (coord_x, coord_y).
         """
         height, width = featmap_size
-        x = prior_indexs % width
-        y = (prior_indexs // width) % height
-        prioris = torch.stack([x, y],
-                              1).to(dtype) * self.strides[level_idx] + (
-                                  self.strides[level_idx] // 2)
+        x = (prior_indexs % width + self.offset) * self.strides[level_idx][0]
+        y = ((prior_indexs // width) % height +
+             self.offset) * self.strides[level_idx][1]
+        prioris = torch.stack([x, y], 1).to(dtype)
         prioris = prioris.to(device)
         return prioris
