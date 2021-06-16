@@ -1,4 +1,4 @@
-# Tutorial : Weight initialization
+# Tutorial 10: Weight initialization
 
 During training, a proper initialization strategy is beneficial to speed up the training or obtain a higher performance. [MMCV](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/weight_init.py) provide some commonly used methods for initializing modules like `nn.Conv2d`. Model initialization in MMdetection mainly uses `init_cfg`. Users can initialize models with following two steps:
 
