@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
+set -v
+set -x
 
 work_dir=$(realpath "$(dirname $0)")
 
 venv_dir=$1
 if [ -z "$venv_dir" ]; then
-  venv_dir=$(realpath -m ${work_dir}/venv)
+  venv_dir=$(realpath -m ${work_dir}/venv2)
 else
   venv_dir=$(realpath -m "$venv_dir")
 fi
@@ -25,7 +27,7 @@ if [ -z "${CUDA_HOME}" ] && [ -d ${CUDA_HOME_CANDIDATE} ]; then
 fi
 
 # Create virtual environment
-virtualenv ${venv_dir} -p python3 --prompt="(detection)" || exit 1
+virtualenv ${venv_dir} -p python3.8 --prompt="(detection2)" || exit 1
 
 path_openvino_vars="${INTEL_OPENVINO_DIR:-/opt/intel/openvino_2021}/bin/setupvars.sh"
 if [[ -e "${path_openvino_vars}" ]]; then
@@ -34,6 +36,7 @@ fi
 
 . ${venv_dir}/bin/activate
 
+pip install -c constraints.txt setuptools==44.0.0 || exit 1
 
 if [ -z ${CUDA_VERSION} ] && [ -e "$CUDA_HOME/version.txt" ]; then
   # Get CUDA version from version.txt file.
@@ -75,6 +78,8 @@ fi
 pip install -c constraints.txt -e . || exit 1
 MMDETECTION_DIR=`realpath .`
 echo "export MMDETECTION_DIR=${MMDETECTION_DIR}" >> ${venv_dir}/bin/activate
+
+#!!#pip install -c constraints.txt -r mmdet/apis/ote/tests/requirements.txt
 
 deactivate
 
