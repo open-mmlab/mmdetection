@@ -5,7 +5,7 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
 
-from mmdet.core import multi_apply
+from mmdet.core import build_bbox_coder, multi_apply
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -53,6 +53,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                      alpha=0.25,
                      loss_weight=1.0),
                  loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+                 bbox_coder=dict(type='DistancePointBBoxCoder'),
                  conv_cfg=None,
                  norm_cfg=None,
                  train_cfg=None,
@@ -78,6 +79,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.conv_bias = conv_bias
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
+        self.bbox_coder = build_bbox_coder(bbox_coder)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.conv_cfg = conv_cfg

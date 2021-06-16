@@ -416,7 +416,8 @@ class FCOSHead(AnchorFreeHead):
                     scores = scores[batch_inds, topk_inds, :]
                     centerness = centerness[batch_inds, topk_inds]
 
-            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shapes)
+            bboxes = self.bbox_coder.decode(
+                points, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
