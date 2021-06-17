@@ -2,10 +2,10 @@ import numpy as np
 import torch
 from torch.nn.modules.utils import _pair
 
-from .builder import PRIORS_GENERATORS
+from .builder import PRIOR_GENERATORS
 
 
-@PRIORS_GENERATORS.register_module()
+@PRIOR_GENERATORS.register_module()
 class PointGenerator:
 
     def _meshgrid(self, x, y, row_major=True):
@@ -39,7 +39,7 @@ class PointGenerator:
         return valid
 
 
-@PRIORS_GENERATORS.register_module()
+@PRIOR_GENERATORS.register_module()
 class MlvlPointGenerator:
 
     def __init__(self, strides, offset=0.5):
