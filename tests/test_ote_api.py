@@ -1,3 +1,4 @@
+import functools
 import numpy as np
 import os.path as osp
 import pytest
@@ -28,14 +29,27 @@ from mmdet.apis.ote.apis.detection import MMObjectDetectionTask, MMDetectionPara
 
 
 # BEGIN code to use e2e test system
-class Requirements:
+try:
+    from e2e.markers.mark_meta import MarkMeta
+    class Requirements:
+        # Dummy requirement
+        REQ_DUMMY = "Dummy requirement"
 
-    # Dummy requirement
-    REQ_1 = "Dummy requirement"
+    class OTEComponent(MarkMeta):
+        OTE = "ote"
 
-from e2e.markers.mark_meta import MarkMeta
-class OTEComponent(MarkMeta):
-    OTE = "ote"
+    def e2e_pytest(func):
+        @pytest.mark.components(OTEComponent.OTE)
+        @pytest.mark.priority_medium
+        @pytest.mark.reqids(Requirements.REQ_DUMMY)
+        @pytest.mark.api_other
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+except ImportError:
+    def e2e_pytest(func):
+        return func
 # END code to use e2e test system
 
 
@@ -111,10 +125,7 @@ class TestOTEAPI(unittest.TestCase):
         configurable_parameters.learning_parameters.num_epochs.value = num_epochs
         return configurable_parameters
 
-    @pytest.mark.components(OTEComponent.OTE)
-    @pytest.mark.priority_medium
-    @pytest.mark.reqids(Requirements.REQ_1)
-    @pytest.mark.api_other
+    @e2e_pytest
     @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def test_cancel_training_detection(self):
         """
@@ -230,26 +241,17 @@ class TestOTEAPI(unittest.TestCase):
         print(f'Performance after reloading: {performance_after_reloading.score.value:.4f}')
         print(f'Performance delta after reloading: {performance_delta:.6f}')
 
-    @pytest.mark.components(OTEComponent.OTE)
-    @pytest.mark.priority_medium
-    @pytest.mark.reqids(Requirements.REQ_1)
-    @pytest.mark.api_other
+    @e2e_pytest
     @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def test_training_custom_mobilenetssd_256(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
 
-    @pytest.mark.components(OTEComponent.OTE)
-    @pytest.mark.priority_medium
-    @pytest.mark.reqids(Requirements.REQ_1)
-    @pytest.mark.api_other
+    @e2e_pytest
     @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def test_training_custom_mobilenetssd_384(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-384x384'))
 
-    @pytest.mark.components(OTEComponent.OTE)
-    @pytest.mark.priority_medium
-    @pytest.mark.reqids(Requirements.REQ_1)
-    @pytest.mark.api_other
+    @e2e_pytest
     @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def test_training_custom_mobilenetssd_512(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-512x512'))
