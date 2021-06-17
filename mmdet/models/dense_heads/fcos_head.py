@@ -65,7 +65,6 @@ class FCOSHead(AnchorFreeHead):
                  center_sample_radius=1.5,
                  norm_on_bbox=False,
                  centerness_on_reg=False,
-                 bbox_coder=dict(type='PointBBoxCoder'),
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -93,7 +92,6 @@ class FCOSHead(AnchorFreeHead):
         self.center_sample_radius = center_sample_radius
         self.norm_on_bbox = norm_on_bbox
         self.centerness_on_reg = centerness_on_reg
-        self.bbox_coder = build_bbox_coder(bbox_coder)
         super().__init__(
             num_classes,
             in_channels,
