@@ -4,9 +4,24 @@ import json
 import os.path as osp
 import shutil
 import subprocess
+from collections import OrderedDict
 
 import mmcv
 import torch
+import yaml
+
+
+def ordered_yaml_dump(data, stream=None, Dumper=yaml.SafeDumper, **kwds):
+
+    class OrderedDumper(Dumper):
+        pass
+
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    return yaml.dump(data, stream, OrderedDumper, **kwds)
 
 
 def process_checkpoint(in_file, out_file):
@@ -16,7 +31,10 @@ def process_checkpoint(in_file, out_file):
         del checkpoint['optimizer']
     # if it is necessary to remove some sensitive data in checkpoint['meta'],
     # add the code here.
-    torch.save(checkpoint, out_file)
+    if torch.__version__ >= '1.6':
+        torch.save(checkpoint, out_file, _use_new_zipfile_serialization=False)
+    else:
+        torch.save(checkpoint, out_file)
     sha = subprocess.check_output(['sha256sum', out_file]).decode()
     final_file = out_file.rstrip('.pth') + '-{}.pth'.format(sha[:8])
     subprocess.Popen(['mv', out_file, final_file])
@@ -25,7 +43,15 @@ def process_checkpoint(in_file, out_file):
 
 def get_final_epoch(config):
     cfg = mmcv.Config.fromfile('./configs/' + config)
-    return cfg.total_epochs
+    return cfg.runner.max_epochs
+
+
+def get_real_epoch(config):
+    cfg = mmcv.Config.fromfile('./configs/' + config)
+    epoch = cfg.runner.max_epochs
+    if cfg.data.train.type == 'RepeatDataset':
+        epoch *= cfg.data.train.times
+    return epoch
 
 
 def get_final_results(log_json_path, epoch, results_lut):
@@ -45,6 +71,70 @@ def get_final_results(log_json_path, epoch, results_lut):
                     for key in results_lut if key in log_line
                 })
                 return result_dict
+
+
+def get_dataset_name(config):
+    # If there are more dataset, add here.
+    name_map = dict(
+        CityscapesDataset='Cityscapes',
+        CocoDataset='COCO',
+        DeepFashionDataset='Deep Fashion',
+        LVISV05Dataset='LVIS v0.5',
+        LVISV1Dataset='LVIS v1',
+        VOCDataset='Pascal VOC',
+        WIDERFaceDataset='WIDER Face')
+    cfg = mmcv.Config.fromfile('./configs/' + config)
+    return name_map[cfg.dataset_type]
+
+
+def convert_model_info_to_pwc(model_infos):
+    pwc_files = {}
+    for model in model_infos:
+        cfg_folder_name = osp.split(model['config'])[-2]
+        pwc_model_info = OrderedDict()
+        pwc_model_info['Name'] = osp.split(model['config'])[-1].split('.')[0]
+        pwc_model_info['In Collection'] = 'Please fill in Collection name'
+        pwc_model_info['Config'] = osp.join('configs', model['config'])
+
+        # get metadata
+        memory = round(model['results']['memory'] / 1024, 1)
+        epochs = get_real_epoch(model['config'])
+        meta_data = OrderedDict()
+        meta_data['Training Memory (GB)'] = memory
+        meta_data['Epochs'] = epochs
+        pwc_model_info['Metadata'] = meta_data
+
+        # get dataset name
+        dataset_name = get_dataset_name(model['config'])
+
+        # get results
+        results = []
+        # if there are more metrics, add here.
+        if 'bbox_mAP' in model['results']:
+            metric = round(model['results']['bbox_mAP'] * 100, 1)
+            results.append(
+                OrderedDict(
+                    Task='Object Detection',
+                    Dataset=dataset_name,
+                    Metrics={'box AP': metric}))
+        if 'segm_mAP' in model['results']:
+            metric = round(model['results']['segm_mAP'] * 100, 1)
+            results.append(
+                OrderedDict(
+                    Task='Instance Segmentation',
+                    Dataset=dataset_name,
+                    Metrics={'mask AP': metric}))
+        pwc_model_info['Results'] = results
+
+        link_string = 'https://download.openmmlab.com/mmdetection/v2.0/'
+        link_string += '{}/{}'.format(model['config'].rstrip('.py'),
+                                      osp.split(model['model_path'])[-1])
+        pwc_model_info['Weights'] = link_string
+        if cfg_folder_name in pwc_files:
+            pwc_files[cfg_folder_name].append(pwc_model_info)
+        else:
+            pwc_files[cfg_folder_name] = [pwc_model_info]
+    return pwc_files
 
 
 def parse_args():
@@ -156,6 +246,11 @@ def main():
     models = dict(models=publish_model_infos)
     print(f'Totally gathered {len(publish_model_infos)} models')
     mmcv.dump(models, osp.join(models_out, 'model_info.json'))
+
+    pwc_files = convert_model_info_to_pwc(publish_model_infos)
+    for name in pwc_files:
+        with open(osp.join(models_out, name + '_metafile.yml'), 'w') as f:
+            ordered_yaml_dump(pwc_files[name], f, encoding='utf-8')
 
 
 if __name__ == '__main__':

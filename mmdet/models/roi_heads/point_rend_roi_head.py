@@ -23,15 +23,6 @@ class PointRendRoIHead(StandardRoIHead):
         """Initialize ``point_head``"""
         self.point_head = builder.build_head(point_head)
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-        """
-        super().init_weights(pretrained)
-        self.point_head.init_weights()
-
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
         """Run forward function and calculate loss for mask head and point head
@@ -200,7 +191,7 @@ class PointRendRoIHead(StandardRoIHead):
                 mask_results = self._mask_forward(x, mask_rois)
                 mask_results['mask_pred'] = self._mask_point_forward_test(
                     x, mask_rois, det_labels, mask_results['mask_pred'],
-                    img_metas)
+                    img_meta)
                 # convert to numpy array to save memory
                 aug_masks.append(
                     mask_results['mask_pred'].sigmoid().cpu().numpy())

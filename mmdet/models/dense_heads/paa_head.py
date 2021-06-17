@@ -533,7 +533,9 @@ class PAAHead(ATSSHead):
         cls_scores. Besides, score voting is used when `` score_voting``
         is set to True.
         """
-        assert with_nms, 'PAA only supports "with_nms=True" now'
+        assert with_nms, 'PAA only supports "with_nms=True" now and it ' \
+                         'means PAAHead does not support ' \
+                         'test-time augmentation'
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         batch_size = cls_scores[0].shape[0]
 

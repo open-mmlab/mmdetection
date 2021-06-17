@@ -18,15 +18,18 @@ class SingleRoIExtractor(BaseRoIExtractor):
         out_channels (int): Output channels of RoI layers.
         featmap_strides (List[int]): Strides of input feature maps.
         finest_scale (int): Scale threshold of mapping to level 0. Default: 56.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
                  roi_layer,
                  out_channels,
                  featmap_strides,
-                 finest_scale=56):
+                 finest_scale=56,
+                 init_cfg=None):
         super(SingleRoIExtractor, self).__init__(roi_layer, out_channels,
-                                                 featmap_strides)
+                                                 featmap_strides, init_cfg)
         self.finest_scale = finest_scale
 
     def map_roi_levels(self, rois, num_levels):
@@ -84,10 +87,13 @@ class SingleRoIExtractor(BaseRoIExtractor):
             if torch.onnx.is_in_onnx_export():
                 # To keep all roi_align nodes exported to onnx
                 # and skip nonzero op
-                mask = mask.float().unsqueeze(-1).expand(*expand_dims).reshape(
-                    roi_feats.shape)
-                roi_feats_t = self.roi_layers[i](feats[i], rois)
-                roi_feats_t *= mask
+                mask = mask.float().unsqueeze(-1)
+                # select target level rois and reset the rest rois to zero.
+                rois_i = rois.clone().detach()
+                rois_i *= mask
+                mask_exp = mask.expand(*expand_dims).reshape(roi_feats.shape)
+                roi_feats_t = self.roi_layers[i](feats[i], rois_i)
+                roi_feats_t *= mask_exp
                 roi_feats += roi_feats_t
                 continue
             inds = mask.nonzero(as_tuple=False).squeeze(1)

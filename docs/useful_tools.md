@@ -146,7 +146,7 @@ python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--
 
 Example:
 
-Assume that you have got [Mask R-CNN checkpoint file](http://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) in the path 'checkpoint'. For other checkpoints, please refer to our [model zoo](./model_zoo.md). You can use the following command to get the results bbox and segmentation json file.
+Assume that you have got [Mask R-CNN checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) in the path 'checkpoint'. For other checkpoints, please refer to our [model zoo](./model_zoo.md). You can use the following command to get the results bbox and segmentation json file.
 
 ```shell
 # out: results.bbox.json and results.segm.json
@@ -184,19 +184,23 @@ In order to serve an `MMDetection` model with [`TorchServe`](https://pytorch.org
 
 ```shell
 python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
---output_folder ${MODEL_STORE} \
+--output-folder ${MODEL_STORE} \
 --model-name ${MODEL_NAME}
 ```
+
+***Note**: ${MODEL_STORE} needs to be an absolute path to a folder.
 
 ### 2. Build `mmdet-serve` docker image
 
 ```shell
-DOCKER_BUILDKIT=1 docker build -t mmdet-serve:latest docker/serve/
+docker build -t mmdet-serve:latest docker/serve/
 ```
 
-### 3. Launch `mmdet-serve`
+### 3. Run `mmdet-serve`
 
 Check the official docs for [running TorchServe with docker](https://github.com/pytorch/serve/blob/master/docker/README.md#running-torchserve-in-a-production-docker-environment).
+
+In order to run in GPU, you need to install [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). You can omit the `--gpus` argument in order to run in CPU.
 
 Example:
 
@@ -209,9 +213,7 @@ docker run --rm \
 mmdet-serve:latest
 ```
 
-***Note**: ${MODEL_STORE} needs to be an absolute path.
-
-[Read the docs](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md) about the Inference (8080), Management (8081) and Metrics (8082) APis
+[Read the docs](https://github.com/pytorch/serve/blob/072f5d088cce9bb64b2a18af065886c9b01b317b/docs/rest_api.md/) about the Inference (8080), Management (8081) and Metrics (8082) APis
 
 ### 4. Test deployment
 

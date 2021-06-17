@@ -4,7 +4,7 @@ from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()
-class InstaBoost(object):
+class InstaBoost:
     r"""Data augmentation method in `InstaBoost: Boosting Instance
     Segmentation Via Probability Map Guided Copy-Pasting
     <https://arxiv.org/abs/1908.07801>`_.

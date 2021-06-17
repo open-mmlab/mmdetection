@@ -1,16 +1,17 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.runner import auto_fp16, force_fp32
+from mmcv.runner import BaseModule, auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.losses import accuracy
+from mmdet.models.utils import build_linear_layer
 
 
 @HEADS.register_module()
-class BBoxHead(nn.Module):
+class BBoxHead(BaseModule):
     """Simplest RoI head, with only two fc layers for classification and
     regression respectively."""
 
@@ -28,13 +29,16 @@ class BBoxHead(nn.Module):
                      target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
                  reg_decoded_bbox=False,
+                 reg_predictor_cfg=dict(type='Linear'),
+                 cls_predictor_cfg=dict(type='Linear'),
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
                      loss_weight=1.0),
                  loss_bbox=dict(
-                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
-        super(BBoxHead, self).__init__()
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
+                 init_cfg=None):
+        super(BBoxHead, self).__init__(init_cfg)
         assert with_cls or with_reg
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
@@ -45,6 +49,8 @@ class BBoxHead(nn.Module):
         self.num_classes = num_classes
         self.reg_class_agnostic = reg_class_agnostic
         self.reg_decoded_bbox = reg_decoded_bbox
+        self.reg_predictor_cfg = reg_predictor_cfg
+        self.cls_predictor_cfg = cls_predictor_cfg
         self.fp16_enabled = False
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
@@ -58,20 +64,45 @@ class BBoxHead(nn.Module):
             in_channels *= self.roi_feat_area
         if self.with_cls:
             # need to add background class
-            self.fc_cls = nn.Linear(in_channels, num_classes + 1)
+            if self.custom_cls_channels:
+                cls_channels = self.loss_cls.get_cls_channels(self.num_classes)
+            else:
+                cls_channels = num_classes + 1
+            self.fc_cls = build_linear_layer(
+                self.cls_predictor_cfg,
+                in_features=in_channels,
+                out_features=cls_channels)
         if self.with_reg:
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
-            self.fc_reg = nn.Linear(in_channels, out_dim_reg)
+            self.fc_reg = build_linear_layer(
+                self.reg_predictor_cfg,
+                in_features=in_channels,
+                out_features=out_dim_reg)
         self.debug_imgs = None
+        if init_cfg is None:
+            self.init_cfg = []
+            if self.with_cls:
+                self.init_cfg += [
+                    dict(
+                        type='Normal', std=0.01, override=dict(name='fc_cls'))
+                ]
+            if self.with_reg:
+                self.init_cfg += [
+                    dict(
+                        type='Normal', std=0.001, override=dict(name='fc_reg'))
+                ]
 
-    def init_weights(self):
-        # conv layers are already initialized by ConvModule
-        if self.with_cls:
-            nn.init.normal_(self.fc_cls.weight, 0, 0.01)
-            nn.init.constant_(self.fc_cls.bias, 0)
-        if self.with_reg:
-            nn.init.normal_(self.fc_reg.weight, 0, 0.001)
-            nn.init.constant_(self.fc_reg.bias, 0)
+    @property
+    def custom_cls_channels(self):
+        return getattr(self.loss_cls, 'custom_cls_channels', False)
+
+    @property
+    def custom_activation(self):
+        return getattr(self.loss_cls, 'custom_activation', False)
+
+    @property
+    def custom_accuracy(self):
+        return getattr(self.loss_cls, 'custom_accuracy', False)
 
     @auto_fp16()
     def forward(self, x):
@@ -229,13 +260,21 @@ class BBoxHead(nn.Module):
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if cls_score.numel() > 0:
-                losses['loss_cls'] = self.loss_cls(
+                loss_cls_ = self.loss_cls(
                     cls_score,
                     labels,
                     label_weights,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
-                losses['acc'] = accuracy(cls_score, labels)
+                if isinstance(loss_cls_, dict):
+                    losses.update(loss_cls_)
+                else:
+                    losses['loss_cls'] = loss_cls_
+                if self.custom_activation:
+                    acc_ = self.loss_cls.get_accuracy(cls_score, labels)
+                    losses.update(acc_)
+                else:
+                    losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             bg_class_ind = self.num_classes
             # 0~self.num_classes-1 are FG, self.num_classes is BG
@@ -277,100 +316,60 @@ class BBoxHead(nn.Module):
                    cfg=None):
         """Transform network output for a batch into bbox predictions.
 
-        If the input rois has batch dimension, the function would be in
-        `batch_mode` and return is a tuple[list[Tensor], list[Tensor]],
-        otherwise, the return is a tuple[Tensor, Tensor].
-
         Args:
-            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5)
-               or (B, num_boxes, 5)
-            cls_score (list[Tensor] or Tensor): Box scores for
-               each scale level, each is a 4D-tensor, the channel number is
-               num_points * num_classes.
-            bbox_pred (Tensor, optional): Box energies / deltas for each scale
-                level, each is a 4D-tensor, the channel number is
-                num_classes * 4.
-            img_shape (Sequence[int] or torch.Tensor or Sequence[
-                Sequence[int]], optional): Maximum bounds for boxes, specifies
-                (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
-                the max_shape should be a Sequence[Sequence[int]]
-                and the length of max_shape should also be B.
-            scale_factor (tuple[ndarray] or ndarray): Scale factor of the
-               image arange as (w_scale, h_scale, w_scale, h_scale). In
-               `batch_mode`, the scale_factor shape is tuple[ndarray].
+            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5).
+                last dimension 5 arrange as (batch_index, x1, y1, x2, y2).
+            cls_score (Tensor): Box scores, has shape
+                (num_boxes, num_classes + 1).
+            bbox_pred (Tensor, optional): Box energies / deltas.
+                has shape (num_boxes, num_classes * 4).
+            img_shape (Sequence[int], optional): Maximum bounds for boxes,
+                specifies (H, W, C) or (H, W).
+            scale_factor (ndarray): Scale factor of the
+               image arrange as (w_scale, h_scale, w_scale, h_scale).
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
 
         Returns:
-            tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor]:
-                If the input has a batch dimension, the return value is
-                a tuple of the list. The first list contains the boxes of
-                the corresponding image in a batch, each tensor has the
-                shape (num_boxes, 5) and last dimension 5 represent
-                (tl_x, tl_y, br_x, br_y, score). Each Tensor in the second
-                list is the labels with shape (num_boxes, ). The length of
-                both lists should be equal to batch_size. Otherwise return
-                value is a tuple of two tensors, the first tensor is the
-                boxes with scores, the second tensor is the labels, both
-                have the same shape as the first case.
+            tuple[Tensor, Tensor]:
+                Fisrt tensor is `det_bboxes`, has the shape
+                (num_boxes, 5) and last
+                dimension 5 represent (tl_x, tl_y, br_x, br_y, score).
+                Second tensor is the labels with shape (num_boxes, ).
         """
-        if isinstance(cls_score, list):
-            cls_score = sum(cls_score) / float(len(cls_score))
 
-        scores = F.softmax(
-            cls_score, dim=-1) if cls_score is not None else None
-
-        batch_mode = True
-        if rois.ndim == 2:
-            # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
-            batch_mode = False
-
-            # add batch dimension
-            if scores is not None:
-                scores = scores.unsqueeze(0)
-            if bbox_pred is not None:
-                bbox_pred = bbox_pred.unsqueeze(0)
-            rois = rois.unsqueeze(0)
-
+        # some loss (Seesaw loss..) may have custom activation
+        if self.custom_cls_channels:
+            scores = self.loss_cls.get_activation(cls_score)
+        else:
+            scores = F.softmax(
+                cls_score, dim=-1) if cls_score is not None else None
+        # bbox_pred would be None in some detector when with_reg is False,
+        # e.g. Grid R-CNN.
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
                 rois[..., 1:], bbox_pred, max_shape=img_shape)
         else:
-            bboxes = rois[..., 1:].clone()
+            bboxes = rois[:, 1:].clone()
             if img_shape is not None:
-                max_shape = bboxes.new_tensor(img_shape)[..., :2]
-                min_xy = bboxes.new_tensor(0)
-                max_xy = torch.cat(
-                    [max_shape] * 2, dim=-1).flip(-1).unsqueeze(-2)
-                bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
-                bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
+                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
-        if rescale and bboxes.size(-2) > 0:
-            if not isinstance(scale_factor, tuple):
-                scale_factor = tuple([scale_factor])
-            # B, 1, bboxes.size(-1)
-            scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(1).repeat(
-                1, 1,
-                bboxes.size(-1) // 4)
-            bboxes /= scale_factor
+        if rescale and bboxes.size(0) > 0:
 
-        det_bboxes = []
-        det_labels = []
-        for (bbox, score) in zip(bboxes, scores):
-            if cfg is not None:
-                det_bbox, det_label = multiclass_nms(bbox, score,
-                                                     cfg.score_thr, cfg.nms,
-                                                     cfg.max_per_img)
-            else:
-                det_bbox, det_label = bbox, score
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
+            scale_factor = bboxes.new_tensor(scale_factor)
+            bboxes = (bboxes.view(bboxes.size(0), -1, 4) / scale_factor).view(
+                bboxes.size()[0], -1)
 
-        if not batch_mode:
-            det_bboxes = det_bboxes[0]
-            det_labels = det_labels[0]
-        return det_bboxes, det_labels
+        if cfg is None:
+            return bboxes, scores
+        else:
+            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
+                                                    cfg.score_thr, cfg.nms,
+                                                    cfg.max_per_img)
+
+            return det_bboxes, det_labels
 
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
@@ -481,3 +480,90 @@ class BBoxHead(nn.Module):
             new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
 
         return new_rois
+
+    def onnx_export(self,
+                    rois,
+                    cls_score,
+                    bbox_pred,
+                    img_shape,
+                    cfg=None,
+                    **kwargs):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            rois (Tensor): Boxes to be transformed.
+                Has shape (B, num_boxes, 5)
+            cls_score (Tensor): Box scores. has shape
+                (B, num_boxes, num_classes + 1), 1 represent the background.
+            bbox_pred (Tensor, optional): Box energies / deltas for,
+                has shape (B, num_boxes, num_classes * 4) when.
+            img_shape (torch.Tensor): Shape of image.
+            cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
+
+        Returns:
+            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
+                and class labels of shape [N, num_det].
+        """
+
+        assert rois.ndim == 3, 'Only support export two stage ' \
+                               'model to ONNX ' \
+                               'with batch dimension. '
+
+        if self.custom_cls_channels:
+            scores = self.loss_cls.get_activation(cls_score)
+        else:
+            scores = F.softmax(
+                cls_score, dim=-1) if cls_score is not None else None
+
+        if bbox_pred is not None:
+            bboxes = self.bbox_coder.decode(
+                rois[..., 1:], bbox_pred, max_shape=img_shape)
+        else:
+            bboxes = rois[..., 1:].clone()
+            if img_shape is not None:
+                max_shape = bboxes.new_tensor(img_shape)[..., :2]
+                min_xy = bboxes.new_tensor(0)
+                max_xy = torch.cat(
+                    [max_shape] * 2, dim=-1).flip(-1).unsqueeze(-2)
+                bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
+                bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+        from mmdet.core.export import add_dummy_nms_for_onnx
+        batch_size = scores.shape[0]
+        # ignore background class
+        scores = scores[..., :self.num_classes]
+        labels = torch.arange(
+            self.num_classes, dtype=torch.long).to(scores.device)
+        labels = labels.view(1, 1, -1).expand_as(scores)
+        labels = labels.reshape(batch_size, -1)
+        scores = scores.reshape(batch_size, -1)
+        bboxes = bboxes.reshape(batch_size, -1, 4)
+
+        max_size = torch.max(img_shape)
+        # Offset bboxes of each class so that bboxes of different labels
+        #  do not overlap.
+        offsets = (labels * max_size + 1).unsqueeze(2)
+        bboxes_for_nms = bboxes + offsets
+        max_output_boxes_per_class = cfg.nms.get('max_output_boxes_per_class',
+                                                 cfg.max_per_img)
+        iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+        score_threshold = cfg.score_thr
+        nms_pre = cfg.get('deploy_nms_pre', -1)
+        batch_dets, labels = add_dummy_nms_for_onnx(
+            bboxes_for_nms,
+            scores.unsqueeze(2),
+            max_output_boxes_per_class,
+            iou_threshold,
+            score_threshold,
+            pre_top_k=nms_pre,
+            after_top_k=cfg.max_per_img,
+            labels=labels)
+        # Offset the bboxes back after dummy nms.
+        offsets = (labels * max_size + 1).unsqueeze(2)
+        # Indexing + inplace operation fails with dynamic shape in ONNX
+        # original style: batch_dets[..., :4] -= offsets
+        bboxes, scores = batch_dets[..., 0:4], batch_dets[..., 4:5]
+        bboxes -= offsets
+        batch_dets = torch.cat([bboxes, scores], dim=2)
+        return batch_dets, labels

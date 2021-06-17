@@ -1,3 +1,4 @@
+# model settings
 model = dict(
     type='FasterRCNN',
     pretrained='torchvision://resnet50',

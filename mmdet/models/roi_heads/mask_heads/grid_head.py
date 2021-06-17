@@ -2,13 +2,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, kaiming_init, normal_init
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 
 from mmdet.models.builder import HEADS, build_loss
 
 
 @HEADS.register_module()
-class GridHead(nn.Module):
+class GridHead(BaseModule):
 
     def __init__(self,
                  grid_points=9,
@@ -23,8 +24,20 @@ class GridHead(nn.Module):
                      type='CrossEntropyLoss', use_sigmoid=True,
                      loss_weight=15),
                  conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=36)):
-        super(GridHead, self).__init__()
+                 norm_cfg=dict(type='GN', num_groups=36),
+                 init_cfg=[
+                     dict(type='Kaiming', layer=['Conv2d', 'Linear']),
+                     dict(
+                         type='Normal',
+                         layer='ConvTranspose2d',
+                         std=0.001,
+                         override=dict(
+                             type='Normal',
+                             name='deconv2',
+                             std=0.001,
+                             bias=-np.log(0.99 / 0.01)))
+                 ]):
+        super(GridHead, self).__init__(init_cfg)
         self.grid_points = grid_points
         self.num_convs = num_convs
         self.roi_feat_size = roi_feat_size
@@ -137,16 +150,6 @@ class GridHead(nn.Module):
             self.sorder_trans.append(so_trans)
 
         self.loss_grid = build_loss(loss_grid)
-
-    def init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-                # TODO: compare mode = "fan_in" or "fan_out"
-                kaiming_init(m)
-        for m in self.modules():
-            if isinstance(m, nn.ConvTranspose2d):
-                normal_init(m, std=0.001)
-        nn.init.constant_(self.deconv2.bias, -np.log(0.99 / 0.01))
 
     def forward(self, x):
         assert x.shape[-1] == x.shape[-2] == self.roi_feat_size

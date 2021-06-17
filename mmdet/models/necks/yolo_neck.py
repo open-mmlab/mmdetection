@@ -1,14 +1,14 @@
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 
 from ..builder import NECKS
 
 
-class DetectionBlock(nn.Module):
+class DetectionBlock(BaseModule):
     """Detection block in YOLO neck.
 
     Let out_channels = n, the DetectionBlock contains:
@@ -27,6 +27,8 @@ class DetectionBlock(nn.Module):
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -34,8 +36,9 @@ class DetectionBlock(nn.Module):
                  out_channels,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
-        super(DetectionBlock, self).__init__()
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
+                 init_cfg=None):
+        super(DetectionBlock, self).__init__(init_cfg)
         double_out_channels = out_channels * 2
 
         # shortcut
@@ -58,7 +61,7 @@ class DetectionBlock(nn.Module):
 
 
 @NECKS.register_module()
-class YOLOV3Neck(nn.Module):
+class YOLOV3Neck(BaseModule):
     """The neck of YOLOV3.
 
     It can be treated as a simplified version of FPN. It
@@ -73,13 +76,16 @@ class YOLOV3Neck(nn.Module):
 
     Args:
         num_scales (int): The number of scales / stages.
-        in_channels (int): The number of input channels.
-        out_channels (int): The number of output channels.
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True)
-        act_cfg (dict): Config dict for activation layer.
+        in_channels (List[int]): The number of input channels per scale.
+        out_channels (List[int]): The number of output channels  per scale.
+        conv_cfg (dict, optional): Config dict for convolution layer.
+            Default: None.
+        norm_cfg (dict, optional): Dictionary to construct and config norm
+            layer. Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict, optional): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -88,8 +94,9 @@ class YOLOV3Neck(nn.Module):
                  out_channels,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
-        super(YOLOV3Neck, self).__init__()
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
+                 init_cfg=None):
+        super(YOLOV3Neck, self).__init__(init_cfg)
         assert (num_scales == len(in_channels) == len(out_channels))
         self.num_scales = num_scales
         self.in_channels = in_channels
@@ -103,7 +110,8 @@ class YOLOV3Neck(nn.Module):
         self.detect1 = DetectionBlock(in_channels[0], out_channels[0], **cfg)
         for i in range(1, self.num_scales):
             in_c, out_c = self.in_channels[i], self.out_channels[i]
-            self.add_module(f'conv{i}', ConvModule(in_c, out_c, 1, **cfg))
+            inter_c = out_channels[i - 1]
+            self.add_module(f'conv{i}', ConvModule(inter_c, out_c, 1, **cfg))
             # in_c + out_c : High-lvl feats will be cat with low-lvl feats
             self.add_module(f'detect{i+1}',
                             DetectionBlock(in_c + out_c, out_c, **cfg))
@@ -129,8 +137,3 @@ class YOLOV3Neck(nn.Module):
             outs.append(out)
 
         return tuple(outs)
-
-    def init_weights(self):
-        """Initialize the weights of module."""
-        # init is done in ConvModule
-        pass

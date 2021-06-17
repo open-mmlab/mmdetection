@@ -13,7 +13,8 @@ class TridentFasterRCNN(FasterRCNN):
                  train_cfg,
                  test_cfg,
                  neck=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
 
         super(TridentFasterRCNN, self).__init__(
             backbone=backbone,
@@ -22,7 +23,8 @@ class TridentFasterRCNN(FasterRCNN):
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            pretrained=pretrained)
+            pretrained=pretrained,
+            init_cfg=init_cfg)
         assert self.backbone.num_branch == self.roi_head.num_branch
         assert self.backbone.test_branch_idx == self.roi_head.test_branch_idx
         self.num_branch = self.backbone.num_branch

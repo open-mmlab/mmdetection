@@ -44,7 +44,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.11.0 was released in 01/04/2021.
+v2.13.0 was released in 01/06/2021.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -109,8 +109,14 @@ Supported methods:
 - [x] [CentripetalNet (CVPR'2020)](configs/centripetalnet/README.md)
 - [x] [VFNet (ArXix'2020)](configs/vfnet/README.md)
 - [x] [DETR (ECCV'2020)](configs/detr/README.md)
+- [x] [Deformable DETR (ICLR'2021)](configs/deformable_detr/README.md)
 - [x] [CascadeRPN (NeurIPS'2019)](configs/cascade_rpn/README.md)
 - [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
+- [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
+- [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
+- [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
+- [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
+
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
@@ -122,7 +128,7 @@ Please refer to [get_started.md](docs/get_started.md) for installation.
 
 Please see [get_started.md](docs/get_started.md) for the basic usage of MMDetection.
 We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/1_exist_data_model.md) and [with new dataset](docs/2_new_data_model.md) for beginners.
-There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), [customizing runtime settings](docs/tutorials/customize_runtime.md) and [useful tools](docs/useful_tools.md).
+There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/customize_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), [customizing runtime settings](docs/tutorials/customize_runtime.md) and [useful tools](docs/useful_tools.md).
 
 Please refer to [FAQ](docs/faq.md) for frequently asked questions.
 
@@ -164,3 +170,5 @@ If you use this toolbox or benchmark in your research, please cite this project.
 - [MMTracking](https://github.com/open-mmlab/mmtracking): OpenMMLab video perception toolbox and benchmark.
 - [MMPose](https://github.com/open-mmlab/mmpose): OpenMMLab pose estimation toolbox and benchmark.
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab image and video editing toolbox.
+- [MMOCR](https://github.com/open-mmlab/mmocr): A Comprehensive Toolbox for Text Detection, Recognition and Understanding.
+- [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab image and video generative models toolbox.

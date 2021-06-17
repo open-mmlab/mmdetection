@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 ```latex
 @article{zhang2019bridging,
@@ -17,5 +17,5 @@
 
 | Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 |:---------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
-| R-50      | pytorch | 1x      | 3.7      | 19.7           |  39.4  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/atss/atss_r50_fpn_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209-985f7bd0.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209_102539.log.json) |
-| R-101     | pytorch | 1x      | 5.6      | 12.3           |  41.5  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/atss/atss_r101_fpn_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/atss/atss_r101_fpn_1x_coco/atss_r101_fpn_1x_20200825-dfcadd6f.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/atss/atss_r101_fpn_1x_coco/atss_r101_fpn_1x_20200825-dfcadd6f.log.json) |
+| R-50      | pytorch | 1x      | 3.7      | 19.7           |  39.4  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/atss/atss_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209-985f7bd0.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209_102539.log.json) |
+| R-101     | pytorch | 1x      | 5.6      | 12.3           |  41.5  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/atss/atss_r101_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/atss/atss_r101_fpn_1x_coco/atss_r101_fpn_1x_20200825-dfcadd6f.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/atss/atss_r101_fpn_1x_coco/atss_r101_fpn_1x_20200825-dfcadd6f.log.json) |

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 ```latex
 @inproceedings{law2018cornernet,
@@ -19,9 +19,9 @@
 
 | Backbone        | Batch Size | Step/Total Epochs | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :------: | :--------: |
-| HourglassNet-104 | [10 x 5](./cornernet_hourglass104_mstest_10x5_210e_coco.py) | 180/210 | 13.9 | 4.2 | 41.2 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco/cornernet_hourglass104_mstest_10x5_210e_coco_20200824_185720-5fefbf1c.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco/cornernet_hourglass104_mstest_10x5_210e_coco_20200824_185720.log.json) |
-| HourglassNet-104 | [8 x 6](./cornernet_hourglass104_mstest_8x6_210e_coco.py) | 180/210 | 15.9 | 4.2 | 41.2 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco/cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618-79b44c30.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco/cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618.log.json) |
-| HourglassNet-104 | [32 x 3](./cornernet_hourglass104_mstest_32x3_210e_coco.py) | 180/210 | 9.5 | 3.9 | 40.4 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco/cornernet_hourglass104_mstest_32x3_210e_coco_20200819_203110-1efaea91.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco/cornernet_hourglass104_mstest_32x3_210e_coco_20200819_203110.log.json) |
+| HourglassNet-104 | [10 x 5](./cornernet_hourglass104_mstest_10x5_210e_coco.py) | 180/210 | 13.9 | 4.2 | 41.2 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco/cornernet_hourglass104_mstest_10x5_210e_coco_20200824_185720-5fefbf1c.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco/cornernet_hourglass104_mstest_10x5_210e_coco_20200824_185720.log.json) |
+| HourglassNet-104 | [8 x 6](./cornernet_hourglass104_mstest_8x6_210e_coco.py) | 180/210 | 15.9 | 4.2 | 41.2 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco/cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618-79b44c30.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco/cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618.log.json) |
+| HourglassNet-104 | [32 x 3](./cornernet_hourglass104_mstest_32x3_210e_coco.py) | 180/210 | 9.5 | 3.9 | 40.4 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco/cornernet_hourglass104_mstest_32x3_210e_coco_20200819_203110-1efaea91.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco/cornernet_hourglass104_mstest_32x3_210e_coco_20200819_203110.log.json) |
 
 Note:
 

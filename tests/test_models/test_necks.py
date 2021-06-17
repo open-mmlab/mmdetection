@@ -2,7 +2,8 @@ import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.necks import FPN, ChannelMapper
+from mmdet.models.necks import (FPN, ChannelMapper, CTResNetNeck,
+                                DilatedEncoder, YOLOV3Neck)
 
 
 def test_fpn():
@@ -236,3 +237,104 @@ def test_channel_mapper():
     for i in range(len(feats)):
         outs[i].shape[1] == out_channels
         outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
+
+
+def test_dilated_encoder():
+    in_channels = 16
+    out_channels = 32
+    out_shape = 34
+    dilated_encoder = DilatedEncoder(in_channels, out_channels, 16, 2)
+    feat = [torch.rand(1, in_channels, 34, 34)]
+    out_feat = dilated_encoder(feat)[0]
+    assert out_feat.shape == (1, out_channels, out_shape, out_shape)
+
+
+def test_ct_resnet_neck():
+    # num_filters/num_kernels must be a list
+    with pytest.raises(TypeError):
+        CTResNetNeck(
+            in_channel=10, num_deconv_filters=10, num_deconv_kernels=4)
+
+    # num_filters/num_kernels must be same length
+    with pytest.raises(AssertionError):
+        CTResNetNeck(
+            in_channel=10,
+            num_deconv_filters=(10, 10),
+            num_deconv_kernels=(4, ))
+
+    in_channels = 16
+    num_filters = (8, 8)
+    num_kernels = (4, 4)
+    feat = torch.rand(1, 16, 4, 4)
+    ct_resnet_neck = CTResNetNeck(
+        in_channel=in_channels,
+        num_deconv_filters=num_filters,
+        num_deconv_kernels=num_kernels,
+        use_dcn=False)
+
+    # feat must be list or tuple
+    with pytest.raises(AssertionError):
+        ct_resnet_neck(feat)
+
+    out_feat = ct_resnet_neck([feat])[0]
+    assert out_feat.shape == (1, num_filters[-1], 16, 16)
+
+    if torch.cuda.is_available():
+        # test dcn
+        ct_resnet_neck = CTResNetNeck(
+            in_channel=in_channels,
+            num_deconv_filters=num_filters,
+            num_deconv_kernels=num_kernels)
+        ct_resnet_neck = ct_resnet_neck.cuda()
+        feat = feat.cuda()
+        out_feat = ct_resnet_neck([feat])[0]
+        assert out_feat.shape == (1, num_filters[-1], 16, 16)
+
+
+def test_yolov3_neck():
+    # num_scales, in_channels, out_channels must be same length
+    with pytest.raises(AssertionError):
+        YOLOV3Neck(num_scales=3, in_channels=[16, 8, 4], out_channels=[8, 4])
+
+    # len(feats) must equal to num_scales
+    with pytest.raises(AssertionError):
+        neck = YOLOV3Neck(
+            num_scales=3, in_channels=[16, 8, 4], out_channels=[8, 4, 2])
+        feats = (torch.rand(1, 4, 16, 16), torch.rand(1, 8, 16, 16))
+        neck(feats)
+
+    # test normal channels
+    s = 32
+    in_channels = [16, 8, 4]
+    out_channels = [8, 4, 2]
+    feat_sizes = [s // 2**i for i in range(len(in_channels) - 1, -1, -1)]
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels) - 1, -1, -1)
+    ]
+    neck = YOLOV3Neck(
+        num_scales=3, in_channels=in_channels, out_channels=out_channels)
+    outs = neck(feats)
+
+    assert len(outs) == len(feats)
+    for i in range(len(outs)):
+        assert outs[i].shape == \
+               (1, out_channels[i], feat_sizes[i], feat_sizes[i])
+
+    # test more flexible setting
+    s = 32
+    in_channels = [32, 8, 16]
+    out_channels = [19, 21, 5]
+    feat_sizes = [s // 2**i for i in range(len(in_channels) - 1, -1, -1)]
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels) - 1, -1, -1)
+    ]
+    neck = YOLOV3Neck(
+        num_scales=3, in_channels=in_channels, out_channels=out_channels)
+    outs = neck(feats)
+
+    assert len(outs) == len(feats)
+    for i in range(len(outs)):
+        assert outs[i].shape == \
+               (1, out_channels[i], feat_sizes[i], feat_sizes[i])
