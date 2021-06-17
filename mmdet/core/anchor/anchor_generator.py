@@ -267,7 +267,7 @@ class AnchorGenerator:
             base_anchors (torch.Tensor): The base anchors of a feature grid.
             featmap_size (tuple[int]): Size of the feature maps.
             stride (tuple[int], optional): Stride of the feature map in order
-                (h, w). Defaults to (16, 16).
+                (w, h). Defaults to (16, 16).
             device (str, optional): The device the tensor will be put on.
                 Defaults to 'cuda'.
 

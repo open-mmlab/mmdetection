@@ -153,7 +153,8 @@ class MlvlPointGenerator:
             featmap_sizes (list(tuple)): List of feature map sizes in
                 multiple feature levels, each size arrange as
                 as (h, w).
-            pad_shape (tuple): The padded shape of the image.
+            pad_shape (tuple(int)): The padded shape of the image,
+                 arrange as (h, w).
             device (str): The device where the anchors will be put on.
 
         Return:
