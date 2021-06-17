@@ -3,14 +3,14 @@
 During training, a proper initialization strategy is beneficial to speed up the training or obtain a higher performance. [MMCV](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/weight_init.py) provide some commonly used methods for initializing modules like `nn.Conv2d`. Model initialization in MMdetection mainly uses `init_cfg`. Users can initialize models with following two steps:
 
 1. Define `init_cfg` for a model or its components in `model_cfg`,  but `init_cfg` of children components have higher priority and will override `init_cfg` of parents modules.
-2. Build model as usual, but call `model.init_weight()` method explicitly, and model parameters will be initialized as configuration.
+2. Build model as usual, but call `model.init_weights()` method explicitly, and model parameters will be initialized as configuration.
 
 The high-level workflow of initialization in MMdetection is :
 
 model_cfg(init_cfg) -> build_from_cfg -> model -> init_weight() -> initialize(self, self.init_cfg) -> children's init_weight()
 
 ### init_cfg APIs
-it is dict or list[dict], and contains:
+it is dict or list[dict], and contains the following keys and values:
 
 - `type` --str, containing the initializer name in `INTIALIZERS`, and followed by arguments of the initializer.
 - `layer` --str or list[str], containing the names of basiclayers in Pytorch or MMCV with learnable parameters that will be initialized, e.g. `'Conv2d'`,`'DeformConv2d'`.
@@ -156,4 +156,4 @@ class FooModel(BaseModule)
                 checkpoint='torchvision://resnet50')
 	```
 
-More details can refer [cnn.md](https://github.com/open-mmlab/mmcv/blob/master/docs/cnn.md) and [Pull-Request](https://github.com/open-mmlab/mmcv/pull/780)
+More details can refer to [cnn.md](https://github.com/open-mmlab/mmcv/blob/master/docs/cnn.md) and [Pull-Request](https://github.com/open-mmlab/mmcv/pull/780)
