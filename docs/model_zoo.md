@@ -15,24 +15,23 @@ You can replace `https://s3.ap-northeast-2.amazonaws.com/open-mmlab` with `https
 
 ## ImageNet Pretrained Models
 
-It is common to initialize from backbone models pre-trained on ImageNet classification task. All pre-trained  model links can be found at [open_mmlab](https://github.com/open-mmlab/mmcv/blob/master/mmcv/model_zoo/open_mmlab.json).  According to `img_norm_cfg`, we can divide all the ImageNet  pre-trained  model weights into four cases:
+It is common to initialize from backbone models pre-trained on ImageNet classification task. All pre-trained  model links can be found at [open_mmlab](https://github.com/open-mmlab/mmcv/blob/master/mmcv/model_zoo/open_mmlab.json).  According to `img_norm_cfg` and source of weight, we can divide all the ImageNet  pre-trained  model weights into some cases:
 
-- TorchVision styles:  Corresponding to torchvision weight, including ResNet50, ResNet101, RegNetX_3.2gf、ResNext101_32x4d, and ResNext101_64x4d. The `img_norm_cfg` is `dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)`.
-- MSRA styles: Corresponding to MSRA weights, including ResNet50_Caffe and ResNet101_Caffe The `img_norm_cfg` is `dict(
+- TorchVision:  Corresponding to torchvision weight, including ResNet50, ResNet101. The `img_norm_cfg` is `dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)`.
+- Pycls:  Corresponding to [pycls](https://github.com/facebookresearch/pycls) weight, including RegNetX. The `img_norm_cfg` is `dict(
+    mean=[103.530, 116.280, 123.675], std=[57.375, 57.12, 58.395], to_rgb=False)`.
+- MSRA styles: Corresponding to [MSRA](https://github.com/KaimingHe/deep-residual-networks) weights, including ResNet50_Caffe and ResNet101_Caffe. The `img_norm_cfg` is `dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)`.
 - Caffe2 styles:  Currently only contains ResNext101_32x8d. The `img_norm_cfg` is `dict(mean=[103.530, 116.280, 123.675], std=[57.375, 57.120, 58.395], to_rgb=False)`.
 - Other styles: E.g SSD which corresponds to `img_norm_cfg` is `dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)` and YOLOv3 which corresponds to `img_norm_cfg` is `dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)`.
 
 The detailed table of the commonly used backbone models in MMDetection is listed below :
 
-| model            | style       | link                                                         | description                                                  |
+| model            | source      | link                                                         | description                                                  |
 | ---------------- | ----------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | ResNet50         | TorchVision | [torchvision's ResNet-50]((https://download.pytorch.org/models/resnet50-19c8e357.pth)) | From [torchvision's ResNet-50]((https://download.pytorch.org/models/resnet50-19c8e357.pth)). |
 | ResNet101        | TorchVision | [torchvision's ResNet-101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth) | From [torchvision's ResNet-101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth). |
-| ResNext101_32x4d | TorchVision | [ResNext101_32x4d](https://download.openmmlab.com/pretrain/third_party/resnext101_32x4d-a5af3160.pth) |                                                              |
-| ResNext101_64x4d | TorchVision | [ResNext101_64x4d](https://download.openmmlab.com/pretrain/third_party/resnext101_64x4d-ee2c6f71.pth) |                                                              |
-| RegNetX_3.2gf    | TorchVision | [RegNetX_3.2gf](https://download.openmmlab.com/pretrain/third_party/regnetx_3.2gf-c2599b0f.pth) |                                                              |
+| RegNetX          | Pycls       | [RegNetX_3.2gf](https://download.openmmlab.com/pretrain/third_party/regnetx_3.2gf-c2599b0f.pth), [RegNetX_800mf](https://download.openmmlab.com/pretrain/third_party/regnetx_800mf-1f4be4c7.pth). etc. | From [pycls](https://github.com/facebookresearch/pycls).     |
 | ResNet50_Caffe   | MSRA        | [MSRA's ResNet-50](https://download.openmmlab.com/pretrain/third_party/resnet50_caffe-788b5fa3.pth) | Converted copy of [Detectron2's R-50.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-50.pkl) model. The original weight comes from [MSRA's original ResNet-50](https://github.com/KaimingHe/deep-residual-networks). |
 | ResNet101_Caffe  | MSRA        | [MSRA's ResNet-101](https://download.openmmlab.com/pretrain/third_party/resnet101_caffe-3ad79236.pth) | Converted copy of [Detectron2's R-101.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-101.pkl) model. The original weight comes from [MSRA's original ResNet-101](https://github.com/KaimingHe/deep-residual-networks). |
 | ResNext101_32x8d | Caffe2      | [Caffe2 ResNext101_32x8d](https://download.openmmlab.com/pretrain/third_party/resnext101_32x8d-1516f1aa.pth) | Converted copy of [Detectron2's X-101-32x8d.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/FAIR/X-101-32x8d.pkl) model. The ResNeXt-101-32x8d model trained with Caffe2 at FB. |
