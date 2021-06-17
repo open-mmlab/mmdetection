@@ -36,7 +36,9 @@ def inference_model(config_name, checkpoint, args, logger=None):
             cfg.data.test.pipeline[1].flip = True
         else:
             if logger is not None:
-                logger.error(f'{config_name} " : Unable to start aug test')
+                logger.error(f'{config_name}: unable to start aug test')
+            else:
+                print(f'{config_name}: unable to start aug test', flush=True)
 
     model = init_detector(cfg, checkpoint, device=args.device)
     # test a single image
@@ -56,8 +58,6 @@ def inference_model(config_name, checkpoint, args, logger=None):
 # Sample test whether the inference code is correct
 def main(args):
     config = Config.fromfile(args.config)
-    logger = get_root_logger(
-        log_file='benchmark_test_image.log', log_level=logging.ERROR)
 
     # test single model
     if args.model_name:
@@ -67,15 +67,19 @@ def main(args):
                 model_infos = [model_infos]
             model_info = model_infos[0]
             config_name = model_info['config'].strip()
+            print(f'processing: {config_name}', flush=True)
             checkpoint = osp.join(args.checkpoint_root,
                                   model_info['checkpoint'].strip())
             # build the model from a config file and a checkpoint file
-            inference_model(config_name, checkpoint, args, logger)
+            inference_model(config_name, checkpoint, args)
             return
         else:
-            raise RuntimeError('Model name input error')
+            raise RuntimeError('model name input error.')
 
     # test all model
+    logger = get_root_logger(
+        log_file='benchmark_test_image.log', log_level=logging.ERROR)
+
     for model_key in config:
         model_infos = config[model_key]
         if not isinstance(model_infos, list):
