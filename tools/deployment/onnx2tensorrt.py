@@ -102,6 +102,19 @@ def onnx2tensorrt(onnx_file,
         print('The numerical values are the same between Pytorch and ONNX')
 
 
+def parse_normalize_cfg(test_pipeline):
+    transforms = None
+    for pipeline in test_pipeline:
+        if 'transforms' in pipeline:
+            transforms = pipeline['transforms']
+            break
+    assert transforms is not None, 'Failed to find `transforms`'
+    norm_config_li = [_ for _ in transforms if _['type'] == 'Normalize']
+    assert len(norm_config_li) == 1, '`norm_config` should only have one'
+    norm_config = norm_config_li[0]
+    return norm_config
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert MMDetection models from ONNX to TensorRT')
@@ -117,7 +130,11 @@ def parse_args():
     parser.add_argument(
         '--show', action='store_true', help='Whether to show output results')
     parser.add_argument(
-        '--dataset', type=str, default='coco', help='Dataset name')
+        '--dataset',
+        type=str,
+        default='coco',
+        help='Dataset name. This argument is deprecated and will be \
+        removed in future releases.')
     parser.add_argument(
         '--verify',
         action='store_true',
@@ -130,7 +147,8 @@ def parse_args():
     parser.add_argument(
         '--to-rgb',
         action='store_false',
-        help='Feed model with RGB or BGR image. Default is RGB.')
+        help='Feed model with RGB or BGR image. Default is RGB. This \
+        argument is deprecated and will be removed in future releases.')
     parser.add_argument(
         '--shape',
         type=int,
@@ -142,13 +160,15 @@ def parse_args():
         type=float,
         nargs='+',
         default=[123.675, 116.28, 103.53],
-        help='Mean value used for preprocess input data')
+        help='Mean value used for preprocess input data. This argument \
+        is deprecated and will be removed in future releases.')
     parser.add_argument(
         '--std',
         type=float,
         nargs='+',
         default=[58.395, 57.12, 57.375],
-        help='Variance value used for preprocess input data')
+        help='Variance value used for preprocess input data. \
+        This argument is deprecated and will be removed in future releases.')
     parser.add_argument(
         '--min-shape',
         type=int,
@@ -171,21 +191,14 @@ def parse_args():
     return args
 
 
-def parse_normalize_cfg(test_pipeline):
-    transforms = test_pipeline[1]['transforms']
-    norm_config_li = [_ for _ in transforms if _['type'] == 'Normalize']
-    assert len(norm_config_li) == 1
-    norm_config = norm_config_li[0]
-    return norm_config
-
-
 if __name__ == '__main__':
 
     assert is_tensorrt_plugin_loaded(), 'TensorRT plugin should be compiled.'
     args = parse_args()
     warnings.warn(
-        'Arguments like `--to-rgb`, `--mean`, `--std`, `--dataset` are '
-        'deprecated and will be removed in future releases.')
+        'Arguments like `--to-rgb`, `--mean`, `--std`, `--dataset` would be \
+        parsed directly from config file and are deprecated and will be \
+        removed in future releases.')
     if not args.input_img:
         args.input_img = osp.join(osp.dirname(__file__), '../demo/demo.jpg')
 

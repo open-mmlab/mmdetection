@@ -175,9 +175,14 @@ def pytorch2onnx(model,
 
 
 def parse_normalize_cfg(test_pipeline):
-    transforms = test_pipeline[1]['transforms']
+    transforms = None
+    for pipeline in test_pipeline:
+        if 'transforms' in pipeline:
+            transforms = pipeline['transforms']
+            break
+    assert transforms is not None, 'Failed to find `transforms`'
     norm_config_li = [_ for _ in transforms if _['type'] == 'Normalize']
-    assert len(norm_config_li) == 1
+    assert len(norm_config_li) == 1, '`norm_config` should only have one'
     norm_config = norm_config_li[0]
     return norm_config
 
@@ -197,7 +202,11 @@ def parse_args():
     parser.add_argument(
         '--test-img', type=str, default=None, help='Images for test')
     parser.add_argument(
-        '--dataset', type=str, default='coco', help='Dataset name')
+        '--dataset',
+        type=str,
+        default='coco',
+        help='Dataset name. This argument is deprecated and will be removed \
+        in future releases.')
     parser.add_argument(
         '--verify',
         action='store_true',
@@ -217,13 +226,15 @@ def parse_args():
         type=float,
         nargs='+',
         default=[123.675, 116.28, 103.53],
-        help='mean value used for preprocess input data')
+        help='mean value used for preprocess input data.This argument \
+        is deprecated and will be removed in future releases.')
     parser.add_argument(
         '--std',
         type=float,
         nargs='+',
         default=[58.395, 57.12, 57.375],
-        help='variance value used for preprocess input data')
+        help='variance value used for preprocess input data. '
+        'This argument is deprecated and will be removed in future releases.')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -244,8 +255,9 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    warnings.warn('Arguments like `--mean`, `--std`, `--dataset` are '
-                  'deprecated and will be removed in future releases.')
+    warnings.warn('Arguments like `--mean`, `--std`, `--dataset` would be \
+        parsed directly from config file and are deprecated and \
+        will be removed in future releases.')
 
     assert args.opset_version == 11, 'MMDet only support opset 11 now'
 

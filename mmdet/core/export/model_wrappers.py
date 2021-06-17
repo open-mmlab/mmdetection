@@ -165,6 +165,8 @@ class TensorRTDetector(DeployBaseDetector):
         output_names = ['dets', 'labels']
         model = TRTWraper(engine_file, ['input'], output_names)
         with_masks = False
+        # if TensorRT has totally 4 inputs/outputs, then
+        # the detector should have `mask` output.
         if len(model.engine) == 4:
             model.output_names = output_names + ['masks']
             with_masks = True
