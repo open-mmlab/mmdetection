@@ -6,48 +6,6 @@ from mmcv.runner import BaseModule, force_fp32
 from mmdet.core import multiclass_nms
 
 
-def bbox_post_process(mlvl_scores,
-                      mlvl_bboxes,
-                      img_meta,
-                      cfg,
-                      use_sigmoid_cls,
-                      rescale=False,
-                      with_nms=True,
-                      mlvl_score_factor=None,
-                      **kwargs):
-    scale_factor = img_meta['scale_factor']
-
-    mlvl_bboxes = torch.cat(mlvl_bboxes)
-    if rescale:
-        mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-    mlvl_scores = torch.cat(mlvl_scores)
-
-    if mlvl_score_factor is not None:
-        mlvl_score_factor = torch.cat(mlvl_score_factor)
-
-    if use_sigmoid_cls:
-        # Add a dummy background class to the backend when using sigmoid
-        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-        # BG cat_id: num_class
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-
-    if with_nms:
-        det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes,
-            mlvl_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img,
-            score_factors=mlvl_score_factor)
-        return det_bboxes, det_labels
-    else:
-        if mlvl_score_factor is not None:
-            return mlvl_bboxes, mlvl_scores, mlvl_score_factor
-        else:
-            return mlvl_bboxes, mlvl_scores
-
-
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     """Base class for DenseHeads."""
 
@@ -104,14 +62,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                                               rescale, with_nms, **kwargs)
             result_list.append(results)
         return result_list
-
-    def get_selected_priori(self,
-                            level_idx,
-                            featmap_size,
-                            dtype,
-                            device,
-                            topk_inds=None):
-        pass
 
     def _get_bboxes_single(self,
                            cls_score_list,
@@ -184,26 +134,64 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                                      score_factor[:, None]).max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
 
-                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
-                                                   scores.dtype,
-                                                   cls_score.device, topk_inds)
+                priors = self.prior_generator.sparse_priors(
+                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
+                    scores.device)
 
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 score_factor = score_factor[topk_inds]
             else:
-                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
-                                                   scores.dtype,
-                                                   cls_score.device)
+                priors = self.prior_generator.single_level_grid_priors(
+                    featmap_size_hw, level_idx, scores.device)
 
             bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shape)
+                priors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_score_factor.append(score_factor)
-        return bbox_post_process(mlvl_scores, mlvl_bboxes, img_meta, cfg,
-                                 self.use_sigmoid_cls, rescale, with_nms,
-                                 mlvl_score_factor, **kwargs)
+        return self._bbox_post_process(mlvl_scores, mlvl_bboxes,
+                                       img_meta['scale_factor'], cfg, rescale,
+                                       with_nms, mlvl_score_factor, **kwargs)
+
+    def _bbox_post_process(self,
+                           mlvl_scores,
+                           mlvl_bboxes,
+                           scale_factor,
+                           cfg,
+                           rescale=False,
+                           with_nms=True,
+                           mlvl_score_factor=None,
+                           **kwargs):
+        mlvl_bboxes = torch.cat(mlvl_bboxes)
+        if rescale:
+            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
+        mlvl_scores = torch.cat(mlvl_scores)
+
+        if mlvl_score_factor is not None:
+            mlvl_score_factor = torch.cat(mlvl_score_factor)
+
+        if self.use_sigmoid_cls:
+            # Add a dummy background class to the backend when using sigmoid
+            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
+            # BG cat_id: num_class
+            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
+            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
+
+        if with_nms:
+            det_bboxes, det_labels = multiclass_nms(
+                mlvl_bboxes,
+                mlvl_scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=mlvl_score_factor)
+            return det_bboxes, det_labels
+        else:
+            if mlvl_score_factor is not None:
+                return mlvl_bboxes, mlvl_scores, mlvl_score_factor
+            else:
+                return mlvl_bboxes, mlvl_scores
 
     def forward_train(self,
                       x,

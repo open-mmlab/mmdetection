@@ -89,7 +89,7 @@ class ATSSHead(AnchorHead):
         self.atss_centerness = nn.Conv2d(
             self.feat_channels, self.num_anchors * 1, 3, padding=1)
         self.scales = nn.ModuleList(
-            [Scale(1.0) for _ in self.anchor_generator.strides])
+            [Scale(1.0) for _ in self.prior_generator.strides])
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -243,7 +243,7 @@ class ATSSHead(AnchorHead):
             dict[str, Tensor]: A dictionary of loss components.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(

@@ -11,7 +11,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
-                        multi_apply, multiclass_nms)
+                        multi_apply)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -99,6 +99,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
 
+        self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.one_hot_smoother = one_hot_smoother
 
         self.conv_cfg = conv_cfg
@@ -257,6 +258,9 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(pred_maps_list) == self.num_levels
+        nms_pre = cfg.get('nms_pre', -1)
+        conf_thr = cfg.get('conf_thr', -1)
+
         multi_lvl_bboxes = []
         multi_lvl_cls_scores = []
         multi_lvl_conf_scores = []
@@ -283,7 +287,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 -1, self.num_classes)  # Cls pred one-hot.
 
             # Filtering out all predictions with conf < conf_thr
-            conf_thr = cfg.get('conf_thr', -1)
             if conf_thr > 0:
                 conf_inds = conf_pred.ge(conf_thr).nonzero(
                     as_tuple=False).squeeze(1)
@@ -292,48 +295,19 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 conf_pred = conf_pred[conf_inds]
 
             # Get top-k prediction
-            nms_pre = cfg.get('nms_pre', -1)
             if 0 < nms_pre < conf_pred.size(0):
                 _, topk_inds = conf_pred.topk(nms_pre)
                 bbox_pred = bbox_pred[topk_inds, :]
                 cls_pred = cls_pred[topk_inds, :]
                 conf_pred = conf_pred[topk_inds]
 
-            # Save the result of current scale
             multi_lvl_bboxes.append(bbox_pred)
             multi_lvl_cls_scores.append(cls_pred)
             multi_lvl_conf_scores.append(conf_pred)
 
-        # Merge the results of different scales together
-        multi_lvl_bboxes = torch.cat(multi_lvl_bboxes)
-        multi_lvl_cls_scores = torch.cat(multi_lvl_cls_scores)
-        multi_lvl_conf_scores = torch.cat(multi_lvl_conf_scores)
-
-        if with_nms and (multi_lvl_conf_scores.size(0) == 0):
-            return torch.zeros((0, 5)), torch.zeros((0, ))
-
-        if rescale:
-            multi_lvl_bboxes /= multi_lvl_bboxes.new_tensor(scale_factor)
-
-        # In mmdet 2.x, the class_id for background is num_classes.
-        # i.e., the last column.
-        padding = multi_lvl_cls_scores.new_zeros(multi_lvl_cls_scores.shape[0],
-                                                 1)
-        multi_lvl_cls_scores = torch.cat([multi_lvl_cls_scores, padding],
-                                         dim=1)
-
-        if with_nms:
-            det_bboxes, det_labels = multiclass_nms(
-                multi_lvl_bboxes,
-                multi_lvl_cls_scores,
-                cfg.score_thr,
-                cfg.nms,
-                cfg.max_per_img,
-                score_factors=multi_lvl_conf_scores)
-            return det_bboxes, det_labels
-        else:
-            return (multi_lvl_bboxes, multi_lvl_cls_scores,
-                    multi_lvl_conf_scores)
+        return self._bbox_post_process(multi_lvl_cls_scores, multi_lvl_bboxes,
+                                       scale_factor, cfg, rescale, with_nms,
+                                       multi_lvl_conf_scores)
 
     @force_fp32(apply_to=('pred_maps', ))
     def loss(self,

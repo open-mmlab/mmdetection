@@ -4,8 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import Scale
 from mmcv.runner import force_fp32
 
-from mmdet.core import (build_bbox_coder, distance2bbox, multi_apply,
-                        reduce_mean)
+from mmdet.core import distance2bbox, multi_apply, reduce_mean
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 

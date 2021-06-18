@@ -6,12 +6,11 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
-                        multi_apply, multiclass_nms, unmap)
+                        multi_apply, unmap)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 from .guided_anchor_head import GuidedAnchorHead
-from .base_dense_head import bbox_post_process
 
 
 @HEADS.register_module()
@@ -285,17 +284,17 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
         (all_labels, all_label_weights, all_bbox_cls_targets,
          all_bbox_cls_weights, all_bbox_reg_targets, all_bbox_reg_weights,
          pos_inds_list, neg_inds_list) = multi_apply(
-            self._get_target_single,
-            approx_flat_list,
-            inside_flag_flat_list,
-            square_flat_list,
-            gt_bboxes_list,
-            gt_bboxes_ignore_list,
-            gt_labels_list,
-            img_metas,
-            label_channels=label_channels,
-            sampling=sampling,
-            unmap_outputs=unmap_outputs)
+             self._get_target_single,
+             approx_flat_list,
+             inside_flag_flat_list,
+             square_flat_list,
+             gt_bboxes_list,
+             gt_bboxes_ignore_list,
+             gt_labels_list,
+             img_metas,
+             label_channels=label_channels,
+             sampling=sampling,
+             unmap_outputs=unmap_outputs)
         # no valid anchors
         if any([labels is None for labels in all_labels]):
             return None
@@ -365,7 +364,7 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                     in a single image
         """
         if not inside_flags.any():
-            return (None,) * 8
+            return (None, ) * 8
         # assign gt and sample anchors
         expand_inside_flags = inside_flags[:, None].expand(
             -1, self.approxs_per_octave).reshape(-1)
@@ -387,7 +386,7 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
             (num_valid_squares, self.side_num * 4))
         bbox_reg_weights = squares.new_zeros(
             (num_valid_squares, self.side_num * 4))
-        labels = squares.new_full((num_valid_squares,),
+        labels = squares.new_full((num_valid_squares, ),
                                   self.num_classes,
                                   dtype=torch.long)
         label_weights = squares.new_zeros(num_valid_squares, dtype=torch.float)
@@ -397,7 +396,7 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
         if len(pos_inds) > 0:
             (pos_bbox_reg_targets, pos_bbox_reg_weights, pos_bbox_cls_targets,
              pos_bbox_cls_weights) = self.bbox_coder.encode(
-                sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
+                 sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
 
             bbox_cls_targets[pos_inds, :] = pos_bbox_cls_targets
             bbox_reg_targets[pos_inds, :] = pos_bbox_reg_targets
@@ -566,6 +565,8 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                           cfg,
                           rescale=False):
         cfg = self.test_cfg if cfg is None else cfg
+        nms_pre = cfg.get('nms_pre', -1)
+
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_confids = []
@@ -585,7 +586,7 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                 -1, self.side_num * 4)
             bbox_reg_pred = bbox_reg_pred.permute(1, 2, 0).reshape(
                 -1, self.side_num * 4)
-            nms_pre = cfg.get('nms_pre', -1)
+
             if 0 < nms_pre < scores.shape[0]:
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
@@ -605,5 +606,5 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_confids.append(confids)
-        return bbox_post_process(mlvl_scores, mlvl_bboxes, dict(scale_factor=scale_factor), cfg, self.use_sigmoid_cls,
-                                 rescale, True, mlvl_confids)
+        return self._bbox_post_process(mlvl_scores, mlvl_bboxes, scale_factor,
+                                       cfg, rescale, True, mlvl_confids)

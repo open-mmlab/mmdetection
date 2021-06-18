@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 from mmcv.runner import force_fp32
 
-from mmdet.core import (anchor_inside_flags, build_anchor_generator,
-                        build_assigner, build_bbox_coder, build_sampler,
-                        images_to_levels, multi_apply, unmap)
+from mmdet.core import (anchor_inside_flags, build_assigner, build_bbox_coder,
+                        build_prior_generator, build_sampler, images_to_levels,
+                        multi_apply, unmap)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -90,10 +90,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
 
-        self.anchor_generator = build_anchor_generator(anchor_generator)
+        self.prior_generator = build_prior_generator(anchor_generator)
         # usually the numbers of anchors for each level are the same
         # except SSD detectors
-        self.num_anchors = self.anchor_generator.num_base_anchors[0]
+        self.num_anchors = self.prior_generator.num_base_anchors[0]
         self._init_layers()
 
     def _init_layers(self):
@@ -155,14 +155,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         # since feature map sizes of all images are the same, we only compute
         # anchors for one time
-        multi_level_anchors = self.anchor_generator.grid_anchors(
+        multi_level_anchors = self.prior_generator.grid_anchors(
             featmap_sizes, device)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
         # for each image, we compute valid flags of multi level anchors
         valid_flag_list = []
         for img_id, img_meta in enumerate(img_metas):
-            multi_level_flags = self.anchor_generator.valid_flags(
+            multi_level_flags = self.prior_generator.valid_flags(
                 featmap_sizes, img_meta['pad_shape'], device)
             valid_flag_list.append(multi_level_flags)
 
@@ -210,7 +210,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
         if not inside_flags.any():
-            return (None,) * 7
+            return (None, ) * 7
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 
@@ -223,7 +223,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
-        labels = anchors.new_full((num_valid_anchors,),
+        labels = anchors.new_full((num_valid_anchors, ),
                                   self.num_classes,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
@@ -362,7 +362,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         res = (labels_list, label_weights_list, bbox_targets_list,
                bbox_weights_list, num_total_pos, num_total_neg)
         if return_sampling_results:
-            res = res + (sampling_results_list,)
+            res = res + (sampling_results_list, )
         for i, r in enumerate(rest_results):  # user-added return values
             rest_results[i] = images_to_levels(r, num_level_anchors)
 
@@ -445,7 +445,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             dict[str, Tensor]: A dictionary of loss components.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
 
@@ -487,32 +487,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_weights_list,
             num_total_samples=num_total_samples)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
-
-    def get_selected_priori(self,
-                            level_idx,
-                            featmap_size,
-                            dtype,
-                            device,
-                            topk_inds=None):
-        # recover the grid index in feature map from topk_inds
-        # only generate anchors on the filtered grids to reduce latency
-        height, width = featmap_size
-        if topk_inds is not None:
-            num_anchors = self.anchor_generator.num_base_anchors[level_idx]
-            anchor_id = topk_inds % num_anchors
-            x = (topk_inds // num_anchors) % width
-            y = (topk_inds // width // num_anchors) % height
-            prioris = torch.stack([x, y, x, y], 1).to(
-                dtype) * self.anchor_generator.strides[level_idx][
-                    0] + self.anchor_generator.base_anchors[level_idx][
-                        anchor_id, :].to(device)
-        else:
-            prioris = self.anchor_generator.single_level_grid_anchors(
-                self.anchor_generator.base_anchors[level_idx].to(device),
-                [height, width],
-                self.anchor_generator.strides[level_idx],
-                device=device)
-        return prioris
 
     def aug_test(self, feats, img_metas, rescale=False):
         """Test function with test time augmentation.

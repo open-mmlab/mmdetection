@@ -7,7 +7,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (bbox2distance, bbox_overlaps, build_anchor_generator,
                         build_assigner, build_sampler, distance2bbox,
-                        multi_apply, multiclass_nms, reduce_mean)
+                        multi_apply, reduce_mean)
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
@@ -558,6 +558,8 @@ class VFNetHead(ATSSHead, FCOSHead):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
+        nms_pre = cfg.get('nms_pre', -1)
+
         mlvl_bboxes = []
         mlvl_scores = []
         for cls_score, bbox_pred, points in zip(cls_scores, bbox_preds,
@@ -567,7 +569,6 @@ class VFNetHead(ATSSHead, FCOSHead):
                 -1, self.cls_out_channels).contiguous().sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).contiguous()
 
-            nms_pre = cfg.get('nms_pre', -1)
             if 0 < nms_pre < scores.shape[0]:
                 max_scores, _ = scores.max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
@@ -579,21 +580,8 @@ class VFNetHead(ATSSHead, FCOSHead):
                 points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-        # BG cat_id: num_class
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        if with_nms:
-            det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-            return det_bboxes, det_labels
-        else:
-            return mlvl_bboxes, mlvl_scores
+        return self._bbox_post_process(mlvl_scores, mlvl_bboxes, scale_factor,
+                                       cfg, rescale, with_nms)
 
     def _get_points_single(self,
                            featmap_size,

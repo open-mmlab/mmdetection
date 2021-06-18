@@ -6,6 +6,7 @@ from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
 
 from mmdet.core import build_bbox_coder, multi_apply
+from mmdet.core.anchor.point_generator import MlvlPointGenerator
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -84,6 +85,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.bbox_coder = build_bbox_coder(bbox_coder)
+        self.prior_generator = MlvlPointGenerator(strides)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.conv_cfg = conv_cfg
@@ -302,27 +304,6 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                 self._get_points_single(featmap_sizes[i], self.strides[i],
                                         dtype, device, flatten))
         return mlvl_points
-
-    def get_selected_priori(self,
-                            level_idx,
-                            featmap_size,
-                            dtype,
-                            device,
-                            topk_inds=None):
-        height, width = featmap_size
-        if topk_inds is not None:
-            x = topk_inds % width
-            y = (topk_inds // width) % height
-            prioris = torch.stack([x, y],
-                                  1).to(dtype) * self.strides[level_idx] + (
-                                      self.strides[level_idx] // 2)
-            prioris = prioris.to(device)
-        else:
-            prioris = self._get_points_single([height, width],
-                                              self.strides[level_idx], dtype,
-                                              device)
-
-        return prioris
 
     def aug_test(self, feats, img_metas, rescale=False):
         """Test function with test time augmentation.

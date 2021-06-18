@@ -9,7 +9,6 @@ from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
                         images_to_levels, multi_apply, reduce_mean, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
-from .base_dense_head import bbox_post_process
 
 
 class Integral(nn.Module):
@@ -89,6 +88,7 @@ class GFLHead(AnchorHead):
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  loss_dfl=dict(type='DistributionFocalLoss', loss_weight=0.25),
+                 bbox_coder=dict(type='DistancePointBBoxCoder'),
                  reg_max=16,
                  init_cfg=dict(
                      type='Normal',
@@ -105,7 +105,11 @@ class GFLHead(AnchorHead):
         self.norm_cfg = norm_cfg
         self.reg_max = reg_max
         super(GFLHead, self).__init__(
-            num_classes, in_channels, init_cfg=init_cfg, **kwargs)
+            num_classes,
+            in_channels,
+            bbox_coder=bbox_coder,
+            init_cfg=init_cfg,
+            **kwargs)
 
         self.sampling = False
         if self.train_cfg:
@@ -148,7 +152,7 @@ class GFLHead(AnchorHead):
         self.gfl_reg = nn.Conv2d(
             self.feat_channels, 4 * (self.reg_max + 1), 3, padding=1)
         self.scales = nn.ModuleList(
-            [Scale(1.0) for _ in self.anchor_generator.strides])
+            [Scale(1.0) for _ in self.prior_generator.strides])
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -324,7 +328,7 @@ class GFLHead(AnchorHead):
         """
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
@@ -359,7 +363,7 @@ class GFLHead(AnchorHead):
                 labels_list,
                 label_weights_list,
                 bbox_targets_list,
-                self.anchor_generator.strides,
+                self.prior_generator.strides,
                 num_total_samples=num_total_samples)
 
         avg_factor = sum(avg_factor)
@@ -410,12 +414,13 @@ class GFLHead(AnchorHead):
         """
         cfg = self.test_cfg if cfg is None else cfg
         img_shape = img_meta['img_shape']
+        nms_pre = cfg.get('nms_pre', -1)
 
         mlvl_bboxes = []
         mlvl_scores = []
         for level_idx, (cls_score, bbox_pred, stride) in enumerate(
                 zip(cls_score_list, bbox_pred_list,
-                    self.anchor_generator.strides)):
+                    self.prior_generator.strides)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             assert stride[0] == stride[1]
             featmap_size_hw = cls_score.shape[-2:]
@@ -425,31 +430,28 @@ class GFLHead(AnchorHead):
             bbox_pred = bbox_pred.permute(1, 2, 0)
             bbox_pred = self.integral(bbox_pred) * stride[0]
 
-            nms_pre = cfg.get('nms_pre', -1)
             if 0 < nms_pre < scores.shape[0]:
                 max_scores, _ = scores.max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
-                                                   scores.dtype,
-                                                   cls_score.device, topk_inds)
+                anchors = self.prior_generator.sparse_priors(
+                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
+                    scores.device)
             else:
-                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
-                                                   scores.dtype,
-                                                   cls_score.device)
+                anchors = self.prior_generator.single_level_grid_priors(
+                    featmap_size_hw, level_idx, scores.device)
 
-            bboxes = distance2bbox(
+            bboxes = self.bbox_coder.decode(
                 self.anchor_center(anchors), bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
-        return bbox_post_process(
+        return self._bbox_post_process(
             mlvl_scores,
             mlvl_bboxes,
-            img_meta,
+            img_meta['scale_factor'],
             cfg,
-            use_sigmoid_cls=True,
             rescale=rescale,
             with_nms=with_nms)
 

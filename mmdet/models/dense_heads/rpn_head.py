@@ -74,6 +74,7 @@ class RPNHead(AnchorHead):
         return dict(
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
+    # TODO: Reuse base method
     def _get_bboxes_single(self,
                            cls_score_list,
                            bbox_pred_list,
@@ -141,14 +142,12 @@ class RPNHead(AnchorHead):
                 topk_inds = rank_inds[:nms_pre]
                 scores = ranked_scores[:nms_pre]
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
-                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
-                                                   scores.dtype,
-                                                   rpn_cls_score.device,
-                                                   topk_inds)
+                anchors = self.prior_generator.sparse_priors(
+                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
+                    scores.device)
             else:
-                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
-                                                   scores.dtype,
-                                                   rpn_cls_score.device)
+                anchors = self.prior_generator.single_level_grid_priors(
+                    featmap_size_hw, level_idx, scores.device)
             mlvl_scores.append(scores)
             mlvl_bbox_preds.append(rpn_bbox_pred)
             mlvl_valid_anchors.append(anchors)
@@ -199,7 +198,7 @@ class RPNHead(AnchorHead):
 
         device = cls_scores[0].device
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.anchor_generator.grid_anchors(
+        mlvl_anchors = self.prior_generator.grid_anchors(
             featmap_sizes, device=device)
 
         cls_scores = [cls_scores[i].detach() for i in range(num_levels)]

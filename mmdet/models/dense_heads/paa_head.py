@@ -516,60 +516,15 @@ class PAAHead(ATSSHead):
             label_channels=1,
             unmap_outputs=True)
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           iou_preds,
-                           img_meta,
+    def _bbox_post_process(self,
+                           mlvl_scores,
+                           mlvl_bboxes,
+                           scale_factor,
                            cfg,
                            rescale=False,
-                           with_nms=True):
-        """Transform outputs for a single batch item into labeled boxes.
-
-        This method is almost same as `ATSSHead._get_bboxes_single()`.
-        We use sqrt(iou_preds * cls_scores) in NMS process instead of just
-        cls_scores. Besides, score voting is used when `` score_voting``
-        is set to True.
-        """
-        assert with_nms, 'PAA only supports "with_nms=True" now and it ' \
-                         'means PAAHead does not support ' \
-                         'test-time augmentation'
-        cfg = self.test_cfg if cfg is None else cfg
-        img_shape = img_meta['img_shape']
-        scale_factor = img_meta['scale_factor']
-
-        mlvl_bboxes = []
-        mlvl_scores = []
-        mlvl_iou_preds = []
-        for level_idx, (cls_score, bbox_pred, iou_preds) in enumerate(
-                zip(cls_scores, bbox_preds, iou_preds)):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            featmap_size_hw = cls_score.shape[-2:]
-
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            iou_preds = iou_preds.permute(1, 2, 0).reshape(-1).sigmoid()
-            nms_pre = cfg.get('nms_pre', -1)
-            if 0 < nms_pre < scores.shape[0]:
-                max_scores, _ = (scores * iou_preds[:, None]).sqrt().max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                iou_preds = iou_preds[topk_inds]
-                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
-                                                   scores.dtype,
-                                                   cls_score.device, topk_inds)
-            else:
-                anchors = self.get_selected_priori(level_idx, featmap_size_hw,
-                                                   scores.dtype,
-                                                   cls_score.device)
-
-            bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shape)
-            mlvl_bboxes.append(bboxes)
-            mlvl_scores.append(scores)
-            mlvl_iou_preds.append(iou_preds)
+                           with_nms=True,
+                           mlvl_score_factor=None,
+                           **kwargs):
 
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
@@ -581,7 +536,7 @@ class PAAHead(ATSSHead):
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
 
-        mlvl_iou_preds = torch.cat(mlvl_iou_preds)
+        mlvl_iou_preds = torch.cat(mlvl_score_factor)
         mlvl_nms_scores = (mlvl_scores * mlvl_iou_preds[:, None]).sqrt()
         det_bboxes, det_labels = multiclass_nms(
             mlvl_bboxes,
