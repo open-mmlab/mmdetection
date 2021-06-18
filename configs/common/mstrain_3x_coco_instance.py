@@ -1,37 +1,15 @@
-_base_ = [
-    '../common/mstrain-poly_3x_coco_instance.py',
-    '../_base_/models/mask_rcnn_r50_fpn.py'
-]
-
-model = dict(
-    pretrained='open-mmlab://detectron2/resnext101_32x8d',
-    backbone=dict(
-        type='ResNeXt',
-        depth=101,
-        groups=32,
-        base_width=8,
-        num_stages=4,
-        out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
-        style='pytorch'))
-
+_base_ = '../_base_/default_runtime.py'
+# dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[103.530, 116.280, 123.675],
-    std=[57.375, 57.120, 58.395],
-    to_rgb=False)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 # In mstrain 3x config, img_scale=[(1333, 640), (1333, 800)],
 # multiscale_mode='range'
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(
-        type='LoadAnnotations',
-        with_bbox=True,
-        with_mask=True,
-        poly2mask=False),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='Resize',
         img_scale=[(1333, 640), (1333, 800)],
@@ -81,3 +59,18 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric=['bbox', 'segm'])
+
+# optimizer
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=None)
+
+# learning policy
+# Experiments show that using step=[9, 11] has higher performance
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=0.001,
+    step=[9, 11])
+runner = dict(type='EpochBasedRunner', max_epochs=12)
