@@ -294,8 +294,8 @@ class AnchorGenerator:
              num_base_anchors) % width * self.strides[level_idx][0]
         y = (prior_idx // width //
              num_base_anchors) % height * self.strides[level_idx][1]
-        priors = (torch.stack([x, y, x, y], 1).to(dtype) +
-                  self.base_anchors[level_idx][base_anchor_id, :]).to(device)
+        priors = torch.stack([x, y, x, y], 1).to(dtype).to(device) + \
+            self.base_anchors[level_idx][base_anchor_id, :].to(device)
 
         return priors
 
