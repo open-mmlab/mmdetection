@@ -93,7 +93,7 @@ class MlvlPointGenerator:
         for i in range(self.num_levels):
             priors = self.single_level_grid_priors(
                 featmap_sizes[i],
-                stride=self.strides[i],
+                level_idx=i,
                 device=device,
                 with_stride=with_stride)
             multi_level_priors.append(priors)
@@ -101,7 +101,7 @@ class MlvlPointGenerator:
 
     def single_level_grid_priors(self,
                                  featmap_size,
-                                 stride=None,
+                                 level_idx,
                                  device='cuda',
                                  with_stride=False):
         """Generate grid Points of a single level.
@@ -112,8 +112,7 @@ class MlvlPointGenerator:
         Args:
             featmap_size (tuple[int]): Size of the feature maps, arrange as
                 (h, w).
-            stride (int, tuple[int], optional): Stride of the feature map
-                in order (w, h). Defaults to None.
+            level_idx (int): The index of corresponding feature map level.
             device (str, optional): The device the tensor will be put on.
                 Defaults to 'cuda'.
             with_stride (bool): Concatenate the stride to the last dimension
@@ -130,7 +129,7 @@ class MlvlPointGenerator:
             (coord_x, coord_y, stride_w, stride_h).
         """
         feat_h, feat_w = featmap_size
-        stride_w, stride_h = stride
+        stride_w, stride_h = self.strides[level_idx]
         shift_x = (torch.arange(0., feat_w, device=device) +
                    self.offset) * stride_w
         shift_y = (torch.arange(0., feat_h, device=device) +
@@ -204,15 +203,15 @@ class MlvlPointGenerator:
         return valid
 
     def sparse_priors(self,
-                      prior_indexs,
+                      prior_idx,
                       featmap_size,
                       level_idx,
                       dtype,
                       device='cuda'):
-        """Generate sparse points according to the ``prior_indexs``.
+        """Generate sparse points according to the ``prior_idx``.
 
         Args:
-            prior_indexs (Tensor): The index of corresponding anchors
+            prior_idx (Tensor): The index of corresponding anchors
                 in the feature map.
             featmap_size (tuple[int]): feature map size arrange as (w, h).
             level_idx (int): The level index of corresponding feature
@@ -222,12 +221,12 @@ class MlvlPointGenerator:
                 located.
         Returns:
             Tensor: Anchor with shape (N, 2), N should be equal to
-            the length of ``prior_indexs``. And last dimension
+            the length of ``prior_idx``. And last dimension
             2 represent (coord_x, coord_y).
         """
         height, width = featmap_size
-        x = (prior_indexs % width + self.offset) * self.strides[level_idx][0]
-        y = ((prior_indexs // width) % height +
+        x = (prior_idx % width + self.offset) * self.strides[level_idx][0]
+        y = ((prior_idx // width) % height +
              self.offset) * self.strides[level_idx][1]
         prioris = torch.stack([x, y], 1).to(dtype)
         prioris = prioris.to(device)
