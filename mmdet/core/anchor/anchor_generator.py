@@ -268,7 +268,7 @@ class AnchorGenerator:
                       prior_idx,
                       featmap_size,
                       level_idx,
-                      dtype,
+                      dtype=torch.float32,
                       device='cuda'):
         """Generate sparse anchors according to the ``prior_idx``.
 
@@ -278,7 +278,8 @@ class AnchorGenerator:
             featmap_size (tuple[int]): feature map size arrange as (h, w).
             level_idx (int): The level index of corresponding feature
                 map.
-            dtype (obj:`torch.dtype`): Date type of points.
+            dtype (obj:`torch.dtype`): Date type of points.Defaults to
+                ``torch.float32``.
             device (obj:`torch.device`): The device where the points is
                 located.
         Returns:

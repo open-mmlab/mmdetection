@@ -62,14 +62,44 @@ def test_standard_points_generator():
 def test_sparse_prior():
     from mmdet.core.anchor import MlvlPointGenerator
     mlvl_points = MlvlPointGenerator(strides=[4, 10], offset=0)
-    prior_indexs = torch.Tensor([[0, 2, 4, 5, 6, 9]], dtype=torch.Long)
+    prior_indexs = torch.Tensor([0, 2, 4, 5, 6, 9]).long()
 
     featmap_sizes = [(3, 5), (6, 4)]
     grid_anchors = mlvl_points.grid_priors(
-        featmap_sizes=featmap_sizes, with_stride=False)
+        featmap_sizes=featmap_sizes, with_stride=False, device='cpu')
     sparse_prior = mlvl_points.sparse_priors(
-        prior_indexs=prior_indexs, featmap_size=featmap_sizes[0], level_idx=0)
+        prior_idx=prior_indexs,
+        featmap_size=featmap_sizes[0],
+        level_idx=0,
+        device='cpu')
     assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
+    sparse_prior = mlvl_points.sparse_priors(
+        prior_idx=prior_indexs,
+        featmap_size=featmap_sizes[1],
+        level_idx=1,
+        device='cpu')
+    assert (sparse_prior == grid_anchors[1][prior_indexs]).all()
+
+    from mmdet.core.anchor import AnchorGenerator
+    mlvl_anchors = AnchorGenerator(
+        strides=[16, 32], ratios=[1.], scales=[1.], base_sizes=[4, 8])
+    prior_indexs = torch.Tensor([0, 2, 4, 5, 6, 9]).long()
+
+    featmap_sizes = [(3, 5), (6, 4)]
+    grid_anchors = mlvl_anchors.grid_priors(
+        featmap_sizes=featmap_sizes, device='cpu')
+    sparse_prior = mlvl_anchors.sparse_priors(
+        prior_idx=prior_indexs,
+        featmap_size=featmap_sizes[0],
+        level_idx=0,
+        device='cpu')
+    assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
+    sparse_prior = mlvl_anchors.sparse_priors(
+        prior_idx=prior_indexs,
+        featmap_size=featmap_sizes[1],
+        level_idx=1,
+        device='cpu')
+    assert (sparse_prior == grid_anchors[1][prior_indexs]).all()
 
 
 def test_standard_anchor_generator():
