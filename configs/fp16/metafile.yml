@@ -21,7 +21,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 37.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/fp16/faster_rcnn_r50_fpn_fp16_1x_coco/faster_rcnn_r50_fpn_fp16_1x_coco_20200204-d4dc1471.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fp16/faster_rcnn_r50_fpn_fp16_1x_coco/faster_rcnn_r50_fpn_fp16_1x_coco_20200204-d4dc1471.pth
 
   - Name: mask_rcnn_r50_fpn_fp16_1x_coco
     In Collection: FP16
@@ -39,7 +39,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  34.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/fp16/mask_rcnn_r50_fpn_fp16_1x_coco/mask_rcnn_r50_fpn_fp16_1x_coco_20200205-59faf7e4.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fp16/mask_rcnn_r50_fpn_fp16_1x_coco/mask_rcnn_r50_fpn_fp16_1x_coco_20200205-59faf7e4.pth
 
   - Name: retinanet_r50_fpn_fp16_1x_coco
     In Collection: FP16
@@ -53,4 +53,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 36.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/fp16/retinanet_r50_fpn_fp16_1x_coco/retinanet_r50_fpn_fp16_1x_coco_20200702-0dbfb212.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fp16/retinanet_r50_fpn_fp16_1x_coco/retinanet_r50_fpn_fp16_1x_coco_20200702-0dbfb212.pth

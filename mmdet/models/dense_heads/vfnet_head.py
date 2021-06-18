@@ -574,7 +574,9 @@ class VFNetHead(ATSSHead, FCOSHead):
                 points = points[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
+
+            bboxes = self.bbox_coder.decode(
+                points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)
