@@ -268,7 +268,10 @@ class VFNetHead(ATSSHead, FCOSHead):
         cls_feat = self.relu(self.vfnet_cls_dconv(cls_feat, dcn_offset))
         cls_score = self.vfnet_cls(cls_feat)
 
-        return cls_score, bbox_pred, bbox_pred_refine
+        if self.training:
+            return cls_score, bbox_pred, bbox_pred_refine
+        else:
+            return cls_score, bbox_pred_refine
 
     def star_dcn_offset(self, bbox_pred, gradient_mul, stride):
         """Compute the star deformable conv offsets.
@@ -459,74 +462,40 @@ class VFNetHead(ATSSHead, FCOSHead):
             loss_bbox=loss_bbox,
             loss_bbox_rf=loss_bbox_refine)
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'bbox_preds_refine'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   bbox_preds_refine,
-                   img_metas,
-                   cfg=None,
-                   rescale=None,
-                   with_nms=True):
-        """Transform network outputs for a batch into bbox predictions.
-
-        Args:
-            cls_scores (list[Tensor]): Box iou-aware scores for each scale
-                level with shape (N, num_points * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box offsets for each scale
-                level with shape (N, num_points * 4, H, W).
-            bbox_preds_refine (list[Tensor]): Refined Box offsets for
-                each scale level with shape (N, num_points * 4, H, W).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used. Default: None.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before returning boxes.
-                Default: True.
-
-        Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of
-                the corresponding box.
-        """
-        assert len(cls_scores) == len(bbox_preds) == len(bbox_preds_refine)
-        num_levels = len(cls_scores)
-
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        mlvl_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                      bbox_preds[0].device)
-        result_list = []
-        for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds_refine[i][img_id].detach()
-                for i in range(num_levels)
-            ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self._get_bboxes_single(cls_score_list,
-                                                 bbox_pred_list, mlvl_points,
-                                                 img_shape, scale_factor, cfg,
-                                                 rescale, with_nms)
-            result_list.append(det_bboxes)
-        return result_list
+    # TODO： two base classes, subsequent reconstruction
+    def _sparse_priors(self,
+                       level_idx,
+                       featmap_size,
+                       dtype,
+                       device,
+                       topk_inds=None):
+        height, width = featmap_size
+        if self.use_atss:
+            offset = self.anchor_center_offset
+        else:
+            offset = 0.5
+        if topk_inds is not None:
+            x = topk_inds % width
+            y = (topk_inds // width) % height
+            priors = torch.stack([x, y], 1).to(dtype) \
+                * self.strides[level_idx] \
+                + self.strides[level_idx] * offset
+            priors = priors.to(device)
+        else:
+            priors = self._get_points_single(featmap_size,
+                                             self.strides[level_idx], dtype,
+                                             device)
+        return priors
 
     def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_points,
-                           img_shape,
-                           scale_factor,
+                           cls_score_list,
+                           bbox_pred_list,
+                           score_factor_list,
+                           img_meta,
                            cfg,
                            rescale=False,
-                           with_nms=True):
+                           with_nms=True,
+                           **kwargs):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
@@ -557,14 +526,16 @@ class VFNetHead(ATSSHead, FCOSHead):
                     predicted class label of the corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
+        assert len(cls_score_list) == len(bbox_pred_list)
+        img_shape = img_meta['img_shape']
         nms_pre = cfg.get('nms_pre', -1)
 
         mlvl_bboxes = []
         mlvl_scores = []
-        for cls_score, bbox_pred, points in zip(cls_scores, bbox_preds,
-                                                mlvl_points):
+        for level_idx, (cls_score, bbox_pred) in enumerate(
+                zip(cls_score_list, bbox_pred_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            featmap_size_hw = cls_score.shape[-2:]
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).contiguous().sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).contiguous()
@@ -572,16 +543,22 @@ class VFNetHead(ATSSHead, FCOSHead):
             if 0 < nms_pre < scores.shape[0]:
                 max_scores, _ = scores.max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                points = points[topk_inds, :]
+                points = self._sparse_priors(level_idx, featmap_size_hw,
+                                             scores.dtype, scores.device,
+                                             topk_inds)
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
+            else:
+                points = self._sparse_priors(level_idx, featmap_size_hw,
+                                             scores.dtype, scores.device)
 
             bboxes = self.bbox_coder.decode(
                 points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-        return self._bbox_post_process(mlvl_scores, mlvl_bboxes, scale_factor,
-                                       cfg, rescale, with_nms)
+        return self._bbox_post_process(mlvl_scores, mlvl_bboxes,
+                                       img_meta['scale_factor'], cfg, rescale,
+                                       with_nms)
 
     def _get_points_single(self,
                            featmap_size,
