@@ -225,12 +225,44 @@ class AnchorGenerator:
         multi_level_anchors = []
         for i in range(self.num_levels):
             anchors = self.single_level_grid_priors(
-                self.base_anchors[i].to(device),
-                featmap_sizes[i],
-                self.strides[i],
-                device=device)
+                featmap_sizes[i], level_idx=i, device=device)
             multi_level_anchors.append(anchors)
         return multi_level_anchors
+
+    def single_level_grid_priors(self, featmap_size, level_idx, device='cuda'):
+        """Generate grid anchors of a single level.
+
+        Note:
+            This function is usually called by method ``self.grid_priors``.
+
+        Args:
+            featmap_size (tuple[int]): Size of the feature maps.
+            level_idx (int): The index of corresponding feature map level.
+            device (str, optional): The device the tensor will be put on.
+                Defaults to 'cuda'.
+
+        Returns:
+            torch.Tensor: Anchors in the overall feature maps.
+        """
+
+        base_anchors = self.base_anchors[level_idx]
+        feat_h, feat_w = featmap_size
+        stride_w, stride_h = self.strides[level_idx]
+        shift_x = torch.arange(0, feat_w, device=device) * stride_w
+        shift_y = torch.arange(0, feat_h, device=device) * stride_h
+
+        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
+        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
+        shifts = shifts.type_as(base_anchors)
+        # first feat_w elements correspond to the first row of shifts
+        # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
+        # shifted anchors (K, A, 4), reshape to (K*A, 4)
+
+        all_anchors = base_anchors[None, :, :] + shifts[:, None, :]
+        all_anchors = all_anchors.view(-1, 4)
+        # first A rows correspond to A anchors of (0, 0) in feature map,
+        # then (0, 1), (0, 2), ...
+        return all_anchors
 
     def grid_anchors(self, featmap_sizes, device='cuda'):
 
@@ -243,21 +275,6 @@ class AnchorGenerator:
                                   featmap_size,
                                   stride=(16, 16),
                                   device='cuda'):
-        warnings.warn(
-            '``single_level_grid_anchors`` would be deprecated soon. '
-            'Please use ``single_level_grid_priors`` ')
-
-        return self.single_level_grid_priors(
-            base_anchors=base_anchors,
-            featmap_size=featmap_size,
-            stride=stride,
-            device=device)
-
-    def single_level_grid_priors(self,
-                                 base_anchors,
-                                 featmap_size,
-                                 stride=(16, 16),
-                                 device='cuda'):
         """Generate grid anchors of a single level.
 
         Note:
@@ -275,6 +292,10 @@ class AnchorGenerator:
             torch.Tensor: Anchors in the overall feature maps.
         """
         # keep as Tensor, so that we can covert to ONNX correctly
+        warnings.warn(
+            '``single_level_grid_anchors`` would be deprecated soon. '
+            'Please use ``single_level_grid_priors`` ')
+
         feat_h, feat_w = featmap_size
         stride_w, stride_h = stride
         shift_x = torch.arange(0, feat_w, device=device) * stride_w
@@ -353,15 +374,15 @@ class AnchorGenerator:
         return valid
 
     def sparse_priors(self,
-                      prior_indexs,
+                      prior_idx,
                       featmap_size,
                       level_idx,
                       dtype,
                       device='cuda'):
-        """Generate sparse anchors according to the ``prior_indexs``.
+        """Generate sparse anchors according to the ``prior_idx``.
 
         Args:
-            prior_indexs (Tensor): The index of corresponding anchors
+            prior_idx (Tensor): The index of corresponding anchors
                 in the feature map.
             featmap_size (tuple[int]): feature map size arrange as (h, w).
             level_idx (int): The level index of corresponding feature
@@ -371,15 +392,15 @@ class AnchorGenerator:
                 located.
         Returns:
             Tensor: Anchor with shape (N, 4), N should be equal to
-                the length of ``prior_indexs``.
+                the length of ``prior_idx``.
         """
 
         height, width = featmap_size
         num_base_anchors = self.num_base_anchors[level_idx]
-        base_anchor_id = prior_indexs % num_base_anchors
-        x = (prior_indexs //
+        base_anchor_id = prior_idx % num_base_anchors
+        x = (prior_idx //
              num_base_anchors) % width * self.strides[level_idx][0]
-        y = (prior_indexs // width //
+        y = (prior_idx // width //
              num_base_anchors) % height * self.strides[level_idx][1]
         priors = torch.stack([x, y, x, y], 1).to(
             dtype) + self.base_anchors[level_idx][base_anchor_id, :].to(device)

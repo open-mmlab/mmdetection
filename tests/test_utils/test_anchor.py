@@ -59,6 +59,19 @@ def test_standard_points_generator():
     assert (priors_half_offset[1][0] - priors[1][0]).sum() == 10 * 0.5 * 2
 
 
+def test_sparse_prior():
+    from mmdet.core.anchor import MlvlPointGenerator
+    mlvl_points = MlvlPointGenerator(strides=[4, 10], offset=0)
+    prior_indexs = torch.Tensor([[0, 2, 4, 5, 6, 9]], dtype=torch.Long)
+
+    featmap_sizes = [(3, 5), (6, 4)]
+    grid_anchors = mlvl_points.grid_priors(
+        featmap_sizes=featmap_sizes, with_stride=False)
+    sparse_prior = mlvl_points.sparse_priors(
+        prior_indexs=prior_indexs, featmap_size=featmap_sizes[0], level_idx=0)
+    assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
+
+
 def test_standard_anchor_generator():
     from mmdet.core.anchor import build_anchor_generator
     anchor_generator_cfg = dict(
@@ -69,10 +82,6 @@ def test_standard_anchor_generator():
 
     anchor_generator = build_anchor_generator(anchor_generator_cfg)
     assert anchor_generator is not None
-
-
-def test_sparse_prior():
-    pass
 
 
 def test_strides():
