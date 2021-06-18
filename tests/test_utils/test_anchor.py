@@ -149,7 +149,7 @@ def test_sparse_prior():
     if torch.cuda.is_available():
         mlvl_points = MlvlPointGenerator(strides=[4, 10], offset=0)
         prior_indexs = torch.Tensor([0, 3, 4, 5, 6, 7, 1, 2, 4, 5, 6,
-                                     9]).long()
+                                     9]).long().cuda()
 
         featmap_sizes = [(6, 8), (6, 4)]
         grid_anchors = mlvl_points.grid_priors(
