@@ -13,12 +13,20 @@ class SSDVGG(VGG, BaseModule):
     """VGG Backbone network for single-shot-detection.
 
     Args:
-        input_size (int): width and height of input, from {300, 512}.
         depth (int): Depth of vgg, from {11, 13, 16, 19}.
+        with_last_pool (bool): Whether to add a pooling layer at the last
+            of the model
+        ceil_mode (bool): When True, will use `ceil` instead of `floor`
+            to compute the output shape.
         out_indices (Sequence[int]): Output from which stages.
+        out_feature_indices (Sequence[int]): Output from which feature map.
         pretrained (str, optional): model pretrained path. Default: None
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None
+        input_size (int, optional): Deprecated argumment.
+            Width and height of input, from {300, 512}.
+        l2_norm_scale (float, optional) : Deprecated argumment.
+            L2 normalization layer init scale.
 
     Example:
         >>> self = SSDVGG(input_size=300, depth=11)
@@ -45,7 +53,9 @@ class SSDVGG(VGG, BaseModule):
                  out_indices=(3, 4),
                  out_feature_indices=(22, 34),
                  pretrained=None,
-                 init_cfg=None):
+                 init_cfg=None,
+                 input_size=None,
+                 l2_norm_scale=None):
         # TODO: in_channels for mmcv.VGG
         super(SSDVGG, self).__init__(
             depth,
@@ -70,9 +80,14 @@ class SSDVGG(VGG, BaseModule):
         assert not (init_cfg and pretrained), \
             'init_cfg and pretrained cannot be setting at the same time'
         if isinstance(pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
             self.init_cfg = [dict(type='Pretrained', checkpoint=pretrained)]
+        if input_size is not None:
+            warnings.warn('DeprecationWarning: input_size is deprecated')
+        if l2_norm_scale is not None:
+            warnings.warn('DeprecationWarning: l2_norm_scale in VGG is '
+                          'deprecated, it has been moved to SSDNeck.')
         elif pretrained is None:
             if init_cfg is None:
                 self.init_cfg = [
