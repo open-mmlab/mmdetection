@@ -148,9 +148,10 @@ def test_sparse_prior():
 
     if torch.cuda.is_available():
         mlvl_points = MlvlPointGenerator(strides=[4, 10], offset=0)
-        prior_indexs = torch.Tensor([0, 2, 4, 5, 6, 9]).long()
+        prior_indexs = torch.Tensor([0, 3, 4, 5, 6, 7, 1, 2, 4, 5, 6,
+                                     9]).long()
 
-        featmap_sizes = [(3, 5), (6, 4)]
+        featmap_sizes = [(6, 8), (6, 4)]
         grid_anchors = mlvl_points.grid_priors(
             featmap_sizes=featmap_sizes, with_stride=False, device='cuda')
         sparse_prior = mlvl_points.sparse_priors(
@@ -166,12 +167,14 @@ def test_sparse_prior():
             device='cuda')
         assert (sparse_prior == grid_anchors[1][prior_indexs]).all()
         assert sparse_prior.is_cuda
-        from mmdet.core.anchor import AnchorGenerator
         mlvl_anchors = AnchorGenerator(
-            strides=[16, 32], ratios=[1.], scales=[1.], base_sizes=[4, 8])
-        prior_indexs = torch.Tensor([0, 2, 4, 5, 6, 9]).long()
+            strides=[16, 32],
+            ratios=[1., 2.5],
+            scales=[1., 5.],
+            base_sizes=[4, 8])
+        prior_indexs = torch.Tensor([4, 5, 6, 7, 0, 2, 50, 4, 5, 6, 9]).long()
 
-        featmap_sizes = [(3, 5), (6, 4)]
+        featmap_sizes = [(13, 5), (16, 4)]
         grid_anchors = mlvl_anchors.grid_priors(
             featmap_sizes=featmap_sizes, device='cuda')
         sparse_prior = mlvl_anchors.sparse_priors(
