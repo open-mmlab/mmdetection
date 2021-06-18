@@ -19,3 +19,16 @@
 | :------: | :---: | :---: | :-----: | :------: | :------------: | :----: | :------: |  :--------: |
 |  VGG16   |  300  | caffe |  120e   |   10.2   |  43.7          |  25.6  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ssd/ssd300_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20200307_174216.log.json) |
 |  VGG16   |  512  | caffe |  120e   |   9.3    |  30.7          |  29.4  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ssd/ssd512_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20200308-038c5591.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20200308_134447.log.json) |
+
+## Notice
+
+We refactored SSD neck and head for more flexible usage. If users want to use the old version of
+ssd checkpoints, we provide a scripts `tools/model_converters/upgrade_ssd_version.py` to convert the model weights.
+
+```bash
+python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH}
+
+```
+
+- OLD_MODEL_PATH: the path to load the old version SSD model.
+- NEW_MODEL_PATH: the path to save the converted model weights.
