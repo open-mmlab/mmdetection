@@ -3,19 +3,19 @@
 <!-- TOC -->
 
 - [Tutorial 8: Pytorch to ONNX (Experimental)](#tutorial-8-pytorch-to-onnx-experimental)
-  - [How to convert models from Pytorch to ONNX](#how-to-convert-models-from-pytorch-to-onnx)
-    - [Prerequisite](#prerequisite)
-    - [Usage](#usage)
-    - [Description of all arguments](#description-of-all-arguments)
-  - [How to evaluate ONNX models with ONNX Runtime](#how-to-evaluate-onnx-models-with-onnx-runtime)
-    - [Prerequisite](#prerequisite-1)
-    - [Usage](#usage-1)
-    - [Description of all arguments](#description-of-all-arguments-1)
-    - [Results and Models](#results-and-models)
-  - [List of supported models exportable to ONNX](#list-of-supported-models-exportable-to-onnx)
-  - [The Parameters of Non-Maximum Suppression in ONNX Export](#the-parameters-of-non-maximum-suppression-in-onnx-export)
-  - [Reminders](#reminders)
-  - [FAQs](#faqs)
+	- [How to convert models from Pytorch to ONNX](#how-to-convert-models-from-pytorch-to-onnx)
+		- [Prerequisite](#prerequisite)
+		- [Usage](#usage)
+		- [Description of all arguments](#description-of-all-arguments)
+	- [How to evaluate the exported models](#how-to-evaluate-the-exported-models)
+		- [Prerequisite](#prerequisite-1)
+		- [Usage](#usage-1)
+		- [Description of all arguments](#description-of-all-arguments-1)
+		- [Results and Models](#results-and-models)
+	- [List of supported models exportable to ONNX](#list-of-supported-models-exportable-to-onnx)
+	- [The Parameters of Non-Maximum Suppression in ONNX Export](#the-parameters-of-non-maximum-suppression-in-onnx-export)
+	- [Reminders](#reminders)
+	- [FAQs](#faqs)
 
 <!-- TOC -->
 
@@ -85,14 +85,12 @@ python tools/deployment/pytorch2onnx.py \
     --verify \
     --dynamic-export \
     --cfg-options \
-      model.test_cfg.nms_pre=200  \
-      model.test_cfg.max_per_img=200  \
-      model.test_cfg.deploy_nms_pre=300 \
+      model.test_cfg.deploy_nms_pre=-1 \
 ```
 
-## How to evaluate ONNX models with ONNX Runtime
+## How to evaluate the exported models
 
-We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNX Runtime backend.
+We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXRuntime and TensorRT.
 
 ### Prerequisite
 
@@ -102,13 +100,16 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNX 
   pip install onnx onnxruntime-gpu
   ```
 
+- Install TensorRT by referring to [how-to-build-tensorrt-plugins-in-mmcv](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv)(optional)
+
 ### Usage
 
 ```bash
 python tools/deployment/test.py \
     ${CONFIG_FILE} \
-    ${ONNX_FILE} \
+    ${MODEL_FILE} \
     --out ${OUTPUT_FILE} \
+    --backend ${BACKEND} \
     --format-only ${FORMAT_ONLY} \
     --eval ${EVALUATION_METRICS} \
     --show-dir ${SHOW_DIRECTORY} \
@@ -120,8 +121,9 @@ python tools/deployment/test.py \
 ### Description of all arguments
 
 - `config`: The path of a model config file.
-- `model`: The path of a ONNX model file.
+- `model`: The path of an input model file.
 - `--out`: The path of output result file in pickle format.
+- `--backend`: Backend for input model to run and should be `onnxruntime` or `tensorrt`.
 - `--format-only` : Format the output results without perform evaluation. It is useful when you want to format the result to a specific format and submit it to the test server. If not specified, it will be set to `False`.
 - `--eval`: Evaluation metrics, which depends on the dataset, e.g., "bbox", "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC.
 - `--show-dir`: Directory where painted images will be saved
@@ -138,6 +140,7 @@ python tools/deployment/test.py \
 	    <th align="center">Metric</th>
 	    <th align="center">PyTorch</th>
 	    <th align="center">ONNX Runtime</th>
+	    <th align="center">TensorRT</th>
 	</tr >
   <tr >
 	    <td align="center">FCOS</td>
@@ -145,6 +148,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">36.6</td>
 	    <td align="center">36.5</td>
+	    <td align="center">36.3</td>
 	</tr>
   <tr >
 	    <td align="center">FSAF</td>
@@ -152,6 +156,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">36.0</td>
 	    <td align="center">36.0</td>
+	    <td align="center">35.9</td>
 	</tr>
   <tr >
 	    <td align="center">RetinaNet</td>
@@ -159,11 +164,13 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">36.5</td>
 	    <td align="center">36.4</td>
+	    <td align="center">36.3</td>
 	</tr>
 	<tr >
 	    <td align="center" align="center" >SSD</td>
 	    <td align="center" align="center"><code>configs/ssd/ssd300_coco.py</code></td>
 	    <td align="center" align="center">Box AP</td>
+	    <td align="center" align="center">25.6</td>
 	    <td align="center" align="center">25.6</td>
 	    <td align="center" align="center">25.6</td>
 	</tr>
@@ -173,6 +180,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">33.5</td>
 	    <td align="center">33.5</td>
+	    <td align="center">33.5</td>
 	</tr>
   <tr >
 	    <td align="center">Faster R-CNN</td>
@@ -180,6 +188,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">37.4</td>
 	    <td align="center">37.4</td>
+	    <td align="center">37.0</td>
 	</tr>
   <tr >
 	    <td align="center" rowspan="2">Mask R-CNN</td>
@@ -187,37 +196,52 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">38.2</td>
 	    <td align="center">38.1</td>
+	    <td align="center">37.7</td>
 	</tr>
 	<tr>
 	    <td align="center">Mask AP</td>
 	    <td align="center">34.7</td>
 	    <td align="center">33.7</td>
+	    <td align="center">33.3</td>
+	</tr>
+  <tr >
+	    <td align="center">CornerNet</td>
+	    <td align="center"><code>configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">40.6</td>
+	    <td align="center">40.4</td>
 	</tr>
 </table>
 
 Notes:
 
-- All ONNX models are evaluated with dynamic shape on coco dataset and images are preprocessed according to the original config file.
+- All ONNX models are evaluated with dynamic shape on coco dataset and images are preprocessed according to the original config file. Note that CornerNet is evaluated without test-time flip, since currently only single-scale evaluation is supported with ONNX Runtime.
 
-- Mask AP of Mask R-CNN drops by 1% for ONNXRuntime. The main reason is that the predicted masks are directly interpolated to original image in PyTorch, while they are at first interpolated to the preprocessed input image of the model and then to original image in ONNXRuntime.
+- Mask AP of Mask R-CNN drops by 1% for ONNXRuntime. The main reason is that the predicted masks are directly interpolated to original image in PyTorch, while they are at first interpolated to the preprocessed input image of the model and then to original image in other backend.
 
 ## List of supported models exportable to ONNX
 
 The table below lists the models that are guaranteed to be exportable to ONNX and runnable in ONNX Runtime.
 
-|    Model     |                          Config                          | Dynamic Shape | Batch Inference | Note  |
-| :----------: | :------------------------------------------------------: | :-----------: | :-------------: | :---: |
-|     FCOS     | `configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py` |       Y       |        Y        |       |
-|     FSAF     |          `configs/fsaf/fsaf_r50_fpn_1x_coco.py`          |       Y       |        Y        |       |
-|  RetinaNet   |     `configs/retinanet/retinanet_r50_fpn_1x_coco.py`     |       Y       |        Y        |       |
-|     SSD      |               `configs/ssd/ssd300_coco.py`               |       Y       |        Y        |       |
-|    YOLOv3    |    `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`    |       Y       |        Y        |       |
-| Faster R-CNN |   `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
-|  Mask R-CNN  |     `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`     |       Y       |        Y        |       |
+|    Model     |                               Config                                | Dynamic Shape | Batch Inference |                                     Note                                      |
+| :----------: | :-----------------------------------------------------------------: | :-----------: | :-------------: | :---------------------------------------------------------------------------: |
+|     FCOS     |      `configs/fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py`       |       Y       |        Y        |                                                                               |
+|     FSAF     |               `configs/fsaf/fsaf_r50_fpn_1x_coco.py`                |       Y       |        Y        |                                                                               |
+|  RetinaNet   |          `configs/retinanet/retinanet_r50_fpn_1x_coco.py`           |       Y       |        Y        |                                                                               |
+|     SSD      |                    `configs/ssd/ssd300_coco.py`                     |       Y       |        Y        |                                                                               |
+|    YOLOv3    |         `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`          |       Y       |        Y        |                                                                               |
+| Faster R-CNN |        `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`         |       Y       |        Y        |                                                                               |
+|  Mask R-CNN  |          `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`           |       Y       |        Y        |                                                                               |
+|  CornerNet   | `configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py` |       Y       |        N        | no flip, no batch inference, tested with torch==1.7.0 and onnxruntime==1.5.1. |
 
 Notes:
 
-- *All models above are tested with Pytorch==1.6.0 and onnxruntime==1.5.1*
+- Minimum required version of MMCV is `1.3.5`
+
+- *All models above are tested with Pytorch==1.6.0 and onnxruntime==1.5.1*, except for CornerNet. For more details about the
+torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md#known-issues) in mmcv.
+
+- Currently only single-scale evaluation is supported with ONNX Runtime, also `mmcv::SoftNonMaxSuppression` is only supported for single image by now.
 
 - If the deployed backend platform is TensorRT, please add environment variables before running the file:
 

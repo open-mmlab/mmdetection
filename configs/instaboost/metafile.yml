@@ -27,7 +27,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 36.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_r50_fpn_instaboost_4x_coco/mask_rcnn_r50_fpn_instaboost_4x_coco_20200307-d025f83a.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_r50_fpn_instaboost_4x_coco/mask_rcnn_r50_fpn_instaboost_4x_coco_20200307-d025f83a.pth
 
   - Name: mask_rcnn_r101_fpn_instaboost_4x_coco
     In Collection: InstaBoost
@@ -44,7 +44,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 38.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_r101_fpn_instaboost_4x_coco/mask_rcnn_r101_fpn_instaboost_4x_coco_20200703_235738-f23f3a5f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_r101_fpn_instaboost_4x_coco/mask_rcnn_r101_fpn_instaboost_4x_coco_20200703_235738-f23f3a5f.pth
 
   - Name: mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco
     In Collection: InstaBoost
@@ -61,7 +61,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 39.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco_20200515_080947-8ed58c1b.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco_20200515_080947-8ed58c1b.pth
 
   - Name: cascade_mask_rcnn_r50_fpn_instaboost_4x_coco
     In Collection: InstaBoost
@@ -79,4 +79,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 38.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/instaboost/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco_20200307-c19d98d9.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/instaboost/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco_20200307-c19d98d9.pth
