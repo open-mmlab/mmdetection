@@ -39,9 +39,6 @@ python tools/deployment/pytorch2onnx.py \
     --output-file ${OUTPUT_FILE} \
     --input-img ${INPUT_IMAGE_PATH} \
     --shape ${IMAGE_SHAPE} \
-    --mean ${IMAGE_MEAN} \
-    --std ${IMAGE_STD} \
-    --dataset ${DATASET_NAME} \
     --test-img ${TEST_IMAGE_PATH} \
     --opset-version ${OPSET_VERSION} \
     --cfg-options ${CFG_OPTIONS}
@@ -58,9 +55,6 @@ python tools/deployment/pytorch2onnx.py \
 - `--output-file`: The path of output ONNX model. If not specified, it will be set to `tmp.onnx`.
 - `--input-img`: The path of an input image for tracing and conversion. By default, it will be set to `tests/data/color.jpg`.
 - `--shape`: The height and width of input tensor to the model. If not specified, it will be set to `800 1216`.
-- `--mean` : Three mean values for the input image. If not specified, it will be set to `123.675 116.28 103.53`.
-- `--std` : Three std values for the input image. If not specified, it will be set to `58.395 57.12 57.375`.
-- `--dataset` : The dataset name for the input model. If not specified, it will be set to `coco`.
 - `--test-img` : The path of an image to verify the exported ONNX model. By default, it will be set to `None`, meaning it will use `--input-img` for verification.
 - `--opset-version` : The opset version of ONNX. If not specified, it will be set to `11`.
 - `--dynamic-export`: Determines whether to export ONNX model with dynamic input and output shapes. If not specified, it will be set to `False`.
@@ -79,8 +73,6 @@ python tools/deployment/pytorch2onnx.py \
     --input-img demo/demo.jpg \
     --test-img tests/data/color.jpg \
     --shape 608 608 \
-    --mean 0 0 0 \
-    --std 255 255 255 \
     --show \
     --verify \
     --dynamic-export \
