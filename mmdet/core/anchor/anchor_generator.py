@@ -265,15 +265,15 @@ class AnchorGenerator:
         return all_anchors
 
     def sparse_priors(self,
-                      prior_idx,
+                      prior_idxs,
                       featmap_size,
                       level_idx,
                       dtype=torch.float32,
                       device='cuda'):
-        """Generate sparse anchors according to the ``prior_idx``.
+        """Generate sparse anchors according to the ``prior_idxs``.
 
         Args:
-            prior_idx (Tensor): The index of corresponding anchors
+            prior_idxs (Tensor): The index of corresponding anchors
                 in the feature map.
             featmap_size (tuple[int]): feature map size arrange as (h, w).
             level_idx (int): The level index of corresponding feature
@@ -284,15 +284,15 @@ class AnchorGenerator:
                 located.
         Returns:
             Tensor: Anchor with shape (N, 4), N should be equal to
-                the length of ``prior_idx``.
+                the length of ``prior_idxs``.
         """
 
         height, width = featmap_size
         num_base_anchors = self.num_base_anchors[level_idx]
-        base_anchor_id = prior_idx % num_base_anchors
-        x = (prior_idx //
+        base_anchor_id = prior_idxs % num_base_anchors
+        x = (prior_idxs //
              num_base_anchors) % width * self.strides[level_idx][0]
-        y = (prior_idx // width //
+        y = (prior_idxs // width //
              num_base_anchors) % height * self.strides[level_idx][1]
         priors = torch.stack([x, y, x, y], 1).to(dtype).to(device) + \
             self.base_anchors[level_idx][base_anchor_id, :].to(device)
