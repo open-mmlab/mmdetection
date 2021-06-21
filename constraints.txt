@@ -13,7 +13,7 @@ requests==2.25.0
 requests-toolbelt==0.9.1
 typing-extensions==3.7.4.3
 pytest==5.3.5
-networkx==2.1
+networkx==2.5
 natsort==7.1.1
 coloredlogs==14.0
 
@@ -23,3 +23,5 @@ jsonobject==0.9.9
 
 testfixtures==6.17.1
 pre-commit==2.7.1
+
+decorator==4.4.*
