@@ -24,7 +24,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 27.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_320_273e_coco/yolov3_d53_320_273e_coco-421362b6.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_320_273e_coco/yolov3_d53_320_273e_coco-421362b6.pth
 
   - Name: yolov3_d53_mstrain-416_273e_coco
     In Collection: YOLOv3
@@ -38,18 +38,32 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 30.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-416_273e_coco/yolov3_d53_mstrain-416_273e_coco-2b60fcd9.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-416_273e_coco/yolov3_d53_mstrain-416_273e_coco-2b60fcd9.pth
 
   - Name: yolov3_d53_mstrain-608_273e_coco
     In Collection: YOLOv3
     Config: configs/yolo/yolov3_d53_mstrain-608_273e_coco.py
     Metadata:
-      Training Memory (GB): 7.1
+      Training Memory (GB): 7.4
       inference time (s/im): 0.02079
       Epochs: 273
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 33.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-608_273e_coco/yolov3_d53_mstrain-608_273e_coco-139f5633.pth
+          box AP: 33.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-608_273e_coco/yolov3_d53_mstrain-608_273e_coco_20210518_115020-a2c3acb8.pth
+
+  - Name: yolov3_d53_fp16_mstrain-608_273e_coco
+    In Collection: YOLOv3
+    Config: configs/yolo/yolov3_d53_fp16_mstrain-608_273e_coco.py
+    Metadata:
+      Training Memory (GB): 4.7
+      inference time (s/im): 0.02079
+      Epochs: 273
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 33.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_fp16_mstrain-608_273e_coco/yolov3_d53_fp16_mstrain-608_273e_coco_20210517_213542-4bc34944.pth

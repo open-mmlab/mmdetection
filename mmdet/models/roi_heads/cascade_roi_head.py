@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.runner import ModuleList
@@ -459,9 +460,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [[[]
-                                for _ in range(self.mask_head[-1].num_classes)]
-                               ]
+                segm_result = [[]
+                               for _ in range(self.mask_head[-1].num_classes)]
             else:
                 aug_masks = []
                 aug_img_metas = []
@@ -482,13 +482,14 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                                self.test_cfg)
 
                 ori_shape = img_metas[0][0]['ori_shape']
+                dummy_scale_factor = np.ones(4)
                 segm_result = self.mask_head[-1].get_seg_masks(
                     merged_masks,
                     det_bboxes,
                     det_labels,
                     rcnn_test_cfg,
                     ori_shape,
-                    scale_factor=1.0,
+                    scale_factor=dummy_scale_factor,
                     rescale=False)
             return [(bbox_result, segm_result)]
         else:

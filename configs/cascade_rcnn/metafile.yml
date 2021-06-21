@@ -27,7 +27,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r50_caffe_fpn_1x_coco/cascade_rcnn_r50_caffe_fpn_1x_coco_bbox_mAP-0.404_20200504_174853-b857be87.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r50_caffe_fpn_1x_coco/cascade_rcnn_r50_caffe_fpn_1x_coco_bbox_mAP-0.404_20200504_174853-b857be87.pth
 
   - Name: cascade_rcnn_r50_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -41,7 +41,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.3
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco/cascade_rcnn_r50_fpn_1x_coco_20200316-3dc56deb.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco/cascade_rcnn_r50_fpn_1x_coco_20200316-3dc56deb.pth
 
   - Name: cascade_rcnn_r50_fpn_20e_coco
     In Collection: Cascade R-CNN
@@ -55,7 +55,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r50_fpn_20e_coco/cascade_rcnn_r50_fpn_20e_coco_bbox_mAP-0.41_20200504_175131-e9872a90.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r50_fpn_20e_coco/cascade_rcnn_r50_fpn_20e_coco_bbox_mAP-0.41_20200504_175131-e9872a90.pth
 
   - Name: cascade_rcnn_r101_caffe_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -68,7 +68,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.3
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r101_caffe_fpn_1x_coco/cascade_rcnn_r101_caffe_fpn_1x_coco_bbox_mAP-0.423_20200504_175649-cab8dbd5.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r101_caffe_fpn_1x_coco/cascade_rcnn_r101_caffe_fpn_1x_coco_bbox_mAP-0.423_20200504_175649-cab8dbd5.pth
 
   - Name: cascade_rcnn_r101_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -82,7 +82,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r101_fpn_1x_coco/cascade_rcnn_r101_fpn_1x_coco_20200317-0b6a2fbf.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r101_fpn_1x_coco/cascade_rcnn_r101_fpn_1x_coco_20200317-0b6a2fbf.pth
 
   - Name: cascade_rcnn_r101_fpn_20e_coco
     In Collection: Cascade R-CNN
@@ -96,7 +96,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r101_fpn_20e_coco/cascade_rcnn_r101_fpn_20e_coco_bbox_mAP-0.425_20200504_231812-5057dcc5.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_r101_fpn_20e_coco/cascade_rcnn_r101_fpn_20e_coco_bbox_mAP-0.425_20200504_231812-5057dcc5.pth
 
   - Name: cascade_rcnn_x101_32x4d_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -110,7 +110,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 43.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_1x_coco/cascade_rcnn_x101_32x4d_fpn_1x_coco_20200316-95c2deb6.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_1x_coco/cascade_rcnn_x101_32x4d_fpn_1x_coco_20200316-95c2deb6.pth
 
   - Name: cascade_rcnn_x101_32x4d_fpn_20e_coco
     In Collection: Cascade R-CNN
@@ -123,7 +123,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 43.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_20e_coco/cascade_rcnn_x101_32x4d_fpn_20e_coco_20200906_134608-9ae0a720.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_20e_coco/cascade_rcnn_x101_32x4d_fpn_20e_coco_20200906_134608-9ae0a720.pth
 
   - Name: cascade_rcnn_x101_64x4d_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -136,7 +136,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 44.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_64x4d_fpn_1x_coco/cascade_rcnn_x101_64x4d_fpn_1x_coco_20200515_075702-43ce6a30.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_64x4d_fpn_1x_coco/cascade_rcnn_x101_64x4d_fpn_1x_coco_20200515_075702-43ce6a30.pth
 
   - Name: cascade_rcnn_x101_64x4d_fpn_20e_coco
     In Collection: Cascade R-CNN
@@ -149,7 +149,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 44.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_64x4d_fpn_20e_coco/cascade_rcnn_x101_64x4d_fpn_20e_coco_20200509_224357-051557b1.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_64x4d_fpn_20e_coco/cascade_rcnn_x101_64x4d_fpn_20e_coco_20200509_224357-051557b1.pth
 
   - Name: cascade_mask_rcnn_r50_caffe_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -166,7 +166,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  36.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_caffe_fpn_1x_coco/cascade_mask_rcnn_r50_caffe_fpn_1x_coco_bbox_mAP-0.412__segm_mAP-0.36_20200504_174659-5004b251.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_caffe_fpn_1x_coco/cascade_mask_rcnn_r50_caffe_fpn_1x_coco_bbox_mAP-0.412__segm_mAP-0.36_20200504_174659-5004b251.pth
 
   - Name: cascade_mask_rcnn_r50_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -184,7 +184,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  35.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco/cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco/cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth
 
   - Name: cascade_mask_rcnn_r50_fpn_20e_coco
     In Collection: Cascade R-CNN
@@ -202,7 +202,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  36.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_20e_coco/cascade_mask_rcnn_r50_fpn_20e_coco_bbox_mAP-0.419__segm_mAP-0.365_20200504_174711-4af8e66e.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_20e_coco/cascade_mask_rcnn_r50_fpn_20e_coco_bbox_mAP-0.419__segm_mAP-0.365_20200504_174711-4af8e66e.pth
 
   - Name: cascade_mask_rcnn_r101_caffe_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -219,7 +219,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  37.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r101_caffe_fpn_1x_coco/cascade_mask_rcnn_r101_caffe_fpn_1x_coco_bbox_mAP-0.432__segm_mAP-0.376_20200504_174813-5c1e9599.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r101_caffe_fpn_1x_coco/cascade_mask_rcnn_r101_caffe_fpn_1x_coco_bbox_mAP-0.432__segm_mAP-0.376_20200504_174813-5c1e9599.pth
 
   - Name: cascade_mask_rcnn_r101_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -237,7 +237,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  37.3
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r101_fpn_1x_coco/cascade_mask_rcnn_r101_fpn_1x_coco_20200203-befdf6ee.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r101_fpn_1x_coco/cascade_mask_rcnn_r101_fpn_1x_coco_20200203-befdf6ee.pth
 
   - Name: cascade_mask_rcnn_r101_fpn_20e_coco
     In Collection: Cascade R-CNN
@@ -255,7 +255,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  37.8
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r101_fpn_20e_coco/cascade_mask_rcnn_r101_fpn_20e_coco_bbox_mAP-0.434__segm_mAP-0.378_20200504_174836-005947da.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r101_fpn_20e_coco/cascade_mask_rcnn_r101_fpn_20e_coco_bbox_mAP-0.434__segm_mAP-0.378_20200504_174836-005947da.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -273,7 +273,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  38.3
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco_20200201-0f411b1f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco_20200201-0f411b1f.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_20e_coco
     In Collection: Cascade R-CNN
@@ -291,7 +291,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  39.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_20e_coco/cascade_mask_rcnn_x101_32x4d_fpn_20e_coco_20200528_083917-ed1f4751.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_20e_coco/cascade_mask_rcnn_x101_32x4d_fpn_20e_coco_20200528_083917-ed1f4751.pth
 
   - Name: cascade_mask_rcnn_x101_64x4d_fpn_1x_coco
     In Collection: Cascade R-CNN
@@ -309,7 +309,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  39.2
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco_20200203-9a2db89d.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco_20200203-9a2db89d.pth
 
   - Name: cascade_mask_rcnn_x101_64x4d_fpn_20e_coco
     In Collection: Cascade R-CNN
@@ -326,4 +326,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 39.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_20e_coco/cascade_mask_rcnn_x101_64x4d_fpn_20e_coco_20200512_161033-bdb5126a.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_20e_coco/cascade_mask_rcnn_x101_64x4d_fpn_20e_coco_20200512_161033-bdb5126a.pth

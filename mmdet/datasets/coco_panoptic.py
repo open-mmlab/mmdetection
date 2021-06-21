@@ -8,7 +8,7 @@ from mmcv.utils import print_log
 from panopticapi.evaluation import OFFSET, VOID, PQStat
 from panopticapi.utils import IdGenerator, rgb2id
 
-from .api_wrappers import COCO as _COCO
+from .api_wrappers import COCO
 from .builder import DATASETS
 from .coco import CocoDataset
 
@@ -17,7 +17,7 @@ __all__ = ['CocoPanoptic', 'INSTANCE_OFFSET']
 INSTANCE_OFFSET = 1000
 
 
-class COCO(_COCO):
+class COCOPanoptic(COCO):
     """This wrapper is for loading the panoptic style annotation file.
 
     The format is shown in the CocoPanoptic class.
@@ -197,7 +197,7 @@ class CocoPanoptic(CocoDataset):
         Returns:
             list[dict]: Annotation info from COCO api.
         """
-        self.coco = COCO(ann_file)
+        self.coco = COCOPanoptic(ann_file)
         self.cat_ids = self.coco.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.categories = self.coco.cats
@@ -239,25 +239,17 @@ class CocoPanoptic(CocoDataset):
         gt_bboxes = []
         gt_labels = []
         gt_bboxes_ignore = []
-        gt_masks = []
-
-        pan_path = os.path.join(self.seg_prefix, self.formator.format(img_id))
-        assert os.path.isfile(pan_path), f'cannot find {pan_path}'
-        # todo: whether to use fileClient.
-        pan_png = mmcv.imread(pan_path)
-        pan_png = pan_png[:, :, ::-1]  # bgr to rgb
-        pan_png = rgb2id(pan_png)  # convert to segments_id
-        # todo: the start of semantic label
-        gt_seg = np.zeros_like(pan_png)  # 0 as ignore
+        gt_mask_infos = []
 
         for i, ann in enumerate(ann_info):
+            mask_info = dict()
+
             category_id = ann['category_id']
             contiguous_cid = self.cat2label[category_id]
-            id = ann['id']
 
-            mask = (pan_png == id)
-            # semantic label starts from 1
-            gt_seg = np.where(mask, contiguous_cid + 1, gt_seg)
+            mask_info['id'] = ann['id']
+            mask_info['category'] = contiguous_cid
+            gt_mask_infos.append(mask_info)
 
             x1, y1, w, h = ann['bbox']
             if ann['area'] <= 0 or w < 1 or h < 1:
@@ -272,7 +264,7 @@ class CocoPanoptic(CocoDataset):
             else:
                 gt_bboxes.append(bbox)
                 gt_labels.append(contiguous_cid)
-                gt_masks.append(mask.astype(np.uint8))
+                mask_info['is_thing'] = True
 
         if gt_bboxes:
             gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
@@ -290,9 +282,8 @@ class CocoPanoptic(CocoDataset):
             bboxes=gt_bboxes,
             labels=gt_labels,
             bboxes_ignore=gt_bboxes_ignore,
-            masks=gt_masks,  # already been encoded
-            seg_map=gt_seg  # already been loaded
-        )
+            masks=gt_mask_infos,
+            seg_map=self.formator.format(img_id))
 
         return ann
 
