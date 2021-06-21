@@ -41,16 +41,17 @@ class PointGenerator:
 
 @PRIOR_GENERATORS.register_module()
 class MlvlPointGenerator:
+    """Standard points generator for multi-level(Mlvl) feature maps in 2D
+    points-based detectors.
+
+    Args:
+        strides (list[int] | list[tuple[int, int]]): Strides of anchors
+            in multiple feature levels in order (w, h).
+        offset (float): The offset of points, the value is normalized with
+            corresponding stride. Defaults to 0.5.
+    """
 
     def __init__(self, strides, offset=0.5):
-        """Standard points generator for 2D points-based detectors.
-
-        Args:
-            strides (list[int] | list[tuple[int, int]]): Strides of anchors
-                in multiple feature levels in order (w, h).
-            offset (float): The offset of points, the value is normalized with
-                corresponding stride. Defaults to 0.5.
-        """
         self.strides = [_pair(stride) for stride in strides]
         self.offset = offset
 
