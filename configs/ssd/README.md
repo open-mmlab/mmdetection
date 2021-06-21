@@ -22,8 +22,9 @@
 
 ## Notice
 
-We refactored SSD neck and head for more flexible usage. If users want to use the old version of
-ssd checkpoints, we provide a scripts `tools/model_converters/upgrade_ssd_version.py` to convert the model weights.
+In v2.14.0, [PR5291](https://github.com/open-mmlab/mmdetection/pull/5291) refactored SSD neck and head for more
+flexible usage. If users want to use the old version of ssd checkpoints, we provide a scripts
+`tools/model_converters/upgrade_ssd_version.py` to convert the model weights.
 
 ```bash
 python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH}
