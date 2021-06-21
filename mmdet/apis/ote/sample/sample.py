@@ -84,7 +84,7 @@ def main(args):
 
     # Tweak parameters.
     params = task.get_configurable_parameters(environment)
-    params.learning_parameters.nncf_quantization.value = True
+    params.learning_parameters.nncf_quantization.value = False
     # params.learning_parameters.learning_rate_warmup_iters.value = 0
     params.learning_parameters.batch_size.value = 32
     params.learning_parameters.num_epochs.value = 1

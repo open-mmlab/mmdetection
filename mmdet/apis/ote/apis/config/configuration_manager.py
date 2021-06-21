@@ -115,7 +115,7 @@ class MMDetectionConfigManager(object):
                 enabled_nncf_options.append(option)
 
         if 'nncf_config' in self.config:
-            del self.config.nncf_config
+            del self.config['nncf_config']
         if len(enabled_nncf_options) > 0:
             nncf_config = compose_nncf_config(self.nncf_config, enabled_nncf_options)
             # FIXME. NNCF configuration may override some training parameters, like number of epochs.
