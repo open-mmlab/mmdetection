@@ -111,7 +111,7 @@ def test_sparse_prior():
     grid_anchors = mlvl_points.grid_priors(
         featmap_sizes=featmap_sizes, with_stride=False, device='cpu')
     sparse_prior = mlvl_points.sparse_priors(
-        prior_idx=prior_indexs,
+        prior_idxs=prior_indexs,
         featmap_size=featmap_sizes[0],
         level_idx=0,
         device='cpu')
@@ -119,7 +119,7 @@ def test_sparse_prior():
     assert not sparse_prior.is_cuda
     assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
     sparse_prior = mlvl_points.sparse_priors(
-        prior_idx=prior_indexs,
+        prior_idxs=prior_indexs,
         featmap_size=featmap_sizes[1],
         level_idx=1,
         device='cpu')
@@ -134,17 +134,54 @@ def test_sparse_prior():
     grid_anchors = mlvl_anchors.grid_priors(
         featmap_sizes=featmap_sizes, device='cpu')
     sparse_prior = mlvl_anchors.sparse_priors(
-        prior_idx=prior_indexs,
+        prior_idxs=prior_indexs,
         featmap_size=featmap_sizes[0],
         level_idx=0,
         device='cpu')
     assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
     sparse_prior = mlvl_anchors.sparse_priors(
-        prior_idx=prior_indexs,
+        prior_idxs=prior_indexs,
         featmap_size=featmap_sizes[1],
         level_idx=1,
         device='cpu')
     assert (sparse_prior == grid_anchors[1][prior_indexs]).all()
+
+    # for ssd
+    from mmdet.core.anchor.anchor_generator import SSDAnchorGenerator
+    featmap_sizes = [(38, 38), (19, 19), (10, 10)]
+    anchor_generator = SSDAnchorGenerator(
+        scale_major=False,
+        input_size=300,
+        basesize_ratio_range=(0.15, 0.9),
+        strides=[8, 16, 32],
+        ratios=[[2], [2, 3], [2, 3]])
+    ssd_anchors = anchor_generator.grid_anchors(featmap_sizes, device='cpu')
+    for i in range(len(featmap_sizes)):
+        sparse_ssd_anchors = anchor_generator.sparse_priors(
+            prior_idxs=prior_indexs,
+            level_idx=i,
+            featmap_size=featmap_sizes[i],
+            device='cpu')
+        assert (sparse_ssd_anchors == ssd_anchors[i][prior_indexs]).all()
+
+    # for yolo
+    from mmdet.core.anchor.anchor_generator import YOLOAnchorGenerator
+    featmap_sizes = [(38, 38), (19, 19), (10, 10)]
+    anchor_generator = YOLOAnchorGenerator(
+        strides=[32, 16, 8],
+        base_sizes=[
+            [(116, 90), (156, 198), (373, 326)],
+            [(30, 61), (62, 45), (59, 119)],
+            [(10, 13), (16, 30), (33, 23)],
+        ])
+    yolo_anchors = anchor_generator.grid_anchors(featmap_sizes, device='cpu')
+    for i in range(len(featmap_sizes)):
+        sparse_yolo_anchors = anchor_generator.sparse_priors(
+            prior_idxs=prior_indexs,
+            level_idx=i,
+            featmap_size=featmap_sizes[i],
+            device='cpu')
+        assert (sparse_yolo_anchors == yolo_anchors[i][prior_indexs]).all()
 
     if torch.cuda.is_available():
         mlvl_points = MlvlPointGenerator(strides=[4, 10], offset=0)
@@ -155,13 +192,13 @@ def test_sparse_prior():
         grid_anchors = mlvl_points.grid_priors(
             featmap_sizes=featmap_sizes, with_stride=False, device='cuda')
         sparse_prior = mlvl_points.sparse_priors(
-            prior_idx=prior_indexs,
+            prior_idxs=prior_indexs,
             featmap_size=featmap_sizes[0],
             level_idx=0,
             device='cuda')
         assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
         sparse_prior = mlvl_points.sparse_priors(
-            prior_idx=prior_indexs,
+            prior_idxs=prior_indexs,
             featmap_size=featmap_sizes[1],
             level_idx=1,
             device='cuda')
@@ -172,23 +209,63 @@ def test_sparse_prior():
             ratios=[1., 2.5],
             scales=[1., 5.],
             base_sizes=[4, 8])
-        prior_indexs = torch.Tensor([4, 5, 6, 7, 0, 2, 50, 4, 5, 6, 9]).long()
+        prior_indexs = torch.Tensor([4, 5, 6, 7, 0, 2, 50, 4, 5, 6,
+                                     9]).long().cuda()
 
         featmap_sizes = [(13, 5), (16, 4)]
         grid_anchors = mlvl_anchors.grid_priors(
             featmap_sizes=featmap_sizes, device='cuda')
         sparse_prior = mlvl_anchors.sparse_priors(
-            prior_idx=prior_indexs,
+            prior_idxs=prior_indexs,
             featmap_size=featmap_sizes[0],
             level_idx=0,
             device='cuda')
         assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
         sparse_prior = mlvl_anchors.sparse_priors(
-            prior_idx=prior_indexs,
+            prior_idxs=prior_indexs,
             featmap_size=featmap_sizes[1],
             level_idx=1,
             device='cuda')
         assert (sparse_prior == grid_anchors[1][prior_indexs]).all()
+
+        # for ssd
+        from mmdet.core.anchor.anchor_generator import SSDAnchorGenerator
+        featmap_sizes = [(38, 38), (19, 19), (10, 10)]
+        anchor_generator = SSDAnchorGenerator(
+            scale_major=False,
+            input_size=300,
+            basesize_ratio_range=(0.15, 0.9),
+            strides=[8, 16, 32],
+            ratios=[[2], [2, 3], [2, 3]])
+        ssd_anchors = anchor_generator.grid_anchors(
+            featmap_sizes, device='cuda')
+        for i in range(len(featmap_sizes)):
+            sparse_ssd_anchors = anchor_generator.sparse_priors(
+                prior_idxs=prior_indexs,
+                level_idx=i,
+                featmap_size=featmap_sizes[i],
+                device='cuda')
+            assert (sparse_ssd_anchors == ssd_anchors[i][prior_indexs]).all()
+
+        # for yolo
+        from mmdet.core.anchor.anchor_generator import YOLOAnchorGenerator
+        featmap_sizes = [(38, 38), (19, 19), (10, 10)]
+        anchor_generator = YOLOAnchorGenerator(
+            strides=[32, 16, 8],
+            base_sizes=[
+                [(116, 90), (156, 198), (373, 326)],
+                [(30, 61), (62, 45), (59, 119)],
+                [(10, 13), (16, 30), (33, 23)],
+            ])
+        yolo_anchors = anchor_generator.grid_anchors(
+            featmap_sizes, device='cuda')
+        for i in range(len(featmap_sizes)):
+            sparse_yolo_anchors = anchor_generator.sparse_priors(
+                prior_idxs=prior_indexs,
+                level_idx=i,
+                featmap_size=featmap_sizes[i],
+                device='cuda')
+            assert (sparse_yolo_anchors == yolo_anchors[i][prior_indexs]).all()
 
 
 def test_standard_anchor_generator():

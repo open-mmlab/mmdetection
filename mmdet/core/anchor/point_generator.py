@@ -41,16 +41,17 @@ class PointGenerator:
 
 @PRIOR_GENERATORS.register_module()
 class MlvlPointGenerator:
+    """Standard points generator for multi-level(Mlvl) feature maps in 2D
+    points-based detectors.
+
+    Args:
+        strides (list[int] | list[tuple[int, int]]): Strides of anchors
+            in multiple feature levels in order (w, h).
+        offset (float): The offset of points, the value is normalized with
+            corresponding stride. Defaults to 0.5.
+    """
 
     def __init__(self, strides, offset=0.5):
-        """Standard points generator for 2D points-based detectors.
-
-        Args:
-            strides (list[int] | list[tuple[int, int]]): Strides of anchors
-                in multiple feature levels in order (w, h).
-            offset (float): The offset of points, the value is normalized with
-                corresponding stride. Defaults to 0.5.
-        """
         self.strides = [_pair(stride) for stride in strides]
         self.offset = offset
 
@@ -203,15 +204,15 @@ class MlvlPointGenerator:
         return valid
 
     def sparse_priors(self,
-                      prior_idx,
+                      prior_idxs,
                       featmap_size,
                       level_idx,
                       dtype=torch.float32,
                       device='cuda'):
-        """Generate sparse points according to the ``prior_idx``.
+        """Generate sparse points according to the ``prior_idxs``.
 
         Args:
-            prior_idx (Tensor): The index of corresponding anchors
+            prior_idxs (Tensor): The index of corresponding anchors
                 in the feature map.
             featmap_size (tuple[int]): feature map size arrange as (w, h).
             level_idx (int): The level index of corresponding feature
@@ -222,12 +223,12 @@ class MlvlPointGenerator:
                 located.
         Returns:
             Tensor: Anchor with shape (N, 2), N should be equal to
-            the length of ``prior_idx``. And last dimension
+            the length of ``prior_idxs``. And last dimension
             2 represent (coord_x, coord_y).
         """
         height, width = featmap_size
-        x = (prior_idx % width + self.offset) * self.strides[level_idx][0]
-        y = ((prior_idx // width) % height +
+        x = (prior_idxs % width + self.offset) * self.strides[level_idx][0]
+        y = ((prior_idxs // width) % height +
              self.offset) * self.strides[level_idx][1]
         prioris = torch.stack([x, y], 1).to(dtype)
         prioris = prioris.to(device)
