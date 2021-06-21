@@ -143,8 +143,8 @@ class GridRoIHead(StandardRoIHead):
             for i in range(num_imgs):
                 if det_bboxes[i].shape[0] == 0:
                     bbox_results.append(
-                        [np.zeros((0, 5), dtype=np.float32) 
-                        for i in range(self.bbox_head.num_classes)])
+                        [np.zeros((0, 5), dtype=np.float32)
+                            for i in range(self.bbox_head.num_classes)])
                 else:
                     det_bbox = self.grid_head.get_bboxes(
                         det_bboxes[i], grid_pred['fused'][i], [img_metas[i]])
@@ -154,11 +154,9 @@ class GridRoIHead(StandardRoIHead):
                         bbox2result(det_bbox, det_labels[i],
                                     self.bbox_head.num_classes))
         else:
-            bbox_results = [
-                [np.zeros((0, 5), dtype=np.float32) 
-                    for i in range(self.bbox_head.num_classes)] 
-                        for _ in range(len(det_bboxes))
-            ]
+            bbox_results = [[np.zeros((0, 5), dtype=np.float32)
+                            for i in range(self.bbox_head.num_classes)]
+                            for _ in range(len(det_bboxes))]
 
         if not self.with_mask:
             return bbox_results
