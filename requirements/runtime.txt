@@ -1,6 +1,6 @@
+git+https://github.com/cocodataset/panopticapi.git
 matplotlib
 numpy
-panopticapi
 pycocotools; platform_system == "Linux"
 pycocotools-windows; platform_system == "Windows"
 six
