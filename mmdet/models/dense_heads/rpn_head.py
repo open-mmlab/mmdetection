@@ -156,9 +156,19 @@ class RPNHead(AnchorHead):
                                 level_idx,
                                 dtype=torch.long))
 
+        return self._bbox_post_process(mlvl_scores, mlvl_bbox_preds, mlvl_valid_anchors, level_ids, cfg, img_shape)
+
+    def _bbox_post_process(self,
+                           mlvl_scores,
+                           mlvl_bboxes,
+                           mlvl_valid_anchors,
+                           level_ids,
+                           cfg,
+                           img_shape,
+                           **kwargs):
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
-        rpn_bbox_pred = torch.cat(mlvl_bbox_preds)
+        rpn_bbox_pred = torch.cat(mlvl_bboxes)
         proposals = self.bbox_coder.decode(
             anchors, rpn_bbox_pred, max_shape=img_shape)
         ids = torch.cat(level_ids)

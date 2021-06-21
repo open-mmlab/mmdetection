@@ -293,7 +293,11 @@ class RepPointsHead(AnchorFreeHead):
                 pts_out_refine, bbox_out_init.detach())
         else:
             pts_out_refine = pts_out_refine + pts_out_init.detach()
-        return cls_out, pts_out_init, pts_out_refine
+
+        if self.training:
+            return cls_out, pts_out_init, pts_out_refine
+        else:
+            return cls_out, self.points2bbox(pts_out_refine)
 
     def get_points(self, featmap_sizes, img_metas, device):
         """Get points according to feature map sizes.
@@ -649,58 +653,26 @@ class RepPointsHead(AnchorFreeHead):
         }
         return loss_dict_all
 
-    def get_bboxes(self,
-                   cls_scores,
-                   pts_preds_init,
-                   pts_preds_refine,
-                   img_metas,
-                   cfg=None,
-                   rescale=False,
-                   with_nms=True):
-        assert len(cls_scores) == len(pts_preds_refine)
-        device = cls_scores[0].device
-        bbox_preds_refine = [
-            self.points2bbox(pts_pred_refine)
-            for pts_pred_refine in pts_preds_refine
-        ]
-        num_levels = len(cls_scores)
-        featmap_sizes = [
-            cls_scores[i].size()[-2:] for i in range(len(cls_scores))
-        ]
-        multi_level_points = self.point_generator.grid_priors(
-            featmap_sizes, device)
-
-        result_list = []
-        for img_id in range(len(img_metas)):
-            cls_score_list = [cls_scores[i][img_id] for i in range(num_levels)]
-            bbox_pred_list = [
-                bbox_preds_refine[i][img_id] for i in range(num_levels)
-            ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                multi_level_points, img_shape,
-                                                scale_factor, cfg, rescale,
-                                                with_nms)
-            result_list.append(proposals)
-        return result_list
-
     def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_points,
-                           img_shape,
-                           scale_factor,
+                           cls_score_list,
+                           bbox_pred_list,
+                           score_factor_list,
+                           img_meta,
                            cfg,
                            rescale=False,
-                           with_nms=True):
+                           with_nms=True,
+                           **kwargs):
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
+        assert len(cls_score_list) == len(bbox_pred_list)
+        img_shape = img_meta['img_shape']
+        nms_pre = cfg.get('nms_pre', -1)
+
         mlvl_bboxes = []
         mlvl_scores = []
-        for i_lvl, (cls_score, bbox_pred, points) in enumerate(
-                zip(cls_scores, bbox_preds, mlvl_points)):
+        for level_idx, (cls_score, bbox_pred) in enumerate(
+                zip(cls_score_list, bbox_pred_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            featmap_size_hw = cls_score.shape[-2:]
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
@@ -708,8 +680,8 @@ class RepPointsHead(AnchorFreeHead):
             else:
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+
+            if 0 < nms_pre < scores.shape[0]:
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
@@ -718,32 +690,31 @@ class RepPointsHead(AnchorFreeHead):
                     # BG cat_id: num_class
                     max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                points = points[topk_inds, :]
+
+                points = self.point_generator.sparse_priors(
+                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
+                    scores.device)
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
+            else:
+                points = self.point_generator.single_level_grid_priors(
+                    featmap_size_hw, level_idx, scores.device)
+
             bbox_pos_center = torch.cat([points[:, :2], points[:, :2]], dim=1)
-            bboxes = bbox_pred * self.point_strides[i_lvl] + bbox_pos_center
+            bboxes = bbox_pred * self.point_strides[level_idx] + bbox_pos_center
             x1 = bboxes[:, 0].clamp(min=0, max=img_shape[1])
             y1 = bboxes[:, 1].clamp(min=0, max=img_shape[0])
             x2 = bboxes[:, 2].clamp(min=0, max=img_shape[1])
             y2 = bboxes[:, 3].clamp(min=0, max=img_shape[0])
             bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
+
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        if self.use_sigmoid_cls:
-            # Add a dummy background class to the backend when using sigmoid
-            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-            # BG cat_id: num_class
-            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        if with_nms:
-            det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-            return det_bboxes, det_labels
-        else:
-            return mlvl_bboxes, mlvl_scores
+
+        return self._bbox_post_process(
+            mlvl_scores,
+            mlvl_bboxes,
+            img_meta['scale_factor'],
+            cfg,
+            rescale=rescale,
+            with_nms=with_nms)
