@@ -20,6 +20,7 @@ def model_aug_test_template(cfg_file):
     # init test pipeline and set aug test
     load_cfg, multi_scale_cfg = cfg.test_pipeline
     multi_scale_cfg['flip'] = True
+    multi_scale_cfg['flip_direction'] = ['horizontal', 'vertical', 'diagonal']
     multi_scale_cfg['img_scale'] = [(1333, 800), (800, 600), (640, 480)]
 
     load = build_from_cfg(load_cfg, PIPELINES)
