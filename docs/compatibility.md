@@ -1,5 +1,18 @@
 # Compatibility of MMDetection 2.x
 
+## MMDetection 2.14.0
+
+### SSD compatibility
+
+In v2.14.0, to make SSD more flexible to use, [PR5291](https://github.com/open-mmlab/mmdetection/pull/5291) refactored its backbone, neck and head. The users can use the script `tools/model_converters/upgrade_ssd_version.py` to convert their models.
+
+```bash
+python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH}
+```
+
+- OLD_MODEL_PATH: the path to load the old version SSD model.
+- NEW_MODEL_PATH: the path to save the converted model weights.
+
 ## MMDetection 2.12.0
 
 MMDetection is going through big refactoring for more general and convenient usages during the releases from v2.12.0 to v2.15.0 (maybe longer).
@@ -112,14 +125,3 @@ Before [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939), since `py
 If MMDetection is installed before Detectron2, they could work under the same environment.
 [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939) deprecates mmpycocotools in favor of official pycocotools.
 Users may install MMDetection and Detectron2 under the same environment after [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939), no matter what the installation order is.
-
-## SSD compatibility
-
-In v2.14.0, to make SSD more flexible to use, [PR5291](https://github.com/open-mmlab/mmdetection/pull/5291) refactored its backbone, neck and head. The users can use the script `tools/model_converters/upgrade_ssd_version.py` to convert their models.
-
-```bash
-python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH}
-```
-
-- OLD_MODEL_PATH: the path to load the old version SSD model.
-- NEW_MODEL_PATH: the path to save the converted model weights.
