@@ -29,7 +29,7 @@ The detailed table of the commonly used backbone models in MMDetection is listed
 
 | model            | source      | link                                                         | description                                                  |
 | ---------------- | ----------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| ResNet50         | TorchVision | [torchvision's ResNet-50](https://download.pytorch.org/models/resnet50-19c8e357.pth) | From [torchvision's ResNet-50]((https://download.pytorch.org/models/resnet50-19c8e357.pth)). |
+| ResNet50         | TorchVision | [torchvision's ResNet-50](https://download.pytorch.org/models/resnet50-19c8e357.pth) | From [torchvision's ResNet-50](https://download.pytorch.org/models/resnet50-19c8e357.pth). |
 | ResNet101        | TorchVision | [torchvision's ResNet-101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth) | From [torchvision's ResNet-101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth). |
 | RegNetX          | Pycls       | [RegNetX_3.2gf](https://download.openmmlab.com/pretrain/third_party/regnetx_3.2gf-c2599b0f.pth), [RegNetX_800mf](https://download.openmmlab.com/pretrain/third_party/regnetx_800mf-1f4be4c7.pth). etc. | From [pycls](https://github.com/facebookresearch/pycls).     |
 | ResNet50_Caffe   | MSRA        | [MSRA's ResNet-50](https://download.openmmlab.com/pretrain/third_party/resnet50_caffe-788b5fa3.pth) | Converted copy of [Detectron2's R-50.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-50.pkl) model. The original weight comes from [MSRA's original ResNet-50](https://github.com/KaimingHe/deep-residual-networks). |
