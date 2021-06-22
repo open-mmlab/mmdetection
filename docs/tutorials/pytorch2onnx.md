@@ -23,9 +23,9 @@
 
 ### Prerequisite
 
-1. Install the prerequisites following steps 1-3 in [get_started.md/Installation](../get_started.md). (We do not install MMCV and MMDetection because we will do it manually).
-2. Build custom operators for ONNX Runtime and install MMCV following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
-3. Install MMdetection and its requirements following steps 5-6 in [get_started.md/Installation](../get_started.md).
+1. Install the prerequisites following [get_started.md/Prepare environment](../get_started.md).
+2. Build custom operators for ONNX Runtime and install MMCV manually following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
+3. Install MMdetection manually following steps 2-3 in [get_started.md/Install MMdetection](../get_started.md).
 
 ### Usage
 
@@ -100,7 +100,7 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
 
 - Build custom operators for ONNX Runtime following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
 
-- Install TensorRT by referring to [how-to-build-tensorrt-plugins-in-mmcv](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv)(optional)
+- Install TensorRT by referring to [How to build TensorRT plugins in MMCV](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv) (optional)
 
 ### Usage
 
