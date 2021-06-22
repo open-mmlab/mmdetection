@@ -314,7 +314,8 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                     for i, bbox in enumerate(bbox_result)
                 ]
             else:  # segm only
-                # estimate center of mask through segm_result
+                # Estimate the center of mask through segm_result
+                # so that the label is in the mask.
                 for scores, segms in \
                         zip(bbox_result, segm_result):
                     assert len(scores) == len(segms)
