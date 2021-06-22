@@ -18,8 +18,6 @@
 
 ## PyTorch/CUDA 环境相关
 
-
-
 - "RTX 30 series card fails when building MMCV or MMDet"
 
     1. 临时解决方案 `MMCV_WITH_OPS=1 MMCV_CUDA_ARGS='-gencode=arch=compute_80,code=sm_80' pip install -e .`.
