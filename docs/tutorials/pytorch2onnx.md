@@ -23,12 +23,9 @@
 
 ### Prerequisite
 
-1. Please refer to [get_started.md](../get_started.md) for installation of MMCV and MMDetection.
-2. Install onnx and onnxruntime
-
-  ```shell
-  pip install onnx onnxruntime
-  ```
+1. Install the prerequisites following [get_started.md/Prepare environment](../get_started.md).
+2. Build custom operators for ONNX Runtime and install MMCV manually following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
+3. Install MMdetection manually following steps 2-3 in [get_started.md/Install MMdetection](../get_started.md).
 
 ### Usage
 
@@ -86,13 +83,24 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
 
 ### Prerequisite
 
-- Install onnx and onnxruntime-gpu
+- Install onnx and onnxruntime (CPU version)
 
   ```shell
-  pip install onnx onnxruntime-gpu
+  pip install onnx onnxruntime==1.5.1
+  ```
+- If you want to run the model on GPU, please remove the CPU version before using the GPU version.
+
+  ```shell
+  pip uninstall onnxruntime
+  pip install onnxruntime-gpu
   ```
 
-- Install TensorRT by referring to [how-to-build-tensorrt-plugins-in-mmcv](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv)(optional)
+  Note: onnxruntime-gpu is version-dependent on CUDA and CUDNN, please ensure that your
+  environment meets the requirements.
+
+- Build custom operators for ONNX Runtime following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
+
+- Install TensorRT by referring to [How to build TensorRT plugins in MMCV](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv) (optional)
 
 ### Usage
 
