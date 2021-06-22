@@ -20,7 +20,6 @@ def model_aug_test_template(cfg_file):
     # init test pipeline and set aug test
     load_cfg, multi_scale_cfg = cfg.test_pipeline
     multi_scale_cfg['flip'] = True
-    multi_scale_cfg['flip_direction'] = ['horizontal', 'vertical', 'diagonal']
     multi_scale_cfg['img_scale'] = [(1333, 800), (800, 600), (640, 480)]
 
     load = build_from_cfg(load_cfg, PIPELINES)
@@ -57,14 +56,14 @@ def test_aug_test_size():
         transforms=[],
         img_scale=[(1333, 800), (800, 600), (640, 480)],
         flip=True,
-        flip_direction=['horizontal', 'vertical'])
+        flip_direction=['horizontal', 'vertical', 'diagonal'])
     multi_aug_test_module = build_from_cfg(transform, PIPELINES)
 
     results = load(results)
     results = multi_aug_test_module(load(results))
-    # len(["original", "horizontal", "vertical"]) *
+    # len(["original", "horizontal", "vertical", "diagonal"]) *
     # len([(1333, 800), (800, 600), (640, 480)])
-    assert len(results['img']) == 9
+    assert len(results['img']) == 12
 
 
 def test_cascade_rcnn_aug_test():
