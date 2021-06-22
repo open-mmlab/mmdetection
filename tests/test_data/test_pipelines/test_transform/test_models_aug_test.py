@@ -20,6 +20,7 @@ def model_aug_test_template(cfg_file):
     # init test pipeline and set aug test
     load_cfg, multi_scale_cfg = cfg.test_pipeline
     multi_scale_cfg['flip'] = True
+    multi_scale_cfg['flip_direction'] = ['horizontal', 'vertical', 'diagonal']
     multi_scale_cfg['img_scale'] = [(1333, 800), (800, 600), (640, 480)]
 
     load = build_from_cfg(load_cfg, PIPELINES)
@@ -29,8 +30,8 @@ def model_aug_test_template(cfg_file):
         img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
         img_info=dict(filename='color.jpg'))
     results = transform(load(results))
-    assert len(results['img']) == 6
-    assert len(results['img_metas']) == 6
+    assert len(results['img']) == 12
+    assert len(results['img_metas']) == 12
 
     results['img'] = [collate([x]) for x in results['img']]
     results['img_metas'] = [collate([x]).data[0] for x in results['img_metas']]
@@ -107,6 +108,7 @@ def test_cornernet_aug_test():
     # init test pipeline and set aug test
     load_cfg, multi_scale_cfg = cfg.test_pipeline
     multi_scale_cfg['flip'] = True
+    multi_scale_cfg['flip_direction'] = ['horizontal', 'vertical', 'diagonal']
     multi_scale_cfg['scale_factor'] = [0.5, 1.0, 2.0]
 
     load = build_from_cfg(load_cfg, PIPELINES)
@@ -116,8 +118,8 @@ def test_cornernet_aug_test():
         img_prefix=osp.join(osp.dirname(__file__), '../../../data'),
         img_info=dict(filename='color.jpg'))
     results = transform(load(results))
-    assert len(results['img']) == 6
-    assert len(results['img_metas']) == 6
+    assert len(results['img']) == 12
+    assert len(results['img_metas']) == 12
 
     results['img'] = [collate([x]) for x in results['img']]
     results['img_metas'] = [collate([x]).data[0] for x in results['img_metas']]
