@@ -41,7 +41,7 @@ class PointGenerator:
 
 @PRIOR_GENERATORS.register_module()
 class MlvlPointGenerator:
-    """Standard points generator for multi-level(Mlvl) feature maps in 2D
+    """Standard points generator for multi-level (Mlvl) feature maps in 2D
     points-based detectors.
 
     Args:
