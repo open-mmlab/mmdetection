@@ -1,11 +1,12 @@
 import argparse
+import os
 import time
 
 import torch
 from mmcv import Config, DictAction
 from mmcv.cnn import fuse_conv_bn
-from mmcv.parallel import MMDataParallel
-from mmcv.runner import load_checkpoint, wrap_fp16_model
+from mmcv.parallel import MMDistributedDataParallel
+from mmcv.runner import init_dist, load_checkpoint, wrap_fp16_model
 
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
@@ -17,7 +18,9 @@ def parse_args():
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument(
-        '--log-interval', default=50, help='interval of logging')
+        '--max-iter', type=int, default=2000, help='num of max iter')
+    parser.add_argument(
+        '--log-interval', type=int, default=50, help='interval of logging')
     parser.add_argument(
         '--fuse-conv-bn',
         action='store_true',
@@ -33,20 +36,20 @@ def parse_args():
         'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
+    parser.add_argument(
+        '--launcher',
+        choices=['none', 'pytorch', 'slurm', 'mpi'],
+        default='none',
+        help='job launcher')
+    parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
+    if 'LOCAL_RANK' not in os.environ:
+        os.environ['LOCAL_RANK'] = str(args.local_rank)
     return args
 
 
-def main():
-    args = parse_args()
-
-    cfg = Config.fromfile(args.config)
-    if args.cfg_options is not None:
-        cfg.merge_from_dict(args.cfg_options)
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
+def measure_inferense_speed(cfg, checkpoint, max_iter, log_interval,
+                            is_fuse_conv_bn):
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -63,7 +66,7 @@ def main():
         dataset,
         samples_per_gpu=1,
         workers_per_gpu=cfg.data.workers_per_gpu,
-        dist=False,
+        dist=True,
         shuffle=False)
 
     # build the model and load checkpoint
@@ -72,17 +75,20 @@ def main():
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
         wrap_fp16_model(model)
-    load_checkpoint(model, args.checkpoint, map_location='cpu')
-    if args.fuse_conv_bn:
+    load_checkpoint(model, checkpoint, map_location='cpu')
+    if is_fuse_conv_bn:
         model = fuse_conv_bn(model)
 
-    model = MMDataParallel(model, device_ids=[0])
-
+    model = MMDistributedDataParallel(
+        model.cuda(),
+        device_ids=[torch.cuda.current_device()],
+        broadcast_buffers=False)
     model.eval()
 
     # the first several iterations may be very slow so skip them
     num_warmup = 5
     pure_inf_time = 0
+    fps = 0
 
     # benchmark with 2000 image and take the average
     for i, data in enumerate(data_loader):
@@ -98,15 +104,38 @@ def main():
 
         if i >= num_warmup:
             pure_inf_time += elapsed
-            if (i + 1) % args.log_interval == 0:
+            if (i + 1) % log_interval == 0:
                 fps = (i + 1 - num_warmup) / pure_inf_time
-                print(f'Done image [{i + 1:<3}/ 2000], fps: {fps:.1f} img / s')
+                print(
+                    f'Done image [{i + 1:<3}/ {max_iter}], '
+                    f'fps: {fps:.1f} img / s, '
+                    f'times per image: {1000 / fps:.1f} ms / img',
+                    flush=True)
 
-        if (i + 1) == 2000:
-            pure_inf_time += elapsed
+        if (i + 1) == max_iter:
             fps = (i + 1 - num_warmup) / pure_inf_time
-            print(f'Overall fps: {fps:.1f} img / s')
+            print(
+                f'Overall fps: {fps:.1f} img / s, '
+                f'times per image: {1000 / fps:.1f} ms / img',
+                flush=True)
             break
+    return fps
+
+
+def main():
+    args = parse_args()
+
+    cfg = Config.fromfile(args.config)
+    if args.cfg_options is not None:
+        cfg.merge_from_dict(args.cfg_options)
+
+    if args.launcher == 'none':
+        raise NotImplementedError('Only supports distributed mode')
+    else:
+        init_dist(args.launcher, **cfg.dist_params)
+
+    measure_inferense_speed(cfg, args.checkpoint, args.max_iter,
+                            args.log_interval, args.fuse_conv_bn)
 
 
 if __name__ == '__main__':

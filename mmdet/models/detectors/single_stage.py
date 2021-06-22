@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 
 from mmdet.core import bbox2result
@@ -22,7 +24,10 @@ class SingleStageDetector(BaseDetector):
                  pretrained=None,
                  init_cfg=None):
         super(SingleStageDetector, self).__init__(init_cfg)
-        backbone.pretrained = pretrained
+        if pretrained:
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
+                          'please use "init_cfg" instead')
+            backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)
