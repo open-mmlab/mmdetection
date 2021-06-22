@@ -42,11 +42,11 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 
 该项目采用 [Apache 2.0 开源许可证](LICENSE)。
 
-## 更新日志
+## 新闻
 
-最新的月度版本 v2.13.0 在 2021.06.01 发布。
-如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
-在[兼容性说明文档](docs/compatibility.md)中我们提供了 1.x 和 2.0 版本的详细比较。
+我们正在制作 MMDetection 的中文文档和中文教程，他们都是基于[英文文档](docs/)进行翻译的，文档的框架已经做好并放在了[这里](docs_zh-CN/)，欢迎大家将英文文档翻译成中文，具体的提交要求请参考[这里](https://openmmlab.feishu.cn/docs/doccnhOhfcRrgD8aAvrVfs6DuOe)，希望你也能为 MMDetection 做出贡献。
+
+注意：中文文档的框架只出现在 `doc_zh` 分支，请提交的时候也提交到该分支。为避免重复提交，请提前查看 [PR](https://github.com/open-mmlab/mmdetection/pulls/) 中是否已经有人提交了相应的中文文档。
 
 ## 基准测试和模型库
 

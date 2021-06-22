@@ -44,9 +44,9 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## News
 
-v2.13.0 was released in 01/06/2021.
-Please refer to [changelog.md](docs/changelog.md) for details and release history.
-A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
+Nowadays, We are making Chinese documents and Chinese tutorials for MMDetection. They are all based on [English documents](docs/), the framework of the Chinses documents is at [here](docs_zh-CN/). It is very welecome everyone to translate English documents into Chinese. Please refer to [CONTRIBUTING.md](https://github.com/open-mmlab/mmdetection/blob/master/.github/CONTRIBUTING.md) for more details about the contributing guideline. Hope you can contribute to MMdetection
+
+**NOTE: ** The Chinese is in `doc_zh` branch, please submit to this branch when you create your PR. To avoid repeated submissions, please check [PR](https://github.com/open-mmlab/mmdetection/pulls/) in advance to see if anyone has already submitted the corresponding Chinese documents.
 
 ## Benchmark and model zoo
 
