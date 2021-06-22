@@ -15,7 +15,7 @@ def test_standard_points_generator():
         type='MlvlPointGenerator', strides=[4, 8], offset=0)
     anchor_generator = build_prior_generator(anchor_generator_cfg)
     assert anchor_generator is not None
-
+    assert anchor_generator.num_base_priors == [1, 1]
     # test_stride
     from mmdet.core.anchor import MlvlPointGenerator
 
@@ -277,6 +277,9 @@ def test_standard_anchor_generator():
         strides=[4, 8])
 
     anchor_generator = build_anchor_generator(anchor_generator_cfg)
+    assert anchor_generator.num_base_priors == \
+           anchor_generator.num_base_anchors
+    assert anchor_generator.num_base_priors == [3, 3]
     assert anchor_generator is not None
 
 

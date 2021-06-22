@@ -114,6 +114,12 @@ class AnchorGenerator:
     @property
     def num_base_anchors(self):
         """list[int]: total number of base anchors in a feature grid"""
+        return self.num_base_priors
+
+    @property
+    def num_base_priors(self):
+        """list[int]: The number of priors (anchors) at a point
+        on the feature grid"""
         return [base_anchors.size(0) for base_anchors in self.base_anchors]
 
     @property

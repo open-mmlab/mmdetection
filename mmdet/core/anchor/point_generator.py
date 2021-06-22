@@ -60,6 +60,12 @@ class MlvlPointGenerator:
         """int: number of feature levels that the generator will be applied"""
         return len(self.strides)
 
+    @property
+    def num_base_priors(self):
+        """list[int]: The number of priors (points) at a point
+        on the feature grid"""
+        return [1 for _ in range(len(self.strides))]
+
     def _meshgrid(self, x, y, row_major=True):
         xx = x.repeat(len(y))
         yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
