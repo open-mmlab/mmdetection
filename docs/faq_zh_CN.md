@@ -1,18 +1,16 @@
-
-
 我们在这里列出了使用时的一些常见问题及其相应的解决方案。 如果您发现有一些问题被遗漏，请随时提PR丰富这个列表。 如果您无法在次获得帮助，请使用 [issue模板](https://github.com/open-mmlab/mmdetection/blob/master/.github/ISSUE_TEMPLATE/error-report.md/ ) 创建问题，但是请在板中填写所有必填信息，这又主语我们更快定位问题。
 
 ## MMCV 安装相关
 
-- MMCV 与MMdetection的兼容问题: "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, <=xxx."
+- MMCV 与 MMdetection的兼容问题: "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, <=xxx."
 
   请按[安装说明](https://mmdetection.readthedocs.io/en/latest/get_started.html#installation)为你的 mmdetection 安装正确版本的 mmcv 。
 
 - "No module named 'mmcv.ops'"; "No module named 'mmcv._ext'".
 
-    原因是安装了mmcv而不是mmcv-full。
+    原因是安装了 mmcv 而不是 mmcv-full。
 
-    1.  `pip uninstall mmcv`卸载安装的mmcv
+    1. `pip uninstall mmcv`卸载安装的 mmcv
 
     2. 安装 mmcv-full 根据 [安装说明](https://mmcv.readthedocs.io/en/latest/#installation).
 
@@ -20,33 +18,30 @@
 
 - "RTX 30 series card fails when building MMCV or MMDet"
 
-    1. 临时解决方案 `MMCV_WITH_OPS=1 MMCV_CUDA_ARGS='-gencode=arch=compute_80,code=sm_80' pip install -e .`.
-        常见报错信息为 `nvcc fatal : Unsupported gpu architecture 'compute_86'`. 意思是你的编译器不支持sm_86架构(包括n英伟达30系列的显卡)的优化，到 CUDA toolkit 11.0 依旧未支持.
+    1. 临时解决方案 `MMCV_WITH_OPS=1 MMCV_CUDA_ARGS='-gencode=arch=compute_80,code=sm_80' pip install -e .`. 常见报错信息为 `nvcc fatal : Unsupported gpu architecture 'compute_86'`. 意思是你的编译器不支持sm_86架构(包括n英伟达30系列的显卡)的优化，到 CUDA toolkit 11.0 依旧未支持. 这个解决方案是通过增加宏`MMCV_CUDA_ARGS='-gencode=arch=compute_80,code=sm_80` 让nvcc编译器是30系列显卡进行`sm_80`的优化，虽然这有可能会无法发挥出显卡所有性能。
 
-      这个解决方案是通过增加宏`MMCV_CUDA_ARGS='-gencode=arch=compute_80,code=sm_80` 让nvcc编译器是30系列显卡进行`sm_80`的优化，虽然这有可能会无法发挥出显卡所有性能。
-
-    2. 有开发者已经在 [pytorch/pytorch#47585](https://github.com/pytorch/pytorch/pull/47585)更新了pytorch默认的编译flag,但是我们对此并没有进行测试。
+    2. 有开发者已经在 [pytorch/pytorch#47585](https://github.com/pytorch/pytorch/pull/47585)更新了PyTorch默认的编译flag,但是我们对此并没有进行测试。
 
 - "invalid device function" or "no kernel image is available for execution".
 
-    1. 检查您正常安装了cuda runtime (一般在`/usr/local/`)，或者使用`nvcc --version` 检查本地版本，有时安装pytorch会顺带安装一个cuda runtime，并且实际优先使用conda环境中的版本，你可以使用`conda list cudatoolkit`查看其版本。
+    1. 检查您正常安装了 CUDA runtime (一般在`/usr/local/`)，或者使用 `nvcc --version` 检查本地版本，有时安装 PyTorch 会顺带安装一个 CUDA runtime，并且实际优先使用 conda 环境中的版本，你可以使用 `conda list cudatoolkit` 查看其版本。
 
-    2. 编译extention的CUDA Toolkit版本与运行时的CUDA Toolkit版本是否相符，
+    2. 编译 extention 的 CUDA Toolkit版本与运行时的 CUDA Toolkit版本是否相符，
 
-       * 如果您从源码自己编译的，使用 `python mmdet/utils/collect_env.py`检查编译编译extention的CUDA Toolkit版本，然后使用 `conda list cudatoolkit` 检查当前conda环境是否有CUDA Toolkit，若有检查版本是否匹配, 如不匹配，更换conda环境的cudatoolkit，或者使用匹配的cudatoolkit中的nvcc编译即可，如环境中无CUDA Toolkit，可以使用`nvcc -V`
+       * 如果您从源码自己编译的，使用 `python mmdet/utils/collect_env.py`检查编译编译 extention 的 CUDA Toolkit 版本，然后使用 `conda list cudatoolkit` 检查当前conda环境是否有 CUDA Toolkit，若有检查版本是否匹配, 如不匹配，更换 conda 环境的 CUDA Toolkit，或者使用匹配的 CUDA Toolkit 中的 nvcc 编译即可，如环境中无 CUDA Toolkit，可以使用 `nvcc -V`
 
-         等命令查看当前使用的cuda runtime。
+         等命令查看当前使用的CUDA runtime。
 
-       * 如果您是通过pip下载的预编译好的版本，请确保与当前cuda run time一致。
+       * 如果您是通过pip下载的预编译好的版本，请确保与当前 CUDA runtime一致。
 
-    3. 运行 `python mmdet/utils/collect_env.py` 检查是否为正确的GPU架构编译的PyTorch, torchvision, 与 MMCV。你或许需要设置`TORCH_CUDA_ARCH_LIST`来重新安装MMCV，可以参考[GPU 架构表](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list),
+    3. 运行 `python mmdet/utils/collect_env.py` 检查是否为正确的GPU架构编译的 PyTorch, torchvision, 与 MMCV。你或许需要设置 `TORCH_CUDA_ARCH_LIST` 来重新安装 MMCV，可以参考[GPU 架构表](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list),
         例如， 运行 `TORCH_CUDA_ARCH_LIST=7.0 pip install mmcv-full` 为 Volta GPU 编译MMCV。
         这种架构不匹配的问题一般会出现在使用一些旧型号的 GPU 时候出现, 例如， Tesla K80 (3.7) on colab.
 
 - "undefined symbol" or "cannot open xxx.so".
 
     1. 如果这些 symbol 属于 CUDA/C++ (如 libcudart.so 或者 GLIBCXX)，使用 `python mmdet/utils/collect_env.py`检查CUDA/GCC runtime 与编译MMCV的CUDA版本是否相同。
-    2. 如果这些 symbols 属于 PyTorch ，(例如, symbols containing caffe, aten, and TH), 检查当前pytorch版本是否与编译MMCV的版本一致。
+    2. 如果这些 symbols 属于 PyTorch ，(例如, symbols containing caffe, aten, and TH), 检查当前 Pytorch版本是否与编译MMCV的版本一致。
     3. 运行 `python mmdet/utils/collect_env.py` 检查 PyTorch, torchvision, MMCV 等的编译环境与运行环境一致。
 
 - setuptools.sandbox.UnpickleableException: DistutilsSetupError("each element of 'ext_modules' option must be an Extension instance or 2-tuple")
@@ -57,7 +52,7 @@
 - "Segmentation fault".
     1. 检查GCC的版本，通常是因为PyTorch版本与GCC版本不匹配 （例如 GCC < 4.9 )，我们推荐用户使用 GCC 5.4，我们也不推荐使用 GCC 5.5， 因为有反馈 GCC 5.5 会导致 "segmentation fault" 并且切换到 GCC 5.4 就可以解决问题。
 
-    2. 检查是否正确安装了 cuda 版本的 pytorch 。
+    2. 检查是否正确安装了 CUDA 版本的 PyTorch 。
 
         ```shell
         python -c 'import torch; print(torch.cuda.is_available())'
