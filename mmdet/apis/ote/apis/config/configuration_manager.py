@@ -182,6 +182,8 @@ class MMDetectionConfigManager(object):
         learning_rate_warmup_iters = configurable_parameters.learning_parameters.learning_rate_warmup_iters.value
         self._update_learning_rate_schedule(learning_rate_schedule_name, learning_rate_warmup_iters)
         self.config.runner.max_epochs = int(configurable_parameters.learning_parameters.num_epochs.value)
+        self.config.total_epochs = self.config.runner.max_epochs # they are should be the same for EpochBasedRunner
+                                                                 # -- see assert in the function train_detector
         self.config.optimizer.lr = float(configurable_parameters.learning_parameters.learning_rate.value)
         self.config.data.samples_per_gpu = int(configurable_parameters.learning_parameters.batch_size.value)
         self._update_nncf_config_section(configurable_parameters)
