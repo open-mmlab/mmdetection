@@ -267,7 +267,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 roi_labels = bbox_results['bbox_targets'][0]
                 with torch.no_grad():
                     cls_score = bbox_results['cls_score']
-                    if self.bbox_head[i].custom_cls_channels:
+                    if self.bbox_head[i].custom_activation:
                         cls_score = self.bbox_head[i].loss_cls.get_activation(
                             cls_score)
                     roi_labels = torch.where(
@@ -312,7 +312,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
-                if self.bbox_head[i].custom_cls_channels:
+                if self.bbox_head[i].custom_activation:
                     cls_score = [
                         self.bbox_head[i].loss_cls.get_activation(s)
                         for s in cls_score
@@ -438,7 +438,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
                 if i < self.num_stages - 1:
                     cls_score = bbox_results['cls_score']
-                    if self.bbox_head[i].custom_cls_channels:
+                    if self.bbox_head[i].custom_activation:
                         cls_score = self.bbox_head[i].loss_cls.get_activation(
                             cls_score)
                     bbox_label = cls_score[:, :-1].argmax(dim=1)
