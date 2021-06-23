@@ -82,3 +82,14 @@ def flip_tensor(src_tensor, flip_direction):
     else:
         out_tensor = torch.flip(src_tensor, [2, 3])
     return out_tensor
+
+
+def collect_mlvl_tensor_single(mlvl_tensors, batch_id, detach=True):
+    assert isinstance(mlvl_tensors, (list, tuple))
+    num_levels = len(mlvl_tensors)
+
+    if detach:
+        mlvl_tensor_list = [mlvl_tensors[i][batch_id].detach() for i in range(num_levels)]
+    else:
+        mlvl_tensor_list = [mlvl_tensors[i][batch_id] for i in range(num_levels)]
+    return mlvl_tensor_list

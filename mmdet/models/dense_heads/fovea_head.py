@@ -267,6 +267,7 @@ class FoveaHead(AnchorFreeHead):
             bbox_target_list.append(torch.log(bbox_targets))
         return label_list, bbox_target_list
 
+    # Same as base_dense_head/_get_bboxes_single except self._bbox_decode
     def _get_bboxes_single(self,
                            cls_score_list,
                            bbox_pred_list,
@@ -290,7 +291,7 @@ class FoveaHead(AnchorFreeHead):
             featmap_size_hw = cls_score.shape[-2:]
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).exp()
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             if 0 < nms_pre < scores.shape[0]:
                 max_scores, _ = scores.max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
@@ -302,20 +303,28 @@ class FoveaHead(AnchorFreeHead):
             else:
                 priors = self.prior_generator.single_level_grid_priors(
                     featmap_size_hw, level_idx, scores.device)
-            y = priors[:, 1]
-            x = priors[:, 0]
-            x1 = (stride * x - base_len * bbox_pred[:, 0]). \
-                clamp(min=0, max=img_shape[1] - 1)
-            y1 = (stride * y - base_len * bbox_pred[:, 1]). \
-                clamp(min=0, max=img_shape[0] - 1)
-            x2 = (stride * x + base_len * bbox_pred[:, 2]). \
-                clamp(min=0, max=img_shape[1] - 1)
-            y2 = (stride * y + base_len * bbox_pred[:, 3]). \
-                clamp(min=0, max=img_shape[0] - 1)
-            bboxes = torch.stack([x1, y1, x2, y2], -1)
+
+            bboxes = self._bbox_decode(priors, bbox_pred, stride, base_len, img_shape)
+
             det_bboxes.append(bboxes)
             det_scores.append(scores)
 
         return self._bbox_post_process(det_scores, det_bboxes,
                                        img_meta['scale_factor'], cfg, rescale,
                                        with_nms)
+
+    def _bbox_decode(self, priors, bbox_pred, stride, base_len, max_shape):
+        bbox_pred = bbox_pred.exp()
+
+        y = priors[:, 1]
+        x = priors[:, 0]
+        x1 = (stride * x - base_len * bbox_pred[:, 0]). \
+            clamp(min=0, max=max_shape[1] - 1)
+        y1 = (stride * y - base_len * bbox_pred[:, 1]). \
+            clamp(min=0, max=max_shape[0] - 1)
+        x2 = (stride * x + base_len * bbox_pred[:, 2]). \
+            clamp(min=0, max=max_shape[1] - 1)
+        y2 = (stride * y + base_len * bbox_pred[:, 3]). \
+            clamp(min=0, max=max_shape[0] - 1)
+        decoded_bboxes = torch.stack([x1, y1, x2, y2], -1)
+        return decoded_bboxes

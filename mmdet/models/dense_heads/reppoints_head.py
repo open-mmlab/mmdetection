@@ -653,6 +653,7 @@ class RepPointsHead(AnchorFreeHead):
         }
         return loss_dict_all
 
+    # Same as base_dense_head/_get_bboxes_single except self._bbox_decode
     def _get_bboxes_single(self,
                            cls_score_list,
                            bbox_pred_list,
@@ -700,13 +701,7 @@ class RepPointsHead(AnchorFreeHead):
                 points = self.point_generator.single_level_grid_priors(
                     featmap_size_hw, level_idx, scores.device)
 
-            bbox_pos_center = torch.cat([points[:, :2], points[:, :2]], dim=1)
-            bboxes = bbox_pred * self.point_strides[level_idx] + bbox_pos_center
-            x1 = bboxes[:, 0].clamp(min=0, max=img_shape[1])
-            y1 = bboxes[:, 1].clamp(min=0, max=img_shape[0])
-            x2 = bboxes[:, 2].clamp(min=0, max=img_shape[1])
-            y2 = bboxes[:, 3].clamp(min=0, max=img_shape[0])
-            bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
+            bboxes = self._bbox_decode(points, bbox_pred, self.point_strides[level_idx], img_shape)
 
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
@@ -718,3 +713,13 @@ class RepPointsHead(AnchorFreeHead):
             cfg,
             rescale=rescale,
             with_nms=with_nms)
+
+    def _bbox_decode(self, points, bbox_pred, stride, max_shape):
+        bbox_pos_center = torch.cat([points[:, :2], points[:, :2]], dim=1)
+        bboxes = bbox_pred * stride + bbox_pos_center
+        x1 = bboxes[:, 0].clamp(min=0, max=max_shape[1])
+        y1 = bboxes[:, 1].clamp(min=0, max=max_shape[0])
+        x2 = bboxes[:, 2].clamp(min=0, max=max_shape[1])
+        y2 = bboxes[:, 3].clamp(min=0, max=max_shape[0])
+        decoded_bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
+        return decoded_bboxes

@@ -7,7 +7,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (bbox2distance, bbox_overlaps, build_anchor_generator,
                         build_assigner, build_sampler, distance2bbox,
-                        multi_apply, reduce_mean)
+                        multi_apply, reduce_mean, MlvlPointGenerator)
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
@@ -154,6 +154,10 @@ class VFNetHead(ATSSHead, FCOSHead):
             self.assigner = build_assigner(self.train_cfg.assigner)
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
+
+        # in order to unify the get_bbox logic. Not needed during training.
+        self.prior_generator = MlvlPointGenerator(anchor_generator['strides'],
+                                                  self.anchor_center_offset if self.use_atss else 0.5)
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -461,104 +465,6 @@ class VFNetHead(ATSSHead, FCOSHead):
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
             loss_bbox_rf=loss_bbox_refine)
-
-    # TODO： two base classes, subsequent reconstruction
-    def _sparse_priors(self,
-                       level_idx,
-                       featmap_size,
-                       dtype,
-                       device,
-                       topk_inds=None):
-        height, width = featmap_size
-        if self.use_atss:
-            offset = self.anchor_center_offset
-        else:
-            offset = 0.5
-        if topk_inds is not None:
-            x = topk_inds % width
-            y = (topk_inds // width) % height
-            priors = torch.stack([x, y], 1).to(dtype) \
-                * self.strides[level_idx] \
-                + self.strides[level_idx] * offset
-            priors = priors.to(device)
-        else:
-            priors = self._get_points_single(featmap_size,
-                                             self.strides[level_idx], dtype,
-                                             device)
-        return priors
-
-    def _get_bboxes_single(self,
-                           cls_score_list,
-                           bbox_pred_list,
-                           score_factor_list,
-                           img_meta,
-                           cfg,
-                           rescale=False,
-                           with_nms=True,
-                           **kwargs):
-        """Transform outputs for a single batch item into bbox predictions.
-
-        Args:
-            cls_scores (list[Tensor]): Box iou-aware scores for a single scale
-                level with shape (num_points * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box offsets for a single scale
-                level with shape (num_points * 4, H, W).
-            mlvl_points (list[Tensor]): Box reference for a single scale level
-                with shape (num_total_points, 4).
-            img_shape (tuple[int]): Shape of the input image,
-                (height, width, 3).
-            scale_factor (ndarray): Scale factor of the image arrange as
-                (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before returning boxes.
-                Default: True.
-
-        Returns:
-            tuple(Tensor):
-                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
-                    the first 4 columns are bounding box positions
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
-                    between 0 and 1.
-                det_labels (Tensor): A (n,) tensor where each item is the
-                    predicted class label of the corresponding box.
-        """
-        cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_score_list) == len(bbox_pred_list)
-        img_shape = img_meta['img_shape']
-        nms_pre = cfg.get('nms_pre', -1)
-
-        mlvl_bboxes = []
-        mlvl_scores = []
-        for level_idx, (cls_score, bbox_pred) in enumerate(
-                zip(cls_score_list, bbox_pred_list)):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            featmap_size_hw = cls_score.shape[-2:]
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).contiguous().sigmoid()
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).contiguous()
-
-            if 0 < nms_pre < scores.shape[0]:
-                max_scores, _ = scores.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                points = self._sparse_priors(level_idx, featmap_size_hw,
-                                             scores.dtype, scores.device,
-                                             topk_inds)
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-            else:
-                points = self._sparse_priors(level_idx, featmap_size_hw,
-                                             scores.dtype, scores.device)
-
-            bboxes = self.bbox_coder.decode(
-                points, bbox_pred, max_shape=img_shape)
-            mlvl_bboxes.append(bboxes)
-            mlvl_scores.append(scores)
-        return self._bbox_post_process(mlvl_scores, mlvl_bboxes,
-                                       img_meta['scale_factor'], cfg, rescale,
-                                       with_nms)
 
     def _get_points_single(self,
                            featmap_size,
