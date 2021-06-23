@@ -28,7 +28,37 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                    with_nms=True,
                    cfg=None,
                    **kwargs):
-        """Transform network output for a batch into bbox predictions."""
+        """Transform network output for a batch into bbox predictions.
+
+        Note: score_factors is usually multiplied by the classification branch,
+        such as CenterNess in FCOS, IoU branch in ATSS.
+
+        Args:
+            cls_scores (list[Tensor]): Classification scores for all \
+                scale levels, each is a 4D-tensor, the channels number \
+                is num_priors * num_classes.
+            bbox_preds (list[Tensor]): Box energies / deltas for all \
+                scale levels, each is a 4D-tensor, the channels number \
+                is num_priors * 4.
+            score_factors (list[Tensor], Optional):  score_factor for each scale level, \
+                each is a 4D-tensor, the channel number is num_priors * 1.
+                Default None.
+            img_metas (list[dict], Optional): Image meta info. Default None.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+            cfg (mmcv.Config, Optional): Test / postprocessing configuration,
+                if None, test_cfg would be used.  Default: False.
+
+        Returns:
+            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
+                The first item is an (n, 5) tensor, where the first 4 columns \
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
+                5-th column is a score between 0 and 1. The second item is a \
+                (n,) tensor where each item is the predicted class label of \
+                the corresponding box.
+        """
         assert len(cls_scores) == len(bbox_preds)
 
         if score_factors is None:
@@ -67,13 +97,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                            rescale=False,
                            with_nms=True,
                            **kwargs):
-        """Transform outputs for a single batch item into bbox predictions.
+        """Transform outputs of single image into bbox predictions.
 
         Args:
             cls_score_list (list[Tensor]): Box scores for a single scale level
-                Has shape (num_anchors * num_classes, H, W).
+                Has shape (num_priors * num_classes, H, W).
             bbox_pred_list (list[Tensor]): Box energies / deltas for a single
-                scale level with shape (num_anchors * 4, H, W).
+                scale level with shape (num_priors * 4, H, W).
+            score_factor_list (list[Tensor]):  score_factor for each scale level
+                with shape (num_priors * 1, H, W)
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
@@ -82,9 +114,14 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default: True.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1.
+            tuple[Tensor]: Results of detected bboxes and labels.
+
+                - det_bboxes: Predicted bboxes with shape [num_query, 5], \
+                    where the first 4 columns are bounding box positions \
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
+                    between 0 and 1.
+                - det_labels: Predicted labels of the corresponding box with \
+                    shape [num_query].
         """
         if score_factor_list[0] is None:
             # e.g. Retina, FreeAnchor, etc.
