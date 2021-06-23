@@ -782,4 +782,5 @@ class CascadeRPNHead(BaseDenseHead):
 
     def aug_test_rpn(self, x, img_metas):
         """Augmented forward test function."""
-        raise NotImplementedError
+        raise NotImplementedError(
+            'CascadeRPNHead does not support test-time augmentation')

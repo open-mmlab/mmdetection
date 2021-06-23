@@ -27,7 +27,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco/grid_rcnn_r50_fpn_gn-head_2x_coco_20200130-6cca8223.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco/grid_rcnn_r50_fpn_gn-head_2x_coco_20200130-6cca8223.pth
 
   - Name: grid_rcnn_r101_fpn_gn-head_2x_coco
     In Collection: Grid R-CNN
@@ -41,7 +41,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r101_fpn_gn-head_2x_coco/grid_rcnn_r101_fpn_gn-head_2x_coco_20200309-d6eca030.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r101_fpn_gn-head_2x_coco/grid_rcnn_r101_fpn_gn-head_2x_coco_20200309-d6eca030.pth
 
   - Name: grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco
     In Collection: Grid R-CNN
@@ -55,7 +55,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco_20200130-d8f0e3ff.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco_20200130-d8f0e3ff.pth
 
   - Name: grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco
     In Collection: Grid R-CNN
@@ -69,4 +69,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 43.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco_20200204-ec76a754.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco_20200204-ec76a754.pth

@@ -572,6 +572,12 @@ class YOLACTSegmHead(BaseModule):
                     downsampled_masks[obj_idx])
             return segm_targets
 
+    def simple_test(self, feats, img_metas, rescale=False):
+        """Test function without test-time augmentation."""
+        raise NotImplementedError(
+            'simple_test of YOLACTSegmHead is not implemented '
+            'because this head is only evaluated during training')
+
 
 @HEADS.register_module()
 class YOLACTProtonet(BaseModule):
@@ -923,6 +929,68 @@ class YOLACTProtonet(BaseModule):
         x1 = torch.clamp(x1 - padding, min=0)
         x2 = torch.clamp(x2 + padding, max=img_size)
         return x1, x2
+
+    def simple_test(self,
+                    feats,
+                    det_bboxes,
+                    det_labels,
+                    det_coeffs,
+                    img_metas,
+                    rescale=False):
+        """Test function without test-time augmentation.
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+               upstream network, each is a 4D-tensor.
+            det_bboxes (list[Tensor]): BBox results of each image. each
+               element is (n, 5) tensor, where 5 represent
+               (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+            det_labels (list[Tensor]): BBox results of each image. each
+               element is (n, ) tensor, each element represents the class
+               label of the corresponding box.
+            det_coeffs (list[Tensor]): BBox coefficient of each image. each
+               element is (n, m) tensor, m is vector length.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[list]: encoded masks. The c-th item in the outer list
+                corresponds to the c-th class. Given the c-th outer list, the
+                i-th item in that inner list is the mask for the i-th box with
+                class label c.
+        """
+        num_imgs = len(img_metas)
+        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
+            segm_results = [[[] for _ in range(self.num_classes)]
+                            for _ in range(num_imgs)]
+        else:
+            # if det_bboxes is rescaled to the original image size, we need to
+            # rescale it back to the testing scale to obtain RoIs.
+            if rescale and not isinstance(scale_factors[0], float):
+                scale_factors = [
+                    torch.from_numpy(scale_factor).to(det_bboxes[0].device)
+                    for scale_factor in scale_factors
+                ]
+            _bboxes = [
+                det_bboxes[i][:, :4] *
+                scale_factors[i] if rescale else det_bboxes[i][:, :4]
+                for i in range(len(det_bboxes))
+            ]
+            mask_preds = self.forward(feats[0], det_coeffs, _bboxes, img_metas)
+            # apply mask post-processing to each image individually
+            segm_results = []
+            for i in range(num_imgs):
+                if det_bboxes[i].shape[0] == 0:
+                    segm_results.append([[] for _ in range(self.num_classes)])
+                else:
+                    segm_result = self.get_seg_masks(mask_preds[i],
+                                                     det_labels[i],
+                                                     img_metas[i], rescale)
+                    segm_results.append(segm_result)
+        return segm_results
 
 
 class InterpolateModule(BaseModule):

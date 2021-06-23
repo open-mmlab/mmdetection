@@ -36,7 +36,7 @@ async def main():
         'checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth')
 
     if not os.path.exists(checkpoint_file):
-        url = ('http://download.openmmlab.com/mmdetection/v2.0'
+        url = ('https://download.openmmlab.com/mmdetection/v2.0'
                '/mask_rcnn/mask_rcnn_r50_fpn_1x_coco'
                '/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth')
         print(f'Downloading {url} ...')

@@ -25,7 +25,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/free_anchor/retinanet_free_anchor_r50_fpn_1x_coco/retinanet_free_anchor_r50_fpn_1x_coco_20200130-0f67375f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/free_anchor/retinanet_free_anchor_r50_fpn_1x_coco/retinanet_free_anchor_r50_fpn_1x_coco_20200130-0f67375f.pth
 
   - Name: retinanet_free_anchor_r101_fpn_1x_coco
     In Collection: FreeAnchor
@@ -39,7 +39,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.3
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/free_anchor/retinanet_free_anchor_r101_fpn_1x_coco/retinanet_free_anchor_r101_fpn_1x_coco_20200130-358324e6.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/free_anchor/retinanet_free_anchor_r101_fpn_1x_coco/retinanet_free_anchor_r101_fpn_1x_coco_20200130-358324e6.pth
 
   - Name: retinanet_free_anchor_x101_32x4d_fpn_1x_coco
     In Collection: FreeAnchor
@@ -53,4 +53,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/free_anchor/retinanet_free_anchor_x101_32x4d_fpn_1x_coco/retinanet_free_anchor_x101_32x4d_fpn_1x_coco_20200130-d4846968.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/free_anchor/retinanet_free_anchor_x101_32x4d_fpn_1x_coco/retinanet_free_anchor_x101_32x4d_fpn_1x_coco_20200130-d4846968.pth

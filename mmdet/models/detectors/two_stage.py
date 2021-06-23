@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
@@ -22,7 +24,10 @@ class TwoStageDetector(BaseDetector):
                  pretrained=None,
                  init_cfg=None):
         super(TwoStageDetector, self).__init__(init_cfg)
-        backbone.pretrained = pretrained
+        if pretrained:
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
+                          'please use "init_cfg" instead')
+            backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
 
         if neck is not None:

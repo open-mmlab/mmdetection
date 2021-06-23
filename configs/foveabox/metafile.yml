@@ -25,7 +25,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 36.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_1x_coco/fovea_r50_fpn_4x4_1x_coco_20200219-ee4d5303.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_1x_coco/fovea_r50_fpn_4x4_1x_coco_20200219-ee4d5303.pth
 
   - Name: fovea_r50_fpn_4x4_2x_coco
     In Collection: FoveaBox
@@ -38,7 +38,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 37.2
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_2x_coco/fovea_r50_fpn_4x4_2x_coco_20200203-2df792b1.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_2x_coco/fovea_r50_fpn_4x4_2x_coco_20200203-2df792b1.pth
 
   - Name: fovea_align_r50_fpn_gn-head_4x4_2x_coco
     In Collection: FoveaBox
@@ -52,7 +52,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 37.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco/fovea_align_r50_fpn_gn-head_4x4_2x_coco_20200203-8987880d.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco/fovea_align_r50_fpn_gn-head_4x4_2x_coco_20200203-8987880d.pth
 
   - Name: fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco
     In Collection: FoveaBox
@@ -66,7 +66,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco_20200205-85ce26cb.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco_20200205-85ce26cb.pth
 
   - Name: fovea_r101_fpn_4x4_1x_coco
     In Collection: FoveaBox
@@ -80,7 +80,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r101_fpn_4x4_1x_coco/fovea_r101_fpn_4x4_1x_coco_20200219-05e38f1c.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r101_fpn_4x4_1x_coco/fovea_r101_fpn_4x4_1x_coco_20200219-05e38f1c.pth
 
   - Name: fovea_r101_fpn_4x4_2x_coco
     In Collection: FoveaBox
@@ -93,7 +93,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r101_fpn_4x4_2x_coco/fovea_r101_fpn_4x4_2x_coco_20200208-02320ea4.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r101_fpn_4x4_2x_coco/fovea_r101_fpn_4x4_2x_coco_20200208-02320ea4.pth
 
   - Name: fovea_align_r101_fpn_gn-head_4x4_2x_coco
     In Collection: FoveaBox
@@ -107,7 +107,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r101_fpn_gn-head_4x4_2x_coco/fovea_align_r101_fpn_gn-head_4x4_2x_coco_20200208-c39a027a.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r101_fpn_gn-head_4x4_2x_coco/fovea_align_r101_fpn_gn-head_4x4_2x_coco_20200208-c39a027a.pth
 
   - Name: fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco
     In Collection: FoveaBox
@@ -121,4 +121,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco/fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco_20200208-649c5eb6.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco/fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco_20200208-649c5eb6.pth
