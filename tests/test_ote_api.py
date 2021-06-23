@@ -27,30 +27,7 @@ from sc_sdk.utils.project_factory import ProjectFactory
 
 from mmdet.apis.ote.apis.detection import MMObjectDetectionTask, MMDetectionParameters, configurable_parameters
 
-
-# BEGIN code to use e2e test system
-try:
-    from e2e.markers.mark_meta import MarkMeta
-    class Requirements:
-        # Dummy requirement
-        REQ_DUMMY = "Dummy requirement"
-
-    class OTEComponent(MarkMeta):
-        OTE = "ote"
-
-    def e2e_pytest(func):
-        @pytest.mark.components(OTEComponent.OTE)
-        @pytest.mark.priority_medium
-        @pytest.mark.reqids(Requirements.REQ_DUMMY)
-        @pytest.mark.api_other
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-        return wrapper
-except ImportError:
-    def e2e_pytest(func):
-        return func
-# END code to use e2e test system
+from e2e_test_system import e2e_pytest
 
 
 class TestOTEAPI(unittest.TestCase):
