@@ -35,6 +35,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Sample showcasing the new API')
     parser.add_argument('template_file_path', help='path to template file')
     parser.add_argument('--data-dir', default='data')
+    parser.add_argument('--annotations-train')
+    parser.add_argument('--images-train-dir')
+    parser.add_argument('--annotations-val')
+    parser.add_argument('--images-val-dir')
     args = parser.parse_args()
     return args
 
@@ -51,18 +55,42 @@ def get_task_class(path):
     return getattr(module, class_name)
 
 def main(args):
+    #import pudb; pudb._get_debugger(term_size=(135,35)).set_trace()
+
+    if not (args.annotations_train or args.images_train_dir or args.annotations_val or args.images_val_dir):
+        print('Using COCO val both for training and validation')
+        train_ann_file = osp.join(args.data_dir, 'coco/annotations/instances_val2017.json')
+        train_data_root = osp.join(args.data_dir, 'coco/val2017/')
+        val_ann_file = osp.join(args.data_dir, 'coco/annotations/instances_val2017.json')
+        val_data_root = osp.join(args.data_dir, 'coco/val2017/')
+        test_ann_file = osp.join(args.data_dir, 'coco/annotations/instances_val2017.json')
+        test_data_root = osp.join(args.data_dir, 'coco/val2017/')
+    else:
+        # check consistency
+        if not all([args.annotations_train, args.images_train_dir, args.annotations_val, args.images_val_dir]):
+            raise RuntimeError('If not default COCO dataset is used, the following parametrers should be set: '
+                               '--annotations-train, --images-train, --annotations-val, --images-val')
+        print(f'Using for train annotation file {args.annotations_train}')
+        print(f'Using for val annotation file {args.annotations_val}')
+        train_ann_file = args.annotations_train
+        train_data_root = args.images_train_dir
+        val_ann_file = args.annotations_val
+        val_data_root = args.images_val_dir
+        test_ann_file = args.annotations_val
+        test_data_root = args.images_val_dir
+
+    dataset = MMDatasetAdapter(
+        train_ann_file=train_ann_file,
+        train_data_root=train_data_root,
+        val_ann_file=val_ann_file,
+        val_data_root=val_data_root,
+        test_ann_file=test_ann_file,
+        test_data_root=test_data_root)
+
     template = load_template(args.template_file_path)
     task_impl_path = template['task']['impl']
     task_cls = get_task_class(task_impl_path)
 
-    dataset = MMDatasetAdapter(
-        train_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        train_data_root=osp.join(args.data_dir, 'coco/val2017/'),
-        val_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        val_data_root=osp.join(args.data_dir, 'coco/val2017/'),
-        test_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        test_data_root=osp.join(args.data_dir, 'coco/val2017/'))
-    dataset.get_subset(Subset.VALIDATION)
 
     project = ProjectFactory().create_project_single_task(
         name='otedet-sample-project',
