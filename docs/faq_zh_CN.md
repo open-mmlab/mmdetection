@@ -1,4 +1,4 @@
-我们在这里列出了使用时的一些常见问题及其相应的解决方案。 如果您发现有一些问题被遗漏，请随时提PR丰富这个列表。 如果您无法在次获得帮助，请使用[issue模板](https://github.com/open-mmlab/mmdetection/blob/master/.github/ISSUE_TEMPLATE/error-report.md/ )创建问题，但是请在板中填写所有必填信息，这又主语我们更快定位问题。
+我们在这里列出了使用时的一些常见问题及其相应的解决方案。 如果您发现有一些问题被遗漏，请随时提 PR 丰富这个列表。 如果您无法在次获得帮助，请使用[issue模板](https://github.com/open-mmlab/mmdetection/blob/master/.github/ISSUE_TEMPLATE/error-report.md/ )创建问题，但是请在板中填写所有必填信息，这又主语我们更快定位问题。
 
 ## MMCV 安装相关
 
