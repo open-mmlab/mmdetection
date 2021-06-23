@@ -88,7 +88,9 @@ class OTEDataset(CustomDataset):
         self.ote_dataset = ote_dataset
         self.test_mode = test_mode
         self.CLASSES = self.get_classes(classes)
-        self.data_infos = self.load_dataset_items()
+        self.data_infos = self.load_dataset_items() # TODO(lbeynens): IMPORTANT: instead of loading
+                                                    # all dataset items to the memory, the
+                                                    # ote_dataset.__getitem__ should be used
         self.proposals = None  # Attribute expected by mmdet but not used for OTE datasets
 
         if not test_mode:
