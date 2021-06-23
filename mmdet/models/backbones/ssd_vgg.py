@@ -80,31 +80,35 @@ class SSDVGG(VGG, BaseModule):
 
         assert not (init_cfg and pretrained), \
             'init_cfg and pretrained cannot be setting at the same time'
-        if isinstance(pretrained, str):
-            warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                          'please use "init_cfg" instead')
-            self.init_cfg = [dict(type='Pretrained', checkpoint=pretrained)]
-        elif pretrained is None:
-            if init_cfg is None:
-                self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(type='Constant', val=1, layer='BatchNorm2d'),
-                    dict(type='Normal', std=0.01, layer='Linear'),
-                ]
+        if init_cfg is not None:
+            self.init_cfg = [init_cfg]
         else:
-            raise TypeError('pretrained must be a str or None')
-
-        if init_cfg is None:
-            self.init_cfg += [
-                dict(
-                    type='Xavier',
-                    distribution='uniform',
-                    override=dict(name='extra')),
-                dict(
-                    type='Constant',
-                    val=self.l2_norm.scale,
-                    override=dict(name='l2_norm'))
-            ]
+            if isinstance(pretrained, str):
+                warnings.warn('DeprecationWarning: pretrained is deprecated, '
+                              'please use "init_cfg" instead')
+                self.init_cfg = [
+                    dict(type='Pretrained', checkpoint=pretrained)
+                ]
+            elif pretrained is None:
+                if init_cfg is None:
+                    self.init_cfg = [
+                        dict(type='Kaiming', layer='Conv2d'),
+                        dict(type='Constant', val=1, layer='BatchNorm2d'),
+                        dict(type='Normal', std=0.01, layer='Linear'),
+                    ]
+            else:
+                raise TypeError('pretrained must be a str or None')
+        # need review
+        self.init_cfg += [
+            dict(
+                type='Xavier',
+                distribution='uniform',
+                override=dict(name='extra')),
+            dict(
+                type='Constant',
+                val=self.l2_norm.scale,
+                override=dict(name='l2_norm'))
+        ]
 
     def init_weights(self, pretrained=None):
         super(VGG, self).init_weights()
