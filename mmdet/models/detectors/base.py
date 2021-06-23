@@ -275,7 +275,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
         Args:
             img (str or Tensor): The image to be displayed.
-            result (Tensor or np.ndarray): The results to draw over `img`
+            result (tuple or np.ndarray): The results to draw over `img`
                 bbox_result or (bbox_result, segm_result).
             score_thr (float, optional): Minimum score of bboxes to be shown.
                 Default: 0.3.
@@ -307,15 +307,17 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             bbox_result, segm_result = result
             if isinstance(segm_result, tuple):
                 segm_result = segm_result[0]  # ms rcnn
-            if bbox_result[0].shape[1] == 5:  # bbox-segm two stage
+            if bbox_result[0].shape[1] == 5:
+                # Show both bbox and mask
                 bboxes = np.vstack(bbox_result)
                 labels = [
                     np.full(bbox.shape[0], i, dtype=np.int32)
                     for i, bbox in enumerate(bbox_result)
                 ]
-            else:  # segm only
+            else:
+                # Show segmentation only
                 # Estimate the center of mask through segm_result
-                # so that the label is in the mask.
+                # so that the label can be displayed in the mask.
                 for scores, segms in \
                         zip(bbox_result, segm_result):
                     assert len(scores) == len(segms)
@@ -337,6 +339,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                 ]
                 show_bbox = False
         else:
+            # Show bbox only
             bbox_result, segm_result = result, None
             bboxes = np.vstack(bbox_result)
             labels = [
