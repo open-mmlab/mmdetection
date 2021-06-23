@@ -211,6 +211,13 @@ python tools/deployment/test.py \
 	    <td align="center">40.6</td>
 	    <td align="center">40.4</td>
 	</tr>
+  <tr >
+	    <td align="center">DETR</td>
+	    <td align="center"><code>configs/detr/detr_r50_8x2_150e_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">40.1</td>
+	    <td align="center">40.1</td>
+  </tr>
 </table>
 
 Notes:
@@ -233,6 +240,7 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 | Faster R-CNN |        `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`         |       Y       |        Y        |                                                                               |
 |  Mask R-CNN  |          `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`           |       Y       |        Y        |                                                                               |
 |  CornerNet   | `configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py` |       Y       |        N        | no flip, no batch inference, tested with torch==1.7.0 and onnxruntime==1.5.1. |
+|     DETR     |                   `configs/detr/detr_r50_8x2_150e_coco.py`          |       Y       |        Y        | batch inference is *not recommended* |
 
 Notes:
 
@@ -240,6 +248,8 @@ Notes:
 
 - *All models above are tested with Pytorch==1.6.0 and onnxruntime==1.5.1*, except for CornerNet. For more details about the
 torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md#known-issues) in mmcv.
+
+- Though supported, it is *not recommended* to use batch inference in onnxruntime for `DETR`, because there is huge performance gap between ONNX and torch model (e.g. 33.5 vs 39.9 mAP on COCO for onnxruntime and torch respectively, with a batch size 2). The main reason for the gap is that these is non-negligible effect on the predicted regressions during batch inference for ONNX, since the predicted coordinates is normalized by `img_shape` (without padding) and should be converted to absolute format, but `img_shape` is not dynamically traceable thus the padded `img_shape_for_onnx` is used.
 
 - Currently only single-scale evaluation is supported with ONNX Runtime, also `mmcv::SoftNonMaxSuppression` is only supported for single image by now.
 
