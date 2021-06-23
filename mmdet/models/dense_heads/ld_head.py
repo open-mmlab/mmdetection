@@ -211,7 +211,7 @@ class LDHead(GFLHead):
         """
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
@@ -246,7 +246,7 @@ class LDHead(GFLHead):
                 labels_list,
                 label_weights_list,
                 bbox_targets_list,
-                self.anchor_generator.strides,
+                self.prior_generator.strides,
                 soft_target,
                 num_total_samples=num_total_samples)
 

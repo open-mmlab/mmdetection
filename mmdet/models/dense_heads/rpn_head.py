@@ -156,16 +156,12 @@ class RPNHead(AnchorHead):
                                 level_idx,
                                 dtype=torch.long))
 
-        return self._bbox_post_process(mlvl_scores, mlvl_bbox_preds, mlvl_valid_anchors, level_ids, cfg, img_shape)
+        return self._bbox_post_process(mlvl_scores, mlvl_bbox_preds,
+                                       mlvl_valid_anchors, level_ids, cfg,
+                                       img_shape)
 
-    def _bbox_post_process(self,
-                           mlvl_scores,
-                           mlvl_bboxes,
-                           mlvl_valid_anchors,
-                           level_ids,
-                           cfg,
-                           img_shape,
-                           **kwargs):
+    def _bbox_post_process(self, mlvl_scores, mlvl_bboxes, mlvl_valid_anchors,
+                           level_ids, cfg, img_shape, **kwargs):
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
         rpn_bbox_pred = torch.cat(mlvl_bboxes)

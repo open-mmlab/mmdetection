@@ -304,7 +304,8 @@ class FoveaHead(AnchorFreeHead):
                 priors = self.prior_generator.single_level_grid_priors(
                     featmap_size_hw, level_idx, scores.device)
 
-            bboxes = self._bbox_decode(priors, bbox_pred, stride, base_len, img_shape)
+            bboxes = self._bbox_decode(priors, bbox_pred, stride, base_len,
+                                       img_shape)
 
             det_bboxes.append(bboxes)
             det_scores.append(scores)

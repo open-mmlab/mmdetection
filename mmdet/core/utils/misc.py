@@ -89,7 +89,11 @@ def collect_mlvl_tensor_single(mlvl_tensors, batch_id, detach=True):
     num_levels = len(mlvl_tensors)
 
     if detach:
-        mlvl_tensor_list = [mlvl_tensors[i][batch_id].detach() for i in range(num_levels)]
+        mlvl_tensor_list = [
+            mlvl_tensors[i][batch_id].detach() for i in range(num_levels)
+        ]
     else:
-        mlvl_tensor_list = [mlvl_tensors[i][batch_id] for i in range(num_levels)]
+        mlvl_tensor_list = [
+            mlvl_tensors[i][batch_id] for i in range(num_levels)
+        ]
     return mlvl_tensor_list

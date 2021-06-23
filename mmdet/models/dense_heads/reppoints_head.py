@@ -5,7 +5,7 @@ from mmcv.cnn import ConvModule
 from mmcv.ops import DeformConv2d
 
 from mmdet.core import (build_assigner, build_sampler, images_to_levels,
-                        multi_apply, multiclass_nms, unmap)
+                        multi_apply, unmap)
 from mmdet.core.anchor.point_generator import MlvlPointGenerator
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
@@ -701,7 +701,9 @@ class RepPointsHead(AnchorFreeHead):
                 points = self.point_generator.single_level_grid_priors(
                     featmap_size_hw, level_idx, scores.device)
 
-            bboxes = self._bbox_decode(points, bbox_pred, self.point_strides[level_idx], img_shape)
+            bboxes = self._bbox_decode(points, bbox_pred,
+                                       self.point_strides[level_idx],
+                                       img_shape)
 
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)

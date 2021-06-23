@@ -24,9 +24,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                    bbox_preds,
                    score_factors=None,
                    img_metas=None,
+                   cfg=None,
                    rescale=False,
                    with_nms=True,
-                   cfg=None,
                    **kwargs):
         """Transform network output for a batch into bbox predictions.
 
@@ -34,15 +34,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         such as CenterNess in FCOS, IoU branch in ATSS.
 
         Args:
-            cls_scores (list[Tensor]): Classification scores for all \
-                scale levels, each is a 4D-tensor, the channels number \
+            cls_scores (list[Tensor]): Classification scores for all
+                scale levels, each is a 4D-tensor, the channels number
                 is num_priors * num_classes.
-            bbox_preds (list[Tensor]): Box energies / deltas for all \
-                scale levels, each is a 4D-tensor, the channels number \
+            bbox_preds (list[Tensor]): Box energies / deltas for all
+                scale levels, each is a 4D-tensor, the channels number
                 is num_priors * 4.
-            score_factors (list[Tensor], Optional):  score_factor for each scale level, \
-                each is a 4D-tensor, the channel number is num_priors * 1.
-                Default None.
+            score_factors (list[Tensor], Optional):  score_factor for
+                each scale level, each is a 4D-tensor, the channel number
+                is num_priors * 1. Default None.
             img_metas (list[dict], Optional): Image meta info. Default None.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
@@ -52,11 +52,11 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 if None, test_cfg would be used.  Default: False.
 
         Returns:
-            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
-                The first item is an (n, 5) tensor, where the first 4 columns \
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
-                5-th column is a score between 0 and 1. The second item is a \
-                (n,) tensor where each item is the predicted class label of \
+            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class label of
                 the corresponding box.
         """
         assert len(cls_scores) == len(bbox_preds)
@@ -78,7 +78,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             cls_score_list = collect_mlvl_tensor_single(cls_scores, img_id)
             bbox_pred_list = collect_mlvl_tensor_single(bbox_preds, img_id)
             if with_score_factors:
-                score_factor_list = collect_mlvl_tensor_single(score_factors, img_id)
+                score_factor_list = collect_mlvl_tensor_single(
+                    score_factors, img_id)
             else:
                 score_factor_list = [None for _ in range(num_levels)]
 
@@ -104,8 +105,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Has shape (num_priors * num_classes, H, W).
             bbox_pred_list (list[Tensor]): Box energies / deltas for a single
                 scale level with shape (num_priors * 4, H, W).
-            score_factor_list (list[Tensor]):  score_factor for each scale level
-                with shape (num_priors * 1, H, W)
+            score_factor_list (list[Tensor]):  score_factor for each
+                scale level with shape (num_priors * 1, H, W).
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
@@ -157,12 +158,14 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 scores_ = scores[:, :-1]
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             if with_score_factors:
-                score_factor = score_factor.permute(1, 2, 0).reshape(-1).sigmoid()
+                score_factor = score_factor.permute(1, 2,
+                                                    0).reshape(-1).sigmoid()
 
             if 0 < nms_pre < scores.shape[0]:
                 # Get maximum scores for foreground classes.
                 if with_score_factors:
-                    max_scores, _ = (scores_ * score_factor[:, None]).max(dim=1)
+                    max_scores, _ = (scores_ *
+                                     score_factor[:, None]).max(dim=1)
                 else:
                     max_scores, _ = scores_.max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)

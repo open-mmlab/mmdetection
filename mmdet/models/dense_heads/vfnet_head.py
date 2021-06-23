@@ -5,9 +5,9 @@ from mmcv.cnn import ConvModule, Scale
 from mmcv.ops import DeformConv2d
 from mmcv.runner import force_fp32
 
-from mmdet.core import (bbox2distance, bbox_overlaps, build_anchor_generator,
-                        build_assigner, build_sampler, distance2bbox,
-                        multi_apply, reduce_mean, MlvlPointGenerator)
+from mmdet.core import (MlvlPointGenerator, bbox2distance, bbox_overlaps,
+                        build_anchor_generator, build_assigner, build_sampler,
+                        distance2bbox, multi_apply, reduce_mean)
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
@@ -156,8 +156,9 @@ class VFNetHead(ATSSHead, FCOSHead):
             self.sampler = build_sampler(sampler_cfg, context=self)
 
         # in order to unify the get_bbox logic. Not needed during training.
-        self.prior_generator = MlvlPointGenerator(anchor_generator['strides'],
-                                                  self.anchor_center_offset if self.use_atss else 0.5)
+        self.prior_generator = MlvlPointGenerator(
+            anchor_generator['strides'],
+            self.anchor_center_offset if self.use_atss else 0.5)
 
     def _init_layers(self):
         """Initialize layers of the head."""

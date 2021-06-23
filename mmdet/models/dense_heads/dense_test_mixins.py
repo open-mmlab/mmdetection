@@ -61,10 +61,7 @@ class BBoxTestMixin(object):
         # check with_nms argument
         gb_sig = signature(self.get_bboxes)
         gb_args = [p.name for p in gb_sig.parameters.values()]
-        if hasattr(self, '_get_bboxes'):
-            gbs_sig = signature(self._get_bboxes)
-        else:
-            gbs_sig = signature(self._get_bboxes_single)
+        gbs_sig = signature(self._get_bboxes_single)
         gbs_args = [p.name for p in gbs_sig.parameters.values()]
         assert ('with_nms' in gb_args) and ('with_nms' in gbs_args), \
             f'{self.__class__.__name__}' \
@@ -76,8 +73,12 @@ class BBoxTestMixin(object):
         for x, img_meta in zip(feats, img_metas):
             # only one image in the batch
             outs = self.forward(x)
-            bbox_inputs = outs + (img_meta, self.test_cfg, False, False)
-            bbox_outputs = self.get_bboxes(*bbox_inputs)[0]
+            bbox_outputs = self.get_bboxes(
+                *outs,
+                img_metas=img_meta,
+                cfg=self.test_cfg,
+                rescale=False,
+                with_nms=False)[0]
             aug_bboxes.append(bbox_outputs[0])
             aug_scores.append(bbox_outputs[1])
             # bbox_outputs of some detectors (e.g., ATSS, FCOS, YOLOv3)
@@ -168,7 +169,7 @@ class BBoxTestMixin(object):
                     sleep_interval=sleep_interval):
                 rpn_outs = self(x)
 
-            proposal_list = self.get_bboxes(*rpn_outs, img_metas)
+            proposal_list = self.get_bboxes(*rpn_outs, img_metas=img_metas)
             return proposal_list
 
     def merge_aug_bboxes(self, aug_bboxes, aug_scores, img_metas):

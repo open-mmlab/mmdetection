@@ -59,8 +59,8 @@ class SSDHead(AnchorHead):
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.cls_out_channels = num_classes + 1  # add background class
-        self.anchor_generator = build_anchor_generator(anchor_generator)
-        num_anchors = self.anchor_generator.num_base_anchors
+        self.prior_generator = build_anchor_generator(anchor_generator)
+        num_anchors = self.prior_generator.num_base_anchors
 
         reg_convs = []
         cls_convs = []
@@ -204,7 +204,7 @@ class SSDHead(AnchorHead):
             dict[str, Tensor]: A dictionary of loss components.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
 
