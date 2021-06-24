@@ -25,14 +25,13 @@
 
 ```bash
 python tools/deployment/onnx2tensorrt.py \
+    ${CONFIG} \
     ${MODEL} \
     --trt-file ${TRT_FILE} \
     --input-img ${INPUT_IMAGE_PATH} \
-    --shape ${IMAGE_SHAPE} \
+    --shape ${INPUT_IMAGE_SHAPE} \
+    --min-shape ${MIN_IMAGE_SHAPE} \
     --max-shape ${MAX_IMAGE_SHAPE} \
-    --mean ${IMAGE_MEAN} \
-    --std ${IMAGE_STD} \
-    --dataset ${DATASET_NAME} \
     --workspace-size {WORKSPACE_SIZE} \
     --show \
     --verify \
@@ -40,30 +39,27 @@ python tools/deployment/onnx2tensorrt.py \
 
 Description of all arguments:
 
+- `config` : The path of a model config file.
 - `model` : The path of an ONNX model file.
 - `--trt-file`: The Path of output TensorRT engine file. If not specified, it will be set to `tmp.trt`.
 - `--input-img` : The path of an input image for tracing and conversion. By default, it will be set to `demo/demo.jpg`.
 - `--shape`: The height and width of model input. If not specified, it will be set to `400 600`.
+- `--min-shape`: The minimum height and width of model input. If not specified, it will be set to the same as `--shape`.
 - `--max-shape`: The maximum height and width of model input. If not specified, it will be set to the same as `--shape`.
-- `--mean` : Three mean values for the input image. If not specified, it will be set to `123.675 116.28 103.53`.
-- `--std` : Three std values for the input image. If not specified, it will be set to `58.395 57.12 57.375`.
-- `--dataset` : The dataset name for the input model. If not specified, it will be set to `coco`.
 - `--workspace-size` : The required GPU workspace size in GiB to build TensorRT engine. If not specified, it will be set to `1` GiB.
 - `--show`: Determines whether to show the outputs of the model. If not specified, it will be set to `False`.
 - `--verify`: Determines whether to verify the correctness of models between ONNXRuntime and TensorRT. If not specified, it will be set to `False`.
-- `--to-rgb`: Determines whether to convert the input image to RGB mode. If not specified, it will be set to `True`.
 - `--verbose`: Determines whether to print logging messages. It's useful for debugging. If not specified, it will be set to `False`.
 
 Example:
 
 ```bash
 python tools/deployment/onnx2tensorrt.py \
+    configs/retinanet/retinanet_r50_fpn_1x_coco.py \
     checkpoints/retinanet_r50_fpn_1x_coco.onnx \
     --trt-file checkpoints/retinanet_r50_fpn_1x_coco.trt \
     --input-img demo/demo.jpg \
     --shape 400 600 \
-    --mean 123.675 116.28 103.53 \
-    --std 58.395 57.12 57.375 \
     --show \
     --verify \
 ```

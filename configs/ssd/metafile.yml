@@ -16,24 +16,24 @@ Models:
     In Collection: SSD
     Config: configs/ssd/ssd300_coco.py
     Metadata:
-      Training Memory (GB): 10.2
+      Training Memory (GB): 9.9
       inference time (s/im): 0.02288
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 25.6
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth
+          box AP: 25.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20210604_193052-b61137df.pth
 
   - Name: ssd512_coco
     In Collection: SSD
     Config: configs/ssd/ssd512_coco.py
     Metadata:
-      Training Memory (GB): 9.3
+      Training Memory (GB): 19.4
       inference time (s/im): 0.03257
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 29.4
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20200308-038c5591.pth
+          box AP: 29.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20210604_111835-d3eba047.pth
