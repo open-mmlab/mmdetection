@@ -9,11 +9,6 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert benchmark model list to script')
     parser.add_argument('config', help='test config file path')
-    parser.add_argument(
-        '--partition',
-        type=str,
-        default='openmmlab',
-        help='slurm partition name')
     parser.add_argument('--port', type=int, default=29666, help='dist port')
     parser.add_argument(
         '--work-dir',
@@ -34,7 +29,11 @@ def process_model_info(model_info, work_dir):
     job_name = fname
     work_dir = osp.join(work_dir, fname)
     checkpoint = model_info['checkpoint'].strip()
-    eval = model_info['eval'].strip()
+    if not isinstance(model_info['eval'], list):
+        evals = [model_info['eval']]
+    else:
+        evals = model_info['eval']
+    eval = ' '.join(evals)
     return dict(
         config=config,
         job_name=job_name,
@@ -82,12 +81,15 @@ def main():
          'script) with the argument "--out" or "--run"')
 
     commands = []
-    checkpoint_root = 'CHECKPOINT_DIR=$1 '
+    partition_name = 'PARTITION=$1 '
+    commands.append(partition_name)
+    commands.append('\n')
+
+    checkpoint_root = 'CHECKPOINT_DIR=$2 '
     commands.append(checkpoint_root)
     commands.append('\n')
 
     script_name = osp.join('tools', 'slurm_test.sh')
-    partition = args.partition  # cluster name
     port = args.port
     work_dir = args.work_dir
 
@@ -101,7 +103,7 @@ def main():
             print('processing: ', model_info['config'])
             model_test_dict = process_model_info(model_info, work_dir)
             create_test_bash_info(commands, model_test_dict, port, script_name,
-                                  partition)
+                                  '$PARTITION')
             port += 1
 
     command_str = ''.join(commands)

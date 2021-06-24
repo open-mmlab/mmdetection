@@ -2,7 +2,8 @@ import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.necks import FPN, ChannelMapper, CTResNetNeck, DilatedEncoder
+from mmdet.models.necks import (FPN, ChannelMapper, CTResNetNeck,
+                                DilatedEncoder, SSDNeck, YOLOV3Neck)
 
 
 def test_fpn():
@@ -288,3 +289,119 @@ def test_ct_resnet_neck():
         feat = feat.cuda()
         out_feat = ct_resnet_neck([feat])[0]
         assert out_feat.shape == (1, num_filters[-1], 16, 16)
+
+
+def test_yolov3_neck():
+    # num_scales, in_channels, out_channels must be same length
+    with pytest.raises(AssertionError):
+        YOLOV3Neck(num_scales=3, in_channels=[16, 8, 4], out_channels=[8, 4])
+
+    # len(feats) must equal to num_scales
+    with pytest.raises(AssertionError):
+        neck = YOLOV3Neck(
+            num_scales=3, in_channels=[16, 8, 4], out_channels=[8, 4, 2])
+        feats = (torch.rand(1, 4, 16, 16), torch.rand(1, 8, 16, 16))
+        neck(feats)
+
+    # test normal channels
+    s = 32
+    in_channels = [16, 8, 4]
+    out_channels = [8, 4, 2]
+    feat_sizes = [s // 2**i for i in range(len(in_channels) - 1, -1, -1)]
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels) - 1, -1, -1)
+    ]
+    neck = YOLOV3Neck(
+        num_scales=3, in_channels=in_channels, out_channels=out_channels)
+    outs = neck(feats)
+
+    assert len(outs) == len(feats)
+    for i in range(len(outs)):
+        assert outs[i].shape == \
+               (1, out_channels[i], feat_sizes[i], feat_sizes[i])
+
+    # test more flexible setting
+    s = 32
+    in_channels = [32, 8, 16]
+    out_channels = [19, 21, 5]
+    feat_sizes = [s // 2**i for i in range(len(in_channels) - 1, -1, -1)]
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels) - 1, -1, -1)
+    ]
+    neck = YOLOV3Neck(
+        num_scales=3, in_channels=in_channels, out_channels=out_channels)
+    outs = neck(feats)
+
+    assert len(outs) == len(feats)
+    for i in range(len(outs)):
+        assert outs[i].shape == \
+               (1, out_channels[i], feat_sizes[i], feat_sizes[i])
+
+
+def test_ssd_neck():
+    # level_strides/level_paddings must be same length
+    with pytest.raises(AssertionError):
+        SSDNeck(
+            in_channels=[8, 16],
+            out_channels=[8, 16, 32],
+            level_strides=[2],
+            level_paddings=[2, 1])
+
+    # length of out_channels must larger than in_channels
+    with pytest.raises(AssertionError):
+        SSDNeck(
+            in_channels=[8, 16],
+            out_channels=[8],
+            level_strides=[2],
+            level_paddings=[2])
+
+    # len(out_channels) - len(in_channels) must equal to len(level_strides)
+    with pytest.raises(AssertionError):
+        SSDNeck(
+            in_channels=[8, 16],
+            out_channels=[4, 16, 64],
+            level_strides=[2, 2],
+            level_paddings=[2, 2])
+
+    # in_channels must be same with out_channels[:len(in_channels)]
+    with pytest.raises(AssertionError):
+        SSDNeck(
+            in_channels=[8, 16],
+            out_channels=[4, 16, 64],
+            level_strides=[2],
+            level_paddings=[2])
+
+    ssd_neck = SSDNeck(
+        in_channels=[4],
+        out_channels=[4, 8, 16],
+        level_strides=[2, 1],
+        level_paddings=[1, 0])
+    feats = (torch.rand(1, 4, 16, 16), )
+    outs = ssd_neck(feats)
+    assert outs[0].shape == (1, 4, 16, 16)
+    assert outs[1].shape == (1, 8, 8, 8)
+    assert outs[2].shape == (1, 16, 6, 6)
+
+    # test SSD-Lite Neck
+    ssd_neck = SSDNeck(
+        in_channels=[4, 8],
+        out_channels=[4, 8, 16],
+        level_strides=[1],
+        level_paddings=[1],
+        l2_norm_scale=None,
+        use_depthwise=True,
+        norm_cfg=dict(type='BN'),
+        act_cfg=dict(type='ReLU6'))
+    assert not hasattr(ssd_neck, 'l2_norm')
+
+    from mmcv.cnn.bricks import DepthwiseSeparableConvModule
+    assert isinstance(ssd_neck.extra_layers[0][-1],
+                      DepthwiseSeparableConvModule)
+
+    feats = (torch.rand(1, 4, 8, 8), torch.rand(1, 8, 8, 8))
+    outs = ssd_neck(feats)
+    assert outs[0].shape == (1, 4, 8, 8)
+    assert outs[1].shape == (1, 8, 8, 8)
+    assert outs[2].shape == (1, 16, 8, 8)
