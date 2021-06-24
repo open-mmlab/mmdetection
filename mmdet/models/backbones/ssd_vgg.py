@@ -90,12 +90,11 @@ class SSDVGG(VGG, BaseModule):
                     dict(type='Pretrained', checkpoint=pretrained)
                 ]
             elif pretrained is None:
-                if init_cfg is None:
-                    self.init_cfg = [
-                        dict(type='Kaiming', layer='Conv2d'),
-                        dict(type='Constant', val=1, layer='BatchNorm2d'),
-                        dict(type='Normal', std=0.01, layer='Linear'),
-                    ]
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(type='Constant', val=1, layer='BatchNorm2d'),
+                    dict(type='Normal', std=0.01, layer='Linear'),
+                ]
             else:
                 raise TypeError('pretrained must be a str or None')
         # need review
