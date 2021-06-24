@@ -242,7 +242,7 @@ class DetectoRS_ResNet(ResNet):
         if init_cfg is not None:  # init_cfg priority > pretrained
             self.pretrained = init_cfg['checkpoint']
         else:
-            if self.pretrained is not None:
+            if pretrained is not None:
                 self.pretrained = pretrained
             else:
                 self.pretrained = None
