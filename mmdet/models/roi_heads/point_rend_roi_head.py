@@ -349,13 +349,12 @@ class PointRendRoIHead(StandardRoIHead):
         det_bboxes = det_bboxes.reshape(-1, 4)
         det_labels = det_labels.reshape(-1)
 
-        mask_pred = self._mask_point_forward_test(x, mask_rois, det_labels,
-                                                  mask_pred)
+        mask_pred = self._mask_point_onnx_export(x, mask_rois, det_labels,
+                                                 mask_pred)
 
-        segm_results = self.mask_head.get_seg_masks(mask_pred, det_bboxes,
-                                                    det_labels, self.test_cfg,
-                                                    max_shape,
-                                                    scale_factors[0], rescale)
+        segm_results = self.mask_head.onnx_export(mask_pred, det_bboxes,
+                                                  det_labels, self.test_cfg,
+                                                  max_shape)
         segm_results = segm_results.reshape(batch_size, num_det, max_shape[0],
                                             max_shape[1])
         return segm_results
