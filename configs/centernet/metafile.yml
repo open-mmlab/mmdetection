@@ -24,7 +24,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 29.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_dcnv2_140e_coco/centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_dcnv2_140e_coco/centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth
 
   - Name: centernet_resnet18_140e_coco
     In Collection: CenterNet
@@ -38,4 +38,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 26.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_140e_coco/centernet_resnet18_140e_coco_20210519_092334-eafe8ccd.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_140e_coco/centernet_resnet18_140e_coco_20210519_092334-eafe8ccd.pth

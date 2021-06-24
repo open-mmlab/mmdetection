@@ -27,8 +27,8 @@ cascade_rcnn = [
     dict(
         config='configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
         checkpoint='cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth',
-        eval='bbox',
-        metric=dict(bbox_mAP=41.2),
+        eval=['bbox', 'segm'],
+        metric=dict(bbox_mAP=41.2, segm_mAP=35.9),
     ),
 ]
 cascade_rpn = dict(
@@ -64,8 +64,8 @@ deformable_detr = dict(
 detectors = dict(
     config='configs/detectors/detectors_htc_r50_1x_coco.py',
     checkpoint='detectors_htc_r50_1x_coco-329b1453.pth',
-    eval='bbox',
-    metric=dict(bbox_mAP=49.1),
+    eval=['bbox', 'segm'],
+    metric=dict(bbox_mAP=49.1, segm_mAP=42.6),
 )
 detr = dict(
     config='configs/detr/detr_r50_8x2_150e_coco.py',
@@ -124,8 +124,8 @@ fsaf = dict(
 gcnet = dict(
     config='configs/gcnet/mask_rcnn_r50_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco.py',  # noqa
     checkpoint='mask_rcnn_r50_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200202-587b99aa.pth',  # noqa
-    eval='bbox',
-    metric=dict(bbox_mAP=40.4),
+    eval=['bbox', 'segm'],
+    metric=dict(bbox_mAP=40.4, segm_mAP=36.2),
 )
 gfl = dict(
     config='configs/gfl/gfl_r50_fpn_1x_coco.py',
@@ -136,8 +136,8 @@ gfl = dict(
 gn = dict(
     config='configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py',
     checkpoint='mask_rcnn_r50_fpn_gn-all_2x_coco_20200206-8eee02a6.pth',
-    eval='bbox',
-    metric=dict(bbox_mAP=40.1),
+    eval=['bbox', 'segm'],
+    metric=dict(bbox_mAP=40.1, segm_mAP=36.4),
 )
 gn_ws = dict(
     config='configs/gn+ws/faster_rcnn_r50_fpn_gn_ws-all_1x_coco.py',
@@ -180,8 +180,8 @@ hrnet = dict(
 htc = dict(
     config='configs/htc/htc_r50_fpn_1x_coco.py',
     checkpoint='htc_r50_fpn_1x_coco_20200317-7332cf16.pth',
-    eval='bbox',
-    metric=dict(bbox_mAP=42.3),
+    eval=['bbox', 'segm'],
+    metric=dict(bbox_mAP=42.3, segm_mAP=37.4),
 )
 libra_rcnn = dict(
     config='configs/libra_rcnn/libra_faster_rcnn_r50_fpn_1x_coco.py',
@@ -192,14 +192,14 @@ libra_rcnn = dict(
 mask_rcnn = dict(
     config='configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
     checkpoint='mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth',
-    eval='bbox',
-    metric=dict(bbox_mAP=38.2),
+    eval=['bbox', 'segm'],
+    metric=dict(bbox_mAP=38.2, segm_mAP=34.7),
 )
 ms_rcnn = dict(
     config='configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x_coco.py',
     checkpoint='ms_rcnn_r50_caffe_fpn_1x_coco_20200702_180848-61c9355e.pth',
-    eval='bbox',
-    metric=dict(bbox_mAP=38.2),
+    eval=['bbox', 'segm'],
+    metric=dict(bbox_mAP=38.2, segm_mAP=36.0),
 )
 nas_fcos = dict(
     config='configs/nas_fcos/nas_fcos_nashead_r50_caffe_fpn_gn-head_4x4_1x_coco.py',  # noqa
@@ -234,14 +234,14 @@ pisa = dict(
 point_rend = dict(
     config='configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py',
     checkpoint='point_rend_r50_caffe_fpn_mstrain_1x_coco-1bcb5fb4.pth',
-    eval='bbox',
-    metric=dict(bbox_mAP=38.4),
+    eval=['bbox', 'segm'],
+    metric=dict(bbox_mAP=38.4, segm_mAP=36.3),
 )
 regnet = dict(
     config='configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_1x_coco.py',
     checkpoint='mask_rcnn_regnetx-3.2GF_fpn_1x_coco_20200520_163141-2a9d1814.pth',  # noqa
-    eval='bbox',
-    metric=dict(bbox_mAP=40.4),
+    eval=['bbox', 'segm'],
+    metric=dict(bbox_mAP=40.4, segm_mAP=36.7),
 )
 reppoints = dict(
     config='configs/reppoints/reppoints_moment_r50_fpn_1x_coco.py',
@@ -320,8 +320,8 @@ vfnet = dict(
 yolact = dict(
     config='configs/yolact/yolact_r50_1x8_coco.py',
     checkpoint='yolact_r50_1x8_coco_20200908-f38d58df.pth',
-    eval='bbox',
-    metric=dict(bbox_mAP=31.2),
+    eval=['bbox', 'segm'],
+    metric=dict(bbox_mAP=31.2, segm_mAP=29.0),
 )
 yolo = dict(
     config='configs/yolo/yolov3_d53_320_273e_coco.py',
@@ -337,7 +337,7 @@ yolof = dict(
 )
 centernet = dict(
     config='configs/centernet/centernet_resnet18_dcnv2_140e_coco.py',
-    checkpoint='centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth', # noqa
+    checkpoint='centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth',  # noqa
     eval='bbox',
     metric=dict(bbox_mAP=29.5),
 )

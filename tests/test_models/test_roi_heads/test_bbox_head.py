@@ -66,8 +66,8 @@ def test_bbox_head_loss():
     assert losses.get('loss_bbox', 0) > 0, 'box-loss should be non-zero'
 
 
-@pytest.mark.parametrize(['num_sample', 'num_batch'], [[2, 2], [0, 2], [0, 0]])
-def test_bbox_head_get_bboxes(num_sample, num_batch):
+@pytest.mark.parametrize('num_sample', [0, 1, 2])
+def test_bbox_head_get_bboxes(num_sample):
     self = BBoxHead(reg_class_agnostic=True)
 
     num_class = 6
@@ -83,14 +83,6 @@ def test_bbox_head_get_bboxes(num_sample, num_batch):
     else:
         assert det_bboxes.shape == bbox_pred.shape
         assert det_labels.shape == cls_score.shape
-
-    rois = torch.rand((num_batch, num_sample, 5))
-    cls_score = torch.rand((num_batch, num_sample, num_class))
-    bbox_pred = torch.rand((num_batch, num_sample, 4))
-    scale_factor = (np.array([2.0, 2.0, 2.0, 2.0]), ) * num_batch
-    det_bboxes, det_labels = self.get_bboxes(
-        rois, cls_score, bbox_pred, None, scale_factor, rescale=True)
-    assert len(det_bboxes) == num_batch and len(det_labels) == num_batch
 
 
 def test_refine_boxes():

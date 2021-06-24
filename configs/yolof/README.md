@@ -17,7 +17,7 @@
 
 | Backbone  | Style   | Epoch | Lr schd | Mem (GB) |   box AP | Config | Download |
 |:---------:|:-------:|:-------:|:-------:|:--------:|:------:|:------:|:--------:|
-| R-50-C5     | caffe | Y | 1x      | 8.3      |   37.5  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yolof/yolof_r50_c5_8x8_1x_coco.py)       |[model](http://download.openmmlab.com/mmdetection/v2.0/yolof/yolof_r50_c5_8x8_1x_coco/yolof_r50_c5_8x8_1x_coco_20210425_024427-8e864411.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/yolof/yolof_r50_c5_8x8_1x_coco/yolof_r50_c5_8x8_1x_coco_20210425_024427.log.json) |
+| R-50-C5     | caffe | Y | 1x      | 8.3      |   37.5  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yolof/yolof_r50_c5_8x8_1x_coco.py)       |[model](https://download.openmmlab.com/mmdetection/v2.0/yolof/yolof_r50_c5_8x8_1x_coco/yolof_r50_c5_8x8_1x_coco_20210425_024427-8e864411.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/yolof/yolof_r50_c5_8x8_1x_coco/yolof_r50_c5_8x8_1x_coco_20210425_024427.log.json) |
 
 **Note**:
 

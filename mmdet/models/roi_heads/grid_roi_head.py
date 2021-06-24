@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 from mmdet.core import bbox2result, bbox2roi
@@ -142,7 +143,10 @@ class GridRoIHead(StandardRoIHead):
             num_imgs = len(det_bboxes)
             for i in range(num_imgs):
                 if det_bboxes[i].shape[0] == 0:
-                    bbox_results.append(grid_rois.new_tensor([]))
+                    bbox_results.append([
+                        np.zeros((0, 5), dtype=np.float32)
+                        for _ in range(self.bbox_head.num_classes)
+                    ])
                 else:
                     det_bbox = self.grid_head.get_bboxes(
                         det_bboxes[i], grid_pred['fused'][i], [img_metas[i]])
@@ -152,9 +156,10 @@ class GridRoIHead(StandardRoIHead):
                         bbox2result(det_bbox, det_labels[i],
                                     self.bbox_head.num_classes))
         else:
-            bbox_results = [
-                grid_rois.new_tensor([]) for _ in range(len(det_bboxes))
-            ]
+            bbox_results = [[
+                np.zeros((0, 5), dtype=np.float32)
+                for _ in range(self.bbox_head.num_classes)
+            ] for _ in range(len(det_bboxes))]
 
         if not self.with_mask:
             return bbox_results
