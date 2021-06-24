@@ -41,7 +41,7 @@ class PointGenerator:
 
 @PRIOR_GENERATORS.register_module()
 class MlvlPointGenerator:
-    """Standard points generator for multi-level(Mlvl) feature maps in 2D
+    """Standard points generator for multi-level (Mlvl) feature maps in 2D
     points-based detectors.
 
     Args:
@@ -59,6 +59,12 @@ class MlvlPointGenerator:
     def num_levels(self):
         """int: number of feature levels that the generator will be applied"""
         return len(self.strides)
+
+    @property
+    def num_base_priors(self):
+        """list[int]: The number of priors (points) at a point
+        on the feature grid"""
+        return [1 for _ in range(len(self.strides))]
 
     def _meshgrid(self, x, y, row_major=True):
         xx = x.repeat(len(y))
