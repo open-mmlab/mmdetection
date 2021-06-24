@@ -239,11 +239,13 @@ class DetectoRS_ResNet(ResNet):
                  init_cfg=None,
                  **kwargs):
         self.init_cfg = init_cfg
-        if pretrained is None:
-            self.pretrained = None if init_cfg is None else init_cfg[
-                'checkpoint']
+        if init_cfg is not None:  # init_cfg priority > pretrained
+            self.pretrained = init_cfg['checkpoint']
         else:
-            self.pretrained = pretrained
+            if self.pretrained is not None:
+                self.pretrained = pretrained
+            else:
+                self.pretrained = None
         self.sac = sac
         self.stage_with_sac = stage_with_sac
         self.rfp_inplanes = rfp_inplanes
