@@ -10,6 +10,7 @@ from mmdet.models import HEADS
 from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.dense_heads.fcos_head import FCOSHead
 from mmdet.models.dense_heads.paa_head import levels_to_images
+from mmdet.core.anchor.point_generator import MlvlPointGenerator
 
 EPS = 1e-12
 
@@ -157,6 +158,7 @@ class AutoAssignHead(FCOSHead):
         self.pos_loss_weight = pos_loss_weight
         self.neg_loss_weight = neg_loss_weight
         self.center_loss_weight = center_loss_weight
+        self.prior_generator = MlvlPointGenerator(self.strides, offset=0)
 
     def init_weights(self):
         """Initialize weights of the head.
