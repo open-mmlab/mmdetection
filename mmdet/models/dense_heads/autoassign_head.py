@@ -484,7 +484,7 @@ class AutoAssignHead(FCOSHead):
 
         Args:
             gt_bboxes (Tensor): gt_bbox of single image, has shape
-                (num_gt,)
+                (num_gt, 4).
             points (Tensor): Points of all fpn level, has shape
                 (num_points, 2).
 
