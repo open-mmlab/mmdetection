@@ -83,11 +83,6 @@ class SSDVGG(VGG, BaseModule):
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
             self.init_cfg = [dict(type='Pretrained', checkpoint=pretrained)]
-        if input_size is not None:
-            warnings.warn('DeprecationWarning: input_size is deprecated')
-        if l2_norm_scale is not None:
-            warnings.warn('DeprecationWarning: l2_norm_scale in VGG is '
-                          'deprecated, it has been moved to SSDNeck.')
         elif pretrained is None:
             if init_cfg is None:
                 self.init_cfg = [
@@ -97,6 +92,11 @@ class SSDVGG(VGG, BaseModule):
                 ]
         else:
             raise TypeError('pretrained must be a str or None')
+        if input_size is not None:
+            warnings.warn('DeprecationWarning: input_size is deprecated')
+        if l2_norm_scale is not None:
+            warnings.warn('DeprecationWarning: l2_norm_scale in VGG is '
+                          'deprecated, it has been moved to SSDNeck.')
 
     def init_weights(self, pretrained=None):
         super(VGG, self).init_weights()
