@@ -79,6 +79,7 @@ class SSDVGG(VGG, BaseModule):
 
         assert not (init_cfg and pretrained), \
             'init_cfg and pretrained cannot be setting at the same time'
+
         if init_cfg is not None:
             self.init_cfg = init_cfg
         else:
@@ -89,6 +90,7 @@ class SSDVGG(VGG, BaseModule):
                     dict(type='Pretrained', checkpoint=pretrained)
                 ]
             elif pretrained is None:
+
                 self.init_cfg = [
                     dict(type='Kaiming', layer='Conv2d'),
                     dict(type='Constant', val=1, layer='BatchNorm2d'),
@@ -96,6 +98,7 @@ class SSDVGG(VGG, BaseModule):
                 ]
             else:
                 raise TypeError('pretrained must be a str or None')
+
         if input_size is not None:
             warnings.warn('DeprecationWarning: input_size is deprecated')
         if l2_norm_scale is not None:
