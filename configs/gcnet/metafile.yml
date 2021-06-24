@@ -311,12 +311,12 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 44.9
+          box AP: 47.5
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:    38.9
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_1x_coco_20200516_182249-680fc3f2.pth
+          mask AP:  40.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_1x_coco_20210615_211019-abbc39ea.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -327,8 +327,12 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 44.6
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco_20200516_015634-08f56b56.pth
+          box AP: 48.0
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 41.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r16_gcb_c3-c5_1x_coco_20210615_215648-44aa598a.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco
     In Collection: GCNet
@@ -339,9 +343,9 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 45.7
+          box AP: 47.9
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:   39.5
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco_20200518_041145-24cabcfd.pth
+          mask AP:   41.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_dconv_c3-c5_r4_gcb_c3-c5_1x_coco_20210615_161851-720338ec.pth
