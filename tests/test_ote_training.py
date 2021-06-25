@@ -61,7 +61,7 @@ def TRAINING_PARAMETERS_FIELDS():
 TrainingParameters = namedtuple('TrainingParameters', TRAINING_PARAMETERS_FIELDS())
 
 @pytest.fixture
-def dataset_definitions(request):
+def dataset_definitions_fx(request):
     path = request.config.getoption('--dataset-definitions')
     assert path is not None, (f'The command line parameter "--dataset-definitions" is not set, '
                              f'whereas it is required for the test {request.node.originalname or request.node.name}')
@@ -140,9 +140,7 @@ def run_ote_training(params: TrainingParameters):
     logger.info('Model training finished [ROUND 0]')
 
 
-@pytest.fixture
-def training_params_coco_shortened_500(dataset_definitions):
-    dataset_name = 'coco_shortened_500'
+def _get_training_params_from_dataset_definitions(dataset_definitions, dataset_name):
     cur_dataset_definition = dataset_definitions[dataset_name]
     training_parameters_fields = {k: v for k, v in cur_dataset_definition.items()
                                   if k in TRAINING_PARAMETERS_FIELDS()}
@@ -156,6 +154,9 @@ def training_params_coco_shortened_500(dataset_definitions):
     return params
 
 @e2e_pytest
-def test_training_coco_shortened_500(training_params_coco_shortened_500):
-    run_ote_training(training_params_coco_shortened_500)
-
+@pytest.mark.parametrize('dataset_name',
+                         ['coco_shortened_500',
+                          'vitens_tiled_shortened_500'])
+def test_ote_training(dataset_name, dataset_definitions_fx):
+    training_params = _get_training_params_from_dataset_definitions(dataset_definitions_fx, dataset_name)
+    run_ote_training(training_params)
