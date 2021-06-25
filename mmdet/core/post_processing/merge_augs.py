@@ -137,6 +137,9 @@ def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
                 mask = mask[:, :, :, ::-1]
             elif flip_direction == 'vertical':
                 mask = mask[:, :, ::-1, :]
+            elif flip_direction == 'diagonal':
+                mask = mask[:, :, :, ::-1]
+                mask = mask[:, :, ::-1, :]
             else:
                 raise ValueError(
                     f"Invalid flipping direction '{flip_direction}'")
