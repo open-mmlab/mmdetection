@@ -4,7 +4,6 @@ from mmdet.models.backbones import DetectoRS_ResNet
 
 
 def test_detectorrs_resnet_backbone():
-    """Test init_weights config."""
     detectorrs_cfg = dict(
         depth=50,
         num_stages=4,
