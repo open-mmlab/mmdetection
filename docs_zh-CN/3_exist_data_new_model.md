@@ -1,6 +1,6 @@
 # 3: 在标准数据集上训练自定义模型
 
-在本文中，你将知道如何在标准数据集上训练、测试和推理自定义模型。我们将在 cityscapes 数据集上以自定义 Cascade Mask R-CNN R50 模型为例演示整个过程，为了说明我们将 neck 模块中的 `FPN` 替换为 `AugFPN`，并且在训练中的自动增强类中增加 ``Rotate` 或 `Translate`。
+在本文中，你将知道如何在标准数据集上训练、测试和推理自定义模型。我们将在 cityscapes 数据集上以自定义 Cascade Mask R-CNN R50 模型为例演示整个过程，为了说明我们将 neck 模块中的 `FPN` 替换为 `AugFPN`，并且在训练中的自动增强类中增加 `Rotate` 或 `Translate`。
 
 基本步骤如下所示：
 
@@ -48,7 +48,7 @@ pip install cityscapesscripts
 python tools/dataset_converters/cityscapes.py ./data/cityscapes --nproc 8 --out-dir ./data/cityscapes/annotations
 ```
 
-目前在 `cityscapes`文件夹中的配置文件所对应模型是采用 COCO 预训练权重进行初始化的。
+目前在 `cityscapes `文件夹中的配置文件所对应模型是采用 COCO 预训练权重进行初始化的。
 
 如果你的网络不可用或者比较慢，建议你先手动下载对应的预训练权重，否则可能在训练开始时候出现错误。
 
@@ -123,7 +123,7 @@ model = dict(
     # 设置为 None，不加载 ImageNet 预训练权重，
     # 后续相应的设置 `load_from` 参数用来加载 COCO 预训练权重
     pretrained=None,
-    # 使用新增的 `AugFPN`模块代替默认的 `FPN`
+    # 使用新增的 `AugFPN` 模块代替默认的 `FPN`
     neck=dict(
         type='AugFPN',
         in_channels=[256, 512, 1024, 2048],
@@ -138,7 +138,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                # 将 COCO 类别 修改为 cityscapes 类别
+                # 将 COCO 类别修改为 cityscapes 类别
                 num_classes=8,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
@@ -156,7 +156,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                # 将 COCO 类别 修改为 cityscapes 类别
+                # 将 COCO 类别修改为 cityscapes 类别
                 num_classes=8,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
@@ -174,7 +174,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                # 将 COCO 类别 修改为 cityscapes 类别
+                # 将 COCO 类别修改为 cityscapes 类别
                 num_classes=8,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
@@ -192,7 +192,7 @@ model = dict(
             num_convs=4,
             in_channels=256,
             conv_out_channels=256,
-            # 将 COCO 类别 修改为 cityscapes 类别
+            # 将 COCO 类别修改为 cityscapes 类别
             num_classes=8,
             loss_mask=dict(
                 type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))))
@@ -234,7 +234,7 @@ train_pipeline = [
 data = dict(
     samples_per_gpu=1,
     workers_per_gpu=3,
-    # 用新的训练 pipeline 配置覆写 `pipeline`
+    # 用新的训练 pipeline 配置覆写 pipeline
     train=dict(dataset=dict(pipeline=train_pipeline)))
 
 # 设置优化器
