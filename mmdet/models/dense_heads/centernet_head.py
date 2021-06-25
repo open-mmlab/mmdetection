@@ -300,7 +300,7 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
                            img_meta,
                            rescale=False,
                            with_nms=True):
-        """Transform outputs for a single batch item into bbox predictions.
+        """Transform outputs of a single image into bbox results.
 
         Args:
             center_heatmap_pred (Tensor): center heatmap for current level with

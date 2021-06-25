@@ -181,7 +181,11 @@ class RPNHead(AnchorHead):
                 scores = scores[valid_inds]
                 ids = ids[valid_inds]
 
-        dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+        if proposals.numel() > 0:
+            dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+        else:
+            return proposals.new_zeros(0, 5)
+
         return dets[:cfg.max_per_img]
 
     # TODO: waiting for refactor the anchor_head and anchor_free head

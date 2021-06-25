@@ -30,19 +30,20 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                    **kwargs):
         """Transform network output for a batch into bbox predictions.
 
-        Note: score_factors is usually multiplied by the classification branch,
+        Note: When score_factors is not None, the cls_scores are
+        usually multiplied by it then obtain the real score used in NMS,
         such as CenterNess in FCOS, IoU branch in ATSS.
 
         Args:
             cls_scores (list[Tensor]): Classification scores for all
-                scale levels, each is a 4D-tensor, the channels number
-                is num_priors * num_classes.
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for all
-                scale levels, each is a 4D-tensor, the channels number
-                is num_priors * 4.
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * 4, H, W).
             score_factors (list[Tensor], Optional):  score_factor for
-                each scale level, each is a 4D-tensor, the channel number
-                is num_priors * 1. Default None.
+                each scale level, each is a 4D-tensor, has shape
+                (batch_size, num_priors * 1, H, W). Default None.
             img_metas (list[dict], Optional): Image meta info. Default None.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
@@ -62,10 +63,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         assert len(cls_scores) == len(bbox_preds)
 
         if score_factors is None:
-            # e.g. Retina, FreeAnchor, etc.
+            # e.g. Retina, FreeAnchor, Foveabox, etc.
             with_score_factors = False
         else:
-            # e.g. FCOS, PAA, ATSS, etc.
+            # e.g. FCOS, PAA, ATSS, AutoAssign, etc.
             with_score_factors = True
             assert len(cls_scores) == len(score_factors)
 
@@ -101,12 +102,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """Transform outputs of single image into bbox predictions.
 
         Args:
-            cls_score_list (list[Tensor]): Box scores for a single scale level
+            cls_score_list (list[Tensor]): Box scores for a single image
                 Has shape (num_priors * num_classes, H, W).
             bbox_pred_list (list[Tensor]): Box energies / deltas for a single
-                scale level with shape (num_priors * 4, H, W).
+                image with shape (num_priors * 4, H, W).
             score_factor_list (list[Tensor]):  score_factor for each
-                scale level with shape (num_priors * 1, H, W).
+                image with shape (num_priors * 1, H, W).
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
@@ -115,14 +116,18 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default: True.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels.
+            tuple[Tensor]: Results of detected bboxes and labels. if with_nms
+            is False and mlvl_score_factor is None, return mlvl_bboxes and
+            mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+            mlvl_score_factor. Usually with_nms is False is used for aug test.
+            if with_nms is True, then return the following format
 
-                - det_bboxes: Predicted bboxes with shape [num_query, 5], \
+                - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
                     where the first 4 columns are bounding box positions \
                     (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
                     between 0 and 1.
                 - det_labels: Predicted labels of the corresponding box with \
-                    shape [num_query].
+                    shape [num_bbox].
         """
         if score_factor_list[0] is None:
             # e.g. Retina, FreeAnchor, etc.
@@ -201,6 +206,45 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                            with_nms=True,
                            mlvl_score_factor=None,
                            **kwargs):
+        """bbox post-processing method.
+
+        It usually completes the rescale to the original image scale and nms
+        operation. if with_nms is True, Perform nms operation on bbox and
+        return det_bboxes and det_labels. if with_nms is False and
+        mlvl_score_factor is None, return mlvl_bboxes and  mlvl_scores, else
+        return mlvl_bboxes,  mlvl_scores and  mlvl_score_factor. Usually
+        with_nms is False is used for aug test.
+
+        Args:
+            mlvl_scores (list[Tensor]): Box scores for a single image
+                Has shape (num, num_class).
+            mlvl_bboxes (list[Tensor]): Box energies / deltas for a single
+                image with shape (num, 4).
+            scale_factor (ndarray, optional): Scale factor of the image arange
+                as (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+            mlvl_score_factor (list[Tensor], optional):  score_factor for each
+                image with shape (num, ). Default: None.
+
+        Returns:
+            tuple[Tensor]: Results of detected bboxes and labels. if with_nms
+            is False and mlvl_score_factor is None, return mlvl_bboxes and
+            mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+            mlvl_score_factor. Usually with_nms is False is used for aug test.
+            if with_nms is True, then return the following format
+
+                - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
+                    where the first 4 columns are bounding box positions \
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
+                    between 0 and 1.
+                - det_labels: Predicted labels of the corresponding box with \
+                    shape [num_bbox].
+        """
         assert len(mlvl_scores) == len(mlvl_bboxes)
 
         mlvl_bboxes = torch.cat(mlvl_bboxes)

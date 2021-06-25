@@ -84,7 +84,7 @@ def flip_tensor(src_tensor, flip_direction):
     return out_tensor
 
 
-def collect_mlvl_tensor_single(mlvl_tensors, batch_id, detach=True):
+def collect_mlvl_tensor_single(mlvl_tensors, batch_id, detach=False):
     assert isinstance(mlvl_tensors, (list, tuple))
     num_levels = len(mlvl_tensors)
 

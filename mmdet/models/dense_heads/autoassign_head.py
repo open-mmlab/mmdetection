@@ -5,12 +5,12 @@ from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import distance2bbox, multi_apply
+from mmdet.core.anchor.point_generator import MlvlPointGenerator
 from mmdet.core.bbox import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.dense_heads.fcos_head import FCOSHead
 from mmdet.models.dense_heads.paa_head import levels_to_images
-from mmdet.core.anchor.point_generator import MlvlPointGenerator
 
 EPS = 1e-12
 
