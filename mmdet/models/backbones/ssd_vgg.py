@@ -85,7 +85,7 @@ class SSDVGG(VGG, BaseModule):
         elif isinstance(pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
-            self.init_cfg = [dict(type='Pretrained', checkpoint=pretrained)]
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
         elif pretrained is None:
             self.init_cfg = [
                 dict(type='Kaiming', layer='Conv2d'),
