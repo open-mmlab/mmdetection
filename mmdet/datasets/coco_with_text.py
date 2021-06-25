@@ -271,14 +271,21 @@ class CocoWithTextDataset(CocoDataset):
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
-            lexicon_path = metric_params['lexicon']
-            lexicon = self._read_lexicon(lexicon_path)
-
-            lexicon_pairs_path = metric_params['lexicon_mapping']
-            lexicon_mapping = self._read_lexicon_mapping(lexicon_pairs_path)
 
             predictions = []
-            for res in tqdm(results):
+            for img_i, res in tqdm(enumerate(results)):
+                img_id = os.path.basename(cocoGt.imgs[img_i]['filename']).split('.')[0].split('_')[-1]
+
+                lexicon_path = metric_params['lexicon']
+                if lexicon_path and '{}' in lexicon_path:
+                    lexicon_path = lexicon_path.format(img_id)
+                lexicon = self._read_lexicon(lexicon_path)
+
+                lexicon_pairs_path = metric_params['lexicon_mapping']
+                if lexicon_pairs_path and '{}' in lexicon_pairs_path:
+                    lexicon_pairs_path = lexicon_pairs_path.format(img_id)
+                lexicon_mapping = self._read_lexicon_mapping(lexicon_pairs_path)
+
                 boxes = res[0][0]
                 segms = res[1][0]
                 if len(res[2]) == 3:
