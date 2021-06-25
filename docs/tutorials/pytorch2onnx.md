@@ -131,6 +131,16 @@ python tools/deployment/test.py \
 - `--cfg-options`: Override some settings in the used config file, the key-value pair in `xxx=yyy` format will be merged into config file.
 - `--eval-options`: Custom options for evaluation, the key-value pair in `xxx=yyy` format will be kwargs for `dataset.evaluate()` function
 
+Notes:
+
+- If the deployed backend platform is TensorRT, please add environment variables before running the file:
+
+  ```bash
+  export ONNX_BACKEND=MMCVTensorRT
+  ```
+
+- If you want to use the `--dynamic-export` parameter in the TensorRT backend to export ONNX, please remove the `--simplify` parameter, and vice versa.
+
 ### Results and Models
 
 <table border="1" class="docutils">
@@ -269,14 +279,6 @@ torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, p
 - Though supported, it is *not recommended* to use batch inference in onnxruntime for `DETR`, because there is huge performance gap between ONNX and torch model (e.g. 33.5 vs 39.9 mAP on COCO for onnxruntime and torch respectively, with a batch size 2). The main reason for the gap is that these is non-negligible effect on the predicted regressions during batch inference for ONNX, since the predicted coordinates is normalized by `img_shape` (without padding) and should be converted to absolute format, but `img_shape` is not dynamically traceable thus the padded `img_shape_for_onnx` is used.
 
 - Currently only single-scale evaluation is supported with ONNX Runtime, also `mmcv::SoftNonMaxSuppression` is only supported for single image by now.
-
-- If the deployed backend platform is TensorRT, please add environment variables before running the file:
-
-  ```bash
-  export ONNX_BACKEND=MMCVTensorRT
-  ```
-
-- If you want to use the `--dynamic-export` parameter in the TensorRT backend to export ONNX, please remove the `--simplify` parameter, and vice versa.
 
 ## The Parameters of Non-Maximum Suppression in ONNX Export
 

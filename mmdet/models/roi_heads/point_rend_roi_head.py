@@ -1,6 +1,8 @@
 # Modified from https://github.com/facebookresearch/detectron2/tree/master/projects/PointRend  # noqa
+import logging
 import os
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from mmcv.ops import point_sample, rel_roi_point_to_rel_img_point
@@ -9,6 +11,8 @@ from mmdet.core import bbox2roi, bbox_mapping, merge_aug_masks
 from .. import builder
 from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
+
+logger = logging.getLogger(__name__)
 
 
 @HEADS.register_module()
@@ -63,7 +67,20 @@ class PointRendRoIHead(StandardRoIHead):
     def _get_fine_grained_point_feats(self, x, rois, rel_roi_points,
                                       img_metas):
         """Sample fine grained feats from each level feature map and
-        concatenate them together."""
+        concatenate them together.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            rois (Tensor): shape (num_rois, 5).
+            rel_roi_points (Tensor): A tensor of shape (num_rois, num_points,
+                2) that contains [0, 1] x [0, 1] normalized coordinates of the
+                most uncertain points from the [mask_height, mask_width] grid.
+
+        Returns:
+            Tensor: The fine grained features for each points,
+                has shape (num_rois, feats_channels, num_points).
+        """
         num_imgs = len(img_metas)
         fine_grained_feats = []
         for idx in range(self.mask_roi_extractor.num_inputs):
@@ -87,7 +104,20 @@ class PointRendRoIHead(StandardRoIHead):
 
     def _mask_point_forward_test(self, x, rois, label_pred, mask_pred,
                                  img_metas):
-        """Mask refining process with point head in testing."""
+        """Mask refining process with point head in testing.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            rois (Tensor): shape (num_rois, 5).
+            label_pred (Tensor): The predication class for each rois.
+            mask_pred (Tensor): The predication coarse masks of
+                shape (num_rois, num_classes, small_size, small_size).
+
+        Returns:
+            Tensor: The refined masks of shape (num_rois, num_classes,
+                large_size, large_size).
+        """
         refined_mask_pred = mask_pred.clone()
         for subdivision_step in range(self.test_cfg.subdivision_steps):
             refined_mask_pred = F.interpolate(
@@ -132,6 +162,15 @@ class PointRendRoIHead(StandardRoIHead):
         """Obtain mask prediction without augmentation."""
         ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+
+        if isinstance(scale_factors[0], float):
+            logger.warning(
+                'Scale factor in img_metas should be a '
+                'ndarray with shape (4,) '
+                'arrange as (factor_w, factor_h, factor_w, factor_h), '
+                'The scale_factor with float type has been deprecated. ')
+            scale_factors = np.array([scale_factors] * 4, dtype=np.float32)
+
         num_imgs = len(det_bboxes)
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
             segm_results = [[[] for _ in range(self.mask_head.num_classes)]
@@ -139,16 +178,16 @@ class PointRendRoIHead(StandardRoIHead):
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
-            if rescale and not isinstance(scale_factors[0], float):
+            _bboxes = [det_bboxes[i][:, :4] for i in range(len(det_bboxes))]
+            if rescale:
                 scale_factors = [
                     torch.from_numpy(scale_factor).to(det_bboxes[0].device)
                     for scale_factor in scale_factors
                 ]
-            _bboxes = [
-                det_bboxes[i][:, :4] *
-                scale_factors[i] if rescale else det_bboxes[i][:, :4]
-                for i in range(len(det_bboxes))
-            ]
+                _bboxes = [
+                    _bboxes[i] * scale_factors[i] for i in range(len(_bboxes))
+                ]
+
             mask_rois = bbox2roi(_bboxes)
             mask_results = self._mask_forward(x, mask_rois)
             # split batch mask prediction back to each image
@@ -210,7 +249,20 @@ class PointRendRoIHead(StandardRoIHead):
         return segm_result
 
     def _onnx_get_fine_grained_point_feats(self, x, rois, rel_roi_points):
-        """Export the progress of sampling fine grained feats to onnx."""
+        """Export the process of sampling fine grained feats to onnx.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            rois (Tensor): shape (num_rois, 5).
+            rel_roi_points (Tensor): A tensor of shape (num_rois, num_points,
+                2) that contains [0, 1] x [0, 1] normalized coordinates of the
+                most uncertain points from the [mask_height, mask_width] grid.
+
+        Returns:
+            Tensor: The fine grained features for each points,
+                has shape (num_rois, feats_channels, num_points).
+        """
         batch_size = x[0].shape[0]
         num_rois = rois.shape[0]
         fine_grained_feats = []
@@ -232,7 +284,20 @@ class PointRendRoIHead(StandardRoIHead):
         return torch.cat(fine_grained_feats, dim=1)
 
     def _mask_point_onnx_export(self, x, rois, label_pred, mask_pred):
-        """Export mask refining process with point head to onnx."""
+        """Export mask refining process with point head to onnx.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            rois (Tensor): shape (num_rois, 5).
+            label_pred (Tensor): The predication class for each rois.
+            mask_pred (Tensor): The predication coarse masks of
+                shape (num_rois, num_classes, small_size, small_size).
+
+        Returns:
+            Tensor: The refined masks of shape (num_rois, num_classes,
+                large_size, large_size).
+        """
         refined_mask_pred = mask_pred.clone()
         for subdivision_step in range(self.test_cfg.subdivision_steps):
             refined_mask_pred = F.interpolate(
@@ -286,13 +351,7 @@ class PointRendRoIHead(StandardRoIHead):
 
         return refined_mask_pred
 
-    def mask_onnx_export(self,
-                         x,
-                         img_metas,
-                         det_bboxes,
-                         det_labels,
-                         rescale=False,
-                         **kwargs):
+    def mask_onnx_export(self, x, img_metas, det_bboxes, det_labels, **kwargs):
         """Export mask branch to onnx which supports batch inference.
 
         Args:
@@ -307,35 +366,13 @@ class PointRendRoIHead(StandardRoIHead):
             tuple[Tensor, Tensor]: bboxes of shape [N, num_bboxes, 5]
                 and class labels of shape [N, num_bboxes].
         """
-        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
             raise RuntimeError('[ONNX Error] Can not record MaskHead '
                                'as it has not been executed this time')
-
-        # The length of proposals of different batches may be different.
-        # In order to form a batch, a padding operation is required.
-        if isinstance(det_bboxes, list):
-            # padding to form a batch
-            max_size = max([bboxes.size(0) for bboxes in det_bboxes])
-            for i, (bbox, label) in enumerate(zip(det_bboxes, det_labels)):
-                supplement_bbox = bbox.new_full(
-                    (max_size - bbox.size(0), bbox.size(1)), 0)
-                supplement_label = label.new_full((max_size - label.size(0), ),
-                                                  0)
-                det_bboxes[i] = torch.cat((supplement_bbox, bbox), dim=0)
-                det_labels[i] = torch.cat((supplement_label, label), dim=0)
-            det_bboxes = torch.stack(det_bboxes, dim=0)
-            det_labels = torch.stack(det_labels, dim=0)
-
         batch_size = det_bboxes.size(0)
-
         # if det_bboxes is rescaled to the original image size, we need to
         # rescale it back to the testing scale to obtain RoIs.
         det_bboxes = det_bboxes[..., :4]
-        if rescale:
-            if not isinstance(scale_factors[0], float):
-                scale_factors = det_bboxes.new_tensor(scale_factors)
-            det_bboxes = det_bboxes * scale_factors.unsqueeze(1)
         batch_index = torch.arange(
             det_bboxes.size(0), device=det_bboxes.device).float().view(
                 -1, 1, 1).expand(det_bboxes.size(0), det_bboxes.size(1), 1)
@@ -343,7 +380,6 @@ class PointRendRoIHead(StandardRoIHead):
         mask_rois = mask_rois.view(-1, 5)
         mask_results = self._mask_forward(x, mask_rois)
         mask_pred = mask_results['mask_pred']
-
         max_shape = img_metas[0]['img_shape_for_onnx']
         num_det = det_bboxes.shape[1]
         det_bboxes = det_bboxes.reshape(-1, 4)
