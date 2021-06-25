@@ -210,6 +210,7 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">40.6</td>
 	    <td align="center">40.4</td>
+		<td align="center">-</td>
 	</tr>
   <tr >
 	    <td align="center">DETR</td>
@@ -217,6 +218,21 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">40.1</td>
 	    <td align="center">40.1</td>
+		<td align="center">-</td>
+  </tr>
+  <tr >
+	    <td align="center" rowspan="2">PointRend</td>
+	    <td align="center" rowspan="2"><code>configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">38.4</td>
+	    <td align="center">38.4</td>
+	    <td align="center">-</td>
+  </tr>
+  <tr>
+	    <td align="center">Mask AP</td>
+	    <td align="center">36.3</td>
+	    <td align="center">35.2</td>
+	    <td align="center">-</td>
   </tr>
 </table>
 
@@ -240,8 +256,8 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 | Faster R-CNN |        `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`         |       Y       |        Y        |                                                                               |
 |  Mask R-CNN  |          `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`           |       Y       |        Y        |                                                                               |
 |  CornerNet   | `configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py` |       Y       |        N        | no flip, no batch inference, tested with torch==1.7.0 and onnxruntime==1.5.1. |
-|  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py`    |       Y       |        Y        |                                                                               |
 |     DETR     |                   `configs/detr/detr_r50_8x2_150e_coco.py`          |       Y       |        Y        | batch inference is *not recommended*                                          |
+|  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py`    |       Y       |        Y        |                                                                               |
 
 Notes:
 
