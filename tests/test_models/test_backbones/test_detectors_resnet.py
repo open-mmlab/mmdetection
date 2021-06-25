@@ -19,20 +19,29 @@ def test_detectorrs_resnet_backbone():
         output_img=True)
     """Test init_weights config"""
     with pytest.raises(AssertionError):
+        # pretrained and init_cfg cannot be setting at the same time
         DetectoRS_ResNet(
             **detectorrs_cfg, pretrained='Pretrained', init_cfg='Pretrained')
+
     with pytest.raises(AssertionError):
+        # init_cfg must be a dict
         DetectoRS_ResNet(
             **detectorrs_cfg, pretrained=None, init_cfg=['Pretrained'])
+
     with pytest.raises(KeyError):
+        # init_cfg must contain the key `type`
         DetectoRS_ResNet(
             **detectorrs_cfg,
             pretrained=None,
             init_cfg=dict(checkpoint='Pretrained'))
+
     with pytest.raises(AssertionError):
+        # init_cfg only support initialize pretrained model way
         DetectoRS_ResNet(
             **detectorrs_cfg, pretrained=None, init_cfg=dict(type='Trained'))
+
     with pytest.raises(TypeError):
+        # pretrained mast be a str or None
         model = DetectoRS_ResNet(
             **detectorrs_cfg, pretrained=['Pretrained'], init_cfg=None)
         model.init_weights()

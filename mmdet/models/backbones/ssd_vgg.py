@@ -82,22 +82,18 @@ class SSDVGG(VGG, BaseModule):
 
         if init_cfg is not None:
             self.init_cfg = init_cfg
+        elif isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
+                          'please use "init_cfg" instead')
+            self.init_cfg = [dict(type='Pretrained', checkpoint=pretrained)]
+        elif pretrained is None:
+            self.init_cfg = [
+                dict(type='Kaiming', layer='Conv2d'),
+                dict(type='Constant', val=1, layer='BatchNorm2d'),
+                dict(type='Normal', std=0.01, layer='Linear'),
+            ]
         else:
-            if isinstance(pretrained, str):
-                warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                              'please use "init_cfg" instead')
-                self.init_cfg = [
-                    dict(type='Pretrained', checkpoint=pretrained)
-                ]
-            elif pretrained is None:
-
-                self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(type='Constant', val=1, layer='BatchNorm2d'),
-                    dict(type='Normal', std=0.01, layer='Linear'),
-                ]
-            else:
-                raise TypeError('pretrained must be a str or None')
+            raise TypeError('pretrained must be a str or None')
 
         if input_size is not None:
             warnings.warn('DeprecationWarning: input_size is deprecated')
