@@ -6,8 +6,10 @@ _base_ = [
 # model settings
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
-    pretrained='torchvision://resnet101',
-    backbone=dict(depth=101),
+    backbone=dict(
+        depth=101,
+        init_cfg=dict(type='Pretrained',
+                      checkpoint='torchvision://resnet101')),
     bbox_head=dict(
         _delete_=True,
         type='SABLRetinaHead',

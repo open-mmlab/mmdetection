@@ -3,7 +3,7 @@ _base_ = [
     '../_base_/datasets/cityscapes_instance.py', '../_base_/default_runtime.py'
 ]
 model = dict(
-    pretrained=None,
+    backbone=dict(init_cfg=None),
     roi_head=dict(
         bbox_head=dict(
             type='Shared2FCBBoxHead',

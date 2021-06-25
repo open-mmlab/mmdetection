@@ -79,19 +79,22 @@ class SSDVGG(VGG, BaseModule):
 
         assert not (init_cfg and pretrained), \
             'init_cfg and pretrained cannot be setting at the same time'
-        if isinstance(pretrained, str):
+
+        if init_cfg is not None:
+            self.init_cfg = init_cfg
+        elif isinstance(pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
-            self.init_cfg = [dict(type='Pretrained', checkpoint=pretrained)]
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
         elif pretrained is None:
-            if init_cfg is None:
-                self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(type='Constant', val=1, layer='BatchNorm2d'),
-                    dict(type='Normal', std=0.01, layer='Linear'),
-                ]
+            self.init_cfg = [
+                dict(type='Kaiming', layer='Conv2d'),
+                dict(type='Constant', val=1, layer='BatchNorm2d'),
+                dict(type='Normal', std=0.01, layer='Linear'),
+            ]
         else:
             raise TypeError('pretrained must be a str or None')
+
         if input_size is not None:
             warnings.warn('DeprecationWarning: input_size is deprecated')
         if l2_norm_scale is not None:

@@ -1,6 +1,5 @@
 _base_ = '../fast_rcnn/fast_rcnn_r50_fpn_1x_coco.py'
 model = dict(
-    pretrained='open-mmlab://detectron2/resnet50_caffe',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -9,7 +8,10 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
-        style='caffe'),
+        style='caffe',
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='open-mmlab://detectron2/resnet50_caffe')),
     roi_head=dict(
         bbox_head=dict(bbox_coder=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))),
     # model training and testing settings
