@@ -57,7 +57,6 @@ def TRAINING_PARAMETERS_FIELDS():
             'annotations_test',
             'images_test_dir',
             'template_file_path',
-            'data_dir',
             ]
 TrainingParameters = namedtuple('TrainingParameters', TRAINING_PARAMETERS_FIELDS())
 
@@ -84,34 +83,15 @@ def get_task_class(path):
 
 
 def run_ote_training(params: TrainingParameters):
-#    params.annotations_train = None
-#    params.images_train_dir = None
-#    params.annotations_val = None
-#    params.images_val_dir = None
-#    params.template_file_path = 'configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml'
-#    params.data_dir = '/home/lbeynens/_Work/ICV/Deep/OTE_Validation/Experiments/experiment_003_run_pytest_ote_training/COCO/'
-    if not (params.annotations_train or params.images_train_dir or params.annotations_val or params.images_val_dir):
-        print('Using COCO val both for training and validation')
-        train_ann_file = osp.join(params.data_dir, 'coco/annotations/instances_val2017.json')
-        train_data_root = osp.join(params.data_dir, 'coco/val2017/')
-        val_ann_file = osp.join(params.data_dir, 'coco/annotations/instances_val2017.json')
-        val_data_root = osp.join(params.data_dir, 'coco/val2017/')
-        test_ann_file = osp.join(params.data_dir, 'coco/annotations/instances_val2017.json')
-        test_data_root = osp.join(params.data_dir, 'coco/val2017/')
-    else:
-        #
-        # check consistency
-        if not all([params.annotations_train, params.images_train_dir, params.annotations_val, params.images_val_dir]):
-            raise RuntimeError('If not default COCO dataset is used, the following parametrers should be set: '
-                               '--annotations-train, --images-train, --annotations-val, --images-val')
-        print(f'Using for train annotation file {params.annotations_train}')
-        print(f'Using for val annotation file {params.annotations_val}')
-        train_ann_file = params.annotations_train
-        train_data_root = params.images_train_dir
-        val_ann_file = params.annotations_val
-        val_data_root = params.images_val_dir
-        test_ann_file = params.annotations_test
-        test_data_root = params.images_test_dir
+    # check consistency
+    print(f'Using for train annotation file {params.annotations_train}')
+    print(f'Using for val annotation file {params.annotations_val}')
+    train_ann_file = params.annotations_train
+    train_data_root = params.images_train_dir
+    val_ann_file = params.annotations_val
+    val_data_root = params.images_val_dir
+    test_ann_file = params.annotations_test
+    test_data_root = params.images_test_dir
 
     dataset = MMDatasetAdapter(
         train_ann_file=train_ann_file,
@@ -146,9 +126,6 @@ def run_ote_training(params: TrainingParameters):
 
     # Tweak parameters.
     params = task.get_configurable_parameters(environment)
-    if True:
-        from pprint import pformat
-        print(f'params before training=\n{pformat(params.serialize())}')
     params.learning_parameters.nncf_quantization.value = False
     # params.learning_parameters.learning_rate_warmup_iters.value = 0
     params.learning_parameters.batch_size.value = 32
@@ -164,19 +141,18 @@ def run_ote_training(params: TrainingParameters):
 
 
 @pytest.fixture
-#def training_params_coco_shortened_500():
 def training_params_coco_shortened_500(dataset_definitions):
-    cur_dataset_definition = dataset_definitions['coco_shortened_500']
-    training_parameters_fields = {k: v for k, v in cur_dataset_definition.items() if k in TRAINING_PARAMETERS_FIELDS()}
+    dataset_name = 'coco_shortened_500'
+    cur_dataset_definition = dataset_definitions[dataset_name]
+    training_parameters_fields = {k: v for k, v in cur_dataset_definition.items()
+                                  if k in TRAINING_PARAMETERS_FIELDS()}
+
+    assert set(TRAINING_PARAMETERS_FIELDS()) == set(training_parameters_fields.keys()), \
+            f'ERROR: dataset definitions for name={dataset_name} does not contain all required fields'
+    assert all(training_parameters_fields.values()), \
+            f'ERROR: dataset definitions for name={dataset_name} contains empty values for some required fields'
+
     params = TrainingParameters(**training_parameters_fields)
-#    params = TrainingParameters(annotations_train=None,
-#                                images_train_dir=None,
-#                                annotations_val=None,
-#                                images_val_dir=None,
-#                                annotations_test=None,
-#                                images_test_dir=None,
-#                                template_file_path='configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml',
-#                                data_dir='/home/lbeynens/_Work/ICV/Deep/OTE_Validation/Experiments/experiment_003_run_pytest_ote_training/COCO/',)
     return params
 
 @e2e_pytest
