@@ -240,7 +240,7 @@ class DetectoRS_ResNet(ResNet):
                  **kwargs):
         self.init_cfg = init_cfg
         if init_cfg is not None:  # init_cfg priority > pretrained
-            self.pretrained = init_cfg['checkpoint']
+            self.pretrained = init_cfg.get('checkpoint')
         else:
             if pretrained is not None:
                 self.pretrained = pretrained
