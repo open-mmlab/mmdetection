@@ -238,8 +238,16 @@ class DetectoRS_ResNet(ResNet):
                  pretrained=None,
                  init_cfg=None,
                  **kwargs):
-        self.init_cfg = init_cfg
-        if init_cfg is not None:  # init_cfg priority > pretrained
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
+        if init_cfg is not None:
+            assert isinstance(init_cfg, dict), \
+                f'init_cfg must be a dict, but got {type(init_cfg)}'
+            if 'type' in init_cfg:
+                assert init_cfg.get('type') == 'Pretrained', \
+                    'Only can initialize module by loading a pretrained model'
+            else:
+                raise KeyError('`init_cfg` must contain the key "type"')
             self.pretrained = init_cfg.get('checkpoint')
         else:
             if pretrained is not None:
