@@ -363,8 +363,8 @@ class PointRendRoIHead(StandardRoIHead):
                 shape [N, num_bboxes].
 
         Returns:
-            Tensor: The segmentation results of shape (N, num_bboxes,
-                image_height, image_width).
+            Tensor: The segmentation results of shape [N, num_bboxes,
+                image_height, image_width].
         """
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
             raise RuntimeError('[ONNX Error] Can not record MaskHead '
