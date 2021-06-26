@@ -285,6 +285,9 @@ class MaskPointHead(BaseModule):
         num_points = cfg.subdivision_num_points
         uncertainty_map = self._get_uncertainty(mask_pred, pred_label)
         num_rois, _, mask_height, mask_width = uncertainty_map.shape
+
+        # During ONNX exporting, the type of each elements of 'shape' is
+        # `Tensor(float)`, while it is `float` during PyTorch inference.
         if isinstance(mask_height, torch.Tensor):
             h_step = 1.0 / mask_height.float()
             w_step = 1.0 / mask_width.float()
