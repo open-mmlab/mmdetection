@@ -284,7 +284,7 @@ class CocoWithTextDataset(CocoDataset):
             cocoEval.params.imgIds = self.img_ids
 
             predictions = []
-            for img_i, res in tqdm(enumerate(results)):
+            for img_i, res in enumerate(tqdm(results)):
                 img_id = os.path.basename(cocoGt.imgs[img_i]['filename']).split('.')[0].split('_')[-1]
 
                 lexicon_path = metric_params['lexicon']
