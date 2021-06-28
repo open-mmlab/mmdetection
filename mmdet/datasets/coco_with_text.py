@@ -372,6 +372,8 @@ class CocoWithTextDataset(CocoDataset):
                 eval_results[metric + '/hmean'] = float(f'{best_hmean:.3f}')
                 eval_results[metric + '/precision'] = float(f'{best_precision:.3f}')
                 eval_results[metric + '/recall'] = float(f'{best_recall:.3f}')
+                eval_results[metric + '/det_thr'] = float(f'{best_det_thr:.3f}')
+                eval_results[metric + '/rec_thr'] = float(f'{best_rec_thr:.3f}')
 
                 print(f'Text detection recall={best_recall} precision={best_precision} hmean={best_hmean} @ '
                       f'det_thr={best_det_thr} and rec_thr={best_rec_thr}')

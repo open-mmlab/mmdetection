@@ -287,8 +287,6 @@ def match(gt_polygons_list, gt_transcriptions, gt_dont_care_polygon_nums,
                         if  match_transcriptions(gt_transcriptions[gt_idx].lower(), pr_transcriptions[pr_idx].lower(), word_spotting):
                             pr_matched_nums.append(pr_idx)
                         else:
-                            # print(gt_transcriptions[gt_idx],
-                            #       pr_transcriptions[pr_idx])
                             pr_matched_but_not_recognized.append(pr_idx)
                     else:
                         pr_matched_nums.append(pr_idx)
