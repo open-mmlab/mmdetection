@@ -538,7 +538,9 @@ class BBoxHead(BaseModule):
         labels = labels.view(1, 1, -1).expand_as(scores)
         labels = labels.reshape(batch_size, -1)
         scores = scores.reshape(batch_size, -1)
-        bboxes = bboxes.reshape(batch_size, -1, 4)
+        if self.reg_class_agnostic:
+            bboxes = bboxes.reshape(batch_size, -1, 4)
+            bboxes = bboxes.repeat(1, self.num_classes, 1)
 
         max_size = torch.max(img_shape)
         # Offset bboxes of each class so that bboxes of different labels
