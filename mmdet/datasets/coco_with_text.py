@@ -51,6 +51,10 @@ class CocoWithTextDataset(CocoDataset):
         self.alphabet = alphabet
         self.max_text_len = 33
         self.EOS = 1
+        self.lexicon = None
+        self.lexicon_mapping = None
+        self.lexicon_path = None
+        self.lexicon_mapping_path = None
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small or without ground truths."""
@@ -211,22 +215,24 @@ class CocoWithTextDataset(CocoDataset):
             filtered_predictions.append(filtered_per_image_predictions)
         return filtered_predictions
 
-    @staticmethod
-    def _read_lexicon(path):
+    def _read_lexicon(self, path):
         if not path:
             return []
-        with open(path) as read_file:
-            lexicon = [line.strip() for line in read_file]
-        return lexicon
+        if self.lexicon_path is None or self.lexicon != path:
+            with open(path) as read_file:
+                self.lexicon = [line.strip() for line in read_file]
+            self.lexicon_path = path
+        return self.lexicon
 
-    @staticmethod
-    def _read_lexicon_mapping(path):
+    def _read_lexicon_mapping(self, path):
         if not path:
             return {}
-        with open(path) as read_file:
-            lexicon_mapping = [line.strip().split(' ') for line in read_file]
-            lexicon_mapping = {pair[0].upper(): ' '.join(pair[1:]) for pair in lexicon_mapping}
-        return lexicon_mapping
+        if self.lexicon_mapping_path is None or self.lexicon_mapping_path != path:
+            with open(path) as read_file:
+                lexicon_mapping = [line.strip().split(' ') for line in read_file]
+                self.lexicon_mapping = {pair[0].upper(): ' '.join(pair[1:]) for pair in lexicon_mapping}
+            self.lexicon_mapping_path = path
+        return self.lexicon_mapping
 
     def evaluate(self,
                  results,
