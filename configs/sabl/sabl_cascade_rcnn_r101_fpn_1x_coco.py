@@ -5,8 +5,10 @@ _base_ = [
 ]
 # model settings
 model = dict(
-    pretrained='torchvision://resnet101',
-    backbone=dict(depth=101),
+    backbone=dict(
+        depth=101,
+        init_cfg=dict(type='Pretrained',
+                      checkpoint='torchvision://resnet101')),
     roi_head=dict(bbox_head=[
         dict(
             type='SABLHead',

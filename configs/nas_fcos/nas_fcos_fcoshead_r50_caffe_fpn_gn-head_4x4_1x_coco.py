@@ -5,7 +5,6 @@ _base_ = [
 
 model = dict(
     type='NASFCOS',
-    pretrained='open-mmlab://detectron2/resnet50_caffe',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -13,7 +12,10 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False, eps=0),
-        style='caffe'),
+        style='caffe',
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='open-mmlab://detectron2/resnet50_caffe')),
     neck=dict(
         type='NASFCOS_FPN',
         in_channels=[256, 512, 1024, 2048],

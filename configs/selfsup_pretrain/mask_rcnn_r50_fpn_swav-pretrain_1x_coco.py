@@ -5,8 +5,9 @@ _base_ = [
 ]
 
 model = dict(
-    pretrained='./swav_800ep_pretrain.pth.tar',
     backbone=dict(
         frozen_stages=0,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        norm_eval=False))
+        norm_eval=False,
+        init_cfg=dict(
+            type='Pretrained', checkpoint='./swav_800ep_pretrain.pth.tar')))

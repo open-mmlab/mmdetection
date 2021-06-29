@@ -266,10 +266,13 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 # bbox_targets is a tuple
                 roi_labels = bbox_results['bbox_targets'][0]
                 with torch.no_grad():
+                    cls_score = bbox_results['cls_score']
+                    if self.bbox_head[i].custom_activation:
+                        cls_score = self.bbox_head[i].loss_cls.get_activation(
+                            cls_score)
                     roi_labels = torch.where(
                         roi_labels == self.bbox_head[i].num_classes,
-                        bbox_results['cls_score'][:, :-1].argmax(1),
-                        roi_labels)
+                        cls_score[:, :-1].argmax(1), roi_labels)
                     proposal_list = self.bbox_head[i].refine_bboxes(
                         bbox_results['rois'], roi_labels,
                         bbox_results['bbox_pred'], pos_is_gts, img_metas)
@@ -309,6 +312,11 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
+                if self.bbox_head[i].custom_activation:
+                    cls_score = [
+                        self.bbox_head[i].loss_cls.get_activation(s)
+                        for s in cls_score
+                    ]
                 bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
                 rois = torch.cat([
                     self.bbox_head[i].regress_by_class(rois[j], bbox_label[j],
@@ -429,8 +437,11 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 ms_scores.append(bbox_results['cls_score'])
 
                 if i < self.num_stages - 1:
-                    bbox_label = bbox_results['cls_score'][:, :-1].argmax(
-                        dim=1)
+                    cls_score = bbox_results['cls_score']
+                    if self.bbox_head[i].custom_activation:
+                        cls_score = self.bbox_head[i].loss_cls.get_activation(
+                            cls_score)
+                    bbox_label = cls_score[:, :-1].argmax(dim=1)
                     rois = self.bbox_head[i].regress_by_class(
                         rois, bbox_label, bbox_results['bbox_pred'],
                         img_meta[0])
