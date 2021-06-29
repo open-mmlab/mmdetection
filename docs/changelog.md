@@ -12,7 +12,9 @@
 
 - Support pretrained models from MoCo v2 and SwAV (#5286)
 - Add Faster R-CNN and Mask R-CNN config using multi-scale training with 3x schedule (#5179, #5233)
+- Add `reduction_override` in MSELoss (#5437)
 - Stable support of exporting DETR to ONNX with dynamic shapes and batch inference (#5168)
+- Stable support of exporting PointRend to ONNX with dynamic shapes and batch inference (#5440)
 
 ## Bug Fixes
 
@@ -20,6 +22,8 @@
 - Fix the import path of `MultiScaleDeformableAttention` (#5338)
 - Fix errors in config of GCNet ResNext101 models (#5360)
 - Fix Grid-RCNN error when there is no bbox result (#5357)
+- Fix errors in `onnx_export` of bbox_head when setting reg_class_agnostic (#5468)
+- Fix type error of AutoAssign in the document (#5478)
 - Fix web links ending with `.md` (#5315)
 
 ## Improvements
