@@ -4,30 +4,29 @@
 
 ## Highlights
 
-- Add `simple_test` to dense heads to improve the consistency of the inference interface of single-stage and two-stage
-- Revert the `test_mixins` to test image by image to improve efficiency and readability
-- Add Faster R-CNN and Mask R-CNN 3x mstrain config
-- Stable support of exporting DETR to ONNX with dynamic shapes and batch inference
+- Add `simple_test` to dense heads to improve the consistency of single-stage and two-stage detectors
+- Revert the `test_mixins` to single image test to improve efficiency and readability
+- Add Faster R-CNN and Mask R-CNN config using multi-scale training with 3x schedule
 
 ## New Features
 
-- Support pretrained models from MoCov2 (#5286)
-- Add Faster R-CNN and Mask R-CNN 3x mstrain config (#5179, #5233)
+- Support pretrained models from MoCo v2 and SwAV (#5286)
+- Add Faster R-CNN and Mask R-CNN config using multi-scale training with 3x schedule (#5179, #5233)
 - Stable support of exporting DETR to ONNX with dynamic shapes and batch inference (#5168)
 
 ## Bug Fixes
 
 - Fix size mismatch bug in `multiclass_nms` (#4980)
 - Fix the import path of `MultiScaleDeformableAttention` (#5338)
-- Fix GCNet X101 model config error (#5360)
+- Fix errors in config of GCNet ResNext101 models (#5360)
 - Fix Grid-RCNN error when there is no bbox result (#5357)
 - Fix web links ending with `.md` (#5315)
 
 ## Improvements
 
-- Add `simple_test` to dense heads to improve the consistency of the inference interface of single-stage and two-stage (#5264)
+- Add `simple_test` to dense heads to improve the consistency of single-stage and two-stage detectors (#5264)
 - Add support for mask diagonal flip in TTA (#5403)
-- Revert the `test_mixins` to test image by image to improve efficiency and readability (#5249)
+- Revert the `test_mixins` to single image test to improve efficiency and readability (#5249)
 - Make YOLOv3 Neck more flexible (#5218)
 - Refactor SSD to make it more general (#5291)
 - Refactor `anchor_generator` and `point_generator` (#5349)
