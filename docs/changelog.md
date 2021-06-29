@@ -1,19 +1,19 @@
 ## Changelog
 
-# v2.14.0 (28/6/2021)
+# v2.14.0 (29/6/2021)
 
 ## Highlights
 
 - Add `simple_test` to dense heads to improve the consistency of the inference interface of single-stage and two-stage
 - Revert the `test_mixins` to test image by image to improve efficiency and readability
 - Add Faster R-CNN and Mask R-CNN 3x mstrain config
-- Stable support of  exporting DETR to ONNX with dynamic shapes and batch inference
+- Stable support of exporting DETR to ONNX with dynamic shapes and batch inference
 
 ## New Features
 
 - Support pretrained models from MoCov2 (#5286)
-- Add Faster R-CNN and Mask R-CNN 3x mstrain config (#5179,  #5233)
-- Stable support of  exporting DETR to ONNX with dynamic shapes and batch inference (#5168)
+- Add Faster R-CNN and Mask R-CNN 3x mstrain config (#5179, #5233)
+- Stable support of exporting DETR to ONNX with dynamic shapes and batch inference (#5168)
 
 ## Bug Fixes
 
@@ -25,10 +25,9 @@
 
 ## Improvements
 
-- Add `simple_test` to dense heads to improve the consistency of the inference interface of single-stage and two-stage  (#5264)
+- Add `simple_test` to dense heads to improve the consistency of the inference interface of single-stage and two-stage (#5264)
 - Add support for mask diagonal flip in TTA (#5403)
-- Revert the `test_mixins` to test image by image to improve efficiency and readability  (#5249)
-
+- Revert the `test_mixins` to test image by image to improve efficiency and readability (#5249)
 - Make YOLOv3 Neck more flexible (#5218)
 - Refactor SSD to make it more general (#5291)
 - Refactor `anchor_generator` and `point_generator` (#5349)
@@ -38,8 +37,8 @@
 - Make deployment tools more friendly to use (#5280)
 - Clarify installation documentation (#5316)
 - Add ImageNet Pretrained Models docs (#5268)
-- Add FAQ about  training loss=nan solution and COCO AP or AR =-1 (# 5312, #5313)
-- change all weight links of http to https (#5328)
+- Add FAQ about training loss=nan solution and COCO AP or AR =-1 (# 5312, #5313)
+- Change all weight links of http to https (#5328)
 
 ### v2.13.0 (01/6/2021)
 
