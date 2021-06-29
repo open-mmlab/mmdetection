@@ -71,11 +71,11 @@ class PointRendRoIHead(StandardRoIHead):
 
         Args:
             x (tuple[Tensor]): Feature maps of all scale level.
-            img_metas (list[dict]): Image meta info.
             rois (Tensor): shape (num_rois, 5).
             rel_roi_points (Tensor): A tensor of shape (num_rois, num_points,
                 2) that contains [0, 1] x [0, 1] normalized coordinates of the
                 most uncertain points from the [mask_height, mask_width] grid.
+            img_metas (list[dict]): Image meta info.
 
         Returns:
             Tensor: The fine grained features for each points,
@@ -108,11 +108,11 @@ class PointRendRoIHead(StandardRoIHead):
 
         Args:
             x (tuple[Tensor]): Feature maps of all scale level.
-            img_metas (list[dict]): Image meta info.
             rois (Tensor): shape (num_rois, 5).
             label_pred (Tensor): The predication class for each rois.
             mask_pred (Tensor): The predication coarse masks of
                 shape (num_rois, num_classes, small_size, small_size).
+            img_metas (list[dict]): Image meta info.
 
         Returns:
             Tensor: The refined masks of shape (num_rois, num_classes,
@@ -253,7 +253,6 @@ class PointRendRoIHead(StandardRoIHead):
 
         Args:
             x (tuple[Tensor]): Feature maps of all scale level.
-            img_metas (list[dict]): Image meta info.
             rois (Tensor): shape (num_rois, 5).
             rel_roi_points (Tensor): A tensor of shape (num_rois, num_points,
                 2) that contains [0, 1] x [0, 1] normalized coordinates of the
@@ -288,7 +287,6 @@ class PointRendRoIHead(StandardRoIHead):
 
         Args:
             x (tuple[Tensor]): Feature maps of all scale level.
-            img_metas (list[dict]): Image meta info.
             rois (Tensor): shape (num_rois, 5).
             label_pred (Tensor): The predication class for each rois.
             mask_pred (Tensor): The predication coarse masks of
