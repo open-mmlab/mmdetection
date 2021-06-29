@@ -294,8 +294,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 shape [N, num_bboxes].
 
         Returns:
-            tuple[Tensor, Tensor]: bboxes of shape [N, num_bboxes, 5]
-                and class labels of shape [N, num_bboxes].
+            Tensor: The segmentation results of shape [N, num_bboxes,
+                image_height, image_width].
         """
         # image shapes of images in the batch
 
