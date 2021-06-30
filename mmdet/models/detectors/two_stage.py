@@ -201,7 +201,6 @@ class TwoStageDetector(BaseDetector):
         if hasattr(self.roi_head, 'onnx_export'):
             return self.roi_head.onnx_export(x, proposals, img_metas)
         else:
-            return self.roi_head.simple_test(x, proposals, img_metas)
             raise NotImplementedError(
                 f'{self.__class__.__name__} can not '
                 f'be exported to ONNX. Please refer to the '
