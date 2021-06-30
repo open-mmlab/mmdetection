@@ -511,7 +511,6 @@ class BBoxHead(BaseModule):
         assert rois.ndim == 3, 'Only support export two stage ' \
                                'model to ONNX ' \
                                'with batch dimension. '
-
         if self.custom_cls_channels:
             scores = self.loss_cls.get_activation(cls_score)
         else:
@@ -552,7 +551,6 @@ class BBoxHead(BaseModule):
         else:
             batch_size = scores.shape[0]
             # ignore background class
-
             labels = torch.arange(
                 self.num_classes, dtype=torch.long).to(scores.device)
             labels = labels.view(1, 1, -1).expand_as(scores)

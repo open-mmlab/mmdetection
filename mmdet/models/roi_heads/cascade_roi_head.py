@@ -505,9 +505,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             return [bbox_result]
 
     def onnx_export(self, x, proposals, img_metas):
-        """Test without augmentation."""
-        assert self.with_bbox, 'Bbox head must be implemented.'
 
+        assert self.with_bbox, 'Bbox head must be implemented.'
         assert proposals.shape[0] == 1, 'Only support one input image ' \
                                         'while in exporting to ONNX'
         # remove the scores
@@ -535,14 +534,11 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             cls_score = cls_score.reshape(batch_size, num_proposals_per_img,
                                           cls_score.size(-1))
             bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img, 4)
-
             ms_scores.append(cls_score)
-
             if i < self.num_stages - 1:
                 assert self.bbox_head[i].reg_class_agnostic
                 new_rois = self.bbox_head[i].bbox_coder.decode(
                     rois[..., 1:], bbox_pred, max_shape=max_shape)
-
                 rois = new_rois.reshape(-1, new_rois.shape[-1])
                 # add dummy batch index
                 rois = torch.cat([rois.new_zeros(len(rois), 1), rois], dim=-1)
@@ -553,7 +549,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         det_bboxes, det_labels = self.bbox_head[-1].onnx_export(
             rois, cls_score, bbox_pred, max_shape, cfg=rcnn_test_cfg)
 
-        if self.with_mask:
+        if not self.with_mask:
+            return det_bboxes, det_labels
+        else:
             batch_index = torch.arange(
                 det_bboxes.size(0),
                 device=det_bboxes.device).float().view(-1, 1, 1).expand(
@@ -567,7 +565,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 mask_pred = mask_results['mask_pred']
                 aug_masks.append(mask_pred)
             max_shape = img_metas[0]['img_shape_for_onnx']
-            # merge_aug_masks with mean
+            # calculate the mean of masks from several stage
             mask_pred = sum(aug_masks) / len(aug_masks)
             segm_results = self.mask_head[-1].onnx_export(
                 mask_pred, rois.reshape(-1, 4), det_labels.reshape(-1),
@@ -576,5 +574,3 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                                 det_bboxes.shape[1],
                                                 max_shape[0], max_shape[1])
             return det_bboxes, det_labels, segm_results
-
-        return det_bboxes, det_labels
