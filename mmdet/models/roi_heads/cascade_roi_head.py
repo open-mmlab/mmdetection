@@ -506,57 +506,54 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         else:
             return [bbox_result]
 
-    def onnx_export(self, x, proposal_list, img_metas):
+    def onnx_export(self, x, proposals, img_metas):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
-        num_imgs = len(proposal_list)
-        assert num_imgs == 1, 'Only support one input image ' \
-                              'while in exporting to ONNX'
-        img_shapes = img_metas[0]['img_shape_for_onnx']
+
+        assert proposals.shape[0] == 1, 'Only support one input image ' \
+            'while in exporting to ONNX'
+        # remove the scores
+        rois = proposals[..., :-1]
+        batch_size = rois.shape[0]
+        num_proposals_per_img = rois.shape[1]
+        # Eliminate the batch dimension
+        rois = rois.view(-1, 4)
+
+        # add dummy batch index
+        rois = torch.cat([rois.new_zeros(len(rois), 1), rois], dim=-1)
+
+        max_shape = img_metas[0]['img_shape_for_onnx']
         ms_scores = []
         rcnn_test_cfg = self.test_cfg
 
-        rois = bbox2roi(proposal_list)
         for i in range(self.num_stages):
             bbox_results = self._bbox_forward(i, x, rois)
-            # split batch bbox prediction back to each image
+
             cls_score = bbox_results['cls_score']
             bbox_pred = bbox_results['bbox_pred']
-            num_proposals_per_img = tuple(
-                len(proposals) for proposals in proposal_list)
-            rois = rois.split(num_proposals_per_img, 0)
-            cls_score = cls_score.split(num_proposals_per_img, 0)
-            if isinstance(bbox_pred, torch.Tensor):
-                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
-            else:
-                bbox_pred = self.bbox_head[i].bbox_pred_split(
-                    bbox_pred, num_proposals_per_img)
+            # Recover the batch dimension
+            rois = rois.reshape(batch_size, num_proposals_per_img,
+                                rois.size(-1))
+            cls_score = cls_score.reshape(batch_size, num_proposals_per_img,
+                                          cls_score.size(-1))
+            bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img, 4)
+
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
-                bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
-                rois = torch.cat([
-                    self.bbox_head[i].regress_by_class(rois[j], bbox_label[j],
-                                                       bbox_pred[j],
-                                                       img_metas[j])
-                    for j in range(num_imgs)
-                ])
 
-        cls_score = [
-            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-            for i in range(num_imgs)
-        ]
+                assert self.bbox_head[i].reg_class_agnostic
+                new_rois = self.bbox_head[i].bbox_coder.decode(
+                    rois[..., 1:], bbox_pred, max_shape=max_shape)
 
-        det_bboxes = []
-        det_labels = []
-        for i in range(num_imgs):
-            det_bbox, det_label = self.bbox_head[-1].onnx_export(
-                rois[0][None],
-                cls_score[0][None],
-                bbox_pred[0][None],
-                img_shapes,
-                cfg=rcnn_test_cfg)
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
+                rois = new_rois.reshape(-1, new_rois.shape[-1])
+                # add dummy batch index
+                rois = torch.cat([rois.new_zeros(len(rois), 1), rois], dim=-1)
+
+        cls_score = sum(ms_scores) / float(len(ms_scores))
+        bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img, 4)
+        rois = rois.reshape(batch_size, num_proposals_per_img, -1)
+        det_bboxes, det_labels = self.bbox_head[-1].onnx_export(
+            rois, cls_score, bbox_pred, max_shape, cfg=rcnn_test_cfg)
 
         return det_bboxes, det_labels
