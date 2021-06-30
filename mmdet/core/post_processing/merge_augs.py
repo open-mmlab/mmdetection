@@ -131,8 +131,8 @@ def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
     recovered_masks = []
     for mask, img_info in zip(aug_masks, img_metas):
         flip = img_info[0]['flip']
-        flip_direction = img_info[0]['flip_direction']
         if flip:
+            flip_direction = img_info[0]['flip_direction']
             if flip_direction == 'horizontal':
                 mask = mask[:, :, :, ::-1]
             elif flip_direction == 'vertical':

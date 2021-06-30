@@ -346,8 +346,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             det_bboxes.append(det_bbox)
             det_labels.append(det_label)
 
-        if torch.onnx.is_in_onnx_export():
-            return det_bboxes, det_labels
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
                         self.bbox_head[-1].num_classes)
@@ -554,5 +552,29 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = rois.reshape(batch_size, num_proposals_per_img, -1)
         det_bboxes, det_labels = self.bbox_head[-1].onnx_export(
             rois, cls_score, bbox_pred, max_shape, cfg=rcnn_test_cfg)
+
+        if self.with_mask:
+            batch_index = torch.arange(
+                det_bboxes.size(0),
+                device=det_bboxes.device).float().view(-1, 1, 1).expand(
+                    det_bboxes.size(0), det_bboxes.size(1), 1)
+            rois = det_bboxes[..., :4]
+            mask_rois = torch.cat([batch_index, rois], dim=-1)
+            mask_rois = mask_rois.view(-1, 5)
+            aug_masks = []
+            for i in range(self.num_stages):
+                mask_results = self._mask_forward(i, x, mask_rois)
+                mask_pred = mask_results['mask_pred']
+                aug_masks.append(mask_pred)
+            max_shape = img_metas[0]['img_shape_for_onnx']
+            # merge_aug_masks with mean
+            mask_pred = sum(aug_masks) / len(aug_masks)
+            segm_results = self.mask_head[-1].onnx_export(
+                mask_pred, rois.reshape(-1, 4), det_labels.reshape(-1),
+                self.test_cfg, max_shape)
+            segm_results = segm_results.reshape(batch_size,
+                                                det_bboxes.shape[1],
+                                                max_shape[0], max_shape[1])
+            return det_bboxes, det_labels, segm_results
 
         return det_bboxes, det_labels
