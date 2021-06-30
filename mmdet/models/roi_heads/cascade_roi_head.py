@@ -511,7 +511,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         assert self.with_bbox, 'Bbox head must be implemented.'
 
         assert proposals.shape[0] == 1, 'Only support one input image ' \
-            'while in exporting to ONNX'
+                                        'while in exporting to ONNX'
         # remove the scores
         rois = proposals[..., :-1]
         batch_size = rois.shape[0]
@@ -541,7 +541,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
-
                 assert self.bbox_head[i].reg_class_agnostic
                 new_rois = self.bbox_head[i].bbox_coder.decode(
                     rois[..., 1:], bbox_pred, max_shape=max_shape)

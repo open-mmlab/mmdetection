@@ -347,8 +347,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         rois = proposals
 
-        # TODO seems never use the batch_index
-        # remove the score and change the last dimension to batch index?
         batch_index = torch.arange(
             rois.size(0), device=rois.device).float().view(-1, 1, 1).expand(
                 rois.size(0), rois.size(1), 1)
