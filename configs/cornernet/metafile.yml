@@ -4,7 +4,7 @@ Collections:
       Training Data: COCO
       Training Techniques:
         - Adam
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - Corner Pooling
         - Stacked Hourglass Network
@@ -16,12 +16,12 @@ Models:
     In Collection: CornerNet
     Config: configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py
     Metadata:
-      Training Resources: 10x NVIDIA V100 GPUs
+      Training Resources: 10x V100 GPUs
       Batch Size: 50
       Training Memory (GB): 13.9
       inference time (ms/im):
         - value: 238.1
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -42,7 +42,7 @@ Models:
       Training Memory (GB): 15.9
       inference time (ms/im):
         - value: 238.1
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -59,12 +59,12 @@ Models:
     In Collection: CornerNet
     Config: configs/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco.py
     Metadata:
-      Training Resources: 32x NVIDIA V100 GPUs
+      Training Resources: 32x V100 GPUs
       Batch Size: 96
       Training Memory (GB): 9.5
       inference time (ms/im):
         - value: 256.41
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32

@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - FPN
         - RPN
@@ -47,7 +47,7 @@ Models:
       Training Memory (GB): 4.0
       inference time (ms/im):
         - value: 46.73
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -67,7 +67,7 @@ Models:
       Training Memory (GB): 4.0
       inference time (ms/im):
          - value: 46.73
-           hardware: NVIDIA V100 GPU
+           hardware: V100
            backend: PyTorch
            batch size: 1
            mode: FP32
@@ -100,7 +100,7 @@ Models:
       Training Memory (GB): 6.0
       inference time (ms/im):
          - value: 64.1
-           hardware: NVIDIA V100 GPU
+           hardware: V100
            backend: PyTorch
            batch size: 1
            mode: FP32
@@ -120,7 +120,7 @@ Models:
       Training Memory (GB): 6.0
       inference time (ms/im):
          - value: 64.1
-           hardware: NVIDIA V100 GPU
+           hardware: V100
            backend: PyTorch
            batch size: 1
            mode: FP32
@@ -140,7 +140,7 @@ Models:
       Training Memory (GB): 7.2
       inference time (ms/im):
          - value: 72.46
-           hardware: NVIDIA V100 GPU
+           hardware: V100
            backend: PyTorch
            batch size: 1
            mode: FP32
@@ -160,7 +160,7 @@ Models:
       Training Memory (GB): 7.2
       inference time (ms/im):
          - value: 72.46
-           hardware: NVIDIA V100 GPU
+           hardware: V100
            backend: PyTorch
            batch size: 1
            mode: FP32
@@ -180,7 +180,7 @@ Models:
       Training Memory (GB): 10.3
       inference time (ms/im):
          - value: 106.38
-           hardware: NVIDIA V100 GPU
+           hardware: V100
            backend: PyTorch
            batch size: 1
            mode: FP32
@@ -200,7 +200,7 @@ Models:
       Training Memory (GB): 10.3
       inference time (ms/im):
          - value: 106.38
-           hardware: NVIDIA V100 GPU
+           hardware: V100
            backend: PyTorch
            batch size: 1
            mode: FP32

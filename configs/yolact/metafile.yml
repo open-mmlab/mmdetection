@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - FPN
         - ResNet
@@ -17,11 +17,11 @@ Models:
     In Collection: YOLACT
     Config: configs/yolact/yolact_r50_1x8_coco.py
     Metadata:
-      Training Resources: 1x NVIDIA V100 GPU
+      Training Resources: 1x V100 GPU
       Batch Size: 8
       inference time (ms/im):
         - value: 23.53
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -40,7 +40,7 @@ Models:
       Batch Size: 64
       inference time (ms/im):
         - value: 23.53
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -56,11 +56,11 @@ Models:
     In Collection: YOLACT
     Config: configs/yolact/yolact_r101_1x8_coco.py
     Metadata:
-      Training Resources: 1x NVIDIA V100 GPU
+      Training Resources: 1x V100 GPU
       Batch Size: 8
       inference time (ms/im):
         - value: 29.85
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32

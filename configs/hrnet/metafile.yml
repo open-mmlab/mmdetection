@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - HRNet
     Paper: https://arxiv.org/abs/1904.04514
@@ -19,7 +19,7 @@ Models:
       Training Memory (GB): 6.6
       inference time (ms/im):
         - value: 74.63
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -39,7 +39,7 @@ Models:
       Training Memory (GB): 6.6
       inference time (ms/im):
         - value: 74.63
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -59,7 +59,7 @@ Models:
       Training Memory (GB): 9.0
       inference time (ms/im):
         - value: 80.65
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -79,7 +79,7 @@ Models:
       Training Memory (GB): 9.0
       inference time (ms/im):
         - value: 80.65
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -99,7 +99,7 @@ Models:
       Training Memory (GB): 10.4
       inference time (ms/im):
         - value: 95.24
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -119,7 +119,7 @@ Models:
       Training Memory (GB): 10.4
       inference time (ms/im):
         - value: 95.24
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -139,7 +139,7 @@ Models:
       Training Memory (GB): 7.0
       inference time (ms/im):
         - value: 85.47
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -163,7 +163,7 @@ Models:
       Training Memory (GB): 7.0
       inference time (ms/im):
         - value: 85.47
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -187,7 +187,7 @@ Models:
       Training Memory (GB): 9.4
       inference time (ms/im):
         - value: 88.5
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -211,7 +211,7 @@ Models:
       Training Memory (GB): 9.4
       inference time (ms/im):
         - value: 88.5
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -269,7 +269,7 @@ Models:
       Training Memory (GB): 7.0
       inference time (ms/im):
         - value: 90.91
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -289,7 +289,7 @@ Models:
       Training Memory (GB): 9.4
       inference time (ms/im):
         - value: 90.91
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -322,7 +322,7 @@ Models:
       Training Memory (GB): 8.5
       inference time (ms/im):
         - value: 117.65
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -345,7 +345,7 @@ Models:
     Metadata:
       inference time (ms/im):
         - value: 120.48
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -386,7 +386,7 @@ Models:
       Training Memory (GB): 10.8
       inference time (ms/im):
         - value: 212.77
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -410,7 +410,7 @@ Models:
       Training Memory (GB): 13.1
       inference time (ms/im):
         - value: 204.08
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -448,12 +448,12 @@ Models:
     In Collection: HRNet
     Config: configs/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_1x_coco.py
     Metadata:
-      Training Resources: 4x NVIDIA V100 GPUs
+      Training Resources: 4x V100 GPUs
       Batch Size: 16
       Training Memory (GB): 13.0
       inference time (ms/im):
         - value: 77.52
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -470,12 +470,12 @@ Models:
     In Collection: HRNet
     Config: configs/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_2x_coco.py
     Metadata:
-      Training Resources: 4x NVIDIA V100 GPUs
+      Training Resources: 4x V100 GPUs
       Batch Size: 16
       Training Memory (GB): 13.0
       inference time (ms/im):
         - value: 77.52
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -492,12 +492,12 @@ Models:
     In Collection: HRNet
     Config: configs/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_1x_coco.py
     Metadata:
-      Training Resources: 4x NVIDIA V100 GPUs
+      Training Resources: 4x V100 GPUs
       Batch Size: 16
       Training Memory (GB): 17.5
       inference time (ms/im):
         - value: 77.52
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -514,12 +514,12 @@ Models:
     In Collection: HRNet
     Config: configs/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_2x_coco.py
     Metadata:
-      Training Resources: 4x NVIDIA V100 GPUs
+      Training Resources: 4x V100 GPUs
       Batch Size: 16
       Training Memory (GB): 17.5
       inference time (ms/im):
         - value: 77.52
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -536,12 +536,12 @@ Models:
     In Collection: HRNet
     Config: configs/hrnet/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco.py
     Metadata:
-      Training Resources: 4x NVIDIA V100 GPUs
+      Training Resources: 4x V100 GPUs
       Batch Size: 16
       Training Memory (GB): 13.0
       inference time (ms/im):
         - value: 77.52
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -558,12 +558,12 @@ Models:
     In Collection: HRNet
     Config: configs/hrnet/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco.py
     Metadata:
-      Training Resources: 4x NVIDIA V100 GPUs
+      Training Resources: 4x V100 GPUs
       Batch Size: 16
       Training Memory (GB): 17.5
       inference time (ms/im):
         - value: 80.65
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -580,12 +580,12 @@ Models:
     In Collection: HRNet
     Config: configs/hrnet/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco.py
     Metadata:
-      Training Resources: 4x NVIDIA V100 GPUs
+      Training Resources: 4x V100 GPUs
       Batch Size: 16
       Training Memory (GB): 20.3
       inference time (ms/im):
         - value: 92.59
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32

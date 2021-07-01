@@ -4,7 +4,7 @@ Collections:
       Training Data: COCO
       Training Techniques:
         - Adam
-      Training Resources: 16x NVIDIA V100 GPUs
+      Training Resources: 16x V100 GPUs
       Architecture:
         - Corner Pooling
         - Stacked Hourglass Network
@@ -20,7 +20,7 @@ Models:
       Training Memory (GB): 16.7
       inference time (ms/im):
         - value: 270.27
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32

@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - FPN
         - Group Normalization
@@ -21,7 +21,7 @@ Models:
       Training Memory (GB): 3.6
       inference time (ms/im):
         - value: 44.05
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -67,7 +67,7 @@ Models:
       Training Memory (GB): 5.5
       inference time (ms/im):
         - value: 57.8
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -87,7 +87,7 @@ Models:
       Training Memory (GB): 2.6
       inference time (ms/im):
         - value: 43.67
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -107,7 +107,7 @@ Models:
       Training Memory (GB): 5.5
       inference time (ms/im):
         - value: 57.8
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -127,7 +127,7 @@ Models:
       Training Memory (GB): 10.0
       inference time (ms/im):
         - value: 103.09
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32

@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - Generalized Focal Loss
         - FPN
@@ -20,7 +20,7 @@ Models:
     Metadata:
       inference time (ms/im):
         - value: 51.28
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -39,7 +39,7 @@ Models:
     Metadata:
       inference time (ms/im):
         - value: 51.28
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -58,7 +58,7 @@ Models:
     Metadata:
       inference time (ms/im):
         - value: 68.03
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -77,7 +77,7 @@ Models:
     Metadata:
       inference time (ms/im):
         - value: 77.52
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -96,7 +96,7 @@ Models:
     Metadata:
       inference time (ms/im):
         - value: 82.64
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -115,7 +115,7 @@ Models:
     Metadata:
       inference time (ms/im):
         - value: 93.46
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32

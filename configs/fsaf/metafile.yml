@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA Titan-XP GPUs
+      Training Resources: 8x Titan-XP GPUs
       Architecture:
         - FPN
         - FSAF
@@ -21,7 +21,7 @@ Models:
       Training Memory (GB): 3.15
       inference time (ms/im):
         - value: 76.92
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -41,7 +41,7 @@ Models:
       Training Memory (GB): 5.08
       inference time (ms/im):
         - value: 92.59
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32
@@ -61,7 +61,7 @@ Models:
       Training Memory (GB): 9.38
       inference time (ms/im):
         - value: 178.57
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP32

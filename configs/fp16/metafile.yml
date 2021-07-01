@@ -4,7 +4,7 @@ Collections:
       Training Data: COCO
       Training Techniques:
         - Mixed Precision Training
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
     Paper: https://arxiv.org/abs/1710.03740
     README: configs/fp16/README.md
 
@@ -16,7 +16,7 @@ Models:
       Training Memory (GB): 3.4
       inference time (ms/im):
         - value: 34.72
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP16
@@ -36,7 +36,7 @@ Models:
       Training Memory (GB): 3.6
       inference time (ms/im):
         - value: 41.49
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP16
@@ -94,7 +94,7 @@ Models:
       Training Memory (GB): 2.8
       inference time (ms/im):
         - value: 31.65
-          hardware: NVIDIA V100 GPU
+          hardware: V100
           backend: PyTorch
           batch size: 1
           mode: FP16
