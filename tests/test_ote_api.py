@@ -9,10 +9,14 @@ from concurrent.futures import ThreadPoolExecutor
 from flaky import flaky
 from sc_sdk.entities.annotation import Annotation, AnnotationScene, AnnotationSceneKind
 from sc_sdk.entities.dataset_item import DatasetItem
-from sc_sdk.entities.datasets import Dataset, Subset
+from sc_sdk.entities.datasets import Dataset, Subset, NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.model import NullModel
+
+# This one breaks cyclic imports chain.
+from sc_sdk.usecases.repos import BinaryRepo
+
 from sc_sdk.entities.optimized_model import OptimizedModel
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.shapes.box import Box
@@ -84,7 +88,7 @@ class TestOTEAPI(unittest.TestCase):
                 subset = Subset.TRAINING
             items[i].subset = subset
 
-        dataset = Dataset(items)
+        dataset = Dataset(NullDatasetStorage(), items)
         task_node = project.tasks[-1]
         environment = TaskEnvironment(project=project, task_node=task_node)
         return project, environment, dataset

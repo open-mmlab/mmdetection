@@ -16,9 +16,11 @@ import argparse
 import importlib
 import os.path as osp
 import sys
+
 import yaml
 
 from sc_sdk.entities.analyse_parameters import AnalyseParameters
+from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.datasets import Subset
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.task_environment import TaskEnvironment
@@ -61,7 +63,8 @@ def main(args):
         val_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
         val_data_root=osp.join(args.data_dir, 'coco/val2017/'),
         test_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        test_data_root=osp.join(args.data_dir, 'coco/val2017/'))
+        test_data_root=osp.join(args.data_dir, 'coco/val2017/'),
+        dataset_storage=NullDatasetStorage)
     dataset.get_subset(Subset.VALIDATION)
 
     project = ProjectFactory().create_project_single_task(
@@ -84,7 +87,7 @@ def main(args):
 
     # Tweak parameters.
     params = task.get_configurable_parameters(environment)
-    params.learning_parameters.nncf_quantization.value = True
+    params.learning_parameters.nncf_quantization.value = False
     # params.learning_parameters.learning_rate_warmup_iters.value = 0
     params.learning_parameters.batch_size.value = 32
     params.learning_parameters.num_epochs.value = 1

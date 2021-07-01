@@ -30,14 +30,14 @@ from sc_sdk.entities.analyse_parameters import AnalyseParameters
 from sc_sdk.entities.datasets import Dataset
 from sc_sdk.entities.metrics import CurveMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric, InfoMetric, \
     VisualizationType, VisualizationInfo
-from sc_sdk.entities.optimized_model import OptimizedModel, OpenVINOModel, Precision
+from sc_sdk.entities.optimized_model import OptimizedModel, ModelPrecision, ModelOptimizationType, TargetDevice
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.entities.train_parameters import TrainParameters
-from sc_sdk.entities.label_relations import ScoredLabel
+from sc_sdk.entities.label import ScoredLabel
 from sc_sdk.entities.model import Model, NullModel
 from sc_sdk.entities.shapes.box import Box
 from sc_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
-
+from sc_sdk.usecases.adapters.model_adapter import DataSource
 from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from sc_sdk.usecases.repos import BinaryRepo
@@ -214,13 +214,13 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         if model != NullModel():
             # If a model has been trained and saved for the task already, create empty model and load weights here
-            model_data = self._get_model_from_bytes(model.data)
+            model_data = self._get_model_from_bytes(model.get_data("weights.pth"))
             model_config = self.config_manager.config_from_string(model_data['config'])
             torch_model = self._create_model(config=model_config, from_scratch=True)
 
             try:
                 torch_model.load_state_dict(model_data['state_dict'])
-                logger.info(f"Loaded model weights from: {model.data_url}")
+                logger.info(f"Loaded model weights from Task Environment")
                 logger.info(f"Model architecture: {model_config.model.type}")
             except BaseException as ex:
                 raise ValueError("Could not load the saved model. The model file structure is invalid.") \
@@ -280,9 +280,10 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
     def _persist_inference_model(self, dataset: Dataset, performance: Performance, training_duration: float):
         model_data = self._get_model_bytes(self.inference_model)
         model = Model(project=self.task_environment.project,
-                      task_node=self.task_environment.task_node,
+                      model_storage=self.task_environment.task_node.model_storage,
+                      task_node_id=self.task_environment.task_node.id,
                       configuration=self.task_environment.get_model_configuration(),
-                      data=model_data,
+                      data_source_dict={"weights.pth": model_data},
                       tags=None,
                       performance=performance,
                       train_dataset=dataset,
@@ -422,6 +423,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         result_based_confidence_threshold = params.postprocessing.result_based_confidence_threshold.value
 
+        logger.info('Computing F-measure' + (' auto threshold adjustment' if result_based_confidence_threshold else ''))
         f_measure_metrics = MetricsHelper.compute_f_measure(resultset,
                                                             result_based_confidence_threshold,
                                                             False,
@@ -591,8 +593,9 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         optimized_models = [self._optimize_model_openvino()]
         return optimized_models
 
-    def _optimize_model_openvino(self, params: dict = {}) -> OpenVINOModel:
-        optimized_model_precision = Precision.FP32
+    def _optimize_model_openvino(self, params: dict = {}) -> OptimizedModel:
+        optimized_model_precision = ModelPrecision.FP32
+        project = self.task_environment.project
 
         with tempfile.TemporaryDirectory() as tempdir:
             optimized_model_dir = os.path.join(tempdir, "otedet")
@@ -605,18 +608,39 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                 warnings.filterwarnings("ignore", category=TracerWarning)
                 export_model(self.inference_model, tempdir, target='openvino', precision=optimized_model_precision.name)
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
-                openvino_bin_url = BinaryRepo(self.task_environment.project).save_file_at_path(
+                openvino_bin_url = BinaryRepo(project).save_file_at_path(
                     os.path.join(tempdir, bin_file), "optimized_models")
                 xml_file = [f for f in os.listdir(tempdir) if f.endswith('.xml')][0]
-                openvino_xml_url = BinaryRepo(self.task_environment.project).save_file_at_path(
+                openvino_xml_url = BinaryRepo(project).save_file_at_path(
                     os.path.join(tempdir, xml_file), "optimized_models")
             except Exception as ex:
                 raise RuntimeError("Optimization was unsuccessful.") from ex
 
-        return OpenVINOModel(model=self.task_environment.model,
-                             openvino_bin_url=openvino_bin_url,
-                             openvino_xml_url=openvino_xml_url,
-                             precision=optimized_model_precision)
+        model = self.task_environment.model
+        openvino_dict = {"openvino_bin": DataSource(repository=BinaryRepo(project), url=openvino_bin_url),
+                         "openvino_xml": DataSource(repository=BinaryRepo(project), url=openvino_xml_url)}
+        data_source_dict = {key: DataSource(repository=BinaryRepo(project), url=value) for key, value in
+                            model.weight_paths.items()}
+        optimized_model = OptimizedModel(project=model.project,
+                                         model_storage=model.model_storage,
+                                         task_node_id=model.task_node_id,
+                                         configuration=model.configuration,
+                                         creation_date=model.creation_date,
+                                         tags=model.tags,
+                                         data_source_dict={**data_source_dict, **openvino_dict},
+                                         previous_trained_revision=model.previous_trained_revision,
+                                         previous_revision=model.previous_revision,
+                                         train_dataset=model.train_dataset,
+                                         model_status=model.model_status,
+                                         performance=model.performance,
+                                         model_size_reduction=0,
+                                         performance_improvement={},
+                                         target_device=TargetDevice.UNSPECIFIED,
+                                         optimization_level={},
+                                         optimization_methods=[],
+                                         precision=[optimized_model_precision],
+                                         optimization_type=ModelOptimizationType.MO)
+        return optimized_model
 
     def _delete_scratch_space(self):
         """
