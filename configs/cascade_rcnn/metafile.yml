@@ -34,8 +34,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.4
-      inference time (s/im):
-        - value: 0.06211
+      inference time (ms/im):
+        - value: 62.11
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -54,8 +54,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_r50_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 4.4
-      inference time (s/im):
-        - value: 0.06211
+      inference time (ms/im):
+        - value: 62.11
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -87,8 +87,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.4
-      inference time (s/im):
-        - value: 0.07407
+      inference time (ms/im):
+        - value: 74.07
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -107,8 +107,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_r101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 6.4
-      inference time (s/im):
-        - value: 0.07407
+      inference time (ms/im):
+        - value: 74.07
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -127,8 +127,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.6
-      inference time (s/im):
-        - value: 0.09174
+      inference time (ms/im):
+        - value: 91.74
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -203,8 +203,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.0
-      inference time (s/im):
-        - value: 0.08929
+      inference time (ms/im):
+        - value: 89.29
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -227,8 +227,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 6.0
-      inference time (s/im):
-        - value: 0.08929
+      inference time (ms/im):
+        - value: 89.29
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -268,8 +268,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.9
-      inference time (s/im):
-        - value: 0.10204
+      inference time (ms/im):
+        - value: 102.04
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -292,8 +292,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 7.9
-      inference time (s/im):
-        - value: 0.10204
+      inference time (ms/im):
+        - value: 102.04
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -316,8 +316,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 9.2
-      inference time (s/im):
-        - value: 0.11628
+      inference time (ms/im):
+        - value: 116.28
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -340,8 +340,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 9.2
-      inference time (s/im):
-        - value: 0.11628
+      inference time (ms/im):
+        - value: 116.28
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -364,8 +364,8 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 12.2
-      inference time (s/im):
-        - value: 0.14925
+      inference time (ms/im):
+        - value: 149.25
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

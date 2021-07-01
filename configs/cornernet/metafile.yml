@@ -19,8 +19,8 @@ Models:
       Training Resources: 10x NVIDIA V100 GPUs
       Batch Size: 50
       Training Memory (GB): 13.9
-      inference time (s/im):
-        - value: 0.2381
+      inference time (ms/im):
+        - value: 238.1
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -40,8 +40,8 @@ Models:
     Metadata:
       Batch Size: 48
       Training Memory (GB): 15.9
-      inference time (s/im):
-        - value: 0.2381
+      inference time (ms/im):
+        - value: 238.1
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -62,8 +62,8 @@ Models:
       Training Resources: 32x NVIDIA V100 GPUs
       Batch Size: 96
       Training Memory (GB): 9.5
-      inference time (s/im):
-        - value: 0.25641
+      inference time (ms/im):
+        - value: 256.41
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

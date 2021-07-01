@@ -19,8 +19,8 @@ Models:
     Metadata:
       Training Resources: 1x NVIDIA V100 GPU
       Batch Size: 8
-      inference time (s/im):
-        - value: 0.02353
+      inference time (ms/im):
+        - value: 23.53
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -38,8 +38,8 @@ Models:
     Config: configs/yolact/yolact_r50_8x8_coco.py
     Metadata:
       Batch Size: 64
-      inference time (s/im):
-        - value: 0.02353
+      inference time (ms/im):
+        - value: 23.53
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -58,8 +58,8 @@ Models:
     Metadata:
       Training Resources: 1x NVIDIA V100 GPU
       Batch Size: 8
-      inference time (s/im):
-        - value: 0.02985
+      inference time (ms/im):
+        - value: 29.85
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

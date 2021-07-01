@@ -17,8 +17,8 @@ Models:
     Config: configs/ssd/ssd300_coco.py
     Metadata:
       Training Memory (GB): 9.9
-      inference time (s/im):
-        - value: 0.02288
+      inference time (ms/im):
+        - value: 22.88
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -36,8 +36,8 @@ Models:
     Config: configs/ssd/ssd512_coco.py
     Metadata:
       Training Memory (GB): 19.4
-      inference time (s/im):
-        - value: 0.03257
+      inference time (ms/im):
+        - value: 32.57
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

@@ -22,8 +22,8 @@ Models:
     Config: configs/empirical_attention/faster_rcnn_r50_fpn_attention_1111_1x_coco.py
     Metadata:
       Training Memory (GB): 8.0
-      inference time (s/im):
-        - value: 0.07246
+      inference time (ms/im):
+        - value: 72.46
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -42,8 +42,8 @@ Models:
     Config: configs/empirical_attention/faster_rcnn_r50_fpn_attention_0010_1x_coco.py
     Metadata:
       Training Memory (GB): 4.2
-      inference time (s/im):
-        - value: 0.05435
+      inference time (ms/im):
+        - value: 54.35
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -62,8 +62,8 @@ Models:
     Config: configs/empirical_attention/faster_rcnn_r50_fpn_attention_1111_dcn_1x_coco.py
     Metadata:
       Training Memory (GB): 8.0
-      inference time (s/im):
-        - value: 0.07874
+      inference time (ms/im):
+        - value: 78.74
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -82,8 +82,8 @@ Models:
     Config: configs/empirical_attention/faster_rcnn_r50_fpn_attention_0010_dcn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.2
-      inference time (s/im):
-        - value: 0.05848
+      inference time (ms/im):
+        - value: 58.48
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

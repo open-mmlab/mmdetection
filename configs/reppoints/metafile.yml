@@ -20,8 +20,8 @@ Models:
     Config: configs/reppoints/bbox_r50_grid_fpn_gn-neck+head_1x_coco.py
     Metadata:
       Training Memory (GB): 3.9
-      inference time (s/im):
-        - value: 0.06289
+      inference time (ms/im):
+        - value: 62.89
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -40,8 +40,8 @@ Models:
     Config: configs/reppoints/bbox_r50_grid_center_fpn_gn-neck+Bhead_1x_coco.py
     Metadata:
       Training Memory (GB): 3.9
-      inference time (s/im):
-        - value: 0.06494
+      inference time (ms/im):
+        - value: 64.94
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -60,8 +60,8 @@ Models:
     Config: configs/reppoints/reppoints_moment_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.3
-      inference time (s/im):
-        - value: 0.05405
+      inference time (ms/im):
+        - value: 54.05
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -80,8 +80,8 @@ Models:
     Config: configs/reppoints/reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco.py
     Metadata:
       Training Memory (GB): 3.9
-      inference time (s/im):
-        - value: 0.05714
+      inference time (ms/im):
+        - value: 57.14
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -100,8 +100,8 @@ Models:
     Config: configs/reppoints/reppoints_moment_r50_fpn_gn-neck+head_2x_coco.py
     Metadata:
       Training Memory (GB): 3.9
-      inference time (s/im):
-        - value: 0.05714
+      inference time (ms/im):
+        - value: 57.14
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -120,8 +120,8 @@ Models:
     Config: configs/reppoints/reppoints_moment_r101_fpn_gn-neck+head_2x_coco.py
     Metadata:
       Training Memory (GB): 5.8
-      inference time (s/im):
-        - value: 0.07299
+      inference time (ms/im):
+        - value: 72.99
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -140,8 +140,8 @@ Models:
     Config: configs/reppoints/reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck+head_2x_coco.py
     Metadata:
       Training Memory (GB): 5.9
-      inference time (s/im):
-        - value: 0.08264
+      inference time (ms/im):
+        - value: 82.64
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -160,8 +160,8 @@ Models:
     Config: configs/reppoints/reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck+head_2x_coco.py
     Metadata:
       Training Memory (GB): 7.1
-      inference time (s/im):
-        - value: 0.10753
+      inference time (ms/im):
+        - value: 107.53
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

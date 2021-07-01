@@ -18,8 +18,8 @@ Models:
     In Collection: Generalized Focal Loss
     Config: configs/gfl/gfl_r50_fpn_1x_coco.py
     Metadata:
-      inference time (s/im):
-        - value: 0.05128
+      inference time (ms/im):
+        - value: 51.28
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -37,8 +37,8 @@ Models:
     In Collection: Generalized Focal Loss
     Config: configs/gfl/gfl_r50_fpn_mstrain_2x_coco.py
     Metadata:
-      inference time (s/im):
-        - value: 0.05128
+      inference time (ms/im):
+        - value: 51.28
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -56,8 +56,8 @@ Models:
     In Collection: Generalized Focal Loss
     Config: configs/gfl/gfl_r101_fpn_mstrain_2x_coco.py
     Metadata:
-      inference time (s/im):
-        - value: 0.06803
+      inference time (ms/im):
+        - value: 68.03
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -75,8 +75,8 @@ Models:
     In Collection: Generalized Focal Loss
     Config: configs/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco.py
     Metadata:
-      inference time (s/im):
-        - value: 0.07752
+      inference time (ms/im):
+        - value: 77.52
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -94,8 +94,8 @@ Models:
     In Collection: Generalized Focal Loss
     Config: configs/gfl/gfl_x101_32x4d_fpn_mstrain_2x_coco.py
     Metadata:
-      inference time (s/im):
-        - value: 0.08264
+      inference time (ms/im):
+        - value: 82.64
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -113,8 +113,8 @@ Models:
     In Collection: Generalized Focal Loss
     Config: configs/gfl/gfl_x101_32x4d_fpn_dconv_c4-c5_mstrain_2x_coco.py
     Metadata:
-      inference time (s/im):
-        - value: 0.09346
+      inference time (ms/im):
+        - value: 93.46
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

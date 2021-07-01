@@ -20,8 +20,8 @@ Models:
     Config: configs/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py
     Metadata:
       Training Memory (GB): 5.1
-      inference time (s/im):
-        - value: 0.06667
+      inference time (ms/im):
+        - value: 66.67
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -40,8 +40,8 @@ Models:
     Config: configs/grid_rcnn/grid_rcnn_r101_fpn_gn-head_2x_coco.py
     Metadata:
       Training Memory (GB): 7.0
-      inference time (s/im):
-        - value: 0.07937
+      inference time (ms/im):
+        - value: 79.37
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -60,8 +60,8 @@ Models:
     Config: configs/grid_rcnn/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco.py
     Metadata:
       Training Memory (GB): 8.3
-      inference time (s/im):
-        - value: 0.09259
+      inference time (ms/im):
+        - value: 92.59
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -80,8 +80,8 @@ Models:
     Config: configs/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco.py
     Metadata:
       Training Memory (GB): 11.3
-      inference time (s/im):
-        - value: 0.12987
+      inference time (ms/im):
+        - value: 129.87
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

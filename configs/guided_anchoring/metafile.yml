@@ -19,8 +19,8 @@ Models:
     Config: configs/guided_anchoring/ga_rpn_r50_caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.3
-      inference time (s/im):
-        - value: 0.06329
+      inference time (ms/im):
+        - value: 63.29
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -39,8 +39,8 @@ Models:
     Config: configs/guided_anchoring/ga_rpn_r101_caffe_fpn_1x_coco.py.py
     Metadata:
       Training Memory (GB): 7.3
-      inference time (s/im):
-        - value: 0.07692
+      inference time (ms/im):
+        - value: 76.92
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -59,8 +59,8 @@ Models:
     Config: configs/guided_anchoring/ga_rpn_x101_32x4d_fpn_1x_coco.py.py
     Metadata:
       Training Memory (GB): 8.5
-      inference time (s/im):
-        - value: 0.1
+      inference time (ms/im):
+        - value: 100
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -79,8 +79,8 @@ Models:
     Config: configs/guided_anchoring/ga_rpn_x101_64x4d_fpn_1x_coco.py.py.py
     Metadata:
       Training Memory (GB): 7.1
-      inference time (s/im):
-        - value: 0.13333
+      inference time (ms/im):
+        - value: 133.33
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -125,8 +125,8 @@ Models:
     Config: configs/guided_anchoring/ga_faster_x101_32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 8.7
-      inference time (s/im):
-        - value: 0.10309
+      inference time (ms/im):
+        - value: 103.09
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -145,8 +145,8 @@ Models:
     Config: configs/guided_anchoring/ga_faster_x101_64x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 11.8
-      inference time (s/im):
-        - value: 0.13699
+      inference time (ms/im):
+        - value: 136.99
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -165,8 +165,8 @@ Models:
     Config: configs/guided_anchoring/ga_retinanet_r50_caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.5
-      inference time (s/im):
-        - value: 0.05952
+      inference time (ms/im):
+        - value: 59.52
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -185,8 +185,8 @@ Models:
     Config: configs/guided_anchoring/ga_retinanet_r101_caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.5
-      inference time (s/im):
-        - value: 0.07752
+      inference time (ms/im):
+        - value: 77.52
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -205,8 +205,8 @@ Models:
     Config: configs/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.9
-      inference time (s/im):
-        - value: 0.09434
+      inference time (ms/im):
+        - value: 94.34
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -225,8 +225,8 @@ Models:
     Config: configs/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 9.9
-      inference time (s/im):
-        - value: 0.12987
+      inference time (ms/im):
+        - value: 129.87
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

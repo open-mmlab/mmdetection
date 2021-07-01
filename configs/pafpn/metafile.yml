@@ -18,7 +18,7 @@ Models:
     Metadata:
       Training Memory (GB): 4.0
       inference time (s/im):
-        - value: 0.05814
+        - value: 58.14
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

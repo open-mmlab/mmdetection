@@ -17,7 +17,7 @@ Models:
     Config: configs/yolo/yolov3_d53_320_273e_coco.py
     Metadata:
       Training Memory (GB): 2.7
-      inference time (s/im):
+      inference time (ms/im):
         - value: 0.01565
           hardware: NVIDIA V100 GPU
           backend: PyTorch
@@ -37,7 +37,7 @@ Models:
     Config: configs/yolo/yolov3_d53_mstrain-416_273e_coco.py
     Metadata:
       Training Memory (GB): 3.8
-      inference time (s/im):
+      inference time (ms/im):
         - value: 0.01634
           hardware: NVIDIA V100 GPU
           backend: PyTorch
@@ -57,8 +57,8 @@ Models:
     Config: configs/yolo/yolov3_d53_mstrain-608_273e_coco.py
     Metadata:
       Training Memory (GB): 7.4
-      inference time (s/im):
-        - value: 0.02079
+      inference time (ms/im):
+        - value: 20.79
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -77,8 +77,8 @@ Models:
     Config: configs/yolo/yolov3_d53_fp16_mstrain-608_273e_coco.py
     Metadata:
       Training Memory (GB): 4.7
-      inference time (s/im):
-        - value: 0.02079
+      inference time (ms/im):
+        - value: 20.79
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

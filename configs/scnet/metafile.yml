@@ -19,8 +19,8 @@ Models:
     Config: configs/scnet/scnet_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.0
-      inference time (s/im):
-        - value: 0.16129
+      inference time (ms/im):
+        - value: 161.29
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -43,8 +43,8 @@ Models:
     Config: configs/scnet/scnet_r50_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 7.0
-      inference time (s/im):
-        - value: 0.16129
+      inference time (ms/im):
+        - value: 161.29
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -67,8 +67,8 @@ Models:
     Config: configs/scnet/scnet_r101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 8.9
-      inference time (s/im):
-        - value: 0.17241
+      inference time (ms/im):
+        - value: 172.41
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -91,8 +91,8 @@ Models:
     Config: configs/scnet/scnet_x101_64x4d_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 13.2
-      inference time (s/im):
-        - value: 0.20408
+      inference time (ms/im):
+        - value: 204.08
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

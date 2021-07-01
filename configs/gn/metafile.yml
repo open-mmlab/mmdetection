@@ -17,8 +17,8 @@ Models:
     Config: configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py
     Metadata:
       Training Memory (GB): 7.1
-      inference time (s/im):
-        - value: 0.09091
+      inference time (ms/im):
+        - value: 90.91
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -41,8 +41,8 @@ Models:
     Config: configs/gn/mask_rcnn_r50_fpn_gn-all_3x_coco.py
     Metadata:
       Training Memory (GB): 7.1
-      inference time (s/im):
-        - value: 0.09091
+      inference time (ms/im):
+        - value: 90.91
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -65,8 +65,8 @@ Models:
     Config: configs/gn/mask_rcnn_r101_fpn_gn-all_2x_coco.py
     Metadata:
       Training Memory (GB): 9.9
-      inference time (s/im):
-        - value: 0.11111
+      inference time (ms/im):
+        - value: 111.11
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -89,8 +89,8 @@ Models:
     Config: configs/gn/mask_rcnn_r101_fpn_gn-all_3x_coco.py
     Metadata:
       Training Memory (GB): 9.9
-      inference time (s/im):
-        - value: 0.11111
+      inference time (ms/im):
+        - value: 111.11
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -113,8 +113,8 @@ Models:
     Config: configs/gn/mask_rcnn_r50_fpn_gn-all_contrib_2x_coco.py
     Metadata:
       Training Memory (GB): 7.1
-      inference time (s/im):
-        - value: 0.09174
+      inference time (ms/im):
+        - value: 91.74
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -137,8 +137,8 @@ Models:
     Config: configs/gn/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco.py
     Metadata:
       Training Memory (GB): 7.1
-      inference time (s/im):
-        - value: 0.09174
+      inference time (ms/im):
+        - value: 91.74
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1

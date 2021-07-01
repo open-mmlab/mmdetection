@@ -18,8 +18,8 @@ Models:
     Config: configs/nas_fpn/retinanet_r50_fpn_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 12.9
-      inference time (s/im):
-        - value: 0.04367
+      inference time (ms/im):
+        - value: 43.67
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
@@ -38,8 +38,8 @@ Models:
     Config: configs/nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 13.2
-      inference time (s/im):
-        - value: 0.04348
+      inference time (ms/im):
+        - value: 43.48
           hardware: NVIDIA V100 GPU
           backend: PyTorch
           batch size: 1
