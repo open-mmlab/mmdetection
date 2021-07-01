@@ -17,7 +17,7 @@ Models:
     Config: configs/pafpn/faster_rcnn_r50_pafpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.0
-      inference time (s/im):
+      inference time (ms/im):
         - value: 58.14
           hardware: NVIDIA V100 GPU
           backend: PyTorch
