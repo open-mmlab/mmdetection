@@ -17,7 +17,13 @@ Models:
     Config: configs/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 4.0
-      inference time (s/im): 0.05618
+      inference time (s/im):
+        - value: 0.05618
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -31,7 +37,13 @@ Models:
     Config: configs/dcn/faster_rcnn_r50_fpn_mdconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 4.1
-      inference time (s/im): 0.05682
+      inference time (s/im):
+        - value: 0.05682
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -45,7 +57,13 @@ Models:
     Config: configs/dcn/faster_rcnn_r50_fpn_mdconv_c3-c5_group4_1x_coco.py
     Metadata:
       Training Memory (GB): 4.2
-      inference time (s/im): 0.05747
+      inference time (s/im):
+        - value: 0.05747
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -59,7 +77,13 @@ Models:
     Config: configs/dcn/faster_rcnn_r50_fpn_dpool_1x_coco.py
     Metadata:
       Training Memory (GB): 5.0
-      inference time (s/im): 0.05814
+      inference time (s/im):
+        - value: 0.05814
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -73,7 +97,13 @@ Models:
     Config: configs/dcn/faster_rcnn_r50_fpn_mdpool_1x_coco.py
     Metadata:
       Training Memory (GB): 5.8
-      inference time (s/im): 0.06024
+      inference time (s/im):
+        - value: 0.06024
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -87,7 +117,13 @@ Models:
     Config: configs/dcn/faster_rcnn_r101_fpn_dconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 6.0
-      inference time (s/im): 0.08
+      inference time (s/im):
+        - value: 0.08
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -101,7 +137,13 @@ Models:
     Config: configs/dcn/faster_rcnn_x101_32x4d_fpn_dconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 7.3
-      inference time (s/im): 0.1
+      inference time (s/im):
+        - value: 0.1
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -115,7 +157,13 @@ Models:
     Config: configs/dcn/mask_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 4.5
-      inference time (s/im): 0.06494
+      inference time (s/im):
+        - value: 0.06494
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -133,7 +181,13 @@ Models:
     Config: configs/dcn/mask_rcnn_r50_fpn_mdconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 4.5
-      inference time (s/im): 0.06623
+      inference time (s/im):
+        - value: 0.06623
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -151,7 +205,13 @@ Models:
     Config: configs/dcn/mask_rcnn_r101_fpn_dconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 6.5
-      inference time (s/im): 0.08547
+      inference time (s/im):
+        - value: 0.08547
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -169,7 +229,13 @@ Models:
     Config: configs/dcn/cascade_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 4.5
-      inference time (s/im): 0.06849
+      inference time (s/im):
+        - value: 0.06849
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -183,7 +249,13 @@ Models:
     Config: configs/dcn/cascade_rcnn_r101_fpn_dconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 6.4
-      inference time (s/im): 0.09091
+      inference time (s/im):
+        - value: 0.09091
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -197,7 +269,13 @@ Models:
     Config: configs/dcn/cascade_mask_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 6.0
-      inference time (s/im): 0.1
+      inference time (s/im):
+        - value: 0.1
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -215,7 +293,13 @@ Models:
     Config: configs/dcn/cascade_mask_rcnn_r101_fpn_dconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 8.0
-      inference time (s/im): 0.11628
+      inference time (s/im):
+        - value: 0.11628
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection

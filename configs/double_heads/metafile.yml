@@ -20,7 +20,13 @@ Models:
     Config: configs/double_heads/dh_faster_rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.8
-      inference time (s/im): 0.10526
+      inference time (s/im):
+        - value: 0.10526
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection

@@ -34,7 +34,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.4
-      inference time (s/im): 0.06211
+      inference time (s/im):
+        - value: 0.06211
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -48,7 +54,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_r50_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 4.4
-      inference time (s/im): 0.06211
+      inference time (s/im):
+        - value: 0.06211
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 20
     Results:
       - Task: Object Detection
@@ -75,7 +87,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.4
-      inference time (s/im): 0.07407
+      inference time (s/im):
+        - value: 0.07407
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -89,7 +107,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_r101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 6.4
-      inference time (s/im): 0.07407
+      inference time (s/im):
+        - value: 0.07407
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 20
     Results:
       - Task: Object Detection
@@ -103,7 +127,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.6
-      inference time (s/im): 0.09174
+      inference time (s/im):
+        - value: 0.09174
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -173,7 +203,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.0
-      inference time (s/im): 0.08929
+      inference time (s/im):
+        - value: 0.08929
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -191,7 +227,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 6.0
-      inference time (s/im): 0.08929
+      inference time (s/im):
+        - value: 0.08929
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 20
     Results:
       - Task: Object Detection
@@ -226,7 +268,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.9
-      inference time (s/im): 0.10204
+      inference time (s/im):
+        - value: 0.10204
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -244,7 +292,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 7.9
-      inference time (s/im): 0.10204
+      inference time (s/im):
+        - value: 0.10204
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 20
     Results:
       - Task: Object Detection
@@ -262,7 +316,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 9.2
-      inference time (s/im): 0.11628
+      inference time (s/im):
+        - value: 0.11628
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -280,7 +340,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 9.2
-      inference time (s/im): 0.11628
+      inference time (s/im):
+        - value: 0.11628
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 20
     Results:
       - Task: Object Detection
@@ -298,7 +364,13 @@ Models:
     Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 12.2
-      inference time (s/im): 0.14925
+      inference time (s/im):
+        - value: 0.14925
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -327,3 +399,5 @@ Models:
         Metrics:
           mask AP: 39.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_20e_coco/cascade_mask_rcnn_x101_64x4d_fpn_20e_coco_20200512_161033-bdb5126a.pth
+0:
+  0813:

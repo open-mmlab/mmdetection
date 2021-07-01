@@ -18,7 +18,13 @@ Models:
     Config: configs/free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.9
-      inference time (s/im): 0.05435
+      inference time (s/im):
+        - value: 0.05435
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -32,7 +38,13 @@ Models:
     Config: configs/free_anchor/retinanet_free_anchor_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.8
-      inference time (s/im): 0.06711
+      inference time (s/im):
+        - value: 0.06711
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -46,7 +58,13 @@ Models:
     Config: configs/free_anchor/retinanet_free_anchor_x101_32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 8.1
-      inference time (s/im): 0.09009
+      inference time (s/im):
+        - value: 0.09009
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection

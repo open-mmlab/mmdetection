@@ -16,7 +16,13 @@ Models:
     Config: configs/instaboost/mask_rcnn_r50_fpn_instaboost_4x_coco.py
     Metadata:
       Training Memory (GB): 4.4
-      inference time (s/im): 0.05714
+      inference time (s/im):
+        - value: 0.05714
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 48
     Results:
       - Task: Object Detection
@@ -68,7 +74,13 @@ Models:
     Config: configs/instaboost/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco.py
     Metadata:
       Training Memory (GB): 6.0
-      inference time (s/im): 0.08333
+      inference time (s/im):
+        - value: 0.08333
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 48
     Results:
       - Task: Object Detection

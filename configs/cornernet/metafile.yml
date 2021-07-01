@@ -16,9 +16,16 @@ Models:
     In Collection: CornerNet
     Config: configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py
     Metadata:
-      Batch Size: 10 x 5
+      Training Resources: 10x NVIDIA V100 GPUs
+      Batch Size: 50
       Training Memory (GB): 13.9
-      inference time (s/im): 0.2381
+      inference time (s/im):
+        - value: 0.2381
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 210
     Results:
       - Task: Object Detection
@@ -31,9 +38,15 @@ Models:
     In Collection: CornerNet
     Config: configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py
     Metadata:
-      Batch Size: 8 x 6
+      Batch Size: 48
       Training Memory (GB): 15.9
-      inference time (s/im): 0.2381
+      inference time (s/im):
+        - value: 0.2381
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 210
     Results:
       - Task: Object Detection
@@ -46,9 +59,16 @@ Models:
     In Collection: CornerNet
     Config: configs/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco.py
     Metadata:
-      Batch Size: 32 x 3
+      Training Resources: 32x NVIDIA V100 GPUs
+      Batch Size: 96
       Training Memory (GB): 9.5
-      inference time (s/im): 0.25641
+      inference time (s/im):
+        - value: 0.25641
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 210
     Results:
       - Task: Object Detection

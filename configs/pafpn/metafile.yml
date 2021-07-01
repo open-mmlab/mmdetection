@@ -17,7 +17,13 @@ Models:
     Config: configs/pafpn/faster_rcnn_r50_pafpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.0
-      inference time (s/im): 0.05814
+      inference time (s/im):
+        - value: 0.05814
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection

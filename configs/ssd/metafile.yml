@@ -17,7 +17,13 @@ Models:
     Config: configs/ssd/ssd300_coco.py
     Metadata:
       Training Memory (GB): 9.9
-      inference time (s/im): 0.02288
+      inference time (s/im):
+        - value: 0.02288
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (300, 300)
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -30,7 +36,13 @@ Models:
     Config: configs/ssd/ssd512_coco.py
     Metadata:
       Training Memory (GB): 19.4
-      inference time (s/im): 0.03257
+      inference time (s/im):
+        - value: 0.03257
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (512, 512)
     Results:
       - Task: Object Detection
         Dataset: COCO

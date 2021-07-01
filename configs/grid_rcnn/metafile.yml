@@ -20,7 +20,13 @@ Models:
     Config: configs/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py
     Metadata:
       Training Memory (GB): 5.1
-      inference time (s/im): 0.06667
+      inference time (s/im):
+        - value: 0.06667
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -34,7 +40,13 @@ Models:
     Config: configs/grid_rcnn/grid_rcnn_r101_fpn_gn-head_2x_coco.py
     Metadata:
       Training Memory (GB): 7.0
-      inference time (s/im): 0.07937
+      inference time (s/im):
+        - value: 0.07937
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -48,7 +60,13 @@ Models:
     Config: configs/grid_rcnn/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco.py
     Metadata:
       Training Memory (GB): 8.3
-      inference time (s/im): 0.09259
+      inference time (s/im):
+        - value: 0.09259
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -62,7 +80,13 @@ Models:
     Config: configs/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco.py
     Metadata:
       Training Memory (GB): 11.3
-      inference time (s/im): 0.12987
+      inference time (s/im):
+        - value: 0.12987
+          hardware: NVIDIA V100 GPU
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
