@@ -378,8 +378,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     mask_pred = mask_results['mask_pred']
                     # split batch mask prediction back to each image
                     mask_pred = mask_pred.split(num_mask_rois_per_img, 0)
-                    aug_masks.append(
-                        [m.sigmoid().cpu().numpy() for m in mask_pred])
+                    aug_masks.append([
+                        m.sigmoid().cpu().detach().numpy() for m in mask_pred
+                    ])
 
                 # apply mask post-processing to each image individually
                 segm_results = []

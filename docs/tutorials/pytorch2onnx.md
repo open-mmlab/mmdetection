@@ -201,6 +201,15 @@ Notes:
 	    <td align="center">37.0</td>
 	</tr>
   <tr >
+	    <td align="center">Cascade R-CNN</td>
+	    <td align="center"><code>configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">40.3</td>
+	    <td align="center">40.3</td>
+	    <td align="center">-</td>
+	</tr>
+
+  <tr >
 	    <td align="center" rowspan="2">Mask R-CNN</td>
 	    <td align="center" rowspan="2"><code>configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py</code></td>
 	    <td align="center">Box AP</td>
@@ -214,6 +223,22 @@ Notes:
 	    <td align="center">33.7</td>
 	    <td align="center">33.3</td>
 	</tr>
+  <tr >
+	    <td align="center" rowspan="2">Cascade Mask R-CNN</td>
+	    <td align="center" rowspan="2"><code>configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">41.2</td>
+	    <td align="center">-</td>
+	    <td align="center">-</td>
+	</tr>
+	<tr>
+	    <td align="center">Mask AP</td>
+	    <td align="center">35.9</td>
+	    <td align="center">-</td>
+	    <td align="center">-</td>
+	</tr>
+
+
   <tr >
 	    <td align="center">CornerNet</td>
 	    <td align="center"><code>configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py</code></td>

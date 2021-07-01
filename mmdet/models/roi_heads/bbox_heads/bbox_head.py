@@ -550,7 +550,6 @@ class BBoxHead(BaseModule):
                 after_top_k=cfg.max_per_img)
         else:
             batch_size = scores.shape[0]
-            # ignore background class
             labels = torch.arange(
                 self.num_classes, dtype=torch.long).to(scores.device)
             labels = labels.view(1, 1, -1).expand_as(scores)
