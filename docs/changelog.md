@@ -1,14 +1,14 @@
 ## Changelog
 
-# v2.14.0 (29/6/2021)
+### v2.14.0 (29/6/2021)
 
-## Highlights
+#### Highlights
 
 - Add `simple_test` to dense heads to improve the consistency of single-stage and two-stage detectors
 - Revert the `test_mixins` to single image test to improve efficiency and readability
 - Add Faster R-CNN and Mask R-CNN config using multi-scale training with 3x schedule
 
-## New Features
+#### New Features
 
 - Support pretrained models from MoCo v2 and SwAV (#5286)
 - Add Faster R-CNN and Mask R-CNN config using multi-scale training with 3x schedule (#5179, #5233)
@@ -16,7 +16,7 @@
 - Stable support of exporting DETR to ONNX with dynamic shapes and batch inference (#5168)
 - Stable support of exporting PointRend to ONNX with dynamic shapes and batch inference (#5440)
 
-## Bug Fixes
+#### Bug Fixes
 
 - Fix size mismatch bug in `multiclass_nms` (#4980)
 - Fix the import path of `MultiScaleDeformableAttention` (#5338)
@@ -26,7 +26,7 @@
 - Fix type error of AutoAssign in the document (#5478)
 - Fix web links ending with `.md` (#5315)
 
-## Improvements
+#### Improvements
 
 - Add `simple_test` to dense heads to improve the consistency of single-stage and two-stage detectors (#5264)
 - Add support for mask diagonal flip in TTA (#5403)
