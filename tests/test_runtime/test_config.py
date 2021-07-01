@@ -72,7 +72,10 @@ def test_config_build_detector():
 
     import glob
     config_fpaths = list(glob.glob(join(config_dpath, '**', '*.py')))
-    config_fpaths = [p for p in config_fpaths if p.find('_base_') == -1]
+    config_fpaths = [
+        p for p in config_fpaths
+        if p.find('_base_') == -1 and p.find('common') == -1
+    ]
     config_names = [relpath(p, config_dpath) for p in config_fpaths]
 
     print(f'Using {len(config_names)} config files')

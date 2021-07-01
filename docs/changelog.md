@@ -1,5 +1,86 @@
 ## Changelog
 
+### v2.14.0 (29/6/2021)
+
+#### Highlights
+
+- Add `simple_test` to dense heads to improve the consistency of single-stage and two-stage detectors
+- Revert the `test_mixins` to single image test to improve efficiency and readability
+- Add Faster R-CNN and Mask R-CNN config using multi-scale training with 3x schedule
+
+#### New Features
+
+- Support pretrained models from MoCo v2 and SwAV (#5286)
+- Add Faster R-CNN and Mask R-CNN config using multi-scale training with 3x schedule (#5179, #5233)
+- Add `reduction_override` in MSELoss (#5437)
+- Stable support of exporting DETR to ONNX with dynamic shapes and batch inference (#5168)
+- Stable support of exporting PointRend to ONNX with dynamic shapes and batch inference (#5440)
+
+#### Bug Fixes
+
+- Fix size mismatch bug in `multiclass_nms` (#4980)
+- Fix the import path of `MultiScaleDeformableAttention` (#5338)
+- Fix errors in config of GCNet ResNext101 models (#5360)
+- Fix Grid-RCNN error when there is no bbox result (#5357)
+- Fix errors in `onnx_export` of bbox_head when setting reg_class_agnostic (#5468)
+- Fix type error of AutoAssign in the document (#5478)
+- Fix web links ending with `.md` (#5315)
+
+#### Improvements
+
+- Add `simple_test` to dense heads to improve the consistency of single-stage and two-stage detectors (#5264)
+- Add support for mask diagonal flip in TTA (#5403)
+- Revert the `test_mixins` to single image test to improve efficiency and readability (#5249)
+- Make YOLOv3 Neck more flexible (#5218)
+- Refactor SSD to make it more general (#5291)
+- Refactor `anchor_generator` and `point_generator` (#5349)
+- Allow to configure out the `mask_head` of the HTC algorithm (#5389)
+- Delete deprecated warning in FPN (#5311)
+- Move `model.pretrained` to `model.backbone.init_cfg` (#5370)
+- Make deployment tools more friendly to use (#5280)
+- Clarify installation documentation (#5316)
+- Add ImageNet Pretrained Models docs (#5268)
+- Add FAQ about training loss=nan solution and COCO AP or AR =-1 (# 5312, #5313)
+- Change all weight links of http to https (#5328)
+
+### v2.13.0 (01/6/2021)
+
+#### Highlights
+
+- Support new methods: [CenterNet](https://arxiv.org/abs/1904.07850), [Seesaw Loss](https://arxiv.org/abs/2008.10032), [MobileNetV2](https://arxiv.org/abs/1801.04381)
+
+#### New Features
+
+- Support paper [Objects as Points](https://arxiv.org/abs/1904.07850) (#4602)
+- Support paper [Seesaw Loss for Long-Tailed Instance Segmentation (CVPR 2021)](https://arxiv.org/abs/2008.10032) (#5128)
+- Support [MobileNetV2](https://arxiv.org/abs/1801.04381) backbone and inverted residual block (#5122)
+- Support [MIM](https://github.com/open-mmlab/mim) (#5143)
+- ONNX exportation with dynamic shapes of CornerNet (#5136)
+- Add `mask_soft` config option to allow non-binary masks (#4615)
+- Add PWC metafile (#5135)
+
+#### Bug Fixes
+
+- Fix YOLOv3 FP16 training error (#5172)
+- Fix Cacscade R-CNN TTA test error when `det_bboxes` length is 0  (#5221)
+- Fix `iou_thr` variable naming errors in VOC recall calculation function (#5195)
+- Fix Faster R-CNN performance dropped in ONNX Runtime (#5197)
+- Fix DETR dict changed error when using python 3.8 during iteration  (#5226)
+
+#### Improvements
+
+- Refactor ONNX export of two stage detector (#5205)
+- Replace MMDetection's EvalHook with MMCV's EvalHook for consistency  (#4806)
+- Update RoI extractor for ONNX (#5194)
+- Use better parameter initialization in YOLOv3 head for higher performance (#5181)
+- Release new DCN models of Mask R-CNN by mixed-precision training (#5201)
+- Update YOLOv3 model weights (#5229)
+- Add DetectoRS ResNet-101 model weights (#4960)
+- Discard bboxes with sizes equals to `min_bbox_size` (#5011)
+- Remove duplicated code in DETR head (#5129)
+- Remove unnecessary object in class definition (#5180)
+- Fix doc link (#5192)
+
 ### v2.12.0 (01/5/2021)
 
 #### Highlights

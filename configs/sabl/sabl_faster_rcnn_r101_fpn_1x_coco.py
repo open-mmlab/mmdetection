@@ -4,8 +4,10 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 model = dict(
-    pretrained='torchvision://resnet101',
-    backbone=dict(depth=101),
+    backbone=dict(
+        depth=101,
+        init_cfg=dict(type='Pretrained',
+                      checkpoint='torchvision://resnet101')),
     roi_head=dict(
         bbox_head=dict(
             _delete_=True,

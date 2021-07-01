@@ -39,7 +39,7 @@ basic_arch_root = [
     'fsaf', 'gfl', 'ghm', 'grid_rcnn', 'guided_anchoring', 'htc', 'ld',
     'libra_rcnn', 'mask_rcnn', 'ms_rcnn', 'nas_fcos', 'paa', 'pisa',
     'point_rend', 'reppoints', 'retinanet', 'rpn', 'sabl', 'ssd', 'tridentnet',
-    'vfnet', 'yolact', 'yolo', 'sparse_rcnn', 'scnet', 'yolof'
+    'vfnet', 'yolact', 'yolo', 'sparse_rcnn', 'scnet', 'yolof', 'centernet'
 ]
 
 datasets_root = [
@@ -60,6 +60,7 @@ benchmark_pool = [
     'configs/carafe/mask_rcnn_r50_fpn_carafe_1x_coco.py',
     'configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
     'configs/cascade_rpn/crpn_faster_rcnn_r50_caffe_fpn_1x_coco.py',
+    'configs/centernet/centernet_resnet18_dcnv2_140e_coco.py',
     'configs/centripetalnet/'
     'centripetalnet_hourglass104_mstest_16x6_210e_coco.py',
     'configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py',
