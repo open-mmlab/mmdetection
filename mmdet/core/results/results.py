@@ -52,7 +52,7 @@ class Results(NiceRepr):
         img_meta = copy.deepcopy(img_meta)
         for k, v in img_meta.items():
             if k in self._meta_info_field:
-                raise RuntimeError(
+                raise KeyError(
                     f'img_meta_info {k} has been set as '
                     f'{getattr(self, k)} before, which is unmodifiable ')
             else:
@@ -81,6 +81,10 @@ class Results(NiceRepr):
         if name in ('_meta_info_field', '_results_field'):
             if not hasattr(self, name):
                 super().__setattr__(name, val)
+            else:
+                raise AttributeError(
+                    f'{name} has been used as a '
+                    f'private attribute, which is unmodifiable. ')
         else:
             if name in self._meta_info_field:
                 raise AttributeError(f'`{name}` is used in meta information,'
@@ -91,8 +95,21 @@ class Results(NiceRepr):
             self._results_field.add(name)
             super().__setattr__(name, val)
 
+    def __delattr__(self, item):
+
+        if item in ('_meta_info_field', '_results_field'):
+            raise AssertionError(f'You can not delete {item}')
+
+        if item in self._meta_info_field:
+            raise KeyError(f'{item} is used in meta information, '
+                           f'which is unmodifiable.')
+        super().__delattr__(item)
+        if item in self._results_field:
+            self._results_field.remove(item)
+
     # dict-like methods
     __setitem__ = __setattr__
+    __delitem__ = __delattr__
 
     def __getitem__(self, name):
         return getattr(self, name)
@@ -142,18 +159,6 @@ class Results(NiceRepr):
     def __contains__(self, item):
         return item in self._results_field or \
                     item in self._meta_info_field
-
-    def __delattr__(self, item):
-
-        if item in ('_meta_info_field', '_results_field'):
-            raise AssertionError(f'You can not delete {item}')
-
-        if item in self._meta_info_field:
-            raise KeyError(f'{item} is used in meta information, '
-                           f'which is unmodifiable.')
-        super().__delattr__(item)
-        if item in self._results_field:
-            self._results_field.remove(item)
 
     __delitem__ = __delattr__
 
