@@ -124,3 +124,5 @@ echo 'configs/res2net/faster_rcnn_r2_101_fpn_2x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab faster_rcnn_r2_101_fpn_2x_coco configs/res2net/faster_rcnn_r2_101_fpn_2x_coco.py ./tools/work_dir/faster_rcnn_r2_101_fpn_2x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/groie/faster_rcnn_r50_fpn_groie_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab faster_rcnn_r50_fpn_groie_1x_coco configs/groie/faster_rcnn_r50_fpn_groie_1x_coco.py ./tools/work_dir/faster_rcnn_r50_fpn_groie_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
+echo 'configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab mask_rcnn_r50_fpn_1x_cityscapes configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py ./tools/work_dir/mask_rcnn_r50_fpn_1x_cityscapes --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
