@@ -1,7 +1,6 @@
 _base_ = 'ssd300_voc0712.py'
 input_size = 512
 model = dict(
-    backbone=dict(input_size=input_size),
     bbox_head=dict(
         in_channels=(512, 1024, 512, 256, 256, 256, 256),
         anchor_generator=dict(
