@@ -1,34 +1,37 @@
 import copy
 import itertools
+from itertools import chain
 
 import numpy as np
 import torch
 
-
-from itertools import chain
 from mmdet.utils.util_mixins import NiceRepr
 
 
 class Results(NiceRepr):
-    """Base class of the model's results.
+    """A general data structure to store the model's results.
 
-    The model predictions and meta information are stored in this class.
-    User can modify the predictions with `set()` or `remove()`.
-    All predictions results can be export to a dict with `export_results`.
+    The attributes of `Results` are divided into two parts,
+    the `meta_info_field` and the `results_field` respectively.
 
-    The meta information(filename,image_size...) about the image are
-    unmodifiable once initialized.
+    The `meta_info_field` usually includes the information about
+    the image such as filename, image_shape, padding_shape, etc.
+    All attributed in this filed is unmodifiable once set,
+    but the user can add new meta information with
+    `add_meta_info` function.
 
-    The keys and values of meta information and predictions
-    can be accessed with `keys()`, `values()`, `items()`.
 
-    All other (non-field) attributes of this class are considered private:
-    they must start with '_'.
-
-    Besides, it support tensor like methods, such as `to()`,`cpu()`,
-    `cuda()`,`numpy()`, which would apply corresponding function
-    to all Tensors in the instance.
+    The model predictions are stored in `results_field`.
+    Models predictions can be accessed
+    or modified by dict-like or object-like operations
+    such as  `.` , `[]`, `in`, `del`, `pop(str)` `get(str)`, `keys()`,
+    `values()`, `items()`. User can also apply tensor-like methods
+    to all obj:`torch.Tensor` in the `results_filed`,
+    such as `.cuda()`, `.cpu()`, `.numpy()`, `device`, `.to()`
+    `.detach()`, `.numpy()`
     """
+
+    # TODO add examples here
 
     def __init__(self, img_meta=None):
         """
@@ -43,15 +46,18 @@ class Results(NiceRepr):
             self.add_meta_info(img_meta=img_meta)
 
     def add_meta_info(self, img_meta):
-        assert isinstance(img_meta, dict), f"img_meta should be a `dict` but get {self.__class__.__name__}"
+        assert isinstance(
+            img_meta, dict
+        ), f'img_meta should be a `dict` but get {self.__class__.__name__}'
         img_meta = copy.deepcopy(img_meta)
         for k, v in img_meta.items():
             if k in self._meta_info_field:
-                raise RuntimeError(f"img_meta_info {k} has been set as {getattr(self, k)} before, which is unmodifiable ")
+                raise RuntimeError(
+                    f'img_meta_info {k} has been set as '
+                    f'{getattr(self, k)} before, which is unmodifiable ')
             else:
                 self._meta_info_field.add(k)
                 self.__dict__[k] = v
-
 
     def new_results(self):
         """Return a new results with same image meta information and empty
@@ -60,10 +66,8 @@ class Results(NiceRepr):
         new_results.add_meta_info(self.meta_info_field)
         return new_results
 
-
     def keys(self):
-        return chain(self._results_field,
-               self._meta_info_field)
+        return chain(self._results_field, self._meta_info_field)
 
     def values(self):
         for k in self.keys():
@@ -87,13 +91,11 @@ class Results(NiceRepr):
             self._results_field.add(name)
             super().__setattr__(name, val)
 
-
     # dict-like methods
     __setitem__ = __setattr__
 
     def __getitem__(self, name):
         return getattr(self, name)
-
 
     def get(self, *args):
         assert len(args) < 3, '`pop` get more than 2 arguments'
@@ -114,15 +116,18 @@ class Results(NiceRepr):
         elif len(args) == 2:
             return args[1]
         else:
-            raise KeyError(f"{args[0]}")
+            raise KeyError(f'{args[0]}')
 
     @property
     def results_field(self):
-        return {k: getattr(self,k) for k in self._results_field}
+        return {k: getattr(self, k) for k in self._results_field}
 
     @property
     def meta_info_field(self):
-        return {k: copy.deepcopy(getattr(self, k)) for k in self._meta_info_field}
+        return {
+            k: copy.deepcopy(getattr(self, k))
+            for k in self._meta_info_field
+        }
 
     @property
     def device(self):
@@ -131,7 +136,7 @@ class Results(NiceRepr):
         device = None
         for k in self._results_field:
             if isinstance(getattr(self, k), torch.Tensor):
-                return  getattr(self, k).device
+                return getattr(self, k).device
         return device
 
     def __contains__(self, item):
@@ -215,10 +220,8 @@ class Results(NiceRepr):
         return repr + '\n'
 
 
-
-
 class InstanceResults(Results):
-
+    # TODO add examples here
 
     def __setattr__(self, name, value):
 
@@ -236,21 +239,24 @@ class InstanceResults(Results):
             for v in self.results_field.values():
                 assert len(v) == len(value), f'the length of ' \
                                              f'values {len(value)} is ' \
-                                             f'not consistent with the length ' \
+                                             f'not consistent with' \
+                                             f' the length ' \
                                              f'of this instancne {len(self)}'
             super().__setattr__(name, value)
 
     def __getitem__(self, item):
         """
         Args:
-            item (str, obj:`slice` ,obj`torch.LongTensor`, obj:`torch.BoolTensor`):
+            item (str, obj:`slice`,
+                obj`torch.LongTensor`, obj:`torch.BoolTensor`):
                 get the corresponding values according to item.
 
         Returns:
             obj:`InstanceResults`: Corresponding values.
         """
 
-        assert isinstance(item, (str,slice ,int ,torch.LongTensor, torch.BoolTensor))
+        assert isinstance(
+            item, (str, slice, int, torch.LongTensor, torch.BoolTensor))
 
         if isinstance(item, str):
             return getattr(self, item)
@@ -296,7 +302,8 @@ class InstanceResults(Results):
         Returns:
             obj:`InstanceResults`
         """
-        assert all(isinstance(results, InstanceResults) for results in instance_lists)
+        assert all(
+            isinstance(results, InstanceResults) for results in instance_lists)
         assert len(instance_lists) > 0
         if len(instance_lists) == 1:
             return instance_lists[0]

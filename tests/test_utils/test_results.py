@@ -6,6 +6,7 @@ from mmdet.core.results.results import InstanceResults, Results
 
 
 def test_results():
+    # test init
     meta_info = dict(
         img_size=(256, 256), path='dadfaff', scale_factor=np.array([1.5, 1.5]))
 
