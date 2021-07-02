@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 4x NVIDIA V100 GPUs
+      Training Resources: 4x V100 GPUs
       Architecture:
         - FPN
         - ResNet
@@ -18,7 +18,13 @@ Models:
     Config: configs/foveabox/fovea_r50_fpn_4x4_1x_coco.py
     Metadata:
       Training Memory (GB): 5.6
-      inference time (s/im): 0.04149
+      inference time (ms/im):
+        - value: 41.49
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -32,6 +38,13 @@ Models:
     Config: configs/foveabox/fovea_r50_fpn_4x4_2x_coco.py
     Metadata:
       Training Memory (GB): 5.6
+      inference time (ms/im):
+        - value: 41.49
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -45,7 +58,13 @@ Models:
     Config: configs/foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py
     Metadata:
       Training Memory (GB): 8.1
-      inference time (s/im): 0.05155
+      inference time (ms/im):
+        - value: 51.55
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -59,7 +78,13 @@ Models:
     Config: configs/foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py
     Metadata:
       Training Memory (GB): 8.1
-      inference time (s/im): 0.05464
+      inference time (ms/im):
+        - value: 54.64
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -73,7 +98,13 @@ Models:
     Config: configs/foveabox/fovea_r101_fpn_4x4_1x_coco.py
     Metadata:
       Training Memory (GB): 9.2
-      inference time (s/im): 0.05747
+      inference time (ms/im):
+        - value: 57.47
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -100,7 +131,13 @@ Models:
     Config: configs/foveabox/fovea_align_r101_fpn_gn-head_4x4_2x_coco.py
     Metadata:
       Training Memory (GB): 11.7
-      inference time (s/im): 0.06803
+      inference time (ms/im):
+        - value: 68.03
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -114,7 +151,13 @@ Models:
     Config: configs/foveabox/fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py
     Metadata:
       Training Memory (GB): 11.7
-      inference time (s/im): 0.06803
+      inference time (ms/im):
+        - value: 68.03
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection

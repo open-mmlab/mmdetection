@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - Group Normalization
     Paper: https://arxiv.org/abs/1803.08494
@@ -17,7 +17,13 @@ Models:
     Config: configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py
     Metadata:
       Training Memory (GB): 7.1
-      inference time (s/im): 0.09091
+      inference time (ms/im):
+        - value: 90.91
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -35,6 +41,13 @@ Models:
     Config: configs/gn/mask_rcnn_r50_fpn_gn-all_3x_coco.py
     Metadata:
       Training Memory (GB): 7.1
+      inference time (ms/im):
+        - value: 90.91
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 36
     Results:
       - Task: Object Detection
@@ -52,7 +65,13 @@ Models:
     Config: configs/gn/mask_rcnn_r101_fpn_gn-all_2x_coco.py
     Metadata:
       Training Memory (GB): 9.9
-      inference time (s/im): 0.11111
+      inference time (ms/im):
+        - value: 111.11
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -70,6 +89,13 @@ Models:
     Config: configs/gn/mask_rcnn_r101_fpn_gn-all_3x_coco.py
     Metadata:
       Training Memory (GB): 9.9
+      inference time (ms/im):
+        - value: 111.11
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 36
     Results:
       - Task: Object Detection
@@ -87,7 +113,13 @@ Models:
     Config: configs/gn/mask_rcnn_r50_fpn_gn-all_contrib_2x_coco.py
     Metadata:
       Training Memory (GB): 7.1
-      inference time (s/im): 0.09174
+      inference time (ms/im):
+        - value: 91.74
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -105,6 +137,13 @@ Models:
     Config: configs/gn/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco.py
     Metadata:
       Training Memory (GB): 7.1
+      inference time (ms/im):
+        - value: 91.74
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 36
     Results:
       - Task: Object Detection
