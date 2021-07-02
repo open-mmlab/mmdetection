@@ -43,7 +43,7 @@ class ConfigMappings(object):
 
     def get_schedule_friendly_name(self, schedule_name: str) -> str:
         """Returns the user friendly name of a certain learning rate schedule"""
-        return self.learning_rate_schedule_map[schedule_name]['name']
+        return self.learning_rate_schedule_map.get(schedule_name, {'name': 'custom'})['name']
 
     def get_runtime_file(self, runtime_name: str) -> str:
         return self.runtime_map[runtime_name]['filename']

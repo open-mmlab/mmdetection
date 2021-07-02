@@ -30,6 +30,8 @@ from sc_sdk.entities.analyse_parameters import AnalyseParameters
 from sc_sdk.entities.datasets import Dataset
 from sc_sdk.entities.metrics import CurveMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric, InfoMetric, \
     VisualizationType, VisualizationInfo
+# This one breaks cyclic imports chain.
+from sc_sdk.usecases.repos import BinaryRepo
 from sc_sdk.entities.optimized_model import OptimizedModel, ModelPrecision, ModelOptimizationType, TargetDevice
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.entities.train_parameters import TrainParameters
@@ -131,13 +133,13 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             # No need to initialize backbone separately, if all weights are provided.
             model_cfg.pretrained = None
             logger.warning('build detector')
-            model = build_detector(model_cfg)
+            model = build_detector(model_cfg, train_cfg=config.train_cfg, test_cfg=config.test_cfg)
             # Load all weights.
             logger.warning('load checkpoint')
             load_checkpoint(model, init_from, map_location='cpu')
         else:
             logger.warning('build detector as is')
-            model = build_detector(model_cfg)
+            model = build_detector(model_cfg, train_cfg=config.train_cfg, test_cfg=config.test_cfg)
         return model
 
     def analyse(self, dataset: Dataset, analyse_parameters: Optional[AnalyseParameters] = None) -> Dataset:
@@ -331,6 +333,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         self.train_model.cfg = self.config_manager.config_copy
         inference_model = copy.deepcopy(self.train_model)
         inference_model.eval()
+        print(self.config_manager.config_to_string(self.train_model.cfg))
 
         self.config_manager.update_dataset_subsets(dataset)
         mm_train_dataset = build_dataset(self.config_manager.config.data.train)
@@ -345,7 +348,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         self.is_training = True
         start_train_time = time.time()
         train_detector(model=self.train_model,
-                       dataset=[mm_train_dataset],
+                       dataset=mm_train_dataset,
                        cfg=config,
                        validate=True)
         training_duration = time.time() - start_train_time

@@ -169,6 +169,11 @@ class MMDetectionConfigManager(object):
         """ Sets the label names for the different subsets """
         subsets = ['train', 'val', 'test']
         for subset in subsets:
+            cfg = self.config.data[subset]
+            if cfg.type == 'RepeatDataset':
+                cfg.dataset.classes = self.label_names
+            else:
+                cfg.classes = self.label_names
             self.config.data[subset].classes = self.label_names
 
     def update_project_configuration(self, configurable_parameters: MMDetectionParameters):
@@ -181,7 +186,10 @@ class MMDetectionConfigManager(object):
         learning_rate_schedule_name = configurable_parameters.learning_parameters.learning_rate_schedule.value
         learning_rate_warmup_iters = configurable_parameters.learning_parameters.learning_rate_warmup_iters.value
         self._update_learning_rate_schedule(learning_rate_schedule_name, learning_rate_warmup_iters)
-        self.config.runner.max_epochs = int(configurable_parameters.learning_parameters.num_epochs.value)
+        if 'IterBased' in self.config.runner.type:
+            self.config.runner.max_iters = int(configurable_parameters.learning_parameters.num_iters.value)
+        else:
+            self.config.runner.max_epochs = int(configurable_parameters.learning_parameters.num_iters.value)
         self.config.optimizer.lr = float(configurable_parameters.learning_parameters.learning_rate.value)
         self.config.data.samples_per_gpu = int(configurable_parameters.learning_parameters.batch_size.value)
         self._update_nncf_config_section(configurable_parameters)
@@ -202,8 +210,11 @@ class MMDetectionConfigManager(object):
             cfg_to_change = model.cfg.data
 
         cfg_to_change.test.ote_dataset = dataset.get_subset(Subset.TESTING)
-        cfg_to_change.train.ote_dataset = dataset.get_subset(Subset.TRAINING)
         cfg_to_change.val.ote_dataset = dataset.get_subset(Subset.VALIDATION)
+        if 'ote_dataset' in cfg_to_change.train:
+            cfg_to_change.train.ote_dataset = dataset.get_subset(Subset.TRAINING)
+        else:
+            cfg_to_change.train.dataset.ote_dataset = dataset.get_subset(Subset.TRAINING)
         return model
 
     @property
@@ -227,8 +238,11 @@ class MMDetectionConfigManager(object):
         config_copy = copy.deepcopy(config)
         # Clean config up by removing dataset and label entities as this causes the pretty text parsing to fail
         config_copy.data.test.ote_dataset = None
-        config_copy.data.train.ote_dataset = None
         config_copy.data.val.ote_dataset = None
+        if 'ote_dataset' in config_copy.data.train:
+            config_copy.data.train.ote_dataset = None
+        else:
+            config_copy.data.train.dataset.ote_dataset = None
         config_copy.labels = [label.name for label in config.labels]
         return Config(config_copy).pretty_text
 

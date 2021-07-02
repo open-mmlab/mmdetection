@@ -90,13 +90,12 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
             "potentially causing out of memory errors, please update with caution.",
         )
 
-        num_epochs = Integer(
-            default_value=1,
-            header="Number of epochs",
-            description="Increasing this value causes the results to be more robust but training time "
-            "will be longer.",
-            min_value=1,
-            max_value=1000,
+        num_iters = Integer(
+            header="Number of training iterations",
+            description="Increasing this value causes the results to be more robust but training time will be longer.",
+            default_value=10000,
+            min_value=10,
+            max_value=100000,
             editable=True,
         )
 
@@ -105,15 +104,15 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
             header="Learning rate",
             description="Increasing this value will speed up training convergence but might make it unstable. A value "
                         "of 0.0025 is recommended.",
-            min_value=1e-06,
-            max_value=1e-02,
+            min_value=1e-07,
+            max_value=1e-01,
             editable=True,
         )
 
         learning_rate_warmup_iters = Integer(
-            default_value=100,
             header="Number of iterations for learning rate warmup",
             description="",
+            default_value=100,
             min_value=0,
             max_value=1000,
             editable=True,

@@ -154,6 +154,9 @@ class OTEDataset(CustomDataset):
         """
         dataset_item = self.ote_dataset[idx]
         label_list = self.CLASSES
+        if label_list is None:
+            # For RepeatDataset wrapper.
+            label_list = self.dataset.CLASSES
         return get_annotation_mmdet_format(dataset_item, label_list)
 
 

@@ -1,5 +1,5 @@
 evaluation = dict(interval=1, metric='mAP', save_best='mAP', rule='greater')
-checkpoint_config = dict(interval=1)
+checkpoint_config = dict(interval=1000)
 # yapf:disable
 log_config = dict(
     interval=5,
@@ -9,7 +9,7 @@ log_config = dict(
     ])
 # yapf:enable
 dist_params = dict(backend='nccl')
-cudnn_benchmark = True
+cudnn_benchmark = False
 log_level = 'INFO'
 load_from = None
 resume_from = None
@@ -18,6 +18,9 @@ custom_hooks = [
     dict(type='CancelTrainingHook', interval=5),
     # dict(type='EnsureCorrectBestCheckpointHook')
 ]
+# runner = dict(meta=dict(exp_name='train'),
+#               max_epochs=0,  # Set via configurable parameters by the user.
+#               type='EpochRunnerWithCancel')
 runner = dict(meta=dict(exp_name='train'),
-              max_epochs=0,  # Set via configurable parameters by the user.
-              type='EpochRunnerWithCancel')
+              max_iters=0,  # Set via configurable parameters by the user.
+              type='IterBasedRunnerWithCancel')

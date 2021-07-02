@@ -94,12 +94,23 @@ class TestOTEAPI(unittest.TestCase):
         return project, environment, dataset
 
     @staticmethod
-    def setup_configurable_parameters(template_dir, num_epochs=10):
+    def load_template(path):
+        import yaml
+        with open(path) as f:
+            template = yaml.full_load(f)
+        # Save path to template file, to resolve relative paths later.
+        template['hyper_parameters']['params'].setdefault('algo_backend', {})['template'] = path
+        return template
+
+    @staticmethod
+    def setup_configurable_parameters(template_dir, num_iters=250):
+        template = TestOTEAPI.load_template(osp.join(template_dir, 'template.yaml'))
         configurable_parameters = MMDetectionParameters()
-        configurable_parameters.algo_backend.template.value = osp.join(template_dir, 'template.yaml')
+        MMObjectDetectionTask.apply_template_configurable_parameters(configurable_parameters, template)
+        # configurable_parameters.algo_backend.template.value = osp.join(template_dir, 'template.yaml')
         configurable_parameters.algo_backend.model.value = 'model.py'
         configurable_parameters.algo_backend.model_name.value = 'some_detection_model'
-        configurable_parameters.learning_parameters.num_epochs.value = num_epochs
+        configurable_parameters.learning_parameters.num_iters.value = num_iters
         return configurable_parameters
 
     @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
@@ -116,10 +127,11 @@ class TestOTEAPI(unittest.TestCase):
 
         This test should be finished in under one minute on a workstation.
         """
-        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256')
-        configurable_parameters = self.setup_configurable_parameters(template_dir, num_epochs=100)
+        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=10000)
         _, detection_environment, dataset = self.init_environment(configurable_parameters, 250)
         detection_task = MMObjectDetectionTask(task_environment=detection_environment)
+        detection_task.update_configurable_parameters(detection_environment)
 
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='train_thread')
 
@@ -170,9 +182,10 @@ class TestOTEAPI(unittest.TestCase):
             difference between the original and the reloaded model is smaller than 1e-4. Ideally there should be no
             difference at all.
         """
-        configurable_parameters = self.setup_configurable_parameters(template_dir, num_epochs=5)
+        configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=200)
         _, detection_environment, dataset = self.init_environment(configurable_parameters, 250)
         task = MMObjectDetectionTask(task_environment=detection_environment)
+        task.update_configurable_parameters(detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print('Task initialized, model training starts.')
@@ -184,12 +197,12 @@ class TestOTEAPI(unittest.TestCase):
         model = task.train(dataset=dataset)
         self.assertFalse(isinstance(model, NullModel))
 
-        if isinstance(task, IModelOptimizer):
-            optimized_models = task.optimize_loaded_model()
-            self.assertGreater(len(optimized_models), 0, 'Task must return an Optimised model.')
-            for m in optimized_models:
-                self.assertIsInstance(m, OptimizedModel,
-                                      'Optimised model must be an Openvino or DeployableTensorRT model.')
+        # if isinstance(task, IModelOptimizer):
+        #     optimized_models = task.optimize_loaded_model()
+        #     self.assertGreater(len(optimized_models), 0, 'Task must return an Optimised model.')
+        #     for m in optimized_models:
+        #         self.assertIsInstance(m, OptimizedModel,
+        #                               'Optimised model must be an Openvino or DeployableTensorRT model.')
 
         # Run inference
         validation_performance = self.eval(task, detection_environment, dataset)
@@ -229,3 +242,11 @@ class TestOTEAPI(unittest.TestCase):
     def test_training_custom_mobilenetssd_512(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-512x512'))
 
+    def test_training_custom_mobilenet_atss(self):
+        self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS'))
+
+    def test_training_custom_mobilenet_ssd(self):
+        self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD'))
+
+    def test_training_custom_mobilenet_vfnet(self):
+        self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet'))

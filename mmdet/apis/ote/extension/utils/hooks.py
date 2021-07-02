@@ -17,7 +17,7 @@ import os
 from collections import defaultdict
 
 from mmcv.runner.hooks import HOOKS, Hook, LoggerHook
-from mmcv.runner import EpochBasedRunner
+from mmcv.runner import BaseRunner, EpochBasedRunner, IterBasedRunner
 from mmcv.runner.dist_utils import master_only
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
@@ -39,12 +39,13 @@ class CancelTrainingHook(Hook):
         self.interval = interval
 
     @staticmethod
-    def _check_for_stop_signal(runner: EpochBasedRunner):
+    def _check_for_stop_signal(runner: BaseRunner):
         work_dir = runner.work_dir
         stop_filepath = os.path.join(work_dir, '.stop_training')
         if os.path.exists(stop_filepath):
-            epoch = runner.epoch
-            runner._max_epochs = epoch  # Force runner to stop by pretending it has reached it's max_epoch
+            if isinstance(runner, EpochBasedRunner):
+                epoch = runner.epoch
+                runner._max_epochs = epoch  # Force runner to stop by pretending it has reached it's max_epoch
             runner.should_stop = True  # Set this flag to true to stop the current training epoch
             os.remove(stop_filepath)
 
@@ -106,7 +107,10 @@ class OTELoggerHook(LoggerHook):
     @master_only
     def log(self, runner):
         tags = self.get_loggable_tags(runner, allow_text=False)
-        normalized_iter = runner.max_epochs / runner.max_iters * self.get_iter(runner)
+        if runner.max_epochs is not None:
+            normalized_iter = runner.max_epochs / runner.max_iters * self.get_iter(runner)
+        else:
+            normalized_iter = self.get_iter(runner)
         for tag, value in tags.items():
             self.curves[tag].x.append(normalized_iter)
             self.curves[tag].y.append(value)
@@ -121,10 +125,11 @@ class OTEProgressHook(Hook):
         self.print_threshold = 1
 
     def before_run(self, runner):
-        self.time_monitor.total_epochs = runner.max_epochs
-        self.time_monitor.train_steps = runner.max_iters // runner.max_epochs
+        total_epochs = runner.max_epochs if runner.max_epochs is not None else 1
+        self.time_monitor.total_epochs = total_epochs
+        self.time_monitor.train_steps = runner.max_iters // total_epochs
         self.time_monitor.steps_per_epoch = self.time_monitor.train_steps + self.time_monitor.val_steps
-        self.time_monitor.total_steps = math.ceil(self.time_monitor.steps_per_epoch * self.time_monitor.total_epochs)
+        self.time_monitor.total_steps = math.ceil(self.time_monitor.steps_per_epoch * total_epochs)
         self.time_monitor.current_step = 0
         self.time_monitor.current_epoch = 0
 

@@ -35,6 +35,7 @@ logger = logger_factory.get_logger('Sample')
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Sample showcasing the new API')
+    # parser.add_argument('--template_file_path', help='path to template file', default='configs/ote/custom-object-detection/mobilenetV2_ATSS/template.yaml')
     parser.add_argument('template_file_path', help='path to template file')
     parser.add_argument('--data-dir', default='data')
     args = parser.parse_args()
@@ -89,10 +90,10 @@ def main(args):
     params = task.get_configurable_parameters(environment)
     params.learning_parameters.nncf_quantization.value = False
     # params.learning_parameters.learning_rate_warmup_iters.value = 0
-    params.learning_parameters.batch_size.value = 32
-    params.learning_parameters.num_epochs.value = 1
-    params.postprocessing.result_based_confidence_threshold.value = False
-    params.postprocessing.confidence_threshold.value = 0.025
+    # params.learning_parameters.batch_size.value = 32
+    params.learning_parameters.num_iters.value = 1000
+    # params.postprocessing.result_based_confidence_threshold.value = False
+    # params.postprocessing.confidence_threshold.value = 0.025
     environment.set_configurable_parameters(params)
     task.update_configurable_parameters(environment)
 
@@ -121,7 +122,7 @@ def main(args):
     model = task.train(dataset=dataset)
     logger.info('NNCF compression completed')
 
-    task.optimize_loaded_model()
+    # task.optimize_loaded_model()
 
     ProjectFactory.delete_project_with_id(project.id)
 
