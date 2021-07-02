@@ -32,7 +32,7 @@ class GHMC(nn.Module):
         use_sigmoid (bool): Can only be true for BCE based loss now.
         loss_weight (float): The weight of the total GHM-C loss.
         reduction (str): Options are "none", "mean" and "sum".
-            Defaults to "sum"
+            Defaults to "mean"
     """
 
     def __init__(self,
@@ -130,6 +130,8 @@ class GHMR(nn.Module):
         bins (int): Number of the unit regions for distribution calculation.
         momentum (float): The parameter for moving average.
         loss_weight (float): The weight of the total GHM-R loss.
+        reduction (str): Options are "none", "mean" and "sum".
+            Defaults to "mean"
     """
 
     def __init__(self,
@@ -168,6 +170,9 @@ class GHMR(nn.Module):
                 The target regression values with the same size of pred.
             label_weight (float tensor of size [batch_num, 4 (* class_num)]):
                 The weight of each sample, 0 if ignored.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None.
         Returns:
             The gradient harmonized loss.
         """
