@@ -2,7 +2,6 @@ _base_ = '../_base_/default_runtime.py'
 # model settings
 model = dict(
     type='YOLOV3',
-    # pretrained='open-mmlab://mobilenet_v2',
     backbone=dict(type='MobileNetV2', out_indices=(2, 4, 6)),
     neck=dict(
         type='YOLOV3Neck',
@@ -123,3 +122,4 @@ lr_config = dict(
 runner = dict(type='EpochBasedRunner', max_epochs=273)
 evaluation = dict(interval=1, metric=['bbox'])
 find_unused_parameters=True
+
