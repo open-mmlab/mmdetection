@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/mask_rcnn_r50_fpn.py',
-    '../common/lsj_50e_coco_instance.py'
+    '../common/lsj_100e_coco_instance.py'
 ]
 
 norm_cfg = dict(type='SyncBN', requires_grad=True)
