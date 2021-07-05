@@ -234,7 +234,7 @@ def test_results():
             assert value.is_cuda
 
     # test detach
-    grad_results = cpu_results.new_results()
+    grad_results = double_results.new_results()
     grad_results.mask = torch.rand(2, requires_grad=True)
     grad_results.mask_1 = torch.rand(2, requires_grad=True)
     detach_results = grad_results.detach()

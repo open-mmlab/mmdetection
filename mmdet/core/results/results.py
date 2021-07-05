@@ -29,9 +29,52 @@ class Results(NiceRepr):
     to all obj:`torch.Tensor` in the `results_filed`,
     such as `.cuda()`, `.cpu()`, `.numpy()`, `device`, `.to()`
     `.detach()`, `.numpy()`
-    """
 
-    # TODO add examples here
+    Args:
+        img_meta (dict): A dict contains the meta information
+            of image. such as `img_shape`, `scale_factor`, etc.
+
+    Examples:
+        >>> from mmdet.core.results.results import Results
+        >>> img_meta = dict(img_shape=(800, 1196, 3), pad_shape=(800, 1216, 3))
+        >>> results = Results(img_meta)
+        >>> img_shape in results
+        True
+        >>> results.det_labels = torch.LongTensor([0, 1, 2, 3])
+        >>> results["det_scores"] = torch.Tensor([0.01, 0.1, 0.2, 0.3])
+        >>> print(results)
+        <Results(
+
+          META INFORMATION
+        img_shape: (800, 1196, 3)
+        pad_shape: (800, 1216, 3)
+
+           PREDICTIONS
+        shape of det_labels: torch.Size([4])
+        shape of det_scores: torch.Size([4])
+
+        ) at 0x7f84acd10f90>
+        >>> resutls.det_scores
+        tensor([0.0100, 0.1000, 0.2000, 0.3000])
+        >>> results.det_labels
+        tensor([0, 1, 2, 3])
+        >>> results['det_labels']
+        tensor([0, 1, 2, 3])
+        >>> 'det_labels' in results
+        True
+        >>> results.img_shape
+        (800, 1196, 3)
+        >>> 'det_scores' in results
+        True
+        >>> del results.det_scores
+        >>> 'det_scores' in results
+        False
+        >>> det_labels = results.pop('det_labels', None)
+        >>> det_labels
+        tensor([0, 1, 2, 3])
+        >>> 'det_labels' in results
+        >>> False
+    """
 
     def __init__(self, img_meta=None):
         """
@@ -135,6 +178,14 @@ class Results(NiceRepr):
             raise KeyError(f'{args[0]}')
 
     @property
+    def results_keys(self):
+        return list(copy(self._results_field))
+
+    @property
+    def meta_info_keys(self):
+        return list(copy(self._meta_info_field))
+
+    @property
     def results_field(self):
         return {k: getattr(self, k) for k in self._results_field}
 
@@ -213,7 +264,57 @@ class Results(NiceRepr):
 
 
 class InstanceResults(Results):
-    # TODO add examples here
+    """Subclass of results. All value in `results_field` should has same
+    length.
+
+    Examples:
+        >>> from mmdet.core.results.results import InstanceResults
+        >>> import numpy as np
+        >>> img_meta = dict(img_shape=(800, 1196, 3), pad_shape=(800, 1216, 3))
+        >>> results = InstanceResults(img_meta)
+        >>> img_shape in results
+        True
+        >>> results.det_labels = torch.LongTensor([0, 1, 2, 3])
+        >>> results["det_scores"] = torch.Tensor([0.01, 0.7, 0.6, 0.3])
+        >>> results["det_masks"] = np.ndarray(4, 2, 2)
+        >>> len(results)
+        4
+        >>> print(resutls)
+        <Results(
+
+            META INFORMATION
+        pad_shape: (800, 1216, 3)
+        img_shape: (800, 1196, 3)
+
+            PREDICTIONS
+        shape of det_labels: torch.Size([4])
+        shape of det_masks: (4, 2, 2)
+        shape of det_scores: torch.Size([4])
+
+        ) at 0x7fe26b5ca990>
+        >>> sorted_results = results[results.det_scores.sort().indices]
+        >>> sorted_results.det_scores
+        tensor([0.0100, 0.3000, 0.6000, 0.7000])
+        >>> sorted_results.det_labels
+        tensor([0, 3, 2, 1])
+        >>> print(results[results.scores > 0.5])
+        <InstanceResults(
+
+            META INFORMATION
+        pad_shape: (800, 1216, 3)
+        img_shape: (800, 1196, 3)
+
+            PREDICTIONS
+        shape of det_labels: torch.Size([2])
+        shape of det_masks: (2, 2, 2)
+        shape of det_scores: torch.Size([2])
+
+        ) at 0x7fe26b6d7790>
+        >>> results[results.det_scores > 0.5].det_labels
+        tensor([1, 2])
+        >>> results[results.det_scores > 0.5].det_scores
+        tensor([0.7000, 0.6000])
+    """
 
     def __setattr__(self, name, value):
 
