@@ -698,11 +698,146 @@ class DETRHead(AnchorFreeHead):
                 The shape of the second tensor in the tuple is ``labels``
                 with shape (n,)
         """
-        batch_size = len(img_metas)
-        assert batch_size == 1, 'Currently only batch_size 1 for inference ' \
-            f'mode is supported. Found batch_size {batch_size}.'
-
         # forward of this head requires img_metas
         outs = self.forward(feats, img_metas)
         results_list = self.get_bboxes(*outs, img_metas, rescale=rescale)
         return results_list
+
+    def forward_onnx(self, feats, img_metas):
+        """Forward function for exporting to ONNX.
+
+        Over-write `forward` because: `masks` is directly created with
+        zero (valid position tag) and has the same spatial size as `x`.
+        Thus the construction of `masks` is different from that in `forward`.
+
+        Args:
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            tuple[list[Tensor], list[Tensor]]: Outputs for all scale levels.
+
+                - all_cls_scores_list (list[Tensor]): Classification scores \
+                    for each scale level. Each is a 4D-tensor with shape \
+                    [nb_dec, bs, num_query, cls_out_channels]. Note \
+                    `cls_out_channels` should includes background.
+                - all_bbox_preds_list (list[Tensor]): Sigmoid regression \
+                    outputs for each scale level. Each is a 4D-tensor with \
+                    normalized coordinate format (cx, cy, w, h) and shape \
+                    [nb_dec, bs, num_query, 4].
+        """
+        num_levels = len(feats)
+        img_metas_list = [img_metas for _ in range(num_levels)]
+        return multi_apply(self.forward_single_onnx, feats, img_metas_list)
+
+    def forward_single_onnx(self, x, img_metas):
+        """"Forward function for a single feature level with ONNX exportation.
+
+        Args:
+            x (Tensor): Input feature from backbone's single stage, shape
+                [bs, c, h, w].
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            all_cls_scores (Tensor): Outputs from the classification head,
+                shape [nb_dec, bs, num_query, cls_out_channels]. Note
+                cls_out_channels should includes background.
+            all_bbox_preds (Tensor): Sigmoid outputs from the regression
+                head with normalized coordinate format (cx, cy, w, h).
+                Shape [nb_dec, bs, num_query, 4].
+        """
+        # Note `img_shape` is not dynamically traceable to ONNX,
+        # since the related augmentation was done with numpy under
+        # CPU. Thus `masks` is directly created with zeros (valid tag)
+        # and the same spatial shape as `x`.
+        # The difference between torch and exported ONNX model may be
+        # ignored, since the same performance is achieved (e.g.
+        # 40.1 vs 40.1 for DETR)
+        batch_size = x.size(0)
+        h, w = x.size()[-2:]
+        masks = x.new_zeros((batch_size, h, w))  # [B,h,w]
+
+        x = self.input_proj(x)
+        # interpolate masks to have the same spatial shape with x
+        masks = F.interpolate(
+            masks.unsqueeze(1), size=x.shape[-2:]).to(torch.bool).squeeze(1)
+        pos_embed = self.positional_encoding(masks)
+        outs_dec, _ = self.transformer(x, masks, self.query_embedding.weight,
+                                       pos_embed)
+
+        all_cls_scores = self.fc_cls(outs_dec)
+        all_bbox_preds = self.fc_reg(self.activate(
+            self.reg_ffn(outs_dec))).sigmoid()
+        return all_cls_scores, all_bbox_preds
+
+    def onnx_export(self, all_cls_scores_list, all_bbox_preds_list, img_metas):
+        """Transform network outputs into bbox predictions, with ONNX
+        exportation.
+
+        Args:
+            all_cls_scores_list (list[Tensor]): Classification outputs
+                for each feature level. Each is a 4D-tensor with shape
+                [nb_dec, bs, num_query, cls_out_channels].
+            all_bbox_preds_list (list[Tensor]): Sigmoid regression
+                outputs for each feature level. Each is a 4D-tensor with
+                normalized coordinate format (cx, cy, w, h) and shape
+                [nb_dec, bs, num_query, 4].
+            img_metas (list[dict]): Meta information of each image.
+
+        Returns:
+            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
+                and class labels of shape [N, num_det].
+        """
+        assert len(img_metas) == 1, \
+            'Only support one input image while in exporting to ONNX'
+
+        cls_scores = all_cls_scores_list[-1][-1]
+        bbox_preds = all_bbox_preds_list[-1][-1]
+
+        # Note `img_shape` is not dynamically traceable to ONNX,
+        # here `img_shape_for_onnx` (padded shape of image tensor)
+        # is used.
+        img_shape = img_metas[0]['img_shape_for_onnx']
+        max_per_img = self.test_cfg.get('max_per_img', self.num_query)
+        batch_size = cls_scores.size(0)
+        # `batch_index_offset` is used for the gather of concatenated tensor
+        batch_index_offset = torch.arange(batch_size).to(
+            cls_scores.device) * max_per_img
+        batch_index_offset = batch_index_offset.unsqueeze(1).expand(
+            batch_size, max_per_img)
+
+        # supports dynamical batch inference
+        if self.loss_cls.use_sigmoid:
+            cls_scores = cls_scores.sigmoid()
+            scores, indexes = cls_scores.view(batch_size, -1).topk(
+                max_per_img, dim=1)
+            det_labels = indexes % self.num_classes
+            bbox_index = indexes // self.num_classes
+            bbox_index = (bbox_index + batch_index_offset).view(-1)
+            bbox_preds = bbox_preds.view(-1, 4)[bbox_index]
+            bbox_preds = bbox_preds.view(batch_size, -1, 4)
+        else:
+            scores, det_labels = F.softmax(
+                cls_scores, dim=-1)[..., :-1].max(-1)
+            scores, bbox_index = scores.topk(max_per_img, dim=1)
+            bbox_index = (bbox_index + batch_index_offset).view(-1)
+            bbox_preds = bbox_preds.view(-1, 4)[bbox_index]
+            det_labels = det_labels.view(-1)[bbox_index]
+            bbox_preds = bbox_preds.view(batch_size, -1, 4)
+            det_labels = det_labels.view(batch_size, -1)
+
+        det_bboxes = bbox_cxcywh_to_xyxy(bbox_preds)
+        # use `img_shape_tensor` for dynamically exporting to ONNX
+        img_shape_tensor = img_shape.flip(0).repeat(2)  # [w,h,w,h]
+        img_shape_tensor = img_shape_tensor.unsqueeze(0).unsqueeze(0).expand(
+            batch_size, det_bboxes.size(1), 4)
+        det_bboxes = det_bboxes * img_shape_tensor
+        # dynamically clip bboxes
+        x1, y1, x2, y2 = det_bboxes.split((1, 1, 1, 1), dim=-1)
+        from mmdet.core.export import dynamic_clip_for_onnx
+        x1, y1, x2, y2 = dynamic_clip_for_onnx(x1, y1, x2, y2, img_shape)
+        det_bboxes = torch.cat([x1, y1, x2, y2], dim=-1)
+        det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(-1)), -1)
+
+        return det_bboxes, det_labels

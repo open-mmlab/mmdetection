@@ -1,4 +1,5 @@
 import math
+import warnings
 
 import torch
 import torch.nn as nn
@@ -6,13 +7,21 @@ from mmcv.cnn import build_activation_layer, build_norm_layer, xavier_init
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
                                       TRANSFORMER_LAYER_SEQUENCE)
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
-                                         MultiScaleDeformableAttention,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
 from mmcv.runner.base_module import BaseModule
 from torch.nn.init import normal_
 
 from mmdet.models.utils.builder import TRANSFORMER
+
+try:
+    from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttention
+
+except ImportError:
+    warnings.warn(
+        '`MultiScaleDeformableAttention` in MMCV has been moved to '
+        '`mmcv.ops.multi_scale_deform_attn`, please update your MMCV')
+    from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
 
 
 def inverse_sigmoid(x, eps=1e-5):
@@ -225,11 +234,12 @@ class Transformer(BaseModule):
                       [bs, embed_dims, h, w].
         """
         bs, c, h, w = x.shape
-        x = x.flatten(2).permute(2, 0, 1)  # [bs, c, h, w] -> [h*w, bs, c]
-        pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
+        # use `view` instead of `flatten` for dynamically exporting to ONNX
+        x = x.view(bs, c, -1).permute(2, 0, 1)  # [bs, c, h, w] -> [h*w, bs, c]
+        pos_embed = pos_embed.view(bs, c, -1).permute(2, 0, 1)
         query_embed = query_embed.unsqueeze(1).repeat(
             1, bs, 1)  # [num_query, dim] -> [num_query, bs, dim]
-        mask = mask.flatten(1)  # [bs, h, w] -> [bs, h*w]
+        mask = mask.view(bs, -1)  # [bs, h, w] -> [bs, h*w]
         memory = self.encoder(
             query=x,
             key=None,
@@ -384,7 +394,7 @@ class DeformableDetrTransformer(Transformer):
                 nn.init.xavier_uniform_(p)
         for m in self.modules():
             if isinstance(m, MultiScaleDeformableAttention):
-                m.init_weight()
+                m.init_weights()
         if not self.as_two_stage:
             xavier_init(self.reference_points, distribution='uniform', bias=0.)
         normal_(self.level_embeds)

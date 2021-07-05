@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - ASPP
         - FPN
@@ -29,7 +29,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 44.8
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/detectors/cascade_rcnn_r50_rfp_1x_coco/cascade_rcnn_r50_rfp_1x_coco-8cf51bfd.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/detectors/cascade_rcnn_r50_rfp_1x_coco/cascade_rcnn_r50_rfp_1x_coco-8cf51bfd.pth
 
   - Name: cascade_rcnn_r50_sac_1x_coco
     In Collection: DetectoRS
@@ -42,7 +42,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 45.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/detectors/cascade_rcnn_r50_sac_1x_coco/cascade_rcnn_r50_sac_1x_coco-24bfda62.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/detectors/cascade_rcnn_r50_sac_1x_coco/cascade_rcnn_r50_sac_1x_coco-24bfda62.pth
 
   - Name: detectors_cascade_rcnn_r50_1x_coco
     In Collection: DetectoRS
@@ -55,7 +55,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 47.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/detectors/detectors_cascade_rcnn_r50_1x_coco/detectors_cascade_rcnn_r50_1x_coco-32a10ba0.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/detectors/detectors_cascade_rcnn_r50_1x_coco/detectors_cascade_rcnn_r50_1x_coco-32a10ba0.pth
 
   - Name: htc_r50_rfp_1x_coco
     In Collection: DetectoRS
@@ -72,7 +72,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  40.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/detectors/htc_r50_rfp_1x_coco/htc_r50_rfp_1x_coco-8ff87c51.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/detectors/htc_r50_rfp_1x_coco/htc_r50_rfp_1x_coco-8ff87c51.pth
 
   - Name: htc_r50_sac_1x_coco
     In Collection: DetectoRS
@@ -89,7 +89,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  40.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/detectors/htc_r50_sac_1x_coco/htc_r50_sac_1x_coco-bfa60c54.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/detectors/htc_r50_sac_1x_coco/htc_r50_sac_1x_coco-bfa60c54.pth
 
   - Name: detectors_htc_r50_1x_coco
     In Collection: DetectoRS
@@ -106,4 +106,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP:  42.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/detectors/detectors_htc_r50_1x_coco/detectors_htc_r50_1x_coco-329b1453.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/detectors/detectors_htc_r50_1x_coco/detectors_htc_r50_1x_coco-329b1453.pth

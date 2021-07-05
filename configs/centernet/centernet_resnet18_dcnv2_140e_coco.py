@@ -5,9 +5,12 @@ _base_ = [
 
 model = dict(
     type='CenterNet',
-    pretrained='torchvision://resnet18',
     backbone=dict(
-        type='ResNet', depth=18, norm_eval=False, norm_cfg=dict(type='BN')),
+        type='ResNet',
+        depth=18,
+        norm_eval=False,
+        norm_cfg=dict(type='BN'),
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet18')),
     neck=dict(
         type='CTResNetNeck',
         in_channel=512,

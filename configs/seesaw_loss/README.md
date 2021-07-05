@@ -7,7 +7,7 @@
 We provide config files to reproduce the instance segmentation performance in the CVPR 2021 paper for [Seesaw Loss for Long-Tailed Instance Segmentation](https://arxiv.org/abs/2008.10032).
 
 ```latex
-@inproceedings{gupta2019lvis,
+@inproceedings{wang2021seesaw,
   title={Seesaw Loss for Long-Tailed Instance Segmentation},
   author={Jiaqi Wang and Wenwei Zhang and Yuhang Zang and Yuhang Cao and Jiangmiao Pang and Tao Gong and Kai Chen and Ziwei Liu and Chen Change Loy and Dahua Lin},
   booktitle={Proceedings of the {IEEE} Conference on Computer Vision and Pattern Recognition},

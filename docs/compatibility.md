@@ -1,5 +1,21 @@
 # Compatibility of MMDetection 2.x
 
+## MMDetection 2.14.0
+
+### MMCV Version
+In order to fix the problem that the priority of EvalHook is too low, all hook priorities have been re-adjusted in 1.3.8, so MMDetection 2.14.0 needs to rely on the latest MMCV 1.3.8 version. For related information, please refer to [#1120](https://github.com/open-mmlab/mmcv/pull/1120), for related issues, please refer to [#5343](https://github.com/open-mmlab/mmdetection/issues/5343).
+
+### SSD compatibility
+
+In v2.14.0, to make SSD more flexible to use, [PR5291](https://github.com/open-mmlab/mmdetection/pull/5291) refactored its backbone, neck and head. The users can use the script `tools/model_converters/upgrade_ssd_version.py` to convert their models.
+
+```bash
+python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH}
+```
+
+- OLD_MODEL_PATH: the path to load the old version SSD model.
+- NEW_MODEL_PATH: the path to save the converted model weights.
+
 ## MMDetection 2.12.0
 
 MMDetection is going through big refactoring for more general and convenient usages during the releases from v2.12.0 to v2.15.0 (maybe longer).

@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - GHM-C
         - GHM-R
@@ -20,53 +20,77 @@ Models:
     Config: configs/ghm/retinanet_ghm_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.0
-      inference time (s/im): 0.30303
+      inference time (ms/im):
+        - value: 303.03
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 37.0
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_r50_fpn_1x_coco/retinanet_ghm_r50_fpn_1x_coco_20200130-a437fda3.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_r50_fpn_1x_coco/retinanet_ghm_r50_fpn_1x_coco_20200130-a437fda3.pth
 
   - Name: retinanet_ghm_r101_fpn_1x_coco
     In Collection: GHM
     Config: configs/ghm/retinanet_ghm_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.0
-      inference time (s/im): 0.22727
+      inference time (ms/im):
+        - value: 227.27
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 39.1
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_r101_fpn_1x_coco/retinanet_ghm_r101_fpn_1x_coco_20200130-c148ee8f.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_r101_fpn_1x_coco/retinanet_ghm_r101_fpn_1x_coco_20200130-c148ee8f.pth
 
   - Name: retinanet_ghm_x101_32x4d_fpn_1x_coco
     In Collection: GHM
     Config: configs/ghm/retinanet_ghm_x101_32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.2
-      inference time (s/im): 0.19608
+      inference time (ms/im):
+        - value: 196.08
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 40.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_x101_32x4d_fpn_1x_coco/retinanet_ghm_x101_32x4d_fpn_1x_coco_20200131-e4333bd0.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_x101_32x4d_fpn_1x_coco/retinanet_ghm_x101_32x4d_fpn_1x_coco_20200131-e4333bd0.pth
 
   - Name: retinanet_ghm_x101_64x4d_fpn_1x_coco
     In Collection: GHM
     Config: configs/ghm/retinanet_ghm_x101_64x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 10.3
-      inference time (s/im): 0.19231
+      inference time (ms/im):
+        - value: 192.31
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 41.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_x101_64x4d_fpn_1x_coco/retinanet_ghm_x101_64x4d_fpn_1x_coco_20200131-dd381cef.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_x101_64x4d_fpn_1x_coco/retinanet_ghm_x101_64x4d_fpn_1x_coco_20200131-dd381cef.pth
