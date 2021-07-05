@@ -1,6 +1,6 @@
 # 3: 在标准数据集上训练自定义模型
 
-在本文中，你将知道如何在标准数据集上训练、测试和推理自定义模型。我们将在 cityscapes 数据集上以自定义 Cascade Mask R-CNN R50 模型为例演示整个过程，为了说明我们将 neck 模块中的 `FPN` 替换为 `AugFPN`，并且在训练中的自动增强类中增加 `Rotate` 或 `Translate`。
+在本文中，你将知道如何在标准数据集上训练、测试和推理自定义模型。我们将在 cityscapes 数据集上以自定义 Cascade Mask R-CNN R50 模型为例演示整个过程，为了方便说明，我们将 neck 模块中的 `FPN` 替换为 `AugFPN`，并且在训练中的自动增强类中增加 `Rotate` 或 `Translate`。
 
 基本步骤如下所示：
 
@@ -120,8 +120,8 @@ _base_ = [
 ]
 
 model = dict(
-    # 设置为 None，不加载 ImageNet 预训练权重，
-    # 后续相应的设置 `load_from` 参数用来加载 COCO 预训练权重
+    # 设置为 None，表示不加载 ImageNet 预训练权重，
+    # 后续可以设置 `load_from` 参数用来加载 COCO 预训练权重
     pretrained=None,
     # 使用新增的 `AugFPN` 模块代替默认的 `FPN`
     neck=dict(
@@ -261,7 +261,7 @@ load_from = 'http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade
 python tools/train.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py
 ```
 
-如果想了解更多用法，可以参考 [例子1](1_exist_data_model.md)。
+如果想了解更多用法，可以参考[例子1](1_exist_data_model.md)。
 
 ## 测试和推理
 
@@ -271,4 +271,4 @@ python tools/train.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10
 python tools/test.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py work_dirs/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py/latest.pth --eval bbox segm
 ```
 
-如果想了解更多用法，可以参考 [例子1](1_exist_data_model.md)。
+如果想了解更多用法，可以参考[例子1](1_exist_data_model.md)。
