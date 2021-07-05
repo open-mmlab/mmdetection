@@ -45,7 +45,7 @@ for frame in video:
 jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb) 。
 
 ### 异步接口-支持 Python 3.7+
-对于 Python 3.7+，MMDetection 也支持异步接口。利用 CUDA 流，绑定 GPU 的推理代码不会阻塞 CPU，CPU/GPU 在单线程应用中能达到更高的利用率。无论是在不同的输入数据样本还是在一些推理流程的不同模型间，推理都被能并发地执行。
+对于 Python 3.7+，MMDetection 也有异步接口。利用 CUDA 流，绑定 GPU 的推理代码不会阻塞 CPU，从而使得 CPU/GPU 在单线程应用中能达到更高的利用率。在推理流程中，不同数据样本的推理和不同模型的推理都能并发地运行。
 
 您可以参考 `tests/async_benchmark.py` 来对比同步接口和异步接口的运行速度。
 
@@ -86,73 +86,73 @@ asyncio.run(main())
 ```
 
 ### 演示样例
-我们还提供了三个演示脚本，它们是使用高层编程接口实现的，支持了功能性代码。 [源码在此](https://github.com/open-mmlab/mmdetection/tree/master/demo) 。
+我们还提供了三个演示脚本，它们是使用高层编程接口实现的。 [源码在此](https://github.com/open-mmlab/mmdetection/tree/master/demo) 。
 
 #### 图片样例
-这是在单张图片上进行推理的脚本，可以开启 `--async-test` 来进行异步推理。
+   这是在单张图片上进行推理的脚本，可以开启 `--async-test` 来进行异步推理。
 
-```shell
-python demo/image_demo.py \
-    ${IMAGE_FILE} \
-    ${CONFIG_FILE} \
-    ${CHECKPOINT_FILE} \
-    [--device ${GPU_ID}] \
-    [--score-thr ${SCORE_THR}] \
-    [--async-test]
-```
+   ```shell
+   python demo/image_demo.py \
+       ${IMAGE_FILE} \
+       ${CONFIG_FILE} \
+       ${CHECKPOINT_FILE} \
+       [--device ${GPU_ID}] \
+       [--score-thr ${SCORE_THR}] \
+       [--async-test]
+   ```
 
-运行样例：
+   运行样例：
 
-```shell
-python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
-    --device cpu
-```
+   ```shell
+   python demo/image_demo.py demo/demo.jpg \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+       --device cpu
+   ```
 
 #### 摄像头样例
-这是使用摄像头实时图片的推理脚本。
+   这是使用摄像头实时图片的推理脚本。
 
-```shell
-python demo/webcam_demo.py \
-    ${CONFIG_FILE} \
-    ${CHECKPOINT_FILE} \
-    [--device ${GPU_ID}] \
-    [--camera-id ${CAMERA-ID}] \
-    [--score-thr ${SCORE_THR}]
-```
+   ```shell
+   python demo/webcam_demo.py \
+       ${CONFIG_FILE} \
+       ${CHECKPOINT_FILE} \
+       [--device ${GPU_ID}] \
+       [--camera-id ${CAMERA-ID}] \
+       [--score-thr ${SCORE_THR}]
+   ```
 
-运行样例：
+   运行样例：
 
-```shell
-python demo/webcam_demo.py \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
-```
+   ```shell
+   python demo/webcam_demo.py \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+   ```
 
 #### 视频样例
-这是在视频样例上进行推理的脚本。
+   这是在视频样例上进行推理的脚本。
 
-```shell
-python demo/video_demo.py \
-    ${VIDEO_FILE} \
-    ${CONFIG_FILE} \
-    ${CHECKPOINT_FILE} \
-    [--device ${GPU_ID}] \
-    [--score-thr ${SCORE_THR}] \
-    [--out ${OUT_FILE}] \
-    [--show] \
-    [--wait-time ${WAIT_TIME}]
-```
+   ```shell
+   python demo/video_demo.py \
+       ${VIDEO_FILE} \
+       ${CONFIG_FILE} \
+       ${CHECKPOINT_FILE} \
+       [--device ${GPU_ID}] \
+       [--score-thr ${SCORE_THR}] \
+       [--out ${OUT_FILE}] \
+       [--show] \
+       [--wait-time ${WAIT_TIME}]
+   ```
 
-运行样例：
+   运行样例：
 
-```shell
-python demo/video_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
-    --out result.mp4
-```
+   ```shell
+   python demo/video_demo.py demo/demo.mp4 \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+       --out result.mp4
+   ```
 
 ## 在标准数据集上测试现有模型
 
@@ -374,7 +374,6 @@ bash tools/dist_test.sh \
 
 MMDetection 在测试模式下，既支持单张图片的推理，也支持对图像批推理。默认情况下，我们使用单张图片的测试，你可以通过修改测试数据配置文件中的 `samples_per_gpu` 来开启批测试。
 开启批推理的配置文件修改方法为：
-
 
 ```shell
 data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
