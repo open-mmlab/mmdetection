@@ -252,14 +252,14 @@ def test_results():
         assert not value.requires_grad
 
     # test numpy
-    tensor_results = cpu_results.new_results()
+    tensor_results = double_results.new_results()
     tensor_results.mask = torch.rand(2, requires_grad=True)
     tensor_results.mask_1 = torch.rand(2, requires_grad=True)
     numpy_results = tensor_results.numpy()
     for value in numpy_results.results_field.values():
         assert isinstance(value, np.ndarray)
     if torch.cuda.is_available():
-        tensor_results = cpu_results.new_results()
+        tensor_results = double_results.new_results()
         tensor_results.mask = torch.rand(2)
         tensor_results.mask_1 = torch.rand(2)
         tensor_results = tensor_results.cuda()
