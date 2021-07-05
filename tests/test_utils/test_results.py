@@ -73,7 +73,7 @@ def test_results():
         assert not new_results.cuda_det.is_cuda
         del new_results.cuda_det
 
-    # test `__delattr__`
+    # test `__delattr__`meta_info_field["img_size"][0]
 
     # '_meta_info_field', '_results_field' is unmodifiable.
     with pytest.raises(AttributeError):
@@ -157,11 +157,77 @@ def test_results():
     # test_keys
     new_results.mask = torch.ones(1, 2, 3)
     'mask' in new_results.keys()
+    has_flag = False
+    for key in new_results.keys():
+        if key == 'mask':
+            has_flag = True
+    assert has_flag
 
     # test values
-    assert len(new_results.keys()) == len(new_results.values())
+    assert len(list(new_results.keys())) == len(list(new_results.values()))
+    mask = new_results.mask
+    has_flag = False
+    for value in new_results.values():
+        if value is mask:
+            has_flag = True
+    assert has_flag
 
     # test items
+    assert len(list(new_results.keys())) == len(list(new_results.items()))
+    mask = new_results.mask
+    has_flag = False
+    for key, value in new_results.items():
+        if value is mask:
+            assert key == 'mask'
+            has_flag = True
+    assert has_flag
+
+    # test results_filed
+    results_field = new_results.results_field
+    assert len(results_field) == len(new_results.results_field)
+    for key in new_results._results_field:
+        assert new_results[key] is results_field[key]
+
+    # test meta_file
+    meta_info_field = new_results.meta_info_field
+    assert len(results_field) == len(new_results.results_field)
+    for key in new_results._meta_info_field:
+        if isinstance(new_results[key], np.ndarray):
+            assert (new_results[key] == meta_info_field[key]).all()
+        else:
+            assert (new_results[key] == meta_info_field[key])
+    # test deep copy to avoid being modified outside
+    meta_info_field['img_size'][0] = 100
+    assert not meta_info_field['img_size'] == new_results.img_size
+
+    # test device
+    if torch.cuda.is_available():
+        newnew_results = new_results.new_results()
+        devices = ('cpu', 'cuda')
+        for i in range(10):
+            device = devices[i % 2]
+            newnew_results[f'{i}'] = torch.rand(1, 2, 3, device=device)
+        assert newnew_results.results_field[
+            '0'].device == newnew_results.device
+        for value in newnew_results.results_field.values():
+            assert not value.is_cuda
+        newnew_results = new_results.new_results()
+        devices = ('cuda', 'cpu')
+        for i in range(10):
+            device = devices[i % 2]
+            newnew_results[f'{i}'] = torch.rand(1, 2, 3, device=device)
+        assert newnew_results.results_field[
+            '0'].device == newnew_results.device
+        for value in newnew_results.results_field.values():
+            assert value.is_cuda
+    # test to
+    double_results = results.new_results()
+    double_results.long = torch.LongTensor(1, 2, 3, 4)
+    double_results.bool = torch.BoolTensor(1, 2, 3, 4)
+    double_results = results.to(torch.double)
+    for k, v in double_results.items():
+        if isinstance(v, torch.Tensor):
+            assert v.dtype is torch.double
 
     results['_c'] = 10000
     results.get('dad', None) is None
@@ -212,11 +278,6 @@ def test_results():
         for k, v in cuda_resutls.items():
             if isinstance(v, torch.Tensor):
                 assert v.is_cuda
-
-    double_results = results.to(torch.double)
-    for k, v in double_results.items():
-        if isinstance(v, torch.Tensor):
-            assert v.dtype is torch.double
 
 
 def test_instance_results():

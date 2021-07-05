@@ -67,7 +67,8 @@ class Results(NiceRepr):
         return new_results
 
     def keys(self):
-        return chain(self._results_field, self._meta_info_field)
+        for key in chain(self._results_field, self._meta_info_field):
+            yield key
 
     def values(self):
         for k in self.keys():
