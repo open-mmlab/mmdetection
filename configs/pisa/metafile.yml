@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - FPN
         - PISA
@@ -26,7 +26,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_faster_rcnn_r50_fpn_1x_coco/pisa_faster_rcnn_r50_fpn_1x_coco-dea93523.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_faster_rcnn_r50_fpn_1x_coco/pisa_faster_rcnn_r50_fpn_1x_coco-dea93523.pth
 
   - Name: pisa_faster_rcnn_x101_32x4d_fpn_1x_coco
     In Collection: PISA
@@ -38,7 +38,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_faster_rcnn_x101_32x4d_fpn_1x_coco/pisa_faster_rcnn_x101_32x4d_fpn_1x_coco-e4accec4.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_faster_rcnn_x101_32x4d_fpn_1x_coco/pisa_faster_rcnn_x101_32x4d_fpn_1x_coco-e4accec4.pth
 
   - Name: pisa_mask_rcnn_r50_fpn_1x_coco
     In Collection: PISA
@@ -54,7 +54,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 35.2
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_mask_rcnn_r50_fpn_1x_coco/pisa_mask_rcnn_r50_fpn_1x_coco-dfcedba6.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_mask_rcnn_r50_fpn_1x_coco/pisa_mask_rcnn_r50_fpn_1x_coco-dfcedba6.pth
 
   - Name: pisa_retinanet_r50_fpn_1x_coco
     In Collection: PISA
@@ -66,7 +66,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 36.9
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_retinanet_r50_fpn_1x_coco/pisa_retinanet_r50_fpn_1x_coco-76409952.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_retinanet_r50_fpn_1x_coco/pisa_retinanet_r50_fpn_1x_coco-76409952.pth
 
   - Name: pisa_retinanet_x101_32x4d_fpn_1x_coco
     In Collection: PISA
@@ -78,7 +78,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.7
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_retinanet_x101_32x4d_fpn_1x_coco/pisa_retinanet_x101_32x4d_fpn_1x_coco-a0c13c73.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_retinanet_x101_32x4d_fpn_1x_coco/pisa_retinanet_x101_32x4d_fpn_1x_coco-a0c13c73.pth
 
   - Name: pisa_ssd300_coco
     In Collection: PISA
@@ -90,7 +90,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 27.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_ssd300_coco/pisa_ssd300_coco-710e3ac9.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_ssd300_coco/pisa_ssd300_coco-710e3ac9.pth
 
   - Name: pisa_ssd512_coco
     In Collection: PISA
@@ -102,4 +102,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 31.8
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_ssd512_coco/pisa_ssd512_coco-247addee.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/pisa/pisa_ssd512_coco/pisa_ssd512_coco-247addee.pth

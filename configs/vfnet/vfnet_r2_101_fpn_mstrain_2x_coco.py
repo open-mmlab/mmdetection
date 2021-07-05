@@ -1,6 +1,5 @@
 _base_ = './vfnet_r50_fpn_mstrain_2x_coco.py'
 model = dict(
-    pretrained='open-mmlab://res2net101_v1d_26w_4s',
     backbone=dict(
         type='Res2Net',
         depth=101,
@@ -11,4 +10,7 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch'))
+        style='pytorch',
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='open-mmlab://res2net101_v1d_26w_4s')))

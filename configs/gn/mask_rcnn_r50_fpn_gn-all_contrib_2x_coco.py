@@ -1,8 +1,10 @@
 _base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
-    pretrained='open-mmlab://contrib/resnet50_gn',
-    backbone=dict(norm_cfg=norm_cfg),
+    backbone=dict(
+        norm_cfg=norm_cfg,
+        init_cfg=dict(
+            type='Pretrained', checkpoint='open-mmlab://contrib/resnet50_gn')),
     neck=dict(norm_cfg=norm_cfg),
     roi_head=dict(
         bbox_head=dict(

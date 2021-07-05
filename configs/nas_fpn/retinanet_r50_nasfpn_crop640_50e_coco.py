@@ -7,7 +7,6 @@ cudnn_benchmark = True
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
     type='RetinaNet',
-    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -16,7 +15,8 @@ model = dict(
         frozen_stages=1,
         norm_cfg=norm_cfg,
         norm_eval=False,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(type='NASFPN', stack_times=7, norm_cfg=norm_cfg),
     bbox_head=dict(type='RetinaSepBNHead', num_ins=5, norm_cfg=norm_cfg),
     # training and testing settings

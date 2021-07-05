@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - FPN
         - Probabilistic Anchor Assignment
@@ -24,7 +24,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r50_fpn_1x_coco/paa_r50_fpn_1x_coco_20200821-936edec3.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/paa/paa_r50_fpn_1x_coco/paa_r50_fpn_1x_coco_20200821-936edec3.pth
 
   - Name: paa_r50_fpn_1.5x_coco
     In Collection: PAA
@@ -36,7 +36,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.4
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r50_fpn_1.5x_coco/paa_r50_fpn_1.5x_coco_20200823-805d6078.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/paa/paa_r50_fpn_1.5x_coco/paa_r50_fpn_1.5x_coco_20200823-805d6078.pth
 
   - Name: paa_r50_fpn_2x_coco
     In Collection: PAA
@@ -48,7 +48,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r50_fpn_2x_coco/paa_r50_fpn_2x_coco_20200821-c98bfc4e.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/paa/paa_r50_fpn_2x_coco/paa_r50_fpn_2x_coco_20200821-c98bfc4e.pth
 
   - Name: paa_r50_fpn_mstrain_3x_coco
     In Collection: PAA
@@ -60,7 +60,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 43.3
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r50_fpn_mstrain_3x_coco/paa_r50_fpn_mstrain_3x_coco_20210121_145722-06a6880b.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/paa/paa_r50_fpn_mstrain_3x_coco/paa_r50_fpn_mstrain_3x_coco_20210121_145722-06a6880b.pth
 
   - Name: paa_r101_fpn_1x_coco
     In Collection: PAA
@@ -72,7 +72,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.6
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_1x_coco/paa_r101_fpn_1x_coco_20200821-0a1825a4.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_1x_coco/paa_r101_fpn_1x_coco_20200821-0a1825a4.pth
 
   - Name: paa_r101_fpn_2x_coco
     In Collection: PAA
@@ -84,7 +84,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 43.5
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_2x_coco/paa_r101_fpn_2x_coco_20200821-6829f96b.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_2x_coco/paa_r101_fpn_2x_coco_20200821-6829f96b.pth
 
   - Name: paa_r101_fpn_mstrain_3x_coco
     In Collection: PAA
@@ -96,4 +96,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 45.1
-    Weights: http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_mstrain_3x_coco/paa_r101_fpn_mstrain_3x_coco_20210122_084202-83250d22.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_mstrain_3x_coco/paa_r101_fpn_mstrain_3x_coco_20210122_084202-83250d22.pth
