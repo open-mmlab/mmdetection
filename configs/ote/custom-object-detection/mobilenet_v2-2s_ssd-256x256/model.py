@@ -78,25 +78,22 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=1200,
     warmup_ratio=1.0 / 3,
-    step=[8, 11, 13])
+    step=[8000, 11000, 13000])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
     interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
+        dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
-runner = dict(meta=dict(exp_name='train'),
-              max_epochs=30,
-              type='EpochBasedRunner')
+runner = dict(type='IterBasedRunner', max_iters=13000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'outputs/mobilenet_v2-2s_ssd-256x256'
-init_from = 'https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/mobilenet_v2-2s_ssd-256x256.pth'
-load_from = None
+load_from = 'https://download.01.org/opencv/openvino_training_extensions/models/object_detection/v2/mobilenet_v2-2s_ssd-256x256.pth'
 resume_from = None
 workflow = [('train', 1)]
 cudnn_benchmark = True

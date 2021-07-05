@@ -19,18 +19,6 @@ from sc_sdk.configuration.configurable_parameters import *
 from sc_sdk.configuration.deep_learning_configurable_parameters import DeepLearningConfigurableParameters
 
 
-def list_available_models(models_directory):
-    available_models = []
-    for dirpath, dirnames, filenames in os.walk(models_directory):
-        for filename in filenames:
-            if filename == 'model.py':
-                available_models.append(dict(
-                    name=osp.basename(dirpath),
-                    dir=osp.join(models_directory, dirpath)))
-    available_models.sort(key=lambda x: x['name'])
-    return available_models
-
-
 class MMDetectionParameters(DeepLearningConfigurableParameters):
 
     class __Postprocessing(Group):
@@ -80,7 +68,7 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
         batch_size = Integer(
             default_value=5,
             min_value=1,
-            max_value=32,
+            max_value=512,
             header="Batch size",
             description="The number of training samples seen in each iteration of training. Increasing this value "
             "reduces training time and may make the training more stable. A larger batch size has higher "
@@ -100,10 +88,9 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
         )
 
         learning_rate = Float(
-            default_value=0.0025,
+            default_value=0.01,
             header="Learning rate",
-            description="Increasing this value will speed up training convergence but might make it unstable. A value "
-                        "of 0.0025 is recommended.",
+            description="Increasing this value will speed up training convergence but might make it unstable.",
             min_value=1e-07,
             max_value=1e-01,
             editable=True,
@@ -114,12 +101,12 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
             description="",
             default_value=100,
             min_value=0,
-            max_value=1000,
+            max_value=10000,
             editable=True,
         )
 
         learning_rate_schedule = Selectable(header="Learning rate schedule",
-                                            default_value="exp",
+                                            default_value="custom",
                                             options=[Option(key="fixed",
                                                             value="Fixed",
                                                             description="Learning rate is kept fixed during training"),

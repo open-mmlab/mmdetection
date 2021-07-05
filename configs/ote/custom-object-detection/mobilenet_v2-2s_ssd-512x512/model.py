@@ -77,7 +77,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=1200,
     warmup_ratio=1.0 / 3,
-    step=[8, 11, 13])
+    step=[8000, 11000, 13000])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -88,9 +88,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-runner = dict(meta=dict(exp_name='train'),
-              max_epochs=30,
-              type='EpochBasedRunner')
+runner = dict(type='IterBasedRunner', max_iters=13000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'outputs/mobilenet_v2-2s_ssd-512x512'

@@ -124,7 +124,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         self.learning_curves = defaultdict(OTELoggerHook.Curve)
 
-        init_from = config.get('init_from', None)
+        init_from = config.get('load_from', None)
         if from_scratch:
             model_cfg.pretrained = None
             init_from = None
@@ -133,13 +133,13 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             # No need to initialize backbone separately, if all weights are provided.
             model_cfg.pretrained = None
             logger.warning('build detector')
-            model = build_detector(model_cfg, train_cfg=config.train_cfg, test_cfg=config.test_cfg)
+            model = build_detector(model_cfg)
             # Load all weights.
             logger.warning('load checkpoint')
             load_checkpoint(model, init_from, map_location='cpu')
         else:
             logger.warning('build detector as is')
-            model = build_detector(model_cfg, train_cfg=config.train_cfg, test_cfg=config.test_cfg)
+            model = build_detector(model_cfg)
         return model
 
     def analyse(self, dataset: Dataset, analyse_parameters: Optional[AnalyseParameters] = None) -> Dataset:
@@ -233,14 +233,14 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         else:
             # If there is no trained model yet, create model with pretrained weights as defined in the model config
-            # file. These are ImageNet pretrained
+            # file.
             model_config = self.config_manager.config_copy
-            logger.info(self.config_manager.config_to_string(model_config))
+            # logger.info(self.config_manager.config_to_string(model_config))
             torch_model = self._create_model(config=model_config, from_scratch=False)
             self.train_model = torch_model
             self.inference_model = copy.deepcopy(self.train_model)
-            logger.info(f"No trained model in project yet. Created new model with {self.config_manager.model_name} "
-                        f"architecture and ImageNet pretrained weights.")
+            logger.info(f"No trained model in project yet. Created new model with '{self.config_manager.model_name}' "
+                        f"architecture and general-purpose pretrained weights.")
 
         # Set the model configs. Inference always uses the config that came with the model, while training uses the
         # latest config in the config_manager
@@ -333,7 +333,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         self.train_model.cfg = self.config_manager.config_copy
         inference_model = copy.deepcopy(self.train_model)
         inference_model.eval()
-        print(self.config_manager.config_to_string(self.train_model.cfg))
+        # print(self.config_manager.config_to_string(self.train_model.cfg))
 
         self.config_manager.update_dataset_subsets(dataset)
         mm_train_dataset = build_dataset(self.config_manager.config.data.train)
@@ -343,6 +343,13 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             config.custom_hooks = []
         self.time_monitor = TimeMonitorCallback(0, 0, 0, 0) # It will be initialized properly inside the OTEProgressHook before training.
         config.custom_hooks.append({'type': 'OTEProgressHook', 'time_monitor': self.time_monitor, 'verbose': True})
+        total_iterations = config.runner.max_iters
+        # FIXME. It is hard to define evaluation and checkpoint frequency in absolute number of iterations.
+        # This way those are defined in percentage of total training iterations, which is better, but still not perfect.
+        # It might be even better to control it in terms of training time, but not clear how.
+        # FIXME. It'd make sense to make number of evaluations/checkpoints configurable at least.
+        config.evaluation.interval = total_iterations // 10
+        config.checkpoint_config.interval = total_iterations // 10
 
         # Train the model. Training modifies mmdet config in place, so make a deepcopy
         self.is_training = True

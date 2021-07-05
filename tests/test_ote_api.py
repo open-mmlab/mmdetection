@@ -6,7 +6,6 @@ import unittest
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 
-from flaky import flaky
 from sc_sdk.entities.annotation import Annotation, AnnotationScene, AnnotationSceneKind
 from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, Subset, NullDatasetStorage
@@ -113,7 +112,6 @@ class TestOTEAPI(unittest.TestCase):
         configurable_parameters.learning_parameters.num_iters.value = num_iters
         return configurable_parameters
 
-    @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def test_cancel_training_detection(self):
         """
         Tests starting and cancelling training.
@@ -168,7 +166,6 @@ class TestOTEAPI(unittest.TestCase):
         performance = task.compute_performance(result_set)
         return performance
 
-    @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def train_and_eval(self, template_dir):
         """
         Run training, analysis, evaluation and model optimization
@@ -182,7 +179,7 @@ class TestOTEAPI(unittest.TestCase):
             difference between the original and the reloaded model is smaller than 1e-4. Ideally there should be no
             difference at all.
         """
-        configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=200)
+        configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=150)
         _, detection_environment, dataset = self.init_environment(configurable_parameters, 250)
         task = MMObjectDetectionTask(task_environment=detection_environment)
         task.update_configurable_parameters(detection_environment)
@@ -197,12 +194,12 @@ class TestOTEAPI(unittest.TestCase):
         model = task.train(dataset=dataset)
         self.assertFalse(isinstance(model, NullModel))
 
-        # if isinstance(task, IModelOptimizer):
-        #     optimized_models = task.optimize_loaded_model()
-        #     self.assertGreater(len(optimized_models), 0, 'Task must return an Optimised model.')
-        #     for m in optimized_models:
-        #         self.assertIsInstance(m, OptimizedModel,
-        #                               'Optimised model must be an Openvino or DeployableTensorRT model.')
+        if isinstance(task, IModelOptimizer):
+            optimized_models = task.optimize_loaded_model()
+            self.assertGreater(len(optimized_models), 0, 'Task must return an Optimised model.')
+            for m in optimized_models:
+                self.assertIsInstance(m, OptimizedModel,
+                                      'Optimised model must be an Openvino or DeployableTensorRT model.')
 
         # Run inference
         validation_performance = self.eval(task, detection_environment, dataset)
@@ -230,15 +227,12 @@ class TestOTEAPI(unittest.TestCase):
         print(f'Performance after reloading: {performance_after_reloading.score.value:.4f}')
         print(f'Performance delta after reloading: {performance_delta:.6f}')
 
-    @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def test_training_custom_mobilenetssd_256(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
 
-    @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def test_training_custom_mobilenetssd_384(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-384x384'))
 
-    @flaky(max_runs=2, rerun_filter=rerun_on_flaky_assert())
     def test_training_custom_mobilenetssd_512(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-512x512'))
 

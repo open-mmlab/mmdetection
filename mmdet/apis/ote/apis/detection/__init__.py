@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .configurable_parameters import MMDetectionParameters, list_available_models
+from .configurable_parameters import MMDetectionParameters
 from .task import MMObjectDetectionTask, MMDetectionTaskType
 
-__all__ = [MMDetectionParameters, MMObjectDetectionTask, MMDetectionTaskType, list_available_models]
+__all__ = [MMDetectionParameters, MMObjectDetectionTask, MMDetectionTaskType]

@@ -17,10 +17,9 @@ import os
 from collections import defaultdict
 
 from mmcv.runner.hooks import HOOKS, Hook, LoggerHook
-from mmcv.runner import BaseRunner, EpochBasedRunner, IterBasedRunner
+from mmcv.runner import BaseRunner, EpochBasedRunner
 from mmcv.runner.dist_utils import master_only
 from sc_sdk.logging import logger_factory
-from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 
 logger = logger_factory.get_logger("MMDetectionTask")
 
@@ -49,7 +48,7 @@ class CancelTrainingHook(Hook):
             runner.should_stop = True  # Set this flag to true to stop the current training epoch
             os.remove(stop_filepath)
 
-    def after_train_iter(self, runner: EpochBasedRunner):
+    def after_train_iter(self, runner: BaseRunner):
         if not self.every_n_iters(runner, self.interval):
             return
         self._check_for_stop_signal(runner)

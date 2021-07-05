@@ -11,7 +11,7 @@ log_config = dict(
 dist_params = dict(backend='nccl')
 cudnn_benchmark = False
 log_level = 'INFO'
-load_from = None
+# load_from = None
 resume_from = None
 workflow = [('train', 1)]
 custom_hooks = [
