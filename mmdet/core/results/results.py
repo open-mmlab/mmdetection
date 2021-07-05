@@ -90,9 +90,7 @@ class Results(NiceRepr):
             if name in self._meta_info_field:
                 raise AttributeError(f'`{name}` is used in meta information,'
                                      f'which is unmodifiable')
-            if isinstance(val, torch.Tensor):
-                if self.device:
-                    val = val.to(self.device)
+
             self._results_field.add(name)
             super().__setattr__(name, val)
 
@@ -147,16 +145,6 @@ class Results(NiceRepr):
             for k in self._meta_info_field
         }
 
-    @property
-    def device(self):
-        """Return the device of all tensor in results field, return None when
-        results field is empty."""
-        device = None
-        for k in self._results_field:
-            if isinstance(getattr(self, k), torch.Tensor):
-                return getattr(self, k).device
-        return device
-
     def __contains__(self, item):
         return item in self._results_field or \
                     item in self._meta_info_field
@@ -166,7 +154,7 @@ class Results(NiceRepr):
         """Apply same name function to all tensors in results field."""
         new_results = self.new_results()
         for k, v in self.results_field.items():
-            if isinstance(v, torch.Tensor):
+            if hasattr(v, 'to'):
                 v = v.to(*args, **kwargs)
             new_results[k] = v
         return new_results
@@ -232,16 +220,18 @@ class InstanceResults(Results):
         if name in ('_meta_info_field', '_results_field'):
             if not hasattr(self, name):
                 super().__setattr__(name, value)
+            else:
+                raise AttributeError(
+                    f'{name} has been used as a '
+                    f'private attribute, which is unmodifiable. ')
+
         else:
             assert isinstance(value, (torch.Tensor, np.ndarray, list)), \
                 f'Can set {type(value)}, only support' \
                 f' {(torch.Tensor, np.ndarray, list)}'
 
-            if isinstance(value, torch.Tensor) and self.device:
-                value = value.to(self.device)
-
-            for v in self.results_field.values():
-                assert len(v) == len(value), f'the length of ' \
+            if self._results_field:
+                assert len(value) == len(self), f'the length of ' \
                                              f'values {len(value)} is ' \
                                              f'not consistent with' \
                                              f' the length ' \
@@ -258,6 +248,7 @@ class InstanceResults(Results):
         Returns:
             obj:`InstanceResults`: Corresponding values.
         """
+        assert len(self), ' This is a empty instance'
 
         assert isinstance(
             item, (str, slice, int, torch.LongTensor, torch.BoolTensor))
@@ -276,6 +267,15 @@ class InstanceResults(Results):
         if isinstance(item, (torch.Tensor)):
             assert item.dim() == 1, 'Only support to get the' \
                                  ' values along the first dimension.'
+            if isinstance(item, torch.BoolTensor):
+                assert len(item) == len(self), f'The shape of the' \
+                                               f' input(BoolTensor)) ' \
+                                               f'{len(item)} at index 0' \
+                                               f' does not match the shape ' \
+                                               f'of the indexed tensor ' \
+                                               f'in results_filed ' \
+                                               f'{len(self)} at index 0'
+
             for k, v in self.results_field.items():
                 if isinstance(v, torch.Tensor):
                     r_results[k] = v[item]

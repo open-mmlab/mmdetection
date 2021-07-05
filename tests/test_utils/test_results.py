@@ -66,15 +66,6 @@ def test_results():
     with pytest.raises(AttributeError):
         new_results.scale_factor = 1
 
-    # all tensor would be moved to same device
-    if torch.cuda.is_available():
-        new_results.cuda_det = torch.ones(1, 2, 4, 4, device='cuda')
-        assert new_results.device == new_results.cuda_det.device
-        assert not new_results.cuda_det.is_cuda
-        del new_results.cuda_det
-
-    # test `__delattr__`meta_info_field["img_size"][0]
-
     # '_meta_info_field', '_results_field' is unmodifiable.
     with pytest.raises(AttributeError):
         del new_results._results_field
@@ -207,8 +198,7 @@ def test_results():
         for i in range(10):
             device = devices[i % 2]
             newnew_results[f'{i}'] = torch.rand(1, 2, 3, device=device)
-        assert newnew_results.results_field[
-            '0'].device == newnew_results.device
+        newnew_results = newnew_results.cpu()
         for value in newnew_results.results_field.values():
             assert not value.is_cuda
         newnew_results = new_results.new_results()
@@ -216,8 +206,7 @@ def test_results():
         for i in range(10):
             device = devices[i % 2]
             newnew_results[f'{i}'] = torch.rand(1, 2, 3, device=device)
-        assert newnew_results.results_field[
-            '0'].device == newnew_results.device
+        newnew_results = newnew_results.cuda()
         for value in newnew_results.results_field.values():
             assert value.is_cuda
     # test to
@@ -229,13 +218,50 @@ def test_results():
         if isinstance(v, torch.Tensor):
             assert v.dtype is torch.double
 
+    # test .cpu() .cuda()
+    if torch.cuda.is_available():
+        cpu_results = double_results.new_results()
+        cpu_results.mask = torch.rand(1)
+        cuda_tensor = torch.rand(1, 2, 3).cuda()
+        cuda_results = cpu_results.to(cuda_tensor.device)
+        for value in cuda_results.results_field.values():
+            assert value.is_cuda
+        cpu_results = cuda_results.cpu()
+        for value in cpu_results.results_field.values():
+            assert not value.is_cuda
+        cuda_results = cpu_results.cuda()
+        for value in cuda_results.results_field.values():
+            assert value.is_cuda
+
+    # test detach
+    grad_results = cpu_results.new_results()
+    grad_results.mask = torch.rand(2, requires_grad=True)
+    grad_results.mask_1 = torch.rand(2, requires_grad=True)
+    detach_results = grad_results.detach()
+    for value in detach_results.results_field.values():
+        assert not value.requires_grad
+
+    # test numpy
+    tensor_results = cpu_results.new_results()
+    tensor_results.mask = torch.rand(2, requires_grad=True)
+    tensor_results.mask_1 = torch.rand(2, requires_grad=True)
+    numpy_results = tensor_results.numpy()
+    for value in numpy_results.results_field.values():
+        assert isinstance(value, np.ndarray)
+    if torch.cuda.is_available():
+        tensor_results = cpu_results.new_results()
+        tensor_results.mask = torch.rand(2)
+        tensor_results.mask_1 = torch.rand(2)
+        tensor_results = tensor_results.cuda()
+        numpy_results = tensor_results.numpy()
+        for value in numpy_results.results_field.values():
+            assert isinstance(value, np.ndarray)
+
     results['_c'] = 10000
     results.get('dad', None) is None
     assert hasattr(results, '_c')
     del results['_c']
     assert not hasattr(results, '_c')
-
-    assert results.device is None
     results.a = 1000
     results['a'] = 2000
     assert results['a'] == 2000
@@ -246,16 +272,10 @@ def test_results():
     if torch.cuda.is_available():
         results.bbox = torch.ones(2, 3, 4, 5).cuda()
         results.score = torch.ones(2, 3, 4, 4)
-        assert results.score.device == \
-               results.bbox.device == results.device
-        assert torch.ones(1).to(results.device).device ==\
-               results.device
     else:
         results.bbox = torch.ones(2, 3, 4, 5)
 
-    assert results.device == results.bbox.device
     assert len(results.new_results().results_field) == 0
-    results.bbox.sum()
     with pytest.raises(AttributeError):
         results.img_size = 100
 
@@ -285,9 +305,57 @@ def test_instance_results():
         img_size=(256, 256),
         path='dadfaff',
         scale_factor=np.array([1.5, 1.5, 1, 1]))
-    results = InstanceResults(meta_info)
-    num_instance = 1000
 
+    # test init
+    results = InstanceResults(meta_info)
+    # test deep copy
+    assert results.meta_info_field is not meta_info
+    assert 'img_size' in results
+
+    # test __setattr__
+    # '_meta_info_field', '_results_field' is unmodifiable.
+    with pytest.raises(AttributeError):
+        results._results_field = dict()
+    with pytest.raises(AttributeError):
+        results._results_field = dict()
+
+    # all attribute in results_field should be
+    # (torch.Tensor, np.ndarray, list))
+    with pytest.raises(AssertionError):
+        results.a = 1000
+
+    # results field should has same length
+    new_results = results.new_results()
+    new_results.det_bbox = torch.rand(100, 4)
+    new_results.det_label = torch.arange(100)
+    with pytest.raises(AssertionError):
+        new_results.scores = torch.rand(101, 1)
+    new_results.none = [None] * 100
+    with pytest.raises(AssertionError):
+        new_results.scores = [None] * 101
+    new_results.numpy_det = np.random.random([100, 1])
+    with pytest.raises(AssertionError):
+        new_results.scores = np.random.random([101, 1])
+
+    # isinstance(str, slice, int, torch.LongTensor, torch.BoolTensor)
+    item = torch.Tensor([1, 2, 3, 4])
+    with pytest.raises(AssertionError):
+        new_results[item]
+    len(new_results[item.long()]) == 1
+
+    # when input is a bool tensor, The shape of
+    # the input at index 0 should equal to
+    # the value length in results_field
+    with pytest.raises(AssertionError):
+        new_results[item.bool()]
+
+    for i in range(len(new_results)):
+        assert new_results[i].det_label == i
+        assert len(new_results[i]) == 1
+
+    # asset the index should in 0 ~ len(results) -1
+
+    num_instance = 1000
     results_list = []
     for _ in range(2):
         results['bbox'] = torch.rand(num_instance, 4)
@@ -297,7 +365,7 @@ def test_instance_results():
         results['cpu_bbox'] = np.random.random((num_instance, 4))
         if torch.cuda.is_available():
             results.cuda_tensor = torch.rand(num_instance).cuda()
-            assert not results.cuda_tensor.is_cuda
+            assert results.cuda_tensor.is_cuda
             cuda_results = results.cuda()
             assert cuda_results.cuda_tensor.is_cuda
 
