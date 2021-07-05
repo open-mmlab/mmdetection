@@ -98,7 +98,7 @@ class Results(NiceRepr):
     def __delattr__(self, item):
 
         if item in ('_meta_info_field', '_results_field'):
-            raise AssertionError(f'You can not delete {item}')
+            raise AttributeError(f'You can not delete {item}')
 
         if item in self._meta_info_field:
             raise KeyError(f'{item} is used in meta information, '
@@ -159,8 +159,6 @@ class Results(NiceRepr):
     def __contains__(self, item):
         return item in self._results_field or \
                     item in self._meta_info_field
-
-    __delitem__ = __delattr__
 
     # Tensor-like methods
     def to(self, *args, **kwargs):

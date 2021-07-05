@@ -12,12 +12,6 @@ def test_results():
 
     results = Results(meta_info)
 
-    with pytest.raises(AssertionError):
-        delattr(results, '_meta_info_field')
-
-    with pytest.raises(AssertionError):
-        delattr(results, '_results_field')
-
     for k, v in results.meta_info_field.items():
         if isinstance(v, np.ndarray):
             assert (results.meta_info_field[k] == meta_info[k]).all()
@@ -65,6 +59,13 @@ def test_results():
     with pytest.raises(AttributeError):
         new_results._results_field = dict()
 
+    # attribute releated to meta info is unmodifiable
+    with pytest.raises(AttributeError):
+        new_results._results_field = dict()
+
+    with pytest.raises(AttributeError):
+        new_results.scale_factor = 1
+
     # all tensor would be moved to same device
     if torch.cuda.is_available():
         new_results.cuda_det = torch.ones(1, 2, 4, 4, device='cuda')
@@ -72,14 +73,93 @@ def test_results():
         assert not new_results.cuda_det.is_cuda
         del new_results.cuda_det
 
-    # test
+    # test `__delattr__`
 
-    # test `in`
-    assert 'mask' in new_results
+    # '_meta_info_field', '_results_field' is unmodifiable.
+    with pytest.raises(AttributeError):
+        del new_results._results_field
+    with pytest.raises(AttributeError):
+        del new_results._meta_info_field
+
+    # key in _meta_info_field is unmodifiable
+    with pytest.raises(KeyError):
+        del new_results.img_size
+    with pytest.raises(KeyError):
+        del new_results.scale_factor
+
+    # test key can be removed in results_field
+    assert 'mask' in new_results._results_field
+    assert 'mask' in new_results.results_field
+    assert hasattr(new_results, 'mask')
+    del new_results.mask
+    assert 'mask' not in new_results
+    assert 'mask' not in new_results._results_field
+    assert 'mask' not in new_results.results_field
+    assert not hasattr(new_results, 'mask')
+
+    # tset __delitem__
+    new_results.mask = torch.rand(1, 2, 3)
+    assert 'mask' in new_results._results_field
+    assert 'mask' in new_results.results_field
+    assert hasattr(new_results, 'mask')
+    del new_results['mask']
+    assert 'mask' not in new_results
+    assert 'mask' not in new_results._results_field
+    assert 'mask' not in new_results.results_field
+    assert not hasattr(new_results, 'mask')
+
+    # test __setitem__
+    new_results['mask'] = torch.rand(1, 2, 3)
+    assert 'mask' in new_results._results_field
+    assert 'mask' in new_results.results_field
+    assert hasattr(new_results, 'mask')
+
+    # test results_field has been updated
+    assert 'mask' in new_results.results_field
+    assert 'mask' in new_results._results_field
+
+    # '_meta_info_field', '_results_field' is unmodifiable.
+    with pytest.raises(AttributeError):
+        del new_results['_results_field']
+    with pytest.raises(AttributeError):
+        del new_results['_meta_info_field']
+
+    #  test __getitem__
+    new_results.mask is new_results['mask']
+
+    # test get
+    assert new_results.get('mask') is new_results.mask
+    assert new_results.get('none_attribute', None) is None
+    assert new_results.get('none_attribute', 1) == 1
+
+    # test pop
+    mask = new_results.mask
+    assert new_results.pop('mask') is mask
+    assert new_results.pop('mask', None) is None
+    assert new_results.pop('mask', 1) == 1
+
+    # '_meta_info_field', '_results_field' is unmodifiable.
+    with pytest.raises(KeyError):
+        new_results.pop('_results_field')
+    with pytest.raises(KeyError):
+        new_results.pop('_meta_info_field')
+    # attribute in `_meta_info_field` is unmodifiable
+    with pytest.raises(KeyError):
+        new_results.pop('img_size')
+    # test pop attribute in results_filed
+    new_results['mask'] = torch.rand(1, 2, 3)
+    new_results.pop('mask')
+    # test results_field has been updated
+    assert 'mask' not in new_results.results_field
+    assert 'mask' not in new_results._results_field
+    assert 'mask' not in new_results
 
     # test_keys
+    new_results.mask = torch.ones(1, 2, 3)
+    'mask' in new_results.keys()
 
     # test values
+    assert len(new_results.keys()) == len(new_results.values())
 
     # test items
 
@@ -127,10 +207,11 @@ def test_results():
 
     assert isinstance(cpu_results.numpy().bbox, np.ndarray)
 
-    cuda_resutls = results.cuda()
-    for k, v in cuda_resutls.items():
-        if isinstance(v, torch.Tensor):
-            assert v.is_cuda
+    if torch.cuda.is_available():
+        cuda_resutls = results.cuda()
+        for k, v in cuda_resutls.items():
+            if isinstance(v, torch.Tensor):
+                assert v.is_cuda
 
     double_results = results.to(torch.double)
     for k, v in double_results.items():
