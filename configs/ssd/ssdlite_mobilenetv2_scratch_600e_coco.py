@@ -28,6 +28,9 @@ model = dict(
         norm_cfg=dict(type='BN', eps=0.001, momentum=0.03),
         act_cfg=dict(type='ReLU6'),
         init_cfg=dict(type='Normal', layer='Conv2d', std=0.001),
+
+        # set anchor size manually instead of using the predefined
+        # SSD300 setting.
         anchor_generator=dict(
             type='SSDAnchorGenerator',
             scale_major=False,
@@ -110,7 +113,7 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         _delete_=True,
-        type='RepeatDataset',
+        type='RepeatDataset',  # use RepeatDataset to speed up training
         times=5,
         dataset=dict(
             type=dataset_type,
