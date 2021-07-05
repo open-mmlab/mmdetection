@@ -331,6 +331,8 @@ class InstanceResults(Results):
         return cat_results
 
     def __len__(self):
-        for v in self.results_field.values():
-            return len(v)
-        raise NotImplementedError('This is an empty `InstanceResults`.')
+        if len(self._results_field):
+            for v in self.results_field.values():
+                return len(v)
+        else:
+            raise AssertionError('This is an empty `InstanceResults`.')

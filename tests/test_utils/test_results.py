@@ -353,10 +353,54 @@ def test_instance_results():
         assert new_results[i].det_label == i
         assert len(new_results[i]) == 1
 
-    # asset the index should in 0 ~ len(results) -1
+    # assert the index should in 0 ~ len(results) -1
+    with pytest.raises(IndexError):
+        new_results[101]
+
+    # assert the index should not be an empty tensor
+    new_new_results = new_results.new_results()
+    with pytest.raises(AssertionError):
+        new_new_results[0]
+
+    # test str
+    with pytest.raises(AssertionError):
+        results.img_size_dummmy = meta_info['img_size']
+
+    # test slice
+    ten_ressults = new_results[:10]
+    len(ten_ressults) == 10
+    for v in ten_ressults.results_field.values():
+        assert len(v) == 10
+
+    # test Longtensor
+    long_tensor = torch.randint(100, (50, ))
+    long_index_results = new_results[long_tensor]
+    assert len(long_index_results) == len(long_tensor)
+    for key, value in long_index_results.results_field.items():
+        if not isinstance(value, list):
+            assert (long_index_results[key] == new_results[key][long_tensor]
+                    ).all()
+        else:
+            len(long_tensor) == len(value)
+
+    # test bool tensor
+    bool_tensor = torch.rand(100) > 0.5
+    bool_index_results = new_results[bool_tensor]
+    assert len(bool_index_results) == bool_tensor.sum()
+    for key, value in bool_index_results.results_field.items():
+        if not isinstance(value, list):
+            assert (bool_index_results[key] == new_results[key][bool_tensor]
+                    ).all()
+        else:
+            assert len(value) == bool_tensor.sum()
 
     num_instance = 1000
     results_list = []
+
+    # assert len(instance_lists) > 0
+    with pytest.raises(AssertionError):
+        results.cat(results_list)
+
     for _ in range(2):
         results['bbox'] = torch.rand(num_instance, 4)
         results['label'] = torch.rand(num_instance, 1)
