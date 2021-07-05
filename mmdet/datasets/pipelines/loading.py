@@ -3,10 +3,18 @@ import os.path as osp
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
-from panopticapi.utils import rgb2id
 
 from mmdet.core import BitmapMasks, PolygonMasks
+from mmdet.utils import get_root_logger
 from ..builder import PIPELINES
+
+try:
+    from panopticapi.utils import rgb2id
+except ImportError:
+    logger = get_root_logger(__name__)
+    logger.warning('Please install `panopticapi` from: '
+                   'https://github.com/cocodataset/panopticapi, '
+                   'if you want to use CocoPanopticDataset.')
 
 
 @PIPELINES.register_module()

@@ -242,17 +242,15 @@ class CocoPanopticDataset(CocoDataset):
         gt_mask_infos = []
 
         for i, ann in enumerate(ann_info):
-            mask_info = dict()
+            x1, y1, w, h = ann['bbox']
+            if ann['area'] <= 0 or w < 1 or h < 1:
+                continue
+            bbox = [x1, y1, x1 + w, y1 + h]
 
             category_id = ann['category_id']
             contiguous_cat_id = self.cat2label[category_id]
 
             is_thing = self.coco.load_cats(ids=category_id)[0]['isthing']
-            x1, y1, w, h = ann['bbox']
-            if ann['area'] <= 0 or w < 1 or h < 1:
-                is_thing = False
-            bbox = [x1, y1, x1 + w, y1 + h]
-
             if is_thing:
                 is_crowd = ann.get('iscrowd', False)
                 if not is_crowd:
@@ -262,9 +260,11 @@ class CocoPanopticDataset(CocoDataset):
                     gt_bboxes_ignore.append(bbox)
                     is_thing = False
 
-            mask_info['id'] = ann['id']
-            mask_info['category'] = contiguous_cat_id
-            mask_info['is_thing'] = is_thing
+            mask_info = {
+                'id': ann['id'],
+                'category': contiguous_cat_id,
+                'is_thing': is_thing
+            }
             gt_mask_infos.append(mask_info)
 
         if gt_bboxes:
