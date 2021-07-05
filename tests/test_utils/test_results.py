@@ -12,6 +12,16 @@ def test_results():
 
     results = Results(meta_info)
 
+    # Test `meta_info_keys` and `results_keys`
+    assert 'img_size' in results.meta_info_keys
+    assert 'path' in results.meta_info_keys
+    assert len(results.meta_info_keys) == 3
+
+    results.tmp = torch.rand(2, 3)
+    assert 'tmp' in results
+    assert 'tmp' not in results.meta_info_keys
+    assert 'tmp' in results.results_keys
+
     for k, v in results.meta_info_field.items():
         if isinstance(v, np.ndarray):
             assert (results.meta_info_field[k] == meta_info[k]).all()

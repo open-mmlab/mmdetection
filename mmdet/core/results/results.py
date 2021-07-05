@@ -179,11 +179,11 @@ class Results(NiceRepr):
 
     @property
     def results_keys(self):
-        return list(copy(self._results_field))
+        return list(copy.copy(self._results_field))
 
     @property
     def meta_info_keys(self):
-        return list(copy(self._meta_info_field))
+        return list(copy.copy(self._meta_info_field))
 
     @property
     def results_field(self):
