@@ -1,9 +1,9 @@
 # 1: 使用已有模型在标准数据集上进行推理
-MMDetection 在 [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) 中提供了数以百计现有的检测模型， 并支持多种标准数据集，包括 Pascal VOC，COCO，Cityscapes，LVIS 等。这份文档将会讲述如何使用这些模型和标准数据集来运行一些常见的任务，包括：
+MMDetection 在 [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) 中提供了数以百计现有的检测模型，并支持多种标准数据集，包括 Pascal VOC，COCO，Cityscapes，LVIS 等。这份文档将会讲述如何使用这些模型和标准数据集来运行一些常见的任务，包括：
 
-- 使用现有模型在给定图片上进行推理。
-- 在标准数据集上测试现有模型。
-- 在标准数据集上训练预定义的模型。
+- 使用现有模型在给定图片上进行推理
+- 在标准数据集上测试现有模型
+- 在标准数据集上训练预定义的模型
 
 ## 使用现有模型进行推理
 
@@ -20,31 +20,29 @@ MMDetection 为在图片上推理提供了 Python 的高层编程接口。下面
 from mmdet.apis import init_detector, inference_detector
 import mmcv
 
-# Specify the path to model config and checkpoint file
+# 指定模型的配置文件和 checkpoint 文件路径
 config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
 
-# build the model from a config file and a checkpoint file
+# 根据配置文件和 checkpoint 文件构建模型
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
 
-# test a single image and show the results
-img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
+# 测试单张图片并展示结果
+img = 'test.jpg'  # 或者 img = mmcv.imread(img)，这样图片仅会被读一次
 result = inference_detector(model, img)
-# visualize the results in a new window
+# 在一个新的窗口中将结果可视化
 model.show_result(img, result)
-# or save the visualization results to image files
+# 或者将可视化结果保存为图片
 model.show_result(img, result, out_file='result.jpg')
 
-# test a video and show the results
+# 测试视频并展示结果
 video = mmcv.VideoReader('video.mp4')
 for frame in video:
     result = inference_detector(model, frame)
     model.show_result(frame, result, wait_time=1)
 ```
 
-于 jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb) 。
-
-注意：`inference_detector` 目前仅支持单张图片的推理。
+jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb) 。
 
 ### 异步接口-支持 Python 3.7+
 对于 Python 3.7+，MMDetection 也支持异步接口。利用 CUDA 流，绑定 GPU 的推理代码不会阻塞 CPU，CPU/GPU 在单线程应用中能达到更高的利用率。无论是在不同的输入数据样本还是在一些推理流程的不同模型间，推理都被能并发地执行。
@@ -63,23 +61,23 @@ async def main():
     device = 'cuda:0'
     model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
 
-    # queue is used for concurrent inference of multiple images
+    # 此队列用于并行推理多张图像
     streamqueue = asyncio.Queue()
-    # queue size defines concurrency level
+    # 队列大小定义了并行的数量
     streamqueue_size = 3
 
     for _ in range(streamqueue_size):
         streamqueue.put_nowait(torch.cuda.Stream(device=device))
 
-    # test a single image and show the results
-    img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
+    # 测试单张图片并展示结果
+    img = 'test.jpg'  # or 或者 img = mmcv.imread(img)，这样图片仅会被读一次
 
     async with concurrent(streamqueue):
         result = await async_inference_detector(model, img)
 
-    # visualize the results in a new window
+    # 在一个新的窗口中将结果可视化
     model.show_result(img, result)
-    # or save the visualization results to image files
+    # 或者将可视化结果保存为图片
     model.show_result(img, result, out_file='result.jpg')
 
 
@@ -91,7 +89,7 @@ asyncio.run(main())
 我们还提供了三个演示脚本，它们是使用高层编程接口实现的，支持了功能性代码。 [源码在此](https://github.com/open-mmlab/mmdetection/tree/master/demo) 。
 
 #### 图片样例
-这个脚本会执行在单张图片上的推理。
+这是在单张图片上进行推理的脚本，可以开启 `--async-test` 来进行异步推理。
 
 ```shell
 python demo/image_demo.py \
@@ -99,7 +97,8 @@ python demo/image_demo.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     [--device ${GPU_ID}] \
-    [--score-thr ${SCORE_THR}]
+    [--score-thr ${SCORE_THR}] \
+    [--async-test]
 ```
 
 运行样例：
@@ -112,7 +111,7 @@ python demo/image_demo.py demo/demo.jpg \
 ```
 
 #### 摄像头样例
-这是来自摄像头的实况样例的推理脚本。
+这是使用摄像头实时图片的推理脚本。
 
 ```shell
 python demo/webcam_demo.py \
@@ -157,7 +156,7 @@ python demo/video_demo.py demo/demo.mp4 \
 
 ## 在标准数据集上测试现有模型
 
-为了测试一个模型的精度，我们通常会在标准数据集上对其进行测试。 MMDetection 支持多个公共数据集，包括 COCO， Pascal VOC，Cityscapes 等等。这一部分将会介绍如何在支持的数据集上测试现有模型。
+为了测试一个模型的精度，我们通常会在标准数据集上对其进行测试。MMDetection 支持多个公共数据集，包括 COCO， Pascal VOC，Cityscapes 等等。这一部分将会介绍如何在支持的数据集上测试现有模型。
 
 ### 数据集准备
 一些公共数据集，比如 Pascal VOC 及其镜像数据集，或者 COCO 等数据集都可以从官方网站或者镜像网站获取。
@@ -213,8 +212,6 @@ python tools/dataset_converters/cityscapes.py \
     --out-dir ./data/cityscapes/annotations
 ```
 
-TODO: CHANGE TO THE NEW PATH
-
 ### 测试现有模型
 我们提供了测试脚本，能够测试一个现有模型在所有数据集（COCO，Pascal VOC，Cityscapes 等）上的性能。我们支持在如下环境下测试：
 
@@ -225,7 +222,7 @@ TODO: CHANGE TO THE NEW PATH
 根据以上测试环境，选择合适的脚本来执行测试过程。
 
 ```shell
-# single-gpu testing
+# 单 GPU 测试
 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -233,7 +230,7 @@ python tools/test.py \
     [--eval ${EVAL_METRICS}] \
     [--show]
 
-# multi-gpu testing
+# 单节点多 GPU 测试
 bash tools/dist_test.sh \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -341,7 +338,7 @@ MMDetection 支持不使用 ground-truth 标注的情况下对模型进行测试
 比如，你的数据集格式是 VOC，你可以使用 `tools` 内的脚本直接将其转化成 COCO 格式。
 
 ```shell
-# single-gpu testing
+# 单 GPU 测试
 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -349,7 +346,7 @@ python tools/test.py \
     --options ${JSONFILE_PREFIX} \
     [--show]
 
-# multi-gpu testing
+# 单节点多 GPU 测试
 bash tools/dist_test.sh \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -389,7 +386,7 @@ data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
 在测试模式下，弃用 `ImageToTensor` 流程，取而代之的是 `DefaultFormatBundle`。建议在你的测试数据流程的配置文件中手动替换它，如：
 
 ```python
-# use ImageToTensor (deprecated)
+# （已弃用）使用 ImageToTensor
 pipelines = [
    dict(type='LoadImageFromFile'),
    dict(
@@ -406,7 +403,7 @@ pipelines = [
        ])
    ]
 
-# manually replace ImageToTensor to DefaultFormatBundle (recommended)
+# （建议使用）手动将 ImageToTensor 替换为 DefaultFormatBundle
 pipelines = [
    dict(type='LoadImageFromFile'),
    dict(
@@ -433,7 +430,7 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 在 4 块 GPU 并且每张 GPU 上有 2 张图片的情况下，设置 `lr=0.01`； 在 16 块 GPU 并且每张 GPU 上有 4 张图片的情况下, 设置 `lr=0.08`。
 
 ### 数据集
-训练需要准备好数据集，细节请参考 [数据集准备](#id9) 。
+训练需要准备好数据集，细节请参考 [数据集准备](#数据集准备) 。
 
 **注意**：
 目前，`configs/cityscapes` 文件夹下的配置文件都是使用 COCO 预训练权值进行初始化的。如果网络连接不可用或者速度很慢，你可以提前下载现存的模型。否则可能在训练的开始会有错误发生。
@@ -452,7 +449,7 @@ python tools/train.py \
 默认情况下，模型将在每轮训练之后在 validation 集上进行测试，测试的频率可以通过设置配置文件来指定：
 
 ```python
-# evaluate the model every 12 epoch.
+# 每12轮迭代进行一次测试评估
 evaluation = dict(interval=12)
 ```
 这个工具接受以下参数：
@@ -490,7 +487,7 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
 #### 在多个节点上训练
-MMDetection 是依赖 `torch.distributed` 包进行分布式训练的。因此，我们可以通过 PyTorch 的 [启动工具](https://pytorch.org/docs/stable/distributed.html#launch-utility) 来进行基本的使用。
+MMDetection 是依赖 `torch.distributed` 包进行分布式训练的。因此，我们可以通过 PyTorch 的 [启动工具](https://pytorch.org/docs/stable/distributed.html#launch-utility) 来进行基本地使用。
 
 #### 使用 Slurm 来管理任务
 
