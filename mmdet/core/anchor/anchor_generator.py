@@ -539,8 +539,6 @@ class SSDAnchorGenerator(AnchorGenerator):
                     'not setting min_sizes and max_sizes, '
                     f'got {self.input_size}.')
 
-        assert len(strides) == len(min_sizes) == len(max_sizes)
-
         anchor_ratios = []
         anchor_scales = []
         for k in range(len(self.strides)):
