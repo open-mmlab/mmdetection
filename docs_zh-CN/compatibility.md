@@ -2,9 +2,12 @@
 
 ## MMDetection 2.14.0
 
+### MMCV 版本
+为了修复EvalHook优先级过低的问题，MMCV 1.3.8 中所有 hook 的优先级都重新进行了调整，因此 MMDetection 2.14.0 需要依赖最新的 MMCV 1.3.8 版本。 相关信息请参考[PR #1120](https://github.com/open-mmlab/mmcv/pull/1120) ，相关问题请参考[#5343](https://github.com/open-mmlab/mmdetection/issues/5343) 。
+
 ### SSD 兼容性
 
-在 v2.14.0 中，为了使 SSD 能够更灵活的使用，[PR5291](https://github.com/open-mmlab/mmdetection/pull/5291)重构了 SSD 的 backbone、neck 和 head。用户可以使用 tools/model_converters/upgrade_ssd_version.py 转换旧版本训练的模型。
+在 v2.14.0 中，为了使 SSD 能够更灵活的使用，[PR #5291](https://github.com/open-mmlab/mmdetection/pull/5291) 重构了 SSD 的 backbone、neck 和 head。用户可以使用 tools/model_converters/upgrade_ssd_version.py 转换旧版本训练的模型。
 
 
 ```shell
@@ -21,24 +24,24 @@ python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MOD
 
 ### MMCV 版本
 
-MMDetection v2.12.0 依赖 MMCV 1.3.3 中新增加的功能，包括：使用 `BaseModule` 统一参数初始化，模型 registry，以及[Deformable DETR](https://arxiv.org/abs/2010.04159)中的 `MultiScaleDeformableAttn` CUDA 算子。
+MMDetection v2.12.0 依赖 MMCV 1.3.3 中新增加的功能，包括：使用 `BaseModule` 统一参数初始化，模型 registry，以及[Deformable DETR](https://arxiv.org/abs/2010.04159) 中的 `MultiScaleDeformableAttn` CUDA 算子。
 注意，尽管 MMCV 1.3.2 已经包含了 MMDet 所需的功能，但是存在一些已知的问题。我们建议用户跳过 MMCV v1.3.2 使用 v1.3.3 版本。
 
 ### 统一模型初始化
 
 为了统一 OpenMMLab 项目中的参数初始化方式，MMCV 新增加了 `BaseModule` 类，使用 `init_cfg` 参数对模块进行统一且灵活的初始化配置管理。
-现在用户需要在训练脚本中显式调用 `model.init_weights()` 来初始化模型（例如 [here](https://github.com/open-mmlab/mmdetection/blob/master/tools/train .py#L162)，在这之前则是在 detector 中进行处理的。
+现在用户需要在训练脚本中显式调用 `model.init_weights()` 来初始化模型（例如 [这行代码](https://github.com/open-mmlab/mmdetection/blob/master/tools/train .py#L162) ，在这之前则是在 detector 中进行处理的。
 **下游项目必须相应地更新模型初始化方式才能使用 MMDetection v2.12.0**。请参阅 [PR #4750](https://github.com/open-mmlab/mmdetection/pull/4750) 了解详情。
 
 ### 统一模型 registry
 
 为了能够使用在其他 OpenMMLab 项目中实现的 backbone，MMDetection v2.12.0 继承了在 MMCV (#760) 中创建的模型 registry。
-这样，只要 OpenMMLab 项目实现了某个 backbone，并且该项目也使用 MMCV 中的 registry，那么用户只需修改配置即可在 MMDetection 中使用该 backbone，不再需要将代码复制到 MMDetection 中。 更多详细信息，请参阅 [PR #5059](https://github.com/open-mmlab/mmdetection/pull/5059)。
+这样，只要 OpenMMLab 项目实现了某个 backbone，并且该项目也使用 MMCV 中的 registry，那么用户只需修改配置即可在 MMDetection 中使用该 backbone，不再需要将代码复制到 MMDetection 中。 更多详细信息，请参阅 [PR #5059](https://github.com/open-mmlab/mmdetection/pull/5059) 。
 
 ### Mask AP 评估
 
-在 [PR 4898](https://github.com/open-mmlab/mmdetection/pull/4898) 和 V2.12.0 之前，对小、中、大目标的 mask AP 的评估是基于其边界框区域而不是真正的 mask 区域。
-这导致`APs`和`APm`变得更高但`APl`变得更低，但是不会影响整体的 mask AP。 [PR 4898](https://github.com/open-mmlab/mmdetection/pull/4898) 删除了 mask AP 计算中的 `bbox` ，改为使用 mask 区域。
+在 [PR #4898](https://github.com/open-mmlab/mmdetection/pull/4898) 和 V2.12.0 之前，对小、中、大目标的 mask AP 的评估是基于其边界框区域而不是真正的 mask 区域。
+这导致`APs`和`APm`变得更高但`APl`变得更低，但是不会影响整体的 mask AP。 [PR #4898](https://github.com/open-mmlab/mmdetection/pull/4898) 删除了 mask AP 计算中的 `bbox` ，改为使用 mask 区域。
 新的计算方式不会影响整体的 mask AP 评估，与[Detectron2](https://github.com/facebookresearch/detectron2/)一致。
 
 ## 与 MMDetection 1.x 的兼容性
@@ -64,7 +67,7 @@ MMDetection 2.0 经过了大规模重构并解决了许多遗留问题。 MMDete
   在 MMDetection 1.x 和之前的版本中，anchors 是 `int` 类型且没有居中对齐。
   这会影响 RPN 中的 Anchor 生成和所有基于 Anchor 的方法。
 
-- ROIAlign 更好地与图像坐标系对齐。新的实现来自 [Detectron2](https://github.com/facebookresearch/detectron2/tree/master/detectron2/layers/csrc/ROIAlign)。
+- ROIAlign 更好地与图像坐标系对齐。新的实现来自 [Detectron2](https://github.com/facebookresearch/detectron2/tree/master/detectron2/layers/csrc/ROIAlign) 。
   当 RoI 用于提取 RoI 特征时，与 MMDetection 1.x 相比默认情况下相差半个像素。
   能够通过设置`aligned=False`而不是`aligned=True`来维持旧版本的设置。
 
@@ -120,8 +123,8 @@ MMDetection 2.0 经过了大规模重构并解决了许多遗留问题。 MMDete
 
 ## pycocotools 兼容性
 
-`mmpycocotools` 是 OpenMMlab fork 的官方版`pycocotools`，适用于 MMDetection 和 Detectron2。
-在 [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939) 之前，由于 `pycocotools` 和 `mmpycocotool` 具有相同的包名，如果用户已经安装了 `pyccocotools`（首先安装了 Detectron2 相同环境下），那么MMDetection的设置会跳过安装`mmpycocotool`。 导致 MMDetection 缺少“mmpycocotools”而报错。
+`mmpycocotools` 是 OpenMMlab 的官方版`pycocotools`，适用于 MMDetection 和 Detectron2。
+在 [PR #4939](https://github.com/open-mmlab/mmdetection/pull/4939) 之前，由于 `pycocotools` 和 `mmpycocotool` 具有相同的包名，如果用户已经安装了 `pyccocotools`（首先安装了 Detectron2 相同环境下），那么MMDetection的设置会跳过安装`mmpycocotool`。 导致 MMDetection 缺少“mmpycocotools”而报错。
 但如果在 Detectron2 之前安装 MMDetection，则可以在相同的环境下工作。
-[PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939) 弃用 mmpycocotools，使用官方 pycocotools。
-在[PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939)之后，用户能够在相同环境下安装MMDetection和Detectron2，不再需要关注安装顺序。
+[PR #4939](https://github.com/open-mmlab/mmdetection/pull/4939) 弃用 mmpycocotools，使用官方 pycocotools。
+在[PR #4939](https://github.com/open-mmlab/mmdetection/pull/4939) 之后，用户能够在相同环境下安装MMDetection和Detectron2，不再需要关注安装顺序。
