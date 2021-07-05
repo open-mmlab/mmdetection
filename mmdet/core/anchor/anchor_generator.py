@@ -539,6 +539,8 @@ class SSDAnchorGenerator(AnchorGenerator):
                     'not setting min_sizes and max_sizes, '
                     f'got {self.input_size}.')
 
+        assert len(min_sizes) == len(max_sizes) == len(strides)
+
         anchor_ratios = []
         anchor_scales = []
         for k in range(len(self.strides)):
@@ -707,9 +709,12 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
                  basesize_ratio_range,
                  input_size=300,
                  scale_major=True):
-        super(LegacySSDAnchorGenerator,
-              self).__init__(strides, ratios, basesize_ratio_range, input_size,
-                             scale_major)
+        super(LegacySSDAnchorGenerator, self).__init__(
+            strides=strides,
+            ratios=ratios,
+            basesize_ratio_range=basesize_ratio_range,
+            input_size=input_size,
+            scale_major=scale_major)
         self.centers = [((stride - 1) / 2., (stride - 1) / 2.)
                         for stride in strides]
         self.base_anchors = self.gen_base_anchors()
