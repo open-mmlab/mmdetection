@@ -311,6 +311,28 @@ def test_ssd_anchor_generator():
     else:
         device = 'cpu'
 
+    # min_sizes max_sizes must set at the same time
+    with pytest.raises(AssertionError):
+        anchor_generator_cfg = dict(
+            type='SSDAnchorGenerator',
+            scale_major=False,
+            min_sizes=[48, 100, 150, 202, 253, 300],
+            max_sizes=None,
+            strides=[8, 16, 32, 64, 100, 300],
+            ratios=[[2], [2, 3], [2, 3], [2, 3], [2], [2]])
+        build_anchor_generator(anchor_generator_cfg)
+
+    # length of min_sizes max_sizes must be same
+    with pytest.raises(AssertionError):
+        anchor_generator_cfg = dict(
+            type='SSDAnchorGenerator',
+            scale_major=False,
+            min_sizes=[48, 100, 150, 202, 253, 300],
+            max_sizes=[100, 150, 202, 253, 300],
+            strides=[8, 16, 32, 64, 100, 300],
+            ratios=[[2], [2, 3], [2, 3], [2, 3], [2], [2]])
+        build_anchor_generator(anchor_generator_cfg)
+
     anchor_generator_cfg = dict(
         type='SSDAnchorGenerator',
         scale_major=False,
