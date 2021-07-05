@@ -267,6 +267,8 @@ class InstanceResults(Results):
     """Subclass of results. All value in `results_field` should has same
     length.
 
+    The code is modified from https://github.com/facebookresearch/detectron2/blob/master/detectron2/structures/instances.py # noqa E501
+
     Examples:
         >>> from mmdet.core.results.results import InstanceResults
         >>> import numpy as np
