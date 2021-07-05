@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/mask_rcnn_r50_fpn.py',
-    '../common/lsj_100e_coco_instance.py'
+    '../common/lsj_50e_coco_instance.py'
 ]
 
 norm_cfg = dict(type='SyncBN', requires_grad=True)
@@ -9,6 +9,7 @@ model = dict(
     pretrained=None,
     backbone=dict(frozen_stages=-1, norm_eval=False, norm_cfg=norm_cfg),
     neck=dict(norm_cfg=norm_cfg),
+    rpn_head=dict(num_convs=2),
     roi_head=dict(
         bbox_head=dict(
             type='Shared4Conv1FCBBoxHead',

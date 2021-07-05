@@ -9,6 +9,7 @@ model = dict(
     pretrained=None,
     backbone=dict(frozen_stages=-1, norm_eval=False, norm_cfg=norm_cfg),
     neck=dict(norm_cfg=norm_cfg),
+    rpn_head=dict(num_convs=2),
     roi_head=dict(
         bbox_head=dict(
             type='Shared4Conv1FCBBoxHead',

@@ -7,7 +7,7 @@ norm_cfg = dict(type='SyncBN', requires_grad=True)
 head_norm_cfg = dict(type='NaiveSyncBN', stats_mode='N', requires_grad=True)
 model = dict(
     pretrained=None,
-    backbone=dict(frozen_stages=0, norm_eval=False, norm_cfg=norm_cfg),
+    backbone=dict(frozen_stages=-1, norm_eval=False, norm_cfg=norm_cfg),
     neck=dict(norm_cfg=norm_cfg),
     roi_head=dict(
         bbox_head=dict(
