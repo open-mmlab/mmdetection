@@ -54,6 +54,20 @@ Models:
           box AP: 33.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-608_273e_coco/yolov3_d53_mstrain-608_273e_coco_20210518_115020-a2c3acb8.pth
 
+  - Name: yolov3_mobilenetv2_mstrain-608_273e_coco
+    In Collection: YOLOv3
+    Config: configs/yolo/yolov3_mobilenetv2_mstrain-608_273e_coco.py
+    Metadata:
+      Training Memory (GB): 0
+      inference time (s/im): 0
+      Epochs: 273
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 22.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_mobilenetv2_mstrain-608_273e_coco/yolov3_mobilenetv2_mstrain-608_273e_coco_20210627_170852-5b46eddc.pth
+
   - Name: yolov3_d53_fp16_mstrain-608_273e_coco
     In Collection: YOLOv3
     Config: configs/yolo/yolov3_d53_fp16_mstrain-608_273e_coco.py
