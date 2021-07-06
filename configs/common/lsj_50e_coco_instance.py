@@ -5,8 +5,6 @@ data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 image_size = (1024, 1024)
-# In mstrain 3x config, img_scale=[(1333, 640), (1333, 800)],
-# multiscale_mode='range'
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
