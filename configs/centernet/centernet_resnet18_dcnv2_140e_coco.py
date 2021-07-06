@@ -88,6 +88,7 @@ test_pipeline = [
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 
+# Use RepeatDataset to speed up training
 data = dict(
     samples_per_gpu=16,
     workers_per_gpu=4,
