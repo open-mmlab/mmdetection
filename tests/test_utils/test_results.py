@@ -29,7 +29,7 @@ def test_results():
             assert results.meta_info_field[k] == meta_info[k]
 
     # test `add_meta_info`
-    # attribute in `_meta_info_field` is unmodifiable once initialized
+    # attribute in `_meta_info_field` is immutable once initialized
     with pytest.raises(KeyError):
         results.add_meta_info(meta_info)
 
@@ -63,26 +63,26 @@ def test_results():
     assert 'mask' in new_results.results_field
     assert 'mask' in new_results._results_field
 
-    # '_meta_info_field', '_results_field' is unmodifiable.
+    # '_meta_info_field', '_results_field' is immutable.
     with pytest.raises(AttributeError):
         new_results._results_field = dict()
     with pytest.raises(AttributeError):
         new_results._results_field = dict()
 
-    # attribute releated to meta info is unmodifiable
+    # attribute releated to meta info is immutable
     with pytest.raises(AttributeError):
         new_results._results_field = dict()
 
     with pytest.raises(AttributeError):
         new_results.scale_factor = 1
 
-    # '_meta_info_field', '_results_field' is unmodifiable.
+    # '_meta_info_field', '_results_field' is immutable.
     with pytest.raises(AttributeError):
         del new_results._results_field
     with pytest.raises(AttributeError):
         del new_results._meta_info_field
 
-    # key in _meta_info_field is unmodifiable
+    # key in _meta_info_field is immutable
     with pytest.raises(KeyError):
         del new_results.img_size
     with pytest.raises(KeyError):
@@ -119,7 +119,7 @@ def test_results():
     assert 'mask' in new_results.results_field
     assert 'mask' in new_results._results_field
 
-    # '_meta_info_field', '_results_field' is unmodifiable.
+    # '_meta_info_field', '_results_field' is immutable.
     with pytest.raises(AttributeError):
         del new_results['_results_field']
     with pytest.raises(AttributeError):
@@ -139,12 +139,12 @@ def test_results():
     assert new_results.pop('mask', None) is None
     assert new_results.pop('mask', 1) == 1
 
-    # '_meta_info_field', '_results_field' is unmodifiable.
+    # '_meta_info_field', '_results_field' is immutable.
     with pytest.raises(KeyError):
         new_results.pop('_results_field')
     with pytest.raises(KeyError):
         new_results.pop('_meta_info_field')
-    # attribute in `_meta_info_field` is unmodifiable
+    # attribute in `_meta_info_field` is immutable
     with pytest.raises(KeyError):
         new_results.pop('img_size')
     # test pop attribute in results_filed
@@ -323,7 +323,7 @@ def test_instance_results():
     assert 'img_size' in results
 
     # test __setattr__
-    # '_meta_info_field', '_results_field' is unmodifiable.
+    # '_meta_info_field', '_results_field' is immutable.
     with pytest.raises(AttributeError):
         results._results_field = dict()
     with pytest.raises(AttributeError):

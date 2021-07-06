@@ -16,7 +16,7 @@ class Results(NiceRepr):
 
     The `meta_info_field` usually includes the information about
     the image such as filename, image_shape, padding_shape, etc.
-    All attributed in this filed is unmodifiable once set,
+    All attributed in this filed is immutable once set,
     but the user can add new meta information with
     `add_meta_info` function.
 
@@ -76,28 +76,28 @@ class Results(NiceRepr):
         >>> False
     """
 
-    def __init__(self, img_meta=None):
+    def __init__(self, meta=None):
         """
         Args:
-            img_meta (dict): Meta information about the image.
+            meta (dict): Meta information about the image.
         """
 
         self._meta_info_field = set()
         self._results_field = set()
 
-        if img_meta is not None:
-            self.add_meta_info(img_meta=img_meta)
+        if meta is not None:
+            self.add_meta_info(meta=meta)
 
-    def add_meta_info(self, img_meta):
+    def add_meta_info(self, meta):
         assert isinstance(
-            img_meta, dict
-        ), f'img_meta should be a `dict` but get {self.__class__.__name__}'
-        img_meta = copy.deepcopy(img_meta)
-        for k, v in img_meta.items():
+            meta,
+            dict), f'meta should be a `dict` but get {self.__class__.__name__}'
+        meta = copy.deepcopy(meta)
+        for k, v in meta.items():
             if k in self._meta_info_field:
                 raise KeyError(
                     f'img_meta_info {k} has been set as '
-                    f'{getattr(self, k)} before, which is unmodifiable ')
+                    f'{getattr(self, k)} before, which is immutable ')
             else:
                 self._meta_info_field.add(k)
                 self.__dict__[k] = v
@@ -128,11 +128,11 @@ class Results(NiceRepr):
             else:
                 raise AttributeError(
                     f'{name} has been used as a '
-                    f'private attribute, which is unmodifiable. ')
+                    f'private attribute, which is immutable. ')
         else:
             if name in self._meta_info_field:
                 raise AttributeError(f'`{name}` is used in meta information,'
-                                     f'which is unmodifiable')
+                                     f'which is immutable')
 
             self._results_field.add(name)
             super().__setattr__(name, val)
@@ -144,7 +144,7 @@ class Results(NiceRepr):
 
         if item in self._meta_info_field:
             raise KeyError(f'{item} is used in meta information, '
-                           f'which is unmodifiable.')
+                           f'which is immutable.')
         super().__delattr__(item)
         if item in self._results_field:
             self._results_field.remove(item)
@@ -157,7 +157,7 @@ class Results(NiceRepr):
         return getattr(self, name)
 
     def get(self, *args):
-        assert len(args) < 3, '`pop` get more than 2 arguments'
+        assert len(args) < 3, '`get` get more than 2 arguments'
         return self.__dict__.get(*args)
 
     def pop(self, *args):
@@ -165,7 +165,7 @@ class Results(NiceRepr):
         name = args[0]
         if name in self._meta_info_field:
             raise KeyError(f'{name} is a key in meta information, '
-                           f'which is unmodifiable')
+                           f'which is immutable')
 
         if args[0] in self._results_field:
             self._results_field.remove(args[0])
@@ -326,7 +326,7 @@ class InstanceResults(Results):
             else:
                 raise AttributeError(
                     f'{name} has been used as a '
-                    f'private attribute, which is unmodifiable. ')
+                    f'private attribute, which is immutable. ')
 
         else:
             assert isinstance(value, (torch.Tensor, np.ndarray, list)), \
