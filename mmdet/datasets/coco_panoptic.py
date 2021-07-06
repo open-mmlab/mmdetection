@@ -5,14 +5,19 @@ from collections import defaultdict
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
-from panopticapi.evaluation import OFFSET, VOID, PQStat
-from panopticapi.utils import IdGenerator, rgb2id
 
 from .api_wrappers import COCO
 from .builder import DATASETS
 from .coco import CocoDataset
 
-__all__ = ['CocoPanopticDataset', 'INSTANCE_OFFSET']
+try:
+    import panopticapi
+    from panopticapi.evaluation import OFFSET, VOID, PQStat
+    from panopticapi.utils import IdGenerator, rgb2id
+except ImportError:
+    panopticapi = None
+
+__all__ = ['CocoPanopticDataset']
 
 INSTANCE_OFFSET = 1000
 
@@ -24,6 +29,11 @@ class COCOPanoptic(COCO):
     """
 
     def __init__(self, annotation_file=None):
+        if panopticapi is None:
+            raise RuntimeError('panopticapi is not installed, please install '
+                               'it from: '
+                               'https://github.com/cocodataset/panopticapi.')
+
         super(COCO, self).__init__(annotation_file)
 
     def createIndex(self):
@@ -331,7 +341,7 @@ class CocoPanopticDataset(CocoDataset):
             for pan_label in pan_labels:
                 sem_label = pan_label % INSTANCE_OFFSET
                 # convert sem_label to json label
-                if sem_label == len(self.CLASSES):  # 133
+                if sem_label == len(self.CLASSES):
                     continue
                 cat_id = label2cat[sem_label]
                 segment_id, color = id_generator.get_id_and_color(cat_id)

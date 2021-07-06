@@ -5,16 +5,12 @@ import numpy as np
 import pycocotools.mask as maskUtils
 
 from mmdet.core import BitmapMasks, PolygonMasks
-from mmdet.utils import get_root_logger
 from ..builder import PIPELINES
 
 try:
     from panopticapi.utils import rgb2id
 except ImportError:
-    logger = get_root_logger(__name__)
-    logger.warning('Please install `panopticapi` from: '
-                   'https://github.com/cocodataset/panopticapi, '
-                   'if you want to use CocoPanopticDataset.')
+    rgb2id = None
 
 
 @PIPELINES.register_module()
@@ -417,6 +413,11 @@ class LoadPanopticAnnotations(LoadAnnotations):
                  with_mask=True,
                  with_seg=True,
                  file_client_args=dict(backend='disk')):
+        if rgb2id is None:
+            raise RuntimeError('panopticapi is not installed, please install '
+                               'it from: '
+                               'https://github.com/cocodataset/panopticapi.')
+
         super(LoadPanopticAnnotations,
               self).__init__(with_bbox, with_label, with_mask, with_seg, True,
                              file_client_args)
