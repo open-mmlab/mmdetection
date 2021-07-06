@@ -1,5 +1,5 @@
 # 1: 使用已有模型在标准数据集上进行推理
-MMDetection 在 [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) 中提供了数以百计现有的检测模型，并支持多种标准数据集，包括 Pascal VOC，COCO，Cityscapes，LVIS 等。这份文档将会讲述如何使用这些模型和标准数据集来运行一些常见的任务，包括：
+MMDetection 在 [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) 中提供了数以百计的检测模型，并支持多种标准数据集，包括 Pascal VOC，COCO，Cityscapes，LVIS 等。这份文档将会讲述如何使用这些模型和标准数据集来运行一些常见的任务，包括：
 
 - 使用现有模型在给定图片上进行推理
 - 在标准数据集上测试现有模型
@@ -334,7 +334,7 @@ bash tools/dist_test.sh \
    生成的 png 和 txt 文件在 `./mask_rcnn_cityscapes_test_results` 文件夹下。
 
 ### 不使用 Ground Truth 标注进行测试
-MMDetection 支持不使用 ground-truth 标注的情况下对模型进行测试，这需要用到 `CocoDataset`。如果你的数据集格式不是 COCO 格式的，请将其转化成 COCO 格式。
+MMDetection 支持在不使用 ground-truth 标注的情况下对模型进行测试，这需要用到 `CocoDataset`。如果你的数据集格式不是 COCO 格式的，请将其转化成 COCO 格式。
 比如，你的数据集格式是 VOC，你可以使用 `tools` 内的脚本直接将其转化成 COCO 格式。
 
 ```shell
@@ -370,10 +370,10 @@ bash tools/dist_test.sh \
 
 这行命令生成两个 JSON 文件 `mask_rcnn_test-dev_results.bbox.json` 和 `mask_rcnn_test-dev_results.segm.json`。
 
-### 批推理
+### 批量推理
 
-MMDetection 在测试模式下，既支持单张图片的推理，也支持对图像批推理。默认情况下，我们使用单张图片的测试，你可以通过修改测试数据配置文件中的 `samples_per_gpu` 来开启批测试。
-开启批推理的配置文件修改方法为：
+MMDetection 在测试模式下，既支持单张图片的推理，也支持对图像进行批量推理。默认情况下，我们使用单张图片的测试，你可以通过修改测试数据配置文件中的 `samples_per_gpu` 来开启批量测试。
+开启批量推理的配置文件修改方法为：
 
 ```shell
 data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
@@ -490,7 +490,7 @@ MMDetection 是依赖 `torch.distributed` 包进行分布式训练的。因此�
 
 #### 使用 Slurm 来管理任务
 
-Slurm 是一个很好的计算集群调度系统。在 Slurm 管理的集群上，你可以使用 `slurm.sh` 来开启训练任务。它既支持单节点训练也支持多节点训练。
+Slurm 是一个常见的计算集群调度系统。在 Slurm 管理的集群上，你可以使用 `slurm.sh` 来开启训练任务。它既支持单节点训练也支持多节点训练。
 
 基本使用如下：
 
