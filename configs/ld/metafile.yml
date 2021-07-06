@@ -6,7 +6,7 @@ Collections:
         - Localization Distillation
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - FPN
         - ResNet
@@ -24,8 +24,8 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 36.5
-          AP50: 52.9
-          AP75: 39.3
+          box AP@0.5: 52.9
+          box AP@0.75: 39.3
 
   - Name: ld_r34_gflv1_r101_fpn_coco_1x
     In Collection: Localization Distillation
@@ -37,8 +37,8 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 39.8
-          AP50: 56.6
-          AP75: 43.1
+          box AP@0.5: 56.6
+          box AP@0.75: 43.1
 
   - Name: ld_r50_gflv1_r101_fpn_coco_1x
     In Collection: Localization Distillation
@@ -50,8 +50,8 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.1
-          AP50: 58.7
-          AP75: 44.9
+          box AP@0.5: 58.7
+          box AP@0.75: 44.9
 
   - Name: ld_r101_gflv1_r101dcn_fpn_coco_1x
     In Collection: Localization Distillation
@@ -63,5 +63,5 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 45.4
-          AP50: 63.1
-          AP75: 49.5
+          box AP@0.5: 63.1
+          box AP@0.75: 49.5

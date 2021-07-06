@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - RegNet
     Paper: https://arxiv.org/abs/2003.13678
@@ -310,6 +310,23 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 37.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-1_20210602_210641-6e63e19c.pth
+
+  - Name: mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 5.0
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.1
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-1_20210602_210641-6e63e19c.pth
 
   - Name: mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
