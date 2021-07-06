@@ -201,7 +201,7 @@ class CocoPanopticDataset(CocoDataset):
         self.cat_ids = self.coco.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.categories = self.coco.cats
-        self.img_ids = sorted(self.coco.get_img_ids())
+        self.img_ids = self.coco.get_img_ids()
         data_infos = []
         for i in self.img_ids:
             info = self.coco.load_imgs([i])[0]
