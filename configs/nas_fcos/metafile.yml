@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 4x NVIDIA V100 GPUs
+      Training Resources: 4x V100 GPUs
       Architecture:
         - FPN
         - NAS-FCOS

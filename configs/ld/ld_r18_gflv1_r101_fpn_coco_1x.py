@@ -5,7 +5,6 @@ _base_ = [
 teacher_ckpt = 'https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r101_fpn_mstrain_2x_coco/gfl_r101_fpn_mstrain_2x_coco_20200629_200126-dd12f847.pth'  # noqa
 model = dict(
     type='KnowledgeDistillationSingleStageDetector',
-    pretrained='torchvision://resnet18',
     teacher_config='configs/gfl/gfl_r101_fpn_mstrain_2x_coco.py',
     teacher_ckpt=teacher_ckpt,
     backbone=dict(
@@ -16,7 +15,8 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet18')),
     neck=dict(
         type='FPN',
         in_channels=[64, 128, 256, 512],

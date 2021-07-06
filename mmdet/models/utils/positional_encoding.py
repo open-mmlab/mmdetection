@@ -64,7 +64,10 @@ class SinePositionalEncoding(BaseModule):
             pos (Tensor): Returned position embedding with shape
                 [bs, num_feats*2, h, w].
         """
-        not_mask = ~mask
+        # For convenience of exporting to ONNX, it's required to convert
+        # `masks` from bool to int.
+        mask = mask.to(torch.int)
+        not_mask = 1 - mask  # logical_not
         y_embed = not_mask.cumsum(1, dtype=torch.float32)
         x_embed = not_mask.cumsum(2, dtype=torch.float32)
         if self.normalize:
@@ -77,12 +80,14 @@ class SinePositionalEncoding(BaseModule):
         dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
         pos_x = x_embed[:, :, :, None] / dim_t
         pos_y = y_embed[:, :, :, None] / dim_t
+        # use `view` instead of `flatten` for dynamically exporting to ONNX
+        B, H, W = mask.size()
         pos_x = torch.stack(
             (pos_x[:, :, :, 0::2].sin(), pos_x[:, :, :, 1::2].cos()),
-            dim=4).flatten(3)
+            dim=4).view(B, H, W, -1)
         pos_y = torch.stack(
             (pos_y[:, :, :, 0::2].sin(), pos_y[:, :, :, 1::2].cos()),
-            dim=4).flatten(3)
+            dim=4).view(B, H, W, -1)
         pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)
         return pos
 

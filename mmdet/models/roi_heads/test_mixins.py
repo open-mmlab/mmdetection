@@ -210,7 +210,7 @@ class MaskTestMixin:
                 'ndarray with shape (4,) '
                 'arrange as (factor_w, factor_h, factor_w, factor_h), '
                 'The scale_factor with float type has been deprecated. ')
-            scale_factors = np.array([scale_factors] * 4)
+            scale_factors = np.array([scale_factors] * 4, dtype=np.float32)
 
         num_imgs = len(det_bboxes)
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
