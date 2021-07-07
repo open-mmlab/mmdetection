@@ -1,5 +1,7 @@
 import copy
 
+import numpy as np
+
 from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
@@ -124,19 +126,43 @@ class SingleStageInstanceSegmentor(BaseDetector):
             outs = self.bbox_head(feat)
             det_results = self.bbox_head.get_bboxes(
                 *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)
-            bbox_results = [
+            collect_bbox_results_list = [
                 bbox2result(det_bbox, det_label, self.bbox_head.num_classes)
-                for det_bbox, det_label in zip(det_results.det_bboxes,
-                                               det_results.det_labels)
+                for det_bbox, det_label in zip(det_results.bboxes,
+                                               det_results.labels)
             ]
         else:
             det_results = None
-            bbox_results = [None for _ in range(len(img_metas))]
+            collect_bbox_results_list = []
 
-        segm_results = self.mask_head.simple_test(
+        mask_results_list = self.mask_head.simple_test(
             feat, img_metas, rescale=rescale, det_results=det_results)
 
-        return list(zip(bbox_results, segm_results))
+        collect_mask_results_list = []
+        for mask_results in mask_results_list:
+            collect_mask_results = [[]
+                                    for _ in range(self.mask_head.num_classes)]
+            mask_results = mask_results.numpy()
+            masks = mask_results.masks
+
+            labels = mask_results.labels
+            num_masks = masks.shape[0]
+            for idx in range(num_masks):
+                collect_mask_results[labels[idx]].append(masks[idx])
+            collect_mask_results_list.append(collect_mask_results)
+
+            if not self.bbox_head:
+                # add dummy det_results
+                scores = mask_results.scores
+                bboxes = np.zeros((num_masks, 5), dtype=np.float32)
+                bboxes[:, -1] = scores
+                collect_bbox_result = [
+                    bboxes[labels == i, :]
+                    for i in range(self.mask_head.num_classes)
+                ]
+                collect_bbox_results_list.append(collect_bbox_result)
+
+        return list(zip(collect_bbox_results_list, collect_mask_results_list))
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError

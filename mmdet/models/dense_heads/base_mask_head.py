@@ -37,7 +37,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             **kwargs)
         return loss
 
-    def simple_test(self, feats, img_metas, rescale=False):
+    def simple_test(self, feats, img_metas, rescale=False, **kwargs):
         """Test function without test-time augmentation.
          Args:
              feats (tuple[torch.Tensor]): Multi-level features from the
@@ -46,10 +46,9 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
              rescale (bool, optional): Whether to rescale the results.
                  Defaults to False.
          Returns:
-             # TODO add
+             # TODO
          """
         outs = self(feats)
-
-        mask_inputs = outs + (img_metas, rescale)
-        segm_results = self.bbox_head.get_masks(*mask_inputs)
+        mask_inputs = outs + (img_metas, )
+        segm_results = self.get_masks(*mask_inputs, rescale=rescale, **kwargs)
         return segm_results

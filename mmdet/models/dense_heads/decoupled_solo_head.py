@@ -8,6 +8,7 @@ from scipy import ndimage
 
 from mmdet.core import matrix_nms, multi_apply, points_nms
 from mmdet.models.builder import HEADS
+from ...core.results.results import InstanceResults
 from .solo_head import SOLOHead
 
 
@@ -358,19 +359,17 @@ class DecoupledSOLOHead(SOLOHead):
         return ins_label_list, cate_label_list, \
             ins_ind_label_list, ins_ind_label_list_xy
 
-    def get_seg(self,
-                seg_preds_x,
-                seg_preds_y,
-                cate_preds,
-                img_metas,
-                cfg,
-                rescale=None):
+    def get_masks(self,
+                  seg_preds_x,
+                  seg_preds_y,
+                  cate_preds,
+                  img_metas,
+                  rescale=None,
+                  **kwargs):
         assert len(seg_preds_x) == len(cate_preds)
         num_levels = len(cate_preds)
-        featmap_size = seg_preds_x[0].size()[-2:]
 
-        bbox_result_list = []
-        segm_result_list = []
+        results_list = []
         for img_id in range(len(img_metas)):
             cate_pred_list = [
                 cate_preds[i][img_id].view(-1,
@@ -378,41 +377,33 @@ class DecoupledSOLOHead(SOLOHead):
                 for i in range(num_levels)
             ]
             seg_pred_list_x = [
-                seg_preds_x[i][img_id].detach() for i in range(num_levels)
+                seg_preds_x[i][img_id] for i in range(num_levels)
             ]
             seg_pred_list_y = [
-                seg_preds_y[i][img_id].detach() for i in range(num_levels)
+                seg_preds_y[i][img_id] for i in range(num_levels)
             ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            ori_shape = img_metas[img_id]['ori_shape']
 
             cate_pred_list = torch.cat(cate_pred_list, dim=0)
             seg_pred_list_x = torch.cat(seg_pred_list_x, dim=0)
             seg_pred_list_y = torch.cat(seg_pred_list_y, dim=0)
 
-            result = self.get_seg_single(cate_pred_list, seg_pred_list_x,
-                                         seg_pred_list_y, featmap_size,
-                                         img_shape, ori_shape, scale_factor,
-                                         cfg, rescale)
-            bbox_result, segm_result = self.segm2result(result)
-            bbox_result_list.append(bbox_result)
-            segm_result_list.append(segm_result)
-        return bbox_result_list, segm_result_list
+            results = self.get_masks_single(
+                cate_pred_list,
+                seg_pred_list_x,
+                seg_pred_list_y,
+                img_meta=img_metas[img_id],
+                cfg=self.test_cfg)
+            results_list.append(results)
+        return results_list
 
-    def get_seg_single(self,
-                       cate_preds,
-                       seg_preds_x,
-                       seg_preds_y,
-                       featmap_size,
-                       img_shape,
-                       ori_shape,
-                       scale_factor,
-                       cfg,
-                       rescale=False):
+    def get_masks_single(self, cate_preds, seg_preds_x, seg_preds_y, img_meta,
+                         cfg):
         cfg = self.test_cfg if cfg is None else cfg
         # overall info.
+        img_shape = img_meta['img_shape']
+        ori_shape = img_meta['ori_shape']
         h, w, _ = img_shape
+        featmap_size = seg_preds_x.size()[-2:]
         upsampled_size_out = (featmap_size[0] * 4, featmap_size[1] * 4)
 
         # trans trans_diff.
@@ -473,6 +464,7 @@ class DecoupledSOLOHead(SOLOHead):
             (1, 2)) / sum_masks
         cate_scores *= seg_score
 
+        # TODO proecess this case
         if len(cate_scores) == 0:
             return None
 
@@ -514,4 +506,9 @@ class DecoupledSOLOHead(SOLOHead):
         seg_masks = F.interpolate(
             seg_masks_soft, size=ori_shape[:2], mode='bilinear').squeeze(0)
         seg_masks = seg_masks > cfg.mask_thr
-        return seg_masks, cate_labels, cate_scores
+        results = InstanceResults(img_meta)
+        results.masks = seg_masks
+        results.labels = cate_labels
+        results.scores = cate_scores
+
+        return results

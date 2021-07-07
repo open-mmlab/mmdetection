@@ -1,5 +1,4 @@
 import mmcv
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,6 +7,7 @@ from mmcv.runner import ModuleList
 from scipy import ndimage
 
 from mmdet.core import matrix_nms, multi_apply, points_nms
+from mmdet.core.results.results import InstanceResults
 from mmdet.models.builder import HEADS, build_loss
 from .base_mask_head import BaseMaskHead
 
@@ -323,74 +323,45 @@ class SOLOHead(BaseMaskHead):
             ins_ind_label_list.append(ins_ind_label)
         return ins_label_list, cate_label_list, ins_ind_label_list
 
-    def get_masks(self, seg_preds, cate_preds, img_metas, cfg, rescale=None):
+    def get_masks(self,
+                  seg_preds,
+                  cate_preds,
+                  img_metas,
+                  rescale=None,
+                  **kwargs):
         assert len(seg_preds) == len(cate_preds)
         num_levels = len(cate_preds)
         featmap_size = seg_preds[0].size()[-2:]
 
-        bbox_result_list = []
-        segm_result_list = []
+        results_list = []
         for img_id in range(len(img_metas)):
             cate_pred_list = [
-                cate_preds[i][img_id].view(-1,
-                                           self.cate_out_channels).detach()
+                cate_preds[i][img_id].view(-1, self.cate_out_channels)
                 for i in range(num_levels)
             ]
-            seg_pred_list = [
-                seg_preds[i][img_id].detach() for i in range(num_levels)
-            ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            ori_shape = img_metas[img_id]['ori_shape']
+            seg_pred_list = [seg_preds[i][img_id] for i in range(num_levels)]
 
             cate_pred_list = torch.cat(cate_pred_list, dim=0)
             seg_pred_list = torch.cat(seg_pred_list, dim=0)
 
-            result = self.get_masks_single(cate_pred_list, seg_pred_list,
-                                           featmap_size, img_shape, ori_shape,
-                                           scale_factor, cfg, rescale)
-            bbox_result, segm_result = self.segm2result(result)
-            bbox_result_list.append(bbox_result)
-            segm_result_list.append(segm_result)
-        return bbox_result_list, segm_result_list
+            results = self.get_masks_single(
+                cate_pred_list,
+                seg_pred_list,
+                featmap_size,
+                img_meta=img_metas[img_id],
+                cfg=self.test_cfg)
+            results_list.append(results)
 
-    def segm2result(self, result):
-        segm_result = [[] for _ in range(self.num_classes)]
-        if result is None:
-            bbox_result = [
-                np.zeros((0, 5), dtype=np.float32)
-                for _ in range(self.num_classes)
-            ]
-            # BG is not included in num_classes
-        else:
-            seg_pred = result[0].cpu().numpy()
-            cate_label = result[1].cpu().numpy()
-            cate_score = result[2].cpu().numpy()
-            num_ins = seg_pred.shape[0]
-            # fake bboxes
-            bboxes = np.zeros((num_ins, 5), dtype=np.float32)
-            bboxes[:, -1] = cate_score
-            bbox_result = [
-                bboxes[cate_label == i, :] for i in range(self.num_classes)
-            ]
-            for idx in range(num_ins):
-                segm_result[cate_label[idx]].append(seg_pred[idx])
-        return bbox_result, segm_result
+        return results_list
 
-    def get_masks_single(self,
-                         cate_preds,
-                         seg_preds,
-                         featmap_size,
-                         img_shape,
-                         ori_shape,
-                         scale_factor,
-                         cfg,
-                         rescale=False,
-                         debug=False):
+    def get_masks_single(self, cate_preds, seg_preds, img_meta, cfg):
         assert len(cate_preds) == len(seg_preds)
-
+        featmap_size = seg_preds.size()[-2:]
+        img_shape = img_meta['img_shape']
+        ori_shape = img_meta['ori_shape']
         # overall info.
         h, w, _ = img_shape
+        # TODO remove hard code 4
         upsampled_size_out = (featmap_size[0] * 4, featmap_size[1] * 4)
 
         # process.
@@ -475,4 +446,10 @@ class SOLOHead(BaseMaskHead):
         seg_masks = F.interpolate(
             seg_preds, size=ori_shape[:2], mode='bilinear').squeeze(0)
         seg_masks = seg_masks > cfg.mask_thr
-        return seg_masks, cate_labels, cate_scores
+
+        results = InstanceResults(img_meta)
+        results.masks = seg_masks
+        results.labels = cate_labels
+        results.scores = cate_scores
+
+        return results
