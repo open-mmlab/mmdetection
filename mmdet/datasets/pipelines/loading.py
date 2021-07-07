@@ -414,9 +414,10 @@ class LoadPanopticAnnotations(LoadAnnotations):
                  with_seg=True,
                  file_client_args=dict(backend='disk')):
         if rgb2id is None:
-            raise RuntimeError('panopticapi is not installed, please install '
-                               'it from: '
-                               'https://github.com/cocodataset/panopticapi.')
+            raise RuntimeError(
+                'panopticapi is not installed, please install it by: '
+                'pip install git+https://github.com/cocodataset/'
+                'panopticapi.git.')
 
         super(LoadPanopticAnnotations,
               self).__init__(with_bbox, with_label, with_mask, with_seg, True,

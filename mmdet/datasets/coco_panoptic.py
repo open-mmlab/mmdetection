@@ -19,6 +19,10 @@ except ImportError:
 
 __all__ = ['CocoPanopticDataset']
 
+# A custom value to distinguish instance ID and category ID; need to
+# be greater than the number of categories.
+# For a pixel in the panoptic result map:
+#   pan_id = ins_id * INSTANCE_OFFSET + cat_id
 INSTANCE_OFFSET = 1000
 
 
@@ -26,20 +30,24 @@ class COCOPanoptic(COCO):
     """This wrapper is for loading the panoptic style annotation file.
 
     The format is shown in the CocoPanopticDataset class.
+
+    Args:
+        annotation_file (str): Path of annotation file.
     """
 
     def __init__(self, annotation_file=None):
         if panopticapi is None:
-            raise RuntimeError('panopticapi is not installed, please install '
-                               'it from: '
-                               'https://github.com/cocodataset/panopticapi.')
+            raise RuntimeError(
+                'panopticapi is not installed, please install it by: '
+                'pip install git+https://github.com/cocodataset/'
+                'panopticapi.git.')
 
         super(COCO, self).__init__(annotation_file)
 
     def createIndex(self):
         # create index
         print('creating index...')
-        # anns now stores segment_id -> annotation
+        # anns stores 'segment_id -> annotation'
         anns, cats, imgs = {}, {}, {}
         img_to_anns, cat_to_imgs = defaultdict(list), defaultdict(list)
         if 'annotations' in self.dataset:
@@ -72,7 +80,6 @@ class COCOPanoptic(COCO):
 
         print('index created!')
 
-        # create class members
         self.anns = anns
         self.imgToAnns = img_to_anns
         self.catToImgs = cat_to_imgs
@@ -82,7 +89,7 @@ class COCOPanoptic(COCO):
     def load_anns(self, ids=[]):
         """Load anns with the specified ids.
 
-        Now, self.anns is a list of annotation lists instead of a
+        self.anns is a list of annotation lists instead of a
         list of annotations.
 
         Args:
@@ -94,7 +101,7 @@ class COCOPanoptic(COCO):
         anns = []
 
         if hasattr(ids, '__iter__') and hasattr(ids, '__len__'):
-            # now self.anns is a list of list instead of
+            # self.anns is a list of annotation lists instead of
             # a list of annotations
             for id in ids:
                 anns += self.anns[id]
@@ -135,8 +142,9 @@ class CocoPanopticDataset(CocoDataset):
         ]
 
     Args:
-        formator (str): the formater for the image name of a dataset.
-        write_png (bool): whether to write the result image.
+        formatter (str): the formatter for the image name of a dataset.
+            Default: '{:012}.png'.
+        write_png (bool): whether to write the result image. Default: False.
     """
     CLASSES = [
         'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -193,8 +201,8 @@ class CocoPanopticDataset(CocoDataset):
         'rock-merged', 'wall-other-merged', 'rug-merged'
     ]
 
-    def __init__(self, formator='{:012}.png', write_png=False, **kwargs):
-        self.formator = formator
+    def __init__(self, formatter='{:012}.png', write_png=False, **kwargs):
+        self.formatter = formatter
         self.write_png = write_png
         super(CocoPanopticDataset, self).__init__(**kwargs)
 
@@ -294,7 +302,7 @@ class CocoPanopticDataset(CocoDataset):
             labels=gt_labels,
             bboxes_ignore=gt_bboxes_ignore,
             masks=gt_mask_infos,
-            seg_map=self.formator.format(img_id))
+            seg_map=self.formatter.format(img_id))
 
         return ann
 
@@ -358,7 +366,7 @@ class CocoPanopticDataset(CocoDataset):
             if self.write_png:
                 mmcv.imwrite(
                     pan_format[..., ::-1],
-                    os.path.join(outdir, self.formator.format(img_id)))
+                    os.path.join(outdir, self.formatter.format(img_id)))
             record = {'image_id': img_id, 'segments_info': segm_info}
             pan_json_results.append(record)
         return pan_json_results
@@ -479,6 +487,7 @@ class CocoPanopticDataset(CocoDataset):
         return pq_stat
 
     def evaluate_pan_json(self, result_files, logger=None):
+        """Evaluate PQ according to the panoptic results json file."""
         gt_json = self.coco.img_ann_map
         gt_json = [{
             'image_id': k,
@@ -492,7 +501,7 @@ class CocoPanopticDataset(CocoDataset):
         PQStat_ = PQStat()
         for img_id, pan_pred in zip(pred_json.keys(), self.pan_buffer):
             pan_gt_path = os.path.join(self.seg_prefix,
-                                       self.formator.format(img_id))
+                                       self.formatter.format(img_id))
             pan_gt = mmcv.imread(pan_gt_path)[..., ::-1]  # convert to rgb
             self.pq_compute_single(PQStat_, pan_gt, pan_pred, gt_json[img_id],
                                    pred_json[img_id])
@@ -530,6 +539,21 @@ class CocoPanopticDataset(CocoDataset):
                  logger=None,
                  jsonfile_prefix=None,
                  **kwargs):
+        """Evaluation in COCO Panoptic protocol.
+
+        Args:
+            results (list[dict]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Only
+                support 'pq' at present.
+            logger (logging.Logger | str | None): Logger used for printing
+                related information during evaluation. Default: None.
+            jsonfile_prefix (str | None): The prefix of json files. It includes
+                the file path and the prefix of filename, e.g., "a/b/prefix".
+                If not specified, a temp file will be created. Default: None.
+
+        Returns:
+            dict[str, float]: COCO Panoptic style evaluation metric.
+        """
         metrics = metric if isinstance(metric, list) else [metric]
         allowed_metrics = ['pq']  # todo: support other metrics like 'bbox'
         for metric in metrics:
