@@ -24,7 +24,7 @@ When submitting jobs using "tools/train.py" or "tools/test.py", you may specify 
   change this key, you may specify `--cfg-options workflow="[(train,1),(val,1)]"`. Note that the quotation mark \" is necessary to
   support list/tuple data types, and that **NO** white space is allowed inside the quotation marks in the specified value.
 
-## **Config File Structure**
+## Config File Structure
 
 There are 4 basic component types under `config/_base_`, dataset, model, schedule, default_runtime.
 Many methods could be easily constructed with one of each like Faster R-CNN, Mask R-CNN, Cascade R-CNN, RPN, SSD.
@@ -234,15 +234,15 @@ model = dict(
             nms_pre=1000,  # The number of boxes before NMS
             nms_post=1000,  # The number of boxes to be kept by NMS, Only work in `GARPNHead`.
             max_per_img=1000,  # The number of boxes to be kept after NMS.
-            nms=dict( # Config of nms
-                type='nms',  #Type of nms
+            nms=dict( # Config of NMS
+                type='nms',  #Type of NMS
                 iou_threshold=0.7 # NMS threshold
                 ),
             min_bbox_size=0),  # The allowed minimal box size
         rcnn=dict(  # The config for the roi heads.
             score_thr=0.05,  # Threshold to filter out boxes
-            nms=dict(  # Config of nms in the second stage
-                type='nms',  # Type of nms
+            nms=dict(  # Config of NMS in the second stage
+                type='nms',  # Type of NMS
                 iou_thr=0.5),  # NMS threshold
             max_per_img=100,  # Max number of detections of each image
             mask_thr_binary=0.5))  # Threshold of mask prediction
