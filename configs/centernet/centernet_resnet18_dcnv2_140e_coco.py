@@ -84,10 +84,23 @@ test_pipeline = [
                 keys=['img'])
         ])
 ]
+
+dataset_type = 'CocoDataset'
+data_root = 'data/coco/'
+
+# Use RepeatDataset to speed up training
 data = dict(
     samples_per_gpu=16,
     workers_per_gpu=4,
-    train=dict(pipeline=train_pipeline),
+    train=dict(
+        _delete_=True,
+        type='RepeatDataset',
+        times=5,
+        dataset=dict(
+            type=dataset_type,
+            ann_file=data_root + 'annotations/instances_train2017.json',
+            img_prefix=data_root + 'train2017/',
+            pipeline=train_pipeline)),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 
@@ -105,9 +118,5 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=1000,
     warmup_ratio=1.0 / 1000,
-    step=[90, 120])
-runner = dict(max_epochs=140)
-
-# Avoid evaluation and saving weights too frequently
-evaluation = dict(interval=5, metric='bbox')
-checkpoint_config = dict(interval=5)
+    step=[18, 24])  # the real step is [18*5, 24*5]
+runner = dict(max_epochs=28)  # the real epoch is 28*5=140
