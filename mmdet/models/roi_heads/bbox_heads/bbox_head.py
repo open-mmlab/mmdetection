@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -317,52 +316,28 @@ class BBoxHead(BaseModule):
                    cfg=None):
         """Transform network output for a batch into bbox predictions.
 
-        In most case except Cascade R-CNN, HTC, AugTest..,
-        the dimensions of input rois, cls_score, bbox_pred are equal
-        to 3, and batch dimension is the first dimension, for example
-        roi has shape (B, num_boxes, 5), return is a
-        tuple[list[Tensor], list[Tensor]],
-        the length of list in tuple is equal to the batch_size.
-        otherwise, the input tensor has only 2 dimensions,
-        and return is a tuple[Tensor, Tensor].
-
         Args:
-            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5)
-               or (B, num_boxes, 5)
-            cls_score (Tensor): Box scores, Has shape
-               (B, num_boxes, num_classes + 1) in `batch_model`, otherwise
-                has shape (num_boxes, num_classes + 1).
-            bbox_pred (Tensor, optional): Box energies / deltas. Has shape
-                (B, num_boxes, num_classes * 4) in `batch_model`, otherwise
+            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5).
+                last dimension 5 arrange as (batch_index, x1, y1, x2, y2).
+            cls_score (Tensor): Box scores, has shape
+                (num_boxes, num_classes + 1).
+            bbox_pred (Tensor, optional): Box energies / deltas.
                 has shape (num_boxes, num_classes * 4).
-            img_shape (Sequence[int] or Sequence[
-                Sequence[int]], optional): Maximum bounds for boxes, specifies
-                (H, W, C) or (H, W). If rois shape is (B, num_boxes, 4), then
-                the max_shape should be a Sequence[Sequence[int]]
-                and the length of max_shape should be equal to the batch_size.
-            scale_factor (tuple[ndarray] or ndarray): Scale factor of the
-               image arrange as (w_scale, h_scale, w_scale, h_scale). In
-               `batch_mode`, the scale_factor shape is tuple[ndarray].
-               the length should be equal to the batch size.
+            img_shape (Sequence[int], optional): Maximum bounds for boxes,
+                specifies (H, W, C) or (H, W).
+            scale_factor (ndarray): Scale factor of the
+               image arrange as (w_scale, h_scale, w_scale, h_scale).
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
 
         Returns:
-            tuple[list[Tensor], list[Tensor]] or tuple[Tensor, Tensor]:
-                If the input has a batch dimension, the return value is
-                a tuple of the list. The first list contains the boxes of
-                the corresponding image in a batch, each tensor has the
-                shape (num_boxes, 5) and last dimension 5 represent
-                (tl_x, tl_y, br_x, br_y, score). Each Tensor in the second
-                list is the labels with shape (num_boxes, ). The length of
-                both lists should be equal to batch_size. Otherwise return
-                value is a tuple of two tensors, the first tensor is the
-                boxes with scores, the second tensor is the labels, both
-                have the same shape as the first case.
+            tuple[Tensor, Tensor]:
+                Fisrt tensor is `det_bboxes`, has the shape
+                (num_boxes, 5) and last
+                dimension 5 represent (tl_x, tl_y, br_x, br_y, score).
+                Second tensor is the labels with shape (num_boxes, ).
         """
-
-        # TODO: revert to single image inference
 
         # some loss (Seesaw loss..) may have custom activation
         if self.custom_cls_channels:
@@ -370,69 +345,30 @@ class BBoxHead(BaseModule):
         else:
             scores = F.softmax(
                 cls_score, dim=-1) if cls_score is not None else None
-
-        if rois.ndim == 2:
-            # e.g. AugTest, Cascade R-CNN, HTC, SCNet...
-            batch_mode = False
-            # add batch dimension
-            if scores is not None:
-                scores = scores.unsqueeze(0)
-            if bbox_pred is not None:
-                bbox_pred = bbox_pred.unsqueeze(0)
-            rois = rois.unsqueeze(0)
-
-            assert isinstance(scale_factor, np.ndarray)
-            scale_factor = (scale_factor, )
-
-        elif rois.ndim == 3:
-            # all input tensor have batch dimension
-            batch_mode = True
-            assert isinstance(scale_factor, tuple)
-        else:
-            raise NotImplementedError(f'Unexpect shape of roi {rois.shape}')
-
         # bbox_pred would be None in some detector when with_reg is False,
         # e.g. Grid R-CNN.
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
                 rois[..., 1:], bbox_pred, max_shape=img_shape)
         else:
-            bboxes = rois[..., 1:].clone()
+            bboxes = rois[:, 1:].clone()
             if img_shape is not None:
-                max_shape = bboxes.new_tensor(img_shape)[..., :2]
-                min_xy = bboxes.new_tensor(0)
-                max_xy = torch.cat(
-                    [max_shape] * 2, dim=-1).flip(-1).unsqueeze(-2)
-                bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
-                bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
+                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
+                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
-        num_bboxes = bboxes.size(-2)
-        if rescale and num_bboxes > 0:
-            # B, 1, bboxes.size(-1)
-            scale_factor = bboxes.new_tensor(scale_factor).unsqueeze(1).repeat(
-                1, 1,
-                bboxes.size(-1) // 4)
-            bboxes /= scale_factor
+        if rescale and bboxes.size(0) > 0:
 
-        det_bboxes = []
-        det_labels = []
-        for (bbox, score) in zip(bboxes, scores):
-            if cfg is not None:
-                det_bbox, det_label = multiclass_nms(bbox, score,
-                                                     cfg.score_thr, cfg.nms,
-                                                     cfg.max_per_img)
-            else:
-                det_bbox, det_label = bbox, score
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
+            scale_factor = bboxes.new_tensor(scale_factor)
+            bboxes = (bboxes.view(bboxes.size(0), -1, 4) / scale_factor).view(
+                bboxes.size()[0], -1)
 
-        if not batch_mode:
-            single_det_bboxes = det_bboxes[0]
-            single_det_labels = det_labels[0]
-            # tuple[Tensor, Tensor]
-            return single_det_bboxes, single_det_labels
+        if cfg is None:
+            return bboxes, scores
         else:
-            # tuple[list[Tensor], list[Tensor]]
+            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
+                                                    cfg.score_thr, cfg.nms,
+                                                    cfg.max_per_img)
+
             return det_bboxes, det_labels
 
     @force_fp32(apply_to=('bbox_preds', ))
@@ -603,6 +539,8 @@ class BBoxHead(BaseModule):
         labels = labels.reshape(batch_size, -1)
         scores = scores.reshape(batch_size, -1)
         bboxes = bboxes.reshape(batch_size, -1, 4)
+        if self.reg_class_agnostic:
+            bboxes = bboxes.repeat(1, self.num_classes, 1)
 
         max_size = torch.max(img_shape)
         # Offset bboxes of each class so that bboxes of different labels

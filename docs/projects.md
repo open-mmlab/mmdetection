@@ -2,7 +2,7 @@
 
 There are many projects built upon MMDetection.
 We list some of them as examples of how to extend MMDetection for your own projects.
-Pull requests are also welcomed.
+As the page might not be completed, please feel free to create a PR to update this page.
 
 ## Projects as an extension
 
@@ -19,6 +19,11 @@ Some of the papers are published in top-tier conferences (CVPR, ICCV, and ECCV),
 To make this list also a reference for the community to develop and compare new object detection algorithms, we list them following the time order of top-tier conferences.
 Methods already supported and maintained by MMDetection are not listed.
 
+- Involution: Inverting the Inherence of Convolution for Visual Recognition, CVPR21. [[paper]](https://arxiv.org/abs/2103.06255)[[github]](https://github.com/d-li14/involution)
+- Multiple Instance Active Learning for Object Detection, CVPR 2021. [[paper]](https://openaccess.thecvf.com/content/CVPR2021/papers/Yuan_Multiple_Instance_Active_Learning_for_Object_Detection_CVPR_2021_paper.pdf)[[github]](https://github.com/yuantn/MI-AOD)
+- Adaptive Class Suppression Loss for Long-Tail Object Detection, CVPR 2021. [[paper]](https://arxiv.org/abs/2104.00885)[[github]](https://github.com/CASIA-IVA-Lab/ACSL)
+- Generalizable Pedestrian Detection: The Elephant In The Room, CVPR2021. [[paper]](https://arxiv.org/abs/2003.08799)[[github]](https://github.com/hasanirtiza/Pedestron)
+- Group Fisher Pruning for Practical Network Compression, ICML2021. [[paper]](https://github.com/jshilong/FisherPruning/blob/main/resources/paper.pdf)[[github]](https://github.com/jshilong/FisherPruning)
 - Overcoming Classifier Imbalance for Long-tail Object Detection with Balanced Group Softmax, CVPR2020. [[paper]](http://openaccess.thecvf.com/content_CVPR_2020/papers/Li_Overcoming_Classifier_Imbalance_for_Long-Tail_Object_Detection_With_Balanced_Group_CVPR_2020_paper.pdf)[[github]](https://github.com/FishYuLi/BalancedGroupSoftmax)
 - Coherent Reconstruction of Multiple Humans from a Single Image, CVPR2020. [[paper]](https://jiangwenpl.github.io/multiperson/)[[github]](https://github.com/JiangWenPL/multiperson)
 - Look-into-Object: Self-supervised Structure Modeling for Object Recognition, CVPR 2020. [[paper]](http://openaccess.thecvf.com/content_CVPR_2020/papers/Zhou_Look-Into-Object_Self-Supervised_Structure_Modeling_for_Object_Recognition_CVPR_2020_paper.pdf)[[github]](https://github.com/JDAI-CV/LIO)
@@ -42,5 +47,4 @@ Methods already supported and maintained by MMDetection are not listed.
 - Dense Peppoints: Representing Visual Objects with Dense Point Sets. [[paper]](https://arxiv.org/abs/1912.11473)[[github]](https://github.com/justimyhxu/Dense-RepPoints)
 - IterDet: Iterative Scheme for Object Detection in Crowded Environments. [[paper]](https://arxiv.org/abs/2005.05708)[[github]](https://github.com/saic-vul/iterdet)
 - Cross-Iteration Batch Normalization. [[paper]](https://arxiv.org/abs/2002.05712)[[github]](https://github.com/Howal/Cross-iterationBatchNorm)
-- Pedestrian Detection: The Elephant In The Room. [[paper]](https://arxiv.org/abs/2003.08799)[[github]](https://github.com/hasanirtiza/Pedestron)
 - A Ranking-based, Balanced Loss Function Unifying Classification and Localisation in Object Detection, NeurIPS2020 [[paper]](https://arxiv.org/abs/2009.13592)[[github]](https://github.com/kemaloksuz/aLRPLoss)
