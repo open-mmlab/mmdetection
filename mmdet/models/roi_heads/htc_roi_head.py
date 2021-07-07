@@ -347,7 +347,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         if rois.shape[0] == 0:
             # There is no proposal in the whole batch
             det_bboxes = [rois.new_zeros(0, 5)] * num_imgs
-            det_labels = [rois.new_zeros(0, )] * num_imgs
+            det_labels = [rois.new_zeros((0, ), dtype=torch.long)] * num_imgs
             bbox_result = [[
                 np.zeros((0, 5), dtype=np.float32)
                 for _ in range(self.bbox_head[-1].num_classes)

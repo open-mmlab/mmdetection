@@ -77,8 +77,9 @@ class BBoxTestMixin:
 
         if rois.shape[0] == 0:
             # There is no proposal in the whole batch
-            return [rois.new_zeros(0, 5)
-                    ] * len(proposals), [rois.new_zeros(0, )] * len(proposals)
+            return [rois.new_zeros(0, 5)] * len(proposals), [
+                rois.new_zeros((0, ), dtype=torch.long)
+            ] * len(proposals)
 
         bbox_results = self._bbox_forward(x, rois)
         img_shapes = tuple(meta['img_shape'] for meta in img_metas)
@@ -110,7 +111,7 @@ class BBoxTestMixin:
             if rois[i].shape[0] == 0:
                 # There is no proposal in the single image
                 det_bbox = rois[i].new_zeros(0, 5)
-                det_label = rois[i].new_zeros(0, )
+                det_label = rois[i].new_zeros((0, ), dtype=torch.long)
             else:
                 det_bbox, det_label = self.bbox_head.get_bboxes(
                     rois[i],
@@ -155,7 +156,7 @@ class BBoxTestMixin:
         if merged_bboxes.shape[0] == 0:
             # There is no proposal in the single image
             det_bboxes = merged_bboxes.new_zeros(0, 5)
-            det_labels = merged_bboxes.new_zeros(0, )
+            det_labels = merged_bboxes.new_zeros((0, ), dtype=torch.long)
         else:
             det_bboxes, det_labels = multiclass_nms(merged_bboxes,
                                                     merged_scores,
