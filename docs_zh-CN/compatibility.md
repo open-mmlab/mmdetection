@@ -31,7 +31,7 @@ MMDetection v2.12.0 依赖 MMCV 1.3.3 中新增加的功能，包括：使用 `B
 ### 统一模型初始化
 
 为了统一 OpenMMLab 项目中的参数初始化方式，MMCV 新增加了 `BaseModule` 类，使用 `init_cfg` 参数对模块进行统一且灵活的初始化配置管理。
-现在用户需要在训练脚本中显式调用 `model.init_weights()` 来初始化模型（例如 [这行代码](https://github.com/open-mmlab/mmdetection/blob/master/tools/train .py#L162) ，在这之前则是在 detector 中进行处理的。
+现在用户需要在训练脚本中显式调用 `model.init_weights()` 来初始化模型（例如 [这行代码](https://github.com/open-mmlab/mmdetection/blob/master/tools/train.py#L162) ，在这之前则是在 detector 中进行处理的。
 **下游项目必须相应地更新模型初始化方式才能使用 MMDetection v2.12.0**。请参阅 [PR #4750](https://github.com/open-mmlab/mmdetection/pull/4750) 了解详情。
 
 ### 统一模型 registry
@@ -42,8 +42,8 @@ MMDetection v2.12.0 依赖 MMCV 1.3.3 中新增加的功能，包括：使用 `B
 ### Mask AP 评估
 
 在 [PR #4898](https://github.com/open-mmlab/mmdetection/pull/4898) 和 V2.12.0 之前，对小、中、大目标的 mask AP 的评估是基于其边界框区域而不是真正的 mask 区域。
-这导致`APs`和`APm`变得更高但`APl`变得更低，但是不会影响整体的 mask AP。 [PR #4898](https://github.com/open-mmlab/mmdetection/pull/4898) 删除了 mask AP 计算中的 `bbox` ，改为使用 mask 区域。
-新的计算方式不会影响整体的 mask AP 评估，与[Detectron2](https://github.com/facebookresearch/detectron2/)一致。
+这导致 `APs` 和 `APm` 变得更高但 `APl` 变得更低，但是不会影响整体的 mask AP。 [PR #4898](https://github.com/open-mmlab/mmdetection/pull/4898) 删除了 mask AP 计算中的 `bbox` ，改为使用 mask 区域。
+新的计算方式不会影响整体的 mask AP 评估，与 [Detectron2](https://github.com/facebookresearch/detectron2/)一致。
 
 ## 与 MMDetection 1.x 的兼容性
 
@@ -54,7 +54,7 @@ MMDetection 2.0 经过了大规模重构并解决了许多遗留问题。 MMDete
 ### 坐标系
 
 新坐标系与 [Detectron2](https://github.com/facebookresearch/detectron2/) 一致，
-将最左上角的像素的中心视为坐标原点 (0, 0) 而不是最左上角像素的左上角。 因此 COCO 边界框和分割标注中的坐标被解析为范围`[0，width]`和`[0，height]`中的坐标。 这个修改影响了所有与 bbox 及像素选择相关的计算，变得更加自然且更加准确。
+将最左上角的像素的中心视为坐标原点 (0, 0) 而不是最左上角像素的左上角。 因此 COCO 边界框和分割标注中的坐标被解析为范围 `[0，width]` 和 `[0，height]` 中的坐标。 这个修改影响了所有与 bbox 及像素选择相关的计算，变得更加自然且更加准确。
 
 - 在新坐标系中，左上角和右下角为 (x1, y1) (x2, y2) 的框的宽度及高度计算公式为 `width = x2 - x1` 和 `height = y2 - y1`。
   在 MMDetection 1.x 和之前的版本中，高度和宽度都多了 `+ 1` 的操作。
@@ -75,23 +75,23 @@ MMDetection 2.0 经过了大规模重构并解决了许多遗留问题。 MMDete
 - Mask 的裁剪和粘贴更准确。
 
   1. 我们使用新的 RoIAlign 来提取 mask 目标。 在 MMDetection 1.x 中，bounding box 在提取 mask 目标之前被取整，裁剪过程是 numpy 实现的。 而在新版本中，裁剪的边界框不经过取整直接输入 RoIAlign。 此实现大大加快了训练速度（每次迭代约加速 0.1 秒，1x schedule 训练 Mask R50 时加速约 2 小时）并且理论上会更准确。
-  2. 在 MMDetection 2.0 中，修改后的`paste_mask()`函数应该比之前版本更准确。 此更改参考了 [Detectron2](https://github.com/facebookresearch/detectron2/blob/master/detectron2/structures/masks.py) 中的修改，可以将 COCO 上的 mask AP 提高约 0.5%。
+  2. 在 MMDetection 2.0 中，修改后的 `paste_mask()` 函数应该比之前版本更准确。 此更改参考了 [Detectron2](https://github.com/facebookresearch/detectron2/blob/master/detectron2/structures/masks.py) 中的修改，可以将 COCO 上的 mask AP 提高约 0.5%。
 
 ### 代码库约定
 
 - MMDetection 2.0 更改了类别标签的顺序，减少了回归和 mask 分支里的无用参数并使得顺序更加自然（没有 +1 和 -1）。
   这会影响模型的所有分类层，使其输出的类别标签顺序发生改变。回归分支和 mask head 的最后一层不再为 K 个类别保留 K+1 个通道，类别顺序与分类分支一致。
 
-  - 在 MMDetection 2.0 中，标签“K”表示背景，标签 [0, K-1] 对应于 K = num_categories 个对象类别。
+  - 在 MMDetection 2.0 中，标签 “K” 表示背景，标签 [0, K-1] 对应于 K = num_categories 个对象类别。
 
-  - 在 MMDetection 1.x 及之前的版本中，标签“0”表示背景，标签[1, K]对应K个类别。
+  - 在 MMDetection 1.x 及之前的版本中，标签 “0” 表示背景，标签 [1, K] 对应 K 个类别。
 
-  - **注意**：softmax RPN的类顺序在version<=2.4.0中仍然和1.x中的一样，而sigmoid RPN不受影响。从MMDetection v2.5.0开始，所有head中的类顺序是统一的。
+  - **注意**：softmax RPN 的类顺序在 version<=2.4.0 中仍然和 1.x 中的一样，而 sigmoid RPN 不受影响。从 MMDetection v2.5.0 开始，所有 head 中的类顺序是统一的。
 
 - 不使用 R-CNN 中的低质量匹配。在 MMDetection 1.x 和之前的版本中，`max_iou_assigner` 会在 RPN 和 R-CNN 训练时给每个 ground truth 匹配低质量框。我们发现这会导致最佳的 GT 框不会被分配给某些边界框，
   因此，在MMDetection 2.0 的 R-CNN 训练中默认不允许低质量匹配。这有时可能会稍微改善 box AP（约为 0.1%）。
 
-- 单独的宽高比例系数。在 MMDetection 1.x 和以前的版本中，`keep_ratio=True` 时比例系数是单个浮点数，这并不准确，因为宽度和高度的比例系数会有一定的差异。 MMDetection 2.0 对宽度和高度使用单独的比例系数，对 AP 的改进约为 0.1%。
+- 单独的宽高比例系数。在 MMDetection 1.x 和以前的版本中，`keep_ratio=True` 时比例系数是单个浮点数，这并不准确，因为宽度和高度的比例系数会有一定的差异。 MMDetection 2.0 对宽度和高度使用单独的比例系数，对 AP 的提升约为 0.1%。
 
 - 修改了 config 文件名称的规范。 由于 model zoo 中模型不断增多， MMDetection V2.0 采用新的命名规则：
 
@@ -113,7 +113,7 @@ MMDetection 2.0 经过了大规模重构并解决了许多遗留问题。 MMDete
 
 - 为简单起见，RoIAlign 层的 `sampling_ratio` 设置为 0。略微提升了 AP（约 0.2% 绝对值）。
 
-- 为了提升训练速度，默认设置在训练过程中不再使用梯度裁剪。大多数模型的性能不会受到影响。对于某些模型（例如 RepPoints），我们依旧使用梯度裁剪来稳定训练过程并获得更好的性能。
+- 为了提升训练速度，默认设置在训练过程中不再使用梯度裁剪。大多数模型的性能不会受到影响。对于某些模型（例如 RepPoints），我们依旧使用梯度裁剪来稳定训练过程从而获得更好的性能。
 
 - 因为不再默认使用梯度裁剪，默认 warmup 比率从 1/3 更改为 0.001，以使模型训练预热更加平缓。不过我们重新进行基准测试时发现这种影响可以忽略不计。
 
@@ -128,4 +128,4 @@ MMDetection 2.0 经过了大规模重构并解决了许多遗留问题。 MMDete
 在 [PR #4939](https://github.com/open-mmlab/mmdetection/pull/4939) 之前，由于 `pycocotools` 和 `mmpycocotool` 具有相同的包名，如果用户已经安装了 `pyccocotools`（在相同环境下先安装了 Detectron2 ），那么 MMDetection 的安装过程会跳过安装 `mmpycocotool`。 导致 MMDetection 缺少 `mmpycocotools` 而报错。
 但如果在 Detectron2 之前安装 MMDetection，则可以在相同的环境下工作。
 [PR #4939](https://github.com/open-mmlab/mmdetection/pull/4939) 弃用 mmpycocotools，使用官方 pycocotools。
-在[PR #4939](https://github.com/open-mmlab/mmdetection/pull/4939) 之后，用户能够在相同环境下安装 MMDetection 和 Detectron2，不再需要关注安装顺序。
+在 [PR #4939](https://github.com/open-mmlab/mmdetection/pull/4939) 之后，用户能够在相同环境下安装 MMDetection 和 Detectron2，不再需要关注安装顺序。
