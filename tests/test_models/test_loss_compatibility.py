@@ -17,7 +17,7 @@ from mmdet.models import build_detector
     dict(type='BalancedL1Loss', loss_weight=1.0)
 ])
 def test_bbox_loss_compatibility(loss_bbox):
-    """Test loss_cls and loss_bbox compatibility.
+    """Test loss_bbox compatibility.
 
     Using Faster R-CNN as a sample, modifying the loss function in the config
     file to verify the compatibility of Loss APIS
@@ -54,7 +54,7 @@ def test_bbox_loss_compatibility(loss_bbox):
         type='GHMC', bins=30, momentum=0.75, use_sigmoid=True, loss_weight=1.0)
 ])
 def test_cls_loss_compatibility(loss_cls):
-    """Test loss_cls and loss_bbox compatibility.
+    """Test loss_cls compatibility.
 
     Using Faster R-CNN as a sample, modifying the loss function in the config
     file to verify the compatibility of Loss APIS
