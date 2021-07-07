@@ -143,7 +143,7 @@ class CocoPanopticDataset(CocoDataset):
         ]
 
     Args:
-        category_json (str): Path of 'panoptic_coco_categories.json' in
+        cats_json (str): Path of 'panoptic_coco_categories.json' in
             'panopticapi'. Must be specified, it will be used in evalutation.
         formatter (str): the formatter for the image name of a dataset.
             Default: '{:012}.png'.
@@ -203,10 +203,10 @@ class CocoPanopticDataset(CocoDataset):
         'rock-merged', 'wall-other-merged', 'rug-merged'
     ]
 
-    def __init__(self, category_json, formatter='{:012}.png', **kwargs):
-        assert category_json is not None
-        category_json = mmcv.load(category_json)
-        self.categories = {cat['id']: cat for cat in category_json}
+    def __init__(self, cats_json, formatter='{:012}.png', **kwargs):
+        assert cats_json is not None
+        cats_json = mmcv.load(cats_json)
+        self.categories = {cat['id']: cat for cat in cats_json}
         self.formatter = formatter
         super(CocoPanopticDataset, self).__init__(**kwargs)
 
@@ -339,7 +339,7 @@ class CocoPanopticDataset(CocoDataset):
         label2cat = dict((v, k) for (k, v) in self.cat2label.items())
         id_generator = IdGenerator(self.categories)
         pan_json_results = []
-        outdir = os.path.join(outfile_prefix, 'panoptic')
+        outdir = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
 
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -416,7 +416,7 @@ class CocoPanopticDataset(CocoDataset):
             matched_annotations_list.append((gt_ann, pred_json[img_id]))
 
         gt_folder = self.seg_prefix
-        pred_folder = os.path.join(outfile_prefix, 'panoptic')
+        pred_folder = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
 
         pq_stat = pq_compute_multi_core(matched_annotations_list, gt_folder,
                                         pred_folder, self.categories)
