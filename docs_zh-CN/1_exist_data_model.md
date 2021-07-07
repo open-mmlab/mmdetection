@@ -89,7 +89,7 @@ asyncio.run(main())
 我们还提供了三个演示脚本，它们是使用高层编程接口实现的。 [源码在此](https://github.com/open-mmlab/mmdetection/tree/master/demo) 。
 
 #### 图片样例
-   这是在单张图片上进行推理的脚本，可以开启 `--async-test` 来进行异步推理。
+这是在单张图片上进行推理的脚本，可以开启 `--async-test` 来进行异步推理。
 
    ```shell
    python demo/image_demo.py \
@@ -101,7 +101,7 @@ asyncio.run(main())
        [--async-test]
    ```
 
-   运行样例：
+运行样例：
 
    ```shell
    python demo/image_demo.py demo/demo.jpg \
@@ -111,7 +111,7 @@ asyncio.run(main())
    ```
 
 #### 摄像头样例
-   这是使用摄像头实时图片的推理脚本。
+这是使用摄像头实时图片的推理脚本。
 
    ```shell
    python demo/webcam_demo.py \
@@ -122,7 +122,7 @@ asyncio.run(main())
        [--score-thr ${SCORE_THR}]
    ```
 
-   运行样例：
+运行样例：
 
    ```shell
    python demo/webcam_demo.py \
@@ -131,7 +131,7 @@ asyncio.run(main())
    ```
 
 #### 视频样例
-   这是在视频样例上进行推理的脚本。
+这是在视频样例上进行推理的脚本。
 
    ```shell
    python demo/video_demo.py \
@@ -145,7 +145,7 @@ asyncio.run(main())
        [--wait-time ${WAIT_TIME}]
    ```
 
-   运行样例：
+运行样例：
 
    ```shell
    python demo/video_demo.py demo/demo.mp4 \
@@ -155,13 +155,14 @@ asyncio.run(main())
    ```
 
 ## 在标准数据集上测试现有模型
-
-为了测试一个模型的精度，我们通常会在标准数据集上对其进行测试。MMDetection 支持多个公共数据集，包括 COCO， Pascal VOC，Cityscapes 等等。这一部分将会介绍如何在支持的数据集上测试现有模型。
+为了测试一个模型的精度，我们通常会在标准数据集上对其进行测试。MMDetection 支持多个公共数据集，包括 [COCO](https://cocodataset.org/) ，
+[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC) ，[Cityscapes](https://www.cityscapes-dataset.com/) 等等。
+这一部分将会介绍如何在支持的数据集上测试现有模型。
 
 ### 数据集准备
 一些公共数据集，比如 Pascal VOC 及其镜像数据集，或者 COCO 等数据集都可以从官方网站或者镜像网站获取。
 注意：在检测任务中，Pascal VOC 2012 是 Pascal VOC 2007 的无交集扩展，我们通常将两者一起使用。
-我们建议将数据集下载和提取到项目外部的某个文件夹内，然后通过符号链接的方式，将数据集根目录链接到 `$MMDETECTION/data` 文件夹下，格式如下所示。
+我们建议将数据集下载，然后解压到项目外部的某个文件夹内，然后通过符号链接的方式，将数据集根目录链接到 `$MMDETECTION/data` 文件夹下，格式如下所示。
 如果你的文件夹结构和下方不同的话，你需要在配置文件中改变对应的路径。
 
 ```plain
@@ -201,7 +202,7 @@ mmdetection
 │   │   ├── stuffthingmaps
 ```
 
-[Cityscape](https://www.cityscapes-dataset.com/) 数据集的标注格式需要转换，以与 COCO 数据集标注格式保持一致，使用 `tools/dataset_converters/cityscapes.py` 来完成转换：
+Cityscape 数据集的标注格式需要转换，以与 COCO 数据集标注格式保持一致，使用 `tools/dataset_converters/cityscapes.py` 来完成转换：
 
 ```shell
 pip install cityscapesscripts
@@ -244,12 +245,10 @@ bash tools/dist_test.sh \
 可选参数：
 
 - `RESULT_FILE`: 结果文件名称，需以 .pkl 形式存储。如果没有声明，则不将结果存储到文件。
-- `EVAL_METRICS`: 需要测试的度量指标。可选值是取决于数据集的，比如 `proposal_fast`，`proposal`，`bbox`，`segm` 是 COCO 数据集的可选值，`mAP`，`recall` 是 Pascal VOC 数据集的可选值。
-  Cityscapes 数据集可以测试 `cityscapes` 和所有 COCO 数据集支持的度量指标。
-- `--show`: 如果开启，检测结果将被绘制在图像上，以一个新窗口的形式展示。它只适用于单 GPU 的测试，是用于调试和可视化的。请确保使用此功能时，你的 GUI 可以
-  在环境中打开。否则，你可能会遇到这么一个错误 `cannot connect to X server`。
-- `--show-dir`: 如果标明，检测结果将会被绘制在图像上并保存到指定目录。它只适用于单 GPU 的测试，是用于调试和可视化的。即使你的环境中没有 GUI，这个选项也可使用。
-- `--show-score-thr`: 如果标明，得分低于此阈值的检测结果将会被移除。
+- `EVAL_METRICS`: 需要测试的度量指标。可选值是取决于数据集的，比如 `proposal_fast`，`proposal`，`bbox`，`segm` 是 COCO 数据集的可选值，`mAP`，`recall` 是 Pascal VOC 数据集的可选值。Cityscapes 数据集可以测试 `cityscapes` 和所有 COCO 数据集支持的度量指标。
+- `--show`: 如果开启，检测结果将被绘制在图像上，以一个新窗口的形式展示。它只适用于单 GPU 的测试，是用于调试和可视化的。请确保使用此功能时，你的 GUI 可以在环境中打开。否则，你可能会遇到这么一个错误 `cannot connect to X server`。
+- `--show-dir`: 如果指明，检测结果将会被绘制在图像上并保存到指定目录。它只适用于单 GPU 的测试，是用于调试和可视化的。即使你的环境中没有 GUI，这个选项也可使用。
+- `--show-score-thr`: 如果指明，得分低于此阈值的检测结果将会被移除。
 - `--cfg-options`:  如果指明，这里的键值对将会被合并到配置文件中。
 - `--eval-options`: 如果指明，这里的键值对将会作为字典参数被传入 `dataset.evalutation()` 函数中，仅在测试阶段使用。
 
@@ -318,7 +317,7 @@ bash tools/dist_test.sh \
        --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
    ```
 
-   这行命令生成两个 JSON 文件 `mask_rcnn_test-dev_results.bbox.json` 和 `mask_rcnn_test-dev_results.segm.json`。
+这行命令生成两个 JSON 文件 `mask_rcnn_test-dev_results.bbox.json` 和 `mask_rcnn_test-dev_results.segm.json`。
 
 7. 在 Cityscapes 数据集上，使用 8 块 GPU 测试 Mask R-CNN，生成 txt 和 png 文件，并上传到官方评测服务器。配置文件和 checkpoint 文件 [在此](https://github.com/open-mmlab/mmdetection/tree/master/configs/cityscapes) 。
 
@@ -331,7 +330,7 @@ bash tools/dist_test.sh \
        --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
    ```
 
-   生成的 png 和 txt 文件在 `./mask_rcnn_cityscapes_test_results` 文件夹下。
+生成的 png 和 txt 文件在 `./mask_rcnn_cityscapes_test_results` 文件夹下。
 
 ### 不使用 Ground Truth 标注进行测试
 MMDetection 支持在不使用 ground-truth 标注的情况下对模型进行测试，这需要用到 `CocoDataset`。如果你的数据集格式不是 COCO 格式的，请将其转化成 COCO 格式。
@@ -448,7 +447,7 @@ python tools/train.py \
 默认情况下，模型将在每轮训练之后在 validation 集上进行测试，测试的频率可以通过设置配置文件来指定：
 
 ```python
-# 每12轮迭代进行一次测试评估
+# 每 12 轮迭代进行一次测试评估
 evaluation = dict(interval=12)
 ```
 这个工具接受以下参数：
