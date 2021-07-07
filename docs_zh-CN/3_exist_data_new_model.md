@@ -105,7 +105,7 @@ neck=dict(
     num_outs=5)
 ```
 
-关于自定义模型其余相关细节例如实现新的骨架网络，头部网络、损失函数，以及运行时训练配置例如定义新的优化器、使用梯度裁剪、定制训练调度策略和钩子等，请参考文档[自定义模型](tutorials/customize_models.md)和[自定义运行时训练配置](tutorials/customize_runtime.md)。
+关于自定义模型其余相关细节例如实现新的骨架网络，头部网络、损失函数，以及运行时训练配置例如定义新的优化器、使用梯度裁剪、定制训练调度策略和钩子等，请参考文档 [自定义模型](tutorials/customize_models.md) 和 [自定义运行时训练配置](tutorials/customize_runtime.md)。
 
 ## 准备配置文件
 
@@ -261,7 +261,7 @@ load_from = 'http://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade
 python tools/train.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py
 ```
 
-如果想了解更多用法，可以参考[例子1](1_exist_data_model.md)。
+如果想了解更多用法，可以参考 [例子1](1_exist_data_model.md)。
 
 ## 测试和推理
 
@@ -271,4 +271,4 @@ python tools/train.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10
 python tools/test.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py work_dirs/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py/latest.pth --eval bbox segm
 ```
 
-如果想了解更多用法，可以参考[例子1](1_exist_data_model.md)。
+如果想了解更多用法，可以参考 [例子1](1_exist_data_model.md)。
