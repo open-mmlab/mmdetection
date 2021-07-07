@@ -121,6 +121,7 @@ _base_ = [
 model = dict(
     # 设置为 None，表示不加载 ImageNet 预训练权重，
     # 后续可以设置 `load_from` 参数用来加载 COCO 预训练权重
+    backbone=dict(init_cfg=None),
     pretrained=None,
     # 使用新增的 `AugFPN` 模块代替默认的 `FPN`
     neck=dict(

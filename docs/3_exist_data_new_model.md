@@ -123,7 +123,7 @@ _base_ = [
 model = dict(
     # set None to avoid loading ImageNet pretrained backbone,
     # instead here we set `load_from` to load from COCO pretrained detectors.
-    pretrained=None,
+    backbone=dict(init_cfg=None),
     # replace neck from defaultly `FPN` to our new implemented module `AugFPN`
     neck=dict(
         type='AugFPN',
