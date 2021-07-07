@@ -9,11 +9,11 @@ from scipy import ndimage
 
 from mmdet.core import matrix_nms, multi_apply, points_nms
 from mmdet.models.builder import HEADS, build_loss
-from .base_dense_head import BaseDenseHead
+from .base_mask_head import BaseMaskHead
 
 
 @HEADS.register_module()
-class SOLOHead(BaseDenseHead):
+class SOLOHead(BaseMaskHead):
 
     def __init__(
         self,
@@ -94,10 +94,6 @@ class SOLOHead(BaseDenseHead):
         self.solo_cate = nn.Conv2d(
             self.seg_feat_channels, self.cate_out_channels, 3, padding=1)
 
-    def get_bboxes(self, **kwargs):
-        """Transform network output for a batch into bbox predictions."""
-        pass
-
     @property
     def num_levels(self):
         return len(self.strides)
@@ -156,32 +152,16 @@ class SOLOHead(BaseDenseHead):
             cate_pred_maps.append(cate_pred)
         return ins_pred_maps, cate_pred_maps
 
-    def forward_train(self,
-                      x,
-                      gt_labels,
-                      gt_masks,
-                      img_metas,
-                      gt_bboxes=None,
-                      gt_bboxes_ignore=None,
-                      **kwargs):
-        outs = self(x)
-        losses = self.loss(
-            *outs,
-            gt_labels,
-            gt_masks,
-            img_metas,
-            gt_bboxes=None,
-            gt_bboxes_ignore=None)
-        return losses
-
     def loss(self,
              ins_preds,
              cate_preds,
              gt_labels,
              gt_masks,
-             gt_bboxes,
              img_metas,
-             gt_bboxes_ignore=None):
+             gt_bboxes=None,
+             gt_bboxes_ignore=None,
+             **kwargs):
+
         featmap_sizes = [featmap.size()[-2:] for featmap in ins_preds]
         ins_label_list, cate_label_list, ins_ind_label_list = multi_apply(
             self.solo_target_single,
@@ -343,7 +323,7 @@ class SOLOHead(BaseDenseHead):
             ins_ind_label_list.append(ins_ind_label)
         return ins_label_list, cate_label_list, ins_ind_label_list
 
-    def get_seg(self, seg_preds, cate_preds, img_metas, cfg, rescale=None):
+    def get_masks(self, seg_preds, cate_preds, img_metas, cfg, rescale=None):
         assert len(seg_preds) == len(cate_preds)
         num_levels = len(cate_preds)
         featmap_size = seg_preds[0].size()[-2:]
@@ -366,9 +346,9 @@ class SOLOHead(BaseDenseHead):
             cate_pred_list = torch.cat(cate_pred_list, dim=0)
             seg_pred_list = torch.cat(seg_pred_list, dim=0)
 
-            result = self.get_seg_single(cate_pred_list, seg_pred_list,
-                                         featmap_size, img_shape, ori_shape,
-                                         scale_factor, cfg, rescale)
+            result = self.get_masks_single(cate_pred_list, seg_pred_list,
+                                           featmap_size, img_shape, ori_shape,
+                                           scale_factor, cfg, rescale)
             bbox_result, segm_result = self.segm2result(result)
             bbox_result_list.append(bbox_result)
             segm_result_list.append(segm_result)
@@ -379,7 +359,7 @@ class SOLOHead(BaseDenseHead):
         if result is None:
             bbox_result = [
                 np.zeros((0, 5), dtype=np.float32)
-                for i in range(self.num_classes)
+                for _ in range(self.num_classes)
             ]
             # BG is not included in num_classes
         else:
@@ -397,16 +377,16 @@ class SOLOHead(BaseDenseHead):
                 segm_result[cate_label[idx]].append(seg_pred[idx])
         return bbox_result, segm_result
 
-    def get_seg_single(self,
-                       cate_preds,
-                       seg_preds,
-                       featmap_size,
-                       img_shape,
-                       ori_shape,
-                       scale_factor,
-                       cfg,
-                       rescale=False,
-                       debug=False):
+    def get_masks_single(self,
+                         cate_preds,
+                         seg_preds,
+                         featmap_size,
+                         img_shape,
+                         ori_shape,
+                         scale_factor,
+                         cfg,
+                         rescale=False,
+                         debug=False):
         assert len(cate_preds) == len(seg_preds)
 
         # overall info.

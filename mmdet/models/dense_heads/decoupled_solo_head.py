@@ -172,20 +172,20 @@ class DecoupledSOLOHead(SOLOHead):
              ins_preds_x,
              ins_preds_y,
              cate_preds,
-             gt_bbox_list,
-             gt_label_list,
+             gt_labels,
+             gt_masks,
              img_metas,
-             gt_mask_list,
-             cfg=None,
-             gt_bboxes_ignore=None):
+             gt_bboxes=None,
+             gt_bboxes_ignore=None,
+             **kwargs):
         featmap_sizes = [featmap.size()[-2:] for featmap in ins_preds_x]
 
         ins_label_list, cate_label_list, \
             ins_ind_label_list, ins_ind_label_list_xy = \
             multi_apply(self.solo_target_single,
-                        gt_bbox_list,
-                        gt_label_list,
-                        gt_mask_list,
+                        gt_bboxes,
+                        gt_labels,
+                        gt_masks,
                         featmap_sizes=featmap_sizes)
 
         # ins

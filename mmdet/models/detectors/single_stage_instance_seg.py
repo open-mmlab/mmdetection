@@ -23,7 +23,6 @@ class SingleStageInstanceSegmentor(BaseDetector):
             self.neck = build_neck(neck)
         else:
             self.neck = None
-
         if bbox_head is not None:
             bbox_head.update(train_cfg=copy.deepcopy(train_cfg))
             bbox_head.update(test_cfg=copy.deepcopy(test_cfg))
