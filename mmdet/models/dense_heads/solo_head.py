@@ -158,42 +158,36 @@ class SOLOHead(BaseDenseHead):
 
     def forward_train(self,
                       x,
+                      gt_labels,
+                      gt_masks,
                       img_metas,
-                      gt_bboxes,
-                      gt_labels=None,
+                      gt_bboxes=None,
                       gt_bboxes_ignore=None,
-                      gt_mask=None,
-                      proposal_cfg=None,
                       **kwargs):
         outs = self(x)
-        if gt_labels and gt_mask is None:
-            loss_inputs = outs + (gt_bboxes, img_metas)
-        elif gt_labels and gt_mask is not None:
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, gt_mask)
-        elif gt_labels is not None and gt_mask is None:
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas)
-        losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-        if proposal_cfg is None:
-            return losses
-        else:
-            proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
-            return losses, proposal_list
+        losses = self.loss(
+            *outs,
+            gt_labels,
+            gt_masks,
+            img_metas,
+            gt_bboxes=None,
+            gt_bboxes_ignore=None)
+        return losses
 
     def loss(self,
              ins_preds,
              cate_preds,
-             gt_bbox_list,
-             gt_label_list,
+             gt_labels,
+             gt_masks,
+             gt_bboxes,
              img_metas,
-             gt_mask_list,
-             cfg=None,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in ins_preds]
         ins_label_list, cate_label_list, ins_ind_label_list = multi_apply(
             self.solo_target_single,
-            gt_bbox_list,
-            gt_label_list,
-            gt_mask_list,
+            gt_bboxes,
+            gt_labels,
+            gt_masks,
             featmap_sizes=featmap_sizes)
 
         ins_labels = [[] for _ in range(len(ins_preds))]

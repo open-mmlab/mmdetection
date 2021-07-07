@@ -1,10 +1,9 @@
 _base_ = [
-    '../_base_/datasets/coco_instance.py', '../_base_/models/solo_r50_fpn.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    './solo_r50_fpn_1x_coco.py',
 ]
 # model settings
 model = dict(
-    bbox_head=dict(
+    mask_head=dict(
         type='DecoupledSOLOHead',
         num_classes=80,
         in_channels=256,

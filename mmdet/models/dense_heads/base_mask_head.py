@@ -3,11 +3,11 @@ from abc import ABCMeta, abstractmethod
 import torch.nn as nn
 
 
-class BaseDenseSegHead(nn.Module, metaclass=ABCMeta):
-    """Base class for DenseHeads"""
+class BaseMaskHead(nn.Module, metaclass=ABCMeta):
+    """Base class for DenseHeads."""
 
     def __init__(self):
-        super(BaseDenseSegHead, self).__init__()
+        super(BaseMaskHead, self).__init__()
 
     @abstractmethod
     def loss(self, **kwargs):
@@ -24,7 +24,6 @@ class BaseDenseSegHead(nn.Module, metaclass=ABCMeta):
                       gt_labels=None,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
-                      proposal_cfg=None,
                       **kwargs):
         """
         Args:
@@ -51,3 +50,20 @@ class BaseDenseSegHead(nn.Module, metaclass=ABCMeta):
             loss_inputs = outs + (gt_bboxes, gt_labels, gt_masks, img_metas)
         losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
+
+    def simple_test(self, feats, img_metas, rescale=False):
+        """Test function without test-time augmentation.
+         Args:
+             feats (tuple[torch.Tensor]): Multi-level features from the
+                 upstream network, each is a 4D-tensor.
+             img_metas (list[dict]): List of image information.
+             rescale (bool, optional): Whether to rescale the results.
+                 Defaults to False.
+         Returns:
+             # TODO add
+         """
+        outs = self(feats)
+
+        mask_inputs = outs + (img_metas, rescale)
+        segm_results = self.bbox_head.get_masks(*mask_inputs)
+        return segm_results
