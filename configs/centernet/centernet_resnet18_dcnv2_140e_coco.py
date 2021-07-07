@@ -118,5 +118,5 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=1000,
     warmup_ratio=1.0 / 1000,
-    step=[18, 24])
-runner = dict(max_epochs=28)
+    step=[18, 24])  # the real step is [18*5, 24*5]
+runner = dict(max_epochs=28)  # the real epoch is 28*5=140
