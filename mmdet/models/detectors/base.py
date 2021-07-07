@@ -242,7 +242,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
         return outputs
 
-    def val_step(self, data, optimizer):
+    def val_step(self, data, optimizer=None):
         """The iteration step during validation.
 
         This method shares the same signature as :func:`train_step`, but used

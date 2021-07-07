@@ -86,6 +86,7 @@ The table below lists the models that are guaranteed to be convertable to Tensor
 |  RetinaNet   |   `configs/retinanet/retinanet_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
 | Faster R-CNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |       Y       |        Y        |       |
 |  Mask R-CNN  |   `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
+|  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py` |   Y    |   Y        |       |
 
 Notes:
 

@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - NAS-FPN
         - ResNet
@@ -18,7 +18,13 @@ Models:
     Config: configs/nas_fpn/retinanet_r50_fpn_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 12.9
-      inference time (s/im): 0.04367
+      inference time (ms/im):
+        - value: 43.67
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 50
     Results:
       - Task: Object Detection
@@ -32,7 +38,13 @@ Models:
     Config: configs/nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco.py
     Metadata:
       Training Memory (GB): 13.2
-      inference time (s/im): 0.04348
+      inference time (ms/im):
+        - value: 43.48
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 50
     Results:
       - Task: Object Detection
