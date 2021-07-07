@@ -369,7 +369,7 @@ class CocoPanopticDataset(CocoDataset):
             record = {
                 'image_id': img_id,
                 'segments_info': segm_info,
-                'file_name': self.formator.format(img_id)
+                'file_name': self.formatter.format(img_id)
             }
             pan_json_results.append(record)
         return pan_json_results
