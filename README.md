@@ -42,7 +42,7 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 This project is released under the [Apache 2.0 license](LICENSE).
 
-## News
+## Changelog
 
 v2.14.0 was released in 29/06/2021.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.

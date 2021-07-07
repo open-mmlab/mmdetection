@@ -1,9 +1,9 @@
 ## 依赖
 
-- Linux 和 macOS （Windows理论上支持）
+- Linux 和 macOS （Windows 理论上支持）
 - Python 3.6+
 - PyTorch 1.3+
-- CUDA 9.2+ （如果基于PyTorch源码安装，也能够支持CUDA9.0）
+- CUDA 9.2+ （如果基于 PyTorch 源码安装，也能够支持 CUDA 9.0）
 - GCC 5+
 - [MMCV](https://mmcv.readthedocs.io/en/latest/#installation)
 
@@ -11,7 +11,8 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 
 | MMDetection 版本 |        MMCV 版本         |
 | :--------------: | :----------------------: |
-|      master      | mmcv-full>=1.3.3, <1.4.0 |
+|      master      | mmcv-full>=1.3.8, <1.4.0 |
+|      2.14.0      | mmcv-full>=1.3.8, <1.4.0 |
 |      2.13.0      | mmcv-full>=1.3.3, <1.4.0 |
 |      2.12.0      | mmcv-full>=1.3.3, <1.4.0 |
 |      2.11.0      | mmcv-full>=1.2.4, <1.4.0 |
@@ -29,7 +30,7 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 |      2.1.0       |   mmcv>=0.5.9, <=0.6.1   |
 |      2.0.0       |   mmcv>=0.5.1, <=0.5.8   |
 
-注意：如果已经安装了 mmcv，首先需要使用 `pip uninstall mmcv` 卸载已安装的 mmcv。 如果同时安装了 mmcv 和 mmcv-full，将会报 `ModuleNotFoundError` 。
+**注意：**如果已经安装了 mmcv，首先需要使用 `pip uninstall mmcv` 卸载已安装的 mmcv，如果同时安装了 mmcv 和 mmcv-full，将会报 `ModuleNotFoundError` 错误。
 
 ## 安装流程
 
@@ -56,7 +57,7 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
    conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
    ```
 
-   `例 2` 例如在 `/usr/local/cuda` 下安装了 CUDA 9.2， 并想安装 PyTorch 1.3.1，则需要安装支持 CUDA 9.2  的预构建   PyTorch：
+   `例 2` 例如在 `/usr/local/cuda` 下安装了 CUDA 9.2， 并想安装 PyTorch 1.3.1，则需要安装支持 CUDA 9.2  的预构建 PyTorch：
 
    ```shell
    conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
@@ -77,14 +78,13 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 或者，可以手动安装 MMDetection：
 
-
 1. 安装 mmcv-full，我们建议使用预构建包来安装：
 
     ```shell
     pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
     ```
 
-    请把命令行中的 `{cu_version}` 和 `{torch_version}` 替换成对应的版本。例如：在 CUDA 11 和 PyTorch 1.7.0 的环境下，可以使用下面命令安装最新版本的 MMCV：
+    需要把命令行中的 `{cu_version}` 和 `{torch_version}` 替换成对应的版本。例如：在 CUDA 11 和 PyTorch 1.7.0 的环境下，可以使用下面命令安装最新版本的 MMCV：
 
     ```shell
     pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
@@ -95,7 +95,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
     ```shell
     git clone https://github.com/open-mmlab/mmcv.git
     cd mmcv
-    MMCV_WITH_OPS=1 pip install -e .  # 安装好mmcv-full
+    MMCV_WITH_OPS=1 pip install -e .  # 安装好 mmcv-full
     cd ..
     ```
 
@@ -131,7 +131,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 (2) 如果希望使用 `opencv-python-headless` 而不是 `opencv-python`， 可以在安装 MMCV 之前安装；
 
-(3) 一些安装依赖是可以选择的。例如只需要安装最低运行要求的版本，则可以使用 `pip install -v -e .` 命令。如果希望使用可选择的像 `albumentations` 和 `imagecorruptions` 这种依赖项，可以使用 `pip install -r requirements/optional.txt ` 进行手动安装，或者在使用 `pip` 时指定所需的附加功能（例如 `pip install -v -e .[optional]`），支持附加功能的有效键值包括  `all`、 `tests`、  `build` 以及 `optional` 。
+(3) 一些安装依赖是可以选择的。例如只需要安装最低运行要求的版本，则可以使用 `pip install -v -e .` 命令。如果希望使用可选择的像 `albumentations` 和 `imagecorruptions` 这种依赖项，可以使用 `pip install -r requirements/optional.txt ` 进行手动安装，或者在使用 `pip` 时指定所需的附加功能（例如 `pip install -v -e .[optional]`），支持附加功能的有效键值包括  `all`、`tests`、`build` 以及 `optional` 。
 
 ### 只在CPU安装
 
@@ -165,7 +165,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 ### 另一种选择： Docker Image
 
-我们提供了 [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) 来生成图片，请确保 [docker 版本](https://docs.docker.com/engine/install/) >=19.03。
+我们提供了 [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) 来生成图片，请确保 [docker](https://docs.docker.com/engine/install/)  的版本  >= 19.03。
 
 ```shell
 # 基于 PyTorch 1.6, CUDA 10.1 生成图片
@@ -189,7 +189,7 @@ conda activate open-mmlab
 conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch -y
 
 # 安装最新版本的 mmcv
-pip install mmcv-full==latest+torch1.6.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+ pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
 
 # 安装 MMDetection
 git clone https://github.com/open-mmlab/mmdetection.git
@@ -202,7 +202,7 @@ pip install -v -e .
 
 训练和测试的脚本已经在 PYTHONPATH 中进行了修改，以确保脚本使用当前目录中的 MMDetection。
 
-要使环境中安装默认的 MMDetection 而不是当前重在使用的，可以删除出现在相关脚本中的代码：
+要使环境中安装默认的 MMDetection 而不是当前正在在使用的，可以删除出现在相关脚本中的代码：
 
 ```shell
 PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
