@@ -2,14 +2,15 @@
 input_size = 300
 model = dict(
     type='SingleStageDetector',
-    pretrained='open-mmlab://vgg16_caffe',
     backbone=dict(
         type='SSDVGG',
         depth=16,
         with_last_pool=False,
         ceil_mode=True,
         out_indices=(3, 4),
-        out_feature_indices=(22, 34)),
+        out_feature_indices=(22, 34),
+        init_cfg=dict(
+            type='Pretrained', checkpoint='open-mmlab://vgg16_caffe')),
     neck=dict(
         type='SSDNeck',
         in_channels=(512, 1024),

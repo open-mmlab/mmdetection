@@ -153,7 +153,7 @@ def preprocess_example_input(input_config):
         'ori_shape': (H, W, C),
         'pad_shape': (H, W, C),
         'filename': '<demo>.png',
-        'scale_factor': np.ones(4),
+        'scale_factor': np.ones(4, dtype=np.float32),
         'flip': False,
         'show_img': show_img,
     }

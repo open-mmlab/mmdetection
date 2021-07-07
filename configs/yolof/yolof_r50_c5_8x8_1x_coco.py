@@ -4,7 +4,6 @@ _base_ = [
 ]
 model = dict(
     type='YOLOF',
-    pretrained='open-mmlab://detectron/resnet50_caffe',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -13,7 +12,10 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
-        style='caffe'),
+        style='caffe',
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='open-mmlab://detectron/resnet50_caffe')),
     neck=dict(
         type='DilatedEncoder',
         in_channels=2048,

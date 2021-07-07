@@ -169,38 +169,6 @@ def test_fpn():
         outs[i].shape[1] == out_channels
         outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
 
-    # extra_convs_on_inputs=False is equal to extra convs source is 'on_output'
-    fpn_model = FPN(
-        in_channels=in_channels,
-        out_channels=out_channels,
-        add_extra_convs=True,
-        extra_convs_on_inputs=False,
-        start_level=1,
-        num_outs=5,
-    )
-    assert fpn_model.add_extra_convs == 'on_output'
-    outs = fpn_model(feats)
-    assert len(outs) == fpn_model.num_outs
-    for i in range(fpn_model.num_outs):
-        outs[i].shape[1] == out_channels
-        outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
-
-    # extra_convs_on_inputs=True is equal to extra convs source is 'on_input'
-    fpn_model = FPN(
-        in_channels=in_channels,
-        out_channels=out_channels,
-        add_extra_convs=True,
-        extra_convs_on_inputs=True,
-        start_level=1,
-        num_outs=5,
-    )
-    assert fpn_model.add_extra_convs == 'on_input'
-    outs = fpn_model(feats)
-    assert len(outs) == fpn_model.num_outs
-    for i in range(fpn_model.num_outs):
-        outs[i].shape[1] == out_channels
-        outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
-
 
 def test_channel_mapper():
     """Tests ChannelMapper."""
