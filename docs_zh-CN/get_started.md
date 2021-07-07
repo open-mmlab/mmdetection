@@ -90,7 +90,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
     pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
     ```
 
-    请参考 [MMCV](https://mmcv.readthedocs.io/en/latest/#installation) 获取不同版本的MMCV 所兼容的的不同的 PyTorch 和 CUDA 版本。同时，也可以通过以下命令行从源码编译 MMCV：
+    请参考 [MMCV](https://mmcv.readthedocs.io/en/latest/#installation) 获取不同版本的 MMCV 所兼容的的不同的 PyTorch 和 CUDA 版本。同时，也可以通过以下命令行从源码编译 MMCV：
 
     ```shell
     git clone https://github.com/open-mmlab/mmcv.git
@@ -133,11 +133,11 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 (3) 一些安装依赖是可以选择的。例如只需要安装最低运行要求的版本，则可以使用 `pip install -v -e .` 命令。如果希望使用可选择的像 `albumentations` 和 `imagecorruptions` 这种依赖项，可以使用 `pip install -r requirements/optional.txt ` 进行手动安装，或者在使用 `pip` 时指定所需的附加功能（例如 `pip install -v -e .[optional]`），支持附加功能的有效键值包括  `all`、`tests`、`build` 以及 `optional` 。
 
-### 只在CPU安装
+### 只在 CPU 安装
 
-我们的代码能够建立只使用 CPU 的环境（CUDA 不可用）。
+我们的代码能够建立在只使用 CPU 的环境（CUDA 不可用）。
 
-在CPU模式下，可以运行 `demo/webcam_demo.py` 示例，然而以下功能将在CPU模式下不能使用：
+在CPU模式下，可以运行 `demo/webcam_demo.py` 示例，然而以下功能将在 CPU 模式下不能使用：
 
 - Deformable Convolution
 - Modulated Deformable Convolution
@@ -154,14 +154,14 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 因此，如果尝试使用包含上述操作的模型进行推理，将会报错。下表列出了由于依赖上述算子而无法在 CPU 上运行的相关模型：
 
-|                        Operator                         |                            Model                             |
+|                        操作                         |                            模型                             |
 | :-----------------------------------------------------: | :----------------------------------------------------------: |
 | Deformable Convolution/Modulated Deformable Convolution | DCN、Guided Anchoring、RepPoints、CentripetalNet、VFNet、CascadeRPN、NAS-FCOS、DetectoRS |
 |                      MaskedConv2d                       |                       Guided Anchoring                       |
 |                         CARAFE                          |                            CARAFE                            |
 |                      SyncBatchNorm                      |                           ResNeSt                            |
 
-**注意**： MMDetection 目前不支持使用CPU进行训练。
+**注意**： MMDetection 目前不支持使用 CPU 进行训练。
 
 ### 另一种选择： Docker Image
 
