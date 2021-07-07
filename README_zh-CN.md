@@ -130,7 +130,7 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 
 我们也提供了一些进阶教程，内容覆盖了 [finetune 模型](docs/tutorials/finetune.md)，[增加新数据集支持](docs/tutorials/new_dataset.md)，[设计新的数据预处理流程](docs/tutorials/data_pipeline.md)，[增加自定义模型](ocs/tutorials/customize_models.md)，[增加自定义的运行时配置](docs/tutorials/customize_runtime.md)，[常用工具和脚本](docs/useful_tools.md)。
 
-如果遇到问题，请参考 [FAQ 页面](docs/faq_zh_CN.md)。
+如果遇到问题，请参考 [常见问题解答](docs_zh-CN/faq.md)。
 
 ## 贡献指南
 
