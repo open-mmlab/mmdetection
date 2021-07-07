@@ -484,6 +484,8 @@ class LoadPanopticAnnotations(LoadAnnotations):
         if self.with_label:
             results = self._load_labels(results)
         if self.with_mask or self.with_seg:
+            # The tasks completed by '_load_masks' and '_load_semantic_segs'
+            # in LoadAnnotations are merged to one function.
             results = self._load_masks_and_semantic_segs(results)
 
         return results

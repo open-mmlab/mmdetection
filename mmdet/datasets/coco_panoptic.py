@@ -1,4 +1,3 @@
-import json
 import os
 from collections import defaultdict
 
@@ -494,7 +493,7 @@ class CocoPanopticDataset(CocoDataset):
             'segments_info': v
         } for k, v in gt_json.items()]
         gt_json = dict((el['image_id'], el) for el in gt_json)
-        pred_json = json.load(open(result_files['panoptic'], 'r'))
+        pred_json = mmcv.load(result_files['panoptic'])
         pred_json = dict((el['image_id'], el) for el in pred_json)
 
         assert len(gt_json) == len(pred_json)
