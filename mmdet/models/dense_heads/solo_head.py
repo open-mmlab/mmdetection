@@ -164,7 +164,7 @@ class SOLOHead(BaseMaskHead):
 
         featmap_sizes = [featmap.size()[-2:] for featmap in ins_preds]
         ins_label_list, cate_label_list, ins_ind_label_list = multi_apply(
-            self.solo_target_single,
+            self._get_targets_single,
             gt_bboxes,
             gt_labels,
             gt_masks,
@@ -218,11 +218,11 @@ class SOLOHead(BaseMaskHead):
             flatten_cate_preds, flatten_cate_labels, avg_factor=num_ins + 1)
         return dict(loss_ins=loss_mask, loss_cate=loss_cls)
 
-    def solo_target_single(self,
-                           gt_bboxes_raw,
-                           gt_labels_raw,
-                           gt_masks_raw,
-                           featmap_sizes=None):
+    def _get_targets_single(self,
+                            gt_bboxes_raw,
+                            gt_labels_raw,
+                            gt_masks_raw,
+                            featmap_sizes=None):
 
         device = gt_labels_raw[0].device
 
@@ -331,7 +331,6 @@ class SOLOHead(BaseMaskHead):
                   **kwargs):
         assert len(seg_preds) == len(cate_preds)
         num_levels = len(cate_preds)
-        featmap_size = seg_preds[0].size()[-2:]
 
         results_list = []
         for img_id in range(len(img_metas)):
@@ -344,32 +343,37 @@ class SOLOHead(BaseMaskHead):
             cate_pred_list = torch.cat(cate_pred_list, dim=0)
             seg_pred_list = torch.cat(seg_pred_list, dim=0)
 
-            results = self.get_masks_single(
-                cate_pred_list,
-                seg_pred_list,
-                featmap_size,
-                img_meta=img_metas[img_id],
-                cfg=self.test_cfg)
+            results = self._get_masks_single(
+                cate_pred_list, seg_pred_list, img_meta=img_metas[img_id])
             results_list.append(results)
 
         return results_list
 
-    def get_masks_single(self, cate_preds, seg_preds, img_meta, cfg):
+    def _get_masks_single(self, cate_preds, seg_preds, img_meta, cfg=None):
+
+        if cfg is None:
+            cfg = self.test_cfg
         assert len(cate_preds) == len(seg_preds)
+        processed_results = InstanceResults(img_meta)
+
         featmap_size = seg_preds.size()[-2:]
         img_shape = img_meta['img_shape']
         ori_shape = img_meta['ori_shape']
         # overall info.
         h, w, _ = img_shape
-        # TODO remove hard code 4
+        # TODO remove hard code 4 ?
         upsampled_size_out = (featmap_size[0] * 4, featmap_size[1] * 4)
 
         # process.
         inds = (cate_preds > cfg.score_thr)
+
         # category scores.
         cate_scores = cate_preds[inds]
         if len(cate_scores) == 0:
-            return None
+            processed_results.scores = cate_scores
+            processed_results.masks = cate_scores.new_zeros(0, *ori_shape[:2])
+            processed_results.labels = cate_scores.new_ones(0)
+            return processed_results
         # category labels.
         inds = inds.nonzero()
         cate_labels = inds[:, 1]
@@ -393,7 +397,10 @@ class SOLOHead(BaseMaskHead):
         # filter.
         keep = sum_masks > strides
         if keep.sum() == 0:
-            return None
+            processed_results.scores = cate_scores
+            processed_results.masks = cate_scores.new_zeros(0, *ori_shape[:2])
+            processed_results.labels = cate_scores.new_ones(0)
+            return processed_results
 
         seg_masks = seg_masks[keep, ...]
         seg_preds = seg_preds[keep, ...]
@@ -427,7 +434,10 @@ class SOLOHead(BaseMaskHead):
         # filter.
         keep = cate_scores >= cfg.update_thr
         if keep.sum() == 0:
-            return None
+            processed_results.scores = cate_scores
+            processed_results.masks = cate_scores.new_zeros(0, *ori_shape[:2])
+            processed_results.labels = cate_scores.new_ones(0)
+            return processed_results
         seg_preds = seg_preds[keep, :, :]
         cate_scores = cate_scores[keep]
         cate_labels = cate_labels[keep]

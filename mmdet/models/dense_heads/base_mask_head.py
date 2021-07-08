@@ -39,16 +39,22 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
 
     def simple_test(self, feats, img_metas, rescale=False, **kwargs):
         """Test function without test-time augmentation.
-         Args:
-             feats (tuple[torch.Tensor]): Multi-level features from the
-                 upstream network, each is a 4D-tensor.
-             img_metas (list[dict]): List of image information.
-             rescale (bool, optional): Whether to rescale the results.
-                 Defaults to False.
-         Returns:
-             # TODO
-         """
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+        Returns:
+            list[obj:`InstanceResults`]: Each `InstanceResults` containing
+            the following keys.
+                - `masks`: has shape (num_masks, H, W)
+                - `scores`: has shape (num_masks,)
+                - `labels`: has shape (num_masks)
+        """
         outs = self(feats)
         mask_inputs = outs + (img_metas, )
-        segm_results = self.get_masks(*mask_inputs, rescale=rescale, **kwargs)
-        return segm_results
+        mask_results_list = self.get_masks(
+            *mask_inputs, rescale=rescale, **kwargs)
+        return mask_results_list
