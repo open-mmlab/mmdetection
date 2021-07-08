@@ -4,7 +4,268 @@ CommandLine:
     xdoctest tests/test_utils/test_anchor.py zero
 
 """
+import pytest
 import torch
+
+
+def test_standard_points_generator():
+    from mmdet.core.anchor import build_prior_generator
+    # teat init
+    anchor_generator_cfg = dict(
+        type='MlvlPointGenerator', strides=[4, 8], offset=0)
+    anchor_generator = build_prior_generator(anchor_generator_cfg)
+    assert anchor_generator is not None
+    assert anchor_generator.num_base_priors == [1, 1]
+    # test_stride
+    from mmdet.core.anchor import MlvlPointGenerator
+
+    # Square strides
+    mlvl_points = MlvlPointGenerator(strides=[4, 10], offset=0)
+    mlvl_points_half_stride_generator = MlvlPointGenerator(
+        strides=[4, 10], offset=0.5)
+    assert mlvl_points.num_levels == 2
+
+    # assert self.num_levels == len(featmap_sizes)
+    with pytest.raises(AssertionError):
+        mlvl_points.grid_priors(featmap_sizes=[(2, 2)], device='cpu')
+    priors = mlvl_points.grid_priors(
+        featmap_sizes=[(2, 2), (4, 8)], device='cpu')
+    priors_with_stride = mlvl_points.grid_priors(
+        featmap_sizes=[(2, 2), (4, 8)], with_stride=True, device='cpu')
+    assert len(priors) == 2
+
+    # assert last dimension is (coord_x, coord_y, stride_w, stride_h).
+    assert priors_with_stride[0].size(1) == 4
+    assert priors_with_stride[0][0][2] == 4
+    assert priors_with_stride[0][0][3] == 4
+    assert priors_with_stride[1][0][2] == 10
+    assert priors_with_stride[1][0][3] == 10
+
+    stride_4_feat_2_2 = priors[0]
+    assert (stride_4_feat_2_2[1] - stride_4_feat_2_2[0]).sum() == 4
+    assert stride_4_feat_2_2.size(0) == 4
+    assert stride_4_feat_2_2.size(1) == 2
+
+    stride_10_feat_4_8 = priors[1]
+    assert (stride_10_feat_4_8[1] - stride_10_feat_4_8[0]).sum() == 10
+    assert stride_10_feat_4_8.size(0) == 4 * 8
+    assert stride_10_feat_4_8.size(1) == 2
+
+    # assert the offset of 0.5 * stride
+    priors_half_offset = mlvl_points_half_stride_generator.grid_priors(
+        featmap_sizes=[(2, 2), (4, 8)], device='cpu')
+
+    assert (priors_half_offset[0][0] - priors[0][0]).sum() == 4 * 0.5 * 2
+    assert (priors_half_offset[1][0] - priors[1][0]).sum() == 10 * 0.5 * 2
+    if torch.cuda.is_available():
+        anchor_generator_cfg = dict(
+            type='MlvlPointGenerator', strides=[4, 8], offset=0)
+        anchor_generator = build_prior_generator(anchor_generator_cfg)
+        assert anchor_generator is not None
+        # Square strides
+        mlvl_points = MlvlPointGenerator(strides=[4, 10], offset=0)
+        mlvl_points_half_stride_generator = MlvlPointGenerator(
+            strides=[4, 10], offset=0.5)
+        assert mlvl_points.num_levels == 2
+
+        # assert self.num_levels == len(featmap_sizes)
+        with pytest.raises(AssertionError):
+            mlvl_points.grid_priors(featmap_sizes=[(2, 2)], device='cuda')
+        priors = mlvl_points.grid_priors(
+            featmap_sizes=[(2, 2), (4, 8)], device='cuda')
+        priors_with_stride = mlvl_points.grid_priors(
+            featmap_sizes=[(2, 2), (4, 8)], with_stride=True, device='cuda')
+        assert len(priors) == 2
+
+        # assert last dimension is (coord_x, coord_y, stride_w, stride_h).
+        assert priors_with_stride[0].size(1) == 4
+        assert priors_with_stride[0][0][2] == 4
+        assert priors_with_stride[0][0][3] == 4
+        assert priors_with_stride[1][0][2] == 10
+        assert priors_with_stride[1][0][3] == 10
+
+        stride_4_feat_2_2 = priors[0]
+        assert (stride_4_feat_2_2[1] - stride_4_feat_2_2[0]).sum() == 4
+        assert stride_4_feat_2_2.size(0) == 4
+        assert stride_4_feat_2_2.size(1) == 2
+
+        stride_10_feat_4_8 = priors[1]
+        assert (stride_10_feat_4_8[1] - stride_10_feat_4_8[0]).sum() == 10
+        assert stride_10_feat_4_8.size(0) == 4 * 8
+        assert stride_10_feat_4_8.size(1) == 2
+
+        # assert the offset of 0.5 * stride
+        priors_half_offset = mlvl_points_half_stride_generator.grid_priors(
+            featmap_sizes=[(2, 2), (4, 8)], device='cuda')
+
+        assert (priors_half_offset[0][0] - priors[0][0]).sum() == 4 * 0.5 * 2
+        assert (priors_half_offset[1][0] - priors[1][0]).sum() == 10 * 0.5 * 2
+
+
+def test_sparse_prior():
+    from mmdet.core.anchor import MlvlPointGenerator
+    mlvl_points = MlvlPointGenerator(strides=[4, 10], offset=0)
+    prior_indexs = torch.Tensor([0, 2, 4, 5, 6, 9]).long()
+
+    featmap_sizes = [(3, 5), (6, 4)]
+    grid_anchors = mlvl_points.grid_priors(
+        featmap_sizes=featmap_sizes, with_stride=False, device='cpu')
+    sparse_prior = mlvl_points.sparse_priors(
+        prior_idxs=prior_indexs,
+        featmap_size=featmap_sizes[0],
+        level_idx=0,
+        device='cpu')
+
+    assert not sparse_prior.is_cuda
+    assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
+    sparse_prior = mlvl_points.sparse_priors(
+        prior_idxs=prior_indexs,
+        featmap_size=featmap_sizes[1],
+        level_idx=1,
+        device='cpu')
+    assert (sparse_prior == grid_anchors[1][prior_indexs]).all()
+
+    from mmdet.core.anchor import AnchorGenerator
+    mlvl_anchors = AnchorGenerator(
+        strides=[16, 32], ratios=[1.], scales=[1.], base_sizes=[4, 8])
+    prior_indexs = torch.Tensor([0, 2, 4, 5, 6, 9]).long()
+
+    featmap_sizes = [(3, 5), (6, 4)]
+    grid_anchors = mlvl_anchors.grid_priors(
+        featmap_sizes=featmap_sizes, device='cpu')
+    sparse_prior = mlvl_anchors.sparse_priors(
+        prior_idxs=prior_indexs,
+        featmap_size=featmap_sizes[0],
+        level_idx=0,
+        device='cpu')
+    assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
+    sparse_prior = mlvl_anchors.sparse_priors(
+        prior_idxs=prior_indexs,
+        featmap_size=featmap_sizes[1],
+        level_idx=1,
+        device='cpu')
+    assert (sparse_prior == grid_anchors[1][prior_indexs]).all()
+
+    # for ssd
+    from mmdet.core.anchor.anchor_generator import SSDAnchorGenerator
+    featmap_sizes = [(38, 38), (19, 19), (10, 10)]
+    anchor_generator = SSDAnchorGenerator(
+        scale_major=False,
+        input_size=300,
+        basesize_ratio_range=(0.15, 0.9),
+        strides=[8, 16, 32],
+        ratios=[[2], [2, 3], [2, 3]])
+    ssd_anchors = anchor_generator.grid_anchors(featmap_sizes, device='cpu')
+    for i in range(len(featmap_sizes)):
+        sparse_ssd_anchors = anchor_generator.sparse_priors(
+            prior_idxs=prior_indexs,
+            level_idx=i,
+            featmap_size=featmap_sizes[i],
+            device='cpu')
+        assert (sparse_ssd_anchors == ssd_anchors[i][prior_indexs]).all()
+
+    # for yolo
+    from mmdet.core.anchor.anchor_generator import YOLOAnchorGenerator
+    featmap_sizes = [(38, 38), (19, 19), (10, 10)]
+    anchor_generator = YOLOAnchorGenerator(
+        strides=[32, 16, 8],
+        base_sizes=[
+            [(116, 90), (156, 198), (373, 326)],
+            [(30, 61), (62, 45), (59, 119)],
+            [(10, 13), (16, 30), (33, 23)],
+        ])
+    yolo_anchors = anchor_generator.grid_anchors(featmap_sizes, device='cpu')
+    for i in range(len(featmap_sizes)):
+        sparse_yolo_anchors = anchor_generator.sparse_priors(
+            prior_idxs=prior_indexs,
+            level_idx=i,
+            featmap_size=featmap_sizes[i],
+            device='cpu')
+        assert (sparse_yolo_anchors == yolo_anchors[i][prior_indexs]).all()
+
+    if torch.cuda.is_available():
+        mlvl_points = MlvlPointGenerator(strides=[4, 10], offset=0)
+        prior_indexs = torch.Tensor([0, 3, 4, 5, 6, 7, 1, 2, 4, 5, 6,
+                                     9]).long().cuda()
+
+        featmap_sizes = [(6, 8), (6, 4)]
+        grid_anchors = mlvl_points.grid_priors(
+            featmap_sizes=featmap_sizes, with_stride=False, device='cuda')
+        sparse_prior = mlvl_points.sparse_priors(
+            prior_idxs=prior_indexs,
+            featmap_size=featmap_sizes[0],
+            level_idx=0,
+            device='cuda')
+        assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
+        sparse_prior = mlvl_points.sparse_priors(
+            prior_idxs=prior_indexs,
+            featmap_size=featmap_sizes[1],
+            level_idx=1,
+            device='cuda')
+        assert (sparse_prior == grid_anchors[1][prior_indexs]).all()
+        assert sparse_prior.is_cuda
+        mlvl_anchors = AnchorGenerator(
+            strides=[16, 32],
+            ratios=[1., 2.5],
+            scales=[1., 5.],
+            base_sizes=[4, 8])
+        prior_indexs = torch.Tensor([4, 5, 6, 7, 0, 2, 50, 4, 5, 6,
+                                     9]).long().cuda()
+
+        featmap_sizes = [(13, 5), (16, 4)]
+        grid_anchors = mlvl_anchors.grid_priors(
+            featmap_sizes=featmap_sizes, device='cuda')
+        sparse_prior = mlvl_anchors.sparse_priors(
+            prior_idxs=prior_indexs,
+            featmap_size=featmap_sizes[0],
+            level_idx=0,
+            device='cuda')
+        assert (sparse_prior == grid_anchors[0][prior_indexs]).all()
+        sparse_prior = mlvl_anchors.sparse_priors(
+            prior_idxs=prior_indexs,
+            featmap_size=featmap_sizes[1],
+            level_idx=1,
+            device='cuda')
+        assert (sparse_prior == grid_anchors[1][prior_indexs]).all()
+
+        # for ssd
+        from mmdet.core.anchor.anchor_generator import SSDAnchorGenerator
+        featmap_sizes = [(38, 38), (19, 19), (10, 10)]
+        anchor_generator = SSDAnchorGenerator(
+            scale_major=False,
+            input_size=300,
+            basesize_ratio_range=(0.15, 0.9),
+            strides=[8, 16, 32],
+            ratios=[[2], [2, 3], [2, 3]])
+        ssd_anchors = anchor_generator.grid_anchors(
+            featmap_sizes, device='cuda')
+        for i in range(len(featmap_sizes)):
+            sparse_ssd_anchors = anchor_generator.sparse_priors(
+                prior_idxs=prior_indexs,
+                level_idx=i,
+                featmap_size=featmap_sizes[i],
+                device='cuda')
+            assert (sparse_ssd_anchors == ssd_anchors[i][prior_indexs]).all()
+
+        # for yolo
+        from mmdet.core.anchor.anchor_generator import YOLOAnchorGenerator
+        featmap_sizes = [(38, 38), (19, 19), (10, 10)]
+        anchor_generator = YOLOAnchorGenerator(
+            strides=[32, 16, 8],
+            base_sizes=[
+                [(116, 90), (156, 198), (373, 326)],
+                [(30, 61), (62, 45), (59, 119)],
+                [(10, 13), (16, 30), (33, 23)],
+            ])
+        yolo_anchors = anchor_generator.grid_anchors(
+            featmap_sizes, device='cuda')
+        for i in range(len(featmap_sizes)):
+            sparse_yolo_anchors = anchor_generator.sparse_priors(
+                prior_idxs=prior_indexs,
+                level_idx=i,
+                featmap_size=featmap_sizes[i],
+                device='cuda')
+            assert (sparse_yolo_anchors == yolo_anchors[i][prior_indexs]).all()
 
 
 def test_standard_anchor_generator():
@@ -16,6 +277,9 @@ def test_standard_anchor_generator():
         strides=[4, 8])
 
     anchor_generator = build_anchor_generator(anchor_generator_cfg)
+    assert anchor_generator.num_base_priors == \
+           anchor_generator.num_base_anchors
+    assert anchor_generator.num_base_priors == [3, 3]
     assert anchor_generator is not None
 
 

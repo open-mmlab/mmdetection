@@ -2,7 +2,6 @@ _base_ = [
     '../common/mstrain_3x_coco.py', '../_base_/models/faster_rcnn_r50_fpn.py'
 ]
 model = dict(
-    pretrained='open-mmlab://detectron2/resnext101_32x8d',
     backbone=dict(
         type='ResNeXt',
         depth=101,
@@ -12,7 +11,10 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
-        style='pytorch'))
+        style='pytorch',
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='open-mmlab://detectron2/resnext101_32x8d')))
 
 # ResNeXt-101-32x8d model trained with Caffe2 at FB,
 # so the mean and std need to be changed.

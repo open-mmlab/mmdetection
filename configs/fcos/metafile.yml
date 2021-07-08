@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - FPN
         - Group Normalization
@@ -19,7 +19,13 @@ Models:
     Config: configs/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco.py
     Metadata:
       Training Memory (GB): 3.6
-      inference time (s/im): 0.04405
+      inference time (ms/im):
+        - value: 44.05
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -59,7 +65,13 @@ Models:
     Config: configs/fcos/fcos_r101_caffe_fpn_gn-head_1x_coco.py
     Metadata:
       Training Memory (GB): 5.5
-      inference time (s/im): 0.0578
+      inference time (ms/im):
+        - value: 57.8
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -73,7 +85,13 @@ Models:
     Config: configs/fcos/fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco.py
     Metadata:
       Training Memory (GB): 2.6
-      inference time (s/im): 0.04367
+      inference time (ms/im):
+        - value: 43.67
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -87,7 +105,13 @@ Models:
     Config: configs/fcos/fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco.py
     Metadata:
       Training Memory (GB): 5.5
-      inference time (s/im): 0.0578
+      inference time (ms/im):
+        - value: 57.8
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -101,7 +125,13 @@ Models:
     Config: configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco.py
     Metadata:
       Training Memory (GB): 10.0
-      inference time (s/im): 0.10309
+      inference time (ms/im):
+        - value: 103.09
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection

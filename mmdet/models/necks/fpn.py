@@ -1,5 +1,3 @@
-import warnings
-
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
@@ -25,17 +23,13 @@ class FPN(BaseModule):
             build the feature pyramid. Default: -1, which means the last level.
         add_extra_convs (bool | str): If bool, it decides whether to add conv
             layers on top of the original feature maps. Default to False.
-            If True, its actual mode is specified by `extra_convs_on_inputs`.
+            If True, it is equivalent to `add_extra_convs='on_input'`.
             If str, it specifies the source feature map of the extra convs.
             Only the following options are allowed
 
             - 'on_input': Last feat map of neck inputs (i.e. backbone feature).
             - 'on_lateral':  Last feature map after lateral convs.
             - 'on_output': The last output feature map after fpn convs.
-        extra_convs_on_inputs (bool, deprecated): Whether to apply extra convs
-            on the original feature from the backbone. If True,
-            it is equivalent to `add_extra_convs='on_input'`. If False, it is
-            equivalent to set `add_extra_convs='on_output'`. Default to True.
         relu_before_extra_convs (bool): Whether to apply relu before the extra
             conv. Default: False.
         no_norm_on_lateral (bool): Whether to apply norm on lateral.
@@ -71,7 +65,6 @@ class FPN(BaseModule):
                  start_level=0,
                  end_level=-1,
                  add_extra_convs=False,
-                 extra_convs_on_inputs=True,
                  relu_before_extra_convs=False,
                  no_norm_on_lateral=False,
                  conv_cfg=None,
@@ -107,15 +100,7 @@ class FPN(BaseModule):
             # Extra_convs_source choices: 'on_input', 'on_lateral', 'on_output'
             assert add_extra_convs in ('on_input', 'on_lateral', 'on_output')
         elif add_extra_convs:  # True
-            if extra_convs_on_inputs:
-                # TODO: deprecate `extra_convs_on_inputs`
-                warnings.simplefilter('once')
-                warnings.warn(
-                    '"extra_convs_on_inputs" will be deprecated in v2.9.0,'
-                    'Please use "add_extra_convs"', DeprecationWarning)
-                self.add_extra_convs = 'on_input'
-            else:
-                self.add_extra_convs = 'on_output'
+            self.add_extra_convs = 'on_input'
 
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()

@@ -4,7 +4,6 @@ _base_ = '../_base_/default_runtime.py'
 img_size = 550
 model = dict(
     type='YOLACT',
-    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -14,7 +13,8 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=False,  # update the statistics of bn
         zero_init_residual=False,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
