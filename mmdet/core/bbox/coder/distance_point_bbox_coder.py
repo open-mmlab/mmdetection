@@ -25,8 +25,9 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
         Args:
             points (Tensor): Shape (N, 2), The format is [x, y].
             gt_bboxes (Tensor): Shape (N, 4), The format is "xyxy"
-            max_dis (float): Upper bound of the distance.
-            eps (float): a small value to ensure target < max_dis, instead <=
+            max_dis (float): Upper bound of the distance. Default None.
+            eps (float): a small value to ensure target < max_dis, instead <=.
+                Default 0.1.
 
         Returns:
             Tensor: Box transformation deltas. The shape is (N, 4).
@@ -49,10 +50,13 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
                 (H, W, C) or (H, W). If priors shape is (B, N, 4), then
                 the max_shape should be a Sequence[Sequence[int]],
                 and the length of max_shape should also be B.
+                Default None.
         Returns:
             Tensor: Boxes with shape (N, 4) or (B, N, 4)
         """
         assert points.size(0) == pred_bboxes.size(0)
         assert points.size(-1) == 2
         assert pred_bboxes.size(-1) == 4
+        if self.clip_border is False:
+            max_shape = None
         return distance2bbox(points, pred_bboxes, max_shape)
