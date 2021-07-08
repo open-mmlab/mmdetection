@@ -34,7 +34,7 @@
 
          等命令查看当前使用的 CUDA runtime。
 
-       * 如果您是通过pip下载的预编译好的版本，请确保与当前 CUDA runtime 一致。
+       * 如果您是通过 pip 下载的预编译好的版本，请确保与当前 CUDA runtime 一致。
 
     3. 运行 `python mmdet/utils/collect_env.py` 检查是否为正确的 GPU 架构编译的 PyTorch， torchvision， 与 MMCV。 你或许需要设置 `TORCH_CUDA_ARCH_LIST` 来重新安装 MMCV，可以参考 [GPU 架构表](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list),
         例如， 运行 `TORCH_CUDA_ARCH_LIST=7.0 pip install mmcv-full` 为 Volta GPU 编译 MMCV。这种架构不匹配的问题一般会出现在使用一些旧型号的 GPU 时候出现， 例如， Tesla K80。
@@ -72,7 +72,7 @@
 ## Training 相关
 
 - "Loss goes Nan"
-    1. 检查数据的标注是否正常， 长或宽为0的框可能会导致回归 loss 变为 nan，一些小尺寸（宽度或高度小于1）的框在数据增强（例如，instaboost）后也会导致此问题。 因此，可以检查标注并过滤掉那些特别小甚至面积为 0 的框，并关闭一些可能会导致 0 面积框出现数据增强。
+    1. 检查数据的标注是否正常， 长或宽为 0 的框可能会导致回归 loss 变为 nan，一些小尺寸（宽度或高度小于 1）的框在数据增强（例如，instaboost）后也会导致此问题。 因此，可以检查标注并过滤掉那些特别小甚至面积为 0 的框，并关闭一些可能会导致 0 面积框出现数据增强。
     2. 降低学习率：由于某些原因，例如 batch size 大小的变化， 导致当前学习率可能太大。 您可以降低为可以稳定训练模型的值。
     3. 延长 warm up 的时间：一些模型在训练初始时对学习率很敏感，您可以把 `warmup_iters` 从 500 更改为 1000 或 2000。
     4. 添加 gradient clipping: 一些模型需要梯度裁剪来稳定训练过程。 默认的 `grad_clip` 是 `None`,  你可以在 config 设置 `optimizer_config=dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))`  如果你的 config 没有继承任何包含 `optimizer_config=dict(grad_clip=None)`,  你可以直接设置`optimizer_config=dict(grad_clip=dict(max_norm=35, norm_type=2))`.
@@ -87,5 +87,5 @@
 ## Evaluation 相关
 
 - 使用 COCO Dataset 的测评接口时, 测评结果中 AP 或者 AR = -1
-    1. 根据COCO数据集的定义，一张图像中的中等物体与小物体面积的阈值分别为 1024（32\*32） 与9216（96\*96）。
+    1. 根据COCO数据集的定义，一张图像中的中等物体与小物体面积的阈值分别为 9216（96\*96）与 1024（32\*32）。
     2. 如果在某个区间没有检测框 AP 与 AR 认定为 -1.
