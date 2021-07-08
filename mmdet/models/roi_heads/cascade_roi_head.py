@@ -518,7 +518,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = rois.view(-1, 4)
 
         # add dummy batch index
-        rois = torch.cat([rois.new_zeros(len(rois), 1), rois], dim=-1)
+        rois = torch.cat([rois.new_zeros(rois.shape[0], 1), rois], dim=-1)
 
         max_shape = img_metas[0]['img_shape_for_onnx']
         ms_scores = []
@@ -542,7 +542,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     rois[..., 1:], bbox_pred, max_shape=max_shape)
                 rois = new_rois.reshape(-1, new_rois.shape[-1])
                 # add dummy batch index
-                rois = torch.cat([rois.new_zeros(len(rois), 1), rois], dim=-1)
+                rois = torch.cat([rois.new_zeros(rois.shape[0], 1), rois],
+                                 dim=-1)
 
         cls_score = sum(ms_scores) / float(len(ms_scores))
         bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img, 4)
