@@ -74,7 +74,6 @@ class RPNHead(AnchorHead):
         return dict(
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
-    # TODO: Reuse base method
     def _get_bboxes_single(self,
                            cls_score_list,
                            bbox_pred_list,
@@ -84,22 +83,24 @@ class RPNHead(AnchorHead):
                            rescale=False,
                            with_nms=True,
                            **kwargs):
-        """Transform outputs for a single batch item into bbox predictions.
+        """Transform outputs of single image into bbox predictions.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (num_anchors * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (num_anchors * 4, H, W).
-            mlvl_anchors (list[Tensor]): Box reference for each scale level
-                with shape (num_total_anchors, 4).
-            img_shape (tuple[int]): Shape of the input image,
-                (height, width, 3).
-            scale_factor (ndarray): Scale factor of the image arange as
-                (w_scale, h_scale, w_scale, h_scale).
+            cls_score_list (list[Tensor]):Box scores from all scale
+                levels of a single image, each item has shape
+                (num_anchors * num_classes, H, W).
+            bbox_pred_list (list[Tensor]):  Box energies / deltas from
+                all scale levels of a single image, each item has
+                shape (num_anchors * 4, H, W).
+            score_factor_list (list[Tensor]):  score_factor from all scale
+                levels of a single image. rpn head does not need this value.
+            img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
 
         Returns:
             Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
@@ -162,6 +163,31 @@ class RPNHead(AnchorHead):
 
     def _bbox_post_process(self, mlvl_scores, mlvl_bboxes, mlvl_valid_anchors,
                            level_ids, cfg, img_shape, **kwargs):
+        """bbox post-processing method.
+
+        The boxes would be rescaled to the original image scale and do
+        the nms operation. Usually with_nms is False is used for aug test.
+
+        Args:
+            mlvl_scores (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num, num_class).
+            mlvl_bboxes (list[Tensor]): Box energies / deltas for a single
+                image, each item has shape (num, 4).
+            mlvl_valid_anchors (list[Tensor]): Box reference from all scale
+                levels of a single image, each item has shape
+                (num, 4).
+            level_ids (list[Tensor]): indexes from all scale levels of a
+                single image, each item has shape (num, ).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            img_shape (tuple(int)): Shape of current image.
+
+        Returns:
+            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1.
+        """
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
         rpn_bbox_pred = torch.cat(mlvl_bboxes)

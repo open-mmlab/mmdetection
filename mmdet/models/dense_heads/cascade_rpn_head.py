@@ -505,7 +505,27 @@ class StageCascadeRPNHead(RPNHead):
                    img_metas,
                    cfg,
                    rescale=False):
-        """Get proposal predict."""
+        """Get proposal predict.
+
+        Args:
+            anchor_list (list[list]): Multi level anchors of each image.
+            cls_scores (list[Tensor]): Classification scores for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * 4, H, W).
+            img_metas (list[dict], Optional): Image meta info. Default None.
+            cfg (mmcv.Config, Optional): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+
+        Returns:
+            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1.
+        """
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
@@ -533,15 +553,18 @@ class StageCascadeRPNHead(RPNHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-        """Transform outputs for a single batch item into bbox predictions.
+        """Transform outputs of single image into bbox predictions.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (num_anchors * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (num_anchors * 4, H, W).
-            mlvl_anchors (list[Tensor]): Box reference for each scale level
-                with shape (num_total_anchors, 4).
+            cls_scores (list[Tensor]):Box scores from all scale
+                levels of a single image, each item has shape
+                (num_anchors * num_classes, H, W).
+            bbox_preds (list[Tensor]):  Box energies / deltas from
+                all scale levels of a single image, each item has
+                shape (num_anchors * 4, H, W).
+            mlvl_anchors (list[Tensor]):Box reference from all scale
+                levels of a single image, each item has shape
+                (num_total_anchors, 4).
             img_shape (tuple[int]): Shape of the input image,
                 (height, width, 3).
             scale_factor (ndarray): Scale factor of the image arange as
@@ -549,6 +572,7 @@ class StageCascadeRPNHead(RPNHead):
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
+                Default False.
 
         Returns:
             Tensor: Labeled boxes in shape (n, 5), where the first 4 columns

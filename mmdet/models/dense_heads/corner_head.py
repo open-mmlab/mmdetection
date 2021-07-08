@@ -768,7 +768,6 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         scores = batch_scores.view([-1, 1])
         clses = batch_clses.view([-1, 1])
 
-        # TODO: why need ?
         # use `sort` instead of `argsort` here, since currently exporting
         # `argsort` to ONNX opset version 11 is not supported
         scores, idx = scores.sort(dim=0, descending=True)

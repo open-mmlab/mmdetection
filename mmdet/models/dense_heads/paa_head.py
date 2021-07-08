@@ -525,7 +525,41 @@ class PAAHead(ATSSHead):
                            with_nms=True,
                            mlvl_score_factor=None,
                            **kwargs):
+        """bbox post-processing method.
 
+        The boxes would be rescaled to the original image scale and do
+        the nms operation. Usually with_nms is False is used for aug test.
+
+        Args:
+            mlvl_scores (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num, num_class).
+            mlvl_bboxes (list[Tensor]): Box energies / deltas for a single
+                image, each item has shape (num, 4).
+            scale_factor (ndarray, optional): Scale factor of the image arange
+                as (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+            mlvl_score_factor (list[Tensor], optional):  score_factor for each
+                image, each item has shape (num, ). Default: None.
+
+        Returns:
+            tuple[Tensor]: Results of detected boxes and labels. with_nms would
+                always be False except for doing the AugTest. It return
+                mlvl_bboxes and mlvl_scores when with_nms is True, otherwise
+                the mlvl_score_factor would be added.
+
+                - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
+                    where the first 4 columns are bounding box positions \
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
+                    between 0 and 1.
+                - det_labels: Predicted labels of the corresponding box with \
+                    shape [num_bbox].
+        """
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)

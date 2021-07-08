@@ -382,21 +382,19 @@ class GFLHead(AnchorHead):
                            rescale=False,
                            with_nms=True,
                            **kwargs):
-        """Transform outputs for a single batch item into labeled boxes.
+        """Transform outputs of single image into bbox predictions.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for a single scale level
-                has shape (num_classes, H, W).
-            bbox_preds (list[Tensor]): Box distribution logits for a single
-                scale level with shape (4*(n+1), H, W), n is max value of
-                integral set.
-            mlvl_anchors (list[Tensor]): Box reference for a single scale level
-                with shape (num_total_anchors, 4).
-            img_shape (tuple[int]): Shape of the input image,
-                (height, width, 3).
-            scale_factor (ndarray): Scale factor of the image arange as
-                (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
+            cls_score_list (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_priors * num_classes, H, W).
+            bbox_pred_list (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has shape
+                (num_priors * 4, H, W).
+            score_factor_list (list[Tensor]):  score_factor from all scale
+                levels of a single image. gfl head does not need this value.
+            img_meta (dict): Image meta info.
+            cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
@@ -404,13 +402,18 @@ class GFLHead(AnchorHead):
                 Default: True.
 
         Returns:
-            tuple(Tensor):
-                det_bboxes (Tensor): Bbox predictions in shape (N, 5), where
-                    the first 4 columns are bounding box positions
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+            tuple[Tensor]: Results of detected bboxes and labels. if with_nms
+                is False and mlvl_score_factor is None, return mlvl_bboxes and
+                mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+                mlvl_score_factor. Usually with_nms is False is used for aug
+                test. if with_nms is True, then return the following format
+
+                - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
+                    where the first 4 columns are bounding box positions \
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
                     between 0 and 1.
-                det_labels (Tensor): A (N,) tensor where each item is the
-                    predicted class label of the corresponding box.
+                - det_labels: Predicted labels of the corresponding box with \
+                    shape [num_bbox].
         """
         cfg = self.test_cfg if cfg is None else cfg
         img_shape = img_meta['img_shape']

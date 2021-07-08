@@ -28,7 +28,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                    rescale=False,
                    with_nms=True,
                    **kwargs):
-        """Transform network output for a batch into bbox predictions.
+        """Transform network outputs of a batch into bbox results.
 
         Note: When score_factors is not None, the cls_scores are
         usually multiplied by it then obtain the real score used in NMS,
@@ -45,12 +45,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 each scale level, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 1, H, W). Default None.
             img_metas (list[dict], Optional): Image meta info. Default None.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
             cfg (mmcv.Config, Optional): Test / postprocessing configuration,
-                if None, test_cfg would be used.  Default: False.
+                if None, test_cfg would be used.  Default None.
+            rescale (bool): If True, return boxes in original image space.
+                Default False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default True.
 
         Returns:
             list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple.
@@ -102,12 +102,16 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """Transform outputs of single image into bbox predictions.
 
         Args:
-            cls_score_list (list[Tensor]): Box scores for a single image
-                Has shape (num_priors * num_classes, H, W).
-            bbox_pred_list (list[Tensor]): Box energies / deltas for a single
-                image with shape (num_priors * 4, H, W).
-            score_factor_list (list[Tensor]):  score_factor for each
-                image with shape (num_priors * 1, H, W).
+            cls_score_list (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_priors * num_classes, H, W).
+            bbox_pred_list (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has shape
+                (num_priors * 4, H, W).
+            score_factor_list (list[Tensor]):  score_factor from all scale
+                levels of a single image, each item has shape
+                (num_priors * 1, H, W).
+            img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
@@ -208,18 +212,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                            **kwargs):
         """bbox post-processing method.
 
-        It usually completes the rescale to the original image scale and nms
-        operation. if with_nms is True, Perform nms operation on bbox and
-        return det_bboxes and det_labels. if with_nms is False and
-        mlvl_score_factor is None, return mlvl_bboxes and  mlvl_scores, else
-        return mlvl_bboxes,  mlvl_scores and  mlvl_score_factor. Usually
-        with_nms is False is used for aug test.
+        The boxes would be rescaled to the original image scale and do
+        the nms operation. Usually with_nms is False is used for aug test.
 
         Args:
-            mlvl_scores (list[Tensor]): Box scores for a single image
-                Has shape (num, num_class).
+            mlvl_scores (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num, num_class).
             mlvl_bboxes (list[Tensor]): Box energies / deltas for a single
-                image with shape (num, 4).
+                image, each item has shape (num, 4).
             scale_factor (ndarray, optional): Scale factor of the image arange
                 as (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config): Test / postprocessing configuration,
@@ -229,14 +230,13 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
             mlvl_score_factor (list[Tensor], optional):  score_factor for each
-                image with shape (num, ). Default: None.
+                image, each item has shape (num, ). Default: None.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. if with_nms
-            is False and mlvl_score_factor is None, return mlvl_bboxes and
-            mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
-            mlvl_score_factor. Usually with_nms is False is used for aug test.
-            if with_nms is True, then return the following format
+            tuple[Tensor]: Results of detected boxes and labels. with_nms would
+                always be False except for doing the AugTest. It return
+                mlvl_bboxes and mlvl_scores when with_nms is True, otherwise
+                the mlvl_score_factor would be added.
 
                 - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
                     where the first 4 columns are bounding box positions \
