@@ -6,7 +6,7 @@ from .bbox_overlaps import bbox_overlaps
 
 def _recalls(all_ious, proposal_nums, thrs):
 
-    img_num = all_ious.shape[0]
+    img_num = len(all_ious)
     total_gt_num = sum([ious.shape[0] for ious in all_ious])
 
     _ious = np.zeros((proposal_nums.size, total_gt_num), dtype=np.float32)
@@ -95,7 +95,6 @@ def eval_recalls(gts,
         else:
             ious = bbox_overlaps(gts[i], img_proposal[:prop_num, :4])
         all_ious.append(ious)
-    all_ious = np.array(all_ious)
     recalls = _recalls(all_ious, proposal_nums, iou_thrs)
     if print_summary:
         print_recall_summary(recalls, proposal_nums, iou_thrs)
