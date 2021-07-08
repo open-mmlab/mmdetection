@@ -143,8 +143,9 @@ class CocoPanopticDataset(CocoDataset):
         ]
 
     Args:
-        cats_json (str): Path of 'panoptic_coco_categories.json' in
-            'panopticapi'. Must be specified, it will be used in evalutation.
+        cats_json (str | list): Path of 'panoptic_coco_categories.json' in
+            'panopticapi'. Or the loaded categories list.
+            Must be specified, it will be used in evalutation.
         formatter (str): the formatter for the image name of a dataset.
             Default: '{:012}.png'.
     """
@@ -204,8 +205,10 @@ class CocoPanopticDataset(CocoDataset):
     ]
 
     def __init__(self, cats_json, formatter='{:012}.png', **kwargs):
-        assert cats_json is not None
-        cats_json = mmcv.load(cats_json)
+        assert isinstance(cats_json, str) or isinstance(cats_json, list)
+        # Path of 'panoptic_coco_categories.json'
+        if isinstance(cats_json, str):
+            cats_json = mmcv.load(cats_json)
         self.categories = {cat['id']: cat for cat in cats_json}
         self.formatter = formatter
         super(CocoPanopticDataset, self).__init__(**kwargs)

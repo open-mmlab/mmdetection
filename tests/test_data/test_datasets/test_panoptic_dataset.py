@@ -93,17 +93,20 @@ def _create_panoptic_style_json(json_name):
         'id': 0,
         'name': 'car',
         'supercategory': 'car',
-        'isthing': 1
+        'isthing': 1,
+        'color': [220, 20, 60]
     }, {
         'id': 1,
         'name': 'person',
         'supercategory': 'person',
-        'isthing': 1
+        'isthing': 1,
+        'color': [119, 11, 32]
     }, {
         'id': 2,
         'name': 'wall',
         'supercategory': 'wall',
-        'isthing': 0
+        'isthing': 0,
+        'color': [0, 0, 142],
     }]
 
     fake_json = {
@@ -113,15 +116,18 @@ def _create_panoptic_style_json(json_name):
     }
     mmcv.dump(fake_json, json_name)
 
+    return fake_json
+
 
 def test_load_panoptic_style_json():
     tmp_dir = tempfile.TemporaryDirectory()
     fake_json_file = osp.join(tmp_dir.name, 'fake_data.json')
-    _create_panoptic_style_json(fake_json_file)
+    fake_json = _create_panoptic_style_json(fake_json_file)
 
     dataset = CocoPanopticDataset(
         ann_file=fake_json_file,
-        classes=('car', 'person', 'categories'),
+        cats_json=fake_json['categories'],
+        classes=[cat['name'] for cat in fake_json['categories']],
         pipeline=[])
 
     ann = dataset.get_ann_info(0)
