@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import Scale
 from mmcv.runner import force_fp32
 
-from mmdet.core import distance2bbox, multi_apply, multiclass_nms, reduce_mean
+from mmdet.core import multi_apply, multiclass_nms, reduce_mean
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -240,9 +240,10 @@ class FCOSHead(AnchorFreeHead):
 
         if len(pos_inds) > 0:
             pos_points = flatten_points[pos_inds]
-            pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
-            pos_decoded_target_preds = distance2bbox(pos_points,
-                                                     pos_bbox_targets)
+            pos_decoded_bbox_preds = self.bbox_coder.decode(
+                pos_points, pos_bbox_preds)
+            pos_decoded_target_preds = self.bbox_coder.decode(
+                pos_points, pos_bbox_targets)
             loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
