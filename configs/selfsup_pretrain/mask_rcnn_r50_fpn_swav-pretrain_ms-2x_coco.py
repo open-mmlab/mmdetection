@@ -5,11 +5,12 @@ _base_ = [
 ]
 
 model = dict(
-    pretrained='./swav_800ep_pretrain.pth.tar',
     backbone=dict(
         frozen_stages=0,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        norm_eval=False))
+        norm_eval=False,
+        init_cfg=dict(
+            type='Pretrained', checkpoint='./swav_800ep_pretrain.pth.tar')))
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)

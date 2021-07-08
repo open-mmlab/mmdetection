@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - Softmax
         - RPN
@@ -40,7 +40,13 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.4
-      inference time (s/im): 0.06211
+      inference time (ms/im):
+        - value: 62.11
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -58,7 +64,13 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_r50_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 4.4
-      inference time (s/im): 0.06211
+      inference time (ms/im):
+        - value: 62.11
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -92,7 +104,13 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.4
-      inference time (s/im): 0.07407
+      inference time (ms/im):
+        - value: 74.07
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -110,7 +128,13 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_r101_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 6.4
-      inference time (s/im): 0.07407
+      inference time (ms/im):
+        - value: 74.07
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -128,7 +152,13 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_x101_32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.6
-      inference time (s/im): 0.0885
+      inference time (ms/im):
+        - value: 88.5
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -146,7 +176,13 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_x101_32x4d_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 7.6
-      inference time (s/im): 0.0885
+      inference time (ms/im):
+        - value: 88.5
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -164,7 +200,13 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_x101_64x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 10.7
-      inference time (s/im): 0.125
+      inference time (ms/im):
+        - value: 125
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -182,7 +224,13 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_x101_64x4d_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 10.7
-      inference time (s/im): 0.125
+      inference time (ms/im):
+        - value: 125
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -200,7 +248,13 @@ Models:
     Config: configs/mask_rcnn/mask_rcnn_x101_32x8d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 10.7
-      inference time (s/im): 0.125
+      inference time (ms/im):
+        - value: 125
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection

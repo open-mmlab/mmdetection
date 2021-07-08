@@ -1,6 +1,5 @@
 _base_ = './fcos_r50_caffe_fpn_gn-head_1x_coco.py'
 model = dict(
-    pretrained='open-mmlab://resnext101_64x4d',
     backbone=dict(
         type='ResNeXt',
         depth=101,
@@ -11,7 +10,9 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch'))
+        style='pytorch',
+        init_cfg=dict(
+            type='Pretrained', checkpoint='open-mmlab://resnext101_64x4d')))
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [

@@ -82,8 +82,8 @@ echo 'configs/tridentnet/tridentnet_r50_caffe_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab tridentnet_r50_caffe_1x_coco configs/tridentnet/tridentnet_r50_caffe_1x_coco.py ./tools/work_dir/tridentnet_r50_caffe_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/vfnet/vfnet_r50_fpn_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab vfnet_r50_fpn_1x_coco configs/vfnet/vfnet_r50_fpn_1x_coco.py ./tools/work_dir/vfnet_r50_fpn_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
-echo 'configs/yolact/yolact_r50_1x8_coco.py' &
-GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab yolact_r50_1x8_coco configs/yolact/yolact_r50_1x8_coco.py ./tools/work_dir/yolact_r50_1x8_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
+echo 'configs/yolact/yolact_r50_8x8_coco.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab yolact_r50_8x8_coco configs/yolact/yolact_r50_8x8_coco.py ./tools/work_dir/yolact_r50_8x8_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/yolo/yolov3_d53_320_273e_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab yolov3_d53_320_273e_coco configs/yolo/yolov3_d53_320_273e_coco.py ./tools/work_dir/yolov3_d53_320_273e_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py' &
@@ -124,3 +124,5 @@ echo 'configs/res2net/faster_rcnn_r2_101_fpn_2x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab faster_rcnn_r2_101_fpn_2x_coco configs/res2net/faster_rcnn_r2_101_fpn_2x_coco.py ./tools/work_dir/faster_rcnn_r2_101_fpn_2x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/groie/faster_rcnn_r50_fpn_groie_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab faster_rcnn_r50_fpn_groie_1x_coco configs/groie/faster_rcnn_r50_fpn_groie_1x_coco.py ./tools/work_dir/faster_rcnn_r50_fpn_groie_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
+echo 'configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab mask_rcnn_r50_fpn_1x_cityscapes configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py ./tools/work_dir/mask_rcnn_r50_fpn_1x_cityscapes --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &

@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - ATSS
         - FPN
@@ -19,7 +19,13 @@ Models:
     Config: configs/atss/atss_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.7
-      inference time (s/im): 0.05076
+      inference time (ms/im):
+        - value: 50.76
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -33,7 +39,13 @@ Models:
     Config: configs/atss/atss_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.6
-      inference time (s/im): 0.0813
+      inference time (ms/im):
+        - value: 81.3
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection

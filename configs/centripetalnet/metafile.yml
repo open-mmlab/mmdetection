@@ -4,7 +4,7 @@ Collections:
       Training Data: COCO
       Training Techniques:
         - Adam
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 16x V100 GPUs
       Architecture:
         - Corner Pooling
         - Stacked Hourglass Network
@@ -16,9 +16,15 @@ Models:
     In Collection: CentripetalNet
     Config: configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py
     Metadata:
-      Batch Size: 16 x 6
+      Batch Size: 96
       Training Memory (GB): 16.7
-      inference time (s/im): 0.27027
+      inference time (ms/im):
+        - value: 270.27
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 210
     Results:
       - Task: Object Detection
