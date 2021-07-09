@@ -1,6 +1,7 @@
 import copy
 
 import numpy as np
+import torch
 
 from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
@@ -84,6 +85,11 @@ class SingleStageInstanceSegmentor(BaseDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+
+        gt_masks = [
+            gt_mask.to_tensor(dtype=torch.bool, device=img.device)
+            for gt_mask in gt_masks
+        ]
         x = self.extract_feat(img)
         losses = dict()
 
