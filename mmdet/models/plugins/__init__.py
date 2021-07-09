@@ -1,5 +1,3 @@
 from .dropblock import DropBlock
 
-__all__ = [
-    'DropBlock'
-]
+__all__ = ['DropBlock']

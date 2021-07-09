@@ -34,7 +34,7 @@ class DropBlock(nn.Module):
     def forward(self, x):
         """
         Args:
-            x (Tensor): Input featuremap onwhich some areas will be randomly
+            x (Tensor): Input feature map on which some areas will be randomly
                 dropped.
 
         Returns:
@@ -59,9 +59,10 @@ class DropBlock(nn.Module):
         return x
 
     def _compute_gamma(self, feat_size):
-        """Compute the value of gamma according to paper.
-        gamma is the parameter of bernoulli distribution, which controls
-        the number of features to drop.
+        """Compute the value of gamma according to paper. gamma is the
+        parameter of bernoulli distribution, which controls the number of
+        features to drop.
+
         gamma = (drop_prob * fm_area) / (drop_area * keep_area)
 
         Args:
