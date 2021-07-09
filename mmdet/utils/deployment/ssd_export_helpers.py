@@ -16,12 +16,12 @@
 
 import torch
 
-from ...core import multiclass_nms
-from ...core.bbox.coder.delta_xywh_bbox_coder import delta2bbox
-from ...core.anchor.anchor_generator import SSDAnchorGeneratorClustered
-
+from mmdet.core.utils.misc import topk
 from mmdet.integration.nncf import no_nncf_trace
 from mmdet.utils.deployment.operations_domain import add_domain
+from ...core import multiclass_nms
+from ...core.anchor.anchor_generator import SSDAnchorGeneratorClustered
+from ...core.bbox.coder.delta_xywh_bbox_coder import delta2bbox
 
 
 def get_proposals(img_metas, cls_scores, bbox_preds, priors,
@@ -139,9 +139,10 @@ class DetectionOutput(torch.autograd.Function):
     def symbolic(g, cls_scores, bbox_preds, img_metas, cfg,
                  rescale, priors, cls_out_channels, use_sigmoid_cls,
                  target_means, target_stds):
+
         return g.op(add_domain("DetectionOutput"), bbox_preds, cls_scores, priors,
                     num_classes_i=cls_out_channels, background_label_id_i=cls_out_channels - 1,
-                    top_k_i=cfg['max_per_img'],
+                    top_k_i=-1,
                     keep_top_k_i=cfg['max_per_img'],
                     confidence_threshold_f=cfg['score_thr'],
                     nms_threshold_f=cfg['nms']['iou_threshold'],
@@ -233,8 +234,7 @@ def export_forward_ssd_head(self, cls_scores, bbox_preds, cfg, rescale,
                 self.anchor_generator.strides[i],
                 feats[i],
                 img_tensor, self.bbox_coder.stds))
-    anchors = torch.cat(anchors, 2)
-    cls_scores, bbox_preds = self._prepare_cls_scores_bbox_preds(cls_scores, bbox_preds)
+    cls_scores, bbox_preds, anchors = self._prepare_cls_scores_bbox_preds(cls_scores, bbox_preds, anchors)
 
     return DetectionOutput.apply(cls_scores, bbox_preds, img_metas, cfg,
                                  rescale, anchors, self.cls_out_channels,
@@ -242,21 +242,42 @@ def export_forward_ssd_head(self, cls_scores, bbox_preds, cfg, rescale,
                                  self.bbox_coder.stds)
 
 
-def prepare_cls_scores_bbox_preds_ssd_head(self, cls_scores, bbox_preds):
+def prepare_cls_scores_bbox_preds_ssd_head(self, cls_scores, bbox_preds, mlvl_anchors):
     scores_list = []
-    for o in cls_scores:
-        score = o.permute(0, 2, 3, 1).contiguous().view(o.size(0), -1)
-        scores_list.append(score)
-    cls_scores = torch.cat(scores_list, 1)
-    cls_scores = cls_scores.view(cls_scores.size(0), -1, self.cls_out_channels)
-    if self.use_sigmoid_cls:
-        cls_scores = cls_scores.sigmoid()
-    else:
-        cls_scores = cls_scores.softmax(-1)
-    cls_scores = cls_scores.view(cls_scores.size(0), -1)
     bbox_list = []
-    for o in bbox_preds:
-        boxes = o.permute(0, 2, 3, 1).contiguous().view(o.size(0), -1)
+    anchors_list = []
+    for scores, boxes, anchors in zip(cls_scores, bbox_preds, mlvl_anchors):
+        scores = scores.permute(0, 2, 3, 1).contiguous().view(scores.size(0), -1)
+        scores = scores.view(scores.size(0), -1, self.cls_out_channels)
+        if self.use_sigmoid_cls:
+            scores = scores.sigmoid()
+        else:
+            scores = scores.softmax(-1)
+            fg_scores = scores[:, :, :self.num_classes].view(-1, self.num_classes)
+
+        boxes = boxes.permute(0, 2, 3, 1).contiguous().view(boxes.size(0), -1, 4)
+
+        nms_pre = self.test_cfg.get('nms_pre', -1)
+
+        if nms_pre > 0:
+            max_scores, _ = fg_scores.max(dim=1)
+            _, topk_inds = topk(max_scores, nms_pre)
+            anchors = anchors.view(anchors.size(0), anchors.size(1), -1, 4)[:, :, topk_inds, :]
+            boxes = boxes[:, topk_inds, :]
+            scores = scores[:, topk_inds, :]
+
+        scores = scores.view(scores.size(0), scores.size(1), -1)
+        boxes = boxes.view(boxes.size(0), -1)
+        anchors = anchors.view(anchors.size(0), anchors.size(1), -1)
+
+        scores_list.append(scores)
         bbox_list.append(boxes)
+        anchors_list.append(anchors)
+
+    cls_scores = torch.cat(scores_list, 1)
+    cls_scores = cls_scores.view(cls_scores.size(0), -1)
+
     bbox_preds = torch.cat(bbox_list, 1)
-    return cls_scores, bbox_preds
+
+    anchors = torch.cat(anchors_list, 2)
+    return cls_scores, bbox_preds, anchors
