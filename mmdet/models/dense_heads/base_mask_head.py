@@ -24,16 +24,23 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                       img_metas,
                       gt_bboxes=None,
                       gt_bboxes_ignore=None,
+                      positive_infos=None,
                       **kwargs):
+        if positive_infos is None:
+            outs = self(x)
+        else:
+            outs = self(x, positive_infos)
 
-        outs = self(x)
+        assert isinstance(outs, tuple), 'Forward results should be a tuple, ' \
+                                        'even if only one item is returned'
         loss = self.loss(
             *outs,
-            gt_labels,
             gt_masks,
-            img_metas,
+            gt_labels=gt_labels,
+            img_metas=img_metas,
             gt_bboxes=gt_bboxes,
             gt_bboxes_ignore=gt_bboxes_ignore,
+            positive_infos=positive_infos,
             **kwargs)
         return loss
 

@@ -2,11 +2,11 @@ import torch
 
 from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_head
-from .single_stage import SingleStageDetector
+from .single_stage_instance_seg import SingleStageInstanceSegmentor
 
 
 @DETECTORS.register_module()
-class YOLACT(SingleStageDetector):
+class YOLACT(SingleStageInstanceSegmentor):
     """Implementation of `YOLACT <https://arxiv.org/abs/1904.02689>`_"""
 
     def __init__(self,
@@ -17,12 +17,10 @@ class YOLACT(SingleStageDetector):
                  mask_head,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None,
                  init_cfg=None):
-        super(YOLACT, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                     test_cfg, pretrained, init_cfg)
+        super(YOLACT, self).__init__(backbone, neck, bbox_head, mask_head,
+                                     train_cfg, test_cfg, init_cfg)
         self.segm_head = build_head(segm_head)
-        self.mask_head = build_head(mask_head)
 
     def forward_dummy(self, img):
         """Used for computing network flops.
@@ -58,29 +56,43 @@ class YOLACT(SingleStageDetector):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        # convert Bitmap mask or Polygon Mask to Tensor here
+
         gt_masks = [
-            gt_mask.to_tensor(dtype=torch.uint8, device=img.device)
+            gt_mask.to_tensor(dtype=torch.bool, device=img.device)
             for gt_mask in gt_masks
         ]
-
         x = self.extract_feat(img)
+        losses = dict()
 
-        cls_score, bbox_pred, coeff_pred = self.bbox_head(x)
-        bbox_head_loss_inputs = (cls_score, bbox_pred) + (gt_bboxes, gt_labels,
-                                                          img_metas)
-        losses, sampling_results = self.bbox_head.loss(
-            *bbox_head_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        # bbox_head_results is a tuple
+        bbox_head_preds = self.bbox_head(x)
+
+        det_losses, positive_infos = self.bbox_head.loss(
+            *bbox_head_preds,
+            gt_bboxes=gt_bboxes,
+            gt_labels=gt_labels,
+            img_metas=img_metas,
+            gt_bboxes_ignore=gt_bboxes_ignore)
+        losses.update(det_losses)
+
+        mask_head_inputs = (x, gt_labels, gt_masks, img_metas)
+
+        # when no positive_infos add gt bbox
+        mask_loss = self.mask_head.forward_train(
+            *mask_head_inputs,
+            positive_infos=positive_infos,
+            gt_bboxes=gt_bboxes,
+            gt_bboxes_ignore=gt_bboxes_ignore)
+        # avoid loss override
+        assert not set(mask_loss.keys()) & set(losses.keys())
+
+        losses.update(mask_loss)
 
         segm_head_outs = self.segm_head(x[0])
         loss_segm = self.segm_head.loss(segm_head_outs, gt_masks, gt_labels)
-        losses.update(loss_segm)
 
-        mask_pred = self.mask_head(x[0], coeff_pred, gt_bboxes, img_metas,
-                                   sampling_results)
-        loss_mask = self.mask_head.loss(mask_pred, gt_masks, gt_bboxes,
-                                        img_metas, sampling_results)
-        losses.update(loss_mask)
+        assert not set(loss_segm.keys()) & set(losses.keys())
+        losses.update(loss_segm)
 
         # check NaN and Inf
         for loss_name in losses.keys():

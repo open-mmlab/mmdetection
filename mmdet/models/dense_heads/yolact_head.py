@@ -6,8 +6,10 @@ from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule, ModuleList, force_fp32
 
 from mmdet.core import build_sampler, fast_nms, images_to_levels, multi_apply
+from ...core.results.results import InstanceResults
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
+from .base_mask_head import BaseMaskHead
 
 
 @HEADS.register_module()
@@ -138,6 +140,7 @@ class YOLACTHead(AnchorHead):
     def loss(self,
              cls_scores,
              bbox_preds,
+             coeff_preds,
              gt_bboxes,
              gt_labels,
              img_metas,
@@ -154,6 +157,8 @@ class YOLACTHead(AnchorHead):
                 Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
+            coeff_preds (list[Tensor]): Mask coefficients for each scale
+                level with shape (N, num_anchors * num_protos, H, W).
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): Class indices corresponding to each box
@@ -253,8 +258,29 @@ class YOLACTHead(AnchorHead):
                 bbox_weights_list,
                 num_total_samples=num_total_samples)
 
+        # Training state
+
+        num_imgs = len(coeff_preds[0])
+        coeff_pred_list = []
+        for coeff_pred_per_level in coeff_preds:
+            coeff_pred_per_level = \
+                coeff_pred_per_level.permute(
+                    0, 2, 3, 1).reshape(num_imgs, -1, self.num_protos)
+            coeff_pred_list.append(coeff_pred_per_level)
+        coeff_preds = torch.cat(coeff_pred_list, dim=1)
+
+        positive_info_list = []
+        for img_id, item in enumerate(sampling_results):
+            positive_info = InstanceResults()
+            coeff_preds_single = coeff_preds[img_id]
+            positive_info.pos_assigned_gt_inds = item.pos_assigned_gt_inds
+            positive_info.pos_inds = item.pos_inds
+            positive_info.pos_coeffs = coeff_preds_single[
+                positive_info.pos_inds]
+            positive_info_list.append(positive_info)
+
         return dict(
-            loss_cls=losses_cls, loss_bbox=losses_bbox), sampling_results
+            loss_cls=losses_cls, loss_bbox=losses_bbox), positive_info_list
 
     def loss_single_OHEM(self, cls_score, bbox_pred, anchors, labels,
                          label_weights, bbox_targets, bbox_weights,
@@ -580,7 +606,7 @@ class YOLACTSegmHead(BaseModule):
 
 
 @HEADS.register_module()
-class YOLACTProtonet(BaseModule):
+class YOLACTProtonet(BaseMaskHead):
     """YOLACT mask head used in https://arxiv.org/abs/1904.02689.
 
     This head outputs the mask prototypes for YOLACT.
@@ -611,7 +637,8 @@ class YOLACTProtonet(BaseModule):
                  init_cfg=dict(
                      type='Xavier',
                      distribution='uniform',
-                     override=dict(name='protonet'))):
+                     override=dict(name='protonet')),
+                 **kwargs):
         super(YOLACTProtonet, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.proto_channels = proto_channels
@@ -662,105 +689,79 @@ class YOLACTProtonet(BaseModule):
             protonets = protonets[:-1]
         return nn.Sequential(*protonets)
 
-    def forward(self, x, coeff_pred, bboxes, img_meta, sampling_results=None):
+    def forward(self, feats, positive_infos=None):
         """Forward feature from the upstream network to get prototypes and
         linearly combine the prototypes, using masks coefficients, into
         instance masks. Finally, crop the instance masks with given bboxes.
 
         Args:
-            x (Tensor): Feature from the upstream network, which is
+            feats (list[Tensor]): Features from the upstream network, each is
                 a 4D-tensor.
-            coeff_pred (list[Tensor]): Mask coefficients for each scale
-                level with shape (N, num_anchors * num_protos, H, W).
-            bboxes (list[Tensor]): Box used for cropping with shape
-                (N, num_anchors * 4, H, W). During training, they are
-                ground truth boxes. During testing, they are predicted
-                boxes.
-            img_meta (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            sampling_results (List[:obj:``SamplingResult``]): Sampler results
-                for each image.
+            positive_infos (List[:obj:``InstanceResults``]):
+                Information about positive samples for each image.
 
         Returns:
             list[Tensor]: Predicted instance segmentation masks.
         """
+        x = feats[0]
         prototypes = self.protonet(x)
         prototypes = prototypes.permute(0, 2, 3, 1).contiguous()
-
         num_imgs = x.size(0)
-        # Training state
-        if self.training:
-            coeff_pred_list = []
-            for coeff_pred_per_level in coeff_pred:
-                coeff_pred_per_level = \
-                    coeff_pred_per_level.permute(
-                        0, 2, 3, 1).reshape(num_imgs, -1, self.num_protos)
-                coeff_pred_list.append(coeff_pred_per_level)
-            coeff_pred = torch.cat(coeff_pred_list, dim=1)
-
         mask_pred_list = []
         for idx in range(num_imgs):
             cur_prototypes = prototypes[idx]
-            cur_coeff_pred = coeff_pred[idx]
-            cur_bboxes = bboxes[idx]
-            cur_img_meta = img_meta[idx]
-
-            # Testing state
-            if not self.training:
-                bboxes_for_cropping = cur_bboxes
-            else:
-                cur_sampling_results = sampling_results[idx]
-                pos_assigned_gt_inds = \
-                    cur_sampling_results.pos_assigned_gt_inds
-                bboxes_for_cropping = cur_bboxes[pos_assigned_gt_inds].clone()
-                pos_inds = cur_sampling_results.pos_inds
-                cur_coeff_pred = cur_coeff_pred[pos_inds]
-
+            cur_positive_infos = positive_infos[idx]
+            pos_coeffs = cur_positive_infos.pos_coeffs
             # Linearly combine the prototypes with the mask coefficients
-            mask_pred = cur_prototypes @ cur_coeff_pred.t()
+            mask_pred = cur_prototypes @ pos_coeffs.t()
             mask_pred = torch.sigmoid(mask_pred)
-
-            h, w = cur_img_meta['img_shape'][:2]
-            bboxes_for_cropping[:, 0] /= w
-            bboxes_for_cropping[:, 1] /= h
-            bboxes_for_cropping[:, 2] /= w
-            bboxes_for_cropping[:, 3] /= h
-
-            mask_pred = self.crop(mask_pred, bboxes_for_cropping)
-            mask_pred = mask_pred.permute(2, 0, 1).contiguous()
             mask_pred_list.append(mask_pred)
-        return mask_pred_list
+        return (mask_pred_list, )
 
     @force_fp32(apply_to=('mask_pred', ))
-    def loss(self, mask_pred, gt_masks, gt_bboxes, img_meta, sampling_results):
+    def loss(self, mask_preds, gt_masks, gt_bboxes, img_metas, positive_infos,
+             **kwargs):
         """Compute loss of the head.
 
         Args:
-            mask_pred (list[Tensor]): Predicted prototypes with shape
+            mask_preds (list[Tensor]): Predicted prototypes with shape
                 (num_classes, H, W).
             gt_masks (list[Tensor]): Ground truth masks for each image with
                 the same shape of the input image.
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            img_meta (list[dict]): Meta information of each image, e.g.,
+            img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            sampling_results (List[:obj:``SamplingResult``]): Sampler results
+            positive_infos (List[:obj:``SamplingResult``]): Sampler results
                 for each image.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+
+        croped_mask_preds = []
+        for cur_img_meta, gt_bboxe, mask_pred, positive_info in zip(
+                img_metas, gt_bboxes, mask_preds, positive_infos):
+            bboxes_for_cropping = gt_bboxe.clone()[
+                positive_info.pos_assigned_gt_inds]
+            h, w = cur_img_meta['img_shape'][:2]
+            bboxes_for_cropping[:, 0::2] /= w
+            bboxes_for_cropping[:, 1::2] /= h
+            mask_pred = self.crop(mask_pred, bboxes_for_cropping)
+            mask_pred = mask_pred.permute(2, 0, 1).contiguous()
+            croped_mask_preds.append(mask_pred)
+
         loss_mask = []
-        num_imgs = len(mask_pred)
+        num_imgs = len(croped_mask_preds)
         total_pos = 0
         for idx in range(num_imgs):
-            cur_mask_pred = mask_pred[idx]
+            cur_mask_pred = croped_mask_preds[idx]
             cur_gt_masks = gt_masks[idx].float()
             cur_gt_bboxes = gt_bboxes[idx]
-            cur_img_meta = img_meta[idx]
-            cur_sampling_results = sampling_results[idx]
+            cur_img_meta = img_metas[idx]
+            cur_positive_infos = positive_infos[idx]
 
-            pos_assigned_gt_inds = cur_sampling_results.pos_assigned_gt_inds
+            pos_assigned_gt_inds = cur_positive_infos.pos_assigned_gt_inds
             num_pos = pos_assigned_gt_inds.size(0)
             # Since we're producing (near) full image masks,
             # it'd take too much vram to backprop on every single mask.
@@ -830,7 +831,7 @@ class YOLACTProtonet(BaseModule):
         mask_targets = gt_masks[pos_assigned_gt_inds]
         return mask_targets
 
-    def get_seg_masks(self, mask_pred, label_pred, img_meta, rescale):
+    def get_masks(self, mask_pred, label_pred, img_meta, rescale):
         """Resize, binarize, and format the instance mask predictions.
 
         Args:
