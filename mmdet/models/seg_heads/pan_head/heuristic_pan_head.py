@@ -1,40 +1,24 @@
-from abc import ABCMeta
-
 import torch
-import torch.nn as nn
 
-from ...builder import build_loss
+from mmdet.models.builder import HEADS
+from .base_pan_head import BasePanHead
 
 
-class BasePanHead(nn.Module, metaclass=ABCMeta):
+@HEADS.register_module()
+class HeuristicPanHead(BasePanHead):
+    """Base class for panoptic heads."""
 
-    def __init__(
-        self,
-        num_things=80,
-        num_stuff=53,
-        loss_panoptic=None,
-    ):
-        self.num_things = num_things
-        self.num_stuff = num_stuff
+    def __init__(self, num_things=80, num_stuff=53, init_cfg=None, **kwargs):
+        super(HeuristicPanHead, self).__init__(num_things, num_stuff, None,
+                                               init_cfg, **kwargs)
 
-        if loss_panoptic:
-            self.loss_panoptic = build_loss(loss_panoptic)
-        else:
-            self.loss_panoptic = None
+    def forward_train(self, gt_masks=None, gt_semantic_seg=None, **kwargs):
+        """HeuristicPanHead has not training loss."""
+        return dict()
 
-    @property
-    def with_loss(self):
-        return self.loss_panoptic is not None
-
-    def loss(self):
-        pass
-
-    def lay_masks(bboxes, labels, segm_masks, img_meta, overlap_thr=0.5):
-        img_h, img_w, _ = img_meta[0]['ori_shape']
+    def _lay_masks(self, bboxes, labels, masks, img_shape, overlap_thr=0.5):
         num_insts = bboxes.shape[0]
-        id_map = torch.zeros([img_h, img_w],
-                             device=labels.device,
-                             dtype=torch.long)
+        id_map = torch.zeros(img_shape, device=labels.device, dtype=torch.long)
         if num_insts == 0:
             return id_map, labels
 
@@ -44,7 +28,7 @@ class BasePanHead(nn.Module, metaclass=ABCMeta):
         order = torch.argsort(-scores)
         bboxes = bboxes[order]
         labels = labels[order]
-        segm_masks = segm_masks[order]
+        segm_masks = masks[order]
 
         inst_idx = 1
         left_labels = []
@@ -70,11 +54,6 @@ class BasePanHead(nn.Module, metaclass=ABCMeta):
         assert inst_idx == (len(inst_labels) + 1)
         return id_map, inst_labels
 
-    def simple_test(
-        self,
-        det_bboxes,
-        det_labels,
-        mask_preds,
-        seg_logits,
-    ):
-        pass
+    def simple_test(self, img_metas, det_bboxes, det_labels, mask_preds,
+                    seg_logits, **kwargs):
+        """Test without augmentation."""
