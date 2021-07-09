@@ -1,5 +1,6 @@
 import torch
 
+from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET
 from mmdet.models.builder import HEADS
 from .base_pan_head import BasePanHead
 
@@ -56,4 +57,35 @@ class HeuristicPanHead(BasePanHead):
 
     def simple_test(self, img_metas, det_bboxes, det_labels, mask_preds,
                     seg_logits, **kwargs):
-        """Test without augmentation."""
+
+        id_map, labels = self._lay_masks(det_bboxes, det_labels, mask_preds,
+                                         img_metas[0]['ori_shape'])
+        seg_pred = seg_logits.argmax(dim=1)
+        seg_pred = seg_pred + self.num_things
+
+        pano_results = seg_pred
+        instance_id = 1
+        for idx in range(det_labels.shape[0]):
+            _mask = id_map == (idx + 1)
+            if _mask.sum() == 0:
+                continue
+            _cls = labels[idx]
+            # simply trust detection
+            segment_id = _cls + instance_id * INSTANCE_OFFSET
+            pano_results[_mask] = segment_id
+            instance_id += 1
+
+        ids, cnts = torch.unique(
+            pano_results % INSTANCE_OFFSET, return_counts=True)
+        stuff_ids = ids[ids >= self.num_things]
+        stuff_cnts = cnts[ids >= self.num_things]
+        ignore_stuff_ids = stuff_ids[
+            stuff_cnts < self.test_cfg.panoptic.stuff_area_limit]
+
+        assert pano_results.ndim == 2
+        pano_results[(pano_results.unsqueeze(2) == ignore_stuff_ids.reshape(
+            1, 1, -1)).any(dim=2)] = self.num_classes
+
+        pano_results = pano_results.int().detach().cpu().numpy()
+
+        return pano_results

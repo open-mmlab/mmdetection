@@ -28,6 +28,7 @@ from .single_stage import SingleStageDetector
 from .sparse_rcnn import SparseRCNN
 from .trident_faster_rcnn import TridentFasterRCNN
 from .two_stage import TwoStageDetector
+from .two_stage_panoptic import TwoStagePanopticSegmentor
 from .vfnet import VFNet
 from .yolact import YOLACT
 from .yolo import YOLOV3
@@ -40,5 +41,6 @@ __all__ = [
     'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector', 'FOVEA', 'FSAF',
     'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA', 'YOLOV3', 'YOLACT',
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet',
-    'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet'
+    'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet',
+    'TwoStagePanopticSegmentor'
 ]
