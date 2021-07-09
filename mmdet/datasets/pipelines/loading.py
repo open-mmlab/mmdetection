@@ -414,9 +414,10 @@ class LoadPanopticAnnotations(LoadAnnotations):
                  with_seg=True,
                  file_client_args=dict(backend='disk')):
         if rgb2id is None:
-            raise RuntimeError('panopticapi is not installed, please install '
-                               'it from: '
-                               'https://github.com/cocodataset/panopticapi.')
+            raise RuntimeError(
+                'panopticapi is not installed, please install it by: '
+                'pip install git+https://github.com/cocodataset/'
+                'panopticapi.git.')
 
         super(LoadPanopticAnnotations,
               self).__init__(with_bbox, with_label, with_mask, with_seg, True,
@@ -483,6 +484,8 @@ class LoadPanopticAnnotations(LoadAnnotations):
         if self.with_label:
             results = self._load_labels(results)
         if self.with_mask or self.with_seg:
+            # The tasks completed by '_load_masks' and '_load_semantic_segs'
+            # in LoadAnnotations are merged to one function.
             results = self._load_masks_and_semantic_segs(results)
 
         return results

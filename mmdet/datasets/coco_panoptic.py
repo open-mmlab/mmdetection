@@ -1,4 +1,3 @@
-import json
 import os
 from collections import defaultdict
 
@@ -12,13 +11,19 @@ from .coco import CocoDataset
 
 try:
     import panopticapi
-    from panopticapi.evaluation import OFFSET, VOID, PQStat
-    from panopticapi.utils import IdGenerator, rgb2id
+    from panopticapi.evaluation import pq_compute_multi_core
+    from panopticapi.utils import IdGenerator
 except ImportError:
     panopticapi = None
+    pq_compute_multi_core = None
+    IdGenerator = None
 
 __all__ = ['CocoPanopticDataset']
 
+# A custom value to distinguish instance ID and category ID; need to
+# be greater than the number of categories.
+# For a pixel in the panoptic result map:
+#   pan_id = ins_id * INSTANCE_OFFSET + cat_id
 INSTANCE_OFFSET = 1000
 
 
@@ -26,20 +31,24 @@ class COCOPanoptic(COCO):
     """This wrapper is for loading the panoptic style annotation file.
 
     The format is shown in the CocoPanopticDataset class.
+
+    Args:
+        annotation_file (str): Path of annotation file.
     """
 
     def __init__(self, annotation_file=None):
         if panopticapi is None:
-            raise RuntimeError('panopticapi is not installed, please install '
-                               'it from: '
-                               'https://github.com/cocodataset/panopticapi.')
+            raise RuntimeError(
+                'panopticapi is not installed, please install it by: '
+                'pip install git+https://github.com/cocodataset/'
+                'panopticapi.git.')
 
         super(COCO, self).__init__(annotation_file)
 
     def createIndex(self):
         # create index
         print('creating index...')
-        # anns now stores segment_id -> annotation
+        # anns stores 'segment_id -> annotation'
         anns, cats, imgs = {}, {}, {}
         img_to_anns, cat_to_imgs = defaultdict(list), defaultdict(list)
         if 'annotations' in self.dataset:
@@ -72,7 +81,6 @@ class COCOPanoptic(COCO):
 
         print('index created!')
 
-        # create class members
         self.anns = anns
         self.imgToAnns = img_to_anns
         self.catToImgs = cat_to_imgs
@@ -82,7 +90,7 @@ class COCOPanoptic(COCO):
     def load_anns(self, ids=[]):
         """Load anns with the specified ids.
 
-        Now, self.anns is a list of annotation lists instead of a
+        self.anns is a list of annotation lists instead of a
         list of annotations.
 
         Args:
@@ -94,7 +102,7 @@ class COCOPanoptic(COCO):
         anns = []
 
         if hasattr(ids, '__iter__') and hasattr(ids, '__len__'):
-            # now self.anns is a list of list instead of
+            # self.anns is a list of annotation lists instead of
             # a list of annotations
             for id in ids:
                 anns += self.anns[id]
@@ -135,8 +143,11 @@ class CocoPanopticDataset(CocoDataset):
         ]
 
     Args:
-        formator (str): the formater for the image name of a dataset.
-        write_png (bool): whether to write the result image.
+        cats_json (str | list): Path of 'panoptic_coco_categories.json' in
+            'panopticapi'. Or the loaded categories list.
+            Must be specified, it will be used in evalutation.
+        formatter (str): the formatter for the image name of a dataset.
+            Default: '{:012}.png'.
     """
     CLASSES = [
         'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -193,9 +204,13 @@ class CocoPanopticDataset(CocoDataset):
         'rock-merged', 'wall-other-merged', 'rug-merged'
     ]
 
-    def __init__(self, formator='{:012}.png', write_png=False, **kwargs):
-        self.formator = formator
-        self.write_png = write_png
+    def __init__(self, cats_json, formatter='{:012}.png', **kwargs):
+        assert isinstance(cats_json, str) or isinstance(cats_json, list)
+        # Path of 'panoptic_coco_categories.json'
+        if isinstance(cats_json, str):
+            cats_json = mmcv.load(cats_json)
+        self.categories = {cat['id']: cat for cat in cats_json}
+        self.formatter = formatter
         super(CocoPanopticDataset, self).__init__(**kwargs)
 
     def load_annotations(self, ann_file):
@@ -210,7 +225,6 @@ class CocoPanopticDataset(CocoDataset):
         self.coco = COCOPanoptic(ann_file)
         self.cat_ids = self.coco.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
-        self.categories = self.coco.cats
         self.img_ids = self.coco.get_img_ids()
         data_infos = []
         for i in self.img_ids:
@@ -294,7 +308,7 @@ class CocoPanopticDataset(CocoDataset):
             labels=gt_labels,
             bboxes_ignore=gt_bboxes_ignore,
             masks=gt_mask_infos,
-            seg_map=self.formator.format(img_id))
+            seg_map=self.formatter.format(img_id))
 
         return ann
 
@@ -353,13 +367,13 @@ class CocoPanopticDataset(CocoDataset):
                     'area': int(area)
                 })
                 pan_format[mask] = color
-            # put the formatted results into buffer
-            self.pan_buffer.append(pan_format)
-            if self.write_png:
-                mmcv.imwrite(
-                    pan_format[..., ::-1],
-                    os.path.join(outdir, self.formator.format(img_id)))
-            record = {'image_id': img_id, 'segments_info': segm_info}
+            mmcv.imwrite(pan_format[..., ::-1],
+                         os.path.join(outdir, self.formatter.format(img_id)))
+            record = {
+                'image_id': img_id,
+                'segments_info': segm_info,
+                'file_name': self.formatter.format(img_id)
+            }
             pan_json_results.append(record)
         return pan_json_results
 
@@ -384,118 +398,31 @@ class CocoPanopticDataset(CocoDataset):
 
         return result_files
 
-    def pq_compute_single(self, pq_stat, pan_gt, pan_pred, gt_ann, pred_ann):
-        pan_gt = rgb2id(pan_gt)
-        pan_pred = rgb2id(pan_pred)
-
-        gt_segms = {el['id']: el for el in gt_ann['segments_info']}
-        pred_segms = {el['id']: el for el in pred_ann['segments_info']}
-
-        # predicted segments area calculation + prediction sanity checks
-        pred_labels_set = set(el['id'] for el in pred_ann['segments_info'])
-        labels, labels_cnt = np.unique(pan_pred, return_counts=True)
-        for label, label_cnt in zip(labels, labels_cnt):
-            if label not in pred_segms:
-                if label == VOID:
-                    continue
-                raise KeyError(
-                    'In the image with ID {} segment with ID {} '
-                    'is presented in PNG and not presented in JSON.'.format(
-                        gt_ann['image_id'], label))
-            pred_segms[label]['area'] = label_cnt
-            pred_labels_set.remove(label)
-            if pred_segms[label]['category_id'] not in self.categories:
-                raise KeyError(
-                    'In the image with ID {} segment with ID {} has unknown '
-                    'category_id {}.'.format(gt_ann['image_id'], label,
-                                             pred_segms[label]['category_id']))
-        if len(pred_labels_set) != 0:
-            raise KeyError(
-                'In the image with ID {} the following segment IDs {} are '
-                'presented in JSON and not presented in PNG.'.format(
-                    gt_ann['image_id'], list(pred_labels_set)))
-
-        # confusion matrix calculation
-        pan_gt_pred = pan_gt.astype(np.uint64) * OFFSET + pan_pred.astype(
-            np.uint64)
-        gt_pred_map = {}
-        labels, labels_cnt = np.unique(pan_gt_pred, return_counts=True)
-        for label, intersection in zip(labels, labels_cnt):
-            gt_id = label // OFFSET
-            pred_id = label % OFFSET
-            gt_pred_map[(gt_id, pred_id)] = intersection
-
-        # count all matched pairs
-        gt_matched = set()
-        pred_matched = set()
-        for label_tuple, intersection in gt_pred_map.items():
-            gt_label, pred_label = label_tuple
-            if gt_label not in gt_segms:
-                continue
-            if pred_label not in pred_segms:
-                continue
-            if gt_segms[gt_label]['iscrowd'] == 1:
-                continue
-            if gt_segms[gt_label]['category_id'] != pred_segms[pred_label][
-                    'category_id']:
-                continue
-
-            union = pred_segms[pred_label]['area'] + gt_segms[gt_label][
-                'area'] - intersection - gt_pred_map.get((VOID, pred_label), 0)
-            iou = intersection / union
-            if iou > 0.5:
-                pq_stat[gt_segms[gt_label]['category_id']].tp += 1
-                pq_stat[gt_segms[gt_label]['category_id']].iou += iou
-                gt_matched.add(gt_label)
-                pred_matched.add(pred_label)
-
-        # count false positives
-        crowd_labels_dict = {}
-        for gt_label, gt_info in gt_segms.items():
-            if gt_label in gt_matched:
-                continue
-            # crowd segments are ignored
-            if gt_info['iscrowd'] == 1:
-                crowd_labels_dict[gt_info['category_id']] = gt_label
-                continue
-            pq_stat[gt_info['category_id']].fn += 1
-
-        # count false positives
-        for pred_label, pred_info in pred_segms.items():
-            if pred_label in pred_matched:
-                continue
-            # intersection of the segment with VOID
-            intersection = gt_pred_map.get((VOID, pred_label), 0)
-            # plus intersection with corresponding CROWD region if it exists
-            if pred_info['category_id'] in crowd_labels_dict:
-                intersection += gt_pred_map.get(
-                    (crowd_labels_dict[pred_info['category_id']], pred_label),
-                    0)
-            # predicted segment is ignored if more than half of the segment
-            # correspond to VOID and CROWD regions
-            if intersection / pred_info['area'] > 0.5:
-                continue
-            pq_stat[pred_info['category_id']].fp += 1
-        return pq_stat
-
-    def evaluate_pan_json(self, result_files, logger=None):
-        gt_json = self.coco.img_ann_map
+    def evaluate_pan_json(self, result_files, outfile_prefix, logger=None):
+        """Evaluate PQ according to the panoptic results json file."""
+        gt_json = self.coco.img_ann_map  # image to annotations
         gt_json = [{
             'image_id': k,
-            'segments_info': v
+            'segments_info': v,
+            'file_name': self.formatter.format(k)
         } for k, v in gt_json.items()]
-        gt_json = dict((el['image_id'], el) for el in gt_json)
-        pred_json = json.load(open(result_files['panoptic'], 'r'))
+        pred_json = mmcv.load(result_files['panoptic'])
         pred_json = dict((el['image_id'], el) for el in pred_json)
 
-        assert len(gt_json) == len(pred_json)
-        PQStat_ = PQStat()
-        for img_id, pan_pred in zip(pred_json.keys(), self.pan_buffer):
-            pan_gt_path = os.path.join(self.seg_prefix,
-                                       self.formator.format(img_id))
-            pan_gt = mmcv.imread(pan_gt_path)[..., ::-1]  # convert to rgb
-            self.pq_compute_single(PQStat_, pan_gt, pan_pred, gt_json[img_id],
-                                   pred_json[img_id])
+        # match the gt_anns and pred_anns in the same image
+        matched_annotations_list = []
+        for gt_ann in gt_json:
+            img_id = gt_ann['image_id']
+            if img_id not in pred_json.keys():
+                raise Exception('no prediction for the image'
+                                ' with id: {}'.format(img_id))
+            matched_annotations_list.append((gt_ann, pred_json[img_id]))
+
+        gt_folder = self.seg_prefix
+        pred_folder = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
+
+        pq_stat = pq_compute_multi_core(matched_annotations_list, gt_folder,
+                                        pred_folder, self.categories)
 
         eval_results = {}
 
@@ -504,7 +431,7 @@ class CocoPanopticDataset(CocoDataset):
 
         output = '\n'
         for name, isthing in metrics:
-            pq_results[name], per_class_pq_results = PQStat_.pq_average(
+            pq_results[name], per_class_pq_results = pq_stat.pq_average(
                 self.categories, isthing=isthing)
             if name == 'All':
                 pq_results['per_class'] = per_class_pq_results
@@ -530,23 +457,35 @@ class CocoPanopticDataset(CocoDataset):
                  logger=None,
                  jsonfile_prefix=None,
                  **kwargs):
+        """Evaluation in COCO Panoptic protocol.
+
+        Args:
+            results (list[dict]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Only
+                support 'pq' at present.
+            logger (logging.Logger | str | None): Logger used for printing
+                related information during evaluation. Default: None.
+            jsonfile_prefix (str | None): The prefix of json files. It includes
+                the file path and the prefix of filename, e.g., "a/b/prefix".
+                If not specified, a temp file will be created. Default: None.
+
+        Returns:
+            dict[str, float]: COCO Panoptic style evaluation metric.
+        """
         metrics = metric if isinstance(metric, list) else [metric]
         allowed_metrics = ['pq']  # todo: support other metrics like 'bbox'
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
 
-        # panoptic results buffer
-        self.pan_buffer = []
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
         eval_results = {}
 
+        outfile_prefix = tmp_dir if tmp_dir is not None else jsonfile_prefix
         if 'pq' in metrics:
-            eval_pan_results = self.evaluate_pan_json(result_files, logger)
+            eval_pan_results = self.evaluate_pan_json(result_files,
+                                                      outfile_prefix, logger)
             eval_results.update(eval_pan_results)
-
-        # clear buffer
-        self.pan_buffer.clear()
 
         if tmp_dir is not None:
             tmp_dir.cleanup()
