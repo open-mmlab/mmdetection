@@ -1,6 +1,5 @@
 import torch
 
-from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_head
 from .single_stage_instance_seg import SingleStageInstanceSegmentor
 
@@ -101,26 +100,6 @@ class YOLACT(SingleStageInstanceSegmentor):
                 .format(loss_name)
 
         return losses
-
-    def simple_test(self, img, img_metas, rescale=False):
-        """Test function without test-time augmentation."""
-        feat = self.extract_feat(img)
-        det_bboxes, det_labels, det_coeffs = self.bbox_head.simple_test(
-            feat, img_metas, rescale=rescale)
-        bbox_results = [
-            bbox2result(det_bbox, det_label, self.bbox_head.num_classes)
-            for det_bbox, det_label in zip(det_bboxes, det_labels)
-        ]
-
-        segm_results = self.mask_head.simple_test(
-            feat,
-            det_bboxes,
-            det_labels,
-            det_coeffs,
-            img_metas,
-            rescale=rescale)
-
-        return list(zip(bbox_results, segm_results))
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test with augmentations."""

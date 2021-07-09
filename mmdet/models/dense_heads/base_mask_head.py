@@ -44,7 +44,12 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             **kwargs)
         return loss
 
-    def simple_test(self, feats, img_metas, rescale=False, **kwargs):
+    def simple_test(self,
+                    feats,
+                    img_metas,
+                    rescale=False,
+                    det_results=None,
+                    **kwargs):
         """Test function without test-time augmentation.
 
         Args:
@@ -53,15 +58,18 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             img_metas (list[dict]): List of image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
+            det_results (list[obj:`InstanceResults`]): Detection
+                Results of each image after the post process.
+
         Returns:
-            list[obj:`InstanceResults`]: Each `InstanceResults` containing
-            the following keys.
-                - `masks`: has shape (num_masks, H, W)
-                - `scores`: has shape (num_masks,)
-                - `labels`: has shape (num_masks)
+            list[obj:`InstanceResults`]: Instance segmentation
+                results of each image after the post process.
         """
-        outs = self(feats)
+        if det_results is None:
+            outs = self(feats)
+        else:
+            outs = self(feats, det_results=det_results)
         mask_inputs = outs + (img_metas, )
         mask_results_list = self.get_masks(
-            *mask_inputs, rescale=rescale, **kwargs)
+            *mask_inputs, rescale=rescale, det_results=det_results, **kwargs)
         return mask_results_list

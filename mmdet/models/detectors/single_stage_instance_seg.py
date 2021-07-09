@@ -132,11 +132,16 @@ class SingleStageInstanceSegmentor(BaseDetector):
             outs = self.bbox_head(feat)
             det_results = self.bbox_head.get_bboxes(
                 *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)
+            # clone is necessary to avoid inplace modification later
             collect_bbox_results_list = [
-                bbox2result(det_bbox, det_label, self.bbox_head.num_classes)
-                for det_bbox, det_label in zip(det_results.bboxes,
-                                               det_results.labels)
+                bbox2result(item.bboxes.clone(), item.labels.clone(),
+                            self.bbox_head.num_classes) for item in det_results
             ]
+            # mapping bboxes to current resolution
+            if rescale:
+                for item in det_results:
+                    scale_factor = item.bboxes.new_tensor(item.scale_factor)
+                    item.bboxes[:, :4] = item.bboxes[:, :4] * scale_factor
         else:
             det_results = None
             collect_bbox_results_list = []
