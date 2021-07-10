@@ -872,6 +872,7 @@ class YOLACTProtonet(BaseMaskHead):
         ori_shape = det_result.ori_shape
         if len(det_result) == 0:
             det_result.masks = det_result.bboxes.new_zeros(0, *ori_shape[:2])
+            return det_result
         scale_factor = det_result.scale_factor
         if rescale:
             img_h, img_w = ori_shape[:2]
@@ -883,6 +884,7 @@ class YOLACTProtonet(BaseMaskHead):
             mask_pred.unsqueeze(0), (img_h, img_w),
             mode='bilinear',
             align_corners=False).squeeze(0) > 0.5
+
         det_result.masks = mask_pred
         return det_result,
 
