@@ -861,6 +861,7 @@ class YOLACTProtonet(BaseMaskHead):
         mask_preds = croped_mask_preds
 
         num_img = len(mask_preds)
+
         mask_results_list, = multi_apply(self._get_masks_single, mask_preds,
                                          det_results, [rescale] * num_img)
 
@@ -869,6 +870,8 @@ class YOLACTProtonet(BaseMaskHead):
     def _get_masks_single(self, mask_pred, det_result, rescale):
 
         ori_shape = det_result.ori_shape
+        if len(det_result) == 0:
+            det_result.masks = det_result.bboxes.new_zeros(0, *ori_shape[:2])
         scale_factor = det_result.scale_factor
         if rescale:
             img_h, img_w = ori_shape[:2]
@@ -876,15 +879,10 @@ class YOLACTProtonet(BaseMaskHead):
             img_h = np.round(ori_shape[0] * scale_factor[1]).astype(np.int32)
             img_w = np.round(ori_shape[1] * scale_factor[0]).astype(np.int32)
 
-        cls_segms = [[] for _ in range(self.num_classes)]
-        if mask_pred.size(0) == 0:
-            return cls_segms
-
         mask_pred = F.interpolate(
             mask_pred.unsqueeze(0), (img_h, img_w),
             mode='bilinear',
             align_corners=False).squeeze(0) > 0.5
-        mask_pred = mask_pred.cpu().numpy().astype(np.uint8)
         det_result.masks = mask_pred
         return det_result,
 

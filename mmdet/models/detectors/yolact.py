@@ -16,9 +16,10 @@ class YOLACT(SingleStageInstanceSegmentor):
                  mask_head,
                  train_cfg=None,
                  test_cfg=None,
-                 init_cfg=None):
+                 init_cfg=None,
+                 **kwargs):
         super(YOLACT, self).__init__(backbone, neck, bbox_head, mask_head,
-                                     train_cfg, test_cfg, init_cfg)
+                                     train_cfg, test_cfg, init_cfg, **kwargs)
         self.segm_head = build_head(segm_head)
 
     def forward_dummy(self, img):

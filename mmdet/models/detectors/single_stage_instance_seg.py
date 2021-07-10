@@ -1,4 +1,5 @@
 import copy
+import warnings
 
 import numpy as np
 import torch
@@ -12,14 +13,21 @@ from .base import BaseDetector
 class SingleStageInstanceSegmentor(BaseDetector):
     """Base class for single-stage instance segmentors."""
 
-    def __init__(self,
-                 backbone,
-                 neck=None,
-                 bbox_head=None,
-                 mask_head=None,
-                 train_cfg=None,
-                 test_cfg=None,
-                 init_cfg=None):
+    def __init__(
+        self,
+        backbone,
+        neck=None,
+        bbox_head=None,
+        mask_head=None,
+        train_cfg=None,
+        test_cfg=None,
+        init_cfg=None,
+        pretrained=None,
+    ):
+        if pretrained:
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
+                          'please use "init_cfg" instead')
+            backbone.pretrained = pretrained
         super(SingleStageInstanceSegmentor, self).__init__(init_cfg)
         self.backbone = build_backbone(backbone)
         if neck is not None:
@@ -150,9 +158,11 @@ class SingleStageInstanceSegmentor(BaseDetector):
             feat, img_metas, rescale=rescale, det_results=det_results)
 
         collect_mask_results_list = []
+
         for mask_results in mask_results_list:
             collect_mask_results = [[]
                                     for _ in range(self.mask_head.num_classes)]
+
             mask_results = mask_results.numpy()
             masks = mask_results.masks
 
