@@ -74,8 +74,6 @@ class FoveaHead(AnchorFreeHead):
         self.with_deform = with_deform
         self.deform_groups = deform_groups
         super().__init__(num_classes, in_channels, init_cfg=init_cfg, **kwargs)
-        # self.strides does not need to be passed in.
-        self.prior_generator = MlvlPointGenerator([1] * len(self.strides))
 
     def _init_layers(self):
         # box branch
@@ -337,8 +335,7 @@ class FoveaHead(AnchorFreeHead):
                 priors = self.prior_generator.single_level_grid_priors(
                     featmap_size_hw, level_idx, scores.device)
 
-            bboxes = self._bbox_decode(priors, bbox_pred, stride, base_len,
-                                       img_shape)
+            bboxes = self._bbox_decode(priors, bbox_pred, base_len, img_shape)
 
             det_bboxes.append(bboxes)
             det_scores.append(scores)
@@ -347,18 +344,18 @@ class FoveaHead(AnchorFreeHead):
                                        img_meta['scale_factor'], cfg, rescale,
                                        with_nms)
 
-    def _bbox_decode(self, priors, bbox_pred, stride, base_len, max_shape):
+    def _bbox_decode(self, priors, bbox_pred, base_len, max_shape):
         bbox_pred = bbox_pred.exp()
 
         y = priors[:, 1]
         x = priors[:, 0]
-        x1 = (stride * x - base_len * bbox_pred[:, 0]). \
+        x1 = (x - base_len * bbox_pred[:, 0]). \
             clamp(min=0, max=max_shape[1] - 1)
-        y1 = (stride * y - base_len * bbox_pred[:, 1]). \
+        y1 = (y - base_len * bbox_pred[:, 1]). \
             clamp(min=0, max=max_shape[0] - 1)
-        x2 = (stride * x + base_len * bbox_pred[:, 2]). \
+        x2 = (x + base_len * bbox_pred[:, 2]). \
             clamp(min=0, max=max_shape[1] - 1)
-        y2 = (stride * y + base_len * bbox_pred[:, 3]). \
+        y2 = (y + base_len * bbox_pred[:, 3]). \
             clamp(min=0, max=max_shape[0] - 1)
         decoded_bboxes = torch.stack([x1, y1, x2, y2], -1)
         return decoded_bboxes

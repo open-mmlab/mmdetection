@@ -335,12 +335,12 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         det_labels = batch_labels.view(-1)
 
         batch_border = det_bboxes.new_tensor(
-            img_meta['border'])[None][..., [2, 0, 2, 0]]
+            img_meta['border'])[..., [2, 0, 2, 0]]
         det_bboxes[..., :4] -= batch_border
 
         if rescale:
             det_bboxes[..., :4] /= det_bboxes.new_tensor(
-                img_meta['scale_factor'])[None]
+                img_meta['scale_factor'])
 
         if with_nms:
             det_bboxes, det_labels = self._bboxes_nms(det_bboxes, det_labels,
