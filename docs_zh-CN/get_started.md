@@ -163,12 +163,12 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 **注意**： MMDetection 目前不支持使用 CPU 进行训练。
 
-### 另一种选择： Docker Image
+### 另一种选择： Docker 镜像
 
-我们提供了 [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) 来生成图片，请确保 [docker](https://docs.docker.com/engine/install/)  的版本  >= 19.03。
+我们提供了 [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) 来生成镜像，请确保 [docker](https://docs.docker.com/engine/install/)  的版本  >= 19.03。
 
 ```shell
-# 基于 PyTorch 1.6, CUDA 10.1 生成图片
+# 基于 PyTorch 1.6, CUDA 10.1 生成镜像
 docker build -t mmdetection docker/
 ```
 
