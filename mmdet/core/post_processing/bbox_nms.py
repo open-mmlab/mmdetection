@@ -89,7 +89,7 @@ def multiclass_nms(multi_bboxes,
         keep = keep[:max_num]
 
     if return_inds:
-        return dets, labels[keep], keep
+        return dets, labels[keep], inds[keep]
     else:
         return dets, labels[keep]
 
