@@ -300,6 +300,31 @@ def test_two_stage_forward(cfg_file):
                                       return_loss=False)
             batch_results.append(result)
 
+    # test empty proposal in roi_head
+    with torch.no_grad():
+        # test no proposal in the whole batch
+        detector.simple_test(
+            imgs[0][None, :], [img_metas[0]], proposals=[torch.empty((0, 4))])
+
+        # test no proposal of aug
+        features = detector.extract_feats([imgs[0][None, :]] * 2)
+        detector.roi_head.aug_test(features, [torch.empty((0, 4))] * 2,
+                                   [[img_metas[0]]] * 2)
+
+        # test no proposal in the some image
+        x1y1 = torch.randint(1, 100, (10, 2)).float()
+        # x2y2 must be greater than x1y1
+        x2y2 = x1y1 + torch.randint(1, 100, (10, 2))
+        detector.simple_test(
+            imgs[0][None, :].repeat(2, 1, 1, 1), [img_metas[0]] * 2,
+            proposals=[torch.empty((0, 4)),
+                       torch.cat([x1y1, x2y2], dim=-1)])
+
+        # test no proposal of aug
+        detector.roi_head.aug_test(
+            features, [torch.cat([x1y1, x2y2], dim=-1),
+                       torch.empty((0, 4))], [[img_metas[0]]] * 2)
+
 
 @pytest.mark.parametrize(
     'cfg_file', ['ghm/retinanet_ghm_r50_fpn_1x_coco.py', 'ssd/ssd300_coco.py'])
