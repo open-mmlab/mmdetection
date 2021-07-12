@@ -146,9 +146,9 @@ class VFNetHead(ATSSHead, FCOSHead):
         # for getting ATSS targets
         self.use_atss = use_atss
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        self.anchor_generator = build_anchor_generator(anchor_generator)
+        self.prior_generator = build_anchor_generator(anchor_generator)
         self.anchor_center_offset = anchor_generator['center_offset']
-        self.num_anchors = self.anchor_generator.num_base_anchors[0]
+        self.num_anchors = self.prior_generator.num_base_anchors[0]
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
@@ -156,7 +156,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             self.sampler = build_sampler(sampler_cfg, context=self)
 
         # in order to unify the get_bbox logic. Not needed during training.
-        self.prior_generator = MlvlPointGenerator(
+        self.test_prior_generator = MlvlPointGenerator(
             anchor_generator['strides'],
             self.anchor_center_offset if self.use_atss else 0.5)
 
@@ -276,6 +276,8 @@ class VFNetHead(ATSSHead, FCOSHead):
         if self.training:
             return cls_score, bbox_pred, bbox_pred_refine
         else:
+            # TODO： Find a better way
+            self.prior_generator = self.test_prior_generator
             return cls_score, bbox_pred_refine
 
     def star_dcn_offset(self, bbox_pred, gradient_mul, stride):
@@ -590,7 +592,7 @@ class VFNetHead(ATSSHead, FCOSHead):
                 bbox_weights (Tensor): Bbox weights of all levels.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
