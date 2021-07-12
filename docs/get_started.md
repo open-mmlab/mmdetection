@@ -30,7 +30,7 @@ The compatible MMDetection and MMCV versions are as below. Please install the co
 | 2.1.0               | mmcv>=0.5.9, <=0.6.1|
 | 2.0.0               | mmcv>=0.5.1, <=0.5.8|
 
-Note: You need to run `pip uninstall mmcv` first if you have mmcv installed.
+**Note:** You need to run `pip uninstall mmcv` first if you have mmcv installed.
 If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
 ## Installation
@@ -132,7 +132,7 @@ Or, you can install MMDetection manually:
     pip install mmdet
     ```
 
-Note:
+**Note:**
 
 a. Following the above instructions, MMDetection is installed on `dev` mode
 , any local modifications made to the code will take effect without the need to reinstall it.
@@ -172,7 +172,7 @@ So if you try to run inference with a model containing above ops you will get an
 |                         CARAFE                          |                            CARAFE                            |
 |                      SyncBatchNorm                      |                           ResNeSt                            |
 
-**Notice**: MMDetection does not support training with CPU for now.
+**Notice:** MMDetection does not support training with CPU for now.
 
 ### Another option: Docker Image
 
@@ -200,7 +200,7 @@ conda activate open-mmlab
 conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch -y
 
 # install the latest mmcv
-pip install mmcv-full==latest+torch1.6.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
 
 # install mmdetection
 git clone https://github.com/open-mmlab/mmdetection.git

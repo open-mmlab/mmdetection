@@ -630,14 +630,11 @@ class StageCascadeRPNHead(RPNHead):
         if cfg.min_bbox_size >= 0:
             w = proposals[:, 2] - proposals[:, 0]
             h = proposals[:, 3] - proposals[:, 1]
-            valid_inds = torch.nonzero(
-                (w > cfg.min_bbox_size)
-                & (h > cfg.min_bbox_size),
-                as_tuple=False).squeeze()
-            if valid_inds.sum().item() != len(proposals):
-                proposals = proposals[valid_inds, :]
-                scores = scores[valid_inds]
-                ids = ids[valid_inds]
+            valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
+            if not valid_mask.all():
+                proposals = proposals[valid_mask]
+                scores = scores[valid_mask]
+                ids = ids[valid_mask]
 
         dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
         return dets[:cfg.max_per_img]
