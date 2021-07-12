@@ -7,7 +7,7 @@ from ..builder import HEADS
 from .base_semantic_head import BaseSemanticHead
 
 
-class PanoFpnSubNet(nn.Module):
+class PanFpnSubNet(nn.Module):
 
     def __init__(self,
                  in_channels,
@@ -16,7 +16,7 @@ class PanoFpnSubNet(nn.Module):
                  conv_cfg=None,
                  norm_cfg=None,
                  num_upsample=None):
-        super(PanoFpnSubNet, self).__init__()
+        super(PanFpnSubNet, self).__init__()
         if num_upsample is None:  # performs 2x upsample after each conv module
             num_upsample = num_layers
 
@@ -65,7 +65,7 @@ class PanoFpnSubNet(nn.Module):
 
 
 @HEADS.register_module()
-class PanFpnHead(BaseSemanticHead):
+class PanopticFpnHead(BaseSemanticHead):
 
     def __init__(self,
                  num_classes,
@@ -78,7 +78,8 @@ class PanFpnHead(BaseSemanticHead):
                  conv_cfg=None,
                  norm_cfg=None,
                  loss_semantic=dict(type='CrossEntropyLoss', loss_weight=1.0)):
-        super(PanFpnHead, self).__init__(num_classes, num_feats, loss_semantic)
+        super(PanopticFpnHead, self).__init__(num_classes, num_feats,
+                                              loss_semantic)
         self.fg_range = fg_range
         self.bg_range = bg_range
         self.fg_nums = self.fg_range[1] - self.fg_range[0] + 1
@@ -89,7 +90,7 @@ class PanFpnHead(BaseSemanticHead):
         self.subnet = nn.ModuleList()
         for i in range(num_stages):
             self.subnet.append(
-                PanoFpnSubNet(
+                PanFpnSubNet(
                     in_channels,
                     inner_channels,
                     num_layers=i if i > 0 else 1,
@@ -114,7 +115,7 @@ class PanFpnHead(BaseSemanticHead):
 
     def loss(self, logits, gt_semantic_seg):
         gt_semantic_seg = self._set_things_to_void(gt_semantic_seg)
-        return super(PanFpnHead, self).loss(logits, gt_semantic_seg)
+        return super(PanopticFpnHead, self).loss(logits, gt_semantic_seg)
 
     def init_weights(self):
         nn.init.normal_(self.score.weight.data, 0, 0.01)

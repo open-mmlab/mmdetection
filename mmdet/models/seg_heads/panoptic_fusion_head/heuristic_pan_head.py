@@ -2,12 +2,12 @@ import torch
 
 from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET
 from mmdet.models.builder import HEADS
-from .base_pan_head import BasePanHead
+from .base_panoptic_fusion_head import BasePanopticFusionHead
 
 
 @HEADS.register_module()
-class HeuristicPanHead(BasePanHead):
-    """Base class for panoptic heads."""
+class HeuristicPanHead(BasePanopticFusionHead):
+    """Fusion Head with Heuristic method."""
 
     def __init__(self, num_things=80, num_stuff=53, init_cfg=None, **kwargs):
         super(HeuristicPanHead, self).__init__(num_things, num_stuff, None,

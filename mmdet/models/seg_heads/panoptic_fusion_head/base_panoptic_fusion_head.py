@@ -5,7 +5,7 @@ from mmcv.runner import BaseModule
 from ...builder import build_loss
 
 
-class BasePanHead(BaseModule, metaclass=ABCMeta):
+class BasePanopticFusionHead(BaseModule, metaclass=ABCMeta):
     """Base class for panoptic heads."""
 
     def __init__(self,
@@ -14,7 +14,7 @@ class BasePanHead(BaseModule, metaclass=ABCMeta):
                  loss_panoptic=None,
                  init_cfg=None,
                  **kwargs):
-        super(BasePanHead, self).__init__(init_cfg)
+        super(BasePanopticFusionHead, self).__init__(init_cfg)
         self.num_things = num_things
         self.num_stuff = num_stuff
 

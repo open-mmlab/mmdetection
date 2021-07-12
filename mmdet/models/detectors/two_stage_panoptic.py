@@ -76,8 +76,9 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         stuff_loss = self.stuff_head.forward_train(x, gt_semantic_seg)
         losses.update(stuff_loss)
 
-        panoptic_loss = self.panoptic_head.forward_train()
-        losses.update(panoptic_loss)
+        if self.panoptic_head.with_loss:
+            panoptic_loss = self.panoptic_head.forward_train()
+            losses.update(panoptic_loss)
 
         return losses
 
