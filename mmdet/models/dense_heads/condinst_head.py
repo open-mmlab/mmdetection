@@ -90,7 +90,9 @@ def dice_coefficient(x, target):
     n_instance = x.size(0)
     x = x.reshape(n_instance, -1)
     target = target.reshape(n_instance, -1)
+
     intersection = (x * target).sum(dim=1)
+
     union = (x**2.0).sum(dim=1) + (target**2.0).sum(dim=1) + eps
     loss = 1. - (2 * intersection / union)
     return loss
@@ -502,18 +504,19 @@ class CondInstHead(AnchorFreeHead):
                                                    self.bias_nums)
             mask_logits = self.mask_heads_forward(mask_head_inputs, weights,
                                                   biases, num_instance)
-            mask_logits = mask_logits.reshape(-1, 1, mask_feat.size(1),
-                                              mask_feat.size(2)).squeeze(1)
+
             # pad gt mask
-            img_h, img_w = mask_feat.size(1) * 8, mask_feat.size(2) * 8
+            img_h, img_w = img_metas[i]['batch_input_shape']
             h, w = gt_masks_list[i].size()[1:]
             gt_mask = F.pad(gt_masks_list[i], (0, img_w - w, 0, img_h - h),
                             'constant', 0)
-            start = int(8 // 2)
-            gt_mask = gt_mask[:, start::8, start::8]
+
+            start = int(4 // 2)
+            gt_mask = gt_mask[:, start::4, start::4]
             gt_mask = gt_mask.gt(0.5).float()
             gt_mask = torch.index_select(gt_mask, 0, idx_gt).contiguous()
-            loss_mask += dice_coefficient(mask_logits.sigmoid(), gt_mask).sum()
+            loss_mask += dice_coefficient(mask_logits.sigmoid().squeeze(1),
+                                          gt_mask).sum()
             num_mask += len(idx_gt)
 
         loss_mask = loss_mask / num_mask
@@ -542,7 +545,12 @@ class CondInstHead(AnchorFreeHead):
                 x, w, bias=b, stride=1, padding=0, groups=num_instances)
             if i < n_layers - 1:
                 x = F.relu(x)
-        return x
+
+        N, _, H, W = x.size()
+        mask_logits = x.reshape(-1, 1, H, W)
+        mask_logits = aligned_bilinear(mask_logits, 2)
+
+        return mask_logits
 
     def relative_coordinate_feature_generator(self, mask_feat,
                                               instance_locations, strides):
@@ -788,8 +796,7 @@ class CondInstHead(AnchorFreeHead):
                                                    self.bias_nums)
             mask_logits = self.mask_heads_forward(mask_head_inputs, weights,
                                                   biases, num_instance)
-            mask_logits = mask_logits.reshape(-1, 1, mask_feat.size(1),
-                                              mask_feat.size(2)).sigmoid()
+            mask_logits = mask_logits.sigmoid()
             if rescale:
                 pred_global_masks = aligned_bilinear(mask_logits, 8)
                 pred_global_masks = pred_global_masks[:, :, :img_shape[0], :
@@ -800,7 +807,7 @@ class CondInstHead(AnchorFreeHead):
                     mode='bilinear',
                     align_corners=False).squeeze(1)
             else:
-                masks = aligned_bilinear(mask_logits, 8).squeeze(1)
+                masks = aligned_bilinear(mask_logits, 4).squeeze(1)
             masks.gt_(0.5)
         return det_bboxes, det_labels, masks
 
