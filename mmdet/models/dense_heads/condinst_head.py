@@ -160,6 +160,8 @@ def aligned_bilinear(tensor, factor):
 class CondInstHead(AnchorFreeHead):
     """Conditional Convolutions for Instance Segmentation."""
 
+    _version = 1
+
     def __init__(self,
                  num_classes,
                  in_channels,
