@@ -391,10 +391,9 @@ class CondInstHead(AnchorFreeHead):
         # gt mask
         gt_masks_list = []
         for i in range(len(gt_labels)):
-            gt_label = gt_labels[i]
-            gt_masks_list.append(
-                torch.from_numpy(np.array(gt_masks[i], dtype=np.float32)).to(
-                    gt_label.device))
+            masks = gt_masks[i].masks
+            masks = cls_scores[0].new_tensor(masks)
+            gt_masks_list.append(masks)
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and centerness
