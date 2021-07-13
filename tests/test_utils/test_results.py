@@ -267,6 +267,53 @@ def test_results():
         for value in numpy_results.results_field.values():
             assert isinstance(value, np.ndarray)
 
+    # test format the resutls
+    results.format_results() is results.results_field
+
+    results1 = results.new_results()
+    results1.masks = torch.rand(3, 5, 5)
+    results1.labels = torch.rand(3)
+    results2 = results1.new_results()
+    results2.bboxes = torch.rand(3, 4)
+    results2.center = torch.rand(3)
+
+    top_level_results = results.new_results()
+    top_level_results.results1 = results1
+    top_level_results.results2 = results2
+
+    top_level_results.temp_bbox = torch.rand(5, 4)
+
+    format_results = top_level_results.format_results()
+    assert 'masks' in format_results
+    assert format_results['masks'] is results1.masks
+    assert 'labels' in format_results
+    assert format_results['labels'] is results1.labels
+
+    assert 'bboxes' in format_results
+    assert format_results['bboxes'] is results2.bboxes
+
+    assert 'center' in format_results
+    assert format_results['center'] is results2.center
+
+    assert 'temp_bbox' in format_results
+    assert format_results['temp_bbox'] is top_level_results.temp_bbox
+
+    # assert duplicate keys
+    results1.results2 = results2
+    with pytest.raises(AssertionError):
+        top_level_results.format_results()
+    del results1.results2
+
+    results3 = results1.new_results()
+    results3.keypoints = torch.rand(3, 2, 2)
+    results3.keypoints_scores = torch.rand(3)
+    results2.results3 = results3
+    format_results = top_level_results.format_results()
+    assert 'keypoints' in format_results
+    assert 'keypoints_scores' in format_results
+    assert format_results['keypoints'] is results3.keypoints
+    assert format_results['keypoints_scores'] is results3.keypoints_scores
+
     results['_c'] = 10000
     results.get('dad', None) is None
     assert hasattr(results, '_c')

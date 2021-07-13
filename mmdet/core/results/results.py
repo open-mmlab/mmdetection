@@ -251,7 +251,7 @@ class Results(NiceRepr):
             new_results[k] = v
         return new_results
 
-    def formart_results(self):
+    def format_results(self):
         """The protocols for serializing the value in `results_field`,
         Generally the value would be converted into a format suitable for
         multi-GPU synchronization.
@@ -259,22 +259,22 @@ class Results(NiceRepr):
         Returns:
             dict
         """
-        resutls_dict = {}
+        results_dict = {}
 
-        for name, results in self.results_field:
-            if hasattr(results, 'formart_results'):
-                update_dict = results.formart_results()
+        for name, results in self.results_field.items():
+            if hasattr(results, 'format_results'):
+                update_dict = results.format_results()
             else:
-                update_dict = dict(name=resutls_dict)
+                update_dict = {name: results}
 
             assert not set(update_dict.keys()) & \
-                set(resutls_dict.keys()), f'Find' \
+                set(results_dict.keys()), f'Find' \
                 f' duplicate keys ' \
-                f'{set(update_dict.keys()) & set(resutls_dict.keys())} ' \
+                f'{set(update_dict.keys()) & set(results_dict.keys())} ' \
                 f'when format the {self}'
-            resutls_dict.update(update_dict)
+            results_dict.update(update_dict)
 
-        return self.results_field
+        return results_dict
 
     def __nice__(self):
         repr = '\n \n  META INFORMATION \n'
@@ -486,6 +486,12 @@ class DetectionResults(InstanceResults):
         results_dict = dict()
         assert 'scores' in self._results_field
         assert 'labels' in self._results_field
+
+        assert 'bboxes' in self._results_field or \
+            'masks' in self._results_field, \
+            'DetectionResults at least contains one of ' \
+            '(bboxes, masks) when format the results '
+
         labels = self.labels.detach().cpu().numpy()
         if 'bboxes' in self._results_field:
             # format bboxes results
