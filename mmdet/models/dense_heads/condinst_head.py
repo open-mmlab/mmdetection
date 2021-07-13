@@ -800,7 +800,7 @@ class CondInstHead(AnchorFreeHead):
                                                   biases, num_instance)
             mask_logits = mask_logits.sigmoid()
             if rescale:
-                pred_global_masks = aligned_bilinear(mask_logits, 8)
+                pred_global_masks = aligned_bilinear(mask_logits, 4)
                 pred_global_masks = pred_global_masks[:, :, :img_shape[0], :
                                                       img_shape[1]]
                 masks = F.interpolate(
