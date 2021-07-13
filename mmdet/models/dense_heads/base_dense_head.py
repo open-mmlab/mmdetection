@@ -229,14 +229,16 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default: False.
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
-            mlvl_score_factor (list[Tensor], optional):  score_factor for each
-                image, each item has shape (num, ). Default: None.
+            mlvl_score_factor (list[Tensor], optional): score_factor from
+                all scale levels of a single image, each item has shape,
+                each item has shape (num, ). Default: None.
 
         Returns:
-            tuple[Tensor]: Results of detected boxes and labels. with_nms would
-                always be False except for doing the AugTest. It return
-                mlvl_bboxes and mlvl_scores when with_nms is True, otherwise
-                the mlvl_score_factor would be added.
+            tuple[Tensor]: Results of detected bboxes and labels. if with_nms
+                is False and mlvl_score_factor is None, return mlvl_bboxes
+                and mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+                mlvl_score_factor. Usually with_nms is False is used for
+                aug test. if with_nms is True, then return the following format
 
                 - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
                     where the first 4 columns are bounding box positions \
@@ -313,7 +315,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         if proposal_cfg is None:
             return losses
         else:
-            proposal_list = self.get_bboxes(*outs, img_metas=img_metas, cfg=proposal_cfg)
+            proposal_list = self.get_bboxes(
+                *outs, img_metas=img_metas, cfg=proposal_cfg)
             return losses, proposal_list
 
     def simple_test(self, feats, img_metas, rescale=False):
@@ -331,6 +334,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 The first item is ``bboxes`` with shape (n, 5),
                 where 5 represent (tl_x, tl_y, br_x, br_y, score).
                 The shape of the second tensor in the tuple is ``labels``
-                with shape (n,)
+                with shape (n, ).
         """
         return self.simple_test_bboxes(feats, img_metas, rescale=rescale)

@@ -1,8 +1,10 @@
 from __future__ import division
 import copy
+import warnings
 
 import torch
 import torch.nn as nn
+from mmcv import ConfigDict
 from mmcv.ops import DeformConv2d, batched_nms
 from mmcv.runner import BaseModule, ModuleList
 
@@ -636,7 +638,38 @@ class StageCascadeRPNHead(RPNHead):
                 scores = scores[valid_mask]
                 ids = ids[valid_mask]
 
-        dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+        # deprecate arguments warning
+        if 'nms' not in cfg or 'max_num' in cfg or 'nms_thr' in cfg:
+            warnings.warn(
+                'In rpn_proposal or test_cfg, '
+                'nms_thr has been moved to a dict named nms as '
+                'iou_threshold, max_num has been renamed as max_per_img, '
+                'name of original arguments and the way to specify '
+                'iou_threshold of NMS will be deprecated.')
+        if 'nms' not in cfg:
+            cfg.nms = ConfigDict(dict(type='nms', iou_threshold=cfg.nms_thr))
+        if 'max_num' in cfg:
+            if 'max_per_img' in cfg:
+                assert cfg.max_num == cfg.max_per_img, f'You ' \
+                    f'set max_num and ' \
+                    f'max_per_img at the same time, but get {cfg.max_num} ' \
+                    f'and {cfg.max_per_img} respectively' \
+                    'Please delete max_num which will be deprecated.'
+            else:
+                cfg.max_per_img = cfg.max_num
+        if 'nms_thr' in cfg:
+            assert cfg.nms.iou_threshold == cfg.nms_thr, f'You set' \
+                f' iou_threshold in nms and ' \
+                f'nms_thr at the same time, but get' \
+                f' {cfg.nms.iou_threshold} and {cfg.nms_thr}' \
+                f' respectively. Please delete the nms_thr ' \
+                f'which will be deprecated.'
+
+        if proposals.numel() > 0:
+            dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+        else:
+            return proposals.new_zeros(0, 5)
+
         return dets[:cfg.max_per_img]
 
     def refine_bboxes(self, anchor_list, bbox_preds, img_metas):

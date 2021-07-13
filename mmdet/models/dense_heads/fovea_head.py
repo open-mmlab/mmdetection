@@ -5,7 +5,6 @@ from mmcv.ops import DeformConv2d
 from mmcv.runner import BaseModule
 
 from mmdet.core import multi_apply
-from mmdet.core.anchor.point_generator import MlvlPointGenerator
 from ..builder import HEADS
 from .anchor_free_head import AnchorFreeHead
 

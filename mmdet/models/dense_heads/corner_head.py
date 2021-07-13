@@ -765,15 +765,8 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
             batch_bboxes /= batch_bboxes.new_tensor(img_meta['scale_factor'])
 
         bboxes = batch_bboxes.view([-1, 4])
-        scores = batch_scores.view([-1, 1])
-        clses = batch_clses.view([-1, 1])
-
-        # use `sort` instead of `argsort` here, since currently exporting
-        # `argsort` to ONNX opset version 11 is not supported
-        scores, idx = scores.sort(dim=0, descending=True)
-        bboxes = bboxes[idx].view([-1, 4])
-        scores = scores.view(-1)
-        clses = clses[idx].view(-1)
+        scores = batch_scores.view(-1)
+        clses = batch_clses.view(-1)
 
         detections = torch.cat([bboxes, scores.unsqueeze(-1)], -1)
         keepinds = (detections[:, -1] > -0.1)
@@ -787,33 +780,22 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         return detections, labels
 
     def _bboxes_nms(self, bboxes, labels, cfg):
-        if labels.numel() == 0:
-            return bboxes, labels
-
         if 'nms_cfg' in cfg:
             warning.warn('nms_cfg in test_cfg will be deprecated. '
                          'Please rename it as nms')
         if 'nms' not in cfg:
             cfg.nms = cfg.nms_cfg
 
-        out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
-                                       cfg.nms)
-        out_labels = labels[keep]
+        if labels.numel() > 0:
+            max_num = cfg.max_per_img
+            bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:,
+                                                             -1].contiguous(),
+                                       labels, cfg.nms)
+            if max_num > 0:
+                bboxes = bboxes[:max_num]
+                labels = labels[keep][:max_num]
 
-        if len(out_bboxes) > 0:
-            # use `sort` to replace with `argsort` here
-            _, idx = torch.sort(out_bboxes[:, -1], descending=True)
-            max_per_img = out_bboxes.new_tensor(cfg.max_per_img).to(torch.long)
-            nms_after = max_per_img
-            if torch.onnx.is_in_onnx_export():
-                # Always keep topk op for dynamic input in onnx
-                from mmdet.core.export import get_k_for_topk
-                nms_after = get_k_for_topk(max_per_img, out_bboxes.shape[0])
-            idx = idx[:nms_after]
-            out_bboxes = out_bboxes[idx]
-            out_labels = out_labels[idx]
-
-        return out_bboxes, out_labels
+        return bboxes, labels
 
     def decode_heatmap(self,
                        tl_heat,

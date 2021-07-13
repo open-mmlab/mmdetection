@@ -334,8 +334,8 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         det_bboxes = batch_det_bboxes.view([-1, 5])
         det_labels = batch_labels.view(-1)
 
-        batch_border = det_bboxes.new_tensor(
-            img_meta['border'])[..., [2, 0, 2, 0]]
+        batch_border = det_bboxes.new_tensor(img_meta['border'])[...,
+                                                                 [2, 0, 2, 0]]
         det_bboxes[..., :4] -= batch_border
 
         if rescale:
@@ -345,6 +345,18 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         if with_nms:
             det_bboxes, det_labels = self._bboxes_nms(det_bboxes, det_labels,
                                                       self.test_cfg)
+        return det_bboxes, det_labels
+
+        if with_nms:
+            if det_labels.numel() > 0:
+                max_num = self.test_cfg.max_per_img
+                det_bboxes, keep = batched_nms(det_bboxes[:, :4],
+                                               det_bboxes[:, -1].contiguous(),
+                                               det_labels, self.test_cfg.nms)
+                if max_num > 0:
+                    det_bboxes = det_bboxes[:max_num]
+                    det_labels = det_labels[keep][:max_num]
+
         return det_bboxes, det_labels
 
     def decode_heatmap(self,
@@ -399,17 +411,13 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         return batch_bboxes, batch_topk_labels
 
     def _bboxes_nms(self, bboxes, labels, cfg):
-        if labels.numel() == 0:
-            return bboxes, labels
+        if labels.numel() > 0:
+            max_num = cfg.max_per_img
+            bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:,
+                                                             -1].contiguous(),
+                                       labels, cfg.nms)
+            if max_num > 0:
+                bboxes = bboxes[:max_num]
+                labels = labels[keep][:max_num]
 
-        out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
-                                       cfg.nms_cfg)
-        out_labels = labels[keep]
-
-        if len(out_bboxes) > 0:
-            idx = torch.argsort(out_bboxes[:, -1], descending=True)
-            idx = idx[:cfg.max_per_img]
-            out_bboxes = out_bboxes[idx]
-            out_labels = out_labels[idx]
-
-        return out_bboxes, out_labels
+        return bboxes, labels
