@@ -96,9 +96,20 @@ class Results(NiceRepr):
         meta = copy.deepcopy(meta)
         for k, v in meta.items():
             if k in self._meta_info_field:
-                raise KeyError(
-                    f'img_meta_info {k} has been set as '
-                    f'{getattr(self, k)} before, which is immutable ')
+                ori_value = getattr(self, k)
+                if isinstance(ori_value, (torch.Tensor, np.ndarray)):
+                    if (ori_value == v).all():
+                        continue
+                    else:
+                        raise KeyError(
+                            f'img_meta_info {k} has been set as '
+                            f'{getattr(self, k)} before, which is immutable ')
+                elif ori_value == v:
+                    continue
+                else:
+                    raise KeyError(
+                        f'img_meta_info {k} has been set as '
+                        f'{getattr(self, k)} before, which is immutable ')
             else:
                 self._meta_info_field.add(k)
                 self.__dict__[k] = v
@@ -475,12 +486,19 @@ class DetectionResults(InstanceResults):
     is suitable for multi-GPU synchronization
     """
 
-    def __init__(self, img_meta, num_classes=80, **kwargs):
-        super(DetectionResults, self).__init__(img_meta=img_meta)
+    def __init__(self, meta=None, num_classes=80, **kwargs):
+        super(DetectionResults, self).__init__(meta=meta)
         extra_metas = dict(num_classes=num_classes)
-        for k, v in kwargs:
+        for k, v in kwargs.items():
             extra_metas[k] = v
         self.add_meta_info(extra_metas)
+
+    def new_results(self):
+        """Return a new results with same image meta information and empty
+        results_field."""
+        new_results = self.__class__(num_classes=self.num_classes)
+        new_results.add_meta_info(self.meta_info_field)
+        return new_results
 
     def format_results(self):
         results_dict = dict()
@@ -520,6 +538,6 @@ class DetectionResults(InstanceResults):
                              dtype='uint8'))[0]
 
                 mask_results[labels[idx]].append(encode_mask)
-            results_dict['mask_results'] = mask_util.encode()
+            results_dict['mask_results'] = mask_results
 
         return results_dict
