@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+from mmcv.cnn.utils import bias_init_with_prob, normal_init
 from mmcv.runner import ModuleList
 
 from mmdet.core import matrix_nms, multi_apply, points_nms
@@ -42,8 +43,17 @@ class SOLOHead(BaseMaskHead):
         norm_cfg=None,
         train_cfg=None,
         test_cfg=None,
-        init_cfg=dict(type='Normal', layer='Conv2d', std=0.01,
-                      bias_prob=0.01)):
+        init_cfg=None
+        # This is the First change, try to use init_cfg
+        # 31.7 mAP
+        # [dict(type='Normal', std=0.01, override=dict(name='ins_convs')),
+        #  dict(type='Normal', std=0.01, override=dict(name='cate_convs')),
+        #  dict(type='Normal', std=0.01, bias_prob=0.01,
+        #  override=dict(name='solo_ins_list')),
+        #  dict(type='Normal', std=0.01, bias_prob=0.01,
+        #  override=dict(name='solo_cate')),
+        #                    ],
+    ):
         super(SOLOHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.cate_out_channels = self.num_classes
@@ -67,10 +77,18 @@ class SOLOHead(BaseMaskHead):
         self._init_layers()
 
     def _init_layers(self):
+        '''
+        Original init way
         self.ins_convs = ModuleList(
-            init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
+        init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
         self.cate_convs = ModuleList(
-            init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
+        init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
+        self.solo_ins_list = ModuleList(
+            init_cfg=dict(
+            type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01))
+        '''
+        self.ins_convs = nn.ModuleList()
+        self.cate_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
             chn = self.in_channels + 2 if i == 0 else self.seg_feat_channels
             self.ins_convs.append(
@@ -92,15 +110,26 @@ class SOLOHead(BaseMaskHead):
                     padding=1,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
-        self.solo_ins_list = ModuleList(
-            init_cfg=dict(
-                type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01))
+        self.solo_ins_list = nn.ModuleList()
         for seg_num_grid in self.seg_num_grids:
             self.solo_ins_list.append(
                 nn.Conv2d(self.seg_feat_channels, seg_num_grid**2, 1))
 
         self.solo_cate = nn.Conv2d(
             self.seg_feat_channels, self.cate_out_channels, 3, padding=1)
+
+    def init_weights(self):
+        # do not use init_cfg to init weights get the same acc
+        # 33.1 mAP
+        for m in self.ins_convs:
+            normal_init(m.conv, std=0.01)
+        for m in self.cate_convs:
+            normal_init(m.conv, std=0.01)
+        bias_ins = bias_init_with_prob(0.01)
+        for m in self.solo_ins_list:
+            normal_init(m, std=0.01, bias=bias_ins)
+        bias_cate = bias_init_with_prob(0.01)
+        normal_init(self.solo_cate, std=0.01, bias=bias_cate)
 
     @property
     def num_levels(self):
