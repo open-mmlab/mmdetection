@@ -324,15 +324,17 @@ def main():
 
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
-
-    train_detector(
-        model,
-        datasets,
-        cfg,
-        distributed=distributed,
-        validate=(not args.no_validate),
-        timestamp=timestamp,
-        meta=meta)
+    try:
+        train_detector(
+            model,
+            datasets,
+            cfg,
+            distributed=distributed,
+            validate=(not args.no_validate),
+            timestamp=timestamp,
+            meta=meta)
+    except KeyboardInterrupt:
+        print("Early Stopping triggered")
 
 
 if __name__ == '__main__':

@@ -601,6 +601,8 @@ class CocoDataset(CustomDataset):
                         f'{cocoEval.stats[coco_metric_names[metric_item]]:.3f}'
                     )
                     eval_results[key] = val
+                    if key == 'bbox_mAP':
+                        eval_results['mAP'] = val
                 ap = cocoEval.stats[:6]
                 eval_results[f'{metric}_mAP_copypaste'] = (
                     f'{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
