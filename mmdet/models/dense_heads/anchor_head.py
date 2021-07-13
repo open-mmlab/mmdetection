@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 import torch.nn as nn
 from mmcv.runner import force_fp32
@@ -95,6 +97,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # except SSD detectors
         self.num_anchors = self.prior_generator.num_base_anchors[0]
         self._init_layers()
+
+    @property
+    def anchor_generator(self):
+        warnings.warn('DeprecationWarning: anchor_generator is deprecated, '
+                      'please use "prior_generator" instead')
+        return self.prior_generator
 
     def _init_layers(self):
         """Initialize layers of the head."""
