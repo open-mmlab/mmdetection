@@ -45,7 +45,7 @@ centripetalnet = dict(
 )
 cornernet = dict(
     config='configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py',
-    checkpoint='cornernet_hourglass104_mstest_8x6_210e_coco/cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618-79b44c30.pth',  # noqa
+    checkpoint='cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618-79b44c30.pth',  # noqa
     eval='bbox',
     metric=dict(bbox_mAP=41.2),
 )
