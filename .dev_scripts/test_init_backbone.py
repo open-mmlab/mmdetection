@@ -106,9 +106,9 @@ def _check_backbone(config, print_cfg=True):
     try:
         init_cfg = cfg.model.backbone.init_cfg
         init_flag = True
-    except Warning:
+    except AttributeError:
         init_flag = False
-    if init_cfg is None:
+    if init_cfg is None or init_cfg.get('type') != 'Pretrained':
         init_flag = False
     if init_flag:
         checkpoint = _load_checkpoint(init_cfg.checkpoint)
@@ -227,7 +227,7 @@ def test_load_pretrained(config):
 
     Details please refer to `_check_backbone`
     """
-    _check_backbone(config, print_cfg=True)
+    _check_backbone(config, print_cfg=False)
 
 
 def _test_load_pretrained():
@@ -256,11 +256,13 @@ def _test_load_pretrained():
     # need to convert the model first.
     ignore_cfg_names += ['selfsup_pretrain']
 
-    #  the `init_cfg` in 'centripetalnet', 'cornernet', 'cityscapes' and
-    #  'scratch' is None.
+    # the `init_cfg` in 'centripetalnet', 'cornernet', 'cityscapes',
+    # 'scratch' is None.
+    # the `init_cfg` in ssdlite(`ssdlite_mobilenetv2_scratch_600e_coco.py`)
+    # is None
     #  Please confirm `bockbone.init_cfg` is None first.
-    ignores = ['centripetalnet', 'cornernet', 'cityscapes', 'scratch']
-
+    ignores_folder = ['centripetalnet', 'cornernet', 'cityscapes', 'scratch']
+    ignores_file = ['ssdlite_mobilenetv2_scratch_600e_coco.py']
     for config_file_name in os.listdir(config_path):
         if config_file_name in ignore_cfg_names:
             continue
@@ -272,6 +274,7 @@ def _test_load_pretrained():
                     init_cfg_name = _check_backbone(name)
                     if init_cfg_name is not None:
                         # ignore config files that `init_cfg` is None
-                        if config_file_name not in ignores:
+                        if config_file_name not in ignores_folder and \
+                                config_sub_file not in ignores_file:
                             check_cfg_names.append(name)
     return check_cfg_names
