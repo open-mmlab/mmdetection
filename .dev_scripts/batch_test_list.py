@@ -45,7 +45,7 @@ centripetalnet = dict(
 )
 cornernet = dict(
     config='configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py',
-    checkpoint='cornernet_hourglass104_mstest_10x5_210e_coco_20200824_185720-5fefbf1c.pth',  # noqa
+    checkpoint='cornernet_hourglass104_mstest_8x6_210e_coco/cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618-79b44c30.pth',  # noqa
     eval='bbox',
     metric=dict(bbox_mAP=41.2),
 )
@@ -275,7 +275,7 @@ rpn = dict(
 )
 sabl = [
     dict(
-        config='configs/sabl/sabl_retinanet_r50_fpn_1x_coco.py ',
+        config='configs/sabl/sabl_retinanet_r50_fpn_1x_coco.py',
         checkpoint='sabl_retinanet_r50_fpn_1x_coco-6c54fd4f.pth',
         eval='bbox',
         metric=dict(bbox_mAP=37.7),
@@ -301,7 +301,7 @@ sparse_rcnn = dict(
 )
 ssd = dict(
     config='configs/ssd/ssd300_coco.py',
-    checkpoint='ssd300_coco_20200307-a92d2092.pth',
+    checkpoint='ssd300_coco_20210604_193052-b61137df.pth',
     eval='bbox',
     metric=dict(bbox_mAP=25.6),
 )
@@ -337,7 +337,7 @@ yolof = dict(
 )
 centernet = dict(
     config='configs/centernet/centernet_resnet18_dcnv2_140e_coco.py',
-    checkpoint='centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth',  # noqa
+    checkpoint='centernet_resnet18_dcnv2_140e_coco_20210702_155131-c8cd631f.pth',  # noqa
     eval='bbox',
     metric=dict(bbox_mAP=29.5),
 )
