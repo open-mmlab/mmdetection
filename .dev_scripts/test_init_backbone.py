@@ -4,7 +4,7 @@ import os
 from os.path import dirname, exists, join
 
 import pytest
-from mmcv import Config
+from mmcv import Config, ProgressBar
 from mmcv.runner import _load_checkpoint
 
 from mmdet.models import build_detector
@@ -46,35 +46,43 @@ def _get_detector_cfg(fname):
 
 
 def _traversed_config_file():
-    """Traversed all potential config files under the `config` file."""
+    """We traversed all potential config files under the `config` file. If you
+    need to print details or debug code, you can use this function.
+
+    If the `backbone.init_cfg` is None (do not use `Pretrained` init way), you
+    need add the folder name in `ignores_folder` (if the config files in this
+    folder all set backbone.init_cfg is None) or add config name in
+    `ignores_file` (if the config file set backbone.init_cfg is None)
+    """
     config_path = _get_config_directory()
     check_cfg_names = []
 
     # `base`, `legacy_1.x` and `common` ignored by default.
-    ignore_cfg_names = ['_base_', 'legacy_1.x', 'common']
+    ignores_folder = ['_base_', 'legacy_1.x', 'common']
     # 'ld' need load teacher model, if want to check 'ld',
     # please check teacher_config path first.
-    ignore_cfg_names += ['ld']
+    ignores_folder += ['ld']
     # `selfsup_pretrain` need convert model, if want to check this model,
     # need to convert the model first.
-    ignore_cfg_names += ['selfsup_pretrain']
+    ignores_folder += ['selfsup_pretrain']
 
-    # the `init_cfg` in 'centripetalnet', 'cornernet', 'cityscapes' and
+    # the `init_cfg` in 'centripetalnet', 'cornernet', 'cityscapes',
     # 'scratch' is None.
+    # the `init_cfg` in ssdlite(`ssdlite_mobilenetv2_scratch_600e_coco.py`)
+    # is None
     # Please confirm `bockbone.init_cfg` is None first.
-    ignore_cfg_names += [
-        'centripetalnet', 'cornernet', 'cityscapes', 'scratch'
-    ]
+    ignores_folder += ['centripetalnet', 'cornernet', 'cityscapes', 'scratch']
+    ignores_file = ['ssdlite_mobilenetv2_scratch_600e_coco.py']
 
     for config_file_name in os.listdir(config_path):
-        if config_file_name in ignore_cfg_names:
-            continue
-        config_file = join(config_path, config_file_name)
-        if os.path.isdir(config_file):
-            for config_sub_file in os.listdir(config_file):
-                if config_sub_file.endswith('py'):
-                    name = join(config_file, config_sub_file)
-                    check_cfg_names.append(name)
+        if config_file_name not in ignores_folder:
+            config_file = join(config_path, config_file_name)
+            if os.path.isdir(config_file):
+                for config_sub_file in os.listdir(config_file):
+                    if config_sub_file.endswith('py') and \
+                            config_sub_file not in ignores_file:
+                        name = join(config_file, config_sub_file)
+                        check_cfg_names.append(name)
     return check_cfg_names
 
 
@@ -149,10 +157,7 @@ def _check_backbone(config, print_cfg=True):
             return config
 
 
-check_cfg_names = _traversed_config_file()
-
-
-@pytest.mark.parametrize('config', check_cfg_names)
+@pytest.mark.parametrize('config', _traversed_config_file())
 def test_load_pretrained(config):
     """Check out backbone whether successfully load pretrained model by using
     `backbone.init_cfg`.
@@ -166,44 +171,20 @@ def _test_load_pretrained():
     """We traversed all potential config files under the `config` file. If you
     need to print details or debug code, you can use this function.
 
-    Returns     check_cfg_names (list[str]): Config files that backbone
-    initialized         from pretrained checkpoint might be problematic. Need
-    to recheck         the config file. The output including the config files
-    that the         backbone.init_cfg is None
+    Returns:
+        check_cfg_names (list[str]): Config files that backbone initialized
+        from pretrained checkpoint might be problematic. Need to recheck
+        the config file. The output including the config files that the
+        backbone.init_cfg is None
     """
-    config_path = _get_config_directory()
-    check_cfg_names = []
+    check_cfg_names = _traversed_config_file()
+    need_check_cfg = []
 
-    # `base`, `legacy_1.x` and `common` ignored by default.
-    ignore_cfg_names = ['_base_', 'legacy_1.x', 'common']
-    # 'ld' need load teacher model, if want to check 'ld',
-    # please check teacher_config path first.
-    ignore_cfg_names += ['ld']
-    # `selfsup_pretrain` need convert model, if want to check this model,
-    # need to convert the model first.
-    ignore_cfg_names += ['selfsup_pretrain']
-
-    # the `init_cfg` in 'centripetalnet', 'cornernet', 'cityscapes',
-    # 'scratch' is None.
-    # the `init_cfg` in ssdlite(`ssdlite_mobilenetv2_scratch_600e_coco.py`)
-    # is None
-    #  Please confirm `bockbone.init_cfg` is None first.
-    ignores_folder = ['centripetalnet', 'cornernet', 'cityscapes', 'scratch']
-    ignores_file = ['ssdlite_mobilenetv2_scratch_600e_coco.py']
-    for config_file_name in os.listdir(config_path):
-        if config_file_name in ignore_cfg_names:
-            continue
-        config_file = join(config_path, config_file_name)
-        if os.path.isdir(config_file):
-            for config_sub_file in os.listdir(config_file):
-                if config_sub_file.endswith('py'):
-                    name = join(config_file, config_sub_file)
-                    init_cfg_name = _check_backbone(name)
-                    if init_cfg_name is not None:
-                        # ignore config files that `init_cfg` is None
-                        if config_file_name not in ignores_folder and \
-                                config_sub_file not in ignores_file:
-                            check_cfg_names.append(name)
+    prog_bar = ProgressBar(len(check_cfg_names))
+    for config in check_cfg_names:
+        init_cfg_name = _check_backbone(config)
+        if init_cfg_name is not None:
+            need_check_cfg.append(init_cfg_name)
+        prog_bar.update()
     print('These config files need to be checked again')
-    print(check_cfg_names)
-    return check_cfg_names
+    print(need_check_cfg)
