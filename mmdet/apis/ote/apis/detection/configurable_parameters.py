@@ -105,37 +105,6 @@ class MMDetectionParameters(DeepLearningConfigurableParameters):
             editable=True,
         )
 
-        learning_rate_schedule = Selectable(header="Learning rate schedule",
-                                            default_value="custom",
-                                            options=[Option(key="fixed",
-                                                            value="Fixed",
-                                                            description="Learning rate is kept fixed during training"),
-                                                     Option(key="exp",
-                                                            value="Exponential annealing",
-                                                            description="Learning rate is reduced exponentially"),
-                                                     Option(key="step",
-                                                            value="Step-wise annealing",
-                                                            description="Learning rate is reduced step-wise at "
-                                                                        "epoch 10"),
-                                                     Option(key="cyclic",
-                                                            value="Cyclic cosine annealing",
-                                                            description="Learning rate is gradually reduced and "
-                                                                        "increased during training, following a cosine "
-                                                                        "pattern. The pattern is repeated for two "
-                                                                        "cycles in one training run."),
-                                                     Option(key="custom",
-                                                            value="Custom",
-                                                            description="Learning rate schedule that is provided "
-                                                                        "with the model."),
-                                                     ],
-                                            description="Specify learning rate scheduling for the MMDetection task. "
-                                                        "When training for a small number of epochs (N < 10), the fixed"
-                                                        " schedule is recommended. For training for 10 < N < 25 epochs,"
-                                                        " step-wise or exponential annealing might give better results."
-                                                        " Finally, for training on large datasets for at least 20 "
-                                                        "epochs, cyclic annealing could result in the best model.",
-                                            editable=True)
-
         nncf_config = Selectable(header="NNCF config file",
                                  default_value='compression_config.json',
                                  options=[Option(key='compression_config.json', value='compression_config.json',

@@ -1,3 +1,6 @@
+_base_ = [
+    './original_data_pipeline.py'
+]
 model = dict(
     type='ATSS',
     backbone=dict(
@@ -52,7 +55,7 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100))
 
-evaluation = dict(interval=500, metric=['bbox'])
+evaluation = dict(interval=500, metric='mAP')
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict()
 lr_config = dict(

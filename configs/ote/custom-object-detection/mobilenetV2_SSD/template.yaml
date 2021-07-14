@@ -29,7 +29,6 @@ hyper_parameters:
   params:
     learning_parameters:
       batch_size: 10
-      learning_rate_schedule: custom
       learning_rate: 0.01
       learning_rate_warmup_iters: 1200
     algo_backend:

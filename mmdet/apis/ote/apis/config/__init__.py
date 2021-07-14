@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .configuration_manager import MMDetectionConfigManager
+from .configuration_manager import MMDetectionConfigManager, ConfigManager
 from .config_mapper import ConfigMappings
 from .task_types import MMDetectionTaskType
 
-__all__ = [MMDetectionConfigManager, ConfigMappings, MMDetectionTaskType]
+__all__ = [MMDetectionConfigManager, ConfigManager, ConfigMappings, MMDetectionTaskType]

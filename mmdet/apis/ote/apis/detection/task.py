@@ -58,11 +58,9 @@ from mmcv.parallel import MMDataParallel
 from mmcv.utils import Config
 from mmcv.runner import load_checkpoint
 
-from .configurable_parameters import MMDetectionParameters
-from ..config import MMDetectionConfigManager, MMDetectionTaskType
+from mmdet.apis.ote.apis.detection.configurable_parameters import MMDetectionParameters
+from ..config import MMDetectionConfigManager, MMDetectionTaskType, ConfigManager
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook, OTEProgressHook
-from mmdet.integration.nncf import wrap_nncf_model
-from mmdet.apis import get_fake_input
 
 # The following imports are needed to register the custom datasets and hooks as modules in the
 # mmdetection framework. They are not used directly in this file, but they have to be here for the registration to work
@@ -85,31 +83,31 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         Task for training object detection models using OTEDetection.
 
         """
-        logger.info(f"Loading OTEDetection task of type 'Detection' with task ID {task_environment.task_node.id}.")
-
-        # Temp directory to store logs and model checkpoints
+        logger.info(f"Loading OTEDetection task with task ID {task_environment.task_node.id}.")
         self.scratch_space = tempfile.mkdtemp(prefix="ote-scratch-")
         logger.info(f"Scratch space created at {self.scratch_space}")
         self.mmdet_logger = get_root_logger(log_file=os.path.join(self.scratch_space, 'mmdet.log'))
 
         self.task_environment = task_environment
-
-        # Initialize configuration manager to manage the configuration for the mmdetection framework, for this
-        # particular task type and task environment
-        self.config_manager = MMDetectionConfigManager(task_environment=task_environment,
-                                                       task_type=MMDetectionTaskType.OBJECTDETECTION,
-                                                       scratch_space=self.scratch_space)
         self.labels = task_environment.labels
+        hyperparams = task_environment.get_configurable_parameters(instance_of=MMDetectionParameters)
+        self.model_name = hyperparams.algo_backend.model_name.value
+        template_file_path = hyperparams.algo_backend.template.value
+        base_dir = os.path.abspath(os.path.dirname(template_file_path))
+        config_file_path = os.path.join(base_dir, hyperparams.algo_backend.model.value)
+        config = Config.fromfile(config_file_path)
+
+        self.config_manager = ConfigManager(config, hyperparams, self.labels, self.scratch_space)
+
         self.should_stop = False
         self.is_training = False
+        self.time_monitor = None
 
         # Model initialization.
         self.train_model = None
         self.inference_model = None
-        self.compression_ctx = None
-        self.learning_curves = defaultdict(OTELoggerHook.Curve)
-        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0)
         self.load_model(self.task_environment)
+        # FIXME. Reinit config manager?
 
     def _create_model(self, config: Config, from_scratch: bool = False):
         """
@@ -122,11 +120,9 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         model_cfg = copy.deepcopy(config.model)
 
-        self.learning_curves = defaultdict(OTELoggerHook.Curve)
-
         init_from = config.get('load_from', None)
         if from_scratch:
-            model_cfg.pretrained = None
+            # model_cfg.pretrained = None
             init_from = None
         logger.warning(init_from)
         if init_from is not None:
@@ -163,12 +159,13 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             self.inference_model.cfg.data.test.ote_dataset = dataset
             mm_test_dataset = build_dataset(copy.deepcopy(self.inference_model.cfg.data.test))
             # Use a single gpu for testing. Set in both mm_test_dataloader and prediction_model
+            config = self.config_manager.config
             mm_test_dataloader = build_dataloader(mm_test_dataset, samples_per_gpu=batch_size, num_gpus=1, dist=False,
-                                                  workers_per_gpu=self.config_manager.config.data.workers_per_gpu,
+                                                  workers_per_gpu=config.data.workers_per_gpu,
                                                   shuffle=False)
             # TODO. Support multi-gpu distributed setup.
-            prediction_model = MMDataParallel(self.inference_model.cuda(self.config_manager.config.gpu_ids[0]),
-                                              device_ids=self.config_manager.config.gpu_ids)
+            prediction_model = MMDataParallel(self.inference_model.cuda(config.gpu_ids[0]),
+                                              device_ids=config.gpu_ids)
             prediction_results = single_gpu_test(prediction_model, mm_test_dataloader, show=False)
 
         # Loop over dataset again to assign predictions. Convert from MMdetection format to OTE format
@@ -187,7 +184,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
                     if probability < confidence_threshold:
                         continue
 
-                    assigned_label = [ScoredLabel(self.config_manager.config.labels[label_idx],
+                    assigned_label = [ScoredLabel(self.config_manager.labels[label_idx],
                                                   probability=probability)]
                     if coords[3] - coords[1] <= 0 or coords[2] - coords[0] <= 0:
                         continue
@@ -239,7 +236,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             torch_model = self._create_model(config=model_config, from_scratch=False)
             self.train_model = torch_model
             self.inference_model = copy.deepcopy(self.train_model)
-            logger.info(f"No trained model in project yet. Created new model with '{self.config_manager.model_name}' "
+            logger.info(f"No trained model in project yet. Created new model with '{self.model_name}' "
                         f"architecture and general-purpose pretrained weights.")
 
         # Set the model configs. Inference always uses the config that came with the model, while training uses the
@@ -259,17 +256,18 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             logger.info("Evaluating model.")
             # Build the dataset with the correct data configuration. Config has to come from the model, not the
             # config_manager, because architecture might have changed
-            model = self.config_manager.update_dataset_subsets(dataset, model)
-            mm_val_dataset = build_dataset(model.cfg.data.test)
+            # model = self.config_manager.update_dataset_subsets(dataset, model)
+            test_config = self.config_manager.prepare_for_testing(model.cfg, dataset)
+            mm_val_dataset = build_dataset(test_config.data.test)
             batch_size = 1
             mm_val_dataloader = build_dataloader(mm_val_dataset,
                                                  samples_per_gpu=batch_size,
-                                                 workers_per_gpu=self.config_manager.config.data.workers_per_gpu,
+                                                 workers_per_gpu=test_config.data.workers_per_gpu,
                                                  num_gpus=1,
                                                  dist=False,
                                                  shuffle=False)
-            eval_model = MMDataParallel(model.cuda(self.config_manager.config.gpu_ids[0]),
-                                        device_ids=self.config_manager.config.gpu_ids)
+            eval_model = MMDataParallel(model.cuda(test_config.gpu_ids[0]),
+                                        device_ids=test_config.gpu_ids)
             # Use a single gpu for testing. Set in both mm_val_dataloader and eval_model
             eval_predictions = single_gpu_test(eval_model, mm_val_dataloader, show=False)
             eval_results = mm_val_dataset.evaluate(eval_predictions, metric='mAP')
@@ -295,20 +293,12 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
     def train(self, dataset: Dataset, train_parameters: Optional[TrainParameters] = None) -> Model:
         """ Trains a model on a dataset """
 
-        # FIXME. Looks like implementation is not intuitive here. This is what it does now:
-        # 1. Build the dataset in a proper format for training. (fine).
-        # 2. Overrides training model, if there is need to reset the weights and train from scratch. (fine).
-        # 3. Evaluates performance before training. (could be done at the upper level via analyze/performace interface).
-        # 4. Do training. (fine).
-        # 5. Evaluate the best obtained model and check if it improved. (see 3).
-        # 6. If model improved (over what?), replace it in task_environment. (this is a side-effect which, IMO, better be ommited here).
-
         if self.train_model is None:
             raise ValueError("Training model is not initialized. Please load the trainable model to the task before training.")
 
         # Create a directory to store model checkpoints for this training round. Also writes the model config to a file
         # 'config.py' in that directory, for debugging purposes.
-        self.config_manager.prepare_work_dir(self.scratch_space)
+        # self.config_manager.prepare_work_dir(self.scratch_space)
 
         # Create new train_model if training from scratch.
         old_train_model = copy.deepcopy(self.train_model)
@@ -333,30 +323,19 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         self.train_model.cfg = self.config_manager.config_copy
         inference_model = copy.deepcopy(self.train_model)
         inference_model.eval()
-        # print(self.config_manager.config_to_string(self.train_model.cfg))
+        print(self.config_manager.config_to_string(self.train_model.cfg))
 
-        self.config_manager.update_dataset_subsets(dataset)
-        mm_train_dataset = build_dataset(self.config_manager.config.data.train)
-        config = self.config_manager.config_copy
-        config.log_config.hooks = [{'type': 'OTELoggerHook', 'curves': self.learning_curves}]
-        if config.get('custom_hooks', None) is None:
-            config.custom_hooks = []
-        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0) # It will be initialized properly inside the OTEProgressHook before training.
-        config.custom_hooks.append({'type': 'OTEProgressHook', 'time_monitor': self.time_monitor, 'verbose': True})
-        total_iterations = config.runner.max_iters
-        # FIXME. It is hard to define evaluation and checkpoint frequency in absolute number of iterations.
-        # This way those are defined in percentage of total training iterations, which is better, but still not perfect.
-        # It might be even better to control it in terms of training time, but not clear how.
-        # FIXME. It'd make sense to make number of evaluations/checkpoints configurable at least.
-        config.evaluation.interval = total_iterations // 10
-        config.checkpoint_config.interval = total_iterations // 10
-
-        # Train the model. Training modifies mmdet config in place, so make a deepcopy
+        # Run training.
+        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0)
+        learning_curves = defaultdict(OTELoggerHook.Curve)
+        training_config = self.config_manager.prepare_for_training(self.train_model.cfg, dataset,
+                                                                   self.time_monitor, learning_curves)
+        mm_train_dataset = build_dataset(training_config.data.train)
         self.is_training = True
         start_train_time = time.time()
         train_detector(model=self.train_model,
                        dataset=mm_train_dataset,
-                       cfg=config,
+                       cfg=training_config,
                        validate=True)
         training_duration = time.time() - start_train_time
 
@@ -369,18 +348,10 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             return self.task_environment.model
 
         # Load the best weights and check if model has improved
-        training_metrics = self._generate_training_metrics_group()
-        best_checkpoint_path = os.path.join(self.train_model.cfg.work_dir, 'latest.pth')
-        if self.train_model.cfg.get('nncf_config'):
-            self.train_model = None
-            cfg = inference_model.cfg
-            cfg.load_from = best_checkpoint_path
-            self.compression_ctx, inference_model = wrap_nncf_model(inference_model, cfg, None, get_fake_input)
-            cfg.load_from = None
-            inference_model.cfg = cfg
-        else:
-            best_checkpoint = torch.load(best_checkpoint_path)
-            inference_model.load_state_dict(best_checkpoint['state_dict'])
+        training_metrics = self._generate_training_metrics_group(learning_curves)
+        best_checkpoint_path = os.path.join(training_config.work_dir, 'latest.pth')
+        best_checkpoint = torch.load(best_checkpoint_path)
+        inference_model.load_state_dict(best_checkpoint['state_dict'])
 
         # Evaluate model performance after training.
         logger.warning('POSTEVALUATION')
@@ -405,6 +376,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
             self.train_model = old_train_model
 
         self.is_training = False
+        self.time_monitor = None
         return self.task_environment.model
 
     def get_training_progress(self) -> float:
@@ -413,7 +385,10 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         :return: training progress in percent
         """
-        return self.time_monitor.get_progress()
+        if self.time_monitor is not None:
+            return self.time_monitor.get_progress()
+        return -1.0
+
 
     def cancel_training(self):
         """
@@ -455,7 +430,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
 
         return f_measure_metrics.get_performance()
 
-    def _generate_training_metrics_group(self) -> Optional[List[MetricsGroup]]:
+    def _generate_training_metrics_group(self, learning_curves) -> Optional[List[MetricsGroup]]:
         """
         Parses the mmdetection logs to get metrics from the latest training run
 
@@ -464,24 +439,14 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         output: List[MetricsGroup] = []
 
         # Model architecture
-        architecture = InfoMetric(name='Model architecture', value=self.config_manager.model_name)
+        architecture = InfoMetric(name='Model architecture', value=self.model_name)
         visualization_info_architecture = VisualizationInfo(name="Model architecture",
                                                             visualisation_type=VisualizationType.TEXT)
         output.append(MetricsGroup(metrics=[architecture],
                                    visualization_info=visualization_info_architecture))
 
-        # Learning rate schedule
-        learning_rate_schedule = InfoMetric(
-            name='Model architecture',
-            value=self.config_manager.get_lr_schedule_friendly_name(self.train_model.cfg.lr_config.policy)
-        )
-        visualization_info_lr_schedule = VisualizationInfo(name="Learning rate schedule",
-                                                           visualisation_type=VisualizationType.TEXT)
-        output.append(MetricsGroup(metrics=[learning_rate_schedule],
-                                   visualization_info=visualization_info_lr_schedule))
-
         # Learning curves
-        for key, curve in self.learning_curves.items():
+        for key, curve in learning_curves.items():
             metric_curve = CurveMetric(xs=curve.x, ys=curve.y, name=key)
             visualization_info = LineChartInfo(name=key, x_axis_label="Epoch", y_axis_label=key)
             output.append(MetricsGroup(metrics=[metric_curve], visualization_info=visualization_info))
@@ -545,7 +510,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IConfigurableParameters, IMod
         """
         new_conf_params = self.get_configurable_parameters(task_environment)
         self.task_environment = task_environment
-        self.config_manager.update_project_configuration(new_conf_params)
+        self.config_manager.set_hyperparams(new_conf_params)
 
     def _get_confidence(self, is_evaluation: bool) -> Tuple[float, float, bool]:
         """
