@@ -11,12 +11,13 @@ from .coco import CocoDataset
 
 try:
     import panopticapi
-    from panopticapi.evaluation import pq_compute_multi_core
-    from panopticapi.utils import IdGenerator
+    from panopticapi.evaluation import pq_compute_multi_core, VOID
+    from panopticapi.utils import id2rgb
 except ImportError:
     panopticapi = None
     pq_compute_multi_core = None
-    IdGenerator = None
+    id2rgb = None
+    VOID = None
 
 __all__ = ['CocoPanopticDataset']
 
@@ -141,13 +142,6 @@ class CocoPanopticDataset(CocoDataset):
             },
             ...
         ]
-
-    Args:
-        cats_json (str | list): Path of 'panoptic_coco_categories.json' in
-            'panopticapi'. Or the loaded categories list.
-            Must be specified, it will be used in evalutation.
-        formatter (str): the formatter for the image name of a dataset.
-            Default: '{:012}.png'.
     """
     CLASSES = [
         'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -204,15 +198,6 @@ class CocoPanopticDataset(CocoDataset):
         'rock-merged', 'wall-other-merged', 'rug-merged'
     ]
 
-    def __init__(self, cats_json, formatter='{:012}.png', **kwargs):
-        assert isinstance(cats_json, str) or isinstance(cats_json, list)
-        # Path of 'panoptic_coco_categories.json'
-        if isinstance(cats_json, str):
-            cats_json = mmcv.load(cats_json)
-        self.categories = {cat['id']: cat for cat in cats_json}
-        self.formatter = formatter
-        super(CocoPanopticDataset, self).__init__(**kwargs)
-
     def load_annotations(self, ann_file):
         """Load annotation from COCO Panoptic style annotation file.
 
@@ -225,11 +210,13 @@ class CocoPanopticDataset(CocoDataset):
         self.coco = COCOPanoptic(ann_file)
         self.cat_ids = self.coco.get_cat_ids()
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
+        self.categories = self.coco.cats
         self.img_ids = self.coco.get_img_ids()
         data_infos = []
         for i in self.img_ids:
             info = self.coco.load_imgs([i])[0]
             info['filename'] = info['file_name']
+            info['segm_file'] = info['filename'].replace('jpg', 'png')
             data_infos.append(info)
         return data_infos
 
@@ -247,13 +234,13 @@ class CocoPanopticDataset(CocoDataset):
         ann_info = self.coco.load_anns(ann_ids)
         # filter out unmatched images
         ann_info = [i for i in ann_info if i['image_id'] == img_id]
-        return self._parse_ann_info(img_id, ann_info)
+        return self._parse_ann_info(self.data_infos[idx], ann_info)
 
-    def _parse_ann_info(self, img_id, ann_info):
-        """Parse annotations and load panoptic gts.
+    def _parse_ann_info(self, img_info, ann_info):
+        """Parse annotations and load panoptic ground truths.
 
         Args:
-            img_id (int): The index of an image.
+            img_info (int): Image info of an image.
             ann_info (list[dict]): Annotation info of an image.
 
         Returns:
@@ -308,7 +295,7 @@ class CocoPanopticDataset(CocoDataset):
             labels=gt_labels,
             bboxes_ignore=gt_bboxes_ignore,
             masks=gt_mask_infos,
-            seg_map=self.formatter.format(img_id))
+            seg_map=img_info['segm_file'])
 
         return ann
 
@@ -340,39 +327,40 @@ class CocoPanopticDataset(CocoDataset):
     def _pan2json(self, results, outfile_prefix):
         """Convert panoptic results to COCO panoptic json style."""
         label2cat = dict((v, k) for (k, v) in self.cat2label.items())
-        id_generator = IdGenerator(self.categories)
         pan_json_results = []
         outdir = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
 
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
+            segm_file = self.data_infos[idx]['segm_file']
             pan = results[idx]
-            pan_format = np.zeros((pan.shape[0], pan.shape[1], 3),
-                                  dtype=np.uint8)
 
             pan_labels = np.unique(pan)
             segm_info = []
             for pan_label in pan_labels:
                 sem_label = pan_label % INSTANCE_OFFSET
-                # convert sem_label to json label
+                # We reserve the length of self.CLASSES for VOID label
                 if sem_label == len(self.CLASSES):
                     continue
+                # convert sem_label to json label
                 cat_id = label2cat[sem_label]
-                segment_id, color = id_generator.get_id_and_color(cat_id)
+                is_thing = self.categories[cat_id]['isthing']
                 mask = pan == pan_label
                 area = mask.sum()
                 segm_info.append({
-                    'id': segment_id,
+                    'id': int(pan_label),
                     'category_id': cat_id,
+                    'isthing': is_thing,
                     'area': int(area)
                 })
-                pan_format[mask] = color
-            mmcv.imwrite(pan_format[..., ::-1],
-                         os.path.join(outdir, self.formatter.format(img_id)))
+            # evaluation script uses 0 for VOID label.
+            pan[pan % INSTANCE_OFFSET == len(self.CLASSES)] = VOID
+            pan = id2rgb(pan).astype(np.uint8)
+            mmcv.imwrite(pan[:, :, ::-1], os.path.join(outdir, segm_file))
             record = {
                 'image_id': img_id,
                 'segments_info': segm_info,
-                'file_name': self.formatter.format(img_id)
+                'file_name': segm_file
             }
             pan_json_results.append(record)
         return pan_json_results
