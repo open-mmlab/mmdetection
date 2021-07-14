@@ -347,18 +347,6 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
                                                       self.test_cfg)
         return det_bboxes, det_labels
 
-        if with_nms:
-            if det_labels.numel() > 0:
-                max_num = self.test_cfg.max_per_img
-                det_bboxes, keep = batched_nms(det_bboxes[:, :4],
-                                               det_bboxes[:, -1].contiguous(),
-                                               det_labels, self.test_cfg.nms)
-                if max_num > 0:
-                    det_bboxes = det_bboxes[:max_num]
-                    det_labels = det_labels[keep][:max_num]
-
-        return det_bboxes, det_labels
-
     def decode_heatmap(self,
                        center_heatmap_pred,
                        wh_pred,
