@@ -112,100 +112,32 @@ def _check_backbone(config, print_cfg=True):
         init_flag = False
     if init_flag:
         checkpoint = _load_checkpoint(init_cfg.checkpoint)
+        if 'state_dict' in checkpoint:
+            state_dict = checkpoint['state_dict']
+        else:
+            state_dict = checkpoint
+
         model = build_detector(
             cfg.model,
             train_cfg=cfg.get('train_cfg'),
             test_cfg=cfg.get('test_cfg'))
         model.init_weights()
 
-        layers = []
-        names = []
-        checkpoint_names = []
-        layer_indexes = []
-        darknet_indexs = []
-        for name in model.backbone.state_dict():
+        checkpoint_layers = dict()
+        backbone_layers = dict()
+        for name, value in state_dict.items():
             split_name = name.split('.')
             if split_name[-1] == 'weight':
-                if 'stem' in split_name[0]:
-                    layers.append(split_name[0])
-                    layer_indexes.append(split_name[1])
-                    checkpoint_names.append(name)
-                    names.append(None)
-                    darknet_indexs.append(None)
-                if 'features' in split_name[0]:
-                    names.append(None)
-                    checkpoint_names.append(name)
-                    layer_indexes.append(split_name[1])
-                    layers.append(split_name[0])
-                    darknet_indexs.append(None)
-                if 'conv' in split_name[-2]:
-                    # conv
-                    if len(split_name) == 2:
-                        # conv in backbone
-                        names.append(split_name[-2])
-                        checkpoint_names.append(name)
-                        layer_indexes.append(None)
-                        layers.append(None)
-                        darknet_indexs.append(None)
-                    elif len(split_name) == 3:
-                        # darknet
-                        names.append(split_name[-2])
-                        checkpoint_names.append(name)
-                        layer_indexes.append(None)
-                        layers.append(split_name[0])
-                        darknet_indexs.append(None)
-                        # vgg
-                    elif len(split_name) == 4:
-                        if 'layer' in split_name[0]:
-                            # resnet
-                            names.append(split_name[-2])
-                            checkpoint_names.append(name)
-                            layer_indexes.append(split_name[1])
-                            layers.append(split_name[0])
-                            darknet_indexs.append(None)
-                    elif len(split_name) == 5:
-                        if 'conv_res' in split_name[0]:
-                            names.append(split_name[-2])
-                            checkpoint_names.append(name)
-                            layer_indexes.append(split_name[2])
-                            layers.append(split_name[0])
-                            darknet_indexs.append(split_name[1])
+                checkpoint_layers[name] = value.sum()
+        for name, value in model.backbone.state_dict().items():
+            split_name = name.split('.')
+            if split_name[-1] == 'weight':
+                backbone_layers[name] = value.sum()
 
-        assert len(names) > 0
-        assert len(names) == len(checkpoint_names) == \
-               len(layer_indexes) == len(layers) == len(darknet_indexs)
-        for i in range(len(names)):
-            if 'state_dict' in checkpoint:
-                state_dict = checkpoint['state_dict']
-            else:
-                state_dict = checkpoint
-            weight_sum = state_dict[checkpoint_names[i]].sum()
-            if layer_indexes[i] is None:
-                if layers[i] is None:
-                    after_init_weight_sum = getattr(model.backbone,
-                                                    names[i]).weight.sum()
-                else:
-                    layer = getattr(model.backbone, layers[i])
-                    after_init_weight_sum = getattr(layer,
-                                                    names[i]).weight.sum()
-            else:
-                if darknet_indexs[i] is not None:
-                    layer = getattr(model.backbone, layers[i])
-                    conv = getattr(layer, darknet_indexs[i])
-                    conv = getattr(conv, layer_indexes[i])
-                    after_init_weight_sum = getattr(conv,
-                                                    names[i]).weight.sum()
-                else:
-                    if names[i] is None:
-                        conv = getattr(model.backbone,
-                                       layers[i])[int(layer_indexes[i])]
-                        after_init_weight_sum = conv.weight.sum()
-                    else:
-                        layer = getattr(model.backbone,
-                                        layers[i])[int(layer_indexes[i])]
-                        after_init_weight_sum = getattr(layer,
-                                                        names[i]).weight.sum()
-            assert weight_sum == after_init_weight_sum
+        check_layers = list(set(backbone_layers) & set(checkpoint_layers))
+        for layer_name in check_layers:
+            assert backbone_layers[layer_name] == checkpoint_layers[layer_name]
+
         if print_cfg:
             print('-' * 10 + 'Successfully load checkpoint' + '-' * 10 +
                   '\n', )
