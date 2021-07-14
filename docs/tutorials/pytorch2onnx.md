@@ -228,13 +228,13 @@ Notes:
 	    <td align="center" rowspan="2"><code>configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py</code></td>
 	    <td align="center">Box AP</td>
 	    <td align="center">41.2</td>
-	    <td align="center">-</td>
-	    <td align="center">-</td>
+	    <td align="center">41.2</td>
+	    <td align="center"></td>
 	</tr>
 	<tr>
 	    <td align="center">Mask AP</td>
 	    <td align="center">35.9</td>
-	    <td align="center">-</td>
+	    <td align="center">34.8</td>
 	    <td align="center">-</td>
 	</tr>
 
