@@ -166,15 +166,10 @@ def _test_load_pretrained():
     """We traversed all potential config files under the `config` file. If you
     need to print details or debug code, you can use this function.
 
-    Returns
-        check_cfg_names (list[str]): Config files that backbone initialized
-            from pretrained checkpoint might be problematic. Need to recheck
-            the config file. The output including the config files that the
-            backbone.init_cfg is None
-    # >>> from test_init_backbone import _test_load_pretrained
-    # >>> check_cfg_names = _test_load_pretrained()
-    # >>> print('These config files need to be checked again')
-    # >>> print(check_cfg_names)
+    Returns     check_cfg_names (list[str]): Config files that backbone
+    initialized         from pretrained checkpoint might be problematic. Need
+    to recheck         the config file. The output including the config files
+    that the         backbone.init_cfg is None
     """
     config_path = _get_config_directory()
     check_cfg_names = []
@@ -209,4 +204,6 @@ def _test_load_pretrained():
                         if config_file_name not in ignores_folder and \
                                 config_sub_file not in ignores_file:
                             check_cfg_names.append(name)
+    print('These config files need to be checked again')
+    print(check_cfg_names)
     return check_cfg_names
