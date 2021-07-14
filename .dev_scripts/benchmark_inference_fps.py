@@ -91,3 +91,16 @@ if __name__ == '__main__':
     if args.out:
         mmcv.mkdir_or_exist(args.out)
         mmcv.dump(result_dict, osp.join(args.out, 'batch_inference_fps.json'))
+
+    format_strs = ["| model | fps | times_pre_image(ms) | \n | ----- | ---- | ---- | \n"]
+    for key, value in result_dict.items():
+        config = key.replace('configs/', '')
+        if isinstance(value, dict):
+            fps = value['fps']
+            ms_times_pre_image = value['ms_times_pre_image']
+            format_strs.append(f'| {config} | {fps} | {ms_times_pre_image}| \n')
+        else:
+            print(f'==== {config} error ====')
+
+    format_strs = ''.join(format_strs)
+    print(format_strs)
