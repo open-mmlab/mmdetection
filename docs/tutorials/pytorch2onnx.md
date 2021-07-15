@@ -206,7 +206,7 @@ Notes:
 	    <td align="center">Box AP</td>
 	    <td align="center">40.3</td>
 	    <td align="center">40.3</td>
-	    <td align="center">-</td>
+	    <td align="center">40.1</td>
 	</tr>
 
   <tr >
@@ -229,13 +229,13 @@ Notes:
 	    <td align="center">Box AP</td>
 	    <td align="center">41.2</td>
 	    <td align="center">41.2</td>
-	    <td align="center"></td>
+	    <td align="center">40.9</td>
 	</tr>
 	<tr>
 	    <td align="center">Mask AP</td>
 	    <td align="center">35.9</td>
 	    <td align="center">34.8</td>
-	    <td align="center">-</td>
+	    <td align="center">34.5</td>
 	</tr>
 
 
