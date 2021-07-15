@@ -198,4 +198,12 @@ class TwoStageDetector(BaseDetector):
         img_metas[0]['img_shape_for_onnx'] = img_shape
         x = self.extract_feat(img)
         proposals = self.rpn_head.onnx_export(x, img_metas)
-        return self.roi_head.onnx_export(x, proposals, img_metas)
+        if hasattr(self.roi_head, 'onnx_export'):
+            return self.roi_head.onnx_export(x, proposals, img_metas)
+        else:
+            raise NotImplementedError(
+                f'{self.__class__.__name__} can not '
+                f'be exported to ONNX. Please refer to the '
+                f'list of supported models,'
+                f'https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html#list-of-supported-models-exportable-to-onnx'  # noqa E501
+            )
