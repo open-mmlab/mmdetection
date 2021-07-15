@@ -654,6 +654,24 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
 
+        nms_pre_classwise = cfg.get('nms_pre_classwise', -1)
+        if nms_pre_classwise > 0:
+            if cfg.get('nms_pre', -1) > 0:
+                raise RuntimeError('nms_pre and nms_pre_classwise are mutually exclusive.')
+            new_mlvl_scores = []
+            new_mlvl_boxes = []
+            for class_id in range(self.num_classes):
+                _, topk_inds = topk(mlvl_scores[:, class_id], nms_pre_classwise)
+                boxes = mlvl_bboxes[topk_inds]
+                scores = torch.zeros_like(mlvl_scores[topk_inds])
+                scores[:, class_id] = mlvl_scores[topk_inds, class_id]
+
+                new_mlvl_scores.append(scores)
+                new_mlvl_boxes.append(boxes)
+
+            mlvl_scores = torch.cat(new_mlvl_scores)
+            mlvl_bboxes = torch.cat(new_mlvl_boxes)
+
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
             # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
