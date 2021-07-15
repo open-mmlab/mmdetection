@@ -267,45 +267,44 @@ class SparseRoIHead(CascadeRoIHead):
                 np.zeros((0, 5), dtype=np.float32)
                 for i in range(self.bbox_head[-1].num_classes)
             ]] * num_imgs
+            return bbox_results
+
+        for stage in range(self.num_stages):
+            rois = bbox2roi(proposal_list)
+            bbox_results = self._bbox_forward(stage, x, rois, object_feats,
+                                              img_metas)
+            object_feats = bbox_results['object_feats']
+            cls_score = bbox_results['cls_score']
+            proposal_list = bbox_results['detach_proposal_list']
+
+        num_classes = self.bbox_head[-1].num_classes
+        det_bboxes = []
+        det_labels = []
+
+        if self.bbox_head[-1].loss_cls.use_sigmoid:
+            cls_score = cls_score.sigmoid()
         else:
-            for stage in range(self.num_stages):
-                rois = bbox2roi(proposal_list)
-                bbox_results = self._bbox_forward(stage, x, rois, object_feats,
-                                                  img_metas)
-                object_feats = bbox_results['object_feats']
-                cls_score = bbox_results['cls_score']
-                proposal_list = bbox_results['detach_proposal_list']
+            cls_score = cls_score.softmax(-1)[..., :-1]
 
-            num_classes = self.bbox_head[-1].num_classes
-            det_bboxes = []
-            det_labels = []
+        for img_id in range(num_imgs):
+            cls_score_per_img = cls_score[img_id]
+            scores_per_img, topk_indices = cls_score_per_img.flatten(
+                0, 1).topk(
+                    self.test_cfg.max_per_img, sorted=False)
+            labels_per_img = topk_indices % num_classes
+            bbox_pred_per_img = proposal_list[img_id][topk_indices //
+                                                      num_classes]
+            if rescale:
+                scale_factor = img_metas[img_id]['scale_factor']
+                bbox_pred_per_img /= bbox_pred_per_img.new_tensor(scale_factor)
+            det_bboxes.append(
+                torch.cat([bbox_pred_per_img, scores_per_img[:, None]], dim=1))
+            det_labels.append(labels_per_img)
 
-            if self.bbox_head[-1].loss_cls.use_sigmoid:
-                cls_score = cls_score.sigmoid()
-            else:
-                cls_score = cls_score.softmax(-1)[..., :-1]
-
-            for img_id in range(num_imgs):
-                cls_score_per_img = cls_score[img_id]
-                scores_per_img, topk_indices = cls_score_per_img.flatten(
-                    0, 1).topk(
-                        self.test_cfg.max_per_img, sorted=False)
-                labels_per_img = topk_indices % num_classes
-                bbox_pred_per_img = proposal_list[img_id][topk_indices //
-                                                          num_classes]
-                if rescale:
-                    scale_factor = img_metas[img_id]['scale_factor']
-                    bbox_pred_per_img /= bbox_pred_per_img.new_tensor(
-                        scale_factor)
-                det_bboxes.append(
-                    torch.cat([bbox_pred_per_img, scores_per_img[:, None]],
-                              dim=1))
-                det_labels.append(labels_per_img)
-
-            bbox_results = [
-                bbox2result(det_bboxes[i], det_labels[i], num_classes)
-                for i in range(num_imgs)
-            ]
+        bbox_results = [
+            bbox2result(det_bboxes[i], det_labels[i], num_classes)
+            for i in range(num_imgs)
+        ]
         return bbox_results
 
     def aug_test(self, features, proposal_list, img_metas, rescale=False):

@@ -102,6 +102,13 @@ def test_sparse_rcnn_forward():
                                       return_loss=False)
             batch_results.append(result)
 
+    # test empty proposal in roi_head
+    with torch.no_grad():
+        # test no proposal in the whole batch
+        detector.roi_head.simple_test([imgs[0][None, :]], torch.empty(
+            (1, 0, 4)), torch.empty((1, 100, 4)), [img_metas[0]],
+                                      torch.ones((1, 4)))
+
 
 def test_rpn_forward():
     model = _get_detector_cfg('rpn/rpn_r50_fpn_1x_coco.py')

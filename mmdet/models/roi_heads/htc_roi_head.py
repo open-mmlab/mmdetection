@@ -344,64 +344,72 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         rcnn_test_cfg = self.test_cfg
 
         rois = bbox2roi(proposal_list)
+
         if rois.shape[0] == 0:
             # There is no proposal in the whole batch
-            det_bboxes = [rois.new_zeros(0, 5)] * num_imgs
-            det_labels = [rois.new_zeros((0, ), dtype=torch.long)] * num_imgs
-            bbox_result = [[
+            bbox_results = [[
                 np.zeros((0, 5), dtype=np.float32)
                 for _ in range(self.bbox_head[-1].num_classes)
             ]] * num_imgs
-        else:
-            for i in range(self.num_stages):
-                bbox_head = self.bbox_head[i]
-                bbox_results = self._bbox_forward(
-                    i, x, rois, semantic_feat=semantic_feat)
-                # split batch bbox prediction back to each image
-                cls_score = bbox_results['cls_score']
-                bbox_pred = bbox_results['bbox_pred']
-                num_proposals_per_img = tuple(len(p) for p in proposal_list)
-                rois = rois.split(num_proposals_per_img, 0)
-                cls_score = cls_score.split(num_proposals_per_img, 0)
-                bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
-                ms_scores.append(cls_score)
 
-                if i < self.num_stages - 1:
-                    refine_roi_list = []
-                    for j in range(num_imgs):
-                        if rois[j].shape[0] > 0:
-                            bbox_label = cls_score[j][:, :-1].argmax(dim=1)
-                            refine_roi = bbox_head.regress_by_class(
-                                rois[j], bbox_label[j], bbox_pred[j],
-                                img_metas[j])
-                            refine_roi_list.append(refine_roi)
-                    rois = torch.cat(refine_roi_list)
+            if self.with_mask:
+                mask_classes = self.mask_head[-1].num_classes
+                segm_results = [[[] for _ in range(mask_classes)]
+                                for _ in range(num_imgs)]
+                results = list(zip(bbox_results, segm_results))
+            else:
+                results = bbox_results
 
-            # average scores of each image by stages
-            cls_score = [
-                sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-                for i in range(num_imgs)
-            ]
+            return results
 
-            # apply bbox post-processing to each image individually
-            det_bboxes = []
-            det_labels = []
-            for i in range(num_imgs):
-                det_bbox, det_label = self.bbox_head[-1].get_bboxes(
-                    rois[i],
-                    cls_score[i],
-                    bbox_pred[i],
-                    img_shapes[i],
-                    scale_factors[i],
-                    rescale=rescale,
-                    cfg=rcnn_test_cfg)
-                det_bboxes.append(det_bbox)
-                det_labels.append(det_label)
-            bbox_result = [
-                bbox2result(det_bboxes[i], det_labels[i],
-                            self.bbox_head[-1].num_classes)
-                for i in range(num_imgs)
-            ]
+        for i in range(self.num_stages):
+            bbox_head = self.bbox_head[i]
+            bbox_results = self._bbox_forward(
+                i, x, rois, semantic_feat=semantic_feat)
+            # split batch bbox prediction back to each image
+            cls_score = bbox_results['cls_score']
+            bbox_pred = bbox_results['bbox_pred']
+            num_proposals_per_img = tuple(len(p) for p in proposal_list)
+            rois = rois.split(num_proposals_per_img, 0)
+            cls_score = cls_score.split(num_proposals_per_img, 0)
+            bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+            ms_scores.append(cls_score)
+
+            if i < self.num_stages - 1:
+                refine_roi_list = []
+                for j in range(num_imgs):
+                    if rois[j].shape[0] > 0:
+                        bbox_label = cls_score[j][:, :-1].argmax(dim=1)
+                        refine_roi = bbox_head.regress_by_class(
+                            rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
+                        refine_roi_list.append(refine_roi)
+                rois = torch.cat(refine_roi_list)
+
+        # average scores of each image by stages
+        cls_score = [
+            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+            for i in range(num_imgs)
+        ]
+
+        # apply bbox post-processing to each image individually
+        det_bboxes = []
+        det_labels = []
+        for i in range(num_imgs):
+            det_bbox, det_label = self.bbox_head[-1].get_bboxes(
+                rois[i],
+                cls_score[i],
+                bbox_pred[i],
+                img_shapes[i],
+                scale_factors[i],
+                rescale=rescale,
+                cfg=rcnn_test_cfg)
+            det_bboxes.append(det_bbox)
+            det_labels.append(det_label)
+        bbox_result = [
+            bbox2result(det_bboxes[i], det_labels[i],
+                        self.bbox_head[-1].num_classes)
+            for i in range(num_imgs)
+        ]
         ms_bbox_result['ensemble'] = bbox_result
 
         if self.with_mask:
@@ -503,30 +511,31 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
             if rois.shape[0] == 0:
                 # There is no proposal in the single image
-                bboxes = rois.new_zeros(0, 4)
-                scores = rois.new_zeros(0, 1)
-            else:
-                for i in range(self.num_stages):
-                    bbox_head = self.bbox_head[i]
-                    bbox_results = self._bbox_forward(
-                        i, x, rois, semantic_feat=semantic)
-                    ms_scores.append(bbox_results['cls_score'])
+                aug_bboxes.append(rois.new_zeros(0, 4))
+                aug_scores.append(rois.new_zeros(0, 1))
+                continue
 
-                    if i < self.num_stages - 1:
-                        bbox_label = bbox_results['cls_score'].argmax(dim=1)
-                        rois = bbox_head.regress_by_class(
-                            rois, bbox_label, bbox_results['bbox_pred'],
-                            img_meta[0])
+            for i in range(self.num_stages):
+                bbox_head = self.bbox_head[i]
+                bbox_results = self._bbox_forward(
+                    i, x, rois, semantic_feat=semantic)
+                ms_scores.append(bbox_results['cls_score'])
 
-                cls_score = sum(ms_scores) / float(len(ms_scores))
-                bboxes, scores = self.bbox_head[-1].get_bboxes(
-                    rois,
-                    cls_score,
-                    bbox_results['bbox_pred'],
-                    img_shape,
-                    scale_factor,
-                    rescale=False,
-                    cfg=None)
+                if i < self.num_stages - 1:
+                    bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                    rois = bbox_head.regress_by_class(
+                        rois, bbox_label, bbox_results['bbox_pred'],
+                        img_meta[0])
+
+            cls_score = sum(ms_scores) / float(len(ms_scores))
+            bboxes, scores = self.bbox_head[-1].get_bboxes(
+                rois,
+                cls_score,
+                bbox_results['bbox_pred'],
+                img_shape,
+                scale_factor,
+                rescale=False,
+                cfg=None)
             aug_bboxes.append(bboxes)
             aug_scores.append(scores)
 
