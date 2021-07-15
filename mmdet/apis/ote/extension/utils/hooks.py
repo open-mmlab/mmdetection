@@ -145,7 +145,8 @@ class EarlyStoppingHook(Hook):
             else:
                 self.wait_count += 1
                 if self.wait_count >= self.patience:
-                    print(f"Early Stopping at iter: {runner.iter} with best {self.key_indicator}: {self.best_score}")
+                    stop_point = runner.epoch if self.by_epoch else runner.iter
+                    print(f"Early Stopping at :{stop_point} with best {self.key_indicator}: {self.best_score}")
                     self._create_stop_file(runner)
 
     def _should_check_stopping(self, runner):
