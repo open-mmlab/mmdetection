@@ -93,20 +93,17 @@ def _create_panoptic_style_json(json_name):
         'id': 0,
         'name': 'car',
         'supercategory': 'car',
-        'isthing': 1,
-        'color': [220, 20, 60]
+        'isthing': 1
     }, {
         'id': 1,
         'name': 'person',
         'supercategory': 'person',
-        'isthing': 1,
-        'color': [119, 11, 32]
+        'isthing': 1
     }, {
         'id': 2,
         'name': 'wall',
         'supercategory': 'wall',
-        'isthing': 0,
-        'color': [0, 0, 142],
+        'isthing': 0
     }]
 
     fake_json = {
@@ -126,7 +123,6 @@ def test_load_panoptic_style_json():
 
     dataset = CocoPanopticDataset(
         ann_file=fake_json_file,
-        cats_json=fake_json['categories'],
         classes=[cat['name'] for cat in fake_json['categories']],
         pipeline=[])
 
