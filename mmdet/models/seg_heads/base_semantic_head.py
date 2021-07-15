@@ -18,7 +18,7 @@ class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
                      type='CrossEntropyLoss', use_mask=False,
                      loss_weight=1.0)):
         super(BaseSemanticHead, self).__init__()
-        self.loss_stuff = build_loss(loss_semantic)
+        self.loss_semantic = build_loss(loss_semantic)
         self.num_classes = num_classes
         self.num_feats = num_feats
         self.eps = 1e-6
@@ -36,7 +36,7 @@ class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
 
         avg_factor = torch.sum(not_ignore) + self.eps
 
-        # shit, has to convert to long
+        # Has to convert to long
         gt_semantic_seg_bias = gt_semantic_seg_bias.long()
 
         loss_semantic = self.loss_semantic(

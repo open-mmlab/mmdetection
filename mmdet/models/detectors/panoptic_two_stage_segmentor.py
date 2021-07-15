@@ -6,29 +6,29 @@ from .two_stage import TwoStageDetector
 
 
 @DETECTORS.register_module()
-class TwoStagePanopticSegmentor(TwoStageDetector):
+class PanopticTwoStageSegmentor(TwoStageDetector):
 
     def __init__(
-        self,
-        backbone,
-        neck=None,
-        rpn_head=None,
-        roi_head=None,
-        train_cfg=None,
-        test_cfg=None,
-        init_cfg=None,
-        # for panoptic segmentation
-        stuff_head=None,
-        panoptic_head=None,
-        pretrained=None,
-        num_things=80,
-        num_stuff=53,
-    ):
-        super(TwoStagePanopticSegmentor,
-              self).__init__(backbone, rpn_head, roi_head, train_cfg, test_cfg,
-                             neck, pretrained, init_cfg)
-        self.stuff_head = build_head(stuff_head)
-        self.panoptic_head = build_head(panoptic_head)
+            self,
+            backbone,
+            neck=None,
+            rpn_head=None,
+            roi_head=None,
+            train_cfg=None,
+            test_cfg=None,
+            init_cfg=None,
+            # for panoptic segmentation
+            stuff_head=None,
+            panoptic_fusion_head=None,
+            num_things=80,
+            num_stuff=53):
+        super(PanopticTwoStageSegmentor,
+              self).__init__(backbone, neck, rpn_head, roi_head, train_cfg,
+                             test_cfg, None, init_cfg)
+        if stuff_head is not None:
+            self.stuff_head = build_head(stuff_head)
+        if panoptic_fusion_head is not None:
+            self.panoptic_fusion_head = build_head(panoptic_fusion_head)
 
         self.num_things = num_things
         self.num_stuff = num_stuff
@@ -37,6 +37,19 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
     @property
     def with_stuff_head(self):
         return hasattr(self, 'stuff_head') and self.stuff_head is not None
+
+    @property
+    def with_panoptic_fusion_head(self):
+        return hasattr(self, 'panoptic_fusion_heads') and \
+               self.panoptic_fusion_head is not None
+
+    def forward_dummy(self, img):
+        """Used for computing network flops.
+
+        See `mmdetection/tools/get_flops.py`
+        """
+        raise NotImplementedError(
+            f'`forward_dummy` is not implemented in {self.__class__.__name__}')
 
     def forward_train(self,
                       img,
@@ -48,7 +61,6 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
                       gt_semantic_seg=None,
                       proposals=None,
                       **kwargs):
-
         x = self.extract_feat(img)
         losses = dict()
 
@@ -76,21 +88,10 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         stuff_loss = self.stuff_head.forward_train(x, gt_semantic_seg)
         losses.update(stuff_loss)
 
-        if self.panoptic_head.with_loss:
-            panoptic_loss = self.panoptic_head.forward_train()
-            losses.update(panoptic_loss)
-
         return losses
 
-    def simple_test_mask(self,
-                         x,
-                         img_metas,
-                         det_bboxes,
-                         det_labels,
-                         rescale=False):
+    def simple_test_mask(self, x, img_metas, det_bboxes, rescale=False):
         """Simple test for mask head without augmentation."""
-        # image shapes of images in the batch
-        ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
@@ -103,18 +104,11 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         if isinstance(det_bboxes, list):
             # padding to form a batch
             max_size = max([bboxes.size(0) for bboxes in det_bboxes])
-            for i, (bbox, label) in enumerate(zip(det_bboxes, det_labels)):
+            for i, bbox in enumerate(det_bboxes):
                 supplement_bbox = bbox.new_full(
                     (max_size - bbox.size(0), bbox.size(1)), 0)
-                supplement_label = label.new_full((max_size - label.size(0), ),
-                                                  0)
                 det_bboxes[i] = torch.cat((supplement_bbox, bbox), dim=0)
-                det_labels[i] = torch.cat((supplement_label, label), dim=0)
             det_bboxes = torch.stack(det_bboxes, dim=0)
-            det_labels = torch.stack(det_labels, dim=0)
-
-        batch_size = det_bboxes.size(0)
-        num_proposals_per_img = det_bboxes.shape[1]
 
         # if det_bboxes is rescaled to the original image size, we need to
         # rescale it back to the testing scale to obtain RoIs.
@@ -130,34 +124,8 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         mask_rois = torch.cat([batch_index, det_bboxes], dim=-1)
         mask_rois = mask_rois.view(-1, 5)
         mask_results = self.roi_head._mask_forward(x, mask_rois)
-        mask_pred = mask_results['mask_pred']
 
-        # Recover the batch dimension
-        mask_preds = mask_pred.reshape(batch_size, num_proposals_per_img,
-                                       *mask_pred.shape[1:])
-
-        # apply mask post-processing to each image individually
-        segm_results = []
-        for i in range(batch_size):
-            mask_pred = mask_preds[i]
-            det_bbox = det_bboxes[i]
-            det_label = det_labels[i]
-
-            # remove padding
-            supplement_mask = det_bbox.abs().sum(dim=-1) != 0
-            mask_pred = mask_pred[supplement_mask]
-            det_bbox = det_bbox[supplement_mask]
-            det_label = det_label[supplement_mask]
-
-            if det_label.shape[0] == 0:
-                segm_results.append(
-                    [[] for _ in range(self.roi_head.mask_head.num_classes)])
-            else:
-                segm_result = self.roi_head.mask_head.get_seg_masks(
-                    mask_pred, det_bbox, det_label, self.roi_head.test_cfg,
-                    ori_shapes[i], scale_factors[i], rescale)
-                segm_results.append(segm_result)
-        return mask_results, segm_results
+        return mask_results
 
     def simple_test(self, img, img_metas, proposals=None, rescale=False):
         x = self.extract_feat(img)
@@ -175,8 +143,9 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             bboxes, scores, self.test_cfg.panoptic.score_thr,
             self.test_cfg.panoptic.nms, self.test_cfg.panoptic.max_per_img)
 
-        mask_preds, _ = self.simple_test_mask(
+        mask_results = self.simple_test_mask(
             x, img_metas, det_bboxes, det_labels, rescale=rescale)
+        mask_preds = mask_results['mask_pred']
 
         logits = self.stuff_head.simple_test(x, img_metas, rescale)
 
