@@ -663,8 +663,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             for class_id in range(self.num_classes):
                 _, topk_inds = topk(mlvl_scores[:, class_id], nms_pre_classwise)
                 boxes = mlvl_bboxes[topk_inds]
-                scores = torch.zeros_like(mlvl_scores[topk_inds])
-                scores[:, class_id] = mlvl_scores[topk_inds, class_id]
+                top_scores = mlvl_scores[topk_inds]
+                scores = torch.zeros_like(top_scores)
+                scores[:, class_id] = top_scores[:, class_id]
 
                 new_mlvl_scores.append(scores)
                 new_mlvl_boxes.append(boxes)
