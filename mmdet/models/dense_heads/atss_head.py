@@ -26,6 +26,7 @@ class ATSSHead(AnchorHead):
                  stacked_convs=4,
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+                 reg_decoded_bbox=True,
                  loss_centerness=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
@@ -44,7 +45,11 @@ class ATSSHead(AnchorHead):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         super(ATSSHead, self).__init__(
-            num_classes, in_channels, init_cfg=init_cfg, **kwargs)
+            num_classes,
+            in_channels,
+            reg_decoded_bbox=reg_decoded_bbox,
+            init_cfg=init_cfg,
+            **kwargs)
 
         self.sampling = False
         if self.train_cfg:
@@ -190,13 +195,11 @@ class ATSSHead(AnchorHead):
                 pos_anchors, pos_bbox_targets)
             pos_decode_bbox_pred = self.bbox_coder.decode(
                 pos_anchors, pos_bbox_pred)
-            pos_decode_bbox_targets = self.bbox_coder.decode(
-                pos_anchors, pos_bbox_targets)
 
             # regression loss
             loss_bbox = self.loss_bbox(
                 pos_decode_bbox_pred,
-                pos_decode_bbox_targets,
+                pos_bbox_targets,
                 weight=centerness_targets,
                 avg_factor=1.0)
 
@@ -289,9 +292,8 @@ class ATSSHead(AnchorHead):
             loss_bbox=losses_bbox,
             loss_centerness=loss_centerness)
 
-    def centerness_target(self, anchors, bbox_targets):
+    def centerness_target(self, anchors, gts):
         # only calculate pos centerness targets, otherwise there may be nan
-        gts = self.bbox_coder.decode(anchors, bbox_targets)
         anchors_cx = (anchors[:, 2] + anchors[:, 0]) / 2
         anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
         l_ = anchors_cx - gts[:, 0]
@@ -445,9 +447,7 @@ class ATSSHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            # TODO： Find a better way
-            if hasattr(self, 'use_atss'):
-                # used in VFNetHead
+            if self.reg_decoded_bbox:
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
             else:
                 pos_bbox_targets = self.bbox_coder.encode(

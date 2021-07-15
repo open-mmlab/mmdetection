@@ -90,6 +90,7 @@ class VFNetHead(ATSSHead, FCOSHead):
                  loss_bbox_refine=dict(type='GIoULoss', loss_weight=2.0),
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  use_atss=True,
+                 reg_decoded_bbox=True,
                  anchor_generator=dict(
                      type='AnchorGenerator',
                      ratios=[1.0],
@@ -145,6 +146,7 @@ class VFNetHead(ATSSHead, FCOSHead):
 
         # for getting ATSS targets
         self.use_atss = use_atss
+        self.reg_decoded_bbox = reg_decoded_bbox
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.prior_generator = build_anchor_generator(anchor_generator)
         self.anchor_center_offset = anchor_generator['center_offset']

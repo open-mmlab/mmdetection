@@ -304,11 +304,11 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
 
         Args:
             center_heatmap_pred (Tensor): center heatmap for current level with
-                shape (N, num_classes, H, W).
+                shape (1, num_classes, H, W).
             wh_pred (Tensor): wh heatmap for current level with shape
-                (N, num_classes, H, W).
+                (1, num_classes, H, W).
             offset_pred (Tensor): offset for current level with shape
-                (N, corner_offset_channels, H, W).
+                (1, corner_offset_channels, H, W).
             img_meta (dict): Meta information of current image, e.g.,
                 image size, scaling factor, etc.
             rescale (bool): If True, return boxes in original image space.

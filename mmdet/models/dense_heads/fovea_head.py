@@ -300,12 +300,12 @@ class FoveaHead(AnchorFreeHead):
                 mlvl_score_factor. Usually with_nms is False is used for aug
                 test. if with_nms is True, then return the following format
 
-                - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
-                    where the first 4 columns are bounding box positions \
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
-                    between 0 and 1.
-                - det_labels: Predicted labels of the corresponding box with \
-                    shape [num_bbox].
+                - det_bboxes (Tensor): Predicted bboxes with shape \
+                    [num_bbox, 5], where the first 4 columns are bounding box \
+                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
+                    are scores between 0 and 1.
+                - det_labels (Tensor): Predicted labels of the corresponding \
+                    box with shape [num_bbox].
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list)

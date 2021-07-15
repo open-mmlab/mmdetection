@@ -42,7 +42,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 scale levels, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 4, H, W).
             score_factors (list[Tensor], Optional):  score_factor for
-                each scale level, each is a 4D-tensor, has shape
+                all scale level, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 1, H, W). Default None.
             img_metas (list[dict], Optional): Image meta info. Default None.
             cfg (mmcv.Config, Optional): Test / postprocessing configuration,
@@ -121,17 +121,17 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels. if with_nms
-            is False and mlvl_score_factor is None, return mlvl_bboxes and
-            mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
-            mlvl_score_factor. Usually with_nms is False is used for aug test.
-            if with_nms is True, then return the following format
+                is False and mlvl_score_factor is None, return mlvl_bboxes and
+                mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+                mlvl_score_factor. Usually with_nms is False is used for aug
+                test. if with_nms is True, then return the following format
 
-                - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
-                    where the first 4 columns are bounding box positions \
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
-                    between 0 and 1.
-                - det_labels: Predicted labels of the corresponding box with \
-                    shape [num_bbox].
+                - det_bboxes (Tensor): Predicted bboxes with shape \
+                    [num_bbox, 5], where the first 4 columns are bounding box \
+                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
+                    are scores between 0 and 1.
+                - det_labels (Tensor): Predicted labels of the corresponding \
+                    box with shape [num_bbox].
         """
         if score_factor_list[0] is None:
             # e.g. Retina, FreeAnchor, etc.
@@ -235,17 +235,17 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels. if with_nms
-                is False and mlvl_score_factor is None, return mlvl_bboxes
-                and mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
-                mlvl_score_factor. Usually with_nms is False is used for
-                aug test. if with_nms is True, then return the following format
+                is False and mlvl_score_factor is None, return mlvl_bboxes and
+                mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+                mlvl_score_factor. Usually with_nms is False is used for aug
+                test. if with_nms is True, then return the following format
 
-                - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
-                    where the first 4 columns are bounding box positions \
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
-                    between 0 and 1.
-                - det_labels: Predicted labels of the corresponding box with \
-                    shape [num_bbox].
+                - det_bboxes (Tensor): Predicted bboxes with shape \
+                    [num_bbox, 5], where the first 4 columns are bounding box \
+                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
+                    are scores between 0 and 1.
+                - det_labels (Tensor): Predicted labels of the corresponding \
+                    box with shape [num_bbox].
         """
         assert len(mlvl_scores) == len(mlvl_bboxes)
 

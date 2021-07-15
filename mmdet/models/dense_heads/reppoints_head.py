@@ -93,7 +93,7 @@ class RepPointsHead(AnchorFreeHead):
         self.gradient_mul = gradient_mul
         self.point_base_scale = point_base_scale
         self.point_strides = point_strides
-        self.point_generator = MlvlPointGenerator(
+        self.prior_generator = MlvlPointGenerator(
             self.point_strides, offset=0.)
 
         self.sampling = loss_cls['type'] not in ['FocalLoss']
@@ -313,7 +313,7 @@ class RepPointsHead(AnchorFreeHead):
 
         # since feature map sizes of all images are the same, we only compute
         # points center for one time
-        multi_level_points = self.point_generator.grid_priors(
+        multi_level_points = self.prior_generator.grid_priors(
             featmap_sizes, device, with_stride=True)
         points_list = [[point.clone() for point in multi_level_points]
                        for _ in range(num_imgs)]
@@ -321,7 +321,7 @@ class RepPointsHead(AnchorFreeHead):
         # for each image, we compute valid flags of multi level grids
         valid_flag_list = []
         for img_id, img_meta in enumerate(img_metas):
-            multi_level_flags = self.point_generator.valid_flags(
+            multi_level_flags = self.prior_generator.valid_flags(
                 featmap_sizes, img_meta['pad_shape'])
             valid_flag_list.append(multi_level_flags)
 
@@ -690,12 +690,12 @@ class RepPointsHead(AnchorFreeHead):
                 mlvl_score_factor. Usually with_nms is False is used for aug
                 test. if with_nms is True, then return the following format
 
-                - det_bboxes: Predicted bboxes with shape [num_bbox, 5], \
-                    where the first 4 columns are bounding box positions \
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column are scores \
-                    between 0 and 1.
-                - det_labels: Predicted labels of the corresponding box with \
-                    shape [num_bbox].
+                - det_bboxes (Tensor): Predicted bboxes with shape \
+                    [num_bbox, 5], where the first 4 columns are bounding box \
+                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
+                    are scores between 0 and 1.
+                - det_labels (Tensor): Predicted labels of the corresponding \
+                    box with shape [num_bbox].
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list)
@@ -726,13 +726,13 @@ class RepPointsHead(AnchorFreeHead):
                     max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
 
-                points = self.point_generator.sparse_priors(
+                points = self.prior_generator.sparse_priors(
                     topk_inds, featmap_size_hw, level_idx, scores.dtype,
                     scores.device)
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
             else:
-                points = self.point_generator.single_level_grid_priors(
+                points = self.prior_generator.single_level_grid_priors(
                     featmap_size_hw, level_idx, scores.device)
 
             bboxes = self._bbox_decode(points, bbox_pred,
