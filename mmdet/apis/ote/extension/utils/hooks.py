@@ -1,15 +1,71 @@
+# Copyright (C) 2021 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions
+# and limitations under the License.
+
+import os
 from math import inf
 
-from mmcv.runner import HOOKS, Hook
+from mmcv.runner import BaseRunner, EpochBasedRunner, IterBasedRunner
+from mmcv.runner.hooks import HOOKS, Hook
+
+
+@HOOKS.register_module()
+class CancelTrainingHook(Hook):
+    def __init__(self, interval: int = 5):
+        """
+        Periodically check whether whether a stop signal is sent to the runner during model training.
+        Every 'check_interval' iterations, the work_dir for the runner is checked to see if a file '.stop_training'
+        is present. If it is, training is stopped.
+
+        :param interval: Period for checking for stop signal, given in iterations.
+
+        """
+        self.interval = interval
+
+    def before_run(self, runner):
+        """ Remove .stop_training file before training begins if it exists
+
+        :param runner:
+        """
+        work_dir = runner.work_dir
+        stop_filepath = os.path.join(work_dir, '.stop_training')
+        if os.path.exists(stop_filepath):
+            os.remove(stop_filepath)
+
+    @staticmethod
+    def _check_for_stop_signal(runner: BaseRunner):
+        work_dir = runner.work_dir
+        stop_filepath = os.path.join(work_dir, '.stop_training')
+        if os.path.exists(stop_filepath):
+            if isinstance(runner, EpochBasedRunner):
+                epoch = runner.epoch
+                runner._max_epochs = epoch  # Force runner to stop by pretending it has reached it's max_epoch
+            elif isinstance(runner, IterBasedRunner):
+                iter = runner.iter
+                runner._max_iters = iter
+            runner.should_stop = True  # Set this flag to true to stop the current training epoch
+
+    def after_train_iter(self, runner: BaseRunner):
+        if not self.every_n_iters(runner, self.interval):
+            return
+        self._check_for_stop_signal(runner)
 
 
 @HOOKS.register_module()
 class EarlyStoppingHook(Hook):
     rule_map = {'greater': lambda x, y: x > y, 'less': lambda x, y: x < y}
     init_value_map = {'greater': -inf, 'less': inf}
-    # TODO: ['acc', 'top', 'AR@', 'auc', 'precision'] not supported yet
-    # TODO: Distributed training not supported yet
-    greater_keys = ['mAP']
+    greater_keys = ['mAP', 'acc', 'top', 'AR@', 'auc', 'precision']
     less_keys = ['loss']
 
     def __init__(self, interval, metric='mAP', rule=None, patience=3, min_delta=0.0):
@@ -20,7 +76,6 @@ class EarlyStoppingHook(Hook):
         self._init_rule(rule, metric)
 
         self.min_delta *= 1 if self.rule == 'greater' else -1
-        self.should_stop = False
         self.best_score = self.init_value_map[self.rule]
 
     def _init_rule(self, rule, key_indicator):
@@ -79,23 +134,20 @@ class EarlyStoppingHook(Hook):
             self._do_check_stopping(runner)
 
     def _do_check_stopping(self, runner):
-        """perform evaluation and save ckpt."""
         if not self._should_check_stopping(runner):
             return
 
         if runner.rank == 0:
             key_score = runner.log_buffer.output[self.key_indicator]
+            self._create_stop_file(runner)
             if self.compare_func(key_score - self.min_delta, self.best_score):
                 self.best_score = key_score
                 self.wait_count = 0
             else:
                 self.wait_count += 1
-
                 if self.wait_count >= self.patience:
-                    self.stopped = runner.iter
-                    raise KeyboardInterrupt(
-                        f"Early Stopping at iter: {runner.iter} with best {self.key_indicator}: {self.best_score} \n"
-                        f'Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = {self.best_score}')
+                    print(f"Early Stopping at iter: {runner.iter} with best {self.key_indicator}: {self.best_score}")
+                    self._create_stop_file(runner)
 
     def _should_check_stopping(self, runner):
         check_time = self.every_n_epochs if self.by_epoch else self.every_n_iters
@@ -103,3 +155,12 @@ class EarlyStoppingHook(Hook):
             # No evaluation during the interval.
             return False
         return True
+
+    def _create_stop_file(self, runner):
+        """ Create an empty stop file. CancelTrainingHook check this file under work_dir in order to stop training
+        across multiple training processes
+
+        :param runner: MMDetection runner
+        """
+        stop_filepath = os.path.join(runner.work_dir, '.stop_training')
+        open(stop_filepath, 'a').close()
