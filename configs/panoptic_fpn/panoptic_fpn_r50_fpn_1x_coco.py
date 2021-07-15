@@ -132,6 +132,13 @@ model = dict(
             score_thr=0.05,
             nms=dict(type='nms', iou_threshold=0.5),
             max_per_img=100,
-            mask_thr_binary=0.5)))
+            mask_thr_binary=0.5),
+        panoptic=dict(
+            score_thr=0.6,
+            max_per_img=100,
+            mask_thr_binary=0.5,
+            mask_overlap=0.5,
+            nms=dict(type='nms', iou_thr=0.5, class_agnositc=True),
+            stuff_area_limit=4096)))
 
 custom_hooks = []
