@@ -139,7 +139,6 @@ class EarlyStoppingHook(Hook):
 
         if runner.rank == 0:
             key_score = runner.log_buffer.output[self.key_indicator]
-            self._create_stop_file(runner)
             if self.compare_func(key_score - self.min_delta, self.best_score):
                 self.best_score = key_score
                 self.wait_count = 0
