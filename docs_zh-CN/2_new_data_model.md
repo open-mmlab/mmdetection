@@ -1,26 +1,30 @@
 # 2: 在自定义数据集上进行训练
 
-通过本文档，你将会知道如何使用自定义的数据集对预定义的模型进行推理，测试以及训练。我们使用[balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) 作为例子来描述整个过程。
+通过本文档，你将会知道如何使用自定义的数据集对预定义的模型进行推理，测试以及训练。我们使用 [balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) 作为例子来描述整个过程。
 
-如下是基本的步骤：
+基本步骤如下：
 
 1. 准备自定义数据集
 2. 准备配置文件
 3. 在自定义数据集上进行训练，测试和推理。
 
 ## 准备自定义数据集
-MMDetection一共支持三种形式应用新数据集：
-1. 将数据集重新组织为COCO格式。
+MMDetection 一共支持三种形式应用新数据集：
+
+1. 将数据集重新组织为 COCO 格式。
 2. 将数据集重新组织为一个中间格式。
 3. 实现一个新的数据集。
 
 我们通常建议使用前面两种方法，因为它们通常来说比第三种方法要简单。
-在本文档中，我们展示一个例子来说明如何将数据转化为COCO格式。
-**注意**：MMDetection现只支持对COCO格式的数据集进行mask AP的评测。
-所以对于要进行实例分割任务的用户而言，必须要将数据集转化为COCO格式。
+
+在本文档中，我们展示一个例子来说明如何将数据转化为 COCO 格式。
+
+**注意**：MMDetection 现只支持对 COCO 格式的数据集进行 mask AP 的评测。
+
+所以对于要进行实例分割任务的用户而言，必须要将数据集转化为 COCO 格式。
 
 ### COCO标注格式
-用于实例分割的COCO数据集格式如下所示，其中的键（key）都是必要的，参考[这里](https://cocodataset.org/#format-data)来获取更多细节。
+用于实例分割的 COCO 数据集格式如下所示，其中的键（key）都是必要的，参考[这里](https://cocodataset.org/#format-data)来获取更多细节。
 ```json
 {
     "images": [image],
@@ -52,8 +56,10 @@ categories = [{
     "supercategory": str,
 }]
 ```
-现在假设我们使用balloon dataset。
-下载了数据集之后，我们需要实现一个函数将标注格式转化为COCO格式。然后我们就可以使用已经实现的COCODataset类来加载数据后进行训练以及评测。
+现在假设我们使用 balloon dataset。
+
+下载了数据集之后，我们需要实现一个函数将标注格式转化为 COCO 格式。然后我们就可以使用已经实现的 COCODataset 类来加载数据后进行训练以及评测。
+
 如果你浏览过数据集，你会发现数据集格式如下：
 
 ```json
@@ -139,8 +145,9 @@ categories = [{
     'name': 'polygon'}}},
  'size': 1115004}
 ```
-标注文件时是JSON格式的，其中所有键（key）组成了一张图片的所有标注。
-其中将balloon dataset转化为COCO格式的代码如下所示。
+标注文件时是 JSON 格式的，其中所有键（key）组成了一张图片的所有标注。
+
+其中将 balloon dataset 转化为 COCO 格式的代码如下所示。
 
 ```python
 import os.path as osp
@@ -195,9 +202,13 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
     mmcv.dump(coco_format_json, out_file)
 
 ```
-使用如上的函数，用户可以成功将标注文件转化为JSON格式，之后可以使用`CocoDataset`对模型进行训练和评测。
+
+使用如上的函数，用户可以成功将标注文件转化为JSON格式，之后可以使用 `CocoDataset` 对模型进行训练和评测。
+
 ## 准备配置文件
-第二步需要准备一个配置文件来成功加载数据集。假设我们想要用balloon dataset来训练配备了FPN的Mask R-CNN，如下是我们的配置文件。假设配置文件命名为`mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py`，相应保存路径为`configs/ballon/`，配置文件内容如下所示。
+
+第二步需要准备一个配置文件来成功加载数据集。假设我们想要用 balloon dataset 来训练配备了 FPN 的 Mask R-CNN ，如下是我们的配置文件。假设配置文件命名为 `mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py`，相应保存路径为 `configs/ballon/`，配置文件内容如下所示。
+
 ```python
 # 这个新的配置文件继承自一个基础（base）配置文件，只需要突出必要的修改部分即可
 _base_ = 'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py'
@@ -225,18 +236,26 @@ data = dict(
         classes=classes,
         ann_file='balloon/val/annotation_coco.json'))
 
-# 我们可以使用预训练的Mask R-CNN来获取更好的性能
+# 我们可以使用预训练的 Mask R-CNN 来获取更好的性能
 load_from = 'checkpoints/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'
 ```
+
 ## 训练一个新的模型
+
 为了使用新的配置方法来对模型进行训练，你只需要简单运行如下命令。
+
 ```shell
 python tools/train.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py
 ```
+
 参考[情况 1](1_exist_data_model.md)来获取更多详细的使用方法。
+
 ## 测试以及推理
+
 为了测试训练完毕的模型，你只需要简单运行如下命令。
+
 ```shell
 python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py/latest.pth --eval bbox segm
 ```
+
 参考[情况 1](1_exist_data_model.md)来获取更多详细的使用方法。
