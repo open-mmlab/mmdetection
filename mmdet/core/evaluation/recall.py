@@ -66,7 +66,7 @@ def eval_recalls(gts,
                  proposal_nums=None,
                  iou_thrs=0.5,
                  logger=None,
-                 Legacy_coordinate=True):
+                 Legacy_coordinate=False):
     """Calculate recalls.
 
     Args:
@@ -78,7 +78,7 @@ def eval_recalls(gts,
             summary. See `mmcv.utils.print_log()` for details. Default: None.
         Legacy_coordinate (bool): Whether use coordinate system in mmdet v1.x.
             "1" was added to both height and width which means w, h should be
-             computed as 'x2 - x1 + 1` and 'y2 - y1 + 1'.
+             computed as 'x2 - x1 + 1` and 'y2 - y1 + 1'. Default: False.
 
 
     Returns:
@@ -92,9 +92,7 @@ def eval_recalls(gts,
 
     img_num = len(gts)
     assert img_num == len(proposals)
-
     proposal_nums, iou_thrs = set_recall_param(proposal_nums, iou_thrs)
-
     all_ious = []
     for i in range(img_num):
         if proposals[i].ndim == 2 and proposals[i].shape[1] == 5:
