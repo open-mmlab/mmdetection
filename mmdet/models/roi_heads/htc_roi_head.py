@@ -376,14 +376,14 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
-                refine_roi_list = []
+                refine_rois_list = []
                 for j in range(num_imgs):
                     if rois[j].shape[0] > 0:
                         bbox_label = cls_score[j][:, :-1].argmax(dim=1)
-                        refine_roi = bbox_head.regress_by_class(
+                        refine_rois = bbox_head.regress_by_class(
                             rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
-                        refine_roi_list.append(refine_roi)
-                rois = torch.cat(refine_roi_list)
+                        refine_rois_list.append(refine_rois)
+                rois = torch.cat(refine_rois_list)
 
         # average scores of each image by stages
         cls_score = [
