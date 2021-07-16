@@ -14,6 +14,7 @@ class PanopticFPN(PanopticTwoStageSegmentor):
             roi_head=None,
             train_cfg=None,
             test_cfg=None,
+            pretrained=None,
             init_cfg=None,
             # for panoptic segmentation
             stuff_head=None,
@@ -27,6 +28,7 @@ class PanopticFPN(PanopticTwoStageSegmentor):
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
+            pretrained=pretrained,
             init_cfg=init_cfg,
             stuff_head=stuff_head,
             panoptic_fusion_head=panoptic_fusion_head,

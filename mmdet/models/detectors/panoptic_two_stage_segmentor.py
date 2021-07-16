@@ -16,6 +16,7 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
             roi_head=None,
             train_cfg=None,
             test_cfg=None,
+            pretrained=None,
             init_cfg=None,
             # for panoptic segmentation
             stuff_head=None,
@@ -24,7 +25,7 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
             num_stuff=53):
         super(PanopticTwoStageSegmentor,
               self).__init__(backbone, neck, rpn_head, roi_head, train_cfg,
-                             test_cfg, None, init_cfg)
+                             test_cfg, pretrained, init_cfg)
         if stuff_head is not None:
             self.stuff_head = build_head(stuff_head)
         if panoptic_fusion_head is not None:
@@ -140,16 +141,15 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
 
         # class-wise predictions
         det_bboxes, det_labels = multiclass_nms(
-            bboxes, scores, self.test_cfg.panoptic.score_thr,
+            bboxes[0], scores[0], self.test_cfg.panoptic.score_thr,
             self.test_cfg.panoptic.nms, self.test_cfg.panoptic.max_per_img)
 
         mask_results = self.simple_test_mask(
-            x, img_metas, det_bboxes, det_labels, rescale=rescale)
+            x, img_metas, det_bboxes, rescale=rescale)
         mask_preds = mask_results['mask_pred']
 
         logits = self.stuff_head.simple_test(x, img_metas, rescale)
 
-        pano_results = self.panoptic_head.simple_test(img_metas, det_bboxes,
-                                                      det_labels, mask_preds,
-                                                      logits)
+        pano_results = self.panoptic_fusion_head.simple_test(
+            img_metas, det_bboxes, det_labels, mask_preds, logits)
         return [{'pano_results': pano_results}]

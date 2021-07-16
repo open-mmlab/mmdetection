@@ -45,7 +45,7 @@ class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
             weight=not_ignore.reshape(-1),
             avg_factor=avg_factor,
         )
-        return {'loss_semantic': loss_semantic}
+        return dict(loss_semantic=loss_semantic)
 
     @auto_fp16()
     @abstractmethod

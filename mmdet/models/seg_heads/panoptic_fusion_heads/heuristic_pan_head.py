@@ -59,7 +59,7 @@ class HeuristicPanHead(BasePanopticFusionHead):
                     seg_logits, **kwargs):
 
         id_map, labels = self._lay_masks(det_bboxes, det_labels, mask_preds,
-                                         img_metas[0]['ori_shape'])
+                                         img_metas[0]['ori_shape'][:2])
         seg_pred = seg_logits.argmax(dim=1)
         seg_pred = seg_pred + self.num_things
 

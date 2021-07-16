@@ -132,5 +132,5 @@ class PanopticFpnHead(BaseSemanticHead):
 
         features = torch.sum(torch.stack(features, dim=0), dim=0)
         score = self.score(features)
-        ret = {'fcn_score': score, 'fcn_feat': features}
+        ret = dict(fcn_score=score, fcn_feat=features)
         return ret
