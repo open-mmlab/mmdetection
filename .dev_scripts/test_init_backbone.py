@@ -131,20 +131,10 @@ def _check_backbone(config, print_cfg=True):
             test_cfg=cfg.get('test_cfg'))
         model.init_weights()
 
-        checkpoint_layers = dict()
-        backbone_layers = dict()
-        for name, value in state_dict.items():
-            split_name = name.split('.')
-            if split_name[-1] == 'weight':
-                checkpoint_layers[name] = value.sum()
+        checkpoint_layers = state_dict.keys()
         for name, value in model.backbone.state_dict().items():
-            split_name = name.split('.')
-            if split_name[-1] == 'weight':
-                backbone_layers[name] = value.sum()
-
-        check_layers = list(set(backbone_layers) & set(checkpoint_layers))
-        for layer_name in check_layers:
-            assert backbone_layers[layer_name] == checkpoint_layers[layer_name]
+            if name in checkpoint_layers:
+                assert value.equal(state_dict[name])
 
         if print_cfg:
             print('-' * 10 + 'Successfully load checkpoint' + '-' * 10 +
