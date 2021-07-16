@@ -201,6 +201,15 @@ Notes:
 	    <td align="center">37.0</td>
 	</tr>
   <tr >
+	    <td align="center">Cascade R-CNN</td>
+	    <td align="center"><code>configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">40.3</td>
+	    <td align="center">40.3</td>
+	    <td align="center">40.1</td>
+	</tr>
+
+  <tr >
 	    <td align="center" rowspan="2">Mask R-CNN</td>
 	    <td align="center" rowspan="2"><code>configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py</code></td>
 	    <td align="center">Box AP</td>
@@ -214,6 +223,22 @@ Notes:
 	    <td align="center">33.7</td>
 	    <td align="center">33.3</td>
 	</tr>
+  <tr >
+	    <td align="center" rowspan="2">Cascade Mask R-CNN</td>
+	    <td align="center" rowspan="2"><code>configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">41.2</td>
+	    <td align="center">41.2</td>
+	    <td align="center">40.9</td>
+	</tr>
+	<tr>
+	    <td align="center">Mask AP</td>
+	    <td align="center">35.9</td>
+	    <td align="center">34.8</td>
+	    <td align="center">34.5</td>
+	</tr>
+
+
   <tr >
 	    <td align="center">CornerNet</td>
 	    <td align="center"><code>configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py</code></td>
@@ -264,7 +289,9 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 |     SSD      |                    `configs/ssd/ssd300_coco.py`                     |       Y       |        Y        |                                                                               |
 |    YOLOv3    |         `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`          |       Y       |        Y        |                                                                               |
 | Faster R-CNN |        `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`         |       Y       |        Y        |                                                                               |
+| Cascade R-CNN| `configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py` |   Y    |   Y        |       |
 |  Mask R-CNN  |          `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`           |       Y       |        Y        |                                                                               |
+| Cascade Mask R-CNN  |   `configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
 |  CornerNet   | `configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py` |       Y       |        N        | no flip, no batch inference, tested with torch==1.7.0 and onnxruntime==1.5.1. |
 |     DETR     |                   `configs/detr/detr_r50_8x2_150e_coco.py`          |       Y       |        Y        | batch inference is *not recommended*                                          |
 |  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py`    |       Y       |        Y        |                                                                               |

@@ -153,11 +153,11 @@ class GARPNHead(GuidedAnchorHead):
             if cfg.min_bbox_size >= 0:
                 w = proposals[:, 2] - proposals[:, 0]
                 h = proposals[:, 3] - proposals[:, 1]
-                valid_inds = torch.nonzero(
-                    (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size),
-                    as_tuple=False).squeeze()
-                proposals = proposals[valid_inds, :]
-                scores = scores[valid_inds]
+                valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
+                if not valid_mask.all():
+                    proposals = proposals[valid_mask]
+                    scores = scores[valid_mask]
+
             # NMS in current level
             proposals, _ = nms(proposals, scores, cfg.nms.iou_threshold)
             proposals = proposals[:cfg.nms_post, :]

@@ -208,10 +208,10 @@ class RPNHead(AnchorHead):
             anchors, rpn_bbox_pred, max_shape=img_shape)
         ids = torch.cat(level_ids)
 
-        if cfg.min_bbox_size > 0:
+        if cfg.min_bbox_size >= 0:
             w = proposals[:, 2] - proposals[:, 0]
             h = proposals[:, 3] - proposals[:, 1]
-            valid_mask = (w >= cfg.min_bbox_size) & (h >= cfg.min_bbox_size)
+            valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
             if not valid_mask.all():
                 proposals = proposals[valid_mask]
                 scores = scores[valid_mask]
