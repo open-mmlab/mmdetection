@@ -69,13 +69,19 @@ class VOCDataset(XMLDataset):
             mean_aps = []
             for iou_thr in iou_thrs:
                 print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')
+                # Follow the official implementation,
+                # http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCdevkit_18-May-2011.tar
+                # we should use the  Legacy coordinate system in mmdet 1.x,
+                # which means h, w should be computed as 'x2 - x1 + 1` and
+                # `y2 - y1 + 1`
                 mean_ap, _ = eval_map(
                     results,
                     annotations,
                     scale_ranges=None,
                     iou_thr=iou_thr,
                     dataset=ds_name,
-                    logger=logger)
+                    logger=logger,
+                    Legacy_coordinate=True)
                 mean_aps.append(mean_ap)
                 eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)
             eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
