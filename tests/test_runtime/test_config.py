@@ -93,11 +93,11 @@ def test_config_build_detector():
         assert detector is not None
 
         # Check whether NumClassCheckHook is used.
-        assert config_mod.custom_hooks is None or \
-               isinstance(config_mod.custom_hooks, list)
+        custom_hooks = config_mod.get('custom_hooks', [])
+        assert custom_hooks is None or isinstance(custom_hooks, list)
         check_class_num = False
-        if config_mod.custom_hooks is not None:
-            hooks = [hook['type'] for hook in config_mod.custom_hooks]
+        if custom_hooks is not None:
+            hooks = [hook['type'] for hook in custom_hooks]
             if 'NumClassCheckHook' in hooks:
                 check_class_num = True
         if check_class_num:
