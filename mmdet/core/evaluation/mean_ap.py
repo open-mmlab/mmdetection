@@ -74,8 +74,8 @@ def tpfp_imagenet(det_bboxes,
             Default: 0.5.
         area_ranges (list[tuple] | None): Range of bbox areas to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. Default: None.
-        Legacy_coordinate (bool): Whether use Coordinate System in mmdet v1.x.
-            "1" was added to both height and width which means should be
+        Legacy_coordinate (bool): Whether use coordinate system in mmdet v1.x.
+            "1" was added to both height and width which means w, h should be
              computed as 'x2 - x1 + 1` and 'y2 - y1 + 1'.
 
     Returns:
@@ -179,8 +179,8 @@ def tpfp_default(det_bboxes,
             Default: 0.5.
         area_ranges (list[tuple] | None): Range of bbox areas to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. Default: None.
-        Legacy_coordinate (bool): Whether use Coordinate System in mmdet v1.x.
-            "1" was added to both height and width which means h, w should be
+        Legacy_coordinate (bool): Whether use coordinate system in mmdet v1.x.
+            "1" was added to both height and width which means w, h should be
              computed as 'x2 - x1 + 1` and 'y2 - y1 + 1'.
              The `Legacy_coordinate` should be Ture
              when evaluate the VOC dataset.
@@ -330,8 +330,8 @@ def eval_map(det_results,
             to evaluate tp & fp. Default None.
         nproc (int): Processes used for computing TP and FP.
             Default: 4.
-        Legacy_coordinate (bool): Whether use Coordinate System in mmdet v1.x.
-            "1" was added to both height and width which means should be
+        Legacy_coordinate (bool): Whether use coordinate system in mmdet v1.x.
+            "1" was added to both height and width which means w, h should be
              computed as 'x2 - x1 + 1` and 'y2 - y1 + 1'.
 
     Returns:

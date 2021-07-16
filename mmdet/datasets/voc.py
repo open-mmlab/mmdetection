@@ -71,8 +71,8 @@ class VOCDataset(XMLDataset):
                 print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')
                 # Follow the official implementation,
                 # http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCdevkit_18-May-2011.tar
-                # we should use the  Legacy coordinate system in mmdet 1.x,
-                # which means h, w should be computed as 'x2 - x1 + 1` and
+                # we should use the legacy coordinate system in mmdet 1.x,
+                # which means w, h should be computed as 'x2 - x1 + 1` and
                 # `y2 - y1 + 1`
                 mean_ap, _ = eval_map(
                     results,
