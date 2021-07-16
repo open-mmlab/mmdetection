@@ -92,7 +92,7 @@ def test_config_build_detector():
         detector = build_detector(config_mod.model)
         assert detector is not None
 
-        # whether NumClassCheckHook is used.
+        # Check whether NumClassCheckHook is used.
         assert config_mod.custom_hooks is None or \
                isinstance(config_mod.custom_hooks, list)
         check_class_num = False
