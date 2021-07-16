@@ -61,7 +61,7 @@ def tpfp_imagenet(det_bboxes,
                   gt_bboxes_ignore=None,
                   default_iou_thr=0.5,
                   area_ranges=None,
-                  Legacy_coordinate=False):
+                  legacy_coordinate=False):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -74,16 +74,17 @@ def tpfp_imagenet(det_bboxes,
             Default: 0.5.
         area_ranges (list[tuple] | None): Range of bbox areas to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. Default: None.
-        Legacy_coordinate (bool): Whether use coordinate system in mmdet v1.x.
-            "1" was added to both height and width which means w, h should be
-             computed as 'x2 - x1 + 1` and 'y2 - y1 + 1'.
+        legacy_coordinate (bool): Whether to use coordinate system in
+            mmdet v1.x. which means width, height should be
+            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
+            Default: False.
 
     Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
             each array is (num_scales, m).
     """
 
-    if not Legacy_coordinate:
+    if not legacy_coordinate:
         extra_length = 0.
     else:
         extra_length = 1.
@@ -167,7 +168,7 @@ def tpfp_default(det_bboxes,
                  gt_bboxes_ignore=None,
                  iou_thr=0.5,
                  area_ranges=None,
-                 Legacy_coordinate=False):
+                 legacy_coordinate=False):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -177,20 +178,20 @@ def tpfp_default(det_bboxes,
             of shape (k, 4). Default: None
         iou_thr (float): IoU threshold to be considered as matched.
             Default: 0.5.
-        area_ranges (list[tuple] | None): Range of bbox areas to be evaluated,
-            in the format [(min1, max1), (min2, max2), ...]. Default: None.
-        Legacy_coordinate (bool): Whether use coordinate system in mmdet v1.x.
-            "1" was added to both height and width which means w, h should be
-             computed as 'x2 - x1 + 1` and 'y2 - y1 + 1'.
-             The `Legacy_coordinate` should be Ture
-             when evaluate the VOC dataset.
+        area_ranges (list[tuple] | None): Range of bbox areas to be
+            evaluated, in the format [(min1, max1), (min2, max2), ...].
+            Default: None.
+        legacy_coordinate (bool): Whether to use coordinate system in
+            mmdet v1.x. which means width, height should be
+            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
+            Default: False.
 
     Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
             each array is (num_scales, m).
     """
 
-    if not Legacy_coordinate:
+    if not legacy_coordinate:
         extra_length = 0.
     else:
         extra_length = 1.
@@ -298,7 +299,7 @@ def eval_map(det_results,
              logger=None,
              tpfp_fn=None,
              nproc=4,
-             Legacy_coordinate=False):
+             legacy_coordinate=False):
     """Evaluate mAP of a dataset.
 
     Args:
@@ -330,15 +331,16 @@ def eval_map(det_results,
             to evaluate tp & fp. Default None.
         nproc (int): Processes used for computing TP and FP.
             Default: 4.
-        Legacy_coordinate (bool): Whether use coordinate system in mmdet v1.x.
-            "1" was added to both height and width which means w, h should be
-             computed as 'x2 - x1 + 1` and 'y2 - y1 + 1'.
+        legacy_coordinate (bool): Whether to use coordinate system in
+            mmdet v1.x. which means width, height should be
+            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
+            Default: False.
 
     Returns:
         tuple: (mAP, [dict, dict, ...])
     """
     assert len(det_results) == len(annotations)
-    if not Legacy_coordinate:
+    if not legacy_coordinate:
         extra_length = 0.
     else:
         extra_length = 1.
@@ -371,7 +373,7 @@ def eval_map(det_results,
             zip(cls_dets, cls_gts, cls_gts_ignore,
                 [iou_thr for _ in range(num_imgs)],
                 [area_ranges for _ in range(num_imgs)],
-                [Legacy_coordinate for _ in range(num_imgs)]))
+                [legacy_coordinate for _ in range(num_imgs)]))
         tp, fp = tuple(zip(*tpfp))
         # calculate gt number of each scale
         # ignored gts or gts beyond the specific scale are not counted

@@ -66,7 +66,7 @@ def eval_recalls(gts,
                  proposal_nums=None,
                  iou_thrs=0.5,
                  logger=None,
-                 Legacy_coordinate=False):
+                 legacy_coordinate=False):
     """Calculate recalls.
 
     Args:
@@ -76,7 +76,7 @@ def eval_recalls(gts,
         iou_thrs (float | Sequence[float]): IoU thresholds. Default: 0.5.
         logger (logging.Logger | str | None): The way to print the recall
             summary. See `mmcv.utils.print_log()` for details. Default: None.
-        Legacy_coordinate (bool): Whether use coordinate system in mmdet v1.x.
+        legacy_coordinate (bool): Whether use coordinate system in mmdet v1.x.
             "1" was added to both height and width which means w, h should be
              computed as 'x2 - x1 + 1` and 'y2 - y1 + 1'. Default: False.
 
@@ -85,7 +85,7 @@ def eval_recalls(gts,
         ndarray: recalls of different ious and proposal nums
     """
 
-    if not Legacy_coordinate:
+    if not legacy_coordinate:
         extra_length = 0.
     else:
         extra_length = 1.
