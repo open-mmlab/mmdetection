@@ -45,16 +45,15 @@ def _get_detector_cfg(fname):
 def test_sparse_rcnn_forward():
     config_path = 'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py'
     model = _get_detector_cfg(config_path)
-    model['pretrained'] = None
+    model.backbone.init_cfg = None
     from mmdet.models import build_detector
     detector = build_detector(model)
+    detector.init_weights()
     input_shape = (1, 3, 550, 550)
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[5])
     imgs = mm_inputs.pop('imgs')
     img_metas = mm_inputs.pop('img_metas')
     # Test forward train with non-empty truth batch
-    detector = detector
-    imgs = imgs
     detector.train()
     gt_bboxes = mm_inputs['gt_bboxes']
     gt_bboxes = [item for item in gt_bboxes]
@@ -74,7 +73,6 @@ def test_sparse_rcnn_forward():
     # Test forward train with an empty truth batch
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
     imgs = mm_inputs.pop('imgs')
-    imgs = imgs
     img_metas = mm_inputs.pop('img_metas')
     gt_bboxes = mm_inputs['gt_bboxes']
     gt_bboxes = [item for item in gt_bboxes]
@@ -104,7 +102,7 @@ def test_sparse_rcnn_forward():
 
 def test_rpn_forward():
     model = _get_detector_cfg('rpn/rpn_r50_fpn_1x_coco.py')
-    model['pretrained'] = None
+    model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
     detector = build_detector(model)
@@ -137,7 +135,7 @@ def test_rpn_forward():
         'retinanet/retinanet_r50_fpn_1x_coco.py',
         'guided_anchoring/ga_retinanet_r50_fpn_1x_coco.py',
         'ghm/retinanet_ghm_r50_fpn_1x_coco.py',
-        'fcos/fcos_center_r50_caffe_fpn_gn-head_4x4_1x_coco.py',
+        'fcos/fcos_center_r50_caffe_fpn_gn-head_1x_coco.py',
         'foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py',
         # 'free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
         # 'atss/atss_r50_fpn_1x_coco.py',  # not ready for topk
@@ -150,7 +148,7 @@ def test_single_stage_forward_gpu(cfg_file):
         pytest.skip('test requires GPU and torch+cuda')
 
     model = _get_detector_cfg(cfg_file)
-    model['pretrained'] = None
+    model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
     detector = build_detector(model)
@@ -187,7 +185,7 @@ def test_single_stage_forward_gpu(cfg_file):
 def test_faster_rcnn_ohem_forward():
     model = _get_detector_cfg(
         'faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py')
-    model['pretrained'] = None
+    model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
     detector = build_detector(model)
@@ -227,14 +225,17 @@ def test_faster_rcnn_ohem_forward():
     assert float(loss.item()) > 0
 
 
-@pytest.mark.parametrize('cfg_file', [
-    'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
-    'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-    'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
-    'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py',
-    'htc/htc_r50_fpn_1x_coco.py',
-    'scnet/scnet_r50_fpn_20e_coco.py',
-])
+@pytest.mark.parametrize(
+    'cfg_file',
+    [
+        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
+        'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
+        'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py',
+        'htc/htc_r50_fpn_1x_coco.py',
+        'scnet/scnet_r50_fpn_20e_coco.py',
+        'seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py'  # noqa: E501
+    ])
 def test_two_stage_forward(cfg_file):
     models_with_semantic = [
         'htc/htc_r50_fpn_1x_coco.py',
@@ -246,7 +247,17 @@ def test_two_stage_forward(cfg_file):
         with_semantic = False
 
     model = _get_detector_cfg(cfg_file)
-    model['pretrained'] = None
+    model.backbone.init_cfg = None
+
+    # Save cost
+    if cfg_file in [
+            'seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py'  # noqa: E501
+    ]:
+        model.roi_head.bbox_head.num_classes = 80
+        model.roi_head.bbox_head.loss_cls.num_classes = 80
+        model.roi_head.mask_head.num_classes = 80
+        model.test_cfg.rcnn.score_thr = 0.05
+        model.test_cfg.rcnn.max_per_img = 100
 
     from mmdet.models import build_detector
     detector = build_detector(model)
@@ -291,7 +302,7 @@ def test_two_stage_forward(cfg_file):
     'cfg_file', ['ghm/retinanet_ghm_r50_fpn_1x_coco.py', 'ssd/ssd300_coco.py'])
 def test_single_stage_forward_cpu(cfg_file):
     model = _get_detector_cfg(cfg_file)
-    model['pretrained'] = None
+    model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
     detector = build_detector(model)
@@ -351,7 +362,7 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
         'ori_shape': (H, W, C),
         'pad_shape': (H, W, C),
         'filename': '<demo>.png',
-        'scale_factor': 1.0,
+        'scale_factor': np.array([1.1, 1.2, 1.1, 1.2]),
         'flip': False,
         'flip_direction': None,
     } for _ in range(N)]
@@ -403,7 +414,7 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
 
 def test_yolact_forward():
     model = _get_detector_cfg('yolact/yolact_r50_1x8_coco.py')
-    model['pretrained'] = None
+    model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
     detector = build_detector(model)
@@ -442,7 +453,62 @@ def test_yolact_forward():
 
 def test_detr_forward():
     model = _get_detector_cfg('detr/detr_r50_8x2_150e_coco.py')
-    model['pretrained'] = None
+    model.backbone.init_cfg = None
+
+    from mmdet.models import build_detector
+    detector = build_detector(model)
+
+    input_shape = (1, 3, 100, 100)
+    mm_inputs = _demo_mm_inputs(input_shape)
+
+    imgs = mm_inputs.pop('imgs')
+    img_metas = mm_inputs.pop('img_metas')
+
+    # Test forward train with non-empty truth batch
+    detector.train()
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_labels = mm_inputs['gt_labels']
+    losses = detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
+
+    # Test forward train with an empty truth batch
+    mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
+    imgs = mm_inputs.pop('imgs')
+    img_metas = mm_inputs.pop('img_metas')
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_labels = mm_inputs['gt_labels']
+    losses = detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
+
+    # Test forward test
+    detector.eval()
+    with torch.no_grad():
+        img_list = [g[None, :] for g in imgs]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      rescale=True,
+                                      return_loss=False)
+            batch_results.append(result)
+
+
+def test_kd_single_stage_forward():
+    model = _get_detector_cfg('ld/ld_r18_gflv1_r101_fpn_coco_1x.py')
+    model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
     detector = build_detector(model)
@@ -504,7 +570,6 @@ def test_inference_detector():
     num_class = 3
     model_dict = dict(
         type='RetinaNet',
-        pretrained=None,
         backbone=dict(
             type='ResNet',
             depth=18,

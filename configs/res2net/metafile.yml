@@ -1,0 +1,89 @@
+Collections:
+  - Name: Res2Net
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - Res2Net
+    Paper: https://arxiv.org/abs/1904.01169
+    README: configs/res2net/README.md
+
+Models:
+  - Name: faster_rcnn_r2_101_fpn_2x_coco
+    In Collection: Res2Net
+    Config: configs/res2net/faster_rcnn_r2_101_fpn_2x_coco.py
+    Metadata:
+      Training Memory (GB): 7.4
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/res2net/faster_rcnn_r2_101_fpn_2x_coco/faster_rcnn_r2_101_fpn_2x_coco-175f1da6.pth
+
+  - Name: mask_rcnn_r2_101_fpn_2x_coco
+    In Collection: Res2Net
+    Config: configs/res2net/mask_rcnn_r2_101_fpn_2x_coco.py
+    Metadata:
+      Training Memory (GB): 7.9
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.6
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/res2net/mask_rcnn_r2_101_fpn_2x_coco/mask_rcnn_r2_101_fpn_2x_coco-17f061e8.pth
+
+  - Name: cascade_rcnn_r2_101_fpn_20e_coco
+    In Collection: Res2Net
+    Config: configs/res2net/cascade_rcnn_r2_101_fpn_20e_coco.py
+    Metadata:
+      Training Memory (GB): 7.8
+      Epochs: 20
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_rcnn_r2_101_fpn_20e_coco/cascade_rcnn_r2_101_fpn_20e_coco-f4b7b7db.pth
+
+  - Name: cascade_mask_rcnn_r2_101_fpn_20e_coco
+    In Collection: Res2Net
+    Config: configs/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco.py
+    Metadata:
+      Training Memory (GB): 9.5
+      Epochs: 20
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.4
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 40.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco/cascade_mask_rcnn_r2_101_fpn_20e_coco-8a7b41e1.pth
+
+  - Name: htc_r2_101_fpn_20e_coco
+    In Collection: Res2Net
+    Config: configs/res2net/htc_r2_101_fpn_20e_coco.py
+    Metadata:
+      Epochs: 20
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 47.5
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 41.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/res2net/htc_r2_101_fpn_20e_coco/htc_r2_101_fpn_20e_coco-3a8d2112.pth

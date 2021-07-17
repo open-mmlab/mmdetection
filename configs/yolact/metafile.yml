@@ -1,0 +1,73 @@
+Collections:
+  - Name: YOLACT
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - FPN
+        - ResNet
+    Paper: https://arxiv.org/abs/1904.02689
+    README: configs/yolact/README.md
+
+Models:
+  - Name: yolact_r50_1x8_coco
+    In Collection: YOLACT
+    Config: configs/yolact/yolact_r50_1x8_coco.py
+    Metadata:
+      Training Resources: 1x V100 GPU
+      Batch Size: 8
+      inference time (ms/im):
+        - value: 23.53
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (550, 550)
+    Results:
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 29.0
+    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/yolact/yolact_r50_1x8_coco_20200908-f38d58df.pth
+
+  - Name: yolact_r50_8x8_coco
+    In Collection: YOLACT
+    Config: configs/yolact/yolact_r50_8x8_coco.py
+    Metadata:
+      Batch Size: 64
+      inference time (ms/im):
+        - value: 23.53
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (550, 550)
+    Results:
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 28.4
+    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/yolact/yolact_r50_8x8_coco_20200908-ca34f5db.pth
+
+  - Name: yolact_r101_1x8_coco
+    In Collection: YOLACT
+    Config: configs/yolact/yolact_r101_1x8_coco.py
+    Metadata:
+      Training Resources: 1x V100 GPU
+      Batch Size: 8
+      inference time (ms/im):
+        - value: 29.85
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (550, 550)
+    Results:
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 30.4
+    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/yolact/yolact_r101_1x8_coco_20200908-4cbe9101.pth

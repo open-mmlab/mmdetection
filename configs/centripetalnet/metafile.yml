@@ -1,0 +1,34 @@
+Collections:
+  - Name: CentripetalNet
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - Adam
+      Training Resources: 16x V100 GPUs
+      Architecture:
+        - Corner Pooling
+        - Stacked Hourglass Network
+    Paper: https://arxiv.org/abs/2003.09119
+    README: configs/centripetalnet/README.md
+
+Models:
+  - Name: centripetalnet_hourglass104_mstest_16x6_210e_coco
+    In Collection: CentripetalNet
+    Config: configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py
+    Metadata:
+      Batch Size: 96
+      Training Memory (GB): 16.7
+      inference time (ms/im):
+        - value: 270.27
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 210
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco/centripetalnet_hourglass104_mstest_16x6_210e_coco_20200915_204804-3ccc61e5.pth

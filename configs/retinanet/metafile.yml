@@ -1,0 +1,207 @@
+Collections:
+  - Name: RetinaNet
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - Focal Loss
+        - FPN
+        - ResNet
+    Paper: https://arxiv.org/abs/1708.02002
+    README: configs/retinanet/README.md
+
+Models:
+  - Name: retinanet_r50_caffe_fpn_1x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r50_caffe_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.5
+      inference time (ms/im):
+        - value: 53.76
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 36.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531-f11027c5.pth
+
+  - Name: retinanet_r50_fpn_1x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r50_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.8
+      inference time (ms/im):
+        - value: 52.63
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 36.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth
+
+  - Name: retinanet_r50_fpn_2x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r50_fpn_2x_coco.py
+    Metadata:
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_2x_coco/retinanet_r50_fpn_2x_coco_20200131-fdb43119.pth
+
+  - Name: retinanet_r101_caffe_fpn_1x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r101_caffe_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 5.5
+      inference time (ms/im):
+        - value: 68.03
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_caffe_fpn_1x_coco/retinanet_r101_caffe_fpn_1x_coco_20200531-b428fa0f.pth
+
+  - Name: retinanet_r101_fpn_1x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r101_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 5.7
+      inference time (ms/im):
+        - value: 66.67
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_1x_coco/retinanet_r101_fpn_1x_coco_20200130-7a93545f.pth
+
+  - Name: retinanet_r101_fpn_2x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r101_fpn_2x_coco.py
+    Metadata:
+      Training Memory (GB): 5.7
+      inference time (ms/im):
+        - value: 66.67
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_2x_coco/retinanet_r101_fpn_2x_coco_20200131-5560aee8.pth
+
+  - Name: retinanet_x101_32x4d_fpn_1x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_x101_32x4d_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 7.0
+      inference time (ms/im):
+        - value: 82.64
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_32x4d_fpn_1x_coco/retinanet_x101_32x4d_fpn_1x_coco_20200130-5c8b7ec4.pth
+
+  - Name: retinanet_x101_32x4d_fpn_2x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_x101_32x4d_fpn_2x_coco.py
+    Metadata:
+      Training Memory (GB): 7.0
+      inference time (ms/im):
+        - value: 82.64
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_32x4d_fpn_2x_coco/retinanet_x101_32x4d_fpn_2x_coco_20200131-237fc5e1.pth
+
+  - Name: retinanet_x101_64x4d_fpn_1x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_x101_64x4d_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 10.0
+      inference time (ms/im):
+        - value: 114.94
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_1x_coco/retinanet_x101_64x4d_fpn_1x_coco_20200130-366f5af1.pth
+
+  - Name: retinanet_x101_64x4d_fpn_2x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_x101_64x4d_fpn_2x_coco.py
+    Metadata:
+      Training Memory (GB): 10.0
+      inference time (ms/im):
+        - value: 114.94
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_2x_coco/retinanet_x101_64x4d_fpn_2x_coco_20200131-bca068ab.pth

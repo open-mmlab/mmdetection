@@ -5,19 +5,16 @@ import mmcv
 import numpy as np
 import torch
 import torch.distributed as dist
-import torch.nn as nn
-from mmcv.runner import auto_fp16
-from mmcv.utils import print_log
+from mmcv.runner import BaseModule, auto_fp16
 
 from mmdet.core.visualization import imshow_det_bboxes
-from mmdet.utils import get_root_logger
 
 
-class BaseDetector(nn.Module, metaclass=ABCMeta):
+class BaseDetector(BaseModule, metaclass=ABCMeta):
     """Base class for detectors."""
 
-    def __init__(self):
-        super(BaseDetector, self).__init__()
+    def __init__(self, init_cfg=None):
+        super(BaseDetector, self).__init__(init_cfg)
         self.fp16_enabled = False
 
     @property
@@ -93,17 +90,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         """Test function with test time augmentation."""
         pass
 
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in detector.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        if pretrained is not None:
-            logger = get_root_logger()
-            print_log(f'load model from: {pretrained}', logger=logger)
-
     async def aforward_test(self, *, img, img_metas, **kwargs):
         for var, name in [(img, 'img'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
@@ -177,6 +163,10 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
         """
+        if torch.onnx.is_in_onnx_export():
+            assert len(img_metas) == 1
+            return self.onnx_export(img[0], img_metas[0])
+
         if return_loss:
             return self.forward_train(img, img_metas, **kwargs)
         else:
@@ -252,7 +242,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
         return outputs
 
-    def val_step(self, data, optimizer):
+    def val_step(self, data, optimizer=None):
         """The iteration step during validation.
 
         This method shares the same signature as :func:`train_step`, but used
@@ -275,7 +265,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     text_color=(72, 101, 241),
                     mask_color=None,
                     thickness=2,
-                    font_scale=0.5,
                     font_size=13,
                     win_name='',
                     show=False,
@@ -297,7 +286,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                Color of masks. The tuple of color should be in BGR order.
                Default: None
             thickness (int): Thickness of lines. Default: 2
-            font_scale (float): Font scales of texts. Default: 0.5
             font_size (int): Font size of texts. Default: 13
             win_name (str): The window name. Default: ''
             wait_time (float): Value of waitKey param.
@@ -347,7 +335,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             text_color=text_color,
             mask_color=mask_color,
             thickness=thickness,
-            font_scale=font_scale,
             font_size=font_size,
             win_name=win_name,
             show=show,
@@ -356,3 +343,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
         if not (show or out_file):
             return img
+
+    def onnx_export(self, img, img_metas):
+        raise NotImplementedError(f'{self.__class__.__name__} does '
+                                  f'not support ONNX EXPORT')

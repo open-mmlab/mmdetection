@@ -1,10 +1,50 @@
-# Compatibility with MMDetection 1.x
+# Compatibility of MMDetection 2.x
+
+## MMDetection 2.14.0
+
+### MMCV Version
+In order to fix the problem that the priority of EvalHook is too low, all hook priorities have been re-adjusted in 1.3.8, so MMDetection 2.14.0 needs to rely on the latest MMCV 1.3.8 version. For related information, please refer to [#1120](https://github.com/open-mmlab/mmcv/pull/1120), for related issues, please refer to [#5343](https://github.com/open-mmlab/mmdetection/issues/5343).
+
+### SSD compatibility
+
+In v2.14.0, to make SSD more flexible to use, [PR5291](https://github.com/open-mmlab/mmdetection/pull/5291) refactored its backbone, neck and head. The users can use the script `tools/model_converters/upgrade_ssd_version.py` to convert their models.
+
+```bash
+python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH}
+```
+
+- OLD_MODEL_PATH: the path to load the old version SSD model.
+- NEW_MODEL_PATH: the path to save the converted model weights.
+
+## MMDetection 2.12.0
+
+MMDetection is going through big refactoring for more general and convenient usages during the releases from v2.12.0 to v2.15.0 (maybe longer).
+In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV dependency, model initialization, model registry, and mask AP evaluation.
+
+### MMCV Version
+
+MMDetection v2.12.0 relies on the newest features in MMCV 1.3.3, including `BaseModule` for unified parameter initialization, model registry, and the CUDA operator `MultiScaleDeformableAttn` for [Deformable DETR](https://arxiv.org/abs/2010.04159). Note that MMCV 1.3.2 already contains all the features used by MMDet but has known issues. Therefore, we recommend users to skip MMCV v1.3.2 and use v1.3.2, though v1.3.2 might work for most of the cases.
+
+### Unified model initialization
+
+To unify the parameter initialization in OpenMMLab projects, MMCV supports `BaseModule` that accepts `init_cfg` to allow the modules' parameters initialized in a flexible and unified manner. Now the users need to explicitly call `model.init_weights()` in the training script to initialize the model (as in [here](https://github.com/open-mmlab/mmdetection/blob/master/tools/train.py#L162), previously this was handled by the detector. **The downstream projects must update their model initialization accordingly to use MMDetection v2.12.0**. Please refer to PR #4750 for details.
+
+### Unified model registry
+
+To easily use backbones implemented in other OpenMMLab projects, MMDetection v2.12.0 inherits the model registry created in MMCV (#760). In this way, as long as the backbone is supported in an OpenMMLab project and that project also uses the registry in MMCV, users can use that backbone in MMDetection by simply modifying the config without copying the code of that backbone into MMDetection. Please refer to PR #5059 for more details.
+
+### Mask AP evaluation
+
+Before [PR 4898](https://github.com/open-mmlab/mmdetection/pull/4898) and V2.12.0, the mask AP of small, medium, and large instances is calculated based on the bounding box area rather than the real mask area. This leads to higher `APs` and `APm` but lower `APl` but will not affect the overall mask AP. [PR 4898](https://github.com/open-mmlab/mmdetection/pull/4898) change it to use mask areas by deleting `bbox` in mask AP calculation.
+The new calculation does not affect the overall mask AP evaluation and is consistent with [Detectron2](https://github.com/facebookresearch/detectron2/).
+
+## Compatibility with MMDetection 1.x
 
 MMDetection 2.0 goes through a big refactoring and addresses many legacy issues. It is not compatible with the 1.x version, i.e., running inference with the same model weights in these two versions will produce different results. Thus, MMDetection 2.0 re-benchmarks all the models and provides their links and logs in the model zoo.
 
 The major differences are in four folds: coordinate system, codebase conventions, training hyperparameters, and modular design.
 
-## Coordinate System
+### Coordinate System
 
 The new coordinate system is consistent with [Detectron2](https://github.com/facebookresearch/detectron2/) and treats the center of the most left-top pixel as (0, 0) rather than the left-top corner of that pixel.
 Accordingly, the system interprets the coordinates in COCO bounding box and segmentation annotations as coordinates in range `[0, width]` or `[0, height]`.
@@ -33,7 +73,7 @@ which is more natural and accurate.
 
   2. In MMDetection 2.0, the "`paste_mask()`" function is different and should be more accurate than those in previous versions. This change follows the modification in [Detectron2](https://github.com/facebookresearch/detectron2/blob/master/detectron2/structures/masks.py) and can improve mask AP on COCO by ~0.5% absolute.
 
-## Codebase Conventions
+### Codebase Conventions
 
 - MMDetection 2.0 changes the order of class labels to reduce unused parameters in regression and mask branch more naturally (without +1 and -1).
   This effect all the classification layers of the model to have a different ordering of class labels. The final layers of regression branch and mask head no longer keep K+1 channels for K categories, and their class orders are consistent with the classification branch.
@@ -59,7 +99,7 @@ which is more natural and accurate.
 
 - MMDetection V2.0 uses new ResNet Caffe backbones to reduce warnings when loading pre-trained models. Most of the new backbones' weights are the same as the former ones but do not have `conv.bias`, except that they use a different `img_norm_cfg`. Thus, the new backbone will not cause warning of unexpected keys.
 
-## Training Hyperparameters
+### Training Hyperparameters
 
 The change in training hyperparameters does not affect
 model-level compatibility but slightly improves the performance. The major ones are:
@@ -75,8 +115,16 @@ model-level compatibility but slightly improves the performance. The major ones 
 
 - The default warmup ratio is changed from 1/3 to 0.001 for a more smooth warming up process since the gradient clipping is usually not used. The effect is found negligible during our re-benchmarking, though.
 
-## Upgrade Models from 1.x to 2.0
+### Upgrade Models from 1.x to 2.0
 
 To convert the models trained by MMDetection V1.x to MMDetection V2.0, the users can use the script `tools/model_converters/upgrade_model_version.py` to convert
 their models. The converted models can be run in MMDetection V2.0 with slightly dropped performance (less than 1% AP absolute).
 Details can be found in `configs/legacy`.
+
+## pycocotools compatibility
+
+`mmpycocotools` is the OpenMMlab's folk of official `pycocotools`, which works for both MMDetection and Detectron2.
+Before [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939), since `pycocotools` and `mmpycocotool` have the same package name, if users already installed `pyccocotools` (installed Detectron2 first under the same environment), then the setup of MMDetection will skip installing `mmpycocotool`. Thus MMDetection fails due to the missing `mmpycocotools`.
+If MMDetection is installed before Detectron2, they could work under the same environment.
+[PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939) deprecates mmpycocotools in favor of official pycocotools.
+Users may install MMDetection and Detectron2 under the same environment after [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939), no matter what the installation order is.

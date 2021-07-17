@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
+from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
@@ -20,6 +20,18 @@ class SSDHead(AnchorHead):
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
+        stacked_convs (int): Number of conv layers in cls and reg tower.
+            Default: 0.
+        feat_channels (int): Number of hidden channels when stacked_convs
+            > 0. Default: 256.
+        use_depthwise (bool): Whether to use DepthwiseSeparableConv.
+            Default: False.
+        conv_cfg (dict): Dictionary to construct and config conv layer.
+            Default: None.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: None.
+        act_cfg (dict): Dictionary to construct and config activation layer.
+            Default: None.
         anchor_generator (dict): Config dict for anchor generator
         bbox_coder (dict): Config of bounding box coder.
         reg_decoded_bbox (bool): If true, the regression loss would be
@@ -29,11 +41,18 @@ class SSDHead(AnchorHead):
             using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     def __init__(self,
                  num_classes=80,
                  in_channels=(512, 1024, 512, 256, 256, 256),
+                 stacked_convs=0,
+                 feat_channels=256,
+                 use_depthwise=False,
+                 conv_cfg=None,
+                 norm_cfg=None,
+                 act_cfg=None,
                  anchor_generator=dict(
                      type='SSDAnchorGenerator',
                      scale_major=False,
@@ -49,31 +68,27 @@ class SSDHead(AnchorHead):
                  ),
                  reg_decoded_bbox=False,
                  train_cfg=None,
-                 test_cfg=None):
-        super(AnchorHead, self).__init__()
+                 test_cfg=None,
+                 init_cfg=dict(
+                     type='Xavier',
+                     layer='Conv2d',
+                     distribution='uniform',
+                     bias=0)):
+        super(AnchorHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
+        self.stacked_convs = stacked_convs
+        self.feat_channels = feat_channels
+        self.use_depthwise = use_depthwise
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.act_cfg = act_cfg
+
         self.cls_out_channels = num_classes + 1  # add background class
         self.anchor_generator = build_anchor_generator(anchor_generator)
-        num_anchors = self.anchor_generator.num_base_anchors
+        self.num_anchors = self.anchor_generator.num_base_anchors
 
-        reg_convs = []
-        cls_convs = []
-        for i in range(len(in_channels)):
-            reg_convs.append(
-                nn.Conv2d(
-                    in_channels[i],
-                    num_anchors[i] * 4,
-                    kernel_size=3,
-                    padding=1))
-            cls_convs.append(
-                nn.Conv2d(
-                    in_channels[i],
-                    num_anchors[i] * (num_classes + 1),
-                    kernel_size=3,
-                    padding=1))
-        self.reg_convs = nn.ModuleList(reg_convs)
-        self.cls_convs = nn.ModuleList(cls_convs)
+        self._init_layers()
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.reg_decoded_bbox = reg_decoded_bbox
@@ -90,11 +105,75 @@ class SSDHead(AnchorHead):
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
 
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform', bias=0)
+    def _init_layers(self):
+        """Initialize layers of the head."""
+        self.cls_convs = nn.ModuleList()
+        self.reg_convs = nn.ModuleList()
+        # TODO: Use registry to choose ConvModule type
+        conv = DepthwiseSeparableConvModule \
+            if self.use_depthwise else ConvModule
+
+        for channel, num_anchors in zip(self.in_channels, self.num_anchors):
+            cls_layers = []
+            reg_layers = []
+            in_channel = channel
+            # build stacked conv tower, not used in default ssd
+            for i in range(self.stacked_convs):
+                cls_layers.append(
+                    conv(
+                        in_channel,
+                        self.feat_channels,
+                        3,
+                        padding=1,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg,
+                        act_cfg=self.act_cfg))
+                reg_layers.append(
+                    conv(
+                        in_channel,
+                        self.feat_channels,
+                        3,
+                        padding=1,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg,
+                        act_cfg=self.act_cfg))
+                in_channel = self.feat_channels
+            # SSD-Lite head
+            if self.use_depthwise:
+                cls_layers.append(
+                    ConvModule(
+                        in_channel,
+                        in_channel,
+                        3,
+                        padding=1,
+                        groups=in_channel,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg,
+                        act_cfg=self.act_cfg))
+                reg_layers.append(
+                    ConvModule(
+                        in_channel,
+                        in_channel,
+                        3,
+                        padding=1,
+                        groups=in_channel,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg,
+                        act_cfg=self.act_cfg))
+            cls_layers.append(
+                nn.Conv2d(
+                    in_channel,
+                    num_anchors * self.cls_out_channels,
+                    kernel_size=1 if self.use_depthwise else 3,
+                    padding=0 if self.use_depthwise else 1))
+            reg_layers.append(
+                nn.Conv2d(
+                    in_channel,
+                    num_anchors * 4,
+                    kernel_size=1 if self.use_depthwise else 3,
+                    padding=0 if self.use_depthwise else 1))
+            self.cls_convs.append(nn.Sequential(*cls_layers))
+            self.reg_convs.append(nn.Sequential(*reg_layers))
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -150,9 +229,10 @@ class SSDHead(AnchorHead):
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        pos_inds = ((labels >= 0) &
-                    (labels < self.num_classes)).nonzero().reshape(-1)
-        neg_inds = (labels == self.num_classes).nonzero().view(-1)
+        pos_inds = ((labels >= 0) & (labels < self.num_classes)).nonzero(
+            as_tuple=False).reshape(-1)
+        neg_inds = (labels == self.num_classes).nonzero(
+            as_tuple=False).view(-1)
 
         num_pos_samples = pos_inds.size(0)
         num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples

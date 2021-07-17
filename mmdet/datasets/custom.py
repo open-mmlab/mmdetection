@@ -5,6 +5,7 @@ from collections import OrderedDict
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
+from terminaltables import AsciiTable
 from torch.utils.data import Dataset
 
 from mmdet.core import eval_map, eval_recalls
@@ -222,8 +223,8 @@ class CustomDataset(Dataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Testing data after pipeline with new keys intorduced by \
-                piepline.
+            dict: Testing data after pipeline with new keys introduced by \
+                pipeline.
         """
 
         img_info = self.data_infos[idx]
@@ -262,7 +263,6 @@ class CustomDataset(Dataset):
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
-        pass
 
     def evaluate(self,
                  results,
@@ -322,3 +322,46 @@ class CustomDataset(Dataset):
                 for i, num in enumerate(proposal_nums):
                     eval_results[f'AR@{num}'] = ar[i]
         return eval_results
+
+    def __repr__(self):
+        """Print the number of instance number."""
+        dataset_type = 'Test' if self.test_mode else 'Train'
+        result = (f'\n{self.__class__.__name__} {dataset_type} dataset '
+                  f'with number of images {len(self)}, '
+                  f'and instance counts: \n')
+        if self.CLASSES is None:
+            result += 'Category names are not provided. \n'
+            return result
+        instance_count = np.zeros(len(self.CLASSES) + 1).astype(int)
+        # count the instance number in each image
+        for idx in range(len(self)):
+            label = self.get_ann_info(idx)['labels']
+            unique, counts = np.unique(label, return_counts=True)
+            if len(unique) > 0:
+                # add the occurrence number to each class
+                instance_count[unique] += counts
+            else:
+                # background is the last index
+                instance_count[-1] += 1
+        # create a table with category count
+        table_data = [['category', 'count'] * 5]
+        row_data = []
+        for cls, count in enumerate(instance_count):
+            if cls < len(self.CLASSES):
+                row_data += [f'{cls} [{self.CLASSES[cls]}]', f'{count}']
+            else:
+                # add the background number
+                row_data += ['-1 background', f'{count}']
+            if len(row_data) == 10:
+                table_data.append(row_data)
+                row_data = []
+        if len(row_data) >= 2:
+            if row_data[-1] == '0':
+                row_data = row_data[:-2]
+            if len(row_data) >= 2:
+                table_data.append([])
+                table_data.append(row_data)
+
+        table = AsciiTable(table_data)
+        result += table.table
+        return result

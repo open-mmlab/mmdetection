@@ -23,7 +23,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The rescaled masks.
         """
-        pass
 
     @abstractmethod
     def resize(self, out_shape, interpolation='nearest'):
@@ -36,7 +35,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The resized masks.
         """
-        pass
 
     @abstractmethod
     def flip(self, flip_direction='horizontal'):
@@ -48,7 +46,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The flipped masks.
         """
-        pass
 
     @abstractmethod
     def pad(self, out_shape, pad_val):
@@ -61,7 +58,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             BaseInstanceMasks: The padded masks.
         """
-        pass
 
     @abstractmethod
     def crop(self, bbox):
@@ -73,7 +69,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Return:
             BaseInstanceMasks: The cropped masks.
         """
-        pass
 
     @abstractmethod
     def crop_and_resize(self,
@@ -81,7 +76,8 @@ class BaseInstanceMasks(metaclass=ABCMeta):
                         out_shape,
                         inds,
                         device,
-                        interpolation='bilinear'):
+                        interpolation='bilinear',
+                        binarize=True):
         """Crop and resize masks by the given bboxes.
 
         This function is mainly used in mask targets computation.
@@ -95,22 +91,22 @@ class BaseInstanceMasks(metaclass=ABCMeta):
                 shape (N,) and values should be between [0, num_masks - 1].
             device (str): Device of bboxes
             interpolation (str): See `mmcv.imresize`
+            binarize (bool): if True fractional values are rounded to 0 or 1
+                after the resize operation. if False and unsupported an error
+                will be raised. Defaults to True.
 
         Return:
             BaseInstanceMasks: the cropped and resized masks.
         """
-        pass
 
     @abstractmethod
     def expand(self, expanded_h, expanded_w, top, left):
         """see :class:`Expand`."""
-        pass
 
     @property
     @abstractmethod
     def areas(self):
         """ndarray: areas of each instance."""
-        pass
 
     @abstractmethod
     def to_ndarray(self):
@@ -119,7 +115,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Return:
             ndarray: Converted masks in the format of ndarray.
         """
-        pass
 
     @abstractmethod
     def to_tensor(self, dtype, device):
@@ -132,7 +127,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Tensor: Converted masks in the format of Tensor.
         """
-        pass
 
     @abstractmethod
     def translate(self,
@@ -154,7 +148,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Translated masks.
         """
-        pass
 
     def shear(self,
               out_shape,
@@ -176,7 +169,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             ndarray: Sheared masks.
         """
-        pass
 
     @abstractmethod
     def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
@@ -195,7 +187,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         Returns:
             Rotated masks.
         """
-        pass
 
 
 class BitmapMasks(BaseInstanceMasks):
@@ -343,7 +334,8 @@ class BitmapMasks(BaseInstanceMasks):
                         out_shape,
                         inds,
                         device='cpu',
-                        interpolation='bilinear'):
+                        interpolation='bilinear',
+                        binarize=True):
         """See :func:`BaseInstanceMasks.crop_and_resize`."""
         if len(self.masks) == 0:
             empty_masks = np.empty((0, *out_shape), dtype=np.uint8)
@@ -365,7 +357,10 @@ class BitmapMasks(BaseInstanceMasks):
                 0, inds).to(dtype=rois.dtype)
             targets = roi_align(gt_masks_th[:, None, :, :], rois, out_shape,
                                 1.0, 0, 'avg', True).squeeze(1)
-            resized_masks = (targets >= 0.5).cpu().numpy()
+            if binarize:
+                resized_masks = (targets >= 0.5).cpu().numpy()
+            else:
+                resized_masks = targets.cpu().numpy()
         else:
             resized_masks = []
         return BitmapMasks(resized_masks, *out_shape)
@@ -715,11 +710,16 @@ class PolygonMasks(BaseInstanceMasks):
                         out_shape,
                         inds,
                         device='cpu',
-                        interpolation='bilinear'):
+                        interpolation='bilinear',
+                        binarize=True):
         """see :func:`BaseInstanceMasks.crop_and_resize`"""
         out_h, out_w = out_shape
         if len(self.masks) == 0:
             return PolygonMasks([], out_h, out_w)
+
+        if not binarize:
+            raise ValueError('Polygons are always binary, '
+                             'setting binarize=False is unsupported')
 
         resized_masks = []
         for i in range(len(bboxes)):

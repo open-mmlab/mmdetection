@@ -2,13 +2,12 @@ import math
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import uniform_init
-
-from .builder import POSITIONAL_ENCODING
+from mmcv.cnn.bricks.transformer import POSITIONAL_ENCODING
+from mmcv.runner import BaseModule
 
 
 @POSITIONAL_ENCODING.register_module()
-class SinePositionalEncoding(nn.Module):
+class SinePositionalEncoding(BaseModule):
     """Position encoding with sine and cosine functions.
 
     See `End-to-End Object Detection with Transformers
@@ -19,14 +18,18 @@ class SinePositionalEncoding(nn.Module):
             along x-axis or y-axis. Note the final returned dimension
             for each position is 2 times of this value.
         temperature (int, optional): The temperature used for scaling
-            the position embedding. Default 10000.
+            the position embedding. Defaults to 10000.
         normalize (bool, optional): Whether to normalize the position
-            embedding. Default False.
+            embedding. Defaults to False.
         scale (float, optional): A scale factor that scales the position
             embedding. The scale will be used only when `normalize` is True.
-            Default 2*pi.
+            Defaults to 2*pi.
         eps (float, optional): A value added to the denominator for
-            numerical stability. Default 1e-6.
+            numerical stability. Defaults to 1e-6.
+        offset (float): offset add to embed when do the normalization.
+            Defaults to 0.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -34,8 +37,10 @@ class SinePositionalEncoding(nn.Module):
                  temperature=10000,
                  normalize=False,
                  scale=2 * math.pi,
-                 eps=1e-6):
-        super(SinePositionalEncoding, self).__init__()
+                 eps=1e-6,
+                 offset=0.,
+                 init_cfg=None):
+        super(SinePositionalEncoding, self).__init__(init_cfg)
         if normalize:
             assert isinstance(scale, (float, int)), 'when normalize is set,' \
                 'scale should be provided and in float or int type, ' \
@@ -45,6 +50,7 @@ class SinePositionalEncoding(nn.Module):
         self.normalize = normalize
         self.scale = scale
         self.eps = eps
+        self.offset = offset
 
     def forward(self, mask):
         """Forward function for `SinePositionalEncoding`.
@@ -58,23 +64,30 @@ class SinePositionalEncoding(nn.Module):
             pos (Tensor): Returned position embedding with shape
                 [bs, num_feats*2, h, w].
         """
-        not_mask = ~mask
+        # For convenience of exporting to ONNX, it's required to convert
+        # `masks` from bool to int.
+        mask = mask.to(torch.int)
+        not_mask = 1 - mask  # logical_not
         y_embed = not_mask.cumsum(1, dtype=torch.float32)
         x_embed = not_mask.cumsum(2, dtype=torch.float32)
         if self.normalize:
-            y_embed = y_embed / (y_embed[:, -1:, :] + self.eps) * self.scale
-            x_embed = x_embed / (x_embed[:, :, -1:] + self.eps) * self.scale
+            y_embed = (y_embed + self.offset) / \
+                      (y_embed[:, -1:, :] + self.eps) * self.scale
+            x_embed = (x_embed + self.offset) / \
+                      (x_embed[:, :, -1:] + self.eps) * self.scale
         dim_t = torch.arange(
             self.num_feats, dtype=torch.float32, device=mask.device)
         dim_t = self.temperature**(2 * (dim_t // 2) / self.num_feats)
         pos_x = x_embed[:, :, :, None] / dim_t
         pos_y = y_embed[:, :, :, None] / dim_t
+        # use `view` instead of `flatten` for dynamically exporting to ONNX
+        B, H, W = mask.size()
         pos_x = torch.stack(
             (pos_x[:, :, :, 0::2].sin(), pos_x[:, :, :, 1::2].cos()),
-            dim=4).flatten(3)
+            dim=4).view(B, H, W, -1)
         pos_y = torch.stack(
             (pos_y[:, :, :, 0::2].sin(), pos_y[:, :, :, 1::2].cos()),
-            dim=4).flatten(3)
+            dim=4).view(B, H, W, -1)
         pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)
         return pos
 
@@ -90,7 +103,7 @@ class SinePositionalEncoding(nn.Module):
 
 
 @POSITIONAL_ENCODING.register_module()
-class LearnedPositionalEncoding(nn.Module):
+class LearnedPositionalEncoding(BaseModule):
     """Position embedding with learnable embedding weights.
 
     Args:
@@ -101,21 +114,20 @@ class LearnedPositionalEncoding(nn.Module):
             Default 50.
         col_num_embed (int, optional): The dictionary size of col embeddings.
             Default 50.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
-    def __init__(self, num_feats, row_num_embed=50, col_num_embed=50):
-        super(LearnedPositionalEncoding, self).__init__()
+    def __init__(self,
+                 num_feats,
+                 row_num_embed=50,
+                 col_num_embed=50,
+                 init_cfg=dict(type='Uniform', layer='Embedding')):
+        super(LearnedPositionalEncoding, self).__init__(init_cfg)
         self.row_embed = nn.Embedding(row_num_embed, num_feats)
         self.col_embed = nn.Embedding(col_num_embed, num_feats)
         self.num_feats = num_feats
         self.row_num_embed = row_num_embed
         self.col_num_embed = col_num_embed
-        self.init_weights()
-
-    def init_weights(self):
-        """Initialize the learnable weights."""
-        uniform_init(self.row_embed)
-        uniform_init(self.col_embed)
 
     def forward(self, mask):
         """Forward function for `LearnedPositionalEncoding`.

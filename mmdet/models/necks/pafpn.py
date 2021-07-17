@@ -22,10 +22,15 @@ class PAFPN(FPN):
             build the feature pyramid. Default: 0.
         end_level (int): Index of the end input backbone level (exclusive) to
             build the feature pyramid. Default: -1, which means the last level.
-        add_extra_convs (bool): Whether to add conv layers on top of the
-            original feature maps. Default: False.
-        extra_convs_on_inputs (bool): Whether to apply extra conv on
-            the original feature from the backbone. Default: False.
+        add_extra_convs (bool | str): If bool, it decides whether to add conv
+            layers on top of the original feature maps. Default to False.
+            If True, it is equivalent to `add_extra_convs='on_input'`.
+            If str, it specifies the source feature map of the extra convs.
+            Only the following options are allowed
+
+            - 'on_input': Last feat map of neck inputs (i.e. backbone feature).
+            - 'on_lateral':  Last feature map after lateral convs.
+            - 'on_output': The last output feature map after fpn convs.
         relu_before_extra_convs (bool): Whether to apply relu before the extra
             conv. Default: False.
         no_norm_on_lateral (bool): Whether to apply norm on lateral.
@@ -34,6 +39,7 @@ class PAFPN(FPN):
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         act_cfg (str): Config dict for activation layer in ConvModule.
             Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -43,17 +49,26 @@ class PAFPN(FPN):
                  start_level=0,
                  end_level=-1,
                  add_extra_convs=False,
-                 extra_convs_on_inputs=True,
                  relu_before_extra_convs=False,
                  no_norm_on_lateral=False,
                  conv_cfg=None,
                  norm_cfg=None,
-                 act_cfg=None):
-        super(PAFPN,
-              self).__init__(in_channels, out_channels, num_outs, start_level,
-                             end_level, add_extra_convs, extra_convs_on_inputs,
-                             relu_before_extra_convs, no_norm_on_lateral,
-                             conv_cfg, norm_cfg, act_cfg)
+                 act_cfg=None,
+                 init_cfg=dict(
+                     type='Xavier', layer='Conv2d', distribution='uniform')):
+        super(PAFPN, self).__init__(
+            in_channels,
+            out_channels,
+            num_outs,
+            start_level,
+            end_level,
+            add_extra_convs,
+            relu_before_extra_convs,
+            no_norm_on_lateral,
+            conv_cfg,
+            norm_cfg,
+            act_cfg,
+            init_cfg=init_cfg)
         # add extra bottom up pathway
         self.downsample_convs = nn.ModuleList()
         self.pafpn_convs = nn.ModuleList()

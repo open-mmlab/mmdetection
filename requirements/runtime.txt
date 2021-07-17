@@ -1,5 +1,7 @@
 matplotlib
-mmpycocotools
 numpy
+panopticapi @ git+https://github.com/cocodataset/panopticapi.git
+pycocotools; platform_system == "Linux"
+pycocotools-windows; platform_system == "Windows"
 six
 terminaltables

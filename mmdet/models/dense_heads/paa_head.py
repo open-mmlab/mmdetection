@@ -385,7 +385,7 @@ class PAAHead(ATSSHead):
                 - pos_inds_temp (Tensor): Indices of positive samples.
                 - ignore_inds_temp (Tensor): Indices of ignore samples.
         """
-        # The implementation is (c) in Fig.3 in origin paper intead of (b).
+        # The implementation is (c) in Fig.3 in origin paper instead of (b).
         # You can refer to issues such as
         # https://github.com/kkhoot/PAA/issues/8 and
         # https://github.com/kkhoot/PAA/issues/9.
@@ -516,25 +516,29 @@ class PAAHead(ATSSHead):
             label_channels=1,
             unmap_outputs=True)
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           iou_preds,
-                           mlvl_anchors,
-                           img_shape,
-                           scale_factor,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
+    def _get_bboxes(self,
+                    cls_scores,
+                    bbox_preds,
+                    iou_preds,
+                    mlvl_anchors,
+                    img_shapes,
+                    scale_factors,
+                    cfg,
+                    rescale=False,
+                    with_nms=True):
         """Transform outputs for a single batch item into labeled boxes.
 
-        This method is almost same as `ATSSHead._get_bboxes_single()`.
+        This method is almost same as `ATSSHead._get_bboxes()`.
         We use sqrt(iou_preds * cls_scores) in NMS process instead of just
         cls_scores. Besides, score voting is used when `` score_voting``
         is set to True.
         """
-        assert with_nms, 'PAA only supports "with_nms=True" now'
+        assert with_nms, 'PAA only supports "with_nms=True" now and it ' \
+                         'means PAAHead does not support ' \
+                         'test-time augmentation'
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
+        batch_size = cls_scores[0].shape[0]
+
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_iou_preds = []
@@ -542,50 +546,64 @@ class PAAHead(ATSSHead):
                 cls_scores, bbox_preds, iou_preds, mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
 
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            iou_preds = iou_preds.permute(1, 2, 0).reshape(-1).sigmoid()
+            scores = cls_score.permute(0, 2, 3, 1).reshape(
+                batch_size, -1, self.cls_out_channels).sigmoid()
+            bbox_pred = bbox_pred.permute(0, 2, 3,
+                                          1).reshape(batch_size, -1, 4)
+            iou_preds = iou_preds.permute(0, 2, 3, 1).reshape(batch_size,
+                                                              -1).sigmoid()
+
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
-                max_scores, _ = (scores * iou_preds[:, None]).sqrt().max(dim=1)
+            if nms_pre > 0 and scores.shape[1] > nms_pre:
+                max_scores, _ = (scores * iou_preds[..., None]).sqrt().max(-1)
                 _, topk_inds = max_scores.topk(nms_pre)
+                batch_inds = torch.arange(batch_size).view(
+                    -1, 1).expand_as(topk_inds).long()
                 anchors = anchors[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                iou_preds = iou_preds[topk_inds]
+                bbox_pred = bbox_pred[batch_inds, topk_inds, :]
+                scores = scores[batch_inds, topk_inds, :]
+                iou_preds = iou_preds[batch_inds, topk_inds]
+            else:
+                anchors = anchors.expand_as(bbox_pred)
 
             bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shape)
+                anchors, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_iou_preds.append(iou_preds)
 
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
+        batch_mlvl_bboxes = torch.cat(mlvl_bboxes, dim=1)
         if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
+            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
+                scale_factors).unsqueeze(1)
+        batch_mlvl_scores = torch.cat(mlvl_scores, dim=1)
         # Add a dummy background class to the backend when using sigmoid
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        mlvl_iou_preds = torch.cat(mlvl_iou_preds)
-        mlvl_nms_scores = (mlvl_scores * mlvl_iou_preds[:, None]).sqrt()
-        det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes,
-            mlvl_nms_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img,
-            score_factors=None)
-        if self.with_score_voting and len(det_bboxes) > 0:
-            det_bboxes, det_labels = self.score_voting(det_bboxes, det_labels,
-                                                       mlvl_bboxes,
-                                                       mlvl_nms_scores,
-                                                       cfg.score_thr)
+        padding = batch_mlvl_scores.new_zeros(batch_size,
+                                              batch_mlvl_scores.shape[1], 1)
+        batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
+        batch_mlvl_iou_preds = torch.cat(mlvl_iou_preds, dim=1)
+        batch_mlvl_nms_scores = (batch_mlvl_scores *
+                                 batch_mlvl_iou_preds[..., None]).sqrt()
 
-        return det_bboxes, det_labels
+        det_results = []
+        for (mlvl_bboxes, mlvl_scores) in zip(batch_mlvl_bboxes,
+                                              batch_mlvl_nms_scores):
+            det_bbox, det_label = multiclass_nms(
+                mlvl_bboxes,
+                mlvl_scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=None)
+            if self.with_score_voting and len(det_bbox) > 0:
+                det_bbox, det_label = self.score_voting(
+                    det_bbox, det_label, mlvl_bboxes, mlvl_scores,
+                    cfg.score_thr)
+            det_results.append(tuple([det_bbox, det_label]))
+
+        return det_results
 
     def score_voting(self, det_bboxes, det_labels, mlvl_bboxes,
                      mlvl_nms_scores, score_thr):
@@ -602,7 +620,7 @@ class PAAHead(ATSSHead):
                 with shape (num_anchors,4).
             mlvl_nms_scores (Tensor): The scores of all boxes which is used
                 in the NMS procedure, with shape (num_anchors, num_class)
-            mlvl_iou_preds (Tensot): The predictions of IOU of all boxes
+            mlvl_iou_preds (Tensor): The predictions of IOU of all boxes
                 before the NMS procedure, with shape (num_anchors, 1)
             score_thr (float): The score threshold of bboxes.
 
@@ -616,9 +634,9 @@ class PAAHead(ATSSHead):
                     after voting, with shape (num_anchors,).
         """
         candidate_mask = mlvl_nms_scores > score_thr
-        candidate_mask_nozeros = candidate_mask.nonzero()
-        candidate_inds = candidate_mask_nozeros[:, 0]
-        candidate_labels = candidate_mask_nozeros[:, 1]
+        candidate_mask_nonzeros = candidate_mask.nonzero()
+        candidate_inds = candidate_mask_nonzeros[:, 0]
+        candidate_labels = candidate_mask_nonzeros[:, 1]
         candidate_bboxes = mlvl_bboxes[candidate_inds]
         candidate_scores = mlvl_nms_scores[candidate_mask]
         det_bboxes_voted = []

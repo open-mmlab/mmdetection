@@ -9,7 +9,7 @@ from mmdet.models.dense_heads.paa_head import levels_to_images
 def test_paa_head_loss():
     """Tests paa head loss when truth is empty and non-empty."""
 
-    class mock_skm(object):
+    class mock_skm:
 
         def GaussianMixture(self, *args, **kwargs):
             return self
@@ -97,10 +97,10 @@ def test_paa_head_loss():
     assert len(results) == n
     assert results[0].size() == (h * w * 5, c)
     assert self.with_score_voting
-    cls_scores = [torch.ones(4, 5, 5)]
-    bbox_preds = [torch.ones(4, 5, 5)]
-    iou_preds = [torch.ones(1, 5, 5)]
-    mlvl_anchors = [torch.ones(5 * 5, 4)]
+    cls_scores = [torch.ones(2, 4, 5, 5)]
+    bbox_preds = [torch.ones(2, 4, 5, 5)]
+    iou_preds = [torch.ones(2, 1, 5, 5)]
+    mlvl_anchors = [torch.ones(2, 5 * 5, 4)]
     img_shape = None
     scale_factor = [0.5, 0.5]
     cfg = mmcv.Config(
@@ -111,7 +111,7 @@ def test_paa_head_loss():
             nms=dict(type='nms', iou_threshold=0.6),
             max_per_img=100))
     rescale = False
-    self._get_bboxes_single(
+    self._get_bboxes(
         cls_scores,
         bbox_preds,
         iou_preds,

@@ -1,0 +1,75 @@
+Collections:
+  - Name: FSAF
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x Titan-XP GPUs
+      Architecture:
+        - FPN
+        - FSAF
+        - ResNet
+    Paper: https://arxiv.org/abs/1903.00621
+    README: configs/fsaf/README.md
+
+Models:
+  - Name: fsaf_r50_fpn_1x_coco
+    In Collection: FSAF
+    Config: configs/fsaf/fsaf_r50_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.15
+      inference time (ms/im):
+        - value: 76.92
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_r50_fpn_1x_coco/fsaf_r50_fpn_1x_coco-94ccc51f.pth
+
+  - Name: fsaf_r101_fpn_1x_coco
+    In Collection: FSAF
+    Config: configs/fsaf/fsaf_r101_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 5.08
+      inference time (ms/im):
+        - value: 92.59
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.3 (37.9)
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_r101_fpn_1x_coco/fsaf_r101_fpn_1x_coco-9e71098f.pth
+
+  - Name: fsaf_x101_64x4d_fpn_1x_coco
+    In Collection: FSAF
+    Config: configs/fsaf/fsaf_x101_64x4d_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 9.38
+      inference time (ms/im):
+        - value: 178.57
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.4 (41.0)
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fsaf/fsaf_x101_64x4d_fpn_1x_coco/fsaf_x101_64x4d_fpn_1x_coco-e3f6e6fd.pth

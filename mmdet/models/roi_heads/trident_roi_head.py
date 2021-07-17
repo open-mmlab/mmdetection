@@ -23,6 +23,25 @@ class TridentRoIHead(StandardRoIHead):
         self.test_branch_idx = test_branch_idx
         super(TridentRoIHead, self).__init__(**kwargs)
 
+    def merge_trident_bboxes(self, trident_det_bboxes, trident_det_labels):
+        """Merge bbox predictions of each branch."""
+        if trident_det_bboxes.numel() == 0:
+            det_bboxes = trident_det_bboxes.new_zeros((0, 5))
+            det_labels = trident_det_bboxes.new_zeros((0, ), dtype=torch.long)
+        else:
+            nms_bboxes = trident_det_bboxes[:, :4]
+            nms_scores = trident_det_bboxes[:, 4].contiguous()
+            nms_inds = trident_det_labels
+            nms_cfg = self.test_cfg['nms']
+            det_bboxes, keep = batched_nms(nms_bboxes, nms_scores, nms_inds,
+                                           nms_cfg)
+            det_labels = trident_det_labels[keep]
+            if self.test_cfg['max_per_img'] > 0:
+                det_labels = det_labels[:self.test_cfg['max_per_img']]
+                det_bboxes = det_bboxes[:self.test_cfg['max_per_img']]
+
+        return det_bboxes, det_labels
+
     def simple_test(self,
                     x,
                     proposal_list,
@@ -39,36 +58,25 @@ class TridentRoIHead(StandardRoIHead):
         assert self.with_bbox, 'Bbox head must be implemented.'
         det_bboxes_list, det_labels_list = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
-
+        num_branch = self.num_branch if self.test_branch_idx == -1 else 1
         for _ in range(len(det_bboxes_list)):
             if det_bboxes_list[_].shape[0] == 0:
                 det_bboxes_list[_] = det_bboxes_list[_].new_empty((0, 5))
-        trident_det_bboxes = torch.cat(det_bboxes_list, 0)
-        trident_det_labels = torch.cat(det_labels_list, 0)
-
-        if trident_det_bboxes.numel() == 0:
-            det_bboxes = trident_det_bboxes.new_zeros((0, 5))
-            det_labels = trident_det_bboxes.new_zeros((0, ), dtype=torch.long)
-        else:
-            nms_bboxes = trident_det_bboxes[:, :4]
-            nms_scores = trident_det_bboxes[:, 4].contiguous()
-            nms_inds = trident_det_labels
-            nms_cfg = self.test_cfg['nms']
-            det_bboxes, keep = batched_nms(nms_bboxes, nms_scores, nms_inds,
-                                           nms_cfg)
-            det_labels = trident_det_labels[keep]
-            if self.test_cfg['max_per_img'] > 0:
-                det_labels = det_labels[:self.test_cfg['max_per_img']]
-                det_bboxes = det_bboxes[:self.test_cfg['max_per_img']]
-
-        det_bboxes, det_labels = [det_bboxes], [det_labels]
+        det_bboxes, det_labels = [], []
+        for i in range(len(img_metas) // num_branch):
+            det_result = self.merge_trident_bboxes(
+                torch.cat(det_bboxes_list[i * num_branch:(i + 1) *
+                                          num_branch]),
+                torch.cat(det_labels_list[i * num_branch:(i + 1) *
+                                          num_branch]))
+            det_bboxes.append(det_result[0])
+            det_labels.append(det_result[1])
 
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
                         self.bbox_head.num_classes)
             for i in range(len(det_bboxes))
         ]
-
         return bbox_results
 
     def aug_test_bboxes(self, feats, img_metas, proposal_list, rcnn_test_cfg):

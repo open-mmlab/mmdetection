@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from mmcv.cnn import normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, images_to_levels, multi_apply,
@@ -24,6 +23,8 @@ class FSAFHead(RetinaHead):
         score_threshold (float, optional): The score_threshold to calculate
             positive recall. If given, prediction scores lower than this value
             is counted as incorrect prediction. Default to None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
         **kwargs: Same as its base class in :class:`RetinaHead`
 
     Example:
@@ -38,8 +39,24 @@ class FSAFHead(RetinaHead):
         >>> assert box_per_anchor == 4
     """
 
-    def __init__(self, *args, score_threshold=None, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, score_threshold=None, init_cfg=None, **kwargs):
+        # The positive bias in self.retina_reg conv is to prevent predicted \
+        #  bbox with 0 area
+        if init_cfg is None:
+            init_cfg = dict(
+                type='Normal',
+                layer='Conv2d',
+                std=0.01,
+                override=[
+                    dict(
+                        type='Normal',
+                        name='retina_cls',
+                        std=0.01,
+                        bias_prob=0.01),
+                    dict(
+                        type='Normal', name='retina_reg', std=0.01, bias=0.25)
+                ])
+        super().__init__(*args, init_cfg=init_cfg, **kwargs)
         self.score_threshold = score_threshold
 
     def forward_single(self, x):
@@ -58,13 +75,6 @@ class FSAFHead(RetinaHead):
         cls_score, bbox_pred = super().forward_single(x)
         # relu: TBLR encoder only accepts positive bbox_pred
         return cls_score, self.relu(bbox_pred)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        super(FSAFHead, self).init_weights()
-        # The positive bias in self.retina_reg conv is to prevent predicted \
-        #  bbox with 0 area
-        normal_init(self.retina_reg, std=0.01, bias=0.25)
 
     def _get_targets_single(self,
                             flat_anchors,
@@ -394,7 +404,7 @@ class FSAFHead(RetinaHead):
                 - cls_loss: Reduced corrected classification loss. Scalar.
                 - reg_loss: Reduced corrected regression loss. Scalar.
                 - pos_flags (Tensor): Corrected bool tensor indicating the
-                  final postive anchors. Shape: (num_anchors, ).
+                  final positive anchors. Shape: (num_anchors, ).
         """
         loc_weight = torch.ones_like(reg_loss)
         cls_weight = torch.ones_like(cls_loss)

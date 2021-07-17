@@ -2,17 +2,22 @@
 input_size = 300
 model = dict(
     type='SingleStageDetector',
-    pretrained='open-mmlab://vgg16_caffe',
     backbone=dict(
         type='SSDVGG',
-        input_size=input_size,
         depth=16,
         with_last_pool=False,
         ceil_mode=True,
         out_indices=(3, 4),
         out_feature_indices=(22, 34),
+        init_cfg=dict(
+            type='Pretrained', checkpoint='open-mmlab://vgg16_caffe')),
+    neck=dict(
+        type='SSDNeck',
+        in_channels=(512, 1024),
+        out_channels=(512, 1024, 512, 256, 256, 256),
+        level_strides=(2, 2, 1, 1),
+        level_paddings=(1, 1, 0, 0),
         l2_norm_scale=20),
-    neck=None,
     bbox_head=dict(
         type='SSDHead',
         in_channels=(512, 1024, 512, 256, 256, 256),
@@ -28,6 +33,7 @@ model = dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[0.1, 0.1, 0.2, 0.2])),
+    # model training and testing settings
     train_cfg=dict(
         assigner=dict(
             type='MaxIoUAssigner',
@@ -42,6 +48,7 @@ model = dict(
         neg_pos_ratio=3,
         debug=False),
     test_cfg=dict(
+        nms_pre=1000,
         nms=dict(type='nms', iou_threshold=0.45),
         min_bbox_size=0,
         score_thr=0.02,

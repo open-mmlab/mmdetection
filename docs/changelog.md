@@ -1,5 +1,205 @@
 ## Changelog
 
+### v2.14.0 (29/6/2021)
+
+#### Highlights
+
+- Add `simple_test` to dense heads to improve the consistency of single-stage and two-stage detectors
+- Revert the `test_mixins` to single image test to improve efficiency and readability
+- Add Faster R-CNN and Mask R-CNN config using multi-scale training with 3x schedule
+
+#### New Features
+
+- Support pretrained models from MoCo v2 and SwAV (#5286)
+- Add Faster R-CNN and Mask R-CNN config using multi-scale training with 3x schedule (#5179, #5233)
+- Add `reduction_override` in MSELoss (#5437)
+- Stable support of exporting DETR to ONNX with dynamic shapes and batch inference (#5168)
+- Stable support of exporting PointRend to ONNX with dynamic shapes and batch inference (#5440)
+
+#### Bug Fixes
+
+- Fix size mismatch bug in `multiclass_nms` (#4980)
+- Fix the import path of `MultiScaleDeformableAttention` (#5338)
+- Fix errors in config of GCNet ResNext101 models (#5360)
+- Fix Grid-RCNN error when there is no bbox result (#5357)
+- Fix errors in `onnx_export` of bbox_head when setting reg_class_agnostic (#5468)
+- Fix type error of AutoAssign in the document (#5478)
+- Fix web links ending with `.md` (#5315)
+
+#### Improvements
+
+- Add `simple_test` to dense heads to improve the consistency of single-stage and two-stage detectors (#5264)
+- Add support for mask diagonal flip in TTA (#5403)
+- Revert the `test_mixins` to single image test to improve efficiency and readability (#5249)
+- Make YOLOv3 Neck more flexible (#5218)
+- Refactor SSD to make it more general (#5291)
+- Refactor `anchor_generator` and `point_generator` (#5349)
+- Allow to configure out the `mask_head` of the HTC algorithm (#5389)
+- Delete deprecated warning in FPN (#5311)
+- Move `model.pretrained` to `model.backbone.init_cfg` (#5370)
+- Make deployment tools more friendly to use (#5280)
+- Clarify installation documentation (#5316)
+- Add ImageNet Pretrained Models docs (#5268)
+- Add FAQ about training loss=nan solution and COCO AP or AR =-1 (# 5312, #5313)
+- Change all weight links of http to https (#5328)
+
+### v2.13.0 (01/6/2021)
+
+#### Highlights
+
+- Support new methods: [CenterNet](https://arxiv.org/abs/1904.07850), [Seesaw Loss](https://arxiv.org/abs/2008.10032), [MobileNetV2](https://arxiv.org/abs/1801.04381)
+
+#### New Features
+
+- Support paper [Objects as Points](https://arxiv.org/abs/1904.07850) (#4602)
+- Support paper [Seesaw Loss for Long-Tailed Instance Segmentation (CVPR 2021)](https://arxiv.org/abs/2008.10032) (#5128)
+- Support [MobileNetV2](https://arxiv.org/abs/1801.04381) backbone and inverted residual block (#5122)
+- Support [MIM](https://github.com/open-mmlab/mim) (#5143)
+- ONNX exportation with dynamic shapes of CornerNet (#5136)
+- Add `mask_soft` config option to allow non-binary masks (#4615)
+- Add PWC metafile (#5135)
+
+#### Bug Fixes
+
+- Fix YOLOv3 FP16 training error (#5172)
+- Fix Cacscade R-CNN TTA test error when `det_bboxes` length is 0  (#5221)
+- Fix `iou_thr` variable naming errors in VOC recall calculation function (#5195)
+- Fix Faster R-CNN performance dropped in ONNX Runtime (#5197)
+- Fix DETR dict changed error when using python 3.8 during iteration  (#5226)
+
+#### Improvements
+
+- Refactor ONNX export of two stage detector (#5205)
+- Replace MMDetection's EvalHook with MMCV's EvalHook for consistency  (#4806)
+- Update RoI extractor for ONNX (#5194)
+- Use better parameter initialization in YOLOv3 head for higher performance (#5181)
+- Release new DCN models of Mask R-CNN by mixed-precision training (#5201)
+- Update YOLOv3 model weights (#5229)
+- Add DetectoRS ResNet-101 model weights (#4960)
+- Discard bboxes with sizes equals to `min_bbox_size` (#5011)
+- Remove duplicated code in DETR head (#5129)
+- Remove unnecessary object in class definition (#5180)
+- Fix doc link (#5192)
+
+### v2.12.0 (01/5/2021)
+
+#### Highlights
+
+- Support new methods: [AutoAssign](https://arxiv.org/abs/2007.03496), [YOLOF](https://arxiv.org/abs/2103.09460), and [Deformable DETR](https://arxiv.org/abs/2010.04159)
+- Stable support of exporting models to ONNX with batched images and dynamic shape (#5039)
+
+#### Backwards Incompatible Changes
+
+MMDetection is going through big refactoring for more general and convenient usages during the releases from v2.12.0 to v2.15.0 (maybe longer).
+In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV dependency, model initialization, model registry, and mask AP evaluation.
+
+- MMCV version. MMDetection v2.12.0 relies on the newest features in MMCV 1.3.3, including `BaseModule` for unified parameter initialization, model registry, and the CUDA operator `MultiScaleDeformableAttn` for [Deformable DETR](https://arxiv.org/abs/2010.04159). Note that MMCV 1.3.2 already contains all the features used by MMDet but has known issues. Therefore, we recommend users skip MMCV v1.3.2 and use v1.3.3, though v1.3.2 might work for most cases.
+- Unified model initialization (#4750). To unify the parameter initialization in OpenMMLab projects, MMCV supports `BaseModule` that accepts `init_cfg` to allow the modules' parameters initialized in a flexible and unified manner. Now the users need to explicitly call `model.init_weights()` in the training script to initialize the model (as in [here](https://github.com/open-mmlab/mmdetection/blob/master/tools/train.py#L162), previously this was handled by the detector. The models in MMDetection have been re-benchmarked to ensure accuracy based on PR #4750. **The downstream projects should update their code accordingly to use MMDetection v2.12.0**.
+- Unified model registry (#5059). To easily use backbones implemented in other OpenMMLab projects, MMDetection migrates to inherit the model registry created in MMCV (#760). In this way, as long as the backbone is supported in an OpenMMLab project and that project also uses the registry in MMCV, users can use that backbone in MMDetection by simply modifying the config without copying the code of that backbone into MMDetection.
+- Mask AP evaluation (#4898). Previous versions calculate the areas of masks through the bounding boxes when calculating the mask AP of small, medium, and large instances. To indeed use the areas of masks, we pop the key `bbox` during mask AP calculation. This change does not affect the overall mask AP evaluation and aligns the mask AP of similar models in other projects like Detectron2.
+
+#### New Features
+
+- Support paper [AutoAssign: Differentiable Label Assignment for Dense Object Detection](https://arxiv.org/abs/2007.03496) (#4295)
+- Support paper [You Only Look One-level Feature](https://arxiv.org/abs/2103.09460) (#4295)
+- Support paper [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159) (#4778)
+- Support calculating IoU with FP16 tensor in `bbox_overlaps` to save memory and keep speed (#4889)
+- Add `__repr__` in custom dataset to count the number of instances (#4756)
+- Add windows support by updating requirements.txt (#5052)
+- Stable support of exporting models to ONNX with batched images and dynamic shape, including SSD, FSAF,FCOS, YOLOv3, RetinaNet, Faster R-CNN, and Mask R-CNN (#5039)
+
+#### Improvements
+
+- Use MMCV `MODEL_REGISTRY` (#5059)
+- Unified parameter initialization for more flexible usage (#4750)
+- Rename variable names and fix docstring in anchor head (#4883)
+- Support training with empty GT in Cascade RPN (#4928)
+- Add more details of usage of `test_robustness` in documentation (#4917)
+- Changing to use `pycocotools` instead of `mmpycocotools` to fully support Detectron2 and MMDetection in one environment (#4939)
+- Update torch serve dockerfile to support dockers of more versions (#4954)
+- Add check for training with single class dataset (#4973)
+- Refactor transformer and DETR Head (#4763)
+- Update FPG model zoo (#5079)
+- More accurate mask AP of small/medium/large instances (#4898)
+
+#### Bug Fixes
+
+- Fix bug in mean_ap.py when calculating mAP by 11 points (#4875)
+- Fix error when key `meta` is not in old checkpoints (#4936)
+- Fix hanging bug when training with empty GT in VFNet, GFL, and FCOS by changing the place of `reduce_mean` (#4923, #4978, #5058)
+- Fix asyncronized inference error and provide related demo (#4941)
+- Fix IoU losses dimensionality unmatch error (#4982)
+- Fix torch.randperm whtn using PyTorch 1.8 (#5014)
+- Fix empty bbox error in `mask_head` when using CARAFE (#5062)
+- Fix `supplement_mask` bug when there are zero-size RoIs (#5065)
+- Fix testing with empty rois in RoI Heads (#5081)
+
+### v2.11.0 (01/4/2021)
+
+**Highlights**
+
+- Support new method: [Localization Distillation for Object Detection](https://arxiv.org/pdf/2102.12252.pdf)
+- Support Pytorch2ONNX with batch inference and dynamic shape
+
+**New Features**
+
+- Support [Localization Distillation for Object Detection](https://arxiv.org/pdf/2102.12252.pdf) (#4758)
+- Support Pytorch2ONNX with batch inference and dynamic shape for Faster-RCNN and mainstream one-stage detectors (#4796)
+
+**Improvements**
+
+- Support batch inference in head of RetinaNet (#4699)
+- Add batch dimension in second stage of Faster-RCNN (#4785)
+- Support batch inference in bbox coder (#4721)
+- Add check for `ann_ids` in `COCODataset` to ensure it is unique (#4789)
+- support for showing the FPN results (#4716)
+- support dynamic shape for grid_anchor (#4684)
+- Move pycocotools version check to when it is used (#4880)
+
+**Bug Fixes**
+
+- Fix a bug of TridentNet when doing the batch inference (#4717)
+- Fix a bug of Pytorch2ONNX in FASF (#4735)
+- Fix a bug when show the image with float type (#4732)
+
+### v2.10.0 (01/03/2021)
+
+#### Highlights
+
+- Support new methods: [FPG](https://arxiv.org/abs/2004.03580)
+- Support ONNX2TensorRT for SSD, FSAF, FCOS, YOLOv3, and Faster R-CNN.
+
+#### New Features
+
+- Support ONNX2TensorRT for SSD, FSAF, FCOS, YOLOv3, and Faster R-CNN (#4569)
+- Support [Feature Pyramid Grids (FPG)](https://arxiv.org/abs/2004.03580) (#4645)
+- Support video demo (#4420)
+- Add seed option for sampler (#4665)
+- Support to customize type of runner (#4570, #4669)
+- Support synchronizing BN buffer in `EvalHook` (#4582)
+- Add script for GIF demo (#4573)
+
+#### Bug Fixes
+
+- Fix ConfigDict AttributeError and add Colab link (#4643)
+- Avoid crash in empty gt training of GFL head (#4631)
+- Fix `iou_thrs` bug in RPN evaluation (#4581)
+- Fix syntax error of config when upgrading model version (#4584)
+
+#### Improvements
+
+- Refactor unit test file structures (#4600)
+- Refactor nms config (#4636)
+- Get loading pipeline by checking the class directly rather than through config strings (#4619)
+- Add doctests for mask target generation and mask structures (#4614)
+- Use deep copy when copying pipeline arguments (#4621)
+- Update documentations (#4642, #4650, #4620, #4630)
+- Remove redundant code calling `import_modules_from_strings` (#4601)
+- Clean deprecated FP16 API (#4571)
+- Check whether `CLASSES` is correctly initialized in the intialization of `XMLDataset` (#4555)
+- Support batch inference in the inference API (#4462, #4526)
+- Clean deprecated warning and fix 'meta' error (#4695)
+
 ### v2.9.0 (01/02/2021)
 
 #### Highlights
@@ -355,7 +555,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Implement FCOS training tricks (#2935)
 - Use BaseDenseHead as base class for anchor-base heads (#2963)
 - Add `with_cp` for BasicBlock (#2891)
-- Add `stem_channles` argument for ResNet (#2954)
+- Add `stem_channels` argument for ResNet (#2954)
 
 **Improvements**
 

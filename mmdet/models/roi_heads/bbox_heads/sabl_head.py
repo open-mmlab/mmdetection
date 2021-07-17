@@ -2,8 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, kaiming_init, normal_init, xavier_init
-from mmcv.runner import force_fp32
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule, force_fp32
 
 from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
 from mmdet.models.builder import HEADS, build_loss
@@ -11,7 +11,7 @@ from mmdet.models.losses import accuracy
 
 
 @HEADS.register_module()
-class SABLHead(nn.Module):
+class SABLHead(BaseModule):
     """Side-Aware Boundary Localization (SABL) for RoI-Head.
 
     Side-Aware features are extracted by conv layers
@@ -50,6 +50,8 @@ class SABLHead(nn.Module):
         loss_cls (dict): Config of classification loss.
         loss_bbox_cls (dict): Config of classification loss for bbox branch.
         loss_bbox_reg (dict): Config of regression loss for bbox branch.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -82,8 +84,9 @@ class SABLHead(nn.Module):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  loss_bbox_reg=dict(
-                     type='SmoothL1Loss', beta=0.1, loss_weight=1.0)):
-        super(SABLHead, self).__init__()
+                     type='SmoothL1Loss', beta=0.1, loss_weight=1.0),
+                 init_cfg=None):
+        super(SABLHead, self).__init__(init_cfg)
         self.cls_in_channels = cls_in_channels
         self.reg_in_channels = reg_in_channels
         self.roi_feat_size = roi_feat_size
@@ -177,6 +180,31 @@ class SABLHead(nn.Module):
         self.fc_reg_cls = nn.Linear(self.reg_cls_out_channels, 1)
         self.fc_reg_offset = nn.Linear(self.reg_offset_out_channels, 1)
 
+        if init_cfg is None:
+            self.init_cfg = [
+                dict(
+                    type='Xavier',
+                    layer='Linear',
+                    distribution='uniform',
+                    override=[
+                        dict(type='Normal', name='reg_conv_att_x', std=0.01),
+                        dict(type='Normal', name='reg_conv_att_y', std=0.01),
+                        dict(type='Normal', name='fc_reg_cls', std=0.01),
+                        dict(type='Normal', name='fc_cls', std=0.01),
+                        dict(type='Normal', name='fc_reg_offset', std=0.001)
+                    ])
+            ]
+            if self.reg_feat_up_ratio > 1:
+                self.init_cfg += [
+                    dict(
+                        type='Kaiming',
+                        distribution='normal',
+                        override=[
+                            dict(name='upsample_x'),
+                            dict(name='upsample_y')
+                        ])
+                ]
+
     def _add_fc_branch(self, num_branch_fcs, in_channels, roi_feat_size,
                        fc_out_channels):
         in_channels = in_channels * roi_feat_size * roi_feat_size
@@ -185,23 +213,6 @@ class SABLHead(nn.Module):
             fc_in_channels = (in_channels if i == 0 else fc_out_channels)
             branch_fcs.append(nn.Linear(fc_in_channels, fc_out_channels))
         return branch_fcs
-
-    def init_weights(self):
-        for module_list in [
-                self.reg_cls_fcs, self.reg_offset_fcs, self.cls_fcs
-        ]:
-            for m in module_list.modules():
-                if isinstance(m, nn.Linear):
-                    xavier_init(m, distribution='uniform')
-        if self.reg_feat_up_ratio > 1:
-            kaiming_init(self.upsample_x, distribution='normal')
-            kaiming_init(self.upsample_y, distribution='normal')
-
-        normal_init(self.reg_conv_att_x, 0, 0.01)
-        normal_init(self.reg_conv_att_y, 0, 0.01)
-        normal_init(self.fc_reg_offset, 0, 0.001)
-        normal_init(self.fc_reg_cls, 0, 0.01)
-        normal_init(self.fc_cls, 0, 0.01)
 
     def cls_forward(self, cls_x):
         cls_x = cls_x.view(cls_x.size(0), -1)
@@ -244,13 +255,13 @@ class SABLHead(nn.Module):
         reg_fy = torch.transpose(reg_fy, 1, 2)
         return reg_fx.contiguous(), reg_fy.contiguous()
 
-    def reg_pred(self, x, offfset_fcs, cls_fcs):
-        """Predict bucketing esimation (cls_pred) and fine regression (offset
+    def reg_pred(self, x, offset_fcs, cls_fcs):
+        """Predict bucketing estimation (cls_pred) and fine regression (offset
         pred) with side-aware features."""
         x_offset = x.view(-1, self.reg_in_channels)
         x_cls = x.view(-1, self.reg_in_channels)
 
-        for fc in offfset_fcs:
+        for fc in offset_fcs:
             x_offset = self.relu(fc(x_offset))
         for fc in cls_fcs:
             x_cls = self.relu(fc(x_cls))

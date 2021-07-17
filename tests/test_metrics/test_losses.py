@@ -78,6 +78,110 @@ def test_varifocal_loss():
         loss_cls(fake_pred, fake_target, fake_weight), torch.tensor(0.0))
 
 
+def test_kd_loss():
+    # test that temeprature should be greater than 1
+    with pytest.raises(AssertionError):
+        loss_cfg = dict(
+            type='KnowledgeDistillationKLDivLoss', loss_weight=1.0, T=0.5)
+        build_loss(loss_cfg)
+
+    # test that pred and target should be of the same size
+    loss_cls_cfg = dict(
+        type='KnowledgeDistillationKLDivLoss', loss_weight=1.0, T=1)
+    loss_cls = build_loss(loss_cls_cfg)
+    with pytest.raises(AssertionError):
+        fake_pred = torch.Tensor([[100, -100]])
+        fake_label = torch.Tensor([1]).long()
+        loss_cls(fake_pred, fake_label)
+
+    # test the calculation
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[100.0, 100.0]])
+    fake_target = torch.Tensor([[1.0, 1.0]])
+    assert torch.allclose(loss_cls(fake_pred, fake_target), torch.tensor(0.0))
+
+    # test the loss with weights
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[100.0, -100.0], [100.0, 100.0]])
+    fake_target = torch.Tensor([[1.0, 0.0], [1.0, 1.0]])
+    fake_weight = torch.Tensor([0.0, 1.0])
+    assert torch.allclose(
+        loss_cls(fake_pred, fake_target, fake_weight), torch.tensor(0.0))
+
+
+def test_seesaw_loss():
+    # only softmax version of Seesaw Loss is implemented
+    with pytest.raises(AssertionError):
+        loss_cfg = dict(type='SeesawLoss', use_sigmoid=True, loss_weight=1.0)
+        build_loss(loss_cfg)
+
+    # test that cls_score.size(-1) == num_classes + 2
+    loss_cls_cfg = dict(
+        type='SeesawLoss', p=0.0, q=0.0, loss_weight=1.0, num_classes=2)
+    loss_cls = build_loss(loss_cls_cfg)
+    # the length of fake_pred should be num_classes + 2 = 4
+    with pytest.raises(AssertionError):
+        fake_pred = torch.Tensor([[-100, 100]])
+        fake_label = torch.Tensor([1]).long()
+        loss_cls(fake_pred, fake_label)
+    # the length of fake_pred should be num_classes + 2 = 4
+    with pytest.raises(AssertionError):
+        fake_pred = torch.Tensor([[-100, 100, -100]])
+        fake_label = torch.Tensor([1]).long()
+        loss_cls(fake_pred, fake_label)
+
+    # test the calculation without p and q
+    loss_cls_cfg = dict(
+        type='SeesawLoss', p=0.0, q=0.0, loss_weight=1.0, num_classes=2)
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[-100, 100, -100, 100]])
+    fake_label = torch.Tensor([1]).long()
+    loss = loss_cls(fake_pred, fake_label)
+    assert torch.allclose(loss['loss_cls_objectness'], torch.tensor(200.))
+    assert torch.allclose(loss['loss_cls_classes'], torch.tensor(0.))
+
+    # test the calculation with p and without q
+    loss_cls_cfg = dict(
+        type='SeesawLoss', p=1.0, q=0.0, loss_weight=1.0, num_classes=2)
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[-100, 100, -100, 100]])
+    fake_label = torch.Tensor([0]).long()
+    loss_cls.cum_samples[0] = torch.exp(torch.Tensor([20]))
+    loss = loss_cls(fake_pred, fake_label)
+    assert torch.allclose(loss['loss_cls_objectness'], torch.tensor(200.))
+    assert torch.allclose(loss['loss_cls_classes'], torch.tensor(180.))
+
+    # test the calculation with q and without p
+    loss_cls_cfg = dict(
+        type='SeesawLoss', p=0.0, q=1.0, loss_weight=1.0, num_classes=2)
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[-100, 100, -100, 100]])
+    fake_label = torch.Tensor([0]).long()
+    loss = loss_cls(fake_pred, fake_label)
+    assert torch.allclose(loss['loss_cls_objectness'], torch.tensor(200.))
+    assert torch.allclose(loss['loss_cls_classes'],
+                          torch.tensor(200.) + torch.tensor(100.).log())
+
+    # test the others
+    loss_cls_cfg = dict(
+        type='SeesawLoss',
+        p=0.0,
+        q=1.0,
+        loss_weight=1.0,
+        num_classes=2,
+        return_dict=False)
+    loss_cls = build_loss(loss_cls_cfg)
+    fake_pred = torch.Tensor([[100, -100, 100, -100]])
+    fake_label = torch.Tensor([0]).long()
+    loss = loss_cls(fake_pred, fake_label)
+    acc = loss_cls.get_accuracy(fake_pred, fake_label)
+    act = loss_cls.get_activation(fake_pred)
+    assert torch.allclose(loss, torch.tensor(0.))
+    assert torch.allclose(acc['acc_objectness'], torch.tensor(100.))
+    assert torch.allclose(acc['acc_classes'], torch.tensor(100.))
+    assert torch.allclose(act, torch.tensor([1., 0., 0.]))
+
+
 def test_accuracy():
     # test for empty pred
     pred = torch.empty(0, 4)

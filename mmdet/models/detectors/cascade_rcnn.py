@@ -14,7 +14,8 @@ class CascadeRCNN(TwoStageDetector):
                  roi_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
         super(CascadeRCNN, self).__init__(
             backbone=backbone,
             neck=neck,
@@ -22,10 +23,20 @@ class CascadeRCNN(TwoStageDetector):
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            pretrained=pretrained)
+            pretrained=pretrained,
+            init_cfg=init_cfg)
 
     def show_result(self, data, result, **kwargs):
-        """Show prediction results of the detector."""
+        """Show prediction results of the detector.
+
+        Args:
+            data (str or np.ndarray): Image filename or loaded image.
+            result (Tensor or tuple): The results to draw over `img`
+                bbox_result or (bbox_result, segm_result).
+
+        Returns:
+            np.ndarray: The image with bboxes drawn on it.
+        """
         if self.with_mask:
             ms_bbox_result, ms_segm_result = result
             if isinstance(ms_bbox_result, dict):

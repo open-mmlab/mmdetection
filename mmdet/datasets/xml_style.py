@@ -102,7 +102,8 @@ class XMLDataset(CustomDataset):
             if name not in self.CLASSES:
                 continue
             label = self.cat2label[name]
-            difficult = int(obj.find('difficult').text)
+            difficult = obj.find('difficult')
+            difficult = 0 if difficult is None else int(difficult.text)
             bnd_box = obj.find('bndbox')
             # TODO: check whether it is necessary to use int
             # Coordinates may be float type

@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply
@@ -33,6 +33,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     _version = 1
@@ -55,8 +56,17 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                  conv_cfg=None,
                  norm_cfg=None,
                  train_cfg=None,
-                 test_cfg=None):
-        super(AnchorFreeHead, self).__init__()
+                 test_cfg=None,
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='conv_cls',
+                         std=0.01,
+                         bias_prob=0.01))):
+        super(AnchorFreeHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.cls_out_channels = num_classes
         self.in_channels = in_channels
@@ -128,18 +138,6 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
             self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.conv_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
 
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.cls_convs:
-            if isinstance(m.conv, nn.Conv2d):
-                normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            if isinstance(m.conv, nn.Conv2d):
-                normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.conv_cls, std=0.01, bias=bias_cls)
-        normal_init(self.conv_reg, std=0.01)
-
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
         """Hack some keys of the model state dict so that can load checkpoints
@@ -197,7 +195,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         return multi_apply(self.forward_single, feats)[:2]
 
     def forward_single(self, x):
-        """Forward features of a single scale levle.
+        """Forward features of a single scale level.
 
         Args:
             x (Tensor): FPN feature maps of the specified stride.
@@ -274,7 +272,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
 
     @abstractmethod
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
-        """Compute regression, classification and centerss targets for points
+        """Compute regression, classification and centerness targets for points
         in multiple images.
 
         Args:
@@ -295,8 +293,10 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                            flatten=False):
         """Get points of a single scale level."""
         h, w = featmap_size
-        x_range = torch.arange(w, dtype=dtype, device=device)
-        y_range = torch.arange(h, dtype=dtype, device=device)
+        # First create Range with the default dtype, than convert to
+        # target `dtype` for onnx exporting.
+        x_range = torch.arange(w, device=device).to(dtype)
+        y_range = torch.arange(h, device=device).to(dtype)
         y, x = torch.meshgrid(y_range, x_range)
         if flatten:
             y = y.flatten()

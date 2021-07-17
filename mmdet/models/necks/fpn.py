@@ -1,15 +1,13 @@
-import warnings
-
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, xavier_init
-from mmcv.runner import auto_fp16
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule, auto_fp16
 
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class FPN(nn.Module):
+class FPN(BaseModule):
     r"""Feature Pyramid Network.
 
     This is an implementation of paper `Feature Pyramid Networks for Object
@@ -25,17 +23,13 @@ class FPN(nn.Module):
             build the feature pyramid. Default: -1, which means the last level.
         add_extra_convs (bool | str): If bool, it decides whether to add conv
             layers on top of the original feature maps. Default to False.
-            If True, its actual mode is specified by `extra_convs_on_inputs`.
+            If True, it is equivalent to `add_extra_convs='on_input'`.
             If str, it specifies the source feature map of the extra convs.
             Only the following options are allowed
 
             - 'on_input': Last feat map of neck inputs (i.e. backbone feature).
             - 'on_lateral':  Last feature map after lateral convs.
             - 'on_output': The last output feature map after fpn convs.
-        extra_convs_on_inputs (bool, deprecated): Whether to apply extra convs
-            on the original feature from the backbone. If True,
-            it is equivalent to `add_extra_convs='on_input'`. If False, it is
-            equivalent to set `add_extra_convs='on_output'`. Default to True.
         relu_before_extra_convs (bool): Whether to apply relu before the extra
             conv. Default: False.
         no_norm_on_lateral (bool): Whether to apply norm on lateral.
@@ -46,6 +40,7 @@ class FPN(nn.Module):
             Default: None.
         upsample_cfg (dict): Config dict for interpolate layer.
             Default: `dict(mode='nearest')`
+        init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
         >>> import torch
@@ -70,14 +65,15 @@ class FPN(nn.Module):
                  start_level=0,
                  end_level=-1,
                  add_extra_convs=False,
-                 extra_convs_on_inputs=True,
                  relu_before_extra_convs=False,
                  no_norm_on_lateral=False,
                  conv_cfg=None,
                  norm_cfg=None,
                  act_cfg=None,
-                 upsample_cfg=dict(mode='nearest')):
-        super(FPN, self).__init__()
+                 upsample_cfg=dict(mode='nearest'),
+                 init_cfg=dict(
+                     type='Xavier', layer='Conv2d', distribution='uniform')):
+        super(FPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -104,15 +100,7 @@ class FPN(nn.Module):
             # Extra_convs_source choices: 'on_input', 'on_lateral', 'on_output'
             assert add_extra_convs in ('on_input', 'on_lateral', 'on_output')
         elif add_extra_convs:  # True
-            if extra_convs_on_inputs:
-                # TODO: deprecate `extra_convs_on_inputs`
-                warnings.simplefilter('once')
-                warnings.warn(
-                    '"extra_convs_on_inputs" will be deprecated in v2.9.0,'
-                    'Please use "add_extra_convs"', DeprecationWarning)
-                self.add_extra_convs = 'on_input'
-            else:
-                self.add_extra_convs = 'on_output'
+            self.add_extra_convs = 'on_input'
 
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
@@ -158,13 +146,6 @@ class FPN(nn.Module):
                     act_cfg=act_cfg,
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)
-
-    # default init_weights for conv(msra) and norm in ConvModule
-    def init_weights(self):
-        """Initialize the weights of FPN module."""
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
 
     @auto_fp16()
     def forward(self, inputs):

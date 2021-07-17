@@ -1,14 +1,13 @@
-import mmcv
 import torch
 import torch.nn as nn
-from mmcv import tensor2imgs
+from mmcv.runner import BaseModule
 
 from mmdet.models.builder import HEADS
 from ...core import bbox_cxcywh_to_xyxy
 
 
 @HEADS.register_module()
-class EmbeddingRPNHead(nn.Module):
+class EmbeddingRPNHead(BaseModule):
     """RPNHead in the `Sparse R-CNN <https://arxiv.org/abs/2011.12450>`_ .
 
     Unlike traditional RPNHead, this module does not need FPN input, but just
@@ -19,13 +18,18 @@ class EmbeddingRPNHead(nn.Module):
         num_proposals (int): Number of init_proposals. Default 100.
         proposal_feature_channel (int): Channel number of
             init_proposal_feature. Defaults to 256.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
                  num_proposals=100,
                  proposal_feature_channel=256,
+                 init_cfg=None,
                  **kwargs):
-        super(EmbeddingRPNHead, self).__init__()
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
+        super(EmbeddingRPNHead, self).__init__(init_cfg)
         self.num_proposals = num_proposals
         self.proposal_feature_channel = proposal_feature_channel
         self._init_layers()
@@ -42,6 +46,7 @@ class EmbeddingRPNHead(nn.Module):
         [c_x, c_y, w, h], and we initialize it to the size of  the entire
         image.
         """
+        super(EmbeddingRPNHead, self).init_weights()
         nn.init.constant_(self.init_proposal_bboxes.weight[:, :2], 0.5)
         nn.init.constant_(self.init_proposal_bboxes.weight[:, 2:], 1)
 
@@ -101,20 +106,10 @@ class EmbeddingRPNHead(nn.Module):
         """Forward function in testing stage."""
         return self._decode_init_proposals(img, img_metas)
 
-    def show_result(self, data):
-        """Show the init proposals in EmbeddingRPN.
+    def simple_test(self, img, img_metas):
+        """Forward function in testing stage."""
+        raise NotImplementedError
 
-        Args:
-            data (dict): Dict contains image and
-                corresponding meta information.
-        """
-        img_tensor = data['img'][0]
-        img_metas = data['img_metas'][0].data[0]
-        imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
-        proposals, _ = self._decode_init_proposals(data['img'],
-                                                   data['img_metas'])
-        assert len(imgs) == len(img_metas)
-        for img, img_meta in zip(imgs, img_metas):
-            h, w, _ = img_meta['img_shape']
-            img_show = img[:h, :w, :]
-            mmcv.imshow_bboxes(img_show, proposals)
+    def aug_test_rpn(self, feats, img_metas):
+        raise NotImplementedError(
+            'EmbeddingRPNHead does not support test-time augmentation')

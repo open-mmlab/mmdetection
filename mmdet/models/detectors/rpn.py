@@ -1,4 +1,7 @@
+import warnings
+
 import mmcv
+import torch
 from mmcv.image import tensor2imgs
 
 from mmdet.core import bbox_mapping
@@ -16,8 +19,13 @@ class RPN(BaseDetector):
                  rpn_head,
                  train_cfg,
                  test_cfg,
-                 pretrained=None):
-        super(RPN, self).__init__()
+                 pretrained=None,
+                 init_cfg=None):
+        super(RPN, self).__init__(init_cfg)
+        if pretrained:
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
+                          'please use "init_cfg" instead')
+            backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
         self.neck = build_neck(neck) if neck is not None else None
         rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
@@ -26,20 +34,6 @@ class RPN(BaseDetector):
         self.rpn_head = build_head(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.init_weights(pretrained=pretrained)
-
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in detector.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        super(RPN, self).init_weights(pretrained)
-        self.backbone.init_weights(pretrained=pretrained)
-        if self.with_neck:
-            self.neck.init_weights()
-        self.rpn_head.init_weights()
 
     def extract_feat(self, img):
         """Extract features.
@@ -106,10 +100,16 @@ class RPN(BaseDetector):
             list[np.ndarray]: proposals
         """
         x = self.extract_feat(img)
+        # get origin input shape to onnx dynamic input shape
+        if torch.onnx.is_in_onnx_export():
+            img_shape = torch._shape_as_tensor(img)[2:]
+            img_metas[0]['img_shape_for_onnx'] = img_shape
         proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         if rescale:
             for proposals, meta in zip(proposal_list, img_metas):
                 proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])
+        if torch.onnx.is_in_onnx_export():
+            return proposal_list
 
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
@@ -138,17 +138,17 @@ class RPN(BaseDetector):
                                                 flip_direction)
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
-    def show_result(self, data, result, dataset=None, top_k=20):
+    def show_result(self, data, result, top_k=20, **kwargs):
         """Show RPN proposals on the image.
 
-        Although we assume batch size is 1, this method supports arbitrary
-        batch size.
+        Args:
+            data (str or np.ndarray): Image filename or loaded image.
+            result (Tensor or tuple): The results to draw over `img`
+                bbox_result or (bbox_result, segm_result).
+            top_k (int): Plot the first k bboxes only
+               if set positive. Default: 20
+
+        Returns:
+            np.ndarray: The image with bboxes drawn on it.
         """
-        img_tensor = data['img'][0]
-        img_metas = data['img_metas'][0].data[0]
-        imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
-        assert len(imgs) == len(img_metas)
-        for img, img_meta in zip(imgs, img_metas):
-            h, w, _ = img_meta['img_shape']
-            img_show = img[:h, :w, :]
-            mmcv.imshow_bboxes(img_show, result, top_k=top_k)
+        mmcv.imshow_bboxes(data, result, top_k=top_k)

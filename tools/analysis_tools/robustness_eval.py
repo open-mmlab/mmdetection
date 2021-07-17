@@ -89,7 +89,7 @@ def get_coco_style_results(filename,
             print(f'Mean Performance under Corruption [mPC] ({task})')
             print_coco_results(mPC)
         if 'rPC' in prints:
-            print(f'Realtive Performance under Corruption [rPC] ({task})')
+            print(f'Relative Performance under Corruption [rPC] ({task})')
             print_coco_results(rPC)
     else:
         if 'P' in prints:
@@ -146,7 +146,7 @@ def get_voc_style_results(filename, prints='mPC', aggregate='benchmark'):
         print('Mean Performance under Corruption [mPC] in AP50 = '
               f'{np.mean(mPC):0.3f}')
     if 'rPC' in prints:
-        print('Realtive Performance under Corruption [rPC] in % = '
+        print('Relative Performance under Corruption [rPC] in % = '
               f'{np.mean(rPC) * 100:0.1f}')
 
     return np.mean(results, axis=2, keepdims=True)

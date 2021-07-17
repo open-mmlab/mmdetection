@@ -34,23 +34,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_roi_extractor = self.bbox_roi_extractor
         self.mask_head = build_head(mask_head)
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        if self.with_shared_head:
-            self.shared_head.init_weights(pretrained=pretrained)
-        if self.with_bbox:
-            self.bbox_roi_extractor.init_weights()
-            self.bbox_head.init_weights()
-        if self.with_mask:
-            self.mask_head.init_weights()
-            if not self.share_roi_extractor:
-                self.mask_roi_extractor.init_weights()
-
     def forward_dummy(self, x, proposals):
         """Dummy forward function."""
         # bbox head
@@ -246,13 +229,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
-        if torch.onnx.is_in_onnx_export():
-            if self.with_mask:
-                segm_results = self.simple_test_mask(
-                    x, img_metas, det_bboxes, det_labels, rescale=rescale)
-                return det_bboxes, det_labels, segm_results
-            else:
-                return det_bboxes, det_labels
 
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
@@ -276,7 +252,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         det_bboxes, det_labels = self.aug_test_bboxes(x, img_metas,
                                                       proposal_list,
                                                       self.test_cfg)
-
         if rescale:
             _det_bboxes = det_bboxes
         else:
@@ -293,3 +268,107 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             return [(bbox_results, segm_results)]
         else:
             return [bbox_results]
+
+    def onnx_export(self, x, proposals, img_metas, rescale=False):
+        """Test without augmentation."""
+        assert self.with_bbox, 'Bbox head must be implemented.'
+        det_bboxes, det_labels = self.bbox_onnx_export(
+            x, img_metas, proposals, self.test_cfg, rescale=rescale)
+
+        if not self.with_mask:
+            return det_bboxes, det_labels
+        else:
+            segm_results = self.mask_onnx_export(
+                x, img_metas, det_bboxes, det_labels, rescale=rescale)
+            return det_bboxes, det_labels, segm_results
+
+    def mask_onnx_export(self, x, img_metas, det_bboxes, det_labels, **kwargs):
+        """Export mask branch to onnx which supports batch inference.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            det_bboxes (Tensor): Bboxes and corresponding scores.
+                has shape [N, num_bboxes, 5].
+            det_labels (Tensor): class labels of
+                shape [N, num_bboxes].
+
+        Returns:
+            Tensor: The segmentation results of shape [N, num_bboxes,
+                image_height, image_width].
+        """
+        # image shapes of images in the batch
+
+        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
+            raise RuntimeError('[ONNX Error] Can not record MaskHead '
+                               'as it has not been executed this time')
+        batch_size = det_bboxes.size(0)
+        # if det_bboxes is rescaled to the original image size, we need to
+        # rescale it back to the testing scale to obtain RoIs.
+        det_bboxes = det_bboxes[..., :4]
+        batch_index = torch.arange(
+            det_bboxes.size(0), device=det_bboxes.device).float().view(
+                -1, 1, 1).expand(det_bboxes.size(0), det_bboxes.size(1), 1)
+        mask_rois = torch.cat([batch_index, det_bboxes], dim=-1)
+        mask_rois = mask_rois.view(-1, 5)
+        mask_results = self._mask_forward(x, mask_rois)
+        mask_pred = mask_results['mask_pred']
+        max_shape = img_metas[0]['img_shape_for_onnx']
+        num_det = det_bboxes.shape[1]
+        det_bboxes = det_bboxes.reshape(-1, 4)
+        det_labels = det_labels.reshape(-1)
+        segm_results = self.mask_head.onnx_export(mask_pred, det_bboxes,
+                                                  det_labels, self.test_cfg,
+                                                  max_shape)
+        segm_results = segm_results.reshape(batch_size, num_det, max_shape[0],
+                                            max_shape[1])
+        return segm_results
+
+    def bbox_onnx_export(self, x, img_metas, proposals, rcnn_test_cfg,
+                         **kwargs):
+        """Export bbox branch to onnx which supports batch inference.
+
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            img_metas (list[dict]): Image meta info.
+            proposals (Tensor): Region proposals with
+                batch dimension, has shape [N, num_bboxes, 5].
+            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
+
+        Returns:
+            tuple[Tensor, Tensor]: bboxes of shape [N, num_bboxes, 5]
+                and class labels of shape [N, num_bboxes].
+        """
+        # get origin input shape to support onnx dynamic input shape
+        assert len(
+            img_metas
+        ) == 1, 'Only support one input image while in exporting to ONNX'
+        img_shapes = img_metas[0]['img_shape_for_onnx']
+
+        rois = proposals
+
+        batch_index = torch.arange(
+            rois.size(0), device=rois.device).float().view(-1, 1, 1).expand(
+                rois.size(0), rois.size(1), 1)
+
+        rois = torch.cat([batch_index, rois[..., :4]], dim=-1)
+        batch_size = rois.shape[0]
+        num_proposals_per_img = rois.shape[1]
+
+        # Eliminate the batch dimension
+        rois = rois.view(-1, 5)
+        bbox_results = self._bbox_forward(x, rois)
+        cls_score = bbox_results['cls_score']
+        bbox_pred = bbox_results['bbox_pred']
+
+        # Recover the batch dimension
+        rois = rois.reshape(batch_size, num_proposals_per_img, rois.size(-1))
+        cls_score = cls_score.reshape(batch_size, num_proposals_per_img,
+                                      cls_score.size(-1))
+
+        bbox_pred = bbox_pred.reshape(batch_size, num_proposals_per_img,
+                                      bbox_pred.size(-1))
+        det_bboxes, det_labels = self.bbox_head.onnx_export(
+            rois, cls_score, bbox_pred, img_shapes, cfg=rcnn_test_cfg)
+
+        return det_bboxes, det_labels

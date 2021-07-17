@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[ALGORITHM]
+<!-- [ALGORITHM] -->
 
 ```
 @article{DynamicRCNN,
@@ -17,4 +17,4 @@
 
 | Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 |:---------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
-| R-50      | pytorch | 1x      | 3.8      |                |  38.9  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x/dynamic_rcnn_r50_fpn_1x-62a3f276.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x/dynamic_rcnn_r50_fpn_1x_20200618_095048.log.json) |
+| R-50      | pytorch | 1x      | 3.8      |                |  38.9  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x/dynamic_rcnn_r50_fpn_1x-62a3f276.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x/dynamic_rcnn_r50_fpn_1x_20200618_095048.log.json) |

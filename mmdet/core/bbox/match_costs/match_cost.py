@@ -6,7 +6,7 @@ from .builder import MATCH_COST
 
 
 @MATCH_COST.register_module()
-class BBoxL1Cost(object):
+class BBoxL1Cost:
     """BBoxL1Cost.
 
      Args:
@@ -50,7 +50,7 @@ class BBoxL1Cost(object):
 
 
 @MATCH_COST.register_module()
-class FocalLossCost(object):
+class FocalLossCost:
     """FocalLossCost.
 
      Args:
@@ -99,7 +99,7 @@ class FocalLossCost(object):
 
 
 @MATCH_COST.register_module()
-class ClassificationCost(object):
+class ClassificationCost:
     """ClsSoftmaxCost.
 
      Args:
@@ -136,14 +136,14 @@ class ClassificationCost(object):
         # Following the official DETR repo, contrary to the loss that
         # NLL is used, we approximate it in 1 - cls_score[gt_label].
         # The 1 is a constant that doesn't change the matching,
-        # so it can be ommitted.
+        # so it can be omitted.
         cls_score = cls_pred.softmax(-1)
         cls_cost = -cls_score[:, gt_labels]
         return cls_cost * self.weight
 
 
 @MATCH_COST.register_module()
-class IoUCost(object):
+class IoUCost:
     """IoUCost.
 
      Args:
@@ -179,6 +179,6 @@ class IoUCost(object):
         # overlaps: [num_bboxes, num_gt]
         overlaps = bbox_overlaps(
             bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
-        # The 1 is a constant that doesn't change the matching, so ommitted.
+        # The 1 is a constant that doesn't change the matching, so omitted.
         iou_cost = -overlaps
         return iou_cost * self.weight

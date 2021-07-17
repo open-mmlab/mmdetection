@@ -17,16 +17,6 @@ class MaskScoringRoIHead(StandardRoIHead):
         super(MaskScoringRoIHead, self).__init__(**kwargs)
         self.mask_iou_head = build_head(mask_iou_head)
 
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        super(MaskScoringRoIHead, self).init_weights(pretrained)
-        self.mask_iou_head.init_weights()
-
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
         """Run forward function and calculate loss for Mask head in

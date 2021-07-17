@@ -2,8 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, xavier_init
-from mmcv.runner import force_fp32
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule, ModuleList, force_fp32
 
 from mmdet.core import build_sampler, fast_nms, images_to_levels, multi_apply
 from ..builder import HEADS, build_loss
@@ -36,6 +36,7 @@ class YOLACTHead(AnchorHead):
             cls loss calculation. If false, ``loss_single`` will be used.
         conv_cfg (dict): Dictionary to construct and config conv layer.
         norm_cfg (dict): Dictionary to construct and config norm layer.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -59,6 +60,11 @@ class YOLACTHead(AnchorHead):
                  use_ohem=True,
                  conv_cfg=None,
                  norm_cfg=None,
+                 init_cfg=dict(
+                     type='Xavier',
+                     distribution='uniform',
+                     bias=0,
+                     layer='Conv2d'),
                  **kwargs):
         self.num_head_convs = num_head_convs
         self.num_protos = num_protos
@@ -71,6 +77,7 @@ class YOLACTHead(AnchorHead):
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
             anchor_generator=anchor_generator,
+            init_cfg=init_cfg,
             **kwargs)
         if self.use_ohem:
             sampler_cfg = dict(type='PseudoSampler')
@@ -80,7 +87,7 @@ class YOLACTHead(AnchorHead):
     def _init_layers(self):
         """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
-        self.head_convs = nn.ModuleList()
+        self.head_convs = ModuleList()
         for i in range(self.num_head_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
             self.head_convs.append(
@@ -104,14 +111,6 @@ class YOLACTHead(AnchorHead):
             self.num_anchors * self.num_protos,
             3,
             padding=1)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.head_convs:
-            xavier_init(m.conv, distribution='uniform', bias=0)
-        xavier_init(self.conv_cls, distribution='uniform', bias=0)
-        xavier_init(self.conv_reg, distribution='uniform', bias=0)
-        xavier_init(self.conv_coeff, distribution='uniform', bias=0)
 
     def forward_single(self, x):
         """Forward feature of a single scale level.
@@ -264,9 +263,10 @@ class YOLACTHead(AnchorHead):
         loss_cls_all = self.loss_cls(cls_score, labels, label_weights)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        pos_inds = ((labels >= 0) &
-                    (labels < self.num_classes)).nonzero().reshape(-1)
-        neg_inds = (labels == self.num_classes).nonzero().view(-1)
+        pos_inds = ((labels >= 0) & (labels < self.num_classes)).nonzero(
+            as_tuple=False).reshape(-1)
+        neg_inds = (labels == self.num_classes).nonzero(
+            as_tuple=False).view(-1)
 
         num_pos_samples = pos_inds.size(0)
         if num_pos_samples == 0:
@@ -457,7 +457,7 @@ class YOLACTHead(AnchorHead):
 
 
 @HEADS.register_module()
-class YOLACTSegmHead(nn.Module):
+class YOLACTSegmHead(BaseModule):
     """YOLACT segmentation head used in https://arxiv.org/abs/1904.02689.
 
     Apply a semantic segmentation loss on feature space using layers that are
@@ -469,6 +469,7 @@ class YOLACTSegmHead(nn.Module):
         num_classes (int): Number of categories excluding the background
             category.
         loss_segm (dict): Config of semantic segmentation loss.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -477,8 +478,12 @@ class YOLACTSegmHead(nn.Module):
                  loss_segm=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
-                     loss_weight=1.0)):
-        super(YOLACTSegmHead, self).__init__()
+                     loss_weight=1.0),
+                 init_cfg=dict(
+                     type='Xavier',
+                     distribution='uniform',
+                     override=dict(name='segm_conv'))):
+        super(YOLACTSegmHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.loss_segm = build_loss(loss_segm)
@@ -489,10 +494,6 @@ class YOLACTSegmHead(nn.Module):
         """Initialize layers of the head."""
         self.segm_conv = nn.Conv2d(
             self.in_channels, self.num_classes, kernel_size=1)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        xavier_init(self.segm_conv, distribution='uniform')
 
     def forward(self, x):
         """Forward feature from the upstream network.
@@ -571,9 +572,15 @@ class YOLACTSegmHead(nn.Module):
                     downsampled_masks[obj_idx])
             return segm_targets
 
+    def simple_test(self, feats, img_metas, rescale=False):
+        """Test function without test-time augmentation."""
+        raise NotImplementedError(
+            'simple_test of YOLACTSegmHead is not implemented '
+            'because this head is only evaluated during training')
+
 
 @HEADS.register_module()
-class YOLACTProtonet(nn.Module):
+class YOLACTProtonet(BaseModule):
     """YOLACT mask head used in https://arxiv.org/abs/1904.02689.
 
     This head outputs the mask prototypes for YOLACT.
@@ -589,6 +596,7 @@ class YOLACTProtonet(nn.Module):
         loss_mask_weight (float): Reweight the mask loss by this factor.
         max_masks_to_train (int): Maximum number of masks to train for
             each image.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -599,8 +607,12 @@ class YOLACTProtonet(nn.Module):
                  include_last_relu=True,
                  num_protos=32,
                  loss_mask_weight=1.0,
-                 max_masks_to_train=100):
-        super(YOLACTProtonet, self).__init__()
+                 max_masks_to_train=100,
+                 init_cfg=dict(
+                     type='Xavier',
+                     distribution='uniform',
+                     override=dict(name='protonet'))):
+        super(YOLACTProtonet, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.proto_channels = proto_channels
         self.proto_kernel_sizes = proto_kernel_sizes
@@ -621,7 +633,7 @@ class YOLACTProtonet(nn.Module):
         # ( 256,-2) -> deconv
         # (None,-2) -> bilinear interpolate
         in_channels = self.in_channels
-        protonets = nn.ModuleList()
+        protonets = ModuleList()
         for num_channels, kernel_size in zip(self.proto_channels,
                                              self.proto_kernel_sizes):
             if kernel_size > 0:
@@ -649,12 +661,6 @@ class YOLACTProtonet(nn.Module):
         if not self.include_last_relu:
             protonets = protonets[:-1]
         return nn.Sequential(*protonets)
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.protonet:
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
 
     def forward(self, x, coeff_pred, bboxes, img_meta, sampling_results=None):
         """Forward feature from the upstream network to get prototypes and
@@ -687,8 +693,8 @@ class YOLACTProtonet(nn.Module):
             coeff_pred_list = []
             for coeff_pred_per_level in coeff_pred:
                 coeff_pred_per_level = \
-                    coeff_pred_per_level.permute(0, 2, 3, 1)\
-                    .reshape(num_imgs, -1, self.num_protos)
+                    coeff_pred_per_level.permute(
+                        0, 2, 3, 1).reshape(num_imgs, -1, self.num_protos)
                 coeff_pred_list.append(coeff_pred_per_level)
             coeff_pred = torch.cat(coeff_pred_list, dim=1)
 
@@ -924,15 +930,77 @@ class YOLACTProtonet(nn.Module):
         x2 = torch.clamp(x2 + padding, max=img_size)
         return x1, x2
 
+    def simple_test(self,
+                    feats,
+                    det_bboxes,
+                    det_labels,
+                    det_coeffs,
+                    img_metas,
+                    rescale=False):
+        """Test function without test-time augmentation.
 
-class InterpolateModule(nn.Module):
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+               upstream network, each is a 4D-tensor.
+            det_bboxes (list[Tensor]): BBox results of each image. each
+               element is (n, 5) tensor, where 5 represent
+               (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+            det_labels (list[Tensor]): BBox results of each image. each
+               element is (n, ) tensor, each element represents the class
+               label of the corresponding box.
+            det_coeffs (list[Tensor]): BBox coefficient of each image. each
+               element is (n, m) tensor, m is vector length.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[list]: encoded masks. The c-th item in the outer list
+                corresponds to the c-th class. Given the c-th outer list, the
+                i-th item in that inner list is the mask for the i-th box with
+                class label c.
+        """
+        num_imgs = len(img_metas)
+        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
+            segm_results = [[[] for _ in range(self.num_classes)]
+                            for _ in range(num_imgs)]
+        else:
+            # if det_bboxes is rescaled to the original image size, we need to
+            # rescale it back to the testing scale to obtain RoIs.
+            if rescale and not isinstance(scale_factors[0], float):
+                scale_factors = [
+                    torch.from_numpy(scale_factor).to(det_bboxes[0].device)
+                    for scale_factor in scale_factors
+                ]
+            _bboxes = [
+                det_bboxes[i][:, :4] *
+                scale_factors[i] if rescale else det_bboxes[i][:, :4]
+                for i in range(len(det_bboxes))
+            ]
+            mask_preds = self.forward(feats[0], det_coeffs, _bboxes, img_metas)
+            # apply mask post-processing to each image individually
+            segm_results = []
+            for i in range(num_imgs):
+                if det_bboxes[i].shape[0] == 0:
+                    segm_results.append([[] for _ in range(self.num_classes)])
+                else:
+                    segm_result = self.get_seg_masks(mask_preds[i],
+                                                     det_labels[i],
+                                                     img_metas[i], rescale)
+                    segm_results.append(segm_result)
+        return segm_results
+
+
+class InterpolateModule(BaseModule):
     """This is a module version of F.interpolate.
 
     Any arguments you give it just get passed along for the ride.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__()
+    def __init__(self, *args, init_cfg=None, **kwargs):
+        super().__init__(init_cfg)
 
         self.args = args
         self.kwargs = kwargs

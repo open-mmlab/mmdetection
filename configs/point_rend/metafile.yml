@@ -1,0 +1,49 @@
+Collections:
+  - Name: PointRend
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - PointRend
+        - FPN
+        - ResNet
+    Paper: https://arxiv.org/abs/1912.08193
+    README: configs/point_rend/README.md
+
+Models:
+  - Name: point_rend_r50_caffe_fpn_mstrain_1x_coco
+    In Collection: PointRend
+    Config: configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py
+    Metadata:
+      Training Memory (GB): 4.6
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.4
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 36.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco/point_rend_r50_caffe_fpn_mstrain_1x_coco-1bcb5fb4.pth
+
+  - Name: point_rend_r50_caffe_fpn_mstrain_3x_coco
+    In Collection: PointRend
+    Config: configs/point_rend/point_rend_r50_caffe_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 4.6
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.0
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/point_rend/point_rend_r50_caffe_fpn_mstrain_3x_coco/point_rend_r50_caffe_fpn_mstrain_3x_coco-e0ebb6b7.pth

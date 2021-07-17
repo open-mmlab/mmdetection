@@ -1,9 +1,12 @@
 from __future__ import division
+import copy
+import warnings
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import normal_init
-from mmcv.ops import DeformConv2d
+from mmcv import ConfigDict
+from mmcv.ops import DeformConv2d, batched_nms
+from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
@@ -12,7 +15,7 @@ from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
 
 
-class AdaptiveConv(nn.Module):
+class AdaptiveConv(BaseModule):
     """AdaptiveConv used to adapt the sampling location with the anchors.
 
     Args:
@@ -31,6 +34,7 @@ class AdaptiveConv(nn.Module):
         type (str, optional): Type of adaptive conv, can be either 'offset'
             (arbitrary anchors) or 'dilation' (uniform anchor).
             Default: 'dilation'.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -42,15 +46,17 @@ class AdaptiveConv(nn.Module):
                  dilation=3,
                  groups=1,
                  bias=False,
-                 type='dilation'):
-        super(AdaptiveConv, self).__init__()
+                 type='dilation',
+                 init_cfg=dict(
+                     type='Normal', std=0.01, override=dict(name='conv'))):
+        super(AdaptiveConv, self).__init__(init_cfg)
         assert type in ['offset', 'dilation']
         self.adapt_type = type
 
         assert kernel_size == 3, 'Adaptive conv only supports kernels 3'
         if self.adapt_type == 'offset':
             assert stride == 1 and padding == 1 and groups == 1, \
-                'Addptive conv offset mode only supports padding: {1}, ' \
+                'Adaptive conv offset mode only supports padding: {1}, ' \
                 f'stride: {1}, groups: {1}'
             self.conv = DeformConv2d(
                 in_channels,
@@ -67,10 +73,6 @@ class AdaptiveConv(nn.Module):
                 kernel_size,
                 padding=dilation,
                 dilation=dilation)
-
-    def init_weights(self):
-        """Init weights."""
-        normal_init(self.conv, std=0.01)
 
     def forward(self, x, offset):
         """Forward function."""
@@ -96,11 +98,13 @@ class StageCascadeRPNHead(RPNHead):
         in_channels (int): Number of channels in the input feature map.
         anchor_generator (dict): anchor generator config.
         adapt_cfg (dict): adaptation config.
-        bridged_feature (bool, optional): wheater update rpn feature.
+        bridged_feature (bool, optional): whether update rpn feature.
             Default: False.
         with_cls (bool, optional): wheather use classification branch.
             Default: True.
         sampling (bool, optional): wheather use sampling. Default: True.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
     """
 
     def __init__(self,
@@ -114,6 +118,7 @@ class StageCascadeRPNHead(RPNHead):
                  bridged_feature=False,
                  with_cls=True,
                  sampling=True,
+                 init_cfg=None,
                  **kwargs):
         self.with_cls = with_cls
         self.anchor_strides = anchor_generator['strides']
@@ -121,7 +126,10 @@ class StageCascadeRPNHead(RPNHead):
         self.bridged_feature = bridged_feature
         self.adapt_cfg = adapt_cfg
         super(StageCascadeRPNHead, self).__init__(
-            in_channels, anchor_generator=anchor_generator, **kwargs)
+            in_channels,
+            anchor_generator=anchor_generator,
+            init_cfg=init_cfg,
+            **kwargs)
 
         # override sampling and sampler
         self.sampling = sampling
@@ -134,6 +142,12 @@ class StageCascadeRPNHead(RPNHead):
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
 
+        if init_cfg is None:
+            self.init_cfg = dict(
+                type='Normal', std=0.01, override=[dict(name='rpn_reg')])
+            if self.with_cls:
+                self.init_cfg['override'].append(dict(name='rpn_cls'))
+
     def _init_layers(self):
         """Init layers of a CascadeRPN stage."""
         self.rpn_conv = AdaptiveConv(self.in_channels, self.feat_channels,
@@ -144,13 +158,6 @@ class StageCascadeRPNHead(RPNHead):
                                      1)
         self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
         self.relu = nn.ReLU(inplace=True)
-
-    def init_weights(self):
-        """Init weights of a CascadeRPN stage."""
-        self.rpn_conv.init_weights()
-        normal_init(self.rpn_reg, std=0.01)
-        if self.with_cls:
-            normal_init(self.rpn_cls, std=0.01)
 
     def forward_single(self, x, offset):
         """Forward function of single scale."""
@@ -468,7 +475,7 @@ class StageCascadeRPNHead(RPNHead):
             num_total_samples = num_total_pos + num_total_neg
         else:
             # 200 is hard-coded average factor,
-            # which follows guilded anchoring.
+            # which follows guided anchoring.
             num_total_samples = sum([label.numel()
                                      for label in labels_list]) / 200.0
 
@@ -536,6 +543,130 @@ class StageCascadeRPNHead(RPNHead):
             new_anchor_list.append(mlvl_anchors)
         return new_anchor_list
 
+    # TODO: temporary plan
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           mlvl_anchors,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
+        """Transform outputs for a single batch item into bbox predictions.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (num_anchors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (num_anchors * 4, H, W).
+            mlvl_anchors (list[Tensor]): Box reference for each scale level
+                with shape (num_total_anchors, 4).
+            img_shape (tuple[int]): Shape of the input image,
+                (height, width, 3).
+            scale_factor (ndarray): Scale factor of the image arange as
+                (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+
+        Returns:
+            Tensor: Labeled boxes have the shape of (n,5), where the
+                first 4 columns are bounding box positions
+                (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                between 0 and 1.
+        """
+        cfg = self.test_cfg if cfg is None else cfg
+        cfg = copy.deepcopy(cfg)
+        # bboxes from different level should be independent during NMS,
+        # level_ids are used as labels for batched NMS to separate them
+        level_ids = []
+        mlvl_scores = []
+        mlvl_bbox_preds = []
+        mlvl_valid_anchors = []
+        for idx in range(len(cls_scores)):
+            rpn_cls_score = cls_scores[idx]
+            rpn_bbox_pred = bbox_preds[idx]
+            assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
+            rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
+            if self.use_sigmoid_cls:
+                rpn_cls_score = rpn_cls_score.reshape(-1)
+                scores = rpn_cls_score.sigmoid()
+            else:
+                rpn_cls_score = rpn_cls_score.reshape(-1, 2)
+                # We set FG labels to [0, num_class-1] and BG label to
+                # num_class in RPN head since mmdet v2.5, which is unified to
+                # be consistent with other head since mmdet v2.0. In mmdet v2.0
+                # to v2.4 we keep BG label as 0 and FG label as 1 in rpn head.
+                scores = rpn_cls_score.softmax(dim=1)[:, 0]
+            rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            anchors = mlvl_anchors[idx]
+            if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
+                # sort is faster than topk
+                # _, topk_inds = scores.topk(cfg.nms_pre)
+                if torch.onnx.is_in_onnx_export():
+                    # sort op will be converted to TopK in onnx
+                    # and k<=3480 in TensorRT
+                    _, topk_inds = scores.topk(cfg.nms_pre)
+                    scores = scores[topk_inds]
+                else:
+                    ranked_scores, rank_inds = scores.sort(descending=True)
+                    topk_inds = rank_inds[:cfg.nms_pre]
+                    scores = ranked_scores[:cfg.nms_pre]
+                rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
+                anchors = anchors[topk_inds, :]
+            mlvl_scores.append(scores)
+            mlvl_bbox_preds.append(rpn_bbox_pred)
+            mlvl_valid_anchors.append(anchors)
+            level_ids.append(
+                scores.new_full((scores.size(0), ), idx, dtype=torch.long))
+
+        scores = torch.cat(mlvl_scores)
+        anchors = torch.cat(mlvl_valid_anchors)
+        rpn_bbox_pred = torch.cat(mlvl_bbox_preds)
+        proposals = self.bbox_coder.decode(
+            anchors, rpn_bbox_pred, max_shape=img_shape)
+        ids = torch.cat(level_ids)
+
+        # Skip nonzero op while exporting to ONNX
+        if cfg.min_bbox_size >= 0 and (not torch.onnx.is_in_onnx_export()):
+            w = proposals[:, 2] - proposals[:, 0]
+            h = proposals[:, 3] - proposals[:, 1]
+            valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
+            if not valid_mask.all():
+                proposals = proposals[valid_mask]
+                scores = scores[valid_mask]
+                ids = ids[valid_mask]
+
+        # deprecate arguments warning
+        if 'nms' not in cfg or 'max_num' in cfg or 'nms_thr' in cfg:
+            warnings.warn(
+                'In rpn_proposal or test_cfg, '
+                'nms_thr has been moved to a dict named nms as '
+                'iou_threshold, max_num has been renamed as max_per_img, '
+                'name of original arguments and the way to specify '
+                'iou_threshold of NMS will be deprecated.')
+        if 'nms' not in cfg:
+            cfg.nms = ConfigDict(dict(type='nms', iou_threshold=cfg.nms_thr))
+        if 'max_num' in cfg:
+            if 'max_per_img' in cfg:
+                assert cfg.max_num == cfg.max_per_img, f'You ' \
+                    f'set max_num and ' \
+                    f'max_per_img at the same time, but get {cfg.max_num} ' \
+                    f'and {cfg.max_per_img} respectively' \
+                    'Please delete max_num which will be deprecated.'
+            else:
+                cfg.max_per_img = cfg.max_num
+        if 'nms_thr' in cfg:
+            assert cfg.nms.iou_threshold == cfg.nms_thr, f'You set' \
+                f' iou_threshold in nms and ' \
+                f'nms_thr at the same time, but get' \
+                f' {cfg.nms.iou_threshold} and {cfg.nms_thr}' \
+                f' respectively. Please delete the nms_thr ' \
+                f'which will be deprecated.'
+
+        dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+        return dets[:cfg.max_per_img]
+
 
 @HEADS.register_module()
 class CascadeRPNHead(BaseDenseHead):
@@ -553,11 +684,13 @@ class CascadeRPNHead(BaseDenseHead):
         test_cfg (dict): config at testing time.
     """
 
-    def __init__(self, num_stages, stages, train_cfg, test_cfg):
-        super(CascadeRPNHead, self).__init__()
+    def __init__(self, num_stages, stages, train_cfg, test_cfg, init_cfg=None):
+        super(CascadeRPNHead, self).__init__(init_cfg)
         assert num_stages == len(stages)
         self.num_stages = num_stages
-        self.stages = nn.ModuleList()
+        # Be careful! Pretrained weights cannot be loaded when use
+        # nn.ModuleList
+        self.stages = ModuleList()
         for i in range(len(stages)):
             train_cfg_i = train_cfg[i] if train_cfg is not None else None
             stages[i].update(train_cfg=train_cfg_i)
@@ -565,11 +698,6 @@ class CascadeRPNHead(BaseDenseHead):
             self.stages.append(build_head(stages[i]))
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-
-    def init_weights(self):
-        """Init weight of CascadeRPN."""
-        for i in range(self.num_stages):
-            self.stages[i].init_weights()
 
     def loss(self):
         """loss() is implemented in StageCascadeRPNHead."""
@@ -651,4 +779,5 @@ class CascadeRPNHead(BaseDenseHead):
 
     def aug_test_rpn(self, x, img_metas):
         """Augmented forward test function."""
-        raise NotImplementedError
+        raise NotImplementedError(
+            'CascadeRPNHead does not support test-time augmentation')

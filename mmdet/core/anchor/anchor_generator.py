@@ -1,13 +1,15 @@
+import warnings
+
 import mmcv
 import numpy as np
 import torch
 from torch.nn.modules.utils import _pair
 
-from .builder import ANCHOR_GENERATORS
+from .builder import PRIOR_GENERATORS
 
 
-@ANCHOR_GENERATORS.register_module()
-class AnchorGenerator(object):
+@PRIOR_GENERATORS.register_module()
+class AnchorGenerator:
     """Standard anchor generator for 2D anchor-based detectors.
 
     Args:
@@ -68,7 +70,7 @@ class AnchorGenerator(object):
         # check center and center_offset
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
-                f'!=0, {centers} is given.'
+                                    f'!=0, {centers} is given.'
         if not (0 <= center_offset <= 1):
             raise ValueError('center_offset should be in range [0, 1], '
                              f'{center_offset} is given.')
@@ -87,7 +89,7 @@ class AnchorGenerator(object):
 
         # calculate scales of anchors
         assert ((octave_base_scale is not None
-                and scales_per_octave is not None) ^ (scales is not None)), \
+                 and scales_per_octave is not None) ^ (scales is not None)), \
             'scales and octave_base_scale with scales_per_octave cannot' \
             ' be set at the same time'
         if scales is not None:
@@ -112,6 +114,12 @@ class AnchorGenerator(object):
     @property
     def num_base_anchors(self):
         """list[int]: total number of base anchors in a feature grid"""
+        return self.num_base_priors
+
+    @property
+    def num_base_priors(self):
+        """list[int]: The number of priors (anchors) at a point
+        on the feature grid"""
         return [base_anchors.size(0) for base_anchors in self.base_anchors]
 
     @property
@@ -196,12 +204,106 @@ class AnchorGenerator(object):
         Returns:
             tuple[torch.Tensor]: The mesh grids of x and y.
         """
-        xx = x.repeat(len(y))
-        yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
+        # use shape instead of len to keep tracing while exporting to onnx
+        xx = x.repeat(y.shape[0])
+        yy = y.view(-1, 1).repeat(1, x.shape[0]).view(-1)
         if row_major:
             return xx, yy
         else:
             return yy, xx
+
+    def grid_priors(self, featmap_sizes, device='cuda'):
+        """Generate grid anchors in multiple feature levels.
+
+        Args:
+            featmap_sizes (list[tuple]): List of feature map sizes in
+                multiple feature levels.
+            device (str): The device where the anchors will be put on.
+
+        Return:
+            list[torch.Tensor]: Anchors in multiple feature levels. \
+                The sizes of each tensor should be [N, 4], where \
+                N = width * height * num_base_anchors, width and height \
+                are the sizes of the corresponding feature level, \
+                num_base_anchors is the number of anchors for that level.
+        """
+        assert self.num_levels == len(featmap_sizes)
+        multi_level_anchors = []
+        for i in range(self.num_levels):
+            anchors = self.single_level_grid_priors(
+                featmap_sizes[i], level_idx=i, device=device)
+            multi_level_anchors.append(anchors)
+        return multi_level_anchors
+
+    def single_level_grid_priors(self, featmap_size, level_idx, device='cuda'):
+        """Generate grid anchors of a single level.
+
+        Note:
+            This function is usually called by method ``self.grid_priors``.
+
+        Args:
+            featmap_size (tuple[int]): Size of the feature maps.
+            level_idx (int): The index of corresponding feature map level.
+            device (str, optional): The device the tensor will be put on.
+                Defaults to 'cuda'.
+
+        Returns:
+            torch.Tensor: Anchors in the overall feature maps.
+        """
+
+        base_anchors = self.base_anchors[level_idx].to(device)
+        feat_h, feat_w = featmap_size
+        stride_w, stride_h = self.strides[level_idx]
+        shift_x = torch.arange(0, feat_w, device=device) * stride_w
+        shift_y = torch.arange(0, feat_h, device=device) * stride_h
+
+        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
+        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
+        shifts = shifts.type_as(base_anchors)
+        # first feat_w elements correspond to the first row of shifts
+        # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
+        # shifted anchors (K, A, 4), reshape to (K*A, 4)
+
+        all_anchors = base_anchors[None, :, :] + shifts[:, None, :]
+        all_anchors = all_anchors.view(-1, 4)
+        # first A rows correspond to A anchors of (0, 0) in feature map,
+        # then (0, 1), (0, 2), ...
+        return all_anchors
+
+    def sparse_priors(self,
+                      prior_idxs,
+                      featmap_size,
+                      level_idx,
+                      dtype=torch.float32,
+                      device='cuda'):
+        """Generate sparse anchors according to the ``prior_idxs``.
+
+        Args:
+            prior_idxs (Tensor): The index of corresponding anchors
+                in the feature map.
+            featmap_size (tuple[int]): feature map size arrange as (h, w).
+            level_idx (int): The level index of corresponding feature
+                map.
+            dtype (obj:`torch.dtype`): Date type of points.Defaults to
+                ``torch.float32``.
+            device (obj:`torch.device`): The device where the points is
+                located.
+        Returns:
+            Tensor: Anchor with shape (N, 4), N should be equal to
+                the length of ``prior_idxs``.
+        """
+
+        height, width = featmap_size
+        num_base_anchors = self.num_base_anchors[level_idx]
+        base_anchor_id = prior_idxs % num_base_anchors
+        x = (prior_idxs //
+             num_base_anchors) % width * self.strides[level_idx][0]
+        y = (prior_idxs // width //
+             num_base_anchors) % height * self.strides[level_idx][1]
+        priors = torch.stack([x, y, x, y], 1).to(dtype).to(device) + \
+            self.base_anchors[level_idx][base_anchor_id, :].to(device)
+
+        return priors
 
     def grid_anchors(self, featmap_sizes, device='cuda'):
         """Generate grid anchors in multiple feature levels.
@@ -218,6 +320,9 @@ class AnchorGenerator(object):
                 are the sizes of the corresponding feature level, \
                 num_base_anchors is the number of anchors for that level.
         """
+        warnings.warn('``grid_anchors`` would be deprecated soon. '
+                      'Please use ``grid_priors`` ')
+
         assert self.num_levels == len(featmap_sizes)
         multi_level_anchors = []
         for i in range(self.num_levels):
@@ -250,10 +355,14 @@ class AnchorGenerator(object):
         Returns:
             torch.Tensor: Anchors in the overall feature maps.
         """
+
+        warnings.warn(
+            '``single_level_grid_anchors`` would be deprecated soon. '
+            'Please use ``single_level_grid_priors`` ')
+
+        # keep featmap_size as Tensor instead of int, so that we
+        # can covert to ONNX correctly
         feat_h, feat_w = featmap_size
-        # convert Tensor to int, so that we can covert to ONNX correctlly
-        feat_h = int(feat_h)
-        feat_w = int(feat_w)
         shift_x = torch.arange(0, feat_w, device=device) * stride[0]
         shift_y = torch.arange(0, feat_h, device=device) * stride[1]
 
@@ -305,7 +414,8 @@ class AnchorGenerator(object):
         """Generate the valid flags of anchor in a single feature map.
 
         Args:
-            featmap_size (tuple[int]): The size of feature maps.
+            featmap_size (tuple[int]): The size of feature maps, arrange
+                as (h, w).
             valid_size (tuple[int]): The valid size of the feature maps.
             num_base_anchors (int): The number of base anchors.
             device (str, optional): Device where the flags will be put on.
@@ -347,7 +457,7 @@ class AnchorGenerator(object):
         return repr_str
 
 
-@ANCHOR_GENERATORS.register_module()
+@PRIOR_GENERATORS.register_module()
 class SSDAnchorGenerator(AnchorGenerator):
     """Anchor generator for SSD.
 
@@ -356,9 +466,14 @@ class SSDAnchorGenerator(AnchorGenerator):
             in multiple feature levels.
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
-        basesize_ratio_range (tuple(float)): Ratio range of anchors.
-        input_size (int): Size of feature map, 300 for SSD300,
-            512 for SSD512.
+        min_sizes (list[float]): The list of minimum anchor sizes on each
+            level.
+        max_sizes (list[float]): The list of maximum anchor sizes on each
+            level.
+        basesize_ratio_range (tuple(float)): Ratio range of anchors. Being
+            used when not setting min_sizes and max_sizes.
+        input_size (int): Size of feature map, 300 for SSD300, 512 for
+            SSD512. Being used when not setting min_sizes and max_sizes.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. It is always set to be False in SSD.
@@ -367,54 +482,64 @@ class SSDAnchorGenerator(AnchorGenerator):
     def __init__(self,
                  strides,
                  ratios,
-                 basesize_ratio_range,
+                 min_sizes=None,
+                 max_sizes=None,
+                 basesize_ratio_range=(0.15, 0.9),
                  input_size=300,
                  scale_major=True):
         assert len(strides) == len(ratios)
-        assert mmcv.is_tuple_of(basesize_ratio_range, float)
-
+        assert not (min_sizes is None) ^ (max_sizes is None)
         self.strides = [_pair(stride) for stride in strides]
-        self.input_size = input_size
         self.centers = [(stride[0] / 2., stride[1] / 2.)
                         for stride in self.strides]
-        self.basesize_ratio_range = basesize_ratio_range
 
-        # calculate anchor ratios and sizes
-        min_ratio, max_ratio = basesize_ratio_range
-        min_ratio = int(min_ratio * 100)
-        max_ratio = int(max_ratio * 100)
-        step = int(np.floor(max_ratio - min_ratio) / (self.num_levels - 2))
-        min_sizes = []
-        max_sizes = []
-        for ratio in range(int(min_ratio), int(max_ratio) + 1, step):
-            min_sizes.append(int(self.input_size * ratio / 100))
-            max_sizes.append(int(self.input_size * (ratio + step) / 100))
-        if self.input_size == 300:
-            if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
-                min_sizes.insert(0, int(self.input_size * 7 / 100))
-                max_sizes.insert(0, int(self.input_size * 15 / 100))
-            elif basesize_ratio_range[0] == 0.2:  # SSD300 VOC
-                min_sizes.insert(0, int(self.input_size * 10 / 100))
-                max_sizes.insert(0, int(self.input_size * 20 / 100))
+        if min_sizes is None and max_sizes is None:
+            # use hard code to generate SSD anchors
+            self.input_size = input_size
+            assert mmcv.is_tuple_of(basesize_ratio_range, float)
+            self.basesize_ratio_range = basesize_ratio_range
+            # calculate anchor ratios and sizes
+            min_ratio, max_ratio = basesize_ratio_range
+            min_ratio = int(min_ratio * 100)
+            max_ratio = int(max_ratio * 100)
+            step = int(np.floor(max_ratio - min_ratio) / (self.num_levels - 2))
+            min_sizes = []
+            max_sizes = []
+            for ratio in range(int(min_ratio), int(max_ratio) + 1, step):
+                min_sizes.append(int(self.input_size * ratio / 100))
+                max_sizes.append(int(self.input_size * (ratio + step) / 100))
+            if self.input_size == 300:
+                if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
+                    min_sizes.insert(0, int(self.input_size * 7 / 100))
+                    max_sizes.insert(0, int(self.input_size * 15 / 100))
+                elif basesize_ratio_range[0] == 0.2:  # SSD300 VOC
+                    min_sizes.insert(0, int(self.input_size * 10 / 100))
+                    max_sizes.insert(0, int(self.input_size * 20 / 100))
+                else:
+                    raise ValueError(
+                        'basesize_ratio_range[0] should be either 0.15'
+                        'or 0.2 when input_size is 300, got '
+                        f'{basesize_ratio_range[0]}.')
+            elif self.input_size == 512:
+                if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
+                    min_sizes.insert(0, int(self.input_size * 4 / 100))
+                    max_sizes.insert(0, int(self.input_size * 10 / 100))
+                elif basesize_ratio_range[0] == 0.15:  # SSD512 VOC
+                    min_sizes.insert(0, int(self.input_size * 7 / 100))
+                    max_sizes.insert(0, int(self.input_size * 15 / 100))
+                else:
+                    raise ValueError(
+                        'When not setting min_sizes and max_sizes,'
+                        'basesize_ratio_range[0] should be either 0.1'
+                        'or 0.15 when input_size is 512, got'
+                        f' {basesize_ratio_range[0]}.')
             else:
                 raise ValueError(
-                    'basesize_ratio_range[0] should be either 0.15'
-                    'or 0.2 when input_size is 300, got '
-                    f'{basesize_ratio_range[0]}.')
-        elif self.input_size == 512:
-            if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
-                min_sizes.insert(0, int(self.input_size * 4 / 100))
-                max_sizes.insert(0, int(self.input_size * 10 / 100))
-            elif basesize_ratio_range[0] == 0.15:  # SSD512 VOC
-                min_sizes.insert(0, int(self.input_size * 7 / 100))
-                max_sizes.insert(0, int(self.input_size * 15 / 100))
-            else:
-                raise ValueError('basesize_ratio_range[0] should be either 0.1'
-                                 'or 0.15 when input_size is 512, got'
-                                 f' {basesize_ratio_range[0]}.')
-        else:
-            raise ValueError('Only support 300 or 512 in SSDAnchorGenerator'
-                             f', got {self.input_size}.')
+                    'Only support 300 or 512 in SSDAnchorGenerator when '
+                    'not setting min_sizes and max_sizes, '
+                    f'got {self.input_size}.')
+
+        assert len(min_sizes) == len(max_sizes) == len(strides)
 
         anchor_ratios = []
         anchor_scales = []
@@ -471,7 +596,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         return repr_str
 
 
-@ANCHOR_GENERATORS.register_module()
+@PRIOR_GENERATORS.register_module()
 class LegacyAnchorGenerator(AnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x.
 
@@ -570,7 +695,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
         return base_anchors
 
 
-@ANCHOR_GENERATORS.register_module()
+@PRIOR_GENERATORS.register_module()
 class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x.
 
@@ -584,15 +709,18 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
                  basesize_ratio_range,
                  input_size=300,
                  scale_major=True):
-        super(LegacySSDAnchorGenerator,
-              self).__init__(strides, ratios, basesize_ratio_range, input_size,
-                             scale_major)
+        super(LegacySSDAnchorGenerator, self).__init__(
+            strides=strides,
+            ratios=ratios,
+            basesize_ratio_range=basesize_ratio_range,
+            input_size=input_size,
+            scale_major=scale_major)
         self.centers = [((stride - 1) / 2., (stride - 1) / 2.)
                         for stride in strides]
         self.base_anchors = self.gen_base_anchors()
 
 
-@ANCHOR_GENERATORS.register_module()
+@PRIOR_GENERATORS.register_module()
 class YOLOAnchorGenerator(AnchorGenerator):
     """Anchor generator for YOLO.
 

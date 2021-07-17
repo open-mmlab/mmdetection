@@ -47,7 +47,7 @@ def average_precision(recalls, precisions, mode='area'):
                 precs = precisions[i, recalls[i, :] >= thr]
                 prec = precs.max() if precs.size > 0 else 0
                 ap[i] += prec
-            ap /= 11
+        ap /= 11
     else:
         raise ValueError(
             'Unrecognized mode, only "area" and "11points" are supported')
@@ -124,7 +124,7 @@ def tpfp_imagenet(det_bboxes,
             # find best overlapped available gt
             for j in range(num_gts):
                 # different from PASCAL VOC: allow finding other gts if the
-                # best overlaped ones are already matched by other det bboxes
+                # best overlapped ones are already matched by other det bboxes
                 if gt_covered[j]:
                     continue
                 elif ious[i, j] >= iou_thrs[j] and ious[i, j] > max_iou:

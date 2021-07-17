@@ -10,7 +10,7 @@ from .base_bbox_coder import BaseBBoxCoder
 
 @BBOX_CODERS.register_module()
 class BucketingBBoxCoder(BaseBBoxCoder):
-    """Bucketing BBox Coder for Side-Aware Bounday Localization (SABL).
+    """Bucketing BBox Coder for Side-Aware Boundary Localization (SABL).
 
     Boundary Localization with Bucketing and Bucketing Guided Rescoring
     are implemented here.
@@ -255,7 +255,7 @@ def bbox2bucket(proposals,
         bucket_cls_d_weights
     ],
                                    dim=-1)
-    # ignore second nearest buckets for cls if necessay
+    # ignore second nearest buckets for cls if necessary
     if cls_ignore_neighbor:
         bucket_cls_weights = (~((bucket_cls_weights == 1) &
                                 (bucket_labels == 0))).float()

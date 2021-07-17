@@ -1,0 +1,167 @@
+Collections:
+  - Name: FoveaBox
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 4x V100 GPUs
+      Architecture:
+        - FPN
+        - ResNet
+    Paper: https://arxiv.org/abs/1904.03797
+    README: configs/foveabox/README.md
+
+Models:
+  - Name: fovea_r50_fpn_4x4_1x_coco
+    In Collection: FoveaBox
+    Config: configs/foveabox/fovea_r50_fpn_4x4_1x_coco.py
+    Metadata:
+      Training Memory (GB): 5.6
+      inference time (ms/im):
+        - value: 41.49
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 36.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_1x_coco/fovea_r50_fpn_4x4_1x_coco_20200219-ee4d5303.pth
+
+  - Name: fovea_r50_fpn_4x4_2x_coco
+    In Collection: FoveaBox
+    Config: configs/foveabox/fovea_r50_fpn_4x4_2x_coco.py
+    Metadata:
+      Training Memory (GB): 5.6
+      inference time (ms/im):
+        - value: 41.49
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_2x_coco/fovea_r50_fpn_4x4_2x_coco_20200203-2df792b1.pth
+
+  - Name: fovea_align_r50_fpn_gn-head_4x4_2x_coco
+    In Collection: FoveaBox
+    Config: configs/foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py
+    Metadata:
+      Training Memory (GB): 8.1
+      inference time (ms/im):
+        - value: 51.55
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco/fovea_align_r50_fpn_gn-head_4x4_2x_coco_20200203-8987880d.pth
+
+  - Name: fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco
+    In Collection: FoveaBox
+    Config: configs/foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py
+    Metadata:
+      Training Memory (GB): 8.1
+      inference time (ms/im):
+        - value: 54.64
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco_20200205-85ce26cb.pth
+
+  - Name: fovea_r101_fpn_4x4_1x_coco
+    In Collection: FoveaBox
+    Config: configs/foveabox/fovea_r101_fpn_4x4_1x_coco.py
+    Metadata:
+      Training Memory (GB): 9.2
+      inference time (ms/im):
+        - value: 57.47
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r101_fpn_4x4_1x_coco/fovea_r101_fpn_4x4_1x_coco_20200219-05e38f1c.pth
+
+  - Name: fovea_r101_fpn_4x4_2x_coco
+    In Collection: FoveaBox
+    Config: configs/foveabox/fovea_r101_fpn_4x4_2x_coco.py
+    Metadata:
+      Training Memory (GB): 11.7
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r101_fpn_4x4_2x_coco/fovea_r101_fpn_4x4_2x_coco_20200208-02320ea4.pth
+
+  - Name: fovea_align_r101_fpn_gn-head_4x4_2x_coco
+    In Collection: FoveaBox
+    Config: configs/foveabox/fovea_align_r101_fpn_gn-head_4x4_2x_coco.py
+    Metadata:
+      Training Memory (GB): 11.7
+      inference time (ms/im):
+        - value: 68.03
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r101_fpn_gn-head_4x4_2x_coco/fovea_align_r101_fpn_gn-head_4x4_2x_coco_20200208-c39a027a.pth
+
+  - Name: fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco
+    In Collection: FoveaBox
+    Config: configs/foveabox/fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py
+    Metadata:
+      Training Memory (GB): 11.7
+      inference time (ms/im):
+        - value: 68.03
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco/fovea_align_r101_fpn_gn-head_mstrain_640-800_4x4_2x_coco_20200208-649c5eb6.pth
