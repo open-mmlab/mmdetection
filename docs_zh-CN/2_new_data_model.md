@@ -1,5 +1,5 @@
 # 2: 在自定义数据集上进行训练
-通过本文档，你将会知道如何使用自定义的数据集对预定义的模型进行推理，测试以及训练。我们使用 [balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) 作为例子来描述整个过程。
+通过本文档，你将会知道如何使用自定义的数据集对预先定义好的模型进行推理，测试以及训练。我们使用 [balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) 作为例子来描述整个过程。
 
 基本步骤如下：
 
@@ -20,7 +20,7 @@ MMDetection 一共支持三种形式应用新数据集：
 
 **注意**：MMDetection 现只支持对 COCO 格式的数据集进行 mask AP 的评测。
 
-所以对于要进行实例分割任务的用户而言，必须要将数据集转化为 COCO 格式。
+所以用户如果要进行实例分割，只能将数据转成 COCO 格式。
 
 ### COCO标注格式
 用于实例分割的 COCO 数据集格式如下所示，其中的键（key）都是必要的，参考[这里](https://cocodataset.org/#format-data)来获取更多细节。
@@ -57,9 +57,9 @@ categories = [{
 ```
 现在假设我们使用 balloon dataset。
 
-下载了数据集之后，我们需要实现一个函数将标注格式转化为 COCO 格式。然后我们就可以使用已经实现的 COCODataset 类来加载数据后进行训练以及评测。
+下载了数据集之后，我们需要实现一个函数将标注格式转化为 COCO 格式。然后我们就可以使用已经实现的 `COCODataset` 类来加载数据并进行训练以及评测。
 
-如果你浏览过数据集，你会发现数据集格式如下：
+如果你浏览过新数据集，你会发现格式如下：
 
 ```json
 {'base64_img_data': '',
@@ -202,7 +202,7 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
 
 ```
 
-使用如上的函数，用户可以成功将标注文件转化为JSON格式，之后可以使用 `CocoDataset` 对模型进行训练和评测。
+使用如上的函数，用户可以成功将标注文件转化为 JSON 格式，之后可以使用 `CocoDataset` 对模型进行训练和评测。
 
 ## 准备配置文件
 
@@ -241,7 +241,7 @@ load_from = 'checkpoints/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0
 
 ## 训练一个新的模型
 
-为了使用新的配置方法来对模型进行训练，你只需要简单运行如下命令。
+为了使用新的配置方法来对模型进行训练，你只需要运行如下命令。
 
 ```shell
 python tools/train.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py
@@ -251,7 +251,7 @@ python tools/train.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_ba
 
 ## 测试以及推理
 
-为了测试训练完毕的模型，你只需要简单运行如下命令。
+为了测试训练完毕的模型，你只需要运行如下命令。
 
 ```shell
 python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py/latest.pth --eval bbox segm
