@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.ops import batched_nms
 from mmcv.runner import force_fp32
@@ -59,10 +60,8 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                  init_cfg=None):
         super(CustomCenterNetHead, self).__init__(init_cfg)
         self.num_classes = num_classes
-        self.heatmap_head = self._build_head(in_channel, feat_channel,
-                                             num_classes)
-        self.wh_head = self._build_head(in_channel, feat_channel, 2)
-        self.offset_head = self._build_head(in_channel, feat_channel, 2)
+
+
 
         self.loss_center_heatmap = build_loss(loss_center_heatmap)
         self.loss_wh = build_loss(loss_wh)
@@ -72,19 +71,46 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.test_cfg = test_cfg
         self.fp16_enabled = False
 
-########################################################## lq #########################
-        # todo: initialize the
-        # cls_tower
-        # bbox_tower
-        # agn_hm
-        # bbox_pred
-        #
+        self.out_kernel = 3
+        norm = cfg.MODEL.CENTERNET.NORM
+        self.only_proposal = True
 
 
-        self.cls_tower()
+        ##########  initialize the   1.<cls_tower>   2.<bbox_tower>   3.<share_tower>[no]  4.<bbox_pred>  5.<agn_hm>  6.<cls_logits>[no]
+
+        ######################################################## origin #########################
+        # self.heatmap_head = self._build_head(in_channel, feat_channel,
+        #                                      num_classes)
+        # self.wh_head = self._build_head(in_channel, feat_channel, 2)
+        # self.offset_head = self._build_head(in_channel, feat_channel, 2)
 
 
+        ########################################################## lq #########################
+        head_configs = {"cls": (cfg.MODEL.CENTERNET.NUM_CLS_CONVS \
+                                if not self.only_proposal else 0,
+                                cfg.MODEL.CENTERNET.USE_DEFORMABLE),
+                        "bbox": (cfg.MODEL.CENTERNET.NUM_BOX_CONVS,
+                                 cfg.MODEL.CENTERNET.USE_DEFORMABLE),
+                        "share": (cfg.MODEL.CENTERNET.NUM_SHARE_CONVS,
+                                  cfg.MODEL.CENTERNET.USE_DEFORMABLE)}
 
+        head_configs = {"cls": (4,False),
+                        "bbox": (4,False),
+                        "share": (0,False)}
+
+        #############  centernet2 , channels from ["p3", "p4", "p5", "p6", "p7"]'s channels, config
+        # in_channels = [s.channels for s in input_shape]
+        # assert len(set(in_channels)) == 1, \
+        #     "Each level must have the same channel!"
+        # in_channels = in_channels[0]
+
+        channels = {
+            'cls': in_channels,
+            'bbox': in_channels,
+            'share': in_channels,
+        }
+
+        ##### initialize the     1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
         for head in head_configs:
             tower = []
             num_convs, use_deformable = head_configs[head]
@@ -105,15 +131,35 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             self.add_module('{}_tower'.format(head),
                             nn.Sequential(*tower))
 
+        ### initialize the    <bbox_pred>
         self.bbox_pred = nn.Conv2d(
             in_channels, 4, kernel_size=self.out_kernel,
             stride=1, padding=self.out_kernel // 2
         )
 
+        ### initialize the     <scales>
         self.scales = nn.ModuleList(
             [Scale(init_value=1.0)])
         # self.scales = nn.ModuleList(
         #     [Scale(init_value=1.0) for _ in input_shape])
+
+
+        ### initialize the     <agn_hm>
+        self.agn_hm = nn.Conv2d(
+            in_channels, 1, kernel_size=self.out_kernel,
+            stride=1, padding=self.out_kernel // 2
+        )
+
+        ### initialize the <cls_logits>, config assigns it to false !
+        if not self.only_proposal:
+            cls_kernel_size = self.out_kernel
+            self.cls_logits = nn.Conv2d(
+                in_channels, self.num_classes,
+                kernel_size=cls_kernel_size,
+                stride=1,
+                padding=cls_kernel_size // 2,
+            )
+
 
 
     def _build_head(self, in_channel, feat_channel, out_channel):
@@ -124,14 +170,45 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             nn.Conv2d(feat_channel, out_channel, kernel_size=1))
         return layer
 
+
     def init_weights(self):
         """Initialize weights of the head."""
-        bias_init = bias_init_with_prob(0.1)
-        self.heatmap_head[-1].bias.data.fill_(bias_init)
-        for head in [self.wh_head, self.offset_head]:
-            for m in head.modules():
-                if isinstance(m, nn.Conv2d):
-                    normal_init(m, std=0.001)
+        ###################### origin ######################
+        # bias_init = bias_init_with_prob(0.1)
+        # self.heatmap_head[-1].bias.data.fill_(bias_init)
+        # for head in [self.wh_head, self.offset_head]:
+        #     for m in head.modules():
+        #         if isinstance(m, nn.Conv2d):
+        #             normal_init(m, std=0.001)
+
+        ########################  lq #####################################
+
+        ### initialize the    1.<cls_tower>   2.<bbox_tower>    3.<share_tower>   4.<bbox_pred>
+        for modules in [
+            self.cls_tower, self.bbox_tower,
+            self.share_tower,
+            self.bbox_pred,
+        ]:
+            for l in modules.modules():
+                if isinstance(l, nn.Conv2d):
+                    torch.nn.init.normal_(l.weight, std=0.01)
+                    torch.nn.init.constant_(l.bias, 0)
+
+        torch.nn.init.constant_(self.bbox_pred.bias, 8.)
+
+        ### initialize the    <agn_hm>
+        #prior_prob = cfg.MODEL.CENTERNET.PRIOR_PROB --> 0.01 in config
+        prior_prob = 0.01
+        bias_value = -math.log((1 - prior_prob) / prior_prob)
+
+        torch.nn.init.constant_(self.agn_hm.bias, bias_value)
+        torch.nn.init.normal_(self.agn_hm.weight, std=0.01)
+
+        ##############  if <cls_logits>
+        if not self.only_proposal:
+            torch.nn.init.constant_(self.cls_logits.bias, bias_value)
+            torch.nn.init.normal_(self.cls_logits.weight, std=0.01)
+
 
 
     def forward(self, feats):
@@ -160,26 +237,27 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             feat (Tensor): Feature of a single level.
 
         Returns:
+            cls(Tensor): cls predicts, the channels number is class number: 80  # not used
             bbox_reg(Tensor): reg predicts, the channels number is 4
             agn_hms (Tensor): center predict heatmaps, the channels number is 1
 
         """
 
-        #feature = self.share_tower(feature)
-        cls_tower = self.cls_tower(feat)
+        feat = self.share_tower(feat)       # not used
+        cls_tower = self.cls_tower(feat)    # not used
         bbox_tower = self.bbox_tower(feat)
 
-        # if not self.only_proposal:
-        #     clss.append(self.cls_logits(cls_tower))
-        # else:
-        #     clss.append(None)
+        if not self.only_proposal:
+            clss = self.cls_logits(cls_tower)
+        else:
+            clss = None
         agn_hms = self.agn_hm(bbox_tower)
         reg = self.bbox_pred(bbox_tower)
         reg = self.scales[0](reg)
         # reg = self.scales[l](reg)
         bbox_reg = F.relu(reg)
 
-    return bbox_reg, agn_hms
+        return clss, bbox_reg, agn_hms
 
 
     @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
@@ -449,3 +527,5 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             out_labels = out_labels[idx]
 
         return out_bboxes, out_labels
+
+
