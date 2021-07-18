@@ -3,6 +3,7 @@ from .autoassign import AutoAssign
 from .base import BaseDetector
 from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
+from .centernet2 import CenterNet2
 from .cornernet import CornerNet
 from .deformable_detr import DeformableDETR
 from .detr import DETR
@@ -40,5 +41,5 @@ __all__ = [
     'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector', 'FOVEA', 'FSAF',
     'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA', 'YOLOV3', 'YOLACT',
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet',
-    'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet'
+    'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'CenterNet2'
 ]
