@@ -10,6 +10,19 @@ class InstaBoost:
     <https://arxiv.org/abs/1908.07801>`_.
 
     Refer to https://github.com/GothicAi/Instaboost for implementation details.
+
+    Args:
+        action_candidate (tuple): action candidates. "normal", "horizontal", \
+            "vertical", "skip" are supported.
+        action_prob (tuple): corresponding action probabilities. Should be the \
+            same length as action_candidate.
+        scale (tuple): (min scale, max scale)
+        dx (int): the maximum x-axis shift will be (instance width) / dx
+        dy (int): the maximum y-axis shift will be (instance height) / dy
+        theta (tuple): (min rotation degree, max rotation degree)
+        color_prob (float): probability of images for color augmentation
+        heatmap_flag (bool): whether to use heatmap guided
+        aug_ratio (float): probability of applying this transformation
     """
 
     def __init__(self,
