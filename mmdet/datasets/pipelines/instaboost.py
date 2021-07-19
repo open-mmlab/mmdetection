@@ -13,9 +13,9 @@ class InstaBoost:
 
     Args:
         action_candidate (tuple): action candidates. "normal", "horizontal", \
-            "vertical", "skip" are supported.
+            "vertical", "skip" are supported
         action_prob (tuple): corresponding action probabilities. Should be the \
-            same length as action_candidate.
+            same length as action_candidate
         scale (tuple): (min scale, max scale)
         dx (int): the maximum x-axis shift will be (instance width) / dx
         dy (int): the maximum y-axis shift will be (instance height) / dy
