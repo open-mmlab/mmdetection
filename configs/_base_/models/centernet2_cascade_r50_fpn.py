@@ -20,13 +20,6 @@ model = dict(
     rpn_head=dict(
         type='CustomCenterNetHead',
         num_classes=80,
-<<<<<<< HEAD
-        in_channel=64,
-        feat_channel=64,
-        loss_center_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
-        loss_wh=dict(type='L1Loss', loss_weight=0.1),
-        loss_offset=dict(type='L1Loss', loss_weight=1.0)),
-=======
         in_channel=256,
         feat_channel=256,
         loss_center_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
@@ -46,7 +39,6 @@ model = dict(
         # loss_cls=dict(
         #     type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         # loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
->>>>>>> 7ccd792e0afbc9bdb69484fe5831cba581c1e8d8
     roi_head=dict(
         type='CascadeRoIHead',
         num_stages=3,

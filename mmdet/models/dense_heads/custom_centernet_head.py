@@ -13,11 +13,9 @@ from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
-<<<<<<< HEAD
 #added by mmz
 from typing import List
 import torch.distributed as dist
-=======
 from torch.nn import functional as F
 from .centernet_head import CenterNetHead
 
@@ -59,7 +57,6 @@ def get_norm(norm, out_channels):
         }[norm]
     return norm(out_channels)
 
->>>>>>> 7ccd792e0afbc9bdb69484fe5831cba581c1e8d8
 
 @HEADS.register_module()
 class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
