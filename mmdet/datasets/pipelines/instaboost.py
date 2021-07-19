@@ -12,9 +12,9 @@ class InstaBoost:
     Refer to https://github.com/GothicAi/Instaboost for implementation details.
 
     Args:
-        action_candidate (tuple): action candidates. "normal", "horizontal", \
+        action_candidate (tuple): Action candidates. "normal", "horizontal", \
             "vertical", "skip" are supported.
-        action_prob (tuple): corresponding action probabilities. Should be \
+        action_prob (tuple): Corresponding action probabilities. Should be \
             the same length as action_candidate.
         scale (tuple): (min scale, max scale)
         dx (int): The maximum x-axis shift will be (instance width) / dx.
