@@ -332,85 +332,85 @@ Models:
     In Collection: Cascade R-CNN
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_caffe_fpn_mstrain_3x_coco.py
     Metadata:
-      Training Memory (GB):
+      Training Memory (GB): 5.7
       Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP:
+          box AP: 44.0
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:
+          mask AP: 38.1
     Weights:
 
   - Name: cascade_mask_rcnn_r50_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_mstrain_3x_coco.py
     Metadata:
-      Training Memory (GB):
+      Training Memory (GB): 5.9
       Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP:
+          box AP: 44.3
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:
+          mask AP: 38.5
     Weights:
 
   - Name: cascade_mask_rcnn_r101_caffe_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_caffe_fpn_mstrain_3x_coco.py
     Metadata:
-      Training Memory (GB):
+      Training Memory (GB): 7.7
       Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP:
+          box AP: 45.4
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:
+          mask AP: 39.5
     Weights:
 
   - Name: cascade_mask_rcnn_r101_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
     Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_mstrain_3x_coco.py
     Metadata:
-      Training Memory (GB):
+      Training Memory (GB): 7.8
       Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP:
+          box AP: 45.5
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:
+          mask AP: 39.6
     Weights:
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
     Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco.py
     Metadata:
-      Training Memory (GB):
+      Training Memory (GB): 9.0
       Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP:
+          box AP: 46.3
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:
+          mask AP: 40.1
     Weights:
 
   - Name: cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco
@@ -434,15 +434,15 @@ Models:
     In Collection: Cascade R-CNN
     Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco.py
     Metadata:
-      Training Memory (GB):
+      Training Memory (GB): 12.0
       Epochs: 36
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP:
+          box AP: 46.2
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:
+          mask AP: 40.1
     Weights:
