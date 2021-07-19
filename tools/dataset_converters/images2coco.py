@@ -10,7 +10,7 @@ def parse_args():
         description='Convert images to coco format without annotations')
     parser.add_argument('img_paths', help='image root path')
     parser.add_argument(
-        'classes', type=str, help='file name of storage class list')
+        'classes', type=str, help='txt file name of storage class list')
     parser.add_argument(
         'out',
         type=str,
@@ -21,7 +21,7 @@ def parse_args():
         '--exclude-extensions',
         type=str,
         nargs='+',
-        help='excluded image extension. e.g., "png", "bmp"')
+        help='suffix name to be excluded. e.g., "png", "bmp"')
     args = parser.parse_args()
     return args
 
