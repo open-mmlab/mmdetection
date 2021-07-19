@@ -1,4 +1,5 @@
 # 2: 在自定义数据集上进行训练
+
 通过本文档，你将会知道如何使用自定义数据集对预先定义好的模型进行推理，测试以及训练。我们使用 [balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) 作为例子来描述整个过程。
 
 基本步骤如下：
@@ -8,6 +9,7 @@
 3. 在自定义数据集上进行训练，测试和推理。
 
 ## 准备自定义数据集
+
 MMDetection 一共支持三种形式应用新数据集：
 
 1. 将数据集重新组织为 COCO 格式。
@@ -23,6 +25,7 @@ MMDetection 一共支持三种形式应用新数据集：
 所以用户如果要进行实例分割，只能将数据转成 COCO 格式。
 
 ### COCO标注格式
+
 用于实例分割的 COCO 数据集格式如下所示，其中的键（key）都是必要的，参考[这里](https://cocodataset.org/#format-data)来获取更多细节。
 ```json
 {
@@ -149,6 +152,7 @@ categories = [{
 其中将 balloon dataset 转化为 COCO 格式的代码如下所示。
 
 ```python
+
 import os.path as osp
 
 def convert_balloon_to_coco(ann_file, out_file, image_prefix):
