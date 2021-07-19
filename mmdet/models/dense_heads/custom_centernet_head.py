@@ -12,6 +12,9 @@ from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
+#added by mmz
+from typing import List
+import torch.distributed as dist
 
 @HEADS.register_module()
 class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
@@ -176,6 +179,457 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             loss_center_heatmap=loss_center_heatmap,
             loss_wh=loss_wh,
             loss_offset=loss_offset)
+
+    def loss_new(self,
+             clss_per_level,
+             reg_pred_per_level,
+             agn_hm_pred_per_level,
+             gt_bboxes,
+             gt_labels,
+             img_metas,
+             gt_bboxes_ignore=None):
+        """Compute losses of the dense head.
+
+        Args:
+            agn_hm_pred_per_level (list[Tensor]): center predict heatmaps for
+               all levels with shape (B, 1, H, W).
+            reg_pred_per_level (list[Tensor]): reg predicts for all levels with
+               shape (B, 4, H, W).
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss. Default: None
+
+        Returns:
+            dict[str, Tensor]: which has components below:
+                - loss_centernet_loc (Tensor): loss of center heatmap.
+                - loss_centernet_agn_pos (Tensor): loss of 
+                - loss_centernet_agn_neg (Tensor): loss of .
+        """
+        grids = self.compute_grids(agn_hm_pred_per_level)
+        shapes_per_level = grids[0].new_tensor(
+                    [(x.shape[2], x.shape[3]) for x in reg_pred_per_level])        
+        pos_inds, labels, reg_targets, flattened_hms = \
+            self._get_ground_truth(
+                grids, shapes_per_level, gt_bboxes, gt_labels, img_metas)
+        logits_pred, reg_pred, agn_hm_pred = self._flatten_outputs(
+            clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
+        losses = self.compute_losses(
+            pos_inds, labels, reg_targets, flattened_hms,
+            logits_pred, reg_pred, agn_hm_pred)
+
+        return losses
+
+    def compute_losses(self, pos_inds, labels, reg_targets, flattened_hms,
+        logits_pred, reg_pred, agn_hm_pred):
+        '''
+        Inputs:
+            pos_inds: N
+            labels: N
+            reg_targets: M x 4
+            flattened_hms: M x C
+            logits_pred: M x C
+            reg_pred: M x 4
+            agn_hm_pred: M x 1 or None
+            N: number of positive locations in all images
+            M: number of pixels from all FPN levels
+            C: number of classes
+        '''
+        assert (torch.isfinite(reg_pred).all().item())
+        num_pos_local = pos_inds.numel()
+        num_gpus = dist.get_world_size()
+        total_num_pos = self.reduce_sum(
+            pos_inds.new_tensor([num_pos_local])).item()
+        num_pos_avg = max(total_num_pos / num_gpus, 1.0)
+
+        losses = {}
+        # if not self.only_proposal:
+        #     pos_loss, neg_loss = heatmap_focal_loss_jit(
+        #         logits_pred, flattened_hms, pos_inds, labels,
+        #         alpha=self.hm_focal_alpha, 
+        #         beta=self.hm_focal_beta, 
+        #         gamma=self.loss_gamma, 
+        #         reduction='sum',
+        #         sigmoid_clamp=self.sigmoid_clamp,
+        #         ignore_high_fp=self.ignore_high_fp,
+        #     )
+        #     pos_loss = self.pos_weight * pos_loss / num_pos_avg
+        #     neg_loss = self.neg_weight * neg_loss / num_pos_avg
+        #     losses['loss_centernet_pos'] = pos_loss
+        #     losses['loss_centernet_neg'] = neg_loss
+        
+        reg_inds = torch.nonzero(reg_targets.max(dim=1)[0] >= 0).squeeze(1)
+        reg_pred = reg_pred[reg_inds]
+        reg_targets_pos = reg_targets[reg_inds]
+        reg_weight_map = flattened_hms.max(dim=1)[0]
+        reg_weight_map = reg_weight_map[reg_inds]
+        # reg_weight_map = reg_weight_map * 0 + 1 \
+        #     if self.not_norm_reg else reg_weight_map
+        reg_weight_map = reg_weight_map * 0 + 1
+        reg_norm = max(self.reduce_sum(reg_weight_map.sum()).item() / num_gpus, 1)
+        # reg_loss = self.reg_weight * self.iou_loss(
+        #     reg_pred, reg_targets_pos, reg_weight_map,
+        #     reduction='sum') / reg_norm
+        reg_loss = 1.0 * self.my_iou_loss(
+            reg_pred, reg_targets_pos, reg_weight_map,
+            reduction='sum') / reg_norm
+        losses['loss_centernet_loc'] = reg_loss
+
+        # if self.with_agn_hm:
+        if True:
+            cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
+            agn_pos_loss, agn_neg_loss = self.binary_heatmap_focal_loss(
+                agn_hm_pred, cat_agn_heatmap, pos_inds,
+                alpha=0.25, 
+                beta=4, 
+                gamma=2.0,
+                sigmoid_clamp=0.0001,
+                ignore_high_fp=0.85,
+            )
+            # agn_pos_loss = self.pos_weight * agn_pos_loss / num_pos_avg
+            # agn_neg_loss = self.neg_weight * agn_neg_loss / num_pos_avg
+            agn_pos_loss = 0.5 * agn_pos_loss / num_pos_avg
+            agn_neg_loss = 0.5 * agn_neg_loss / num_pos_avg
+            losses['loss_centernet_agn_pos'] = agn_pos_loss
+            losses['loss_centernet_agn_neg'] = agn_neg_loss
+    
+        # if self.debug:
+        #     print('losses', losses)
+        #     print('total_num_pos', total_num_pos)
+        return losses        
+
+    def compute_grids(self, agn_hm_pred_per_level):
+        grids = []
+        strides = [8, 16, 32, 64, 128]
+        for level, agn_hm_pred in enumerate(agn_hm_pred_per_level):
+            h, w = agn_hm_pred.size()[-2:]
+            shifts_x = torch.arange(
+                0, w * strides[level], 
+                step = strides[level],
+                dtype = torch.float32, device=agn_hm_pred.device)
+            shifts_y = torch.arange(
+                0, h * strides[level], 
+                step = strides[level],
+                dtype = torch.float32, device=agn_hm_pred.device)
+            shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
+            shift_x = shift_x.reshape(-1)
+            shift_y = shift_y.reshape(-1)
+            grids_per_level = torch.stack((shift_x, shift_y), dim=1) + \
+                strides[level] // 2
+            grids.append(grids_per_level)
+        return grids
+
+    def _get_ground_truth(self, grids, shapes_per_level, gt_bboxes, gt_labels, img_metas):
+        '''
+        Input:
+            grids: list of tensors [(hl x wl, 2)]_l
+            shapes_per_level: list of tuples L x 2:
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+        Retuen:
+            pos_inds: N
+            labels: N
+            reg_targets: M x 4
+            flattened_hms: M x C or M x 1
+            N: number of objects in all images
+            M: number of pixels from all FPN levels
+        '''
+
+        # get positive pixel index
+
+        INF = 100000000
+
+        pos_inds, labels = self._get_label_inds(gt_bboxes, gt_labels, img_metas, shapes_per_level) 
+
+        heatmap_channels = self.num_classes
+        L = len(grids)
+        num_loc_list = [len(loc) for loc in grids]
+        strides = torch.cat([
+            shapes_per_level.new_ones(num_loc_list[l]) * self.strides[l] \
+            for l in range(L)]).float() # M
+        reg_size_ranges = torch.cat([
+            shapes_per_level.new_tensor(self.sizes_of_interest[l]).float().view(
+            1, 2).expand(num_loc_list[l], 2) for l in range(L)]) # M x 2
+        grids = torch.cat(grids, dim=0) # M x 2
+        M = grids.shape[0]
+
+        reg_targets = []
+        flattened_hms = []
+        for i in range(len(gt_bboxes)): # images
+            boxes = gt_bboxes[i] # N x 4
+            # area = gt_instances[i].gt_boxes.area() # N
+            area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+            gt_classes = gt_labels[i] # N in [0, self.num_classes]
+
+            N = boxes.shape[0]
+            if N == 0:
+                reg_targets.append(grids.new_zeros((M, 4)) - INF)
+                flattened_hms.append(
+                    grids.new_zeros((
+                        M, 1 if self.only_proposal else heatmap_channels)))
+                continue
+            
+            l = grids[:, 0].view(M, 1) - boxes[:, 0].view(1, N) # M x N
+            t = grids[:, 1].view(M, 1) - boxes[:, 1].view(1, N) # M x N
+            r = boxes[:, 2].view(1, N) - grids[:, 0].view(M, 1) # M x N
+            b = boxes[:, 3].view(1, N) - grids[:, 1].view(M, 1) # M x N
+            reg_target = torch.stack([l, t, r, b], dim=2) # M x N x 4
+
+            centers = ((boxes[:, [0, 1]] + boxes[:, [2, 3]]) / 2) # N x 2
+            centers_expanded = centers.view(1, N, 2).expand(M, N, 2) # M x N x 2
+            strides_expanded = strides.view(M, 1, 1).expand(M, N, 2)
+            centers_discret = ((centers_expanded / strides_expanded).int() * \
+                strides_expanded).float() + strides_expanded / 2 # M x N x 2
+            
+            is_peak = (((grids.view(M, 1, 2).expand(M, N, 2) - \
+                centers_discret) ** 2).sum(dim=2) == 0) # M x N
+            is_in_boxes = reg_target.min(dim=2)[0] > 0 # M x N
+            is_center3x3 = self.get_center3x3(
+                grids, centers, strides) & is_in_boxes # M x N
+            is_cared_in_the_level = self.assign_reg_fpn(
+                reg_target, reg_size_ranges) # M x N
+            reg_mask = is_center3x3 & is_cared_in_the_level # M x N
+
+            dist2 = ((grids.view(M, 1, 2).expand(M, N, 2) - \
+                centers_expanded) ** 2).sum(dim=2) # M x N
+            dist2[is_peak] = 0
+            radius2 = self.delta ** 2 * 2 * area # N
+            radius2 = torch.clamp(
+                radius2, min=self.min_radius ** 2)
+            weighted_dist2 = dist2 / radius2.view(1, N).expand(M, N) # M x N            
+            reg_target = self._get_reg_targets(
+                reg_target, weighted_dist2.clone(), reg_mask, area) # M x 4
+
+            if self.only_proposal:
+                flattened_hm = self._create_agn_heatmaps_from_dist(
+                    weighted_dist2.clone()) # M x 1
+            else:
+                flattened_hm = self._create_heatmaps_from_dist(
+                    weighted_dist2.clone(), gt_classes, 
+                    channels=heatmap_channels) # M x C
+
+            reg_targets.append(reg_target)
+            flattened_hms.append(flattened_hm)
+        
+        # transpose im first training_targets to level first ones
+        reg_targets = self._transpose(reg_targets, num_loc_list)
+        flattened_hms = self._transpose(flattened_hms, num_loc_list)
+        for l in range(len(reg_targets)):
+            reg_targets[l] = reg_targets[l] / float(self.strides[l])
+        reg_targets = self.cat([x for x in reg_targets], dim=0) # MB x 4
+        flattened_hms = self.cat([x for x in flattened_hms], dim=0) # MB x C
+        
+        return pos_inds, labels, reg_targets, flattened_hms        
+
+    def _get_label_inds(self, gt_bboxes, gt_labels, img_metas, shapes_per_level):
+        '''
+        Inputs:
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            shapes_per_level: L x 2 [(h_l, w_l)]_L
+        Returns:
+            pos_inds: N'
+            labels: N'
+        '''
+        pos_inds = []
+        labels = []
+        L = len(self.strides)
+        B = len(gt_bboxes)
+        shapes_per_level = shapes_per_level.long()
+        loc_per_level = (shapes_per_level[:, 0] * shapes_per_level[:, 1]).long() # L
+        level_bases = []
+        s = 0
+        for l in range(L):
+            level_bases.append(s)
+            s = s + B * loc_per_level[l]
+        level_bases = shapes_per_level.new_tensor(level_bases).long() # L
+        strides_default = shapes_per_level.new_tensor(self.strides).float() # L
+        for im_i in range(B):
+            #targets_per_im = gt_instances[im_i]
+            bboxes = gt_bboxes[im_i].tensor # n x 4
+            n = bboxes.shape[0]
+            centers = ((bboxes[:, [0, 1]] + bboxes[:, [2, 3]]) / 2) # n x 2
+            centers = centers.view(n, 1, 2).expand(n, L, 2)
+            strides = strides_default.view(1, L, 1).expand(n, L, 2)
+            centers_inds = (centers / strides).long() # n x L x 2
+            Ws = shapes_per_level[:, 1].view(1, L).expand(n, L)
+            pos_ind = level_bases.view(1, L).expand(n, L) + \
+                       im_i * loc_per_level.view(1, L).expand(n, L) + \
+                       centers_inds[:, :, 1] * Ws + \
+                       centers_inds[:, :, 0] # n x L
+            is_cared_in_the_level = self.assign_fpn_level(bboxes)
+            pos_ind = pos_ind[is_cared_in_the_level].view(-1)
+            label = gt_labels.view(
+                n, 1).expand(n, L)[is_cared_in_the_level].view(-1)
+
+            pos_inds.append(pos_ind) # n'
+            labels.append(label) # n'
+        pos_inds = torch.cat(pos_inds, dim=0).long()
+        labels = torch.cat(labels, dim=0)
+        return pos_inds, labels # N, N
+
+    def assign_fpn_level(self, boxes):
+        '''
+        Inputs:
+            boxes: n x 4
+            size_ranges: L x 2
+        Return:
+            is_cared_in_the_level: n x L
+        '''
+        size_ranges = boxes.new_tensor(
+            self.sizes_of_interest).view(len(self.sizes_of_interest), 2) # L x 2
+        crit = ((boxes[:, 2:] - boxes[:, :2]) **2).sum(dim=1) ** 0.5 / 2 # n
+        n, L = crit.shape[0], size_ranges.shape[0]
+        crit = crit.view(n, 1).expand(n, L)
+        size_ranges_expand = size_ranges.view(1, L, 2).expand(n, L, 2)
+        is_cared_in_the_level = (crit >= size_ranges_expand[:, :, 0]) & \
+            (crit <= size_ranges_expand[:, :, 1])
+        return is_cared_in_the_level
+
+    def _transpose(training_targets, num_loc_list):
+        '''
+        This function is used to transpose image first training targets to 
+            level first ones
+        :return: level first training targets
+        '''
+        for im_i in range(len(training_targets)):
+            training_targets[im_i] = torch.split(
+                training_targets[im_i], num_loc_list, dim=0)
+
+        targets_level_first = []
+        for targets_per_level in zip(*training_targets):
+            targets_level_first.append(
+                torch.cat(targets_per_level, dim=0))
+        return targets_level_first
+
+    def cat(tensors: List[torch.Tensor], dim: int = 0):
+        """
+        Efficient version of torch.cat that avoids a copy if there is only a single element in a list
+        """
+        assert isinstance(tensors, (list, tuple))
+        if len(tensors) == 1:
+            return tensors[0]
+        return torch.cat(tensors, dim)
+
+    def _flatten_outputs(self, clss, reg_pred, agn_hm_pred):
+        # Reshape: (N, F, Hl, Wl) -> (N, Hl, Wl, F) -> (sum_l N*Hl*Wl, F)
+        clss = self.cat([x.permute(0, 2, 3, 1).reshape(-1, x.shape[1]) \
+            for x in clss], dim=0) if clss[0] is not None else None
+        reg_pred = self.cat(
+            [x.permute(0, 2, 3, 1).reshape(-1, 4) for x in reg_pred], dim=0)            
+        agn_hm_pred = self.cat([x.permute(0, 2, 3, 1).reshape(-1) \
+            for x in agn_hm_pred], dim=0) if self.with_agn_hm else None
+        return clss, reg_pred, agn_hm_pred
+
+    def reduce_sum(tensor):
+        world_size = dist.get_world_size()
+        if world_size < 2:
+            return tensor
+        tensor = tensor.clone()
+        torch.distributed.all_reduce(tensor, op=torch.distributed.ReduceOp.SUM)
+        return tensor
+
+    def my_iou_loss(self, pred, target, weight=None, reduction='sum'):
+        pred_left = pred[:, 0]
+        pred_top = pred[:, 1]
+        pred_right = pred[:, 2]
+        pred_bottom = pred[:, 3]
+
+        target_left = target[:, 0]
+        target_top = target[:, 1]
+        target_right = target[:, 2]
+        target_bottom = target[:, 3]
+
+        target_aera = (target_left + target_right) * \
+                      (target_top + target_bottom)
+        pred_aera = (pred_left + pred_right) * \
+                    (pred_top + pred_bottom)
+
+        w_intersect = torch.min(pred_left, target_left) + \
+                      torch.min(pred_right, target_right)
+        h_intersect = torch.min(pred_bottom, target_bottom) + \
+                      torch.min(pred_top, target_top)
+
+        g_w_intersect = torch.max(pred_left, target_left) + \
+                        torch.max(pred_right, target_right)
+        g_h_intersect = torch.max(pred_bottom, target_bottom) + \
+                        torch.max(pred_top, target_top)
+        ac_uion = g_w_intersect * g_h_intersect
+
+        area_intersect = w_intersect * h_intersect
+        area_union = target_aera + pred_aera - area_intersect
+
+        ious = (area_intersect + 1.0) / (area_union + 1.0)
+        gious = ious - (ac_uion - area_union) / ac_uion
+        # if self.loc_loss_type == 'iou':
+        #     losses = -torch.log(ious)
+        # elif self.loc_loss_type == 'linear_iou':
+        #     losses = 1 - ious
+        # elif self.loc_loss_type == 'giou':
+        #     losses = 1 - gious
+        # else:
+        #     raise NotImplementedError
+        losses = 1 - gious
+        # if weight is not None:
+        #     losses = losses * weight
+        # else:
+        #     losses = losses
+
+        losses = losses * weight
+
+        if reduction == 'sum':
+            return losses.sum()
+        elif reduction == 'batch':
+            return losses.sum(dim=[1])
+        elif reduction == 'none':
+            return losses
+        else:
+            raise NotImplementedError    
+
+    def binary_heatmap_focal_loss(
+        inputs,
+        targets,
+        pos_inds,
+        alpha: float = -1,
+        beta: float = 4,
+        gamma: float = 2,
+        sigmoid_clamp: float = 1e-4,
+        ignore_high_fp: float = -1.,
+        ):
+        """
+        Args:
+            inputs:  (sum_l N*Hl*Wl,)
+            targets: (sum_l N*Hl*Wl,)
+            pos_inds: N
+        Returns:
+            Loss tensor with the reduction option applied.
+        """
+        pred = torch.clamp(inputs.sigmoid_(), min=sigmoid_clamp, max=1-sigmoid_clamp)
+        neg_weights = torch.pow(1 - targets, beta)
+        pos_pred = pred[pos_inds] # N
+        pos_loss = torch.log(pos_pred) * torch.pow(1 - pos_pred, gamma)
+        neg_loss = torch.log(1 - pred) * torch.pow(pred, gamma) * neg_weights
+        if ignore_high_fp > 0:
+            not_high_fp = (pred < ignore_high_fp).float()
+            neg_loss = not_high_fp * neg_loss
+
+        pos_loss = - pos_loss.sum()
+        neg_loss = - neg_loss.sum()
+
+        if alpha >= 0:
+            pos_loss = alpha * pos_loss
+            neg_loss = (1 - alpha) * neg_loss
+
+        return pos_loss, neg_loss
 
     def get_targets(self, gt_bboxes, gt_labels, feat_shape, img_shape):
         """Compute regression and classification targets in multiple images.
