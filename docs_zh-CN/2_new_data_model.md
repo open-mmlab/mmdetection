@@ -258,4 +258,3 @@ python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_bal
 ```
 
 参考[情况 1](./1_exist_data_model.md)来获取更多详细的使用方法。
-
