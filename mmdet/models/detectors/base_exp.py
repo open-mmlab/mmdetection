@@ -1,26 +1,23 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 # Copyright (c) 2014-2021 Megvii Inc. All rights reserved.
 
 import ast
 import pprint
 from abc import ABCMeta, abstractmethod
 from typing import Dict
-from tabulate import tabulate
 
 import torch
+from tabulate import tabulate
 from torch.nn import Module
-
 from yolox.utils import LRScheduler
 
 
 class BaseExp(metaclass=ABCMeta):
-    """Basic class for any experiment.
-    """
+    """Basic class for any experiment."""
 
     def __init__(self):
         self.seed = None
-        self.output_dir = "/data/YOLOX_outputs"
+        self.output_dir = '/data/YOLOX_outputs'
         self.print_interval = 100
         self.eval_interval = 10
 
@@ -30,8 +27,8 @@ class BaseExp(metaclass=ABCMeta):
 
     @abstractmethod
     def get_data_loader(
-        self, batch_size: int, is_distributed: bool
-    ) -> Dict[str, torch.utils.data.DataLoader]:
+            self, batch_size: int,
+            is_distributed: bool) -> Dict[str, torch.utils.data.DataLoader]:
         pass
 
     @abstractmethod
@@ -39,9 +36,8 @@ class BaseExp(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_lr_scheduler(
-        self, lr: float, iters_per_epoch: int, **kwargs
-    ) -> LRScheduler:
+    def get_lr_scheduler(self, lr: float, iters_per_epoch: int,
+                         **kwargs) -> LRScheduler:
         pass
 
     @abstractmethod
@@ -53,11 +49,10 @@ class BaseExp(metaclass=ABCMeta):
         pass
 
     def __repr__(self):
-        table_header = ["keys", "values"]
-        exp_table = [
-            (str(k), pprint.pformat(v)) for k, v in vars(self).items() if not k.startswith("_")
-        ]
-        return tabulate(exp_table, headers=table_header, tablefmt="fancy_grid")
+        table_header = ['keys', 'values']
+        exp_table = [(str(k), pprint.pformat(v))
+                     for k, v in vars(self).items() if not k.startswith('_')]
+        return tabulate(exp_table, headers=table_header, tablefmt='fancy_grid')
 
     def merge(self, cfg_list):
         assert len(cfg_list) % 2 == 0

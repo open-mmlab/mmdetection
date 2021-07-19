@@ -161,7 +161,7 @@ python tools/eval.py -n  yolox-s -c yolox_s.pth.tar -b 1 -d 1 --conf 0.001 --fp1
 
 ## Citing YOLOX
 If you use YOLOX in your research, please cite our work by using the following BibTeX entry:
-  
+
 ```latex
  @article{yolox2021,
   title={YOLOX: Exceeding YOLO Series in 2021},
