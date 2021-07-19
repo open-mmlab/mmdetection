@@ -53,3 +53,17 @@
 **Notes:**
 
 - The `20e` schedule in Cascade (Mask) R-CNN indicates decreasing the lr at 16 and 19 epochs, with a total of 20 epochs.
+
+## Pre-trained Models
+
+We also train some models with longer schedules and multi-scale training for Cascade Mask R-CNN. The users could finetune them for downstream tasks.
+
+|    Backbone        |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
+| :----------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: | :--------: |
+|    R-50-FPN        |  caffe  |   3x    |          |                |        |         |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_r50_caffe_fpn_mstrain_3x_coco.py) | [model]() &#124; [log]()
+|    R-50-FPN        |  pytorch|   3x    |          |                |        |         |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_mstrain_3x_coco.py)  |  [model]() &#124; [log]()
+|    R-101-FPN       |  caffe  |   3x    |          |                |        |         |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_r101_caffe_fpn_mstrain_3x_coco.py) |  [model]() &#124; [log]()
+|    R-101-FPN       |  pytorch|   3x    |          |                |        |         |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_mstrain_3x_coco.py)   |   [model]() &#124; [log]()
+|    x101-32x4d-FPN  |  pytorch|   3x    |          |                |        |         |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco.py)   |   [model]() &#124; [log]()
+|    X-101-32x8d-FPN |  pytorch|   3x    |          |                |        |         |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco.py)   |   [model]() &#124; [log]()
+|    X-101-64x4d-FPN |  pytorch|   3x    |          |                |        |         |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco.py)   |   [model]() &#124; [log]()
