@@ -44,5 +44,9 @@ __all__ = [
     'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'StageCascadeRPNHead',
     'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead',
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
+<<<<<<< HEAD
     'CenterNetHead','CustomCenterNetHead'
+=======
+    'CenterNetHead', 'CustomCenterNetHead'
+>>>>>>> 7ccd792e0afbc9bdb69484fe5831cba581c1e8d8
 ]
