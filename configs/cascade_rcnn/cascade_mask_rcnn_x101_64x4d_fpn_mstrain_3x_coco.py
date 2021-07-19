@@ -1,4 +1,4 @@
-_base_ = './cascade_mask_rcnn_r50_caffe_fpn_mstrain_3x_coco.py'
+_base_ = './cascade_mask_rcnn_r50_fpn_mstrain_3x_coco.py'
 model = dict(
     backbone=dict(
         type='ResNeXt',
