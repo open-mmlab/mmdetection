@@ -15,7 +15,7 @@ from .ssd_neck import SSDNeck
 from .yolo_neck import YOLOV3Neck
 
 __all__ = [
-    'FPN', 'BiFPN' 'BFP', 'ChannelMapper', 'HRFPN', 'NASFPN', 'FPN_CARAFE', 'PAFPN',
+    'FPN', 'BiFPN', 'BFP', 'ChannelMapper', 'HRFPN', 'NASFPN', 'FPN_CARAFE', 'PAFPN',
     'NASFCOS_FPN', 'RFP', 'YOLOV3Neck', 'FPG', 'DilatedEncoder',
     'CTResNetNeck', 'SSDNeck'
 ]
