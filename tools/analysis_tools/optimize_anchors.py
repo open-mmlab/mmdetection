@@ -1,7 +1,11 @@
+import argparse
+import os.path as osp
+
 import mmcv
 import numpy as np
 import torch
 from mmcv import Config
+from scipy.optimize import differential_evolution
 
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.core.bbox.transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
@@ -9,12 +13,62 @@ from mmdet.datasets.builder import build_dataset
 from mmdet.utils import get_root_logger
 
 
-class BaseAnchorOptimizer:
+def parse_args():
+    parser = argparse.ArgumentParser(description='Optimize anchor parameters.')
+    parser.add_argument('config', help='Train config file path.')
+    parser.add_argument(
+        '--device', default='cuda:0', help='Device used for calculating.')
+    parser.add_argument(
+        '--input-shape',
+        type=int,
+        nargs='+',
+        default=[608, 608],
+        help='input image size')
+    parser.add_argument(
+        '--algorithm',
+        default='differential_evolution',
+        help='Algorithm used for anchor optimizing.'
+        'Support k-means and differential_evolution for YOLO.')
+    parser.add_argument(
+        '--iters',
+        default=1000,
+        type=int,
+        help='Maximum iterations for optimizer.')
+    parser.add_argument(
+        '--output-dir',
+        default=None,
+        type=str,
+        help='Path to save anchor optimize result.')
 
-    def __init__(self, dataset, input_shape, logger):
+    args = parser.parse_args()
+    return args
+
+
+class BaseAnchorOptimizer:
+    """Base class for anchor optimizer.
+
+    Args:
+        dataset (obj:`Dataset`): Dataset object.
+        input_shape (list[int]): Input image shape of the model.
+            Format in [width, height].
+        logger (obj:`logging.Logger`): The logger for logging.
+        device (str, optional): Device used for calculating.
+            Default: 'cuda:0'
+        out_dir (str, optional): Path to save anchor optimize result.
+            Default: None
+    """
+
+    def __init__(self,
+                 dataset,
+                 input_shape,
+                 logger,
+                 device='cuda:0',
+                 out_dir=None):
         self.dataset = dataset
         self.input_shape = input_shape
         self.logger = logger
+        self.device = device
+        self.out_dir = out_dir
         bbox_whs, img_shapes = self.get_whs_and_shapes()
         ratios = img_shapes.max(1, keepdims=True) / np.array([input_shape])
 
@@ -22,6 +76,12 @@ class BaseAnchorOptimizer:
         self.bbox_whs = bbox_whs / ratios
 
     def get_whs_and_shapes(self):
+        """Get widths and heights of bboxes and shapes of images.
+
+        Returns:
+            tuple[array, array]: Array of bbox shapes and array of image
+            shapes with shape (num_bboxes, 2) in [width, height] format.
+        """
         self.logger.info('Collecting bboxes from annotation...')
         bbox_whs = []
         img_shapes = []
@@ -42,62 +102,62 @@ class BaseAnchorOptimizer:
         self.logger.info(f'Collected {bbox_whs.shape[0]} bboxes.')
         return bbox_whs, img_shapes
 
-    def optimize(self):
-        raise NotImplementedError
+    def get_zero_center_bbox_tensor(self):
+        """Get a tensor of bboxes centered at (0,0).
 
-
-def avg_iou_cost(x, bboxes):
-    assert len(x) % 2 == 0
-    anchor_whs = torch.tensor([[x[i], x[i + 1]]
-                               for i in range(len(x) // 2)]).to(
-                                   bboxes.device, dtype=bboxes.dtype)
-    anchor_boxes = bbox_cxcywh_to_xyxy(
-        torch.cat([torch.zeros_like(anchor_whs), anchor_whs], dim=1))
-    ious = bbox_overlaps(bboxes, anchor_boxes)
-    max_ious, _ = ious.max(1)
-    cost = 1 - max_ious.mean().item()
-    return cost
-
-
-class YoloAnchorOptimizer(BaseAnchorOptimizer):
-
-    def __init__(self,
-                 dataset,
-                 input_shape,
-                 num_of_anchors,
-                 kmeans_iters,
-                 device='cuda',
-                 **kwargs):
-
-        super(YoloAnchorOptimizer, self).__init__(dataset, input_shape,
-                                                  **kwargs)
-        self.device = device
-        self.num_of_anchors = num_of_anchors
-        self.kmeans_iters = kmeans_iters
-
-    def kmeans_anchors(self, num_centers, kmeans_iters):
-        """https://github.com/AlexeyAB/darknet/blob/master/src/detector.c#L1421
-        ."""
-        self.logger.info(
-            f'Start cluster {num_centers} YOLO anchors with K-means...')
+        Returns:
+            (Tensor): Tensor of bboxes with shape (num_bboxes, 4)
+            in [xmin, ymin, xmax, ymax] format.
+        """
         whs = torch.from_numpy(self.bbox_whs).to(
             self.device, dtype=torch.float32)
         bboxes = bbox_cxcywh_to_xyxy(
             torch.cat([torch.zeros_like(whs), whs], dim=1))
-        cluster_center_idx = torch.randint(0, bboxes.shape[0],
-                                           (num_centers, )).to(self.device)
+        return bboxes
+
+    def optimize(self):
+        raise NotImplementedError
+
+
+class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
+    """YOLO anchor optimizer using k-means. Code refer to `AlexeyAB/darknet.
+
+    <https://github.com/AlexeyAB/darknet/blob/master/
+    src/detector.c#L1421>`_.
+
+    Args:
+        num_anchors (int) : Number of anchors.
+        iters (int): Maximum iterations for k-means.
+    """
+
+    def __init__(self, num_anchors, iters, **kwargs):
+
+        super(YOLOKMeansAnchorOptimizer, self).__init__(**kwargs)
+        self.num_anchors = num_anchors
+        self.iters = iters
+
+    def optimize(self):
+        anchors = self.kmeans_anchors()
+        self.save_result(anchors)
+
+    def kmeans_anchors(self):
+        self.logger.info(
+            f'Start cluster {self.num_anchors} YOLO anchors with K-means...')
+        bboxes = self.get_zero_center_bbox_tensor()
+        cluster_center_idx = torch.randint(
+            0, bboxes.shape[0], (self.num_anchors, )).to(self.device)
 
         assignments = torch.zeros((bboxes.shape[0], )).to(self.device)
         cluster_centers = bboxes[cluster_center_idx]
-        if num_centers == 1:
+        if self.num_anchors == 1:
             cluster_centers = self.kmeans_maximization(bboxes, assignments,
                                                        cluster_centers)
             anchors = bbox_xyxy_to_cxcywh(cluster_centers)[:, 2:].cpu().numpy()
             anchors = sorted(anchors, key=lambda x: x[0] * x[1])
             return anchors
 
-        prog_bar = mmcv.ProgressBar(kmeans_iters)
-        for i in range(kmeans_iters):
+        prog_bar = mmcv.ProgressBar(self.iters)
+        for i in range(self.iters):
             converged, assignments = self.kmeans_expectation(
                 bboxes, assignments, cluster_centers)
             if converged:
@@ -130,44 +190,129 @@ class YoloAnchorOptimizer(BaseAnchorOptimizer):
         converged = (closest == assignments).all()
         return converged, closest
 
-    def print_result(self, anchors):
-        anchor_results = ''
+    def save_result(self, anchors, path=None):
+        anchor_results = []
         for w, h in anchors:
-            anchor_results += f'({round(w)}, {round(h)}), '
-        self.logger.info(f'Anchor cluster result:[{anchor_results}]')
+            anchor_results.append([round(w), round(h)])
+        self.logger.info(f'Anchor cluster result:{anchor_results}')
+        if path:
+            json_path = osp.join(path, 'anchor_optimize_result.json')
+            mmcv.dump(anchor_results, json_path)
+            self.logger.info(f'Result saved in {json_path}')
+
+
+class YOLODEAnchorOptimizer(BaseAnchorOptimizer):
+    """YOLO anchor optimizer using differential evolution algorithm.
+
+    Args:
+        num_anchors (int) : Number of anchors.
+        iters (int): Maximum iterations for k-means.
+    """
+
+    def __init__(self, num_anchors, iters, **kwargs):
+
+        super(YOLODEAnchorOptimizer, self).__init__(**kwargs)
+
+        self.num_anchors = num_anchors
+        self.iters = iters
 
     def optimize(self):
-        anchors = self.kmeans_anchors(self.num_of_anchors, self.kmeans_iters)
-        self.print_result(anchors)
+        anchors = self.differential_evolution()
+        self.save_result(anchors, self.out_dir)
 
     def differential_evolution(self):
-        from scipy.optimize import differential_evolution
+        bboxes = self.get_zero_center_bbox_tensor()
 
-        whs = torch.from_numpy(self.bbox_whs).to(
-            self.device, dtype=torch.float32)
-        bboxes = bbox_cxcywh_to_xyxy(
-            torch.cat([torch.zeros_like(whs), whs], dim=1))
-        bounds = [(0, 104) for i in range(6)] + [
-            (0, 208) for i in range(6)
-        ] + [(0, 416) for i in range(6)]
+        bounds = []
+        for i in range(self.num_anchors):
+            bounds.extend([(0, self.input_shape[0]), (0, self.input_shape[1])])
+
         result = differential_evolution(
-            avg_iou_cost,
+            func=self.avg_iou_cost,
             bounds=bounds,
             args=(bboxes, ),
             strategy='best1bin',
-            maxiter=1000,
+            maxiter=self.iters,
+            popsize=15,
+            tol=0.0001,
+            mutation=(0.5, 1),
+            recombination=0.7,
             updating='immediate',
             disp=True)
-        print(result.x, result.fun)
+        self.logger.info(
+            f'Anchor evolution finish. Average IOU: {1 - result.fun}')
+        anchors = [(w, h) for w, h in zip(result.x[::2], result.x[1::2])]
+        anchors = sorted(anchors, key=lambda x: x[0] * x[1])
+        return anchors
+
+    @staticmethod
+    def avg_iou_cost(anchor_params, bboxes):
+        assert len(anchor_params) % 2 == 0
+        anchor_whs = torch.tensor(
+            [[w, h]
+             for w, h in zip(anchor_params[::2], anchor_params[1::2])]).to(
+                 bboxes.device, dtype=bboxes.dtype)
+        anchor_boxes = bbox_cxcywh_to_xyxy(
+            torch.cat([torch.zeros_like(anchor_whs), anchor_whs], dim=1))
+        ious = bbox_overlaps(bboxes, anchor_boxes)
+        max_ious, _ = ious.max(1)
+        cost = 1 - max_ious.mean().item()
+        return cost
+
+    def save_result(self, anchors, path=None):
+        anchor_results = []
+        for w, h in anchors:
+            anchor_results.append([round(w), round(h)])
+        self.logger.info(
+            f'Anchor differential evolution result:{anchor_results}')
+        if path:
+            json_path = osp.join(path, 'anchor_optimize_result.json')
+            mmcv.dump(anchor_results, json_path)
+            self.logger.info(f'Result saved in {json_path}')
 
 
 if __name__ == '__main__':
     logger = get_root_logger()
-    config_path = ''
-    cfg = Config.fromfile(config_path)
+    args = parse_args()
+    cfg = args.config
+    cfg = Config.fromfile(cfg)
+
+    input_shape = args.input_shape
+    assert len(input_shape) == 2
+
+    anchor_type = cfg.model.bbox_head.anchor_generator.type
+    assert anchor_type == 'YOLOAnchorGenerator', \
+        f'Only support optimize YOLOAnchor, but get {anchor_type}.'
+
+    base_sizes = cfg.model.bbox_head.anchor_generator.base_sizes
+    num_anchors = sum([len(sizes) for sizes in base_sizes])
+
     train_data_cfg = cfg.data.train
     while 'dataset' in train_data_cfg:
         train_data_cfg = train_data_cfg['dataset']
     dataset = build_dataset(train_data_cfg)
-    opt = YoloAnchorOptimizer(dataset, [416, 416], 9, 1000, logger=logger)
-    opt.differential_evolution()
+
+    if args.algorithm == 'k-means':
+        optimizer = YOLOKMeansAnchorOptimizer(
+            dataset=dataset,
+            input_shape=input_shape,
+            device=args.device,
+            num_anchors=num_anchors,
+            iters=args.iters,
+            logger=logger,
+            out_dir=args.output_dir)
+    elif args.algorithm == 'differential_evolution':
+        optimizer = YOLODEAnchorOptimizer(
+            dataset=dataset,
+            input_shape=input_shape,
+            device=args.device,
+            num_anchors=num_anchors,
+            iters=args.iters,
+            logger=logger,
+            out_dir=args.output_dir)
+    else:
+        raise NotImplementedError(
+            f'Only support k-means and differential evolution, '
+            f'but get {args.algorithm}')
+
+    optimizer.optimize()
