@@ -1,5 +1,5 @@
 # 2: 在自定义数据集上进行训练
-通过本文档，你将会知道如何使用自定义的数据集对预先定义好的模型进行推理，测试以及训练。我们使用 [balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) 作为例子来描述整个过程。
+通过本文档，你将会知道如何使用自定义数据集对预先定义好的模型进行推理，测试以及训练。我们使用 [balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) 作为例子来描述整个过程。
 
 基本步骤如下：
 
