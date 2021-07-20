@@ -252,12 +252,12 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 a 4D-tensor.
 
         Returns:
-            center_heatmap_preds (List[Tensor]): center predict heatmaps for
+            cls (List[Tensor]): cls predict for
                 all levels, the channels number is num_classes.
-            wh_preds (List[Tensor]): wh predicts for all levels, the channels
-                number is 2.
-            offset_preds (List[Tensor]): offset predicts for all levels, the
-               channels number is 2.
+            bbox_reg (List[Tensor]): bbox_reg predicts for all levels, the channels
+                number is 4.
+            agn_hms (List[Tensor]): agn_hms predicts for all levels, the
+               channels number is 1.
         """
         return multi_apply(self.forward_single, feats)
 
@@ -294,79 +294,78 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         return clss, bbox_reg, agn_hms
 
 
-    @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
+    # @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
+    # def loss(self,
+    #          center_heatmap_preds,
+    #          wh_preds,
+    #          offset_preds,
+    #          gt_bboxes,
+    #          gt_labels,
+    #          img_metas,
+    #          gt_bboxes_ignore=None):
+    #     """Compute losses of the head.
+
+    #     Args:
+    #         center_heatmap_preds (list[Tensor]): center predict heatmaps for
+    #            all levels with shape (B, num_classes, H, W).
+    #         wh_preds (list[Tensor]): wh predicts for all levels with
+    #            shape (B, 2, H, W).
+    #         offset_preds (list[Tensor]): offset predicts for all levels
+    #            with shape (B, 2, H, W).
+    #         gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+    #             shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+    #         gt_labels (list[Tensor]): class indices corresponding to each box.
+    #         img_metas (list[dict]): Meta information of each image, e.g.,
+    #             image size, scaling factor, etc.
+    #         gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+    #             boxes can be ignored when computing the loss. Default: None
+
+    #     Returns:
+    #         dict[str, Tensor]: which has components below:
+    #             - loss_center_heatmap (Tensor): loss of center heatmap.
+    #             - loss_wh (Tensor): loss of hw heatmap
+    #             - loss_offset (Tensor): loss of offset heatmap.
+    #     """
+    #     assert len(center_heatmap_preds) == len(wh_preds) == len(
+    #         offset_preds) == 1
+    #     center_heatmap_pred = center_heatmap_preds[0]
+    #     wh_pred = wh_preds[0]
+    #     offset_pred = offset_preds[0]
+
+    #     target_result, avg_factor = self.get_targets(gt_bboxes, gt_labels,
+    #                                                  center_heatmap_pred.shape,
+    #                                                  img_metas[0]['pad_shape'])
+
+    #     center_heatmap_target = target_result['center_heatmap_target']
+    #     wh_target = target_result['wh_target']
+    #     offset_target = target_result['offset_target']
+    #     wh_offset_target_weight = target_result['wh_offset_target_weight']
+
+    #     # Since the channel of wh_target and offset_target is 2, the avg_factor
+    #     # of loss_center_heatmap is always 1/2 of loss_wh and loss_offset.
+    #     loss_center_heatmap = self.loss_center_heatmap(
+    #         center_heatmap_pred, center_heatmap_target, avg_factor=avg_factor)
+    #     loss_wh = self.loss_wh(
+    #         wh_pred,
+    #         wh_target,
+    #         wh_offset_target_weight,
+    #         avg_factor=avg_factor * 2)
+    #     loss_offset = self.loss_offset(
+    #         offset_pred,
+    #         offset_target,
+    #         wh_offset_target_weight,
+    #         avg_factor=avg_factor * 2)
+    #     return dict(
+    #         loss_center_heatmap=loss_center_heatmap,
+    #         loss_wh=loss_wh,
+    #         loss_offset=loss_offset)
+
     def loss(self,
-             center_heatmap_preds,
-             wh_preds,
-             offset_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
-        """Compute losses of the head.
-
-        Args:
-            center_heatmap_preds (list[Tensor]): center predict heatmaps for
-               all levels with shape (B, num_classes, H, W).
-            wh_preds (list[Tensor]): wh predicts for all levels with
-               shape (B, 2, H, W).
-            offset_preds (list[Tensor]): offset predicts for all levels
-               with shape (B, 2, H, W).
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss. Default: None
-
-        Returns:
-            dict[str, Tensor]: which has components below:
-                - loss_center_heatmap (Tensor): loss of center heatmap.
-                - loss_wh (Tensor): loss of hw heatmap
-                - loss_offset (Tensor): loss of offset heatmap.
-        """
-        assert len(center_heatmap_preds) == len(wh_preds) == len(
-            offset_preds) == 1
-        center_heatmap_pred = center_heatmap_preds[0]
-        wh_pred = wh_preds[0]
-        offset_pred = offset_preds[0]
-
-        target_result, avg_factor = self.get_targets(gt_bboxes, gt_labels,
-                                                     center_heatmap_pred.shape,
-                                                     img_metas[0]['pad_shape'])
-
-        center_heatmap_target = target_result['center_heatmap_target']
-        wh_target = target_result['wh_target']
-        offset_target = target_result['offset_target']
-        wh_offset_target_weight = target_result['wh_offset_target_weight']
-
-        # Since the channel of wh_target and offset_target is 2, the avg_factor
-        # of loss_center_heatmap is always 1/2 of loss_wh and loss_offset.
-        loss_center_heatmap = self.loss_center_heatmap(
-            center_heatmap_pred, center_heatmap_target, avg_factor=avg_factor)
-        loss_wh = self.loss_wh(
-            wh_pred,
-            wh_target,
-            wh_offset_target_weight,
-            avg_factor=avg_factor * 2)
-        loss_offset = self.loss_offset(
-            offset_pred,
-            offset_target,
-            wh_offset_target_weight,
-            avg_factor=avg_factor * 2)
-        return dict(
-            loss_center_heatmap=loss_center_heatmap,
-            loss_wh=loss_wh,
-            loss_offset=loss_offset)
-
-    def loss_new(self,
              clss_per_level,
              reg_pred_per_level,
              agn_hm_pred_per_level,
              gt_bboxes,
-             gt_labels,
-             img_metas,
+             img_metas,             
              gt_bboxes_ignore=None):
         """Compute losses of the dense head.
 
@@ -392,23 +391,22 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         grids = self.compute_grids(agn_hm_pred_per_level)
         shapes_per_level = grids[0].new_tensor(
                     [(x.shape[2], x.shape[3]) for x in reg_pred_per_level])        
-        pos_inds, labels, reg_targets, flattened_hms = \
+        pos_inds, reg_targets, flattened_hms = \
             self._get_ground_truth(
-                grids, shapes_per_level, gt_bboxes, gt_labels, img_metas)
+                grids, shapes_per_level, gt_bboxes)
         logits_pred, reg_pred, agn_hm_pred = self._flatten_outputs(
             clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
         losses = self.compute_losses(
-            pos_inds, labels, reg_targets, flattened_hms,
+            pos_inds, reg_targets, flattened_hms,
             logits_pred, reg_pred, agn_hm_pred)
 
         return losses
 
-    def compute_losses(self, pos_inds, labels, reg_targets, flattened_hms,
+    def compute_losses(self, pos_inds, reg_targets, flattened_hms,
         logits_pred, reg_pred, agn_hm_pred):
         '''
         Inputs:
             pos_inds: N
-            labels: N
             reg_targets: M x 4
             flattened_hms: M x C
             logits_pred: M x C
@@ -420,7 +418,8 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         '''
         assert (torch.isfinite(reg_pred).all().item())
         num_pos_local = pos_inds.numel()
-        num_gpus = dist.get_world_size()
+        # num_gpus = dist.get_world_size()
+        num_gpus = 1
         total_num_pos = self.reduce_sum(
             pos_inds.new_tensor([num_pos_local])).item()
         num_pos_avg = max(total_num_pos / num_gpus, 1.0)
@@ -502,19 +501,16 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             grids.append(grids_per_level)
         return grids
 
-    def _get_ground_truth(self, grids, shapes_per_level, gt_bboxes, gt_labels, img_metas):
+    def _get_ground_truth(self, grids, shapes_per_level, gt_bboxes):
         '''
         Input:
             grids: list of tensors [(hl x wl, 2)]_l
             shapes_per_level: list of tuples L x 2:
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
+
         Retuen:
             pos_inds: N
-            labels: N
             reg_targets: M x 4
             flattened_hms: M x C or M x 1
             N: number of objects in all images
@@ -524,17 +520,24 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         # get positive pixel index
 
         INF = 100000000
+        strides = [8, 16, 32, 64, 128]
+        num_classes=80
+        sizes_of_interest=[[0, 80], [64, 160], [128, 320], [256, 640], [512, 10000000]]
+        only_proposal=True
+        hm_min_overlap=0.8
+        delta=(1-hm_min_overlap)/(1+hm_min_overlap)
+        min_radius=4
 
-        pos_inds, labels = self._get_label_inds(gt_bboxes, gt_labels, img_metas, shapes_per_level) 
+        pos_inds = self._get_label_inds(gt_bboxes, shapes_per_level) 
 
-        heatmap_channels = self.num_classes
+        heatmap_channels = num_classes
         L = len(grids)
         num_loc_list = [len(loc) for loc in grids]
         strides = torch.cat([
-            shapes_per_level.new_ones(num_loc_list[l]) * self.strides[l] \
+            shapes_per_level.new_ones(num_loc_list[l]) * strides[l] \
             for l in range(L)]).float() # M
         reg_size_ranges = torch.cat([
-            shapes_per_level.new_tensor(self.sizes_of_interest[l]).float().view(
+            shapes_per_level.new_tensor(sizes_of_interest[l]).float().view(
             1, 2).expand(num_loc_list[l], 2) for l in range(L)]) # M x 2
         grids = torch.cat(grids, dim=0) # M x 2
         M = grids.shape[0]
@@ -545,14 +548,14 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             boxes = gt_bboxes[i] # N x 4
             # area = gt_instances[i].gt_boxes.area() # N
             area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-            gt_classes = gt_labels[i] # N in [0, self.num_classes]
+            # gt_classes = gt_labels[i] # N in [0, self.num_classes]
 
             N = boxes.shape[0]
             if N == 0:
                 reg_targets.append(grids.new_zeros((M, 4)) - INF)
                 flattened_hms.append(
                     grids.new_zeros((
-                        M, 1 if self.only_proposal else heatmap_channels)))
+                        M, 1 if only_proposal else heatmap_channels)))
                 continue
             
             l = grids[:, 0].view(M, 1) - boxes[:, 0].view(1, N) # M x N
@@ -579,50 +582,71 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             dist2 = ((grids.view(M, 1, 2).expand(M, N, 2) - \
                 centers_expanded) ** 2).sum(dim=2) # M x N
             dist2[is_peak] = 0
-            radius2 = self.delta ** 2 * 2 * area # N
+            radius2 = delta ** 2 * 2 * area # N
             radius2 = torch.clamp(
-                radius2, min=self.min_radius ** 2)
+                radius2, min=min_radius ** 2)
             weighted_dist2 = dist2 / radius2.view(1, N).expand(M, N) # M x N            
             reg_target = self._get_reg_targets(
                 reg_target, weighted_dist2.clone(), reg_mask, area) # M x 4
 
-            if self.only_proposal:
+            if only_proposal:
                 flattened_hm = self._create_agn_heatmaps_from_dist(
                     weighted_dist2.clone()) # M x 1
-            else:
-                flattened_hm = self._create_heatmaps_from_dist(
-                    weighted_dist2.clone(), gt_classes, 
-                    channels=heatmap_channels) # M x C
+            # else:
+            #     flattened_hm = self._create_heatmaps_from_dist(
+            #         weighted_dist2.clone(), gt_classes, 
+            #         channels=heatmap_channels) # M x C
 
             reg_targets.append(reg_target)
             flattened_hms.append(flattened_hm)
         
         # transpose im first training_targets to level first ones
-        reg_targets = self._transpose(reg_targets, num_loc_list)
-        flattened_hms = self._transpose(flattened_hms, num_loc_list)
-        for l in range(len(reg_targets)):
-            reg_targets[l] = reg_targets[l] / float(self.strides[l])
-        reg_targets = self.cat([x for x in reg_targets], dim=0) # MB x 4
-        flattened_hms = self.cat([x for x in flattened_hms], dim=0) # MB x C
-        
-        return pos_inds, labels, reg_targets, flattened_hms        
+        # reg_targets = self._transpose(reg_targets, num_loc_list)
 
-    def _get_label_inds(self, gt_bboxes, gt_labels, img_metas, shapes_per_level):
+    #     This function is used to transpose image first training targets to 
+    #         level first ones
+        for im_i in range(len(reg_targets)):
+            reg_targets[im_i] = torch.split(
+                reg_targets[im_i], num_loc_list, dim=0)
+
+        targets_level_first = []
+        for targets_per_level in zip(*reg_targets):
+            targets_level_first.append(
+                torch.cat(targets_per_level, dim=0))
+        reg_targets = targets_level_first
+
+
+        # flattened_hms = self._transpose(flattened_hms, num_loc_list)
+        for im_i in range(len(flattened_hms)):
+            flattened_hms[im_i] = torch.split(
+                flattened_hms[im_i], num_loc_list, dim=0)
+
+        hms_level_first = []
+        for hms_per_level in zip(*flattened_hms):
+            hms_level_first.append(
+                torch.cat(hms_per_level, dim=0))
+        flattened_hms = hms_level_first
+
+        for l in range(len(reg_targets)):
+            reg_targets[l] = reg_targets[l] / float(strides[l])
+        reg_targets = torch.cat([x for x in reg_targets], dim=0) # MB x 4
+        flattened_hms = torch.cat([x for x in flattened_hms], dim=0) # MB x C
+        
+        return pos_inds, reg_targets, flattened_hms        
+
+    def _get_label_inds(self, gt_bboxes, shapes_per_level):
         '''
         Inputs:
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
             shapes_per_level: L x 2 [(h_l, w_l)]_L
         Returns:
             pos_inds: N'
-            labels: N'
         '''
+        strides_temp = [8, 16, 32, 64, 128]
         pos_inds = []
-        labels = []
-        L = len(self.strides)
+        # labels = []
+        L = len(strides_temp)
         B = len(gt_bboxes)
         shapes_per_level = shapes_per_level.long()
         loc_per_level = (shapes_per_level[:, 0] * shapes_per_level[:, 1]).long() # L
@@ -632,10 +656,10 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             level_bases.append(s)
             s = s + B * loc_per_level[l]
         level_bases = shapes_per_level.new_tensor(level_bases).long() # L
-        strides_default = shapes_per_level.new_tensor(self.strides).float() # L
+        strides_default = shapes_per_level.new_tensor(strides_temp).float() # L
         for im_i in range(B):
             #targets_per_im = gt_instances[im_i]
-            bboxes = gt_bboxes[im_i].tensor # n x 4
+            bboxes = gt_bboxes[im_i] # n x 4
             n = bboxes.shape[0]
             centers = ((bboxes[:, [0, 1]] + bboxes[:, [2, 3]]) / 2) # n x 2
             centers = centers.view(n, 1, 2).expand(n, L, 2)
@@ -648,14 +672,14 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                        centers_inds[:, :, 0] # n x L
             is_cared_in_the_level = self.assign_fpn_level(bboxes)
             pos_ind = pos_ind[is_cared_in_the_level].view(-1)
-            label = gt_labels.view(
-                n, 1).expand(n, L)[is_cared_in_the_level].view(-1)
+            # label = gt_labels.view(
+            #     n, 1).expand(n, L)[is_cared_in_the_level].view(-1)
 
             pos_inds.append(pos_ind) # n'
-            labels.append(label) # n'
+            # labels.append(label) # n'
         pos_inds = torch.cat(pos_inds, dim=0).long()
-        labels = torch.cat(labels, dim=0)
-        return pos_inds, labels # N, N
+        # labels = torch.cat(labels, dim=0)
+        return pos_inds # N
 
     def assign_fpn_level(self, boxes):
         '''
@@ -665,8 +689,10 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         Return:
             is_cared_in_the_level: n x L
         '''
+
+        sizes_of_interest=[[0, 80], [64, 160], [128, 320], [256, 640], [512, 10000000]]
         size_ranges = boxes.new_tensor(
-            self.sizes_of_interest).view(len(self.sizes_of_interest), 2) # L x 2
+            sizes_of_interest).view(len(sizes_of_interest), 2) # L x 2
         crit = ((boxes[:, 2:] - boxes[:, :2]) **2).sum(dim=1) ** 0.5 / 2 # n
         n, L = crit.shape[0], size_ranges.shape[0]
         crit = crit.view(n, 1).expand(n, L)
@@ -675,43 +701,107 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             (crit <= size_ranges_expand[:, :, 1])
         return is_cared_in_the_level
 
-    def _transpose(training_targets, num_loc_list):
-        '''
-        This function is used to transpose image first training targets to 
-            level first ones
-        :return: level first training targets
-        '''
-        for im_i in range(len(training_targets)):
-            training_targets[im_i] = torch.split(
-                training_targets[im_i], num_loc_list, dim=0)
+    # def _transpose(self, training_targets, num_loc_list):
+    #     '''
+    #     This function is used to transpose image first training targets to 
+    #         level first ones
+    #     :return: level first training targets
+    #     '''
+    #     for im_i in range(len(training_targets)):
+    #         training_targets[im_i] = torch.split(
+    #             training_targets[im_i], num_loc_list, dim=0)
 
-        targets_level_first = []
-        for targets_per_level in zip(*training_targets):
-            targets_level_first.append(
-                torch.cat(targets_per_level, dim=0))
-        return targets_level_first
+    #     targets_level_first = []
+    #     for targets_per_level in zip(*training_targets):
+    #         targets_level_first.append(
+    #             torch.cat(targets_per_level, dim=0))
+    #     return targets_level_first
 
-    def cat(tensors: List[torch.Tensor], dim: int = 0):
-        """
-        Efficient version of torch.cat that avoids a copy if there is only a single element in a list
-        """
-        assert isinstance(tensors, (list, tuple))
-        if len(tensors) == 1:
-            return tensors[0]
-        return torch.cat(tensors, dim)
+    # def cat(tensors: List[torch.Tensor], dim: int = 0):
+    #     """
+    #     Efficient version of torch.cat that avoids a copy if there is only a single element in a list
+    #     """
+    #     assert isinstance(tensors, (list, tuple))
+    #     if len(tensors) == 1:
+    #         return tensors[0]
+    #     return torch.cat(tensors, dim)
+
+    def get_center3x3(self, locations, centers, strides):
+        '''
+        Inputs:
+            locations: M x 2
+            centers: N x 2
+            strides: M
+        '''
+        M, N = locations.shape[0], centers.shape[0]
+        locations_expanded = locations.view(M, 1, 2).expand(M, N, 2) # M x N x 2
+        centers_expanded = centers.view(1, N, 2).expand(M, N, 2) # M x N x 2
+        strides_expanded = strides.view(M, 1, 1).expand(M, N, 2) # M x N
+        centers_discret = ((centers_expanded / strides_expanded).int() * \
+            strides_expanded).float() + strides_expanded / 2 # M x N x 2
+        dist_x = (locations_expanded[:, :, 0] - centers_discret[:, :, 0]).abs()
+        dist_y = (locations_expanded[:, :, 1] - centers_discret[:, :, 1]).abs()
+        return (dist_x <= strides_expanded[:, :, 0]) & \
+            (dist_y <= strides_expanded[:, :, 0])
+
+    def _get_reg_targets(self, reg_targets, dist, mask, area):
+        '''
+          reg_targets (M x N x 4): long tensor
+          dist (M x N)
+          is_*: M x N
+        '''
+        INF=100000000
+
+        dist[mask == 0] = INF * 1.0
+        min_dist, min_inds = dist.min(dim=1) # M
+        reg_targets_per_im = reg_targets[
+            range(len(reg_targets)), min_inds] # M x N x 4 --> M x 4
+        reg_targets_per_im[min_dist == INF] = - INF
+        return reg_targets_per_im
+
+    def assign_reg_fpn(self, reg_targets_per_im, size_ranges):
+        '''
+        TODO (Xingyi): merge it with assign_fpn_level
+        Inputs:
+            reg_targets_per_im: M x N x 4
+            size_ranges: M x 2
+        '''
+        crit = ((reg_targets_per_im[:, :, :2] + \
+            reg_targets_per_im[:, :, 2:])**2).sum(dim=2) ** 0.5 / 2 # M x N
+        is_cared_in_the_level = (crit >= size_ranges[:, [0]]) & \
+            (crit <= size_ranges[:, [1]])
+        return is_cared_in_the_level
+
+    def _create_agn_heatmaps_from_dist(self, dist):
+        '''
+        TODO (Xingyi): merge it with _create_heatmaps_from_dist
+        dist: M x N
+        return:
+          heatmaps: M x 1
+        '''
+        heatmaps = dist.new_zeros((dist.shape[0], 1))
+        heatmaps[:, 0] = torch.exp(-dist.min(dim=1)[0])
+        zeros = heatmaps < 1e-4
+        heatmaps[zeros] = 0
+        return heatmaps
+
 
     def _flatten_outputs(self, clss, reg_pred, agn_hm_pred):
         # Reshape: (N, F, Hl, Wl) -> (N, Hl, Wl, F) -> (sum_l N*Hl*Wl, F)
-        clss = self.cat([x.permute(0, 2, 3, 1).reshape(-1, x.shape[1]) \
-            for x in clss], dim=0) if clss[0] is not None else None
-        reg_pred = self.cat(
-            [x.permute(0, 2, 3, 1).reshape(-1, 4) for x in reg_pred], dim=0)            
-        agn_hm_pred = self.cat([x.permute(0, 2, 3, 1).reshape(-1) \
-            for x in agn_hm_pred], dim=0) if self.with_agn_hm else None
+        with_agn_hm=True
+
+        clss = torch.cat([x.permute(0, 2, 3, 1).reshape(-1, x.shape[1]) \
+            for x in clss], 0) if clss[0] is not None else None
+        reg_pred = torch.cat(
+            [x.permute(0, 2, 3, 1).reshape(-1, 4) for x in reg_pred], 0)            
+        agn_hm_pred = torch.cat([x.permute(0, 2, 3, 1).reshape(-1) \
+            for x in agn_hm_pred], 0) if with_agn_hm else None
         return clss, reg_pred, agn_hm_pred
 
-    def reduce_sum(tensor):
-        world_size = dist.get_world_size()
+    def reduce_sum(self, tensor):
+        # world_size = dist.get_world_size()
+        num_gpus = 1
+        world_size = num_gpus
         if world_size < 2:
             return tensor
         tensor = tensor.clone()
@@ -776,6 +866,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             raise NotImplementedError    
 
     def binary_heatmap_focal_loss(
+        self,
         inputs,
         targets,
         pos_inds,
