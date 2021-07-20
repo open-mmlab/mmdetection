@@ -83,7 +83,6 @@ def test_config_build_detector():
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
         config_mod = Config.fromfile(config_fpath)
-        config_mod.model
         print(f'Building detector, config_fpath = {config_fpath}')
 
         # Remove pretrained keys to allow for testing in an offline environment
@@ -93,7 +92,16 @@ def test_config_build_detector():
         detector = build_detector(config_mod.model)
         assert detector is not None
 
-        _check_numclasscheckhook(detector, config_mod)
+        # Check whether NumClassCheckHook is used.
+        custom_hooks = config_mod.get('custom_hooks', [])
+        assert custom_hooks is None or isinstance(custom_hooks, list)
+        check_class_num = False
+        if custom_hooks is not None:
+            hooks = [hook['type'] for hook in custom_hooks]
+            if 'NumClassCheckHook' in hooks:
+                check_class_num = True
+        if check_class_num:
+            _check_numclasscheckhook(detector, config_mod)
 
         optimizer = build_optimizer(detector, config_mod.optimizer)
         assert isinstance(optimizer, torch.optim.Optimizer)
