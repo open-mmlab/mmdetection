@@ -40,7 +40,10 @@ from sc_sdk.entities.shapes.box import Box
 from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
 from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
-from sc_sdk.usecases.tasks.image_deep_learning_task import ImageDeepLearningTask
+from sc_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
+from sc_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
+from sc_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
+from sc_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
 from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, ExportType
 from sc_sdk.usecases.tasks.interfaces.unload_interface import IUnload
 from sc_sdk.logging import logger_factory
@@ -49,7 +52,7 @@ from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
 from mmdet.apis import train_detector, get_root_logger, set_random_seed, single_gpu_test, export_model
-from mmdet.apis.ote.apis.detection.configuration import ObjectDetectionConfig
+from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.config_utils import (patch_config, set_hyperparams, prepare_for_training,
     prepare_for_testing, config_from_string, config_to_string)
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
@@ -60,85 +63,67 @@ from mmdet.models import build_detector
 logger = logger_factory.get_logger("OTEDetectionTask")
 
 
-class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
+class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTask, IUnload):
+
+    task_environment: TaskEnvironment
 
     def __init__(self, task_environment: TaskEnvironment):
         """"
         Task for training object detection models using OTEDetection.
 
         """
-        logger.info(f"Loading OTEDetection task.")
-        self.scratch_space = tempfile.mkdtemp(prefix="ote-scratch-")
+        logger.info(f"Loading OTEDetectionTask.")
+        self.scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
         logger.info(f"Scratch space created at {self.scratch_space}")
-        self.mmdet_logger = get_root_logger(log_file=os.path.join(self.scratch_space, 'mmdet.log'))
 
         self.task_environment = task_environment
+        self.hyperparams = hyperparams = task_environment.get_configurable_parameters(OTEDetectionConfig)
 
-        self.should_stop = False
-        self.is_training = False
-        self.time_monitor = None
-
-        # Model initialization.
-        self.train_model = None
-        self.inference_model = None
-        self.load_model(self.task_environment)
-        self.update_configurable_parameters(self.task_environment)
-
-
-    def load_model(self, task_environment: TaskEnvironment):
-        """
-        Load the model defined in the task environment. Both train_model and inference_model are loaded.
-        This method is called when the task is loaded, and when the model architecture has changed in the configurable
-        parameters of the task.
-        Model creation without any pretrained weights for training from scratch is not handled here, that is done in
-        the train method itself
-
-        :param task_environment:
-        """
-
-        self.task_environment = task_environment
-        model = task_environment.model
-        hyperparams = task_environment.get_configurable_parameters(ObjectDetectionConfig)
         self.model_name = hyperparams.algo_backend.model_name
         self.labels = task_environment.get_labels(False)
 
+        # Get and prepare mmdet config.
+        template_file_path = hyperparams.algo_backend.template
+        base_dir = os.path.abspath(os.path.dirname(template_file_path))
+        config_file_path = os.path.join(base_dir, hyperparams.algo_backend.model)
+        self.config = Config.fromfile(config_file_path)
+        patch_config(self.config, self.scratch_space, self.labels, random_seed=42)
+        set_hyperparams(self.config, hyperparams)
+
+        # Create and initialize PyTorch model.
+        self.model = self._load_model(task_environment.model)
+
+        # Extra control variables.
+        self.is_training = False
+        self.should_stop = False
+        self.time_monitor = None
+
+
+    def _load_model(self, model: Model):
         if model != NullModel():
             # If a model has been trained and saved for the task already, create empty model and load weights here
-            model_data = self._get_model_from_bytes(model.get_data("weights.pth"))
-            self.config = config_from_string(model_data['mmdet_config'])
-            self.inference_model = self._create_model(config=self.config, from_scratch=True)
+            buffer = io.BytesIO(model.get_data("weights.pth"))
+            model_data = torch.load(buffer)
+
+            model = self._create_model(self.config, from_scratch=True)
 
             try:
-                self.inference_model.load_state_dict(model_data['model'])
+                model.load_state_dict(model_data['model'])
                 logger.info(f"Loaded model weights from Task Environment")
                 logger.info(f"Model architecture: {self.model_name}")
             except BaseException as ex:
                 raise ValueError("Could not load the saved model. The model file structure is invalid.") \
                     from ex
-
-            self.train_model = copy.deepcopy(self.inference_model)
-
         else:
             # If there is no trained model yet, create model with pretrained weights as defined in the model config
             # file.
-            template_file_path = hyperparams.algo_backend.template
-            base_dir = os.path.abspath(os.path.dirname(template_file_path))
-            config_file_path = os.path.join(base_dir, hyperparams.algo_backend.model)
-            self.config = Config.fromfile(config_file_path)
-            patch_config(self.config, self.scratch_space, self.labels, random_seed=42)
-            self.inference_model = self._create_model(config=self.config, from_scratch=False)
-            self.train_model = copy.deepcopy(self.inference_model)
+            model = self._create_model(self.config, from_scratch=False)
             logger.info(f"No trained model in project yet. Created new model with '{self.model_name}' "
                         f"architecture and general-purpose pretrained weights.")
+        return model
 
-        # Set the model configs. Inference always uses the config that came with the model, while training uses the
-        # latest config in the config_manager
-        self.train_model.cfg = copy.deepcopy(self.config)
-        self.inference_model.cfg = copy.deepcopy(self.config)
-        self.inference_model.eval()
-
-
-    def _create_model(self, config: Config, from_scratch: bool = False):
+    @staticmethod
+    def _create_model(config: Config, from_scratch: bool = False):
         """
         Creates a model, based on the configuration in config
 
@@ -167,15 +152,16 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
 
     def infer(self, dataset: Dataset, inference_parameters: Optional[InferenceParameters] = None) -> Dataset:
         """ Analyzes a dataset using the latest inference model. """
+        set_hyperparams(self.config, self.hyperparams)
+
         is_evaluation = inference_parameters is not None and inference_parameters.is_evaluation
-        confidence_threshold = self._get_confidence(is_evaluation)
+        confidence_threshold = self._get_confidence_threshold(is_evaluation)
         logger.info(f'Confidence threshold {confidence_threshold}')
 
-        prediction_results, _ = self._do_inference(self.inference_model, dataset, False)
+        prediction_results, _ = self._infer_detector(self.model, self.config, dataset, False)
 
         # Loop over dataset again to assign predictions. Convert from MMDetection format to OTE format
-        from tqdm import tqdm
-        for dataset_item, output in tqdm(zip(dataset, prediction_results)):
+        for dataset_item, output in zip(dataset, prediction_results):
             width = dataset_item.width
             height = dataset_item.height
 
@@ -200,22 +186,23 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
                         labels=assigned_label))
 
             dataset_item.append_annotations(shapes)
-            # print(dataset_item)
 
         return dataset
 
 
-    def _do_inference(self, model: torch.nn.Module, dataset: Dataset,
-                      eval: Optional[bool] = False, metric_name: Optional[str] = 'mAP') -> Tuple[List, float]:
-        test_config = prepare_for_testing(model.cfg, dataset)
+    @staticmethod
+    def _infer_detector(model: torch.nn.Module, config: Config, dataset: Dataset,
+                        eval: Optional[bool] = False, metric_name: Optional[str] = 'mAP') -> Tuple[List, float]:
+        model.eval()
+        test_config = prepare_for_testing(config, dataset)
         mm_val_dataset = build_dataset(test_config.data.test)
         batch_size = 1
         mm_val_dataloader = build_dataloader(mm_val_dataset,
-                                                samples_per_gpu=batch_size,
-                                                workers_per_gpu=test_config.data.workers_per_gpu,
-                                                num_gpus=1,
-                                                dist=False,
-                                                shuffle=False)
+                                             samples_per_gpu=batch_size,
+                                             workers_per_gpu=test_config.data.workers_per_gpu,
+                                             num_gpus=1,
+                                             dist=False,
+                                             shuffle=False)
         eval_model = MMDataParallel(model.cuda(test_config.gpu_ids[0]),
                                     device_ids=test_config.gpu_ids)
         # Use a single gpu for testing. Set in both mm_val_dataloader and eval_model
@@ -231,7 +218,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
                  output_result_set: ResultSet,
                  evaluation_metric: Optional[str] = None):
         """ Computes performance on a resultset """
-        params = self.get_configurable_parameters(self.task_environment)
+        params = self.hyperparams
 
         result_based_confidence_threshold = params.postprocessing.result_based_confidence_threshold
 
@@ -259,58 +246,59 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
     def train(self, dataset: Dataset, output_model: Model, train_parameters: Optional[TrainParameters] = None):
         """ Trains a model on a dataset """
 
-        if self.train_model is None:
-            raise ValueError("Training model is not initialized. Please load the trainable model to the task before training.")
+        set_hyperparams(self.config, self.hyperparams)
 
-        # Create new train_model if training from scratch.
-        old_train_model = copy.deepcopy(self.train_model)
+        train_dataset = dataset.get_subset(Subset.TRAINING)
+        val_dataset = dataset.get_subset(Subset.VALIDATION)
+        config = self.config
+
+        # Create new model if training from scratch.
+        old_model = copy.deepcopy(self.model)
         if train_parameters is not None and train_parameters.train_on_empty_model:
             logger.info("Training from scratch, creating new model")
             # FIXME. Isn't it an overkill? Consider calling init_weights instead.
-            self.train_model = self._create_model(config=self.config, from_scratch=True)
+            self.model = self._create_model(config=config, from_scratch=True)
 
         # Evaluate model performance before training.
-        logger.warning('PREEVALUATION')
-        initial_performance = self._do_evaluation(self.inference_model, dataset.get_subset(Subset.VALIDATION))
+        _, initial_performance = self._infer_detector(self.model, config, val_dataset, True)
 
         # Check for stop signal between pre-eval and training. If training is cancelled at this point,
-        # old_train_model should be restored.
+        # old_model should be restored.
         if self.should_stop:
-            self.should_stop = False
             logger.info('Training cancelled.')
-            self.train_model = old_train_model
-            return self.task_environment.model
+            self.model = old_model
+            self.should_stop = False
+            self.is_training = False
+            self.time_monitor = None
+            return
 
         # Run training.
-        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda x: None)
+        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda _: None)
         learning_curves = defaultdict(OTELoggerHook.Curve)
-        training_config = prepare_for_training(self.config, dataset.get_subset(Subset.TRAINING),
-            dataset.get_subset(Subset.VALIDATION), self.time_monitor, learning_curves)
+        training_config = prepare_for_training(config, train_dataset, val_dataset, self.time_monitor, learning_curves)
         mm_train_dataset = build_dataset(training_config.data.train)
         self.is_training = True
-        start_train_time = time.time()
-        train_detector(model=self.train_model, dataset=mm_train_dataset, cfg=training_config, validate=True)
-        training_duration = time.time() - start_train_time
+        self.model.train()
+        train_detector(model=self.model, dataset=mm_train_dataset, cfg=training_config, validate=True)
 
         # Check for stop signal when training has stopped. If should_stop is true, training was cancelled and no new
         # model should be returned. Old train model is restored.
         if self.should_stop:
-            self.should_stop = False
             logger.info('Training cancelled.')
-            self.train_model = old_train_model
-            return self.task_environment.model
+            self.model = old_model
+            self.should_stop = False
+            self.is_training = False
+            self.time_monitor = None
+            return
 
-        # Load the best weights and check if model has improved
+        # Load the best weights and check if model has improved.
         training_metrics = self._generate_training_metrics_group(learning_curves)
         best_checkpoint_path = os.path.join(training_config.work_dir, 'latest.pth')
         best_checkpoint = torch.load(best_checkpoint_path)
-        # Create inference model as a copy of a train one.
-        self.train_model.eval()
-        self.train_model.load_state_dict(best_checkpoint['state_dict'])
+        self.model.load_state_dict(best_checkpoint['state_dict'])
 
         # Evaluate model performance after training.
-        logger.warning('POSTEVALUATION')
-        final_performance = self._do_evaluation(self.train_model, dataset.get_subset(Subset.VALIDATION))
+        _, final_performance = self._infer_detector(self.model, config, val_dataset, True)
         improved = final_performance > initial_performance
 
         # Return a new model if model has improved, or there is no model yet.
@@ -323,59 +311,26 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
             performance = Performance(score=ScoreMetric(value=final_performance, name="mAP"),
                                       dashboard_metrics=training_metrics)
             logger.info('FINAL MODEL PERFORMANCE\n' + str(performance))
-            self.inference_model = copy.deepcopy(self.train_model)
             self.save_model(output_model)
             output_model.performance = performance
-            # output_model.tags = tags
             output_model.model_status = ModelStatus.SUCCESS
         else:
             logger.info("Model performance has not improved while training. No new model has been saved.")
             # Restore old training model if training from scratch and not improved
-            self.train_model = old_train_model
+            self.model = old_model
 
         self.is_training = False
         self.time_monitor = None
-        return self.task_environment.model
-
-
-    def _do_evaluation(self, model: torch.nn.Module, dataset: Dataset) -> float:
-        """
-        Performs evaluation of model using internal mAP metric.
-
-        :return pretraining_performance (float): The performance score of the model
-        """
-        if model is not None:
-            logger.info("Evaluating model.")
-            _, pretraining_performance = self._do_inference(model, dataset, True)
-        else:
-            pretraining_performance = 0.0
-        logger.info(f"Model performance: mAP = {pretraining_performance}")
-        return pretraining_performance
 
 
     def save_model(self, output_model: Model):
         buffer = io.BytesIO()
-        hyperparams = self.task_environment.get_configurable_parameters(ObjectDetectionConfig)
-        config = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
+        hyperparams = self.task_environment.get_configurable_parameters(OTEDetectionConfig)
+        hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
         labels = {label.name: label.color.rgb_tuple for label in self.labels}
-        modelinfo = {'model': self.inference_model.state_dict(), 'config': config, 'mmdet_config': config_to_string(self.config),
-                     'labels': labels, 'VERSION': 1}
+        modelinfo = {'model': self.model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
         torch.save(modelinfo, buffer)
         output_model.set_data("weights.pth", buffer.getvalue())
-
-
-    # def _persist_inference_model(self, dataset: Dataset, performance: Performance, training_duration: float):
-    #     model_data = self._get_model_bytes(self.inference_model, self.inference_model.cfg)
-    #     model = Model(project=self.task_environment.project,
-    #                   model_storage=self.task_environment.task_node.model_storage,
-    #                   task_node_id=self.task_environment.task_node.id,
-    #                   configuration=self.task_environment.get_model_configuration(),
-    #                   data_source_dict={"weights.pth": model_data},
-    #                   tags=None,
-    #                   performance=performance,
-    #                   train_dataset=dataset,
-    #                   training_duration=training_duration)
-    #     self.task_environment.model = model
 
 
     def get_training_progress(self) -> float:
@@ -426,48 +381,20 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
         return output
 
 
-    @staticmethod
-    def _get_model_from_bytes(blob: bytes) -> dict:
-        buffer = io.BytesIO(blob)
-        return torch.load(buffer)
-
-
-    @staticmethod
-    def get_configurable_parameters(task_environment: TaskEnvironment) -> ObjectDetectionConfig:
+    def _get_confidence_threshold(self, is_evaluation: bool) -> float:
         """
-        Returns the configurable parameters.
-
-        :param task_environment: Current task environment
-        :return: Instance of ObjectDetectionConfig
-        """
-        return task_environment.get_configurable_parameters(ObjectDetectionConfig)
-
-
-    def update_configurable_parameters(self, task_environment: TaskEnvironment):
-        """
-        Called when the user changes the configurable parameters in the UI.
-
-        :param task_environment: New task environment with updated configurable parameters
-        """
-        new_conf_params = self.get_configurable_parameters(task_environment)
-        self.task_environment = task_environment
-        set_hyperparams(self.config, new_conf_params)
-
-
-    def _get_confidence(self, is_evaluation: bool) -> Tuple[float, float, bool]:
-        """
-        Retrieves the thresholds for confidence from the configurable parameters. If
+        Retrieves the threshold for confidence from the configurable parameters. If
         is_evaluation is True, the confidence threshold is set to 0 in order to compute optimum values
-        for the thresholds. Also returns whether or not to perform nms across objects of different classes.
+        for the thresholds.
 
         :param is_evaluation: bool, True in case analysis is requested for evaluation
 
         :return confidence_threshold: float, threshold for prediction confidence
         """
-        # conf_params = self.get_configurable_parameters(self.task_environment)
-        conf_params = self.task_environment.get_configurable_parameters(ObjectDetectionConfig)
-        confidence_threshold = conf_params.postprocessing.confidence_threshold
-        result_based_confidence_threshold = conf_params.postprocessing.result_based_confidence_threshold
+
+        hyperparams = self.hyperparams
+        confidence_threshold = hyperparams.postprocessing.confidence_threshold
+        result_based_confidence_threshold = hyperparams.postprocessing.result_based_confidence_threshold
         if is_evaluation:
             if result_based_confidence_threshold:
                 confidence_threshold = 0.0
@@ -509,6 +436,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
     def export(self,
                export_type: ExportType,
                output_model: OptimizedModel):
+        assert export_type == ExportType.OPENVINO
         optimized_model_precision = ModelPrecision.FP16
         with tempfile.TemporaryDirectory() as tempdir:
             optimized_model_dir = os.path.join(tempdir, "export")
@@ -517,7 +445,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
             try:
                 from torch.jit._trace import TracerWarning
                 warnings.filterwarnings("ignore", category=TracerWarning)
-                export_model(self.inference_model, tempdir, target='openvino', precision=optimized_model_precision.name)
+                export_model(self.model, tempdir, target='openvino', precision=optimized_model_precision.name)
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
                 xml_file = [f for f in os.listdir(tempdir) if f.endswith('.xml')][0]
                 output_model.set_data("openvino.bin", open(os.path.join(tempdir, bin_file), "rb").read())

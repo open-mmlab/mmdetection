@@ -44,7 +44,7 @@ def configurable_str(default_value: str,
 
 
 @attrs
-class ObjectDetectionConfig(TaskConfig):
+class OTEDetectionConfig(TaskConfig):
     header = string_attribute("Configuration for an object detection task")
     description = header
 
@@ -102,6 +102,15 @@ class ObjectDetectionConfig(TaskConfig):
             description="Increasing this value might improve training speed however it might cause out of memory "
                         "errors. If the number of workers is set to zero, data loading will happen in the main "
                         "training thread.",
+            affects_outcome_of=ModelLifecycle.NONE
+        )
+
+        num_checkpoints = configurable_integer(
+            default_value=5,
+            min_value=1,
+            max_value=100,
+            header="Number of checkpoints that is done during the single training round",
+            description="",
             affects_outcome_of=ModelLifecycle.NONE
         )
 

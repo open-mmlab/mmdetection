@@ -28,7 +28,7 @@ from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, Expor
 from sc_sdk.utils import restricted_pickle_module
 from sc_sdk.utils.project_factory import NullProject
 
-from mmdet.apis.ote.apis.detection import MMObjectDetectionTask, ObjectDetectionConfig
+from mmdet.apis.ote.apis.detection import OTEDetectionTask, OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.config_utils import apply_template_configurable_parameters
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, load_template
 
@@ -94,7 +94,7 @@ class TestOTEAPI(unittest.TestCase):
     @staticmethod
     def setup_configurable_parameters(template_dir, num_iters=250):
         template = load_template(osp.join(template_dir, 'template.yaml'))
-        configurable_parameters = ObjectDetectionConfig(workspace_id=ID(), project_id=ID(), task_id=ID())
+        configurable_parameters = OTEDetectionConfig(workspace_id=ID(), project_id=ID(), task_id=ID())
         apply_template_configurable_parameters(configurable_parameters, template)
         configurable_parameters.learning_parameters.num_iters = num_iters
         configurable_parameters.postprocessing.result_based_confidence_threshold = False
@@ -117,7 +117,7 @@ class TestOTEAPI(unittest.TestCase):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
         configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=10000)
         detection_environment, dataset = self.init_environment(configurable_parameters, 250)
-        detection_task = MMObjectDetectionTask(task_environment=detection_environment)
+        detection_task = OTEDetectionTask(task_environment=detection_environment)
 
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='train_thread')
 
@@ -148,7 +148,7 @@ class TestOTEAPI(unittest.TestCase):
         train_future.result()
 
     @staticmethod
-    def eval(task: MMObjectDetectionTask, model: Model, dataset: Dataset):
+    def eval(task: OTEDetectionTask, model: Model, dataset: Dataset):
         start_time = time.time()
         result_dataset = task.infer(dataset.with_empty_annotations())
         end_time = time.time()
@@ -176,7 +176,7 @@ class TestOTEAPI(unittest.TestCase):
         """
         configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=150)
         detection_environment, dataset = self.init_environment(configurable_parameters, 250)
-        task = MMObjectDetectionTask(task_environment=detection_environment)
+        task = OTEDetectionTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print('Task initialized, model training starts.')
@@ -196,7 +196,7 @@ class TestOTEAPI(unittest.TestCase):
         # Test that labels and configurable parameters are stored in model.data
         modelinfo = torch.load(io.BytesIO(output_model.get_data("weights.pth")))
                                # pickle_module=restricted_pickle_module)
-        self.assertEqual(list(modelinfo.keys()), ['model', 'config', 'mmdet_config', 'labels', 'VERSION'])
+        self.assertEqual(list(modelinfo.keys()), ['model', 'config', 'labels', 'VERSION'])
         self.assertTrue('ellipse' in modelinfo['labels'])
 
         if isinstance(task, IExportTask):
@@ -223,9 +223,24 @@ class TestOTEAPI(unittest.TestCase):
             f'Expected F-measure to be higher than {score_threshold}')
 
         print('Reloading model.')
-        # Re-load the model
-        detection_environment.model = output_model
-        task.load_model(detection_environment)
+        first_model = output_model
+        new_model = Model(
+            NullProject(),
+            ModelStorage(NullWorkspace(), 'storage', NullModelTemplate()),
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY)
+        task.hyperparams.learning_parameters.num_iters = 10
+        task.hyperparams.learning_parameters.num_checkpoints = 1
+        task.train(dataset, new_model)
+        self.assertTrue(first_model.model_status)
+        self.assertNotEqual(first_model, new_model)
+
+        # Make the new model fail
+        new_model.model_status = ModelStatus.NOT_IMPROVED
+        detection_environment.model = first_model
+        task = OTEDetectionTask(detection_environment)
+        self.assertEqual(task.task_environment.model.id, first_model.id)
 
         print('Reevaluating model.')
         # Performance should be the same after reloading

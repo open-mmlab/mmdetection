@@ -17,11 +17,11 @@ dataset_requirements:
 
 # Task implementation.
 task:
-  impl: mmdet.apis.ote.apis.detection.MMObjectDetectionTask
+  impl: mmdet.apis.ote.apis.detection.OTEDetectionTask
 
 # Task and hyperparameters.
 hyper_parameters:
-  impl: mmdet.apis.ote.apis.detection.MMDetectionParameters
+  impl: mmdet.apis.ote.apis.detection.OTEDetectionConfig
   # Would be good to have different groups of parameters:
   # - Basic: Shown to the user in the first place and editable by him.
   # - Advanced: Editable by the user used the "advanced" section.

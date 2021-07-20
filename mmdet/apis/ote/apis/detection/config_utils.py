@@ -25,13 +25,13 @@ from sc_sdk.entities.label import Label
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 
-from .configuration import ObjectDetectionConfig
+from .configuration import OTEDetectionConfig
 
 
 logger = logger_factory.get_logger("OTEDetectionTask")
 
 
-def apply_template_configurable_parameters(params: ObjectDetectionConfig, template: dict):
+def apply_template_configurable_parameters(params: OTEDetectionConfig, template: dict):
 
     def xset(obj, d: dict):
         for k, v in d.items():
@@ -85,17 +85,19 @@ def patch_config(config: Config, work_dir: str, labels: List[Label], random_seed
     config.seed = random_seed
 
 
-def set_hyperparams(config: Config, hyperparams: ObjectDetectionConfig):
+def set_hyperparams(config: Config, hyperparams: OTEDetectionConfig):
     config.optimizer.lr = float(hyperparams.learning_parameters.learning_rate)
     config.lr_config.warmup_iters = int(hyperparams.learning_parameters.learning_rate_warmup_iters)
     config.data.samples_per_gpu = int(hyperparams.learning_parameters.batch_size)
+    config.data.workers_per_gpu = int(hyperparams.learning_parameters.num_workers)
     total_iterations = int(hyperparams.learning_parameters.num_iters)
     if 'IterBased' in config.runner.type:
         config.runner.max_iters = total_iterations
     else:  # Epoch based runner
         config.runner.max_epochs = total_iterations
-    config.evaluation.interval = total_iterations // 10
-    config.checkpoint_config.interval = total_iterations // 10
+    num_checkpoints = int(hyperparams.learning_parameters.num_checkpoints)
+    config.evaluation.interval = total_iterations // num_checkpoints
+    config.checkpoint_config.interval = total_iterations // num_checkpoints
 
 
 def prepare_for_testing(config: Config, dataset: Dataset) -> Config:

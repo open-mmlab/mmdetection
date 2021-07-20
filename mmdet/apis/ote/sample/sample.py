@@ -31,8 +31,8 @@ from sc_sdk.entities.workspace import NullWorkspace
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType
 
-from mmdet.apis.ote.apis.detection import MMObjectDetectionTask
-from mmdet.apis.ote.apis.detection.configuration import ObjectDetectionConfig
+from mmdet.apis.ote.apis.detection import OTEDetectionTask
+from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.config_utils import apply_template_configurable_parameters
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, load_template, get_task_class
@@ -72,11 +72,11 @@ def main(args):
     print(f'train dataset: {len(dataset.get_subset(Subset.TRAINING))} items')
     print(f'validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items')
 
-    params = ObjectDetectionConfig(workspace_id=ID(), project_id=ID(), task_id=ID())
+    params = OTEDetectionConfig(workspace_id=ID(), project_id=ID(), task_id=ID())
     apply_template_configurable_parameters(params, template)
     environment = TaskEnvironment(model=NullModel(), configurable_parameters=params, label_schema=labels_schema)
 
-    task: MMObjectDetectionTask = task_cls(task_environment=environment)
+    task: OTEDetectionTask = task_cls(task_environment=environment)
 
     output_model = Model(
             NullProject(),
@@ -86,10 +86,8 @@ def main(args):
             model_status=ModelStatus.NOT_READY)
 
     # Tweak parameters.
-    params = task.get_configurable_parameters(environment)
+    params = task.hyperparams
     params.learning_parameters.num_iters = 1000
-    environment.set_configurable_parameters(params)
-    task.update_configurable_parameters(environment)
 
     logger.info('Start model training... [ROUND 0]')
     task.train(dataset, output_model)
