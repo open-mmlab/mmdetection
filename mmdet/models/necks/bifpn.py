@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
-
 from ..builder import NECKS
 
 
@@ -19,7 +18,7 @@ class SingleBiFPN(BaseModule):
                  act_cfg=None):
         super(SingleBiFPN, self).__init__()
         self.out_channels = out_channels
-        # build 5-levels bifpn
+
         if len(in_channels_list) == 5:
             self.nodes = [
                 {'feat_level': 3, 'inputs_offsets': [3, 4]},
@@ -49,7 +48,7 @@ class SingleBiFPN(BaseModule):
             for input_offset in inputs_offsets:
                 in_channels = node_info[input_offset]
                 if in_channels != out_channels:
-                    self.add_module("lateral_{}_f{}".format(input_offset, feat_level),
+                    self.add_module(f"lateral_{input_offset}_f{feat_level}",
                                     ConvModule(in_channels,
                                                out_channels,
                                                kernel_size=1,
@@ -59,11 +58,11 @@ class SingleBiFPN(BaseModule):
             node_info.append(out_channels)
 
             # generate attention weights
-            self.__setattr__("weights_f{}_{}".format(feat_level, inputs_offsets_str),
-                             nn.Parameter(torch.ones(len(inputs_offsets), dtype=torch.float32), requires_grad=True))
+            setattr(self, f"weights_f{feat_level}_{inputs_offsets_str}",
+                    nn.Parameter(torch.ones(len(inputs_offsets), dtype=torch.float32), requires_grad=True))
 
             # generate convolutions after combination
-            self.add_module("outputs_f{}_{}".format(feat_level, inputs_offsets_str),
+            self.add_module(f"outputs_f{feat_level}_{inputs_offsets_str}",
                             ConvModule(out_channels,
                                        out_channels,
                                        kernel_size=3,
@@ -85,7 +84,7 @@ class SingleBiFPN(BaseModule):
                 input_node = feats[input_offset]
                 # reduction
                 if input_node.size(1) != self.out_channels:
-                    input_node = self.__getattr__("lateral_{}_f{}".format(input_offset, feat_level))(input_node)
+                    input_node = getattr(self, f"lateral_{input_offset}_f{feat_level}")(input_node)
                 # resize
                 _, _, h, w = input_node.size()
                 if h > target_h and w > target_w:
@@ -100,13 +99,12 @@ class SingleBiFPN(BaseModule):
                     raise NotImplemented
                 input_nodes.append(input_node)
             # attention
-            weights = F.relu(self.__getattr__("weights_f{}_{}".format(feat_level, inputs_offsets_str)))
+            weights = F.relu(getattr(self, f"weights_f{feat_level}_{inputs_offsets_str}"))
             norm_weights = weights / (weights.sum() + 0.0001)
             new_node = torch.stack(input_nodes, dim=-1)
             new_node = (norm_weights * new_node).sum(dim=-1)
             new_node = new_node * new_node.sigmoid()
-
-            feats.append(self.__getattr__("outputs_f{}_{}".format(feat_level, inputs_offsets_str))(new_node))
+            feats.append(getattr(self, f"outputs_f{feat_level}_{inputs_offsets_str}")(new_node))
 
         output_feats = []
         for idx in range(num_levels):
@@ -151,8 +149,7 @@ class BiFPN(BaseModule):
                  conv_cfg=None,
                  norm_cfg=None,
                  act_cfg=None,
-                 init_cfg=None,
-                 ):
+                 init_cfg=None):
         super(BiFPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         assert num_outs == 5 or num_outs == 3, NotImplementedError
@@ -186,7 +183,6 @@ class BiFPN(BaseModule):
                 in_channels_list = in_channels[start_level:end_level + 1] + [out_channels] * num_extra_levels
             else:
                 in_channels_list = [out_channels] * num_outs
-
             self.repeated_bifpn.append(
                 SingleBiFPN(
                     in_channels_list,
@@ -200,10 +196,8 @@ class BiFPN(BaseModule):
         if len(self.__extra_levels) > 0:
             for extra_level in self.__extra_levels:
                 laterals.append(extra_level(laterals[-1]))
-
         for i in range(self.num_bifpn):
             laterals = self.repeated_bifpn[i](laterals)
-
         outs = tuple(laterals)
         return outs
 
