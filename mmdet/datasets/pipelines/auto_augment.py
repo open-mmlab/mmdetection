@@ -1,4 +1,5 @@
 import copy
+import random
 
 import cv2
 import mmcv
@@ -516,7 +517,7 @@ class Rotate(object):
         center = self.center
         if center is None:
             center = ((w - 1) * 0.5, (h - 1) * 0.5)
-        angle = random_negative(self.angle, self.random_negative_prob)
+        angle = random.randint(-1 * self.max_rotate_angle, self.max_rotate_angle)
         self._rotate_img(results, angle, center, self.scale)
         rotate_matrix = cv2.getRotationMatrix2D(center, -angle, self.scale)
         self._rotate_bboxes(results, rotate_matrix)

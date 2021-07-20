@@ -1,6 +1,7 @@
 import os.path as osp
 import warnings
 from collections import OrderedDict
+from random import randint
 
 import mmcv
 import numpy as np
@@ -210,9 +211,21 @@ class CustomDataset(Dataset):
         img_info = self.data_infos[idx]
         ann_info = self.get_ann_info(idx)
         results = dict(img_info=img_info, ann_info=ann_info)
+
+        copy_past_idx = randint(0, len(self.img_ids) - 1)
+        while copy_past_idx == idx:
+            copy_past_idx = randint(0, len(self.img_ids) - 1)
+        copy_past_img_info = self.data_infos[copy_past_idx]
+        copy_past_ann_info = self.get_ann_info(copy_past_idx)
+
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
+
+        results['copy_paste'] = dict(img_info=copy_past_img_info, ann_info=copy_past_ann_info)
+        if 'copy_paste' in results:
+            self.pre_pipeline(results['copy_paste'])
+
         return self.pipeline(results)
 
     def prepare_test_img(self, idx):
