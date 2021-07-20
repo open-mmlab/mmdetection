@@ -16,20 +16,20 @@ import argparse
 import os.path as osp
 import sys
 
-from sc_sdk.entities.analyse_parameters import AnalyseParameters
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.datasets import Subset
 from sc_sdk.entities.id import ID
+from sc_sdk.entities.inference_parameters import InferenceParameters
 from sc_sdk.entities.model import NullModel, Model, ModelStatus
-from sc_sdk.entities.workspace import NullWorkspace
-from sc_sdk.entities.model_template import NullModelTemplate
 from sc_sdk.entities.model_storage import ModelStorage
+from sc_sdk.entities.model_template import NullModelTemplate
 from sc_sdk.entities.optimized_model import ModelOptimizationType, ModelPrecision, OptimizedModel, TargetDevice
 from sc_sdk.entities.project import NullProject
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.task_environment import TaskEnvironment
+from sc_sdk.entities.workspace import NullWorkspace
 from sc_sdk.logging import logger_factory
-from sc_sdk.usecases.tasks.interfaces.export_task import ExportType
+from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType
 
 from mmdet.apis.ote.apis.detection import MMObjectDetectionTask
 from mmdet.apis.ote.apis.detection.configuration import ObjectDetectionConfig
@@ -96,15 +96,15 @@ def main(args):
     logger.info('Model training finished [ROUND 0]')
 
     validation_dataset = dataset.get_subset(Subset.VALIDATION)
-    predicted_validation_dataset = task.analyse(
+    predicted_validation_dataset = task.infer(
         validation_dataset.with_empty_annotations(),
-        AnalyseParameters(is_evaluation=True))
+        InferenceParameters(is_evaluation=True))
     resultset = ResultSet(
         model=output_model,
         ground_truth_dataset=validation_dataset,
         prediction_dataset=predicted_validation_dataset,
     )
-    performance = task.compute_performance(resultset)
+    performance = task.evaluate(resultset)
     print(performance)
 
     if args.export:

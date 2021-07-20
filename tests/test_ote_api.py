@@ -11,16 +11,12 @@ from concurrent.futures import ThreadPoolExecutor
 from sc_sdk.entities.annotation import Annotation, AnnotationScene, AnnotationSceneKind
 from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, Subset, NullDatasetStorage
+from sc_sdk.entities.id import ID
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.model import NullModel, Model, ModelStatus, ModelStorage
 from sc_sdk.entities.workspace import NullWorkspace
 from sc_sdk.entities.model_template import NullModelTemplate
-
-# This one breaks cyclic imports chain.
-from sc_sdk.usecases.repos import BinaryRepo
-
-from sc_sdk.entities.id import ID
 from sc_sdk.entities.optimized_model import ModelOptimizationType, ModelPrecision, OptimizedModel, TargetDevice
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.shapes.box import Box
@@ -28,7 +24,7 @@ from sc_sdk.entities.shapes.ellipse import Ellipse
 from sc_sdk.entities.shapes.polygon import Polygon
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.tests.test_helpers import generate_random_annotated_image
-from sc_sdk.usecases.tasks.interfaces.export_task import IExportTask, ExportType
+from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, ExportType
 from sc_sdk.utils import restricted_pickle_module
 from sc_sdk.utils.project_factory import NullProject
 
@@ -154,7 +150,7 @@ class TestOTEAPI(unittest.TestCase):
     @staticmethod
     def eval(task: MMObjectDetectionTask, model: Model, dataset: Dataset):
         start_time = time.time()
-        result_dataset = task.analyse(dataset.with_empty_annotations())
+        result_dataset = task.infer(dataset.with_empty_annotations())
         end_time = time.time()
         print(f'{len(dataset)} analysed in {end_time - start_time} seconds')
         result_set = ResultSet(
@@ -162,7 +158,7 @@ class TestOTEAPI(unittest.TestCase):
             ground_truth_dataset=dataset,
             prediction_dataset=result_dataset
         )
-        performance = task.compute_performance(result_set)
+        performance = task.evaluate(result_set)
         return performance
 
     def train_and_eval(self, template_dir):

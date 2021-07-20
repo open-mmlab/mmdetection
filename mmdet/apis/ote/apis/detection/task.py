@@ -27,23 +27,21 @@ import numpy as np
 from sc_sdk.configuration import cfg_helper
 from sc_sdk.configuration.helper.utils import ids_to_strings
 from sc_sdk.entities.annotation import Annotation
-from sc_sdk.entities.analyse_parameters import AnalyseParameters
 from sc_sdk.entities.datasets import Dataset, Subset
+from sc_sdk.entities.inference_parameters import InferenceParameters
 from sc_sdk.entities.metrics import CurveMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric, InfoMetric, \
     VisualizationType, VisualizationInfo
-# This one breaks cyclic imports chain.
-from sc_sdk.usecases.repos import BinaryRepo
 from sc_sdk.entities.optimized_model import OptimizedModel, ModelPrecision
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.entities.train_parameters import TrainParameters
 from sc_sdk.entities.label import ScoredLabel
 from sc_sdk.entities.model import Model, ModelStatus, NullModel
 from sc_sdk.entities.shapes.box import Box
-from sc_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
+from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
 from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from sc_sdk.usecases.tasks.image_deep_learning_task import ImageDeepLearningTask
-from sc_sdk.usecases.tasks.interfaces.export_task import IExportTask, ExportType
+from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, ExportType
 from sc_sdk.usecases.tasks.interfaces.unload_interface import IUnload
 from sc_sdk.logging import logger_factory
 
@@ -167,9 +165,9 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
         return model
 
 
-    def analyse(self, dataset: Dataset, analyse_parameters: Optional[AnalyseParameters] = None) -> Dataset:
+    def infer(self, dataset: Dataset, inference_parameters: Optional[InferenceParameters] = None) -> Dataset:
         """ Analyzes a dataset using the latest inference model. """
-        is_evaluation = analyse_parameters is not None and analyse_parameters.is_evaluation
+        is_evaluation = inference_parameters is not None and inference_parameters.is_evaluation
         confidence_threshold = self._get_confidence(is_evaluation)
         logger.info(f'Confidence threshold {confidence_threshold}')
 
@@ -229,19 +227,21 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
         return eval_predictions, metric
 
 
-    def compute_performance(self, resultset: ResultSetEntity) -> Performance:
+    def evaluate(self,
+                 output_result_set: ResultSet,
+                 evaluation_metric: Optional[str] = None):
         """ Computes performance on a resultset """
         params = self.get_configurable_parameters(self.task_environment)
 
         result_based_confidence_threshold = params.postprocessing.result_based_confidence_threshold
 
         logger.info('Computing F-measure' + (' with auto threshold adjustment' if result_based_confidence_threshold else ''))
-        f_measure_metrics = MetricsHelper.compute_f_measure(resultset,
+        f_measure_metrics = MetricsHelper.compute_f_measure(output_result_set,
                                                             result_based_confidence_threshold,
                                                             False,
                                                             False)
 
-        if resultset.purpose is ResultsetPurpose.EVALUATION:
+        if output_result_set.purpose is ResultsetPurpose.EVALUATION:
             # only set configurable params based on validation result set
             if result_based_confidence_threshold:
                 best_confidence_threshold = f_measure_metrics.best_confidence_threshold.value
@@ -282,7 +282,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
             return self.task_environment.model
 
         # Run training.
-        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0)
+        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda x: None)
         learning_curves = defaultdict(OTELoggerHook.Curve)
         training_config = prepare_for_training(self.config, dataset.get_subset(Subset.TRAINING),
             dataset.get_subset(Subset.VALIDATION), self.time_monitor, learning_curves)
@@ -324,7 +324,7 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
                                       dashboard_metrics=training_metrics)
             logger.info('FINAL MODEL PERFORMANCE\n' + str(performance))
             self.inference_model = copy.deepcopy(self.train_model)
-            self._save_model(self.inference_model, output_model)
+            self.save_model(output_model)
             output_model.performance = performance
             # output_model.tags = tags
             output_model.model_status = ModelStatus.SUCCESS
@@ -353,12 +353,12 @@ class MMObjectDetectionTask(ImageDeepLearningTask, IExportTask, IUnload):
         return pretraining_performance
 
 
-    def _save_model(self, model: torch.nn.Module, output_model: Model):
+    def save_model(self, output_model: Model):
         buffer = io.BytesIO()
         hyperparams = self.task_environment.get_configurable_parameters(ObjectDetectionConfig)
         config = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
         labels = {label.name: label.color.rgb_tuple for label in self.labels}
-        modelinfo = {'model': model.state_dict(), 'config': config, 'mmdet_config': config_to_string(self.config),
+        modelinfo = {'model': self.inference_model.state_dict(), 'config': config, 'mmdet_config': config_to_string(self.config),
                      'labels': labels, 'VERSION': 1}
         torch.save(modelinfo, buffer)
         output_model.set_data("weights.pth", buffer.getvalue())
