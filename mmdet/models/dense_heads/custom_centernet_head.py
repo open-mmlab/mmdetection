@@ -820,7 +820,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
         return pos_loss, neg_loss
 
-    def get_world_size() -> int:
+    def get_world_size(self) -> int:
         if not dist.is_available():
             return 1
         if not dist.is_initialized():
