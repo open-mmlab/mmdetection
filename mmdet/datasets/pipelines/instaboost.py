@@ -13,13 +13,17 @@ class InstaBoost:
 
     Args:
         action_candidate (tuple): Action candidates. "normal", "horizontal", \
-            "vertical", "skip" are supported.
+            "vertical", "skip" are supported. Default: ('normal', \
+            'horizontal', 'skip').
         action_prob (tuple): Corresponding action probabilities. Should be \
-            the same length as action_candidate.
-        scale (tuple): (min scale, max scale)
+            the same length as action_candidate. Default: (1, 0, 0).
+        scale (tuple): (min scale, max scale). Default: (0.8, 1.2).
         dx (int): The maximum x-axis shift will be (instance width) / dx.
+            Default 15.
         dy (int): The maximum y-axis shift will be (instance height) / dy.
-        theta (tuple): (min rotation degree, max rotation degree)
+            Default 15.
+        theta (tuple): (min rotation degree, max rotation degree). \
+            Default: (-1, 1).
         color_prob (float): Probability of images for color augmentation.
             Default 0.5.
         heatmap_flag (bool): Whether to use heatmap guided. Default False.
