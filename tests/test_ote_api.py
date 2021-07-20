@@ -1,7 +1,9 @@
+import io
 import numpy as np
 import os.path as osp
 import random
 import time
+import torch
 import unittest
 import warnings
 from concurrent.futures import ThreadPoolExecutor
@@ -11,22 +13,28 @@ from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, Subset, NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
-from sc_sdk.entities.model import NullModel
+from sc_sdk.entities.model import NullModel, Model, ModelStatus, ModelStorage
+from sc_sdk.entities.workspace import NullWorkspace
+from sc_sdk.entities.model_template import NullModelTemplate
 
 # This one breaks cyclic imports chain.
 from sc_sdk.usecases.repos import BinaryRepo
 
-from sc_sdk.entities.optimized_model import OptimizedModel
+from sc_sdk.entities.id import ID
+from sc_sdk.entities.optimized_model import ModelOptimizationType, ModelPrecision, OptimizedModel, TargetDevice
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.shapes.box import Box
 from sc_sdk.entities.shapes.ellipse import Ellipse
 from sc_sdk.entities.shapes.polygon import Polygon
 from sc_sdk.entities.task_environment import TaskEnvironment
-from sc_sdk.tests.test_helpers import generate_random_annotated_image, rerun_on_flaky_assert
-from sc_sdk.usecases.tasks.interfaces.model_optimizer import IModelOptimizer
-from sc_sdk.utils.project_factory import ProjectFactory
+from sc_sdk.tests.test_helpers import generate_random_annotated_image
+from sc_sdk.usecases.tasks.interfaces.export_task import IExportTask, ExportType
+from sc_sdk.utils import restricted_pickle_module
+from sc_sdk.utils.project_factory import NullProject
 
-from mmdet.apis.ote.apis.detection import MMObjectDetectionTask, MMDetectionParameters, configurable_parameters
+from mmdet.apis.ote.apis.detection import MMObjectDetectionTask, ObjectDetectionConfig
+from mmdet.apis.ote.apis.detection.config_utils import apply_template_configurable_parameters
+from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, load_template
 
 
 class TestOTEAPI(unittest.TestCase):
@@ -34,21 +42,18 @@ class TestOTEAPI(unittest.TestCase):
     Collection of tests for OTE API and OTE Model Templates
     """
 
-    def init_environment(self, configurable_parameters, number_of_images=500):
-        project = ProjectFactory.create_project_single_task(name='OTEDetectionTestProject',
-                                                            description='OTEDetectionTestProject',
-                                                            label_names=['rectangle', 'ellipse', 'triangle'],
-                                                            task_name='OTEDetectionTestTask',
-                                                            configurable_parameters=configurable_parameters)
-        self.addCleanup(lambda: ProjectFactory.delete_project_with_id(project.id))
-        labels = project.get_labels()
+    def init_environment(self, params, number_of_images=500):
+        labels_names = ('rectangle', 'ellipse', 'triangle')
+        labels_schema = generate_label_schema(labels_names)
+        labels_list = labels_schema.get_labels(False)
+        environment = TaskEnvironment(model=NullModel(), configurable_parameters=params, label_schema=labels_schema)
 
         warnings.filterwarnings('ignore', message='.* coordinates .* are out of bounds.*')
         items = []
         for i in range(0, number_of_images):
             image_numpy, shapes = generate_random_annotated_image(image_width=640,
                                                                   image_height=480,
-                                                                  labels=labels,
+                                                                  labels=labels_list,
                                                                   max_shapes=20,
                                                                   min_size=50,
                                                                   max_size=100,
@@ -66,7 +71,7 @@ class TestOTEAPI(unittest.TestCase):
                 box_shapes.append(Annotation(Box(x1=box[0], y1=box[1], x2=box[2], y2=box[3]),
                                              labels=shape_labels))
 
-            image = Image(name=f'image_{i}', project=project, numpy=image_numpy)
+            image = Image(name=f'image_{i}', project=NullProject(), numpy=image_numpy)
             image_identifier = ImageIdentifier(image.id)
             annotation = AnnotationScene(
                 kind=AnnotationSceneKind.ANNOTATION,
@@ -88,28 +93,16 @@ class TestOTEAPI(unittest.TestCase):
             items[i].subset = subset
 
         dataset = Dataset(NullDatasetStorage(), items)
-        task_node = project.tasks[-1]
-        environment = TaskEnvironment(project=project, task_node=task_node)
-        return project, environment, dataset
-
-    @staticmethod
-    def load_template(path):
-        import yaml
-        with open(path) as f:
-            template = yaml.full_load(f)
-        # Save path to template file, to resolve relative paths later.
-        template['hyper_parameters']['params'].setdefault('algo_backend', {})['template'] = path
-        return template
+        return environment, dataset
 
     @staticmethod
     def setup_configurable_parameters(template_dir, num_iters=250):
-        template = TestOTEAPI.load_template(osp.join(template_dir, 'template.yaml'))
-        configurable_parameters = MMDetectionParameters()
-        MMObjectDetectionTask.apply_template_configurable_parameters(configurable_parameters, template)
-        # configurable_parameters.algo_backend.template.value = osp.join(template_dir, 'template.yaml')
-        configurable_parameters.algo_backend.model.value = 'model.py'
-        configurable_parameters.algo_backend.model_name.value = 'some_detection_model'
-        configurable_parameters.learning_parameters.num_iters.value = num_iters
+        template = load_template(osp.join(template_dir, 'template.yaml'))
+        configurable_parameters = ObjectDetectionConfig(workspace_id=ID(), project_id=ID(), task_id=ID())
+        apply_template_configurable_parameters(configurable_parameters, template)
+        configurable_parameters.learning_parameters.num_iters = num_iters
+        configurable_parameters.postprocessing.result_based_confidence_threshold = False
+        configurable_parameters.postprocessing.confidence_threshold = 0.1
         return configurable_parameters
 
     def test_cancel_training_detection(self):
@@ -127,25 +120,31 @@ class TestOTEAPI(unittest.TestCase):
         """
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
         configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=10000)
-        _, detection_environment, dataset = self.init_environment(configurable_parameters, 250)
+        detection_environment, dataset = self.init_environment(configurable_parameters, 250)
         detection_task = MMObjectDetectionTask(task_environment=detection_environment)
-        detection_task.update_configurable_parameters(detection_environment)
 
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='train_thread')
 
+        output_model = Model(
+                NullProject(),
+                ModelStorage(NullWorkspace(), 'storage', NullModelTemplate()),
+                dataset,
+                detection_environment.get_model_configuration(),
+                model_status=ModelStatus.NOT_READY)
+
         # Test stopping after some time
         start_time = time.time()
-        train_future = executor.submit(detection_task.train, dataset)
+        train_future = executor.submit(detection_task.train, dataset, output_model)
         time.sleep(10)  # give train_thread some time to initialize the model
         detection_task.cancel_training()
 
         # stopping process has to happen in less than 35 seconds
-        self.assertLess(time.time() - start_time, 35, 'Expected to stop within 35 seconds [flaky].')
+        self.assertLess(time.time() - start_time, 35, 'Expected to stop within 35 seconds.')
         train_future.result()
 
         # Test stopping immediately
         start_time = time.time()
-        train_future = executor.submit(detection_task.train, dataset)
+        train_future = executor.submit(detection_task.train, dataset, output_model)
         time.sleep(1.0)
         detection_task.cancel_training()
 
@@ -153,13 +152,13 @@ class TestOTEAPI(unittest.TestCase):
         train_future.result()
 
     @staticmethod
-    def eval(task, environment, dataset):
+    def eval(task: MMObjectDetectionTask, model: Model, dataset: Dataset):
         start_time = time.time()
         result_dataset = task.analyse(dataset.with_empty_annotations())
         end_time = time.time()
         print(f'{len(dataset)} analysed in {end_time - start_time} seconds')
         result_set = ResultSet(
-            model=environment.model,
+            model=model,
             ground_truth_dataset=dataset,
             prediction_dataset=result_dataset
         )
@@ -180,9 +179,8 @@ class TestOTEAPI(unittest.TestCase):
             difference at all.
         """
         configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=150)
-        _, detection_environment, dataset = self.init_environment(configurable_parameters, 250)
+        detection_environment, dataset = self.init_environment(configurable_parameters, 250)
         task = MMObjectDetectionTask(task_environment=detection_environment)
-        task.update_configurable_parameters(detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print('Task initialized, model training starts.')
@@ -190,31 +188,52 @@ class TestOTEAPI(unittest.TestCase):
         # train_task checks that the returned model is not a NullModel, that the task returns an OptimizedModel and that
         # validation f-measure is higher than the threshold, which is a pretty low bar
         # considering that the dataset is so easy
+        output_model = Model(
+                NullProject(),
+                ModelStorage(NullWorkspace(), 'storage', NullModelTemplate()),
+                dataset,
+                detection_environment.get_model_configuration(),
+                model_status=ModelStatus.NOT_READY)
+        task.train(dataset, output_model)
+        self.assertFalse(isinstance(output_model, NullModel))
 
-        model = task.train(dataset=dataset)
-        self.assertFalse(isinstance(model, NullModel))
+        # Test that labels and configurable parameters are stored in model.data
+        modelinfo = torch.load(io.BytesIO(output_model.get_data("weights.pth")))
+                               # pickle_module=restricted_pickle_module)
+        self.assertEqual(list(modelinfo.keys()), ['model', 'config', 'mmdet_config', 'labels', 'VERSION'])
+        self.assertTrue('ellipse' in modelinfo['labels'])
 
-        if isinstance(task, IModelOptimizer):
-            optimized_models = task.optimize_loaded_model()
-            self.assertGreater(len(optimized_models), 0, 'Task must return an Optimised model.')
-            for m in optimized_models:
-                self.assertIsInstance(m, OptimizedModel,
-                                      'Optimised model must be an Openvino or DeployableTensorRT model.')
+        if isinstance(task, IExportTask):
+            exported_model = OptimizedModel(
+                NullProject(),
+                ModelStorage(NullWorkspace(), 'storage', NullModelTemplate()),
+                dataset,
+                detection_environment.get_model_configuration(),
+                ModelOptimizationType.MO,
+                [ModelPrecision.FP16],
+                optimization_methods=[],
+                optimization_level={},
+                target_device=TargetDevice.UNSPECIFIED,
+                performance_improvement={},
+                model_size_reduction=1.,
+                model_status=ModelStatus.NOT_READY)
+            task.export(ExportType.OPENVINO, exported_model)
 
         # Run inference
-        validation_performance = self.eval(task, detection_environment, dataset)
+        validation_performance = self.eval(task, output_model, dataset)
         print(f'Evaluated model to have a performance of {validation_performance}')
-        score_threshold = 0.5
+        score_threshold = 0.15
         self.assertGreater(validation_performance.score.value, score_threshold,
-            f'Expected F-measure to be higher than {score_threshold} [flaky]')
+            f'Expected F-measure to be higher than {score_threshold}')
 
         print('Reloading model.')
         # Re-load the model
-        task.load_model(task.task_environment)
+        detection_environment.model = output_model
+        task.load_model(detection_environment)
 
         print('Reevaluating model.')
         # Performance should be the same after reloading
-        performance_after_reloading = self.eval(task, detection_environment, dataset)
+        performance_after_reloading = self.eval(task, output_model, dataset)
         performance_delta = performance_after_reloading.score.value - validation_performance.score.value
         perf_delta_tolerance = 0.0001
 

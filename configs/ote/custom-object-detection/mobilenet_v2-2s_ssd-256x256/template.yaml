@@ -29,9 +29,7 @@ hyper_parameters:
   params:
     learning_parameters:
       batch_size: 64
-      learning_rate:
-        value: 0.05
-        max_value: 0.1
+      learning_rate: 0.05
       learning_rate_warmup_iters: 100
     algo_backend:
       model: model.py

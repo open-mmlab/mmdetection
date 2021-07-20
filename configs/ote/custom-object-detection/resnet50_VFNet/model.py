@@ -1,3 +1,6 @@
+_base_ = [
+    './original_data_pipeline.py'
+]
 model = dict(
     type='VFNet',
     backbone=dict(
@@ -20,7 +23,7 @@ model = dict(
         relu_before_extra_convs=True),
     bbox_head=dict(
         type='VFNetHead',
-        num_classes=2,
+        num_classes=80,
         in_channels=256,
         stacked_convs=3,
         feat_channels=256,
@@ -50,7 +53,7 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100))
 
-evaluation = dict(interval=500, metric=['bbox'])
+evaluation = dict(interval=1000, metric='mAP')
 optimizer = dict(type='SGD', lr=0.003, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
 lr_config = dict(
@@ -61,13 +64,13 @@ lr_config = dict(
     step=[8000, 10000])
 checkpoint_config = dict(interval=1000)
 log_config = dict(
-    interval=100,
+    interval=10,
     hooks=[dict(type='TextLoggerHook'),
            dict(type='TensorboardLoggerHook')])
 runner = dict(type='IterBasedRunner', max_iters=10000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'output'
-load_from = './snapshot.pth'
+load_from = '/home/paul/programs/otedetection/configs/ote/custom-object-detection/resnet50_VFNet/snapshot.pth'
 resume_from = None
 workflow = [('train', 500)]

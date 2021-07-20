@@ -20,7 +20,7 @@ model = dict(
         relu_before_extra_convs=True),
     bbox_head=dict(
         type='ATSSHead',
-        num_classes=2,
+        num_classes=80,
         in_channels=64,
         stacked_convs=4,
         feat_channels=64,
@@ -55,7 +55,7 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100))
 
-evaluation = dict(interval=500, metric='mAP')
+evaluation = dict(interval=1000, metric='mAP')
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict()
 lr_config = dict(
@@ -74,6 +74,6 @@ runner = dict(type='IterBasedRunner', max_iters=10000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'output'
-load_from = './snapshot.pth'
+load_from = '/home/paul/programs/otedetection/configs/ote/custom-object-detection/mobilenetV2_ATSS/snapshot.pth'
 resume_from = None
 workflow = [('train', 1)]

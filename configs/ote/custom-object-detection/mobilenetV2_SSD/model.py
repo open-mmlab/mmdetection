@@ -1,3 +1,6 @@
+_base_ = [
+    './original_data_pipeline.py'
+]
 width_mult = 1.0
 model = dict(
     type='SingleStageDetector',
@@ -10,7 +13,7 @@ model = dict(
     neck=None,
     bbox_head=dict(
         type='SSDHead',
-        num_classes=2,
+        num_classes=80,
         in_channels=(96, 320),
         anchor_generator=dict(
             type='SSDAnchorGeneratorClustered',
@@ -60,7 +63,7 @@ model = dict(
         max_per_img=200))
 
 cudnn_benchmark = True
-evaluation = dict(interval=500, metric=['bbox'])
+evaluation = dict(interval=1000, metric='mAP')
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict()
 lr_config = dict(
@@ -72,13 +75,13 @@ lr_config = dict(
 
 checkpoint_config = dict(interval=1000)
 log_config = dict(
-    interval=100,
+    interval=10,
     hooks=[dict(type='TextLoggerHook'),
            dict(type='TensorboardLoggerHook')])
 runner = dict(type='IterBasedRunner', max_iters=10000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'output'
-load_from = './snapshot.pth'
+load_from = '/home/paul/programs/otedetection/configs/ote/custom-object-detection/mobilenetV2_SSD/snapshot.pth'
 resume_from = None
 workflow = [('train', 1)]

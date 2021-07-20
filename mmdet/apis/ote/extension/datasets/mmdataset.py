@@ -192,7 +192,9 @@ class MMDatasetAdapter(Dataset):
         for k, v in self.data_roots.items():
             if v:
                 self.data_roots[k] = os.path.abspath(v)
+        self.labels = None
         self.set_labels_obtained_from_annotation()
+        self.project_labels = None
 
     def set_labels_obtained_from_annotation(self):
         self.labels = None
@@ -205,8 +207,8 @@ class MMDatasetAdapter(Dataset):
                 self.labels = labels
         assert self.labels is not None
 
-    def set_project_labels(self, proejct_labels):
-        self.project_labels = proejct_labels
+    def set_project_labels(self, project_labels):
+        self.project_labels = project_labels
 
     def label_name_to_project_label(self, label_name):
         return [label for label in self.project_labels if label.name == label_name][0]
