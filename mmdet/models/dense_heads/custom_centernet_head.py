@@ -81,23 +81,13 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
     def __init__(self,
                  in_channel,
-                 feat_channel,
                  num_classes,
-                 loss_center_heatmap=dict(
-                     type='GaussianFocalLoss', loss_weight=1.0),
-                 loss_wh=dict(type='L1Loss', loss_weight=0.1),
-                 loss_offset=dict(type='L1Loss', loss_weight=1.0),
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
         super(CustomCenterNetHead, self).__init__(init_cfg)
         self.num_classes = num_classes
-
-
-
-        self.loss_center_heatmap = build_loss(loss_center_heatmap)
-        self.loss_wh = build_loss(loss_wh)
-        self.loss_offset = build_loss(loss_offset)
+        self.strides = [8, 16, 32, 64, 128]
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -106,6 +96,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.out_kernel = 3
         norm = "GN"
         self.only_proposal = True
+
 
 
         ##########  initialize the   1.<cls_tower>   2.<bbox_tower>   3.<share_tower>[no]  4.<bbox_pred>  5.<agn_hm>  6.<cls_logits>[no]
@@ -195,13 +186,13 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
 
 
-    def _build_head(self, in_channel, feat_channel, out_channel):
-        """Build head for each branch."""
-        layer = nn.Sequential(
-            nn.Conv2d(in_channel, feat_channel, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(feat_channel, out_channel, kernel_size=1))
-        return layer
+    # def _build_head(self, in_channel, feat_channel, out_channel):
+    #     """Build head for each branch."""
+    #     layer = nn.Sequential(
+    #         nn.Conv2d(in_channel, feat_channel, kernel_size=3, padding=1),
+    #         nn.ReLU(inplace=True),
+    #         nn.Conv2d(feat_channel, out_channel, kernel_size=1))
+    #     return layer
 
 
     def init_weights(self):
@@ -293,73 +284,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         print("bbox_reg",bbox_reg.size(), agn_hms.size())
         return clss, bbox_reg, agn_hms
 
-
-    # @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
-    # def loss(self,
-    #          center_heatmap_preds,
-    #          wh_preds,
-    #          offset_preds,
-    #          gt_bboxes,
-    #          gt_labels,
-    #          img_metas,
-    #          gt_bboxes_ignore=None):
-    #     """Compute losses of the head.
-
-    #     Args:
-    #         center_heatmap_preds (list[Tensor]): center predict heatmaps for
-    #            all levels with shape (B, num_classes, H, W).
-    #         wh_preds (list[Tensor]): wh predicts for all levels with
-    #            shape (B, 2, H, W).
-    #         offset_preds (list[Tensor]): offset predicts for all levels
-    #            with shape (B, 2, H, W).
-    #         gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-    #             shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-    #         gt_labels (list[Tensor]): class indices corresponding to each box.
-    #         img_metas (list[dict]): Meta information of each image, e.g.,
-    #             image size, scaling factor, etc.
-    #         gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-    #             boxes can be ignored when computing the loss. Default: None
-
-    #     Returns:
-    #         dict[str, Tensor]: which has components below:
-    #             - loss_center_heatmap (Tensor): loss of center heatmap.
-    #             - loss_wh (Tensor): loss of hw heatmap
-    #             - loss_offset (Tensor): loss of offset heatmap.
-    #     """
-    #     assert len(center_heatmap_preds) == len(wh_preds) == len(
-    #         offset_preds) == 1
-    #     center_heatmap_pred = center_heatmap_preds[0]
-    #     wh_pred = wh_preds[0]
-    #     offset_pred = offset_preds[0]
-
-    #     target_result, avg_factor = self.get_targets(gt_bboxes, gt_labels,
-    #                                                  center_heatmap_pred.shape,
-    #                                                  img_metas[0]['pad_shape'])
-
-    #     center_heatmap_target = target_result['center_heatmap_target']
-    #     wh_target = target_result['wh_target']
-    #     offset_target = target_result['offset_target']
-    #     wh_offset_target_weight = target_result['wh_offset_target_weight']
-
-    #     # Since the channel of wh_target and offset_target is 2, the avg_factor
-    #     # of loss_center_heatmap is always 1/2 of loss_wh and loss_offset.
-    #     loss_center_heatmap = self.loss_center_heatmap(
-    #         center_heatmap_pred, center_heatmap_target, avg_factor=avg_factor)
-    #     loss_wh = self.loss_wh(
-    #         wh_pred,
-    #         wh_target,
-    #         wh_offset_target_weight,
-    #         avg_factor=avg_factor * 2)
-    #     loss_offset = self.loss_offset(
-    #         offset_pred,
-    #         offset_target,
-    #         wh_offset_target_weight,
-    #         avg_factor=avg_factor * 2)
-    #     return dict(
-    #         loss_center_heatmap=loss_center_heatmap,
-    #         loss_wh=loss_wh,
-    #         loss_offset=loss_offset)
-
     def loss(self,
              clss_per_level,
              reg_pred_per_level,
@@ -418,8 +342,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         '''
         assert (torch.isfinite(reg_pred).all().item())
         num_pos_local = pos_inds.numel()
-        # num_gpus = dist.get_world_size()
-        num_gpus = 1
+        num_gpus = self.get_world_size()
         total_num_pos = self.reduce_sum(
             pos_inds.new_tensor([num_pos_local])).item()
         num_pos_avg = max(total_num_pos / num_gpus, 1.0)
@@ -482,22 +405,21 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
     def compute_grids(self, agn_hm_pred_per_level):
         grids = []
-        strides = [8, 16, 32, 64, 128]
         for level, agn_hm_pred in enumerate(agn_hm_pred_per_level):
             h, w = agn_hm_pred.size()[-2:]
             shifts_x = torch.arange(
-                0, w * strides[level], 
-                step = strides[level],
+                0, w * self.strides[level], 
+                step = self.strides[level],
                 dtype = torch.float32, device=agn_hm_pred.device)
             shifts_y = torch.arange(
-                0, h * strides[level], 
-                step = strides[level],
+                0, h * self.strides[level], 
+                step = self.strides[level],
                 dtype = torch.float32, device=agn_hm_pred.device)
             shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
             shift_x = shift_x.reshape(-1)
             shift_y = shift_y.reshape(-1)
             grids_per_level = torch.stack((shift_x, shift_y), dim=1) + \
-                strides[level] // 2
+                self.strides[level] // 2
             grids.append(grids_per_level)
         return grids
 
@@ -520,7 +442,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         # get positive pixel index
 
         INF = 100000000
-        strides = [8, 16, 32, 64, 128]
         num_classes=80
         sizes_of_interest=[[0, 80], [64, 160], [128, 320], [256, 640], [512, 10000000]]
         only_proposal=True
@@ -534,7 +455,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         L = len(grids)
         num_loc_list = [len(loc) for loc in grids]
         strides = torch.cat([
-            shapes_per_level.new_ones(num_loc_list[l]) * strides[l] \
+            shapes_per_level.new_ones(num_loc_list[l]) * self.strides[l] \
             for l in range(L)]).float() # M
         reg_size_ranges = torch.cat([
             shapes_per_level.new_tensor(sizes_of_interest[l]).float().view(
@@ -552,7 +473,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
             N = boxes.shape[0]
             if N == 0:
-                reg_targets.append(grids.new_zeros((M, 4)) - INF)
+                reg_targets.append(grids.new_zeros((M, 4)) - self.INF)
                 flattened_hms.append(
                     grids.new_zeros((
                         M, 1 if only_proposal else heatmap_channels)))
@@ -628,7 +549,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         flattened_hms = hms_level_first
 
         for l in range(len(reg_targets)):
-            reg_targets[l] = reg_targets[l] / float(strides[l])
+            reg_targets[l] = reg_targets[l] / float(self.strides[l])
         reg_targets = torch.cat([x for x in reg_targets], dim=0) # MB x 4
         flattened_hms = torch.cat([x for x in flattened_hms], dim=0) # MB x C
         
@@ -643,10 +564,9 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         Returns:
             pos_inds: N'
         '''
-        strides_temp = [8, 16, 32, 64, 128]
         pos_inds = []
         # labels = []
-        L = len(strides_temp)
+        L = len(self.strides)
         B = len(gt_bboxes)
         shapes_per_level = shapes_per_level.long()
         loc_per_level = (shapes_per_level[:, 0] * shapes_per_level[:, 1]).long() # L
@@ -656,7 +576,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             level_bases.append(s)
             s = s + B * loc_per_level[l]
         level_bases = shapes_per_level.new_tensor(level_bases).long() # L
-        strides_default = shapes_per_level.new_tensor(strides_temp).float() # L
+        strides_default = shapes_per_level.new_tensor(self.strides).float() # L
         for im_i in range(B):
             #targets_per_im = gt_instances[im_i]
             bboxes = gt_bboxes[im_i] # n x 4
@@ -799,9 +719,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         return clss, reg_pred, agn_hm_pred
 
     def reduce_sum(self, tensor):
-        # world_size = dist.get_world_size()
-        num_gpus = 1
-        world_size = num_gpus
+        world_size = self.get_world_size()
         if world_size < 2:
             return tensor
         tensor = tensor.clone()
@@ -902,75 +820,15 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
         return pos_loss, neg_loss
 
-    def get_targets(self, gt_bboxes, gt_labels, feat_shape, img_shape):
-        """Compute regression and classification targets in multiple images.
+    def get_world_size() -> int:
+        if not dist.is_available():
+            return 1
+        if not dist.is_initialized():
+            return 1
+        return dist.get_world_size()
 
-        Args:
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box.
-            feat_shape (list[int]): feature map shape with value [B, _, H, W]
-            img_shape (list[int]): image shape in [h, w] format.
 
-        Returns:
-            tuple[dict,float]: The float value is mean avg_factor, the dict has
-               components below:
-               - center_heatmap_target (Tensor): targets of center heatmap, \
-                   shape (B, num_classes, H, W).
-               - wh_target (Tensor): targets of wh predict, shape \
-                   (B, 2, H, W).
-               - offset_target (Tensor): targets of offset predict, shape \
-                   (B, 2, H, W).
-               - wh_offset_target_weight (Tensor): weights of wh and offset \
-                   predict, shape (B, 2, H, W).
-        """
-        img_h, img_w = img_shape[:2]
-        bs, _, feat_h, feat_w = feat_shape
 
-        width_ratio = float(feat_w / img_w)
-        height_ratio = float(feat_h / img_h)
-
-        center_heatmap_target = gt_bboxes[-1].new_zeros(
-            [bs, self.num_classes, feat_h, feat_w])
-        wh_target = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w])
-        offset_target = gt_bboxes[-1].new_zeros([bs, 2, feat_h, feat_w])
-        wh_offset_target_weight = gt_bboxes[-1].new_zeros(
-            [bs, 2, feat_h, feat_w])
-
-        for batch_id in range(bs):
-            gt_bbox = gt_bboxes[batch_id]
-            gt_label = gt_labels[batch_id]
-            center_x = (gt_bbox[:, [0]] + gt_bbox[:, [2]]) * width_ratio / 2
-            center_y = (gt_bbox[:, [1]] + gt_bbox[:, [3]]) * height_ratio / 2
-            gt_centers = torch.cat((center_x, center_y), dim=1)
-
-            for j, ct in enumerate(gt_centers):
-                ctx_int, cty_int = ct.int()
-                ctx, cty = ct
-                scale_box_h = (gt_bbox[j][3] - gt_bbox[j][1]) * height_ratio
-                scale_box_w = (gt_bbox[j][2] - gt_bbox[j][0]) * width_ratio
-                radius = gaussian_radius([scale_box_h, scale_box_w],
-                                         min_overlap=0.3)
-                radius = max(0, int(radius))
-                ind = gt_label[j]
-                gen_gaussian_target(center_heatmap_target[batch_id, ind],
-                                    [ctx_int, cty_int], radius)
-
-                wh_target[batch_id, 0, cty_int, ctx_int] = scale_box_w
-                wh_target[batch_id, 1, cty_int, ctx_int] = scale_box_h
-
-                offset_target[batch_id, 0, cty_int, ctx_int] = ctx - ctx_int
-                offset_target[batch_id, 1, cty_int, ctx_int] = cty - cty_int
-
-                wh_offset_target_weight[batch_id, :, cty_int, ctx_int] = 1
-
-        avg_factor = max(1, center_heatmap_target.eq(1).sum())
-        target_result = dict(
-            center_heatmap_target=center_heatmap_target,
-            wh_target=wh_target,
-            offset_target=offset_target,
-            wh_offset_target_weight=wh_offset_target_weight)
-        return target_result, avg_factor
 
     def get_bboxes(self,
                    center_heatmap_preds,
