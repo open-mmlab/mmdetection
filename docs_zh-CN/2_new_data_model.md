@@ -213,10 +213,10 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
 第二步需要准备一个配置文件来成功加载数据集。假设我们想要用 balloon dataset 来训练配备了 FPN 的 Mask R-CNN ，如下是我们的配置文件。假设配置文件命名为 `mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py`，相应保存路径为 `configs/ballon/`，配置文件内容如下所示。
 
 ```python
-# 这个新的配置文件继承自一个基础（base）配置文件，只需要突出必要的修改部分即可
+# 这个新的配置文件继承自一个原始配置文件，只需要突出必要的修改部分即可
 _base_ = 'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py'
 
-# 我们需要对头（head）中的类别数量进行修改来匹配数据集的标注
+# 我们需要对头中的类别数量进行修改来匹配数据集的标注
 model = dict(
     roi_head=dict(
         bbox_head=dict(num_classes=1),
