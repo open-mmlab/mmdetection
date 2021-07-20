@@ -12,9 +12,10 @@ from .pafpn import PAFPN
 from .rfp import RFP
 from .ssd_neck import SSDNeck
 from .yolo_neck import YOLOV3Neck
+from .yolo_pafpn import YOLOPAFPN
 
 __all__ = [
     'FPN', 'BFP', 'ChannelMapper', 'HRFPN', 'NASFPN', 'FPN_CARAFE', 'PAFPN',
     'NASFCOS_FPN', 'RFP', 'YOLOV3Neck', 'FPG', 'DilatedEncoder',
-    'CTResNetNeck', 'SSDNeck'
+    'CTResNetNeck', 'SSDNeck', 'YOLOPAFPN'
 ]

@@ -1,47 +1,30 @@
 #!/usr/bin/env python
 # Copyright (c) 2014-2021 Megvii Inc. All rights reserved.
 
-import torch.nn as nn
-
-from .yolo_head import YOLOXHead
-from .yolo_pafpn import YOLOPAFPN
+from ..builder import DETECTORS
+from .single_stage import SingleStageDetector
 
 
-class YOLOX(nn.Module):
-    """YOLOX model module.
+@DETECTORS.register_module()
+class YOLOX(SingleStageDetector):
+    """Implementation of `YOLOX <https://arxiv.org/abs/2107.08430>`_."""
 
-    The module list is defined by create_yolov3_modules function. The network
-    returns loss values from three YOLO layers during training and detection
-    results during test.
-    """
+    def __init__(self,
+                 backbone,
+                 neck,
+                 bbox_head,
+                 train_cfg=None,
+                 test_cfg=None,
+                 pretrained=None,
+                 init_cfg=None):
+        super(YOLOX, self).__init__(backbone, neck, bbox_head, train_cfg,
+                                    test_cfg, pretrained, init_cfg)
 
-    def __init__(self, backbone=None, head=None):
-        super().__init__()
-        if backbone is None:
-            backbone = YOLOPAFPN()
-        if head is None:
-            head = YOLOXHead(80)
 
-        self.backbone = backbone
-        self.head = head
-
-    def forward(self, x, targets=None):
-        # fpn output content features of [dark3, dark4, dark5]
-        fpn_outs = self.backbone(x)
-
-        if self.training:
-            assert targets is not None
-            loss, iou_loss, conf_loss, cls_loss, l1_loss, num_fg = self.head(
-                fpn_outs, targets, x)
-            outputs = {
-                'total_loss': loss,
-                'iou_loss': iou_loss,
-                'l1_loss': l1_loss,
-                'conf_loss': conf_loss,
-                'cls_loss': cls_loss,
-                'num_fg': num_fg,
-            }
-        else:
-            outputs = self.head(fpn_outs)
-
-        return outputs
+# TODO
+# def init_yolo(M):
+#     for m in M.modules():
+#         if isinstance(m, nn.BatchNorm2d):
+#             m.eps = 1e-3
+#             m.momentum = 0.03
+# self.model.apply(init_yolo)

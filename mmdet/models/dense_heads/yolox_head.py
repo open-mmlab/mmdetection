@@ -6,33 +6,44 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from loguru import logger
-from yolox.utils import bboxes_iou
+from mmcv.runner import force_fp32
 
-from .losses import IOUloss
-from .network_blocks import BaseConv, DWConv
+from mmdet.utils import get_root_logger
+from ..builder import HEADS, build_loss
+from ..utils.yolox_blocks import BaseConv, DWConv
+from .base_dense_head import BaseDenseHead
+from .dense_test_mixins import BBoxTestMixin
+from .yolox_head_boxes import bboxes_iou, postprocess
 
 
-class YOLOXHead(nn.Module):
+@HEADS.register_module()
+class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
     def __init__(self,
                  num_classes,
+                 in_channels,
                  width=1.0,
                  strides=[8, 16, 32],
-                 in_channels=[256, 512, 1024],
+                 loss_iou=dict(
+                     type='IoULoss', reduction='none', loss_weight=1.0),
+                 depthwise=False,
                  act='silu',
-                 depthwise=False):
+                 train_cfg=None,
+                 test_cfg=None,
+                 init_cfg=None):
         """
         Args:
-            act (str): activation type of conv. Defalut value: "silu".
             depthwise (bool): wheather apply depthwise conv in conv branch.
                 Defalut value: False.
+            act (str): activation type of conv. Defalut value: "silu".
         """
-        super().__init__()
+        super(YOLOXHead, self).__init__(init_cfg)
 
         self.n_anchors = 1
         self.num_classes = num_classes
         self.decode_in_inference = True  # for deploy, set to False
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
 
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -113,10 +124,14 @@ class YOLOXHead(nn.Module):
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction='none')
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction='none')
-        self.iou_loss = IOUloss(reduction='none')
+        # TODO check IOUloss in
+        # https://github.com/Megvii-BaseDetection/YOLOX/blob/main/yolox/models/losses.py
+        self.iou_loss = build_loss(loss_iou)
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
         self.expanded_strides = [None] * len(in_channels)
+
+    # TODO self.initialize_biases(1e-2)
 
     def initialize_biases(self, prior_prob):
         for conv in self.cls_preds:
@@ -177,25 +192,71 @@ class YOLOXHead(nn.Module):
 
             outputs.append(output)
 
-        if self.training:
-            return self.get_losses(
-                imgs,
-                x_shifts,
-                y_shifts,
-                expanded_strides,
-                labels,
-                torch.cat(outputs, 1),
-                origin_preds,
-                dtype=xin[0].dtype)
-        else:
-            self.hw = [x.shape[-2:] for x in outputs]
-            # [batch, n_anchors_all, 85]
-            outputs = torch.cat([x.flatten(start_dim=2) for x in outputs],
-                                dim=2).permute(0, 2, 1)
-            if self.decode_in_inference:
-                return self.decode_outputs(outputs, dtype=xin[0].type())
-            else:
-                return outputs
+        return tuple(outputs),
+
+        # if self.training:
+        #     return self.loss(
+        #         imgs,
+        #         x_shifts,
+        #         y_shifts,
+        #         expanded_strides,
+        #         labels,
+        #         torch.cat(outputs, 1),
+        #         origin_preds,
+        #         dtype=xin[0].dtype)
+
+    @force_fp32(apply_to=('pred_maps', ))
+    def get_bboxes(self,
+                   pred_maps,
+                   img_metas,
+                   cfg=None,
+                   rescale=False,
+                   with_nms=True):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            pred_maps (list[Tensor]): Raw predictions for a batch of images.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
+                if None, test_cfg would be used. Default: None.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
+        """
+        num_levels = len(pred_maps)
+        pred_maps_list = [pred_maps[i].detach() for i in range(num_levels)]
+        scale_factors = [
+            img_metas[i]['scale_factor']
+            for i in range(pred_maps_list[0].shape[0])
+        ]
+        cfg = self.test_cfg if cfg is None else cfg
+        self.hw = [x.shape[-2:] for x in pred_maps_list]
+        # [batch, n_anchors_all, 85]
+        outputs = torch.cat([x.flatten(start_dim=2) for x in pred_maps_list],
+                            dim=2).permute(0, 2, 1)
+        if self.decode_in_inference:
+            outputs = self.decode_outputs(
+                outputs, dtype=pred_maps_list[0].type())
+        outputs = postprocess(
+            outputs,
+            self.num_classes,
+            score_thr=cfg.score_thr,
+            nms_thr=cfg.nms.iou_threshold)
+        if rescale:
+            for output in outputs:
+                output[0][:, :4] /= output[0][:, :4].new_tensor(
+                    scale_factors).squeeze(0)
+        return outputs
 
     def get_output_and_grid(self, output, k, stride, dtype):
         grid = self.grids[k]
@@ -236,17 +297,8 @@ class YOLOXHead(nn.Module):
         outputs[..., 2:4] = torch.exp(outputs[..., 2:4]) * strides
         return outputs
 
-    def get_losses(
-        self,
-        imgs,
-        x_shifts,
-        y_shifts,
-        expanded_strides,
-        labels,
-        outputs,
-        origin_preds,
-        dtype,
-    ):
+    def loss(self, imgs, x_shifts, y_shifts, expanded_strides, labels, outputs,
+             origin_preds, dtype):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
         cls_preds = outputs[:, :, 5:]  # [batch, n_anchors_all, n_cls]
@@ -307,6 +359,7 @@ class YOLOXHead(nn.Module):
                         imgs,
                     )
                 except RuntimeError:
+                    logger = get_root_logger()
                     logger.error(
                         'OOM RuntimeError is raised due to the huge memory'
                         ' cost during label assignment. CPU mode is applied in'
