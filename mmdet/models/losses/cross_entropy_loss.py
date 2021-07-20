@@ -48,23 +48,22 @@ def cross_entropy(pred,
     return loss
 
 
-def _expand_onehot_labels(labels, label_weights, target_shape, ignore_index):
+def _expand_onehot_labels(labels, label_weights, label_channels, ignore_index):
     """Expand onehot labels to match the size of prediction."""
-    bin_labels = labels.new_zeros(target_shape)
+    bin_labels = labels.new_full((labels.size(0), label_channels), 0)
     valid_mask = (labels >= 0) & (labels != ignore_index)
-    inds = torch.nonzero(valid_mask, as_tuple=True)
+    inds = torch.nonzero(
+        valid_mask & (labels < label_channels), as_tuple=False)
 
-    if inds[0].numel() > 0:
-        if labels.dim() == 3:
-            bin_labels[inds[0], labels[valid_mask], inds[1], inds[2]] = 1
-        else:
-            bin_labels[inds[0], labels[valid_mask]] = 1
+    if inds.numel() > 0:
+        bin_labels[inds, labels[inds]] = 1
 
-    valid_mask = valid_mask.unsqueeze(1).expand(target_shape).float()
+    valid_mask = valid_mask.view(-1, 1).expand(labels.size(0),
+                                               label_channels).float()
     if label_weights is None:
         bin_label_weights = valid_mask
     else:
-        bin_label_weights = label_weights.unsqueeze(1).expand(target_shape)
+        bin_label_weights = label_weights.view(-1, 1).repeat(1, label_channels)
         bin_label_weights *= valid_mask
 
     return bin_labels, bin_label_weights
@@ -92,15 +91,11 @@ def binary_cross_entropy(pred,
             If None, it will be set to default value. Default: 255.
 
     Returns:
-        torch.Tensor: The calculated loss
+        torch.Tensor: The calculated loss.
     """
     ignore_index = 255 if ignore_index is None else ignore_index
     if pred.dim() != label.dim():
-        assert (pred.dim() == 2 and label.dim() == 1) or (
-                pred.dim() == 4 and label.dim() == 3), \
-            'Only pred shape [N, C], label shape [N] or pred shape [N, C, ' \
-            'H, W], label shape [N, H, W] are supported'
-        label, weight = _expand_onehot_labels(label, weight, pred.shape,
+        label, weight = _expand_onehot_labels(label, weight, pred.size(-1),
                                               ignore_index)
 
     # weighted element-wise losses
