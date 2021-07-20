@@ -46,13 +46,12 @@
   `gn-head`/`gn-neck` 表示 GN 仅应用于网络的 Head 或 Neck， `gn-all` 表示 GN 用于整个模型， 例如主干网络、Neck 和 Head。
 - `[misc]`： 模型中各式各样的设置/插件，例如 `dconv`、 `gcb`、 `attention`、`albu`、 `mstrain` 等。
 - `[gpu x batch_per_gpu]`：GPU 数量和每个 GPU 的样本数，默认使用 `8x2`。
-- `{schedule}`： 训练方案，选项是 `1x`、 `2x`、 `20e` 等。`1x`  和 `2x` 分别代表12个回合和24个回合，`20e` 在级联模型中使用，表示20个回合。
-  对于 `1x`/`2x`，初始学习率在第8/16和第11/22个回合衰减10倍；对于 `20e` ，初始学习率在第 16 和第 19 个回合衰减了 10 倍。
+- `{schedule}`： 训练方案，选项是 `1x`、 `2x`、 `20e` 等。`1x`  和 `2x` 分别代表 12 epoch 和 24 epoch，`20e` 在级联模型中使用，表示 20 epoch。对于 `1x`/`2x`，初始学习率在第 8/16 和第 11/22 epoch 衰减 10 倍；对于 `20e` ，初始学习率在第 16 和第 19 epoch 衰减 10 倍。
 - `{dataset}`：数据集，例如 `coco`、 `cityscapes`、 `voc_0712`、 `wider_face` 等。
 
 ## 弃用的 train_cfg/test_cfg
 
-`train_cfg` 和 `test_cfg` 在配置文件中已弃用，请在模型配置中指定它们。 原始配置结构如下：
+`train_cfg` 和 `test_cfg` 在配置文件中已弃用，请在模型配置中指定它们。原始配置结构如下：
 
 ```python
 # 已经弃用的形式
@@ -124,10 +123,10 @@ model = dict(
         type='StandardRoIHead',  # RoI head 的类型，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/roi_heads/standard_roi_head.py#L10。
         bbox_roi_extractor=dict(  # 用于 bbox 回归的 RoI 特征提取器。
             type='SingleRoIExtractor',  # RoI 特征提取器的类型，大多数方法使用  SingleRoIExtractor，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/roi_heads/roi_extractors/single_level.py#L10。
-            roi_layer=dict(  # RoI层的配置
+            roi_layer=dict(  # RoI 层的配置
                 type='RoIAlign',  # RoI 层的类别, 也支持 DeformRoIPoolingPack 和 ModulatedDeformRoIPoolingPack，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/ops/roi_align/roi_align.py#L79。
                 output_size=7,  # 特征图的输出大小。
-                sampling_ratio=0),  # 提取 RoI 特征时的采样率。 0 表示自适应比率。
+                sampling_ratio=0),  # 提取 RoI 特征时的采样率。0 表示自适应比率。
             out_channels=256,  # 提取特征的输出通道。
             featmap_strides=[4, 8, 16, 32]),  # 多尺度特征图的步幅，应该与主干的架构保持一致。
         bbox_head=dict(  # RoIHead 中 box head 的配置.
@@ -143,7 +142,7 @@ model = dict(
             reg_class_agnostic=False,  # 回归是否与类别无关。
             loss_cls=dict(  # 分类分支的损失函数配置
                 type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等。
-                use_sigmoid=False,  # 是否使用sigmoid。
+                use_sigmoid=False,  # 是否使用 sigmoid。
                 loss_weight=1.0),  # 分类分支的损失权重。
             loss_bbox=dict(  # 回归分支的损失函数配置。
                 type='L1Loss',  # 损失类型，我们还支持许多 IoU Losses 和 Smooth L1-loss 等。
