@@ -1,5 +1,5 @@
 _base_ = [
-    './original_data_pipeline.py'
+    './coco_data_pipeline.py'
 ]
 model = dict(
     type='ATSS',
