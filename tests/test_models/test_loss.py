@@ -121,3 +121,27 @@ def test_GHMR_loss(loss_class):
     # Test loss forward
     loss = loss_class()(pred, target, weight)
     assert isinstance(loss, torch.Tensor)
+
+
+@pytest.mark.parametrize('use_sigmoid', [True, False])
+def test_loss_with_ignore_index(use_sigmoid):
+    # Test cross_entropy loss
+    loss_class = CrossEntropyLoss(use_sigmoid=True, use_mask=False)
+    pred = torch.rand((10, 5))
+    target = torch.randint(0, 5, (10, ))
+
+    ignored_indices = torch.randint(0, 10, (2, ), dtype=torch.long)
+    target[ignored_indices] = 255
+
+    # Test loss forward with ignore
+    loss_with_ignore = loss_class(
+        pred, target, ignore_index=255, reduction_override='sum')
+    assert isinstance(loss_with_ignore, torch.Tensor)
+
+    # Verify correctness
+    not_ignored_indices = (target != 255)
+    pred = pred[not_ignored_indices]
+    target = target[not_ignored_indices]
+    loss = loss_class(pred, target, reduction_override='sum')
+
+    assert torch.allclose(loss, loss_with_ignore)
