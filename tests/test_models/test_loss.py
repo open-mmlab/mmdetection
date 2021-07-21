@@ -126,7 +126,7 @@ def test_GHMR_loss(loss_class):
 @pytest.mark.parametrize('use_sigmoid', [True, False])
 def test_loss_with_ignore_index(use_sigmoid):
     # Test cross_entropy loss
-    loss_class = CrossEntropyLoss(use_sigmoid=True, use_mask=False)
+    loss_class = CrossEntropyLoss(use_sigmoid=use_sigmoid, use_mask=False)
     pred = torch.rand((10, 5))
     target = torch.randint(0, 5, (10, ))
 
