@@ -12,15 +12,17 @@ from ..builder import PIPELINES
 class CopyPaste:
     def __init__(
         self,
-        copy_all=False,
+        copy_all=True,
         horizontal_flip_ratio=0.5,
-        rotate=30
+        max_rotate_angle=30,
+        rotate_level=2,
+        rotate_prob=0.5
     ):
         self.copy_all = copy_all
         self.resize = None
         self.flip = RandomFlip(flip_ratio=horizontal_flip_ratio)
-        if rotate > 0:
-            self.rotate = Rotate(level=2, prob=0.5, max_rotate_angle=rotate)
+        if max_rotate_angle > 0:
+            self.rotate = Rotate(level=rotate_level, prob=rotate_prob, max_rotate_angle=max_rotate_angle)
         else:
             self.rotate = None
         self.colors = [(np.random.rand(3) * 255).astype(np.uint8) for _ in range(20)]
