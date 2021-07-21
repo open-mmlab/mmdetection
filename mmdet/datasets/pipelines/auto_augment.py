@@ -1,5 +1,4 @@
 import copy
-import random
 
 import cv2
 import mmcv
