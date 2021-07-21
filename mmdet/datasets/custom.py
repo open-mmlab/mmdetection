@@ -214,7 +214,7 @@ class CustomDataset(Dataset):
 
         copy_past_idx = randint(0, self.__len__() - 1)
         while copy_past_idx == idx:
-            copy_past_idx = randint(0, len(self.img_ids) - 1)
+            copy_past_idx = randint(0, self.__len__() - 1)
         copy_past_img_info = self.data_infos[copy_past_idx]
         copy_past_ann_info = self.get_ann_info(copy_past_idx)
 
