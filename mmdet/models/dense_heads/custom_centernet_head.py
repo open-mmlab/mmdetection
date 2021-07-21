@@ -971,5 +971,3 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 #
 #
 #     centernet2_test([feature, feature, feature])
-
-# git user.name test
