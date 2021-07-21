@@ -80,10 +80,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                  in_channel,
                  feat_channel,
                  num_classes,
-                 loss_center_heatmap=dict(
-                     type='GaussianFocalLoss', loss_weight=1.0),
-                 loss_wh=dict(type='L1Loss', loss_weight=0.1),
-                 loss_offset=dict(type='L1Loss', loss_weight=1.0),
+                 num_features,
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
@@ -168,10 +165,10 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         )
 
         ### initialize the     <scales>
-        self.scales = nn.ModuleList(
-            [Scale(init_value=1.0)])
         # self.scales = nn.ModuleList(
-        #     [Scale(init_value=1.0) for _ in input_shape])
+        #     [Scale(init_value=1.0)])
+        self.scales = nn.ModuleList(
+            [Scale(init_value=1.0) for _ in range(num_features)])
 
 
         ### initialize the     <agn_hm>
@@ -256,11 +253,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             offset_preds (List[Tensor]): offset predicts for all levels, the
                channels number is 2.
         """
-        return multi_apply(self.forward_single, feats)
+        return multi_apply(self.forward_single, feats, [i for i in range(len(feats))])
 
 
 
-    def forward_single(self, feat):
+    def forward_single(self, feat, i):
         """Forward feature of a single level.
 
         Args:
@@ -276,16 +273,17 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         feat = self.share_tower(feat)       # not used
         cls_tower = self.cls_tower(feat)    # not used
         bbox_tower = self.bbox_tower(feat)
-
+        # print("cls_tower:",cls_tower.size(), bbox_tower.size())
         if not self.only_proposal:
             clss = self.cls_logits(cls_tower)
         else:
             clss = None
         agn_hms = self.agn_hm(bbox_tower)
         reg = self.bbox_pred(bbox_tower)
-        reg = self.scales[0](reg)
+        reg = self.scales[i](reg)
         # reg = self.scales[l](reg)
         bbox_reg = F.relu(reg)
+        # print("bbox_reg",bbox_reg.size(), agn_hms.size())
         return clss, bbox_reg, agn_hms
 
 
