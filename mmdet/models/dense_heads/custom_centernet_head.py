@@ -277,7 +277,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         cls_tower = self.cls_tower(feat)    # not used
         bbox_tower = self.bbox_tower(feat)
 
-        print("cls_tower:",cls_tower.size(), bbox_tower.size())
         if not self.only_proposal:
             clss = self.cls_logits(cls_tower)
         else:
@@ -287,7 +286,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         reg = self.scales[0](reg)
         # reg = self.scales[l](reg)
         bbox_reg = F.relu(reg)
-        print("bbox_reg",bbox_reg.size(), agn_hms.size())
         return clss, bbox_reg, agn_hms
 
 
