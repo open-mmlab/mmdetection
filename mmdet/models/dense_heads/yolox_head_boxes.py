@@ -47,7 +47,8 @@ def postprocess(prediction, num_classes, score_thr=0.7, nms_thr=0.45):
         # calculate score by obj_conf * class_conf
         score = image_pred[:, 4] * class_conf.squeeze()
         score_mask = (score >= score_thr).squeeze()
-        dets = torch.cat((image_pred[:, :4], score[:, None]), -1)
+        # float() is needed to keep AP with mixed precision
+        dets = torch.cat((image_pred[:, :4], score[:, None].float()), -1)
         dets = dets[score_mask]
         labels = class_pred.squeeze()[score_mask]
         if not dets.size(0):

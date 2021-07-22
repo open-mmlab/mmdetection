@@ -22,6 +22,7 @@ class YOLOPAFPN(nn.Module):
         super().__init__()
         self.in_features = in_features
         self.in_channels = in_channels
+        self.fp16_enabled = False
         Conv = DWConv if depthwise else BaseConv
 
         self.upsample = nn.Upsample(scale_factor=2, mode='nearest')

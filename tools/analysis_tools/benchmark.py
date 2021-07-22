@@ -27,6 +27,10 @@ def parse_args():
         help='Whether to fuse conv and bn, this will slightly increase'
         'the inference speed')
     parser.add_argument(
+        '--force-fp16',
+        action='store_true',
+        help='Whether to convert model and image to fp16')
+    parser.add_argument(
         '--cfg-options',
         nargs='+',
         action=DictAction,
@@ -49,7 +53,7 @@ def parse_args():
 
 
 def measure_inferense_speed(cfg, checkpoint, max_iter, log_interval,
-                            is_fuse_conv_bn):
+                            is_fuse_conv_bn, force_fp16):
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -78,6 +82,8 @@ def measure_inferense_speed(cfg, checkpoint, max_iter, log_interval,
     load_checkpoint(model, checkpoint, map_location='cpu')
     if is_fuse_conv_bn:
         model = fuse_conv_bn(model)
+    if force_fp16:
+        model.half()
 
     model = MMDistributedDataParallel(
         model.cuda(),
@@ -92,6 +98,8 @@ def measure_inferense_speed(cfg, checkpoint, max_iter, log_interval,
 
     # benchmark with 2000 image and take the average
     for i, data in enumerate(data_loader):
+        if force_fp16:
+            data['img'] = [img.half() for img in data['img']]
 
         torch.cuda.synchronize()
         start_time = time.perf_counter()
@@ -135,7 +143,8 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
 
     measure_inferense_speed(cfg, args.checkpoint, args.max_iter,
-                            args.log_interval, args.fuse_conv_bn)
+                            args.log_interval, args.fuse_conv_bn,
+                            args.force_fp16)
 
 
 if __name__ == '__main__':

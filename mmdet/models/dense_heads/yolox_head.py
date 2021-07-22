@@ -6,7 +6,6 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.runner import force_fp32
 
 from mmdet.utils import get_root_logger
 from ..builder import HEADS, build_loss
@@ -44,6 +43,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         self.decode_in_inference = True  # for deploy, set to False
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.fp16_enabled = False
 
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -205,7 +205,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         #         origin_preds,
         #         dtype=xin[0].dtype)
 
-    @force_fp32(apply_to=('pred_maps', ))
+    # @force_fp32 is not needed. float() in postprocess plays the role.
     def get_bboxes(self,
                    pred_maps,
                    img_metas,
