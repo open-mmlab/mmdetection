@@ -19,12 +19,3 @@ class YOLOX(SingleStageDetector):
                  init_cfg=None):
         super(YOLOX, self).__init__(backbone, neck, bbox_head, train_cfg,
                                     test_cfg, pretrained, init_cfg)
-
-
-# TODO
-# def init_yolo(M):
-#     for m in M.modules():
-#         if isinstance(m, nn.BatchNorm2d):
-#             m.eps = 1e-3
-#             m.momentum = 0.03
-# self.model.apply(init_yolo)

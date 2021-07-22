@@ -48,7 +48,7 @@ class BaseConv(nn.Module):
             groups=groups,
             bias=bias,
         )
-        self.bn = nn.BatchNorm2d(out_channels)
+        self.bn = nn.BatchNorm2d(out_channels, momentum=0.03, eps=0.001)
         self.act = get_activation(act, inplace=True)
 
     def forward(self, x):
