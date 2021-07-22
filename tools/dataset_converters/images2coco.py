@@ -8,20 +8,20 @@ from PIL import Image
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert images to coco format without annotations')
-    parser.add_argument('img_paths', help='image root path')
+    parser.add_argument('img_path', help='The root path of images')
     parser.add_argument(
-        'classes', type=str, help='txt file name of storage class list')
+        'classes', type=str, help='The text file name of storage class list')
     parser.add_argument(
         'out',
         type=str,
-        help='output annotation json file name, The save dir is in the same '
-        'directory as img_paths')
+        help='The output annotation json file name, The save dir is in the '
+        'same directory as img_path')
     parser.add_argument(
         '-e',
         '--exclude-extensions',
         type=str,
         nargs='+',
-        help='suffix name to be excluded. e.g., "png", "bmp"')
+        help='The suffix of images to be excluded, such as "png" and "bmp"')
     args = parser.parse_args()
     return args
 
@@ -82,17 +82,17 @@ def main():
         'json'), 'The output file name must be json suffix'
 
     # 1 load image list info
-    img_infos = collect_image_infos(args.img_paths, args.exclude_extensions)
+    img_infos = collect_image_infos(args.img_path, args.exclude_extensions)
 
     # 2 convert to coco format data
     classes = mmcv.list_from_file(args.classes)
-    coco_infos = cvt_to_coco_json(img_infos, classes)
+    coco_info = cvt_to_coco_json(img_infos, classes)
 
     # 3 dump
-    save_dir = os.path.join(args.img_paths, '..', 'annotations')
+    save_dir = os.path.join(args.img_path, '..', 'annotations')
     mmcv.mkdir_or_exist(save_dir)
     save_path = os.path.join(save_dir, args.out)
-    mmcv.dump(coco_infos, save_path)
+    mmcv.dump(coco_info, save_path)
     print(f'save json file: {save_path}')
 
 
