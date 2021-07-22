@@ -1,7 +1,8 @@
-import cv2
 import random
-import numpy as np
 from copy import deepcopy
+
+import cv2
+import numpy as np
 
 from .auto_augment import Rotate
 from .transforms import Resize, RandomFlip
