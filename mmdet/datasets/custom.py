@@ -223,8 +223,7 @@ class CustomDataset(Dataset):
         self.pre_pipeline(results)
 
         results['copy_paste'] = dict(img_info=copy_past_img_info, ann_info=copy_past_ann_info)
-        if 'copy_paste' in results:
-            self.pre_pipeline(results['copy_paste'])
+        self.pre_pipeline(results['copy_paste'])
 
         return self.pipeline(results)
 

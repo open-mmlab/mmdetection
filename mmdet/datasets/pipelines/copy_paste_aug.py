@@ -1,5 +1,4 @@
 import random
-from copy import deepcopy
 
 import cv2
 import numpy as np
@@ -95,7 +94,7 @@ class CopyPaste:
         return bboxes
 
     def visualize(self, results, name=''):
-        img = deepcopy(results['img'])
+        img = np.copy(results['img'])
         n = max(results['gt_bboxes'].shape[0], results['gt_masks'].masks.shape[0])
         for i in range(n):
             bbox = results['gt_bboxes'][i] if i < results['gt_bboxes'].shape[0] else None
@@ -133,6 +132,8 @@ class CopyPaste:
         return composed_mask
 
     def __call__(self, results):
+        if not 'copy_paste' in results:
+            return results
         # Get types of modified objects
         bbox_type = results['gt_bboxes'].dtype
         mask_type = results['gt_masks'].masks.dtype
