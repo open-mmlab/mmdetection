@@ -156,6 +156,7 @@ def preprocess_example_input(input_config):
         'scale_factor': np.ones(4, dtype=np.float32),
         'flip': False,
         'show_img': show_img,
+        'flip_direction': None
     }
 
     return one_img, one_meta

@@ -131,6 +131,16 @@ python tools/deployment/test.py \
 - `--cfg-options`: Override some settings in the used config file, the key-value pair in `xxx=yyy` format will be merged into config file.
 - `--eval-options`: Custom options for evaluation, the key-value pair in `xxx=yyy` format will be kwargs for `dataset.evaluate()` function
 
+Notes:
+
+- If the deployed backend platform is TensorRT, please add environment variables before running the file:
+
+  ```bash
+  export ONNX_BACKEND=MMCVTensorRT
+  ```
+
+- If you want to use the `--dynamic-export` parameter in the TensorRT backend to export ONNX, please remove the `--simplify` parameter, and vice versa.
+
 ### Results and Models
 
 <table border="1" class="docutils">
@@ -191,6 +201,15 @@ python tools/deployment/test.py \
 	    <td align="center">37.0</td>
 	</tr>
   <tr >
+	    <td align="center">Cascade R-CNN</td>
+	    <td align="center"><code>configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">40.3</td>
+	    <td align="center">40.3</td>
+	    <td align="center">40.1</td>
+	</tr>
+
+  <tr >
 	    <td align="center" rowspan="2">Mask R-CNN</td>
 	    <td align="center" rowspan="2"><code>configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py</code></td>
 	    <td align="center">Box AP</td>
@@ -205,11 +224,28 @@ python tools/deployment/test.py \
 	    <td align="center">33.3</td>
 	</tr>
   <tr >
+	    <td align="center" rowspan="2">Cascade Mask R-CNN</td>
+	    <td align="center" rowspan="2"><code>configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">41.2</td>
+	    <td align="center">41.2</td>
+	    <td align="center">40.9</td>
+	</tr>
+	<tr>
+	    <td align="center">Mask AP</td>
+	    <td align="center">35.9</td>
+	    <td align="center">34.8</td>
+	    <td align="center">34.5</td>
+	</tr>
+
+
+  <tr >
 	    <td align="center">CornerNet</td>
 	    <td align="center"><code>configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py</code></td>
 	    <td align="center">Box AP</td>
 	    <td align="center">40.6</td>
 	    <td align="center">40.4</td>
+		<td align="center">-</td>
 	</tr>
   <tr >
 	    <td align="center">DETR</td>
@@ -217,6 +253,21 @@ python tools/deployment/test.py \
 	    <td align="center">Box AP</td>
 	    <td align="center">40.1</td>
 	    <td align="center">40.1</td>
+		<td align="center">-</td>
+  </tr>
+  <tr >
+	    <td align="center" rowspan="2">PointRend</td>
+	    <td align="center" rowspan="2"><code>configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">38.4</td>
+	    <td align="center">38.4</td>
+	    <td align="center">-</td>
+  </tr>
+  <tr>
+	    <td align="center">Mask AP</td>
+	    <td align="center">36.3</td>
+	    <td align="center">35.2</td>
+	    <td align="center">-</td>
   </tr>
 </table>
 
@@ -238,9 +289,12 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 |     SSD      |                    `configs/ssd/ssd300_coco.py`                     |       Y       |        Y        |                                                                               |
 |    YOLOv3    |         `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`          |       Y       |        Y        |                                                                               |
 | Faster R-CNN |        `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`         |       Y       |        Y        |                                                                               |
+| Cascade R-CNN| `configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py` |   Y    |   Y        |       |
 |  Mask R-CNN  |          `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`           |       Y       |        Y        |                                                                               |
+| Cascade Mask R-CNN  |   `configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
 |  CornerNet   | `configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py` |       Y       |        N        | no flip, no batch inference, tested with torch==1.7.0 and onnxruntime==1.5.1. |
-|     DETR     |                   `configs/detr/detr_r50_8x2_150e_coco.py`          |       Y       |        Y        | batch inference is *not recommended* |
+|     DETR     |                   `configs/detr/detr_r50_8x2_150e_coco.py`          |       Y       |        Y        | batch inference is *not recommended*                                          |
+|  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py`    |       Y       |        Y        |                                                                               |
 
 Notes:
 
@@ -252,14 +306,6 @@ torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, p
 - Though supported, it is *not recommended* to use batch inference in onnxruntime for `DETR`, because there is huge performance gap between ONNX and torch model (e.g. 33.5 vs 39.9 mAP on COCO for onnxruntime and torch respectively, with a batch size 2). The main reason for the gap is that these is non-negligible effect on the predicted regressions during batch inference for ONNX, since the predicted coordinates is normalized by `img_shape` (without padding) and should be converted to absolute format, but `img_shape` is not dynamically traceable thus the padded `img_shape_for_onnx` is used.
 
 - Currently only single-scale evaluation is supported with ONNX Runtime, also `mmcv::SoftNonMaxSuppression` is only supported for single image by now.
-
-- If the deployed backend platform is TensorRT, please add environment variables before running the file:
-
-  ```bash
-  export ONNX_BACKEND=MMCVTensorRT
-  ```
-
-- If you want to use the `--dynamic-export` parameter in the TensorRT backend to export ONNX, please remove the `--simplify` parameter, and vice versa.
 
 ## The Parameters of Non-Maximum Suppression in ONNX Export
 
