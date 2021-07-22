@@ -386,9 +386,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         reg_weight_map = reg_weight_map * 0 + 1 \
             if self.not_norm_reg else reg_weight_map
         reg_norm = max(self.reduce_sum(reg_weight_map.sum()).item() / num_gpus, 1)
-        # reg_loss = self.reg_weight * self.iou_loss(
-        #     reg_pred, reg_targets_pos, reg_weight_map,
-        #     reduction='sum') / reg_norm
         reg_loss = self.reg_weight * self.my_iou_loss(
             reg_pred, reg_targets_pos, reg_weight_map,
             reduction='sum') / reg_norm
@@ -404,8 +401,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 sigmoid_clamp=self.sigmoid_clamp,
                 ignore_high_fp=self.ignore_high_fp,
             )
-            # agn_pos_loss = self.pos_weight * agn_pos_loss / num_pos_avg
-            # agn_neg_loss = self.neg_weight * agn_neg_loss / num_pos_avg
             agn_pos_loss = self.pos_weight * agn_pos_loss / num_pos_avg
             agn_neg_loss = self.neg_weight * agn_neg_loss / num_pos_avg
             losses['loss_centernet_agn_pos'] = agn_pos_loss
