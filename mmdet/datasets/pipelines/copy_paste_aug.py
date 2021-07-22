@@ -13,12 +13,14 @@ class CopyPaste:
     def __init__(
         self,
         copy_all=True,
+        filter_ignored=False,
         horizontal_flip_ratio=0.5,
         max_rotate_angle=30,
         rotate_level=2,
         rotate_prob=0.5
     ):
         self.copy_all = copy_all
+        self.filter_ignored = filter_ignored
         self.resize = None
         self.flip = RandomFlip(flip_ratio=horizontal_flip_ratio)
         if max_rotate_angle > 0:
@@ -43,12 +45,12 @@ class CopyPaste:
             (results['gt_bboxes'], results['copy_paste']['gt_bboxes'][paste_objects]), axis=0)
         self.extract_bboxes(results)
 
-    @staticmethod
-    def concatenate_labels(results, paste_objects=None):
+    def concatenate_labels(self, results, paste_objects=None):
         results['gt_labels'] = np.concatenate(
             (results['gt_labels'], results['copy_paste']['gt_labels'][paste_objects]), axis=0)
-        results['gt_bboxes_ignore'] = np.concatenate(
-            (results['gt_bboxes_ignore'], results['copy_paste']['gt_bboxes_ignore']), axis=0)
+        if not self.filter_ignored:
+            results['gt_bboxes_ignore'] = np.concatenate(
+                (results['gt_bboxes_ignore'], results['copy_paste']['gt_bboxes_ignore']), axis=0)
 
     @staticmethod
     def _filter(results, inds):
@@ -72,6 +74,25 @@ class CopyPaste:
         inds = np.argwhere(results['gt_masks'].areas > 0).squeeze()
         self._filter(results, inds)
 
+    def filter_ignored_objects(self, results, k=0.9):
+        if len(results['gt_bboxes_ignore']) == 0:
+            return
+        inds = []
+        for i, bbox in enumerate(results['gt_bboxes']):
+            c = 0
+            for ignore in results['gt_bboxes_ignore']:
+                x0, x1 = max(bbox[0], ignore[0]), min(bbox[2], ignore[2])
+                y0, y1 = max(bbox[1], ignore[1]), min(bbox[3], ignore[3])
+                s_intersection = (x1 - x0) * (y1 - y0)
+                s_bbox = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+                if s_intersection > k * s_bbox:
+                    c += 1
+            if c == 0:
+                inds.append(i)
+        self._filter(results, inds)
+        results['gt_bboxes_ignore'] = np.array([])
+        results['bbox_fields'] = [field for field in results['bbox_fields'] if field != 'gt_bboxes_ignore']
+
     @staticmethod
     def cast(results, bbox_type, mask_type, label_type):
         results['gt_masks'].masks = results['gt_masks'].masks.astype(mask_type)
@@ -93,16 +114,22 @@ class CopyPaste:
         results['gt_bboxes'] = np.array(bboxes)
         return bboxes
 
-    def visualize(self, results, name=''):
+    def visualize(self, results, name='', draw_ignore=False):
+        def draw_rect(img, bbox, color):
+            bbox = [int(x) for x in bbox]
+            x0, y0, x1, y1 = bbox
+            cv2.rectangle(img, (x0, y0), (x1, y1), color, 2)
+
         img = np.copy(results['img'])
         n = max(results['gt_bboxes'].shape[0], results['gt_masks'].masks.shape[0])
+        if draw_ignore:
+            for bbox in results['gt_bboxes_ignore']:
+                draw_rect(img, bbox, (0, 0, 255))
         for i in range(n):
             bbox = results['gt_bboxes'][i] if i < results['gt_bboxes'].shape[0] else None
             mask = results['gt_masks'].masks[i] if i < results['gt_masks'].masks.shape[0] else None
             if bbox is not None:
-                bbox = [int(x) for x in bbox]
-                x0, y0, x1, y1 = bbox
-                cv2.rectangle(img, (x0, y0), (x1, y1), (0, 0, 255), 2)
+                draw_rect(img, bbox, (0, 255, 0))
             if mask is not None:
                 color = self.colors[i % len(self.colors)]
                 colored_mask = np.stack([mask, mask, mask], axis=-1) * color
@@ -138,6 +165,11 @@ class CopyPaste:
         bbox_type = results['gt_bboxes'].dtype
         mask_type = results['gt_masks'].masks.dtype
         label_type = results['gt_labels'].dtype
+        # Filter ignored objects
+        if self.filter_ignored:
+            self.filter_ignored_objects(results['copy_paste'])
+        if len(results['copy_paste']['gt_bboxes']) == 0:
+            return results
         # Apply augmentations to an image that will share masks
         h, w = results['img'].shape[:-1]
         self.rescale_paste_target(results['copy_paste'], (h, w))
