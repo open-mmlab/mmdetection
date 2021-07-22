@@ -41,7 +41,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             bbox_preds (list[Tensor]): Box energies / deltas for all
                 scale levels, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 4, H, W).
-            score_factors (list[Tensor], Optional):  score_factor for
+            score_factors (list[Tensor], Optional): Score factor for
                 all scale level, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 1, H, W). Default None.
             img_metas (list[dict], Optional): Image meta info. Default None.
@@ -108,7 +108,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             bbox_pred_list (list[Tensor]): Box energies / deltas from
                 all scale levels of a single image, each item has shape
                 (num_priors * 4, H, W).
-            score_factor_list (list[Tensor]):  score_factor from all scale
+            score_factor_list (list[Tensor]): Score factor from all scale
                 levels of a single image, each item has shape
                 (num_priors * 1, H, W).
             img_meta (dict): Image meta info.
@@ -120,11 +120,11 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default: True.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. if with_nms
+            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
                 is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
                 mlvl_score_factor. Usually with_nms is False is used for aug
-                test. if with_nms is True, then return the following format
+                test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
                     [num_bbox, 5], where the first 4 columns are bounding box \
@@ -147,9 +147,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         mlvl_bboxes = []
         mlvl_scores = []
         if with_score_factors:
-            mlvl_score_factor = []
+            mlvl_score_factors = []
         else:
-            mlvl_score_factor = None
+            mlvl_score_factors = None
         for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
                 zip(cls_score_list, bbox_pred_list, score_factor_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
@@ -195,11 +195,11 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             if with_score_factors:
-                mlvl_score_factor.append(score_factor)
+                mlvl_score_factors.append(score_factor)
 
         return self._bbox_post_process(mlvl_scores, mlvl_bboxes,
                                        img_meta['scale_factor'], cfg, rescale,
-                                       with_nms, mlvl_score_factor, **kwargs)
+                                       with_nms, mlvl_score_factors, **kwargs)
 
     def _bbox_post_process(self,
                            mlvl_scores,
@@ -208,7 +208,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                            cfg,
                            rescale=False,
                            with_nms=True,
-                           mlvl_score_factor=None,
+                           mlvl_score_factors=None,
                            **kwargs):
         """bbox post-processing method.
 
@@ -219,8 +219,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num, num_class).
-            mlvl_bboxes (list[Tensor]): Box energies / deltas for a single
-                image, each item has shape (num, 4).
+            mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
+                levels of a single image, each item has shape (num, 4).
             scale_factor (ndarray, optional): Scale factor of the image arange
                 as (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config): Test / postprocessing configuration,
@@ -229,16 +229,16 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default: False.
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
-            mlvl_score_factor (list[Tensor], optional): score_factor from
-                all scale levels of a single image, each item has shape,
-                each item has shape (num, ). Default: None.
+            mlvl_score_factors (list[Tensor], optional): Score factor from
+                all scale levels of a single image, each item has shape
+                (num, ). Default: None.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. if with_nms
+            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
                 is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
                 mlvl_score_factor. Usually with_nms is False is used for aug
-                test. if with_nms is True, then return the following format
+                test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
                     [num_bbox, 5], where the first 4 columns are bounding box \
@@ -254,8 +254,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
 
-        if mlvl_score_factor is not None:
-            mlvl_score_factor = torch.cat(mlvl_score_factor)
+        if mlvl_score_factors is not None:
+            mlvl_score_factors = torch.cat(mlvl_score_factors)
 
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
@@ -271,11 +271,11 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 cfg.score_thr,
                 cfg.nms,
                 cfg.max_per_img,
-                score_factors=mlvl_score_factor)
+                score_factors=mlvl_score_factors)
             return det_bboxes, det_labels
         else:
-            if mlvl_score_factor is not None:
-                return mlvl_bboxes, mlvl_scores, mlvl_score_factor
+            if mlvl_score_factors is not None:
+                return mlvl_bboxes, mlvl_scores, mlvl_score_factors
             else:
                 return mlvl_bboxes, mlvl_scores
 

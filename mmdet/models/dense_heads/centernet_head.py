@@ -258,11 +258,11 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         """Transform network output for a batch into bbox predictions.
 
         Args:
-            center_heatmap_preds (list[Tensor]): center predict heatmaps for
+            center_heatmap_preds (list[Tensor]): Center predict heatmaps for
                 all levels with shape (B, num_classes, H, W).
-            wh_preds (list[Tensor]): wh predicts for all levels with
+            wh_preds (list[Tensor]): WH predicts for all levels with
                 shape (B, 2, H, W).
-            offset_preds (list[Tensor]): offset predicts for all levels
+            offset_preds (list[Tensor]): Offset predicts for all levels
                 with shape (B, 2, H, W).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
@@ -303,11 +303,11 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         """Transform outputs of a single image into bbox results.
 
         Args:
-            center_heatmap_pred (Tensor): center heatmap for current level with
+            center_heatmap_pred (Tensor): Center heatmap for current level with
                 shape (1, num_classes, H, W).
-            wh_pred (Tensor): wh heatmap for current level with shape
+            wh_pred (Tensor): WH heatmap for current level with shape
                 (1, num_classes, H, W).
-            offset_pred (Tensor): offset for current level with shape
+            offset_pred (Tensor): Offset for current level with shape
                 (1, corner_offset_channels, H, W).
             img_meta (dict): Meta information of current image, e.g.,
                 image size, scaling factor, etc.

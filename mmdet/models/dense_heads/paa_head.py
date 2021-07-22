@@ -523,7 +523,7 @@ class PAAHead(ATSSHead):
                            cfg,
                            rescale=False,
                            with_nms=True,
-                           mlvl_score_factor=None,
+                           mlvl_score_factors=None,
                            **kwargs):
         """bbox post-processing method.
 
@@ -534,8 +534,8 @@ class PAAHead(ATSSHead):
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num, num_class).
-            mlvl_bboxes (list[Tensor]): Box energies / deltas for a single
-                image, each item has shape (num, 4).
+            mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
+                levels of a single image, each item has shape (num, 4).
             scale_factor (ndarray, optional): Scale factor of the image arange
                 as (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config): Test / postprocessing configuration,
@@ -544,15 +544,16 @@ class PAAHead(ATSSHead):
                 Default: False.
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
-            mlvl_score_factor (list[Tensor], optional):  score_factor for each
-                image, each item has shape (num, ). Default: None.
+            mlvl_score_factors (list[Tensor], optional): Score factor from
+                all scale levels of a single image, each item has shape
+                (num, ). Default: None.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. if with_nms
+            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
                 is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
                 mlvl_score_factor. Usually with_nms is False is used for aug
-                test. if with_nms is True, then return the following format
+                test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
                     [num_bbox, 5], where the first 4 columns are bounding box \
@@ -571,7 +572,7 @@ class PAAHead(ATSSHead):
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
 
-        mlvl_iou_preds = torch.cat(mlvl_score_factor)
+        mlvl_iou_preds = torch.cat(mlvl_score_factors)
         mlvl_nms_scores = (mlvl_scores * mlvl_iou_preds[:, None]).sqrt()
         det_bboxes, det_labels = multiclass_nms(
             mlvl_bboxes,

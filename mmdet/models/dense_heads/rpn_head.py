@@ -86,14 +86,14 @@ class RPNHead(AnchorHead):
         """Transform outputs of single image into bbox predictions.
 
         Args:
-            cls_score_list (list[Tensor]):Box scores from all scale
+            cls_score_list (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num_anchors * num_classes, H, W).
-            bbox_pred_list (list[Tensor]):  Box energies / deltas from
+            bbox_pred_list (list[Tensor]): Box energies / deltas from
                 all scale levels of a single image, each item has
                 shape (num_anchors * 4, H, W).
-            score_factor_list (list[Tensor]):  score_factor from all scale
-                levels of a single image. rpn head does not need this value.
+            score_factor_list (list[Tensor]): Score factor from all scale
+                levels of a single image. RPN head does not need this value.
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -172,12 +172,12 @@ class RPNHead(AnchorHead):
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num, num_class).
-            mlvl_bboxes (list[Tensor]): Box energies / deltas for a single
-                image, each item has shape (num, 4).
+            mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
+                levels of a single image, each item has shape (num, 4).
             mlvl_valid_anchors (list[Tensor]): Box reference from all scale
                 levels of a single image, each item has shape
                 (num, 4).
-            level_ids (list[Tensor]): indexes from all scale levels of a
+            level_ids (list[Tensor]): Indexes from all scale levels of a
                 single image, each item has shape (num, ).
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.

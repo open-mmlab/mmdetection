@@ -283,8 +283,8 @@ class FoveaHead(AnchorFreeHead):
             bbox_pred_list (list[Tensor]): Box energies / deltas from
                 all scale levels of a single image, each item has shape
                 (num_priors * 4, H, W).
-            score_factor_list (list[Tensor]):  score_factor from all scale
-                levels of a single image. fovea head does not need this value.
+            score_factor_list (list[Tensor]): Score factor from all scale
+                levels of a single image. Fovea head does not need this value.
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -294,11 +294,11 @@ class FoveaHead(AnchorFreeHead):
                 Default: True.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. if with_nms
+            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
                 is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes,  mlvl_scores and
+                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
                 mlvl_score_factor. Usually with_nms is False is used for aug
-                test. if with_nms is True, then return the following format
+                test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
                     [num_bbox, 5], where the first 4 columns are bounding box \

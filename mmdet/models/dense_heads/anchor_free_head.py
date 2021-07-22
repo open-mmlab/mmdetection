@@ -30,6 +30,8 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
             None, otherwise False. Default: "auto".
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
+        bbox_coder (dict): Config of bbox coder. Defaults
+            'DistancePointBBoxCoder'.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         train_cfg (dict): Training config of anchor head.
