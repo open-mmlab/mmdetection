@@ -142,6 +142,17 @@ class YOLOPAFPN(nn.Module):
             act=act,
         )
 
+        self.stems = nn.ModuleList()
+        for i in range(len(in_channels)):
+            self.stems.append(
+                BaseConv(
+                    in_channels=int(in_channels[i] * width),
+                    out_channels=int(256 * width),
+                    ksize=1,
+                    stride=1,
+                    act=act,
+                ))
+
     def forward(self, input):
         """
         Args:
@@ -174,6 +185,6 @@ class YOLOPAFPN(nn.Module):
         p_out0 = torch.cat([p_out0, fpn_out0], 1)  # 512->1024/32
         pan_out0 = self.C3_n4(p_out0)  # 1024->1024/32
 
-        outputs = (pan_out2, pan_out1, pan_out0)
+        outputs = (self.stems[2](pan_out0), self.stems[1](pan_out1), self.stems[0](pan_out2))
         return outputs
 

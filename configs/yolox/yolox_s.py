@@ -9,11 +9,10 @@ model = dict(
     type='YOLOX',
     backbone=dict(type='YOLOPAFPN', depth=0.33, width=0.5),
     neck=None,
-    bbox_head=dict(
-        type='YOLOXHead',
-        width=0.5,
-        num_classes=80
-    ),
+    bbox_head=dict(type='YOLOXHead',
+                   num_classes=80,
+                   in_channels=128,
+                   feat_channels=128),
     # test
     test_cfg=dict(
         min_bbox_size=0,

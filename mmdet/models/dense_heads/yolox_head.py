@@ -1,18 +1,20 @@
 import math
-from loguru import logger
 
-import torchvision
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
+from loguru import logger
 
+from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule, bias_init_with_prob, constant_init, is_norm, normal_init
+from mmdet.core import multi_apply
+
+from ..builder import HEADS, build_loss
+# from .losses import IOUloss
+from ..utils.block import BaseConv, DWConv
 # from yolox.utils import bboxes_iou
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
-
-# from .losses import IOUloss
-from ..utils.block import BaseConv, DWConv
-from ..builder import HEADS
 
 
 def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
@@ -53,6 +55,7 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
             output[i] = torch.cat((output[i], detections))
 
     return output
+
 
 class IOUloss(nn.Module):
     def __init__(self, reduction="none", loss_type="iou"):
@@ -99,6 +102,7 @@ class IOUloss(nn.Module):
 
         return loss
 
+
 def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
     if bboxes_a.shape[1] != 4 or bboxes_b.shape[1] != 4:
         raise IndexError
@@ -124,130 +128,157 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
     area_i = torch.prod(br - tl, 2) * en  # * ((tl < br).all())
     return area_i / (area_a[:, None] + area_b - area_i)
 
+
 @HEADS.register_module()
 class YOLOXHead(BaseDenseHead, BBoxTestMixin):
-    def __init__(
-            self, num_classes, width=1.0, strides=[8, 16, 32],
-            in_channels=[256, 512, 1024], act="silu", depthwise=False,
-            train_cfg=None,
-            test_cfg=None
-    ):
+
+    def __init__(self,
+                 num_classes,
+                 in_channels,
+                 feat_channels=256,
+                 stacked_convs=2,
+                 strides=[8, 16, 32],
+                 use_depthwise=False,
+                 dcn_on_last_conv=False,
+                 conv_bias='auto',
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
+                 act_cfg=dict(type='Swish'),
+                 loss_cls=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=True,
+                     loss_weight=1.0),
+                 loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+                 loss_obj=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=True,
+                     loss_weight=1.0),
+                 train_cfg=None,
+                 test_cfg=None,
+                 init_cfg=None
+                 ):
         """
         Args:
             act (str): activation type of conv. Defalut value: "silu".
             depthwise (bool): wheather apply depthwise conv in conv branch. Defalut value: False.
         """
-        super().__init__()
-        self.test_cfg = test_cfg
-        self.train_cfg = train_cfg
+        super().__init__(init_cfg=init_cfg)
+        # params from original repo, to be refactored later
         self.n_anchors = 1
-        self.num_classes = num_classes
         self.decode_in_inference = True  # for deploy, set to False
-
-        self.cls_convs = nn.ModuleList()
-        self.reg_convs = nn.ModuleList()
-        self.cls_preds = nn.ModuleList()
-        self.reg_preds = nn.ModuleList()
-        self.obj_preds = nn.ModuleList()
-        self.stems = nn.ModuleList()
-        Conv = DWConv if depthwise else BaseConv
-
-        for i in range(len(in_channels)):
-            self.stems.append(
-                BaseConv(
-                    in_channels=int(in_channels[i] * width),
-                    out_channels=int(256 * width),
-                    ksize=1,
-                    stride=1,
-                    act=act,
-                )
-            )
-            self.cls_convs.append(
-                nn.Sequential(
-                    *[
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        ),
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        ),
-                    ]
-                )
-            )
-            self.reg_convs.append(
-                nn.Sequential(
-                    *[
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        ),
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        ),
-                    ]
-                )
-            )
-            self.cls_preds.append(
-                nn.Conv2d(
-                    in_channels=int(256 * width),
-                    out_channels=self.n_anchors * self.num_classes,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                )
-            )
-            self.reg_preds.append(
-                nn.Conv2d(
-                    in_channels=int(256 * width),
-                    out_channels=4,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                )
-            )
-            self.obj_preds.append(
-                nn.Conv2d(
-                    in_channels=int(256 * width),
-                    out_channels=self.n_anchors * 1,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                )
-            )
-
+        self.use_depthwise = use_depthwise
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction="none")
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
         self.iou_loss = IOUloss(reduction="none")
+        self.grids = [torch.zeros(1)] * len(strides)
+        self.expanded_strides = [None] * len(strides)
+
+        self.num_classes = num_classes
+        self.cls_out_channels = num_classes
+        self.in_channels = in_channels
+        self.feat_channels = feat_channels
+        self.stacked_convs = stacked_convs
         self.strides = strides
-        self.grids = [torch.zeros(1)] * len(in_channels)
-        self.expanded_strides = [None] * len(in_channels)
+        self.dcn_on_last_conv = dcn_on_last_conv
+        assert conv_bias == 'auto' or isinstance(conv_bias, bool)
+        self.conv_bias = conv_bias
 
-    def initialize_biases(self, prior_prob):
-        for conv in self.cls_preds:
-            b = conv.bias.view(self.n_anchors, -1)
-            b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
-            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.act_cfg = act_cfg
 
-        for conv in self.obj_preds:
-            b = conv.bias.view(self.n_anchors, -1)
-            b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
-            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+        self.loss_cls = build_loss(loss_cls)
+        self.loss_bbox = build_loss(loss_bbox)
+        self.loss_obj = build_loss(loss_obj)
+
+        self.test_cfg = test_cfg
+        self.train_cfg = train_cfg
+
+        self._init_layers()
+
+    def _init_layers(self):
+        self.multi_level_cls_convs = nn.ModuleList()
+        self.multi_level_reg_convs = nn.ModuleList()
+        self.multi_level_conv_cls = nn.ModuleList()
+        self.multi_level_conv_reg = nn.ModuleList()
+        self.multi_level_conv_obj = nn.ModuleList()
+        for _ in self.strides:
+            self.multi_level_cls_convs.append(self._init_stacked_convs())
+            self.multi_level_reg_convs.append(self._init_stacked_convs())
+            conv_cls, conv_reg, conv_obj = self._init_predictor()
+            self.multi_level_conv_cls.append(conv_cls)
+            self.multi_level_conv_reg.append(conv_reg)
+            self.multi_level_conv_obj.append(conv_obj)
+
+    def _init_stacked_convs(self):
+        """Initialize conv layers of a single level head."""
+        conv = DepthwiseSeparableConvModule if self.use_depthwise else ConvModule
+        stacked_convs = []
+        for i in range(self.stacked_convs):
+            chn = self.in_channels if i == 0 else self.feat_channels
+            if self.dcn_on_last_conv and i == self.stacked_convs - 1:
+                conv_cfg = dict(type='DCNv2')
+            else:
+                conv_cfg = self.conv_cfg
+            stacked_convs.append(
+                conv(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=self.norm_cfg,
+                    act_cfg=self.act_cfg,
+                    bias=self.conv_bias))
+        return nn.Sequential(*stacked_convs)
+
+    def _init_predictor(self):
+        """Initialize predictor layers of a single level head."""
+        conv_cls = nn.Conv2d(
+            self.feat_channels, self.cls_out_channels, 1)
+        conv_reg = nn.Conv2d(self.feat_channels, 4, 1)
+        conv_obj = nn.Conv2d(self.feat_channels, 1, 1)
+        return conv_cls, conv_reg, conv_obj
+
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                normal_init(m, mean=0, std=0.01)
+            if is_norm(m):
+                constant_init(m, 1)
+
+        # Use prior in model initialization to improve stability
+        bias_init = bias_init_with_prob(0.01)
+        for conv_cls, conv_obj in zip(self.multi_level_conv_cls,
+                                      self.multi_level_conv_obj):
+            conv_cls.bias.data.fill_(bias_init)
+            conv_obj.bias.data.fill_(bias_init)
+
+    def forward_single(self, x, cls_convs, reg_convs, conv_cls, conv_reg, conv_obj):
+        """Forward feature of a single scale level.
+
+        Args:
+            x (Tensor): Features of a single scale level.
+
+        Returns:
+            tuple:
+                cls_score (Tensor): Cls scores for a single scale level
+                    the channels number is num_classes.
+                bbox_pred (Tensor): Box energies / deltas for a single scale
+                    level, the channels number is 4.
+                objectness (Tensor): Objectness for a single scale level,
+                    the channels number is 1.
+        """
+        cls_feat = cls_convs(x)
+        reg_feat = reg_convs(x)
+
+        cls_score = conv_cls(cls_feat)
+        bbox_pred = conv_reg(reg_feat)
+        objectness = conv_obj(reg_feat)
+
+        return cls_score, bbox_pred, objectness
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -260,37 +291,27 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             tuple[Tensor]: A tuple of multi-level predication map, each is a
                 4D-tensor of shape (batch_size, 5+num_classes, height, width).
         """
-        outputs = []
-        for k, (cls_conv, reg_conv, stride_this_level, x) in enumerate(
-                zip(self.cls_convs, self.reg_convs, self.strides, feats)
-        ):
-            x = self.stems[k](x)
-            cls_x = x
-            reg_x = x
 
-            cls_feat = cls_conv(cls_x)
-            cls_output = self.cls_preds[k](cls_feat)
-
-            reg_feat = reg_conv(reg_x)
-            reg_output = self.reg_preds[k](reg_feat)
-            obj_output = self.obj_preds[k](reg_feat)
-
-            output = [reg_output, obj_output, cls_output]
-
-            outputs.append(output)
-
-        return tuple(outputs),
+        return multi_apply(self.forward_single,
+                           feats,
+                           self.multi_level_cls_convs,
+                           self.multi_level_reg_convs,
+                           self.multi_level_conv_cls,
+                           self.multi_level_conv_reg,
+                           self.multi_level_conv_obj)
 
     # @force_fp32(apply_to=('pred_maps',))
     def get_bboxes(self,
-                   outputs,
+                   cls_scores,
+                   bbox_preds,
+                   objectnesses,
                    img_metas,
                    cfg=None,
                    rescale=False,
                    with_nms=True):
         cfg = self.test_cfg if cfg is None else cfg
         outputs = [torch.cat([reg_out, obj_out.sigmoid(), cls_out.sigmoid()], 1) \
-                            for reg_out, obj_out, cls_out in outputs]
+                            for reg_out, obj_out, cls_out in zip(bbox_preds, objectnesses, cls_scores)]
         self.hw = [x.shape[-2:] for x in outputs]
         # [batch, n_anchors_all, 85]
         outputs = torch.cat([x.flatten(start_dim=2) for x in outputs], dim=2).permute(0, 2, 1)
@@ -318,14 +339,21 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         return imgs_det
     
     def loss(self,
-             preds,
+             cls_scores,
+             bbox_preds,
+             objectnesses,
              gt_bboxes,
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
         """Compute losses of the head.
         Args:
-            preds (list[list[Tensor]]): level predictions (reg_output, obj_output, cls_output)
+            cls_scores (list[Tensor]): Box scores for each scale level,
+                each is a 4D-tensor, the channel number is num_classes.
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level, each is a 4D-tensor, the channel number is 4.
+            objectnesses (list[Tensor]): Objectnesses for each scale level,
+                each is a 4D-tensor, the channel number is 1.
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
@@ -343,8 +371,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         y_shifts = []
         expanded_strides = []
 
-        for k, (out, stride_this_level) in enumerate(zip(preds, self.strides)):
-            reg_output, obj_output, cls_output = out
+        for k, (cls_output, reg_output, obj_output, stride_this_level) \
+                in enumerate(zip(cls_scores, bbox_preds, objectnesses, self.strides)):
             output = torch.cat([reg_output, obj_output, cls_output], 1)
             output, grid = self.get_output_and_grid(output, k, stride_this_level, reg_output.type())
             # output [N, A*H*W, 5+K] (x, y, w, h, obj, classes...)
