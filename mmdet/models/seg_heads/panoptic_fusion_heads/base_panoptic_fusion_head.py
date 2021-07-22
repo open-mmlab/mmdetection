@@ -18,6 +18,7 @@ class BasePanopticFusionHead(BaseModule, metaclass=ABCMeta):
         super(BasePanopticFusionHead, self).__init__(init_cfg)
         self.num_things_classes = num_things_classes
         self.num_stuff_classes = num_stuff_classes
+        self.num_classes = num_things_classes + num_stuff_classes
         self.test_cfg = test_cfg
 
         if loss_panoptic:

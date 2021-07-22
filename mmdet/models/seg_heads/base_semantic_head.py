@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.runner import auto_fp16, force_fp32
@@ -15,7 +14,9 @@ class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
                  num_classes,
                  num_feats=-1,
                  loss_semantic=dict(
-                     type='CrossEntropyLoss', use_mask=False,
+                     type='CrossEntropyLoss',
+                     use_mask=False,
+                     ignore_index=-1,
                      loss_weight=1.0)):
         super(BaseSemanticHead, self).__init__()
         self.loss_semantic = build_loss(loss_semantic)
@@ -29,22 +30,11 @@ class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
             logits = upsample_like(logits, gt_semantic_seg)
         logits = logits.permute((0, 2, 3, 1))
         # hard code here, minus one
-        not_ignore = (gt_semantic_seg > 0)
-        gt_semantic_seg_bias = torch.where(not_ignore, gt_semantic_seg - 1,
-                                           torch.zeros_like(gt_semantic_seg))
-        not_ignore = not_ignore.float()
-
-        avg_factor = torch.sum(not_ignore) + self.eps
-
-        # Has to convert to long
-        gt_semantic_seg_bias = gt_semantic_seg_bias.long()
+        gt_semantic_seg = gt_semantic_seg - 1
 
         loss_semantic = self.loss_semantic(
             logits.reshape(-1, self.num_classes),  # => [NxHxW, C]
-            gt_semantic_seg_bias.reshape(-1),
-            weight=not_ignore.reshape(-1),
-            avg_factor=avg_factor,
-        )
+            gt_semantic_seg.reshape(-1).long())
         return dict(loss_semantic=loss_semantic)
 
     @auto_fp16()

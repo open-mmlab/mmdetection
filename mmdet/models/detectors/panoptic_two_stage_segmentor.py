@@ -181,7 +181,10 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
 
         logits = self.stuff_head.simple_test(x, img_metas, rescale)
 
-        pano_results = self.panoptic_fusion_head.simple_test(
-            img_metas, det_bboxes, det_labels, masks, logits)
-        results['pano_results'] = pano_results
+        panoptic_results = []
+        for i in range(len(det_bboxes)):
+            panoptic_result = self.panoptic_fusion_head.simple_test(
+                det_bboxes[i], det_labels[i], masks[i], logits[i])
+            panoptic_results.append(panoptic_result)
+        results['pano_results'] = panoptic_results
         return [results]

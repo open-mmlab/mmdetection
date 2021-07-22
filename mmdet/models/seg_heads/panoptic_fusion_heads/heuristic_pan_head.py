@@ -58,17 +58,20 @@ class HeuristicPanHead(BasePanopticFusionHead):
             left_labels.append(_cls)
             inst_idx += 1
 
-        inst_labels = torch.stack(left_labels)
+        if len(left_labels) > 0:
+            inst_labels = torch.stack(left_labels)
+        else:
+            inst_labels = bboxes.new_zeros((0, ), dtype=torch.long)
         assert inst_idx == (len(inst_labels) + 1)
         return id_map, inst_labels
 
-    def simple_test(self, img_metas, det_bboxes, det_labels, mask_preds,
-                    seg_logits, **kwargs):
-        mask_preds = mask_preds >= self.test_cfg.threshold
+    def simple_test(self, det_bboxes, det_labels, mask_preds, seg_logits,
+                    **kwargs):
+        mask_preds = mask_preds >= self.test_cfg.mask_thr_binary
         id_map, labels = self._lay_masks(det_bboxes, det_labels, mask_preds,
                                          self.test_cfg.mask_overlap)
 
-        seg_pred = seg_logits.argmax(dim=1)
+        seg_pred = seg_logits.argmax(dim=0)
         seg_pred = seg_pred + self.num_things_classes
 
         pano_results = seg_pred
