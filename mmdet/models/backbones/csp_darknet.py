@@ -256,8 +256,7 @@ class CSPLayer(BaseModule):
 @BACKBONES.register_module()
 class CSPDarknet(BaseModule):
     # in_factor, mid_factor, out_factor, depth_factor, stride, use_shortcut, use_spp
-    arch_settings = [[1, 2, 2, 1, 2, True,
-                      False], [2, 4, 4, 3, 2, True, False],
+    arch_settings = [[1, 2, 2, 1, 2, True, False], [2, 4, 4, 3, 2, True, False],
                      [4, 8, 8, 3, 2, True, False],
                      [8, 16, 16, 1, 2, False, True]]
 
@@ -266,15 +265,12 @@ class CSPDarknet(BaseModule):
             deepen_factor,
             widen_factor,
             out_indices=(3, 4, 5),
-            # out_features=("dark3", "dark4", "dark5"),
             use_depthwise=False,
             conv_cfg=None,
             norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
             act_cfg=dict(type='Swish'),
             init_cfg=None):
         super().__init__(init_cfg)
-        # assert out_features, "please provide output features of Darknet"
-        # self.out_features = out_features
         self.out_indices = out_indices
         conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
 
@@ -323,58 +319,11 @@ class CSPDarknet(BaseModule):
             stage.append(csp_layer)
             self.add_module(f'dark{i + 2}', nn.Sequential(*stage))
 
-        # # dark2
-        # self.dark2 = nn.Sequential(
-        #     conv(base_channels * 1, base_channels * 2, 3, 2, act=act),
-        #     CSPLayer(
-        #         base_channels * 2, base_channels * 2,
-        #         num_blocks=base_depth, use_depthwise=use_depthwise, conv_cfg=conv_cfg,
-        #         norm_cfg=norm_cfg,
-        #         act_cfg=act_cfg
-        #     ),
-        # )
-        #
-        # # dark3
-        # self.dark3 = nn.Sequential(
-        #     conv(base_channels * 2, base_channels * 4, 3, 2, act=act),
-        #     CSPLayer(
-        #         base_channels * 4, base_channels * 4,
-        #         num_blocks=base_depth * 3, use_depthwise=use_depthwise, conv_cfg=conv_cfg,
-        #         norm_cfg=norm_cfg,
-        #         act_cfg=act_cfg
-        #     ),
-        # )
-        #
-        # # dark4
-        # self.dark4 = nn.Sequential(
-        #     conv(base_channels * 4, base_channels * 8, 3, 2, act=act),
-        #     CSPLayer(
-        #         base_channels * 8, base_channels * 8,
-        #         num_blocks=base_depth * 3, use_depthwise=use_depthwise, conv_cfg=conv_cfg,
-        #         norm_cfg=norm_cfg,
-        #         act_cfg=act_cfg
-        #     ),
-        # )
-        #
-        # # dark5
-        # self.dark5 = nn.Sequential(
-        #     conv(base_channels * 8, base_channels * 16, 3, 2, act=act),
-        #     SPPBottleneck(base_channels * 16, base_channels * 16, activation=act),
-        #     CSPLayer(
-        #         base_channels * 16, base_channels * 16, num_blocks=base_depth,
-        #         shortcut=False, use_depthwise=use_depthwise, conv_cfg=conv_cfg,
-        #         norm_cfg=norm_cfg,
-        #         act_cfg=act_cfg
-        #     ),
-        # )
-
     def forward(self, x):
         outs = []
         x = self.stem(x)
         for i in range(len(self.arch_settings)):
-            print(x.shape)
             stage = getattr(self, f'dark{i + 2}')
-            print(i)
             x = stage(x)
             if i + 2 in self.out_indices:
                 outs.append(x)
