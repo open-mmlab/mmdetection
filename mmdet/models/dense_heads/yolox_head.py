@@ -322,7 +322,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
              gt_bboxes,
              gt_labels,
              img_metas,
-             gt_bboxes_ignore=None):
+             gt_bboxes_ignore=None,
+             imgs=None):
         """Compute losses of the head.
         Args:
             preds (list[list[Tensor]]): level predictions (reg_output, obj_output, cls_output)
@@ -366,7 +367,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             outputs.append(output)
 
         loss_iou, loss_obj, loss_cls, loss_l1 = self.get_losses(
-            imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_boxes,
+            imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_bboxes,
             torch.cat(outputs, 1), origin_preds, dtype=origin_preds[0].dtype)
 
         if self.use_l1:
@@ -419,7 +420,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         outputs[..., 2:4] = torch.exp(outputs[..., 2:4]) * strides
         return outputs
 
-    def get_losses(self, imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_boxes,
+    def get_losses(self, imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_bboxes,
         outputs, origin_preds, dtype):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
