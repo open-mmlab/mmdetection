@@ -170,7 +170,7 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask):
                                            self.model.get_data("openvino.xml"),
                                            self.model.get_data("openvino.bin"))
 
-    def infer(self, dataset: Dataset, inference_parameters: InferenceParameters) -> Dataset:
+    def infer(self, dataset: Dataset, inference_parameters: Optional[InferenceParameters] = None) -> Dataset:
         from tqdm import tqdm
         for dataset_item in tqdm(dataset):
             dataset_item.annotation_scene = self.inferencer.predict(dataset_item.numpy)

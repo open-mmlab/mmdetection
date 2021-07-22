@@ -17,7 +17,6 @@ import io
 import os
 import shutil
 import tempfile
-import time
 import torch
 import warnings
 from collections import defaultdict
@@ -51,10 +50,10 @@ from sc_sdk.logging import logger_factory
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
-from mmdet.apis import train_detector, get_root_logger, set_random_seed, single_gpu_test, export_model
+from mmdet.apis import train_detector, single_gpu_test, export_model
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.config_utils import (patch_config, set_hyperparams, prepare_for_training,
-    prepare_for_testing, config_from_string, config_to_string)
+    prepare_for_testing)
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.datasets import build_dataset, build_dataloader
 from mmdet.models import build_detector
@@ -437,7 +436,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                export_type: ExportType,
                output_model: OptimizedModel):
         assert export_type == ExportType.OPENVINO
-        optimized_model_precision = ModelPrecision.FP16
+        optimized_model_precision = ModelPrecision.FP32
         with tempfile.TemporaryDirectory() as tempdir:
             optimized_model_dir = os.path.join(tempdir, "export")
             logger.info(f'Optimized model will be temporarily saved to "{optimized_model_dir}"')
@@ -445,12 +444,16 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             try:
                 from torch.jit._trace import TracerWarning
                 warnings.filterwarnings("ignore", category=TracerWarning)
-                export_model(self.model, self.config, tempdir,
+                model = self.model.cuda(self.config.gpu_ids[0])
+                export_model(model, self.config, tempdir,
                              target='openvino', precision=optimized_model_precision.name)
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
                 xml_file = [f for f in os.listdir(tempdir) if f.endswith('.xml')][0]
-                output_model.set_data("openvino.bin", open(os.path.join(tempdir, bin_file), "rb").read())
-                output_model.set_data("openvino.xml", open(os.path.join(tempdir, xml_file), "rb").read())
+                with open(os.path.join(tempdir, bin_file), "rb") as f:
+                    output_model.set_data("openvino.bin", f.read())
+                with open(os.path.join(tempdir, xml_file), "rb") as f:
+                    output_model.set_data("openvino.xml", f.read())
+                output_model.precision = [optimized_model_precision]
             except Exception as ex:
                 raise RuntimeError("Optimization was unsuccessful.") from ex
 

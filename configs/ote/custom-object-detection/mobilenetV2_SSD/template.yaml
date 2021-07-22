@@ -17,7 +17,8 @@ dataset_requirements:
 
 # Task implementation.
 task:
-  impl: mmdet.apis.ote.apis.detection.OTEDetectionTask
+  base: mmdet.apis.ote.apis.detection.OTEDetectionTask
+  openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
 
 # Task and hyperparameters.
 hyper_parameters:
@@ -33,7 +34,6 @@ hyper_parameters:
       learning_rate_warmup_iters: 1200
     algo_backend:
       model: model.py
-      data_pipeline: ote_data_pipeline.py
 
 # Available model optimizations and their configuration.
 optimization:

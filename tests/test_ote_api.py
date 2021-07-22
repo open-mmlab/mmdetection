@@ -13,10 +13,10 @@ from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, Subset, NullDatasetStorage
 from sc_sdk.entities.id import ID
 from sc_sdk.entities.image import Image
+from sc_sdk.entities.inference_parameters import InferenceParameters
 from sc_sdk.entities.media_identifier import ImageIdentifier
-from sc_sdk.entities.model import NullModel, Model, ModelStatus, ModelStorage
-from sc_sdk.entities.workspace import NullWorkspace
-from sc_sdk.entities.model_template import NullModelTemplate
+from sc_sdk.entities.metrics import Performance
+from sc_sdk.entities.model import NullModel, Model, ModelStatus, NullModelStorage
 from sc_sdk.entities.optimized_model import ModelOptimizationType, ModelPrecision, OptimizedModel, TargetDevice
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.shapes.box import Box
@@ -28,7 +28,7 @@ from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, Expor
 from sc_sdk.utils import restricted_pickle_module
 from sc_sdk.utils.project_factory import NullProject
 
-from mmdet.apis.ote.apis.detection import OTEDetectionTask, OTEDetectionConfig
+from mmdet.apis.ote.apis.detection import OTEDetectionTask, OTEDetectionConfig, OpenVINODetectionTask
 from mmdet.apis.ote.apis.detection.config_utils import apply_template_configurable_parameters
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, load_template
 
@@ -91,12 +91,15 @@ class TestOTEAPI(unittest.TestCase):
         dataset = Dataset(NullDatasetStorage(), items)
         return environment, dataset
 
-    @staticmethod
-    def setup_configurable_parameters(template_dir, num_iters=250):
+    def setup_configurable_parameters(self, template_dir, num_iters=250):
         template = load_template(osp.join(template_dir, 'template.yaml'))
+        self.assertEqual(template['task']['base'], 'mmdet.apis.ote.apis.detection.OTEDetectionTask')
+        self.assertEqual(template['task']['openvino'], 'mmdet.apis.ote.apis.detection.OpenVINODetectionTask')
+        self.assertEqual(template['hyper_parameters']['impl'], 'mmdet.apis.ote.apis.detection.OTEDetectionConfig')
         configurable_parameters = OTEDetectionConfig(workspace_id=ID(), project_id=ID(), task_id=ID())
         apply_template_configurable_parameters(configurable_parameters, template)
         configurable_parameters.learning_parameters.num_iters = num_iters
+        configurable_parameters.learning_parameters.num_checkpoints = 1
         configurable_parameters.postprocessing.result_based_confidence_threshold = False
         configurable_parameters.postprocessing.confidence_threshold = 0.1
         return configurable_parameters
@@ -123,7 +126,7 @@ class TestOTEAPI(unittest.TestCase):
 
         output_model = Model(
                 NullProject(),
-                ModelStorage(NullWorkspace(), 'storage', NullModelTemplate()),
+                NullModelStorage(),
                 dataset,
                 detection_environment.get_model_configuration(),
                 model_status=ModelStatus.NOT_READY)
@@ -148,7 +151,7 @@ class TestOTEAPI(unittest.TestCase):
         train_future.result()
 
     @staticmethod
-    def eval(task: OTEDetectionTask, model: Model, dataset: Dataset):
+    def eval(task: OTEDetectionTask, model: Model, dataset: Dataset) -> Performance:
         start_time = time.time()
         result_dataset = task.infer(dataset.with_empty_annotations())
         end_time = time.time()
@@ -176,6 +179,7 @@ class TestOTEAPI(unittest.TestCase):
         """
         configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=150)
         detection_environment, dataset = self.init_environment(configurable_parameters, 250)
+        val_dataset = dataset.get_subset(Subset.VALIDATION)
         task = OTEDetectionTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
@@ -186,7 +190,7 @@ class TestOTEAPI(unittest.TestCase):
         # considering that the dataset is so easy
         output_model = Model(
                 NullProject(),
-                ModelStorage(NullWorkspace(), 'storage', NullModelTemplate()),
+                NullModelStorage(),
                 dataset,
                 detection_environment.get_model_configuration(),
                 model_status=ModelStatus.NOT_READY)
@@ -202,11 +206,11 @@ class TestOTEAPI(unittest.TestCase):
         if isinstance(task, IExportTask):
             exported_model = OptimizedModel(
                 NullProject(),
-                ModelStorage(NullWorkspace(), 'storage', NullModelTemplate()),
+                NullModelStorage(),
                 dataset,
                 detection_environment.get_model_configuration(),
                 ModelOptimizationType.MO,
-                [ModelPrecision.FP16],
+                [ModelPrecision.FP32],
                 optimization_methods=[],
                 optimization_level={},
                 target_device=TargetDevice.UNSPECIFIED,
@@ -216,9 +220,9 @@ class TestOTEAPI(unittest.TestCase):
             task.export(ExportType.OPENVINO, exported_model)
 
         # Run inference
-        validation_performance = self.eval(task, output_model, dataset)
+        validation_performance = self.eval(task, output_model, val_dataset)
         print(f'Evaluated model to have a performance of {validation_performance}')
-        score_threshold = 0.15
+        score_threshold = 0.5
         self.assertGreater(validation_performance.score.value, score_threshold,
             f'Expected F-measure to be higher than {score_threshold}')
 
@@ -226,7 +230,7 @@ class TestOTEAPI(unittest.TestCase):
         first_model = output_model
         new_model = Model(
             NullProject(),
-            ModelStorage(NullWorkspace(), 'storage', NullModelTemplate()),
+            NullModelStorage(),
             dataset,
             detection_environment.get_model_configuration(),
             model_status=ModelStatus.NOT_READY)
@@ -244,9 +248,9 @@ class TestOTEAPI(unittest.TestCase):
 
         print('Reevaluating model.')
         # Performance should be the same after reloading
-        performance_after_reloading = self.eval(task, output_model, dataset)
+        performance_after_reloading = self.eval(task, output_model, val_dataset)
         performance_delta = performance_after_reloading.score.value - validation_performance.score.value
-        perf_delta_tolerance = 0.0001
+        perf_delta_tolerance = 0.0005
 
         self.assertLess(np.abs(performance_delta), perf_delta_tolerance,
                         msg=f'Expected no or very small performance difference after reloading. Performance delta '
@@ -256,6 +260,24 @@ class TestOTEAPI(unittest.TestCase):
         print(f'Performance: {validation_performance.score.value:.4f}')
         print(f'Performance after reloading: {performance_after_reloading.score.value:.4f}')
         print(f'Performance delta after reloading: {performance_delta:.6f}')
+
+        if isinstance(task, IExportTask):
+            detection_environment.model = exported_model
+            ov_task = OpenVINODetectionTask(detection_environment)
+            predicted_validation_dataset = ov_task.infer(val_dataset.with_empty_annotations())
+            resultset = ResultSet(
+                model=output_model,
+                ground_truth_dataset=val_dataset,
+                prediction_dataset=predicted_validation_dataset,
+            )
+            export_performance = ov_task.evaluate(resultset)
+            print(export_performance)
+            performance_delta = export_performance.score.value - validation_performance.score.value
+            self.assertLess(np.abs(performance_delta), perf_delta_tolerance,
+                        msg=f'Expected no or very small performance difference after export. Performance delta '
+                            f'({validation_performance.score.value} vs {export_performance.score.value}) was '
+                            f'larger than the tolerance of {perf_delta_tolerance}')
+
 
     def test_training_custom_mobilenetssd_256(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
