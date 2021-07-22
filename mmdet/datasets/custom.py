@@ -212,7 +212,7 @@ class CustomDataset(Dataset):
         ann_info = self.get_ann_info(idx)
         results = dict(img_info=img_info, ann_info=ann_info)
 
-        copy_past_idx = randint(0, self.__len__() - 1)
+        copy_past_idx = randint(0, len(self) - 1)
         while copy_past_idx == idx:
             copy_past_idx = randint(0, self.__len__() - 1)
         copy_past_img_info = self.data_infos[copy_past_idx]
