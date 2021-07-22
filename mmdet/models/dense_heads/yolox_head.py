@@ -238,7 +238,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         self.grids = [torch.zeros(1)] * len(in_channels)
         self.expanded_strides = [None] * len(in_channels)
 
-    def initialize_biases(self, prior_prob):
+    def init_weights(self, prior_prob=1e-2):
         for conv in self.cls_preds:
             b = conv.bias.view(self.n_anchors, -1)
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
