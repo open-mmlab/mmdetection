@@ -1,10 +1,10 @@
 from torch.nn import functional as F
 
 
-def up_sample_like(logits, target):
+def upsample_like(logits, target):
     assert len(target.shape) >= 2
 
-    def _up_sample_like(source, target):
+    def _upsample_like(source, target):
         """Upsample the logits (4D) to the shape of target."""
         h, w = target.shape[-2:]
         lh, lw = source.shape[-2:]
@@ -15,7 +15,7 @@ def up_sample_like(logits, target):
 
     if len(logits.shape) == 3:
         logits = logits[:, None, :, :]
-        logits = _up_sample_like(logits, target)
+        logits = _upsample_like(logits, target)
         return logits[:, 0, :, :]
     else:
-        return _up_sample_like(logits, target)
+        return _upsample_like(logits, target)

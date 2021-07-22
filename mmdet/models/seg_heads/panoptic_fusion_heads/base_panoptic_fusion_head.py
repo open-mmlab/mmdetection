@@ -9,14 +9,16 @@ class BasePanopticFusionHead(BaseModule, metaclass=ABCMeta):
     """Base class for panoptic heads."""
 
     def __init__(self,
-                 num_things=80,
-                 num_stuff=53,
+                 num_things_classes=80,
+                 num_stuff_classes=53,
+                 test_cfg=None,
                  loss_panoptic=None,
                  init_cfg=None,
                  **kwargs):
         super(BasePanopticFusionHead, self).__init__(init_cfg)
-        self.num_things = num_things
-        self.num_stuff = num_stuff
+        self.num_things_classes = num_things_classes
+        self.num_stuff_classes = num_stuff_classes
+        self.test_cfg = test_cfg
 
         if loss_panoptic:
             self.loss_panoptic = build_loss(loss_panoptic)

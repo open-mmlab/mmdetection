@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from mmcv.runner import auto_fp16, force_fp32
 
 from ..builder import build_loss
-from ..utils import up_sample_like
+from ..utils import upsample_like
 
 
 class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
@@ -26,7 +26,7 @@ class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
     @force_fp32(apply_to=('logits', ))
     def loss(self, logits, gt_semantic_seg):
         if logits.shape[-2:] != gt_semantic_seg.shape[-2:]:
-            logits = up_sample_like(logits, gt_semantic_seg)
+            logits = upsample_like(logits, gt_semantic_seg)
         logits = logits.permute((0, 2, 3, 1))
         # hard code here, minus one
         not_ignore = (gt_semantic_seg > 0)

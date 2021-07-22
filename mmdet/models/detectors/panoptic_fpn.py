@@ -19,8 +19,8 @@ class PanopticFPN(PanopticTwoStageSegmentor):
             # for panoptic segmentation
             stuff_head=None,
             panoptic_fusion_head=None,
-            num_things=80,
-            num_stuff=53):
+            num_things_classes=80,
+            num_stuff_classes=53):
         super(PanopticFPN, self).__init__(
             backbone=backbone,
             neck=neck,
@@ -32,5 +32,5 @@ class PanopticFPN(PanopticTwoStageSegmentor):
             init_cfg=init_cfg,
             stuff_head=stuff_head,
             panoptic_fusion_head=panoptic_fusion_head,
-            num_things=num_things,
-            num_stuff=num_stuff)
+            num_things_classes=num_things_classes,
+            num_stuff_classes=num_stuff_classes)

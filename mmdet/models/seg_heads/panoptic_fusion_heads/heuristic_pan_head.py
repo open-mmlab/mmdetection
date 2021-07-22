@@ -9,17 +9,24 @@ from .base_panoptic_fusion_head import BasePanopticFusionHead
 class HeuristicPanHead(BasePanopticFusionHead):
     """Fusion Head with Heuristic method."""
 
-    def __init__(self, num_things=80, num_stuff=53, init_cfg=None, **kwargs):
-        super(HeuristicPanHead, self).__init__(num_things, num_stuff, None,
-                                               init_cfg, **kwargs)
+    def __init__(self,
+                 num_things_classes=80,
+                 num_stuff_classes=53,
+                 test_cfg=None,
+                 init_cfg=None,
+                 **kwargs):
+        super(HeuristicPanHead,
+              self).__init__(num_things_classes, num_stuff_classes, test_cfg,
+                             None, init_cfg, **kwargs)
 
     def forward_train(self, gt_masks=None, gt_semantic_seg=None, **kwargs):
         """HeuristicPanHead has not training loss."""
         return dict()
 
-    def _lay_masks(self, bboxes, labels, masks, img_shape, overlap_thr=0.5):
+    def _lay_masks(self, bboxes, labels, masks, overlap_thr=0.5):
         num_insts = bboxes.shape[0]
-        id_map = torch.zeros(img_shape, device=labels.device, dtype=torch.long)
+        id_map = torch.zeros(
+            masks.shape[-2:], device=labels.device, dtype=torch.long)
         if num_insts == 0:
             return id_map, labels
 
@@ -57,11 +64,12 @@ class HeuristicPanHead(BasePanopticFusionHead):
 
     def simple_test(self, img_metas, det_bboxes, det_labels, mask_preds,
                     seg_logits, **kwargs):
-
+        mask_preds = mask_preds >= self.test_cfg.threshold
         id_map, labels = self._lay_masks(det_bboxes, det_labels, mask_preds,
-                                         img_metas[0]['ori_shape'][:2])
+                                         self.test_cfg.mask_overlap)
+
         seg_pred = seg_logits.argmax(dim=1)
-        seg_pred = seg_pred + self.num_things
+        seg_pred = seg_pred + self.num_things_classes
 
         pano_results = seg_pred
         instance_id = 1
@@ -77,10 +85,10 @@ class HeuristicPanHead(BasePanopticFusionHead):
 
         ids, cnts = torch.unique(
             pano_results % INSTANCE_OFFSET, return_counts=True)
-        stuff_ids = ids[ids >= self.num_things]
-        stuff_cnts = cnts[ids >= self.num_things]
+        stuff_ids = ids[ids >= self.num_things_classes]
+        stuff_cnts = cnts[ids >= self.num_things_classes]
         ignore_stuff_ids = stuff_ids[
-            stuff_cnts < self.test_cfg.panoptic.stuff_area_limit]
+            stuff_cnts < self.test_cfg.stuff_area_limit]
 
         assert pano_results.ndim == 2
         pano_results[(pano_results.unsqueeze(2) == ignore_stuff_ids.reshape(
