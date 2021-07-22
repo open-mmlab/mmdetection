@@ -40,13 +40,13 @@ test_pipeline = [
             dict(type='Collect', keys=['img'])
         ])
 ]
-
-data = dict(
-    test=dict(pipeline=test_pipeline))
-
-# liner
 batch_size = 2
 basic_lr_per_img = 0.01 / 64.0
+
+data = dict(
+    samples_per_gpu=batch_size,
+    workers_per_gpu=0,
+    test=dict(pipeline=test_pipeline))
 
 # optimizer
 optimizer = dict(type='SGD', lr=batch_size * basic_lr_per_img, momentum=0.9, weight_decay=5e-4, nesterov=True,
@@ -56,6 +56,7 @@ optimizer_config = dict(grad_clip=None)
 
 # learning policy
 lr_config = dict(
+    _delete_=True,
     policy='CosineAnnealingWithNoAugIter',
     warmup='exp',
     by_epoch=False,

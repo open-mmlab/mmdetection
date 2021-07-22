@@ -352,7 +352,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             x_shifts.append(grid[:, :, 0])
             y_shifts.append(grid[:, :, 1])
             expanded_strides.append(
-                torch.zeros(1, grid.shape[1]).fill_(stride_this_level).type_as(reg_output.type())
+                torch.zeros(1, grid.shape[1]).fill_(stride_this_level).type_as(reg_output)
             )
             if self.use_l1:
                 batch_size = reg_output.shape[0]
@@ -368,7 +368,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         loss_iou, loss_obj, loss_cls, loss_l1 = self.get_losses(
             imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_bboxes,
-            torch.cat(outputs, 1), origin_preds, dtype=origin_preds[0].dtype)
+            torch.cat(outputs, 1), origin_preds, dtype=outputs[0].dtype)
 
         if self.use_l1:
             return dict(
