@@ -149,7 +149,7 @@ class CopyPaste:
         all_nums = list(range(objects_num))
         objects_inds = random.sample(all_nums, random_num) if not self.copy_all else all_nums
         # If list of randomly selected objects is empty do nothing
-        if not len(objects_inds):
+        if len(objects_inds) == 0:
             return results
         objects_inds = np.array(objects_inds)
         # Get composed mask from N masks on the image
