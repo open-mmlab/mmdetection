@@ -8,6 +8,7 @@ import math
 from mmcv import build_from_cfg
 from .builder import DATASETS
 
+
 def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
     bbox[:, 0::2] = np.clip(bbox[:, 0::2] * scale_ratio + padw, 0, w_max)
     bbox[:, 1::2] = np.clip(bbox[:, 1::2] * scale_ratio + padh, 0, h_max)
@@ -15,7 +16,7 @@ def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
 
 
 def random_perspective(
-    img, targets=(), degrees=10, translate=0.1, scale=0.1, shear=10, perspective=0.0, border=(0, 0),
+        img, targets=(), degrees=10, translate=0.1, scale=0.1, shear=10, perspective=0.0, border=(0, 0),
 ):
     # targets = [cls, xyxy]
     height = img.shape[0] + border[0] * 2  # shape(h,w,c)
@@ -87,6 +88,7 @@ def random_perspective(
 
     return img, targets
 
+
 def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
     # box1(4,n), box2(4,n)
     # Compute candidate boxes which include follwing 5 things:
@@ -95,11 +97,12 @@ def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
     w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
     ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
     return (
-        (w2 > wh_thr)
-        & (h2 > wh_thr)
-        & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr)
-        & (ar < ar_thr)
+            (w2 > wh_thr)
+            & (h2 > wh_thr)
+            & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr)
+            & (ar < ar_thr)
     )  # candidates
+
 
 def preproc(image, input_size, mean, std, swap=(2, 0, 1)):
     if len(image.shape) == 3:
@@ -124,6 +127,7 @@ def preproc(image, input_size, mean, std, swap=(2, 0, 1)):
     # image = image.transpose(swap)
     image = np.ascontiguousarray(image, dtype=np.float32)
     return image, r
+
 
 def _distort(image):
     def _convert(image, alpha=1, beta=0):
@@ -154,6 +158,7 @@ def _distort(image):
 
     return image
 
+
 def _mirror(image, boxes):
     _, width, _ = image.shape
     if random.randrange(2):
@@ -164,11 +169,10 @@ def _mirror(image, boxes):
 
 
 class TrainTransform:
-    def __init__(self, p=0.5, rgb_means=None, std=None, max_labels=50):
+    def __init__(self, p=0.5, rgb_means=None, std=None):
         self.means = rgb_means
         self.std = std
         self.p = p
-        self.max_labels = max_labels
 
     def __call__(self, image, targets, input_dim):
         boxes = targets[:, :4].copy()
@@ -183,7 +187,7 @@ class TrainTransform:
             ratios_o = None
         lshape = 6 if mixup else 5
         if len(boxes) == 0:
-            targets = np.zeros((self.max_labels, lshape), dtype=np.float32)
+            targets = np.zeros((0, lshape), dtype=np.float32)
             image, r_o = preproc(image, input_dim, self.means, self.std)
             image = np.ascontiguousarray(image, dtype=np.float32)
             return image, targets
@@ -239,82 +243,9 @@ class TrainTransform:
             targets_t = np.hstack((labels_t, boxes_t, ratios_t))
         else:
             targets_t = np.hstack((labels_t, boxes_t))
-        #mmdet dont need padlabel
-        # padded_labels = np.zeros((self.max_labels, lshape))
-        # padded_labels[range(len(targets_t))[: self.max_labels]] = targets_t[
-        #     : self.max_labels
-        # ]
-        # padded_labels = np.ascontiguousarray(padded_labels, dtype=np.float32)
         image_t = np.ascontiguousarray(image_t, dtype=np.float32)
         return image_t, targets_t
 
-class Dataset(object):
-    """ This class is a subclass of the base :class:`torch.utils.data.Dataset`,
-    that enables on the fly resizing of the ``input_dim``.
-
-    Args:
-        input_dimension (tuple): (width,height) tuple with default dimensions of the network
-    """
-
-    def __init__(self, input_dimension, mosaic=True):
-        super().__init__()
-        self.__input_dim = input_dimension[:2]
-        self._mosaic = mosaic
-
-    @property
-    def input_dim(self):
-        """
-        Dimension that can be used by transforms to set the correct image size, etc.
-        This allows transforms to have a single source of truth
-        for the input dimension of the network.
-
-        Return:
-            list: Tuple containing the current width,height
-        """
-        if hasattr(self, "_input_dim"):
-            return self._input_dim
-        return self.__input_dim
-
-    @staticmethod
-    def resize_getitem(getitem_fn):
-        """
-        Decorator method that needs to be used around the ``__getitem__`` method. |br|
-        This decorator enables the on the fly resizing of
-        the ``input_dim`` with our :class:`~lightnet.data.DataLoader` class.
-
-        Example:
-            >>> class CustomSet(ln.data.Dataset):
-            ...     def __len__(self):
-            ...         return 10
-            ...     @ln.data.Dataset.resize_getitem
-            ...     def __getitem__(self, index):
-            ...         # Should return (image, anno) but here we return input_dim
-            ...         return self.input_dim
-            >>> data = CustomSet((200,200))
-            >>> data[0]
-            (200, 200)
-            >>> data[(480,320), 0]
-            (480, 320)
-        """
-
-        @wraps(getitem_fn)
-        def wrapper(self, index):
-            if not isinstance(index, int):
-                has_dim = True
-                self._input_dim = index[0]
-                self._mosaic = index[2]
-                index = index[1]
-            else:
-                has_dim = False
-
-            ret_val = getitem_fn(self, index)
-
-            if has_dim:
-                del self._input_dim
-
-            return ret_val
-
-        return wrapper
 
 @DATASETS.register_module()
 class COCODataset(CocoDataset):
@@ -325,16 +256,14 @@ class COCODataset(CocoDataset):
     def __init__(self, *args, **kwargs):
         super(COCODataset, self).__init__(*args, **kwargs)
         self.preproc = TrainTransform(rgb_means=(0.485, 0.456, 0.406),
-                                      std=(0.229, 0.224, 0.225),
-                                      max_labels=50)
+                                      std=(0.229, 0.224, 0.225))
         self.ids = self.coco.getImgIds()
         self.class_ids = sorted(self.coco.getCatIds())
         cats = self.coco.loadCats(self.coco.getCatIds())
         self._classes = tuple([c["name"] for c in cats])
 
-
-
         self.input_dim = (640, 640)
+
     # def __len__(self):
     #     return len(self.ids)
 
@@ -388,7 +317,6 @@ class COCODataset(CocoDataset):
 
         return img, res, img_info, id_
 
-    @Dataset.resize_getitem
     def __getitem__(self, index):
         """
         One image / label pair for the given index is picked up and pre-processed.
@@ -435,30 +363,31 @@ class MosaicDetection(CocoDataset):
                  ann_file,
                  pipeline,
                  img_prefix=None,
+                 mixup_scale=(0.5, 1.5),
+                 scale=(0.1, 2),
+                 enable_mixup=True,
                  *args,
                  **kwargs):
-        dataset["pipeline"] = [lambda x:x]
+        dataset["pipeline"] = [lambda x: x]
         dataset = build_from_cfg(dataset, DATASETS)
 
         self._dataset = dataset
-        super(MosaicDetection, self).__init__(ann_file, pipeline, img_prefix=img_prefix)
-
-
+        super(MosaicDetection, self).__init__(ann_file, pipeline, img_prefix=img_prefix, filter_empty_gt=False)
 
         self.preproc = TrainTransform(
-                rgb_means=(0.485, 0.456, 0.406),
-                std=(0.229, 0.224, 0.225),
-                max_labels=120,
-            )
+            rgb_means=(0.485, 0.456, 0.406),
+            std=(0.229, 0.224, 0.225)
+        )
         self.degrees = 10.0
         self.translate = 0.1
-        self.scale = (0.1, 2)
+        self.scale = scale
         self.shear = 2.0
         self.perspective = 0.0
-        self.mixup_scale = (0.5, 1.5)
-        self._mosaic = True
-        self.enable_mixup = True
+        self.mixup_scale = mixup_scale
+        self.mosaic = True
+        self.enable_mixup = enable_mixup
         self.input_dim = (640, 640)
+        self.input_size = self.input_dim
 
     def __len__(self):
         return len(self._dataset)
@@ -494,9 +423,10 @@ class MosaicDetection(CocoDataset):
         return results
 
     def _train(self, idx):
-        if self._mosaic:
+        if self.mosaic:
             labels4 = []
-            input_dim = self._dataset.input_dim
+            # Never change
+            input_dim = self.input_dim
             # yc, xc = s, s  # mosaic center x, y
             yc = int(random.uniform(0.5 * input_dim[0], 1.5 * input_dim[0]))
             xc = int(random.uniform(0.5 * input_dim[1], 1.5 * input_dim[1]))
@@ -565,16 +495,16 @@ class MosaicDetection(CocoDataset):
             # CopyPaste: https://arxiv.org/abs/2012.07177
             # -----------------------------------------------------------------
             if self.enable_mixup and not len(labels4) == 0:
-                img4, labels4 = self.mixup(img4, labels4, self.input_dim)
-            mix_img, padded_labels = self.preproc(img4, labels4, self.input_dim)
+                # TODO: Test
+                img4, labels4 = self.mixup(img4, labels4, self.input_size)
+            # change size
+            mix_img, padded_labels = self.preproc(img4, labels4, self.input_size)
             img_info = (mix_img.shape[1], mix_img.shape[0])
 
             return mix_img, padded_labels, img_info, int(idx)
-
         else:
-            self._dataset._input_dim = self.input_dim
             img, label, img_info, idx = self._dataset.pull_item(idx)
-            img, label = self.preproc(img, label, self.input_dim)
+            img, label = self.preproc(img, label, self.input_size)
             return img, label, img_info, int(idx)
 
     def mixup(self, origin_img, origin_labels, input_dim):
@@ -597,7 +527,7 @@ class MosaicDetection(CocoDataset):
             interpolation=cv2.INTER_LINEAR,
         ).astype(np.float32)
         cp_img[
-            : int(img.shape[0] * cp_scale_ratio), : int(img.shape[1] * cp_scale_ratio)
+        : int(img.shape[0] * cp_scale_ratio), : int(img.shape[1] * cp_scale_ratio)
         ] = resized_img
         cp_img = cv2.resize(
             cp_img,
@@ -620,15 +550,15 @@ class MosaicDetection(CocoDataset):
         if padded_img.shape[1] > target_w:
             x_offset = random.randint(0, padded_img.shape[1] - target_w - 1)
         padded_cropped_img = padded_img[
-            y_offset: y_offset + target_h, x_offset: x_offset + target_w
-        ]
+                             y_offset: y_offset + target_h, x_offset: x_offset + target_w
+                             ]
 
         cp_bboxes_origin_np = adjust_box_anns(
             cp_labels[:, :4], cp_scale_ratio, 0, 0, origin_w, origin_h
         )
         if FLIP:
             cp_bboxes_origin_np[:, 0::2] = (
-                origin_w - cp_bboxes_origin_np[:, 0::2][:, ::-1]
+                    origin_w - cp_bboxes_origin_np[:, 0::2][:, ::-1]
             )
         cp_bboxes_transformed_np = cp_bboxes_origin_np.copy()
         cp_bboxes_transformed_np[:, 0::2] = np.clip(

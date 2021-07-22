@@ -36,14 +36,17 @@ annotations = 'annotations/instances_train2017.json'
 sub_dataset = dict(type="COCODataset",
                    ann_file=data_root + annotations,
                    img_prefix=data_root + name,
-                   pipeline=None
+                   pipeline=None,
+                   filter_empty_gt=False,
                    )
 
 train_dataset = dict(type="MosaicDetection",
                      dataset=sub_dataset,
                      ann_file=data_root + annotations,
                      img_prefix=data_root + name,
-                     pipeline=train_pipeline)
+                     pipeline=train_pipeline,
+                     enable_mixup=False,  # tiny cfg
+                     scale=(0.5, 1.5))
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -74,7 +77,7 @@ data = dict(
     val=dict(type="COCODataset",
              ann_file=data_root + 'annotations/instances_val2017.json',
              img_prefix=data_root + 'val2017/',
-             pipeline=test_pipeline), )
+             pipeline=test_pipeline))
 
 # optimizer
 optimizer = dict(type='SGD', lr=batch_size * basic_lr_per_img, momentum=0.9, weight_decay=5e-4, nesterov=True,
@@ -95,3 +98,5 @@ lr_config = dict(
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 
 evaluation = dict(interval=1, metric='bbox')
+
+custom_hooks = [dict(type='ProcessHook', random_size=(10, 20), no_aug_epochs=15), dict(type='EMAHook', priority=49)]
