@@ -185,6 +185,6 @@ class YOLOPAFPN(nn.Module):
         p_out0 = torch.cat([p_out0, fpn_out0], 1)  # 512->1024/32
         pan_out0 = self.C3_n4(p_out0)  # 1024->1024/32
 
-        outputs = (self.stems[2](pan_out0), self.stems[1](pan_out1), self.stems[0](pan_out2))
+        outputs = (self.stems[0](pan_out2), self.stems[1](pan_out1), self.stems[2](pan_out0))
         return outputs
 
