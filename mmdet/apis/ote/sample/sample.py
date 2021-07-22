@@ -13,6 +13,7 @@
 # and limitations under the License.
 
 import argparse
+from mmdet.apis.export import export_model
 import os.path as osp
 import sys
 
@@ -31,7 +32,7 @@ from sc_sdk.entities.workspace import NullWorkspace
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType
 
-from mmdet.apis.ote.apis.detection import OTEDetectionTask
+from mmdet.apis.ote.apis.detection import OTEDetectionTask, OpenVINODetectionTask
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.config_utils import apply_template_configurable_parameters
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
@@ -120,6 +121,19 @@ def main(args):
             model_size_reduction=1.,
             model_status=ModelStatus.NOT_READY)
         task.export(ExportType.OPENVINO, exported_model)
+
+        environment.model = exported_model
+        ov_task = OpenVINODetectionTask(environment)
+        predicted_validation_dataset = ov_task.infer(
+            validation_dataset.with_empty_annotations(),
+            InferenceParameters(is_evaluation=True))
+        resultset = ResultSet(
+            model=output_model,
+            ground_truth_dataset=validation_dataset,
+            prediction_dataset=predicted_validation_dataset,
+        )
+        performance = ov_task.evaluate(resultset)
+        print(performance)
 
 
 if __name__ == '__main__':

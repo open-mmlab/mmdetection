@@ -445,7 +445,8 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             try:
                 from torch.jit._trace import TracerWarning
                 warnings.filterwarnings("ignore", category=TracerWarning)
-                export_model(self.model, tempdir, target='openvino', precision=optimized_model_precision.name)
+                export_model(self.model, self.config, tempdir,
+                             target='openvino', precision=optimized_model_precision.name)
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
                 xml_file = [f for f in os.listdir(tempdir) if f.endswith('.xml')][0]
                 output_model.set_data("openvino.bin", open(os.path.join(tempdir, bin_file), "rb").read())

@@ -194,7 +194,7 @@ def optimize_onnx_graph(onnx_model_path):
     onnx.save(onnx_model, onnx_model_path)
 
 
-def export_model(model, output_dir, target='openvino', onnx_opset=11,
+def export_model(model, config, output_dir, target='openvino', onnx_opset=11,
                  input_shape=None, input_format='bgr', precision='FP32', alt_ssd_export=False):
     assert onnx_opset in available_opsets
     assert onnx_opset >= get_min_opset_version()
@@ -205,7 +205,7 @@ def export_model(model, output_dir, target='openvino', onnx_opset=11,
         model = model.module
     model.eval()
     device = next(model.parameters()).device
-    cfg = model.cfg
+    cfg = config
     fake_data = get_fake_input(cfg, device=device)
 
     # BEGIN nncf part
@@ -218,7 +218,7 @@ def export_model(model, output_dir, target='openvino', onnx_opset=11,
     # END nncf part
 
     mmcv.mkdir_or_exist(osp.abspath(output_dir))
-    onnx_model_path = osp.join(output_dir, model.cfg.get('model_name', 'model') + '.onnx')
+    onnx_model_path = osp.join(output_dir, cfg.get('model_name', 'model') + '.onnx')
 
     with torch.no_grad():
         export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=onnx_opset,
