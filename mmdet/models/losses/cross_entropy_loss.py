@@ -169,6 +169,7 @@ class CrossEntropyLoss(nn.Module):
                  use_mask=False,
                  reduction='mean',
                  class_weight=None,
+                 ignore_index=None,
                  loss_weight=1.0):
         """CrossEntropyLoss.
 
@@ -181,6 +182,8 @@ class CrossEntropyLoss(nn.Module):
                 Options are "none", "mean" and "sum".
             class_weight (list[float], optional): Weight of each class.
                 Defaults to None.
+            ignore_index (int | None): The label index to be ignored.
+                Defaults to None.
             loss_weight (float, optional): Weight of the loss. Defaults to 1.0.
         """
         super(CrossEntropyLoss, self).__init__()
@@ -190,6 +193,7 @@ class CrossEntropyLoss(nn.Module):
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.class_weight = class_weight
+        self.ignore_index = ignore_index
 
         if self.use_sigmoid:
             self.cls_criterion = binary_cross_entropy
@@ -224,6 +228,8 @@ class CrossEntropyLoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
+        if ignore_index is None:
+            ignore_index = self.ignore_index
 
         if self.class_weight is not None:
             class_weight = cls_score.new_tensor(
