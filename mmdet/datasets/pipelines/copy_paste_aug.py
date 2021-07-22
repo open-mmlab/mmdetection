@@ -146,7 +146,7 @@ class CopyPaste:
         # Get random objects from the image
         objects_num = results['copy_paste']['gt_labels'].shape[0]
         random_num = min(random.randint(0, int(1.1 * objects_num)), objects_num)
-        all_nums = [x for x in range(objects_num)]
+        all_nums = list(range(objects_num))
         objects_inds = random.sample(all_nums, random_num) if not self.copy_all else all_nums
         # If list of randomly selected objects is empty do nothing
         if not len(objects_inds):
