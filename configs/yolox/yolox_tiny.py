@@ -26,4 +26,5 @@ test_pipeline = [
 ]
 
 data = dict(
-    test=dict(pipeline=test_pipeline))
+    test=dict(pipeline=test_pipeline),
+    val=dict(pipeline=test_pipeline))
