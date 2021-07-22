@@ -1,8 +1,9 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py',
     '../_base_/default_runtime.py'
 ]
+
+data_root = 'data/coco/'
 
 # model settings
 model = dict(
@@ -25,6 +26,25 @@ model = dict(
 img_norm_cfg = dict(mean=[0.485 * 255, 0.456 * 255, 0.406 * 255], std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
                     to_rgb=True)
 
+train_pipeline = [dict(type='DefaultFormatBundle'),
+                  dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],
+                       meta_keys=('img_norm_cfg',))]
+
+name = 'train2017/'
+annotations = 'annotations/instances_train2017.json'
+
+sub_dataset = dict(type="COCODataset",
+                   ann_file=data_root + annotations,
+                   img_prefix=data_root + name,
+                   pipeline=None
+                   )
+
+train_dataset = dict(type="MosaicDetection",
+                     dataset=sub_dataset,
+                     ann_file=data_root + annotations,
+                     img_prefix=data_root + name,
+                     pipeline=train_pipeline)
+
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
@@ -46,7 +66,15 @@ basic_lr_per_img = 0.01 / 64.0
 data = dict(
     samples_per_gpu=batch_size,
     workers_per_gpu=0,
-    test=dict(pipeline=test_pipeline))
+    train=train_dataset,
+    test=dict(type="COCODataset",
+              ann_file=data_root + 'annotations/instances_val2017.json',
+              img_prefix=data_root + 'val2017/',
+              pipeline=test_pipeline),
+    val=dict(type="COCODataset",
+             ann_file=data_root + 'annotations/instances_val2017.json',
+             img_prefix=data_root + 'val2017/',
+             pipeline=test_pipeline), )
 
 # optimizer
 optimizer = dict(type='SGD', lr=batch_size * basic_lr_per_img, momentum=0.9, weight_decay=5e-4, nesterov=True,
@@ -65,3 +93,5 @@ lr_config = dict(
     no_aug_epochs=15,
     min_lr_ratio=0.05)
 runner = dict(type='EpochBasedRunner', max_epochs=300)
+
+evaluation = dict(interval=1, metric='bbox')

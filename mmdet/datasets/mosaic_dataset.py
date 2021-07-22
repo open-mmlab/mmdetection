@@ -479,17 +479,17 @@ class MosaicDetection(CocoDataset):
                    'gt_labels': gt_labels}
         results = self.pipeline(results)
 
-        mean = np.array([0.485, 0.456, 0.406])
-        std = np.array([0.229, 0.224, 0.225])
+        # mean = np.array([0.485, 0.456, 0.406])
+        # std = np.array([0.229, 0.224, 0.225])
 
-        show_img = img.copy() * std + mean
-        show_img = show_img * 255
+        # show_img = img.copy() * std + mean
+        # show_img = show_img * 255
 
-        for i in range(len(gt_bboxes)):
-            box = gt_bboxes[i]
-            x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
-            cv2.rectangle(show_img, (x1, y1), (x2, y2), (0, 0, 255), 1)
-        cv2.imwrite(f"img/{idx}.jpg", show_img)
+        # for i in range(len(gt_bboxes)):
+        #     box = gt_bboxes[i]
+        #     x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        #     cv2.rectangle(show_img, (x1, y1), (x2, y2), (0, 0, 255), 1)
+        # cv2.imwrite(f"img/{idx}.jpg", show_img)
 
         return results
 
