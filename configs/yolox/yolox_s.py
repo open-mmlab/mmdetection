@@ -92,6 +92,7 @@ lr_config = dict(
     warmup='exp',
     by_epoch=False,
     warmup_by_epoch=True,
+    warmup_ratio=batch_size * basic_lr_per_img,
     warmup_iters=5,  # 5 epoch
     no_aug_epochs=15,
     min_lr_ratio=0.05)

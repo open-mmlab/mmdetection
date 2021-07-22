@@ -12,6 +12,22 @@ class CosineAnnealingWithNoAugIterLrUpdaterHook(CosineAnnealingLrUpdaterHook):
         self.no_aug_epochs = no_aug_epochs
         super(CosineAnnealingLrUpdaterHook, self).__init__(**kwargs)
 
+    def get_warmup_lr(self, cur_iters):
+        def _get_warmup_lr(cur_iters, regular_lr):
+                k = self.warmup_ratio * pow(
+                    cur_iters / float(self.warmup_iters), 2
+                )
+                warmup_lr = [k for _lr in regular_lr]
+                return warmup_lr
+
+        if isinstance(self.regular_lr, dict):
+            lr_groups = {}
+            for key, regular_lr in self.regular_lr.items():
+                lr_groups[key] = _get_warmup_lr(cur_iters, regular_lr)
+            return lr_groups
+        else:
+            return _get_warmup_lr(cur_iters, self.regular_lr)
+
     def get_lr(self, runner, base_lr):
 
         no_aug_iter = len(runner.data_loader) * self.no_aug_epochs
