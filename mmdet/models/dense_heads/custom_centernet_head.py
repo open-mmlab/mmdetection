@@ -846,15 +846,15 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             return 1
         return dist.get_world_size()
 
-    def get_bboxes(self, *outs, img_metas, cfg):
+    def get_bboxes(self, clss_per_level, reg_pred_per_level, agn_hm_pred_per_level, img_metas, cfg):
         
-        grids = self.compute_grids(outs[-1])
+        grids = self.compute_grids(agn_hm_pred_per_level)
         # grids = multi_apply(self.compute_grids, feats, self.strides)
         # shapes_per_level = grids[0].new_tensor(
         #             [(x.shape[2], x.shape[3]) for x in outs[1]])
-        agn_hm_pred_per_level= outs[2]
-        reg_pred_per_level= outs[1]
-        clss_per_level= outs[0]
+        # agn_hm_pred_per_level= outs[2]
+        # reg_pred_per_level= outs[1]
+        # clss_per_level= outs[0]
 
         if self.training:
             
