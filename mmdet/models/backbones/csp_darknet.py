@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.runner import BaseModule
 
@@ -38,7 +37,7 @@ class Focus(nn.Module):
             out_channels,
             kernel_size,
             stride,
-            padding=(kernel_size-1)//2,
+            padding=(kernel_size - 1) // 2,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
@@ -117,23 +116,21 @@ class SPPBottleneck(BaseModule):
 
 @BACKBONES.register_module()
 class CSPDarknet(BaseModule):
-    # in_channels, mid_channels, out_channels, num_blocks, stride, use_shortcut, use_spp
-    arch_settings = [[64, 128, 3, True, False],
-                     [128, 256, 9, True, False],
-                     [256, 512, 9, True, False],
-                     [512, 1024, 3, False, True]]
+    # From left to right: in_channels, mid_channels, out_channels,
+    # num_blocks, stride, use_shortcut, use_spp
+    arch_settings = [[64, 128, 3, True, False], [128, 256, 9, True, False],
+                     [256, 512, 9, True, False], [512, 1024, 3, False, True]]
 
-    def __init__(
-            self,
-            deepen_factor,
-            widen_factor,
-            out_indices=(3, 4, 5),
-            use_depthwise=False,
-            arch_override=None,
-            conv_cfg=None,
-            norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-            act_cfg=dict(type='Swish'),
-            init_cfg=None):
+    def __init__(self,
+                 deepen_factor,
+                 widen_factor,
+                 out_indices=(3, 4, 5),
+                 use_depthwise=False,
+                 arch_override=None,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
+                 act_cfg=dict(type='Swish'),
+                 init_cfg=None):
         super().__init__(init_cfg)
         if arch_override:
             self.arch_settings = arch_override
@@ -149,8 +146,8 @@ class CSPDarknet(BaseModule):
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
 
-        for i, (in_channels, out_channels, num_blocks,
-                use_shortcut, use_spp) in enumerate(self.arch_settings):
+        for i, (in_channels, out_channels, num_blocks, use_shortcut,
+                use_spp) in enumerate(self.arch_settings):
             in_channels = int(in_channels * widen_factor)
             out_channels = int(out_channels * widen_factor)
             num_blocks = max(round(num_blocks * deepen_factor), 1)
