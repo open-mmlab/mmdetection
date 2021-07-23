@@ -29,6 +29,11 @@ def test_detection_results(num_instances, num_classes):
     assert det_resutls.num_classes == num_classes
     assert det_resutls.task == 'det'
 
+    # test new_results
+    new_det_results = det_resutls.new_results()
+    assert new_det_results.num_classes == det_resutls.num_classes
+    assert new_det_results.file_name == 'temp'
+
     # test format of det_results
     det_resutls.bboxes = torch.rand(num_instances, 4)
     det_resutls.scores = torch.rand(num_instances)
