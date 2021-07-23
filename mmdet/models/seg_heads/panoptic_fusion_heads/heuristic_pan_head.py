@@ -26,7 +26,7 @@ class HeuristicPanHead(BasePanopticFusionHead):
     def _lay_masks(self, bboxes, labels, masks, overlap_thr=0.5):
         num_insts = bboxes.shape[0]
         id_map = torch.zeros(
-            masks.shape[-2:], device=labels.device, dtype=torch.long)
+            masks.shape[-2:], device=bboxes.device, dtype=torch.long)
         if num_insts == 0:
             return id_map, labels
 
@@ -96,7 +96,5 @@ class HeuristicPanHead(BasePanopticFusionHead):
         assert pano_results.ndim == 2
         pano_results[(pano_results.unsqueeze(2) == ignore_stuff_ids.reshape(
             1, 1, -1)).any(dim=2)] = self.num_classes
-
-        pano_results = pano_results.int().detach().cpu().numpy()
 
         return pano_results

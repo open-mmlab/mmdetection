@@ -104,7 +104,7 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
         """Simple test for mask head without augmentation."""
         img_shapes = tuple(meta['ori_shape']
                            for meta in img_metas) if rescale else tuple(
-                               meta['padding_shape'] for meta in img_metas)
+                               meta['pad_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
@@ -185,6 +185,7 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
         for i in range(len(det_bboxes)):
             panoptic_result = self.panoptic_fusion_head.simple_test(
                 det_bboxes[i], det_labels[i], masks[i], logits[i])
+            panoptic_result = panoptic_result.int().detach().cpu().numpy()
             panoptic_results.append(panoptic_result)
         results['pano_results'] = panoptic_results
         return [results]
