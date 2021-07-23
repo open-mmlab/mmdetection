@@ -193,7 +193,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         # self.scales = nn.ModuleList(
         #     [Scale(init_value=1.0) for _ in input_shape])
 
-
         ### initialize the     <agn_hm>
         self.agn_hm = nn.Conv2d(
             in_channel, 1, kernel_size=self.out_kernel,
@@ -209,7 +208,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 stride=1,
                 padding=cls_kernel_size // 2,
             )
-
 
 
     def _build_head(self, in_channel, feat_channel, out_channel):
@@ -260,8 +258,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             torch.nn.init.normal_(self.cls_logits.weight, std=0.01)
 
 
-
-    def forward(self, feats, img_meta, gt_bboxes, gt_labels):
+    def forward(self, feats):
         """Forward features. Notice CenterNet head does not use FPN.
 
         Args:
@@ -276,71 +273,10 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             offset_preds (List[Tensor]): offset predicts for all levels, the
                channels number is 2.
         """
-        # features = [feats[f] for f in self.in_features]
-        reg_pred_per_level = []
-        clss_per_level, reg_pred_per_level, agn_hm_pred_per_level = \
-            multi_apply(self.forward_single, feats)
+        # clss_per_level, reg_pred_per_level, agn_hm_pred_per_level = \
+        #     multi_apply(self.forward_single, feats)
         
-        grids = self.compute_grids(feats)
-        # grids = multi_apply(self.compute_grids, feats, self.strides)
-        shapes_per_level = grids[0].new_tensor(
-                    [(x.shape[2], x.shape[3]) for x in reg_pred_per_level])
-
-        if self.training:
-            pos_inds, labels, reg_targets, flattened_hms = \
-                self._get_ground_truth(
-                    grids, shapes_per_level, gt_bboxes, gt_labels)
-            pos_inds, labels, reg_targets, flattened_hms = \
-                self._get_ground_truth(
-                    grids, shapes_per_level, gt_bboxes, gt_labels)
-            # logits_pred: M x F, reg_pred: M x 4, agn_hm_pred: M
-            logits_pred, reg_pred, agn_hm_pred = self._flatten_outputs(
-                clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
-
-            if self.more_pos:
-                # add more pixels as positive if \
-                #   1. they are within the center3x3 region of an object
-                #   2. their regression losses are small (<self.more_pos_thresh)
-                pos_inds, labels = self._add_more_pos(
-                    reg_pred, gt_bboxes, gt_labels, shapes_per_level)
-            
-
-            proposals = None
-            image_sizes = []
-            for i in range(len(img_meta)):
-                image_sizes.append(img_meta[i]['ori_shape'][:2])
-            if self.only_proposal:
-                agn_hm_pred_per_level = [x.sigmoid() for x in agn_hm_pred_per_level]
-                proposals = self.predict_instances(
-                    grids, agn_hm_pred_per_level, reg_pred_per_level, 
-                    image_sizes, [None for _ in agn_hm_pred_per_level])
-            elif self.as_proposal: # category specific bbox as agnostic proposals
-                clss_per_level = [x.sigmoid() for x in clss_per_level]
-                proposals = self.predict_instances(
-                    grids, clss_per_level, reg_pred_per_level, 
-                    image_sizes, agn_hm_pred_per_level)
-            if self.only_proposal or self.as_proposal:
-                for p in range(len(proposals)):
-                    proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
-                    proposals[p].objectness_logits = proposals[p].get('scores')
-                    proposals[p].remove('pred_boxes')
-                    proposals[p].remove('scores')
-                    proposals[p].remove('pred_classes')
-
-            # losses = self.losses(
-            #     pos_inds, labels, reg_targets, flattened_hms,
-            #     logits_pred, reg_pred, agn_hm_pred)
-
-            # if self.debug:
-            #     debug_train(
-            #         [self.denormalizer(x) for x in images], 
-            #         gt_instances, flattened_hms, reg_targets, 
-            #         labels, pos_inds, shapes_per_level, grids, self.strides)
-            return proposals, losses
-
-        # return multi_apply(self.forward_single, feats)
-
-
+        return multi_apply(self.forward_single, feats)
 
     def forward_single(self, feat):
         """Forward feature of a single level.
@@ -506,7 +442,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             offset_target=offset_target,
             wh_offset_target_weight=wh_offset_target_weight)
         return target_result, avg_factor
-
+    '''
     def get_bboxes(self,
                    center_heatmap_preds,
                    wh_preds,
@@ -571,7 +507,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 tuple(bs) for bs in zip(batch_det_bboxes, batch_labels)
             ]
         return det_results
-
+    '''
     def decode_heatmap(self,
                        center_heatmap_pred,
                        wh_pred,
@@ -642,6 +578,66 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
 #################################
 #################################
+    def get_bboxes(self, *feats, img_metas, gt_bboxes, gt_labels):
+
+        grids = self.compute_grids(feats)
+        # grids = multi_apply(self.compute_grids, feats, self.strides)
+        shapes_per_level = grids[0].new_tensor(
+                    [(x.shape[2], x.shape[3]) for x in reg_pred_per_level])
+
+        if self.training:
+            pos_inds, labels, reg_targets, flattened_hms = \
+                self._get_ground_truth(
+                    grids, shapes_per_level, gt_bboxes, gt_labels)
+            pos_inds, labels, reg_targets, flattened_hms = \
+                self._get_ground_truth(
+                    grids, shapes_per_level, gt_bboxes, gt_labels)
+            # logits_pred: M x F, reg_pred: M x 4, agn_hm_pred: M
+            logits_pred, reg_pred, agn_hm_pred = self._flatten_outputs(
+                clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
+
+            if self.more_pos:
+                # add more pixels as positive if \
+                #   1. they are within the center3x3 region of an object
+                #   2. their regression losses are small (<self.more_pos_thresh)
+                pos_inds, labels = self._add_more_pos(
+                    reg_pred, gt_bboxes, gt_labels, shapes_per_level)
+            
+
+            proposals = None
+            image_sizes = []
+            for i in range(len(img_meta)):
+                image_sizes.append(img_meta[i]['ori_shape'][:2])
+            if self.only_proposal:
+                agn_hm_pred_per_level = [x.sigmoid() for x in agn_hm_pred_per_level]
+                proposals = self.predict_instances(
+                    grids, agn_hm_pred_per_level, reg_pred_per_level, 
+                    image_sizes, [None for _ in agn_hm_pred_per_level])
+            elif self.as_proposal: # category specific bbox as agnostic proposals
+                clss_per_level = [x.sigmoid() for x in clss_per_level]
+                proposals = self.predict_instances(
+                    grids, clss_per_level, reg_pred_per_level, 
+                    image_sizes, agn_hm_pred_per_level)
+            if self.only_proposal or self.as_proposal:
+                for p in range(len(proposals)):
+                    proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
+                    proposals[p].objectness_logits = proposals[p].get('scores')
+                    proposals[p].remove('pred_boxes')
+                    proposals[p].remove('scores')
+                    proposals[p].remove('pred_classes')
+
+            # losses = self.losses(
+            #     pos_inds, labels, reg_targets, flattened_hms,
+            #     logits_pred, reg_pred, agn_hm_pred)
+
+            # if self.debug:
+            #     debug_train(
+            #         [self.denormalizer(x) for x in images], 
+            #         gt_instances, flattened_hms, reg_targets, 
+            #         labels, pos_inds, shapes_per_level, grids, self.strides)
+            return proposals
+
+
 
     def compute_grids(self, features):
         
