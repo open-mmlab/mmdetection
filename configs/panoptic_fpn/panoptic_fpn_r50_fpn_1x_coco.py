@@ -78,7 +78,7 @@ model = dict(
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
         conv_cfg=None,
         loss_semantic=dict(
-            type='CrossEntropyLoss', use_mask=False, loss_weight=0.5)),
+            type='CrossEntropyLoss', ignore_index=-1, loss_weight=0.5)),
     panoptic_fusion_head=dict(
         type='HeuristicPanHead', num_things_classes=80, num_stuff_classes=53),
     # model training and testing settings

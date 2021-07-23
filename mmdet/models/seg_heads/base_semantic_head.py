@@ -14,9 +14,7 @@ class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
                  num_classes,
                  num_feats=-1,
                  loss_semantic=dict(
-                     type='CrossEntropyLoss',
-                     use_mask=False,
-                     ignore_index=-1,
+                     type='CrossEntropyLoss', ignore_index=-1,
                      loss_weight=1.0)):
         super(BaseSemanticHead, self).__init__()
         self.loss_semantic = build_loss(loss_semantic)
