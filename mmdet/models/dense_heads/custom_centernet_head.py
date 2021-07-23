@@ -86,6 +86,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
     def __init__(self,
                  in_channel,
                  num_classes,
+                 num_features,
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
@@ -198,9 +199,9 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         ### initialize the     <scales>
         # self.scales = nn.ModuleList(
         #     [Scale(init_value=1.0)])
-        # self.scales = Scale(init_value=1.0)
-        # # self.scales = nn.ModuleList(
-        # #     [Scale(init_value=1.0) for _ in input_shape])
+        self.scales = nn.ModuleList(
+            [Scale(init_value=1.0) for _ in range(num_features)])
+
 
         ### initialize the     <agn_hm>
         self.agn_hm = nn.Conv2d(
@@ -283,9 +284,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             agn_hms (List[Tensor]): agn_hms predicts for all levels, the
                channels number is 1.
         """
-        return multi_apply(self.forward_single, feats)
+        return multi_apply(self.forward_single, feats, [i for i in range(len(feats))])
 
-    def forward_single(self, feat):
+
+
+    def forward_single(self, feat, i):
         """Forward feature of a single level.
 
         Args:
@@ -315,18 +318,17 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         feat = self.share_tower(feat)       # not used
         cls_tower = self.cls_tower(feat)    # not used
         bbox_tower = self.bbox_tower(feat)
-
-        print("cls_tower:",cls_tower.size(), bbox_tower.size())
+        # print("cls_tower:",cls_tower.size(), bbox_tower.size())
         if not self.only_proposal:
             clss = self.cls_logits(cls_tower)
         else:
             clss = None
         agn_hms = self.agn_hm(bbox_tower)
         reg = self.bbox_pred(bbox_tower)
-        reg = self.scales[0](reg)
+        reg = self.scales[i](reg)
         # reg = self.scales[l](reg)
         bbox_reg = F.relu(reg)
-        print("bbox_reg",bbox_reg.size(), agn_hms.size())
+        # print("bbox_reg",bbox_reg.size(), agn_hms.size())
         return clss, bbox_reg, agn_hms
 
     def loss(self,
@@ -334,6 +336,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
              reg_pred_per_level,
              agn_hm_pred_per_level,
              gt_bboxes,
+             gt_labels,
              img_metas,             
              gt_bboxes_ignore=None):
         """Compute losses of the dense head.
@@ -843,8 +846,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             return 1
         return dist.get_world_size()
 
-    def get_bboxes(self, *outs, img_metas, gt_bboxes, gt_labels):
-        
+    def get_bboxes(self, *outs, img_metas, cfg):
         
         grids = self.compute_grids(outs[-1])
         # grids = multi_apply(self.compute_grids, feats, self.strides)

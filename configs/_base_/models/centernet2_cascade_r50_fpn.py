@@ -22,6 +22,7 @@ model = dict(
         type='CustomCenterNetHead',
         num_classes=80,
         in_channel=256,
+        num_features=5,
         ),
     roi_head=dict(
         type='CascadeRoIHead',
