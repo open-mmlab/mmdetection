@@ -12,7 +12,7 @@
 
 这些操作可以分为数据加载（data loading）、预处理（pre-processing）、格式变化（formatting）和测试时数据增强（test-time augmentation）。
 
-下面的例子就是 `Faster R-CNN` 的一个流程：
+下面的例子是 `Faster R-CNN` 的一个流程：
 
 ```python
 img_norm_cfg = dict(
