@@ -586,16 +586,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                     [(x.shape[2], x.shape[3]) for x in reg_pred_per_level])
 
         if self.training:
-            pos_inds, labels, reg_targets, flattened_hms = \
-                self._get_ground_truth(
-                    grids, shapes_per_level, gt_bboxes, gt_labels)
-            pos_inds, labels, reg_targets, flattened_hms = \
-                self._get_ground_truth(
-                    grids, shapes_per_level, gt_bboxes, gt_labels)
-            # logits_pred: M x F, reg_pred: M x 4, agn_hm_pred: M
-            logits_pred, reg_pred, agn_hm_pred = self._flatten_outputs(
-                clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
-
+            
             if self.more_pos:
                 # add more pixels as positive if \
                 #   1. they are within the center3x3 region of an object
@@ -603,7 +594,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 pos_inds, labels = self._add_more_pos(
                     reg_pred, gt_bboxes, gt_labels, shapes_per_level)
             
-
             proposals = None
             image_sizes = []
             for i in range(len(img_meta)):
@@ -660,109 +650,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             grids.append(grids_per_level)
         return grids
 
-
-    def _get_ground_truth(self, grids, shapes_per_level, gt_bboxes, gt_labels):
-        '''
-        Input:
-            grids: list of tensors [(hl x wl, 2)]_l
-            shapes_per_level: list of tuples L x 2:
-            gt_instances: gt instances
-        Retuen:
-            pos_inds: N
-            labels: N
-            reg_targets: M x 4
-            flattened_hms: M x C or M x 1
-            N: number of objects in all images
-            M: number of pixels from all FPN levels
-        '''
-
-        # get positive pixel index
-        if not self.more_pos:
-            pos_inds, labels = self._get_label_inds(
-                gt_bboxes, gt_labels, shapes_per_level) 
-        else:
-            pos_inds, labels = None, None
-        heatmap_channels = self.num_classes
-        L = len(grids)
-        num_loc_list = [len(loc) for loc in grids]
-        strides = torch.cat([
-            shapes_per_level.new_ones(num_loc_list[l]) * self.strides[l] \
-            for l in range(L)]).float() # M
-        reg_size_ranges = torch.cat([
-            shapes_per_level.new_tensor(self.sizes_of_interest[l]).float().view(
-            1, 2).expand(num_loc_list[l], 2) for l in range(L)]) # M x 2
-        grids = torch.cat(grids, dim=0) # M x 2
-        M = grids.shape[0]
-
-        reg_targets = []
-        flattened_hms = []
-        for i in range(len(gt_labels)): # images
-            boxes = gt_bboxes[i] # N x 4
-            area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-            # area = gt_bboxes[i].area() # N
-            gt_classes = gt_labels[i] # N in [0, self.num_classes]
-
-            N = boxes.shape[0]
-            if N == 0:
-                reg_targets.append(grids.new_zeros((M, 4)) - INF)
-                flattened_hms.append(
-                    grids.new_zeros((
-                        M, 1 if self.only_proposal else heatmap_channels)))
-                continue
-            
-            l = grids[:, 0].view(M, 1) - boxes[:, 0].view(1, N) # M x N
-            t = grids[:, 1].view(M, 1) - boxes[:, 1].view(1, N) # M x N
-            r = boxes[:, 2].view(1, N) - grids[:, 0].view(M, 1) # M x N
-            b = boxes[:, 3].view(1, N) - grids[:, 1].view(M, 1) # M x N
-            reg_target = torch.stack([l, t, r, b], dim=2) # M x N x 4
-
-            centers = ((boxes[:, [0, 1]] + boxes[:, [2, 3]]) / 2) # N x 2
-            centers_expanded = centers.view(1, N, 2).expand(M, N, 2) # M x N x 2
-            strides_expanded = strides.view(M, 1, 1).expand(M, N, 2)
-            centers_discret = ((centers_expanded / strides_expanded).int() * \
-                strides_expanded).float() + strides_expanded / 2 # M x N x 2
-            
-            is_peak = (((grids.view(M, 1, 2).expand(M, N, 2) - \
-                centers_discret) ** 2).sum(dim=2) == 0) # M x N
-            is_in_boxes = reg_target.min(dim=2)[0] > 0 # M x N
-            is_center3x3 = self.get_center3x3(
-                grids, centers, strides) & is_in_boxes # M x N
-            is_cared_in_the_level = self.assign_reg_fpn(
-                reg_target, reg_size_ranges) # M x N
-            reg_mask = is_center3x3 & is_cared_in_the_level # M x N
-
-            dist2 = ((grids.view(M, 1, 2).expand(M, N, 2) - \
-                centers_expanded) ** 2).sum(dim=2) # M x N
-            dist2[is_peak] = 0
-            radius2 = self.delta ** 2 * 2 * area # N
-            radius2 = torch.clamp(
-                radius2, min=self.min_radius ** 2)
-            weighted_dist2 = dist2 / radius2.view(1, N).expand(M, N) # M x N            
-            reg_target = self._get_reg_targets(
-                reg_target, weighted_dist2.clone(), reg_mask, area) # M x 4
-
-            if self.only_proposal:
-                flattened_hm = self._create_agn_heatmaps_from_dist(
-                    weighted_dist2.clone()) # M x 1
-            else:
-                flattened_hm = self._create_heatmaps_from_dist(
-                    weighted_dist2.clone(), gt_classes, 
-                    channels=heatmap_channels) # M x C
-
-            reg_targets.append(reg_target)
-            flattened_hms.append(flattened_hm)
-        
-        # transpose im first training_targets to level first ones
-        reg_targets = _transpose(reg_targets, num_loc_list)
-        flattened_hms = _transpose(flattened_hms, num_loc_list)
-        for l in range(len(reg_targets)):
-            reg_targets[l] = reg_targets[l] / float(self.strides[l])
-        reg_targets = torch.cat([x for x in reg_targets], dim=0) # MB x 4
-        flattened_hms = torch.cat([x for x in flattened_hms], dim=0) # MB x C
-        
-        return pos_inds, labels, reg_targets, flattened_hms
-
-
     def _get_label_inds(self, gt_bboxes, gt_labels, shapes_per_level):
         '''
         Inputs:
@@ -808,41 +695,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         pos_inds = torch.cat(pos_inds, dim=0).long()
         labels = torch.cat(labels, dim=0)
         return pos_inds, labels # N, N
-
-
-    def assign_fpn_level(self, boxes):
-        '''
-        Inputs:
-            boxes: n x 4
-            size_ranges: L x 2
-        Return:
-            is_cared_in_the_level: n x L
-        '''
-        size_ranges = boxes.new_tensor(
-            self.sizes_of_interest).view(len(self.sizes_of_interest), 2) # L x 2
-        crit = ((boxes[:, 2:] - boxes[:, :2]) **2).sum(dim=1) ** 0.5 / 2 # n
-        n, L = crit.shape[0], size_ranges.shape[0]
-        crit = crit.view(n, 1).expand(n, L)
-        size_ranges_expand = size_ranges.view(1, L, 2).expand(n, L, 2)
-        is_cared_in_the_level = (crit >= size_ranges_expand[:, :, 0]) & \
-            (crit <= size_ranges_expand[:, :, 1])
-        return is_cared_in_the_level
     
-
-    def assign_reg_fpn(self, reg_targets_per_im, size_ranges):
-        '''
-        TODO (Xingyi): merge it with assign_fpn_level
-        Inputs:
-            reg_targets_per_im: M x N x 4
-            size_ranges: M x 2
-        '''
-        crit = ((reg_targets_per_im[:, :, :2] + \
-            reg_targets_per_im[:, :, 2:])**2).sum(dim=2) ** 0.5 / 2 # M x N
-        is_cared_in_the_level = (crit >= size_ranges[:, [0]]) & \
-            (crit <= size_ranges[:, [1]])
-        return is_cared_in_the_level
-
-
     def _get_reg_targets(self, reg_targets, dist, mask, area):
         '''
           reg_targets (M x N x 4): long tensor
@@ -873,51 +726,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             zeros = heatmaps[:, c] < 1e-4
             heatmaps[zeros, c] = 0
         return heatmaps
-
-
-    def _create_agn_heatmaps_from_dist(self, dist):
-        '''
-        TODO (Xingyi): merge it with _create_heatmaps_from_dist
-        dist: M x N
-        return:
-          heatmaps: M x 1
-        '''
-        heatmaps = dist.new_zeros((dist.shape[0], 1))
-        heatmaps[:, 0] = torch.exp(-dist.min(dim=1)[0])
-        zeros = heatmaps < 1e-4
-        heatmaps[zeros] = 0
-        return heatmaps
-
-
-    def _flatten_outputs(self, clss, reg_pred, agn_hm_pred):
-        # Reshape: (N, F, Hl, Wl) -> (N, Hl, Wl, F) -> (sum_l N*Hl*Wl, F)
-        clss = torch.cat([x.permute(0, 2, 3, 1).reshape(-1, x.shape[1]) \
-            for x in clss], dim=0) if clss[0] is not None else None
-        reg_pred = torch.cat(
-            [x.permute(0, 2, 3, 1).reshape(-1, 4) for x in reg_pred], dim=0)            
-        agn_hm_pred = torch.cat([x.permute(0, 2, 3, 1).reshape(-1) \
-            for x in agn_hm_pred], dim=0) if self.with_agn_hm else None
-        return clss, reg_pred, agn_hm_pred
-
-
-    def get_center3x3(self, locations, centers, strides):
-        '''
-        Inputs:
-            locations: M x 2
-            centers: N x 2
-            strides: M
-        '''
-        M, N = locations.shape[0], centers.shape[0]
-        locations_expanded = locations.view(M, 1, 2).expand(M, N, 2) # M x N x 2
-        centers_expanded = centers.view(1, N, 2).expand(M, N, 2) # M x N x 2
-        strides_expanded = strides.view(M, 1, 1).expand(M, N, 2) # M x N
-        centers_discret = ((centers_expanded / strides_expanded).int() * \
-            strides_expanded).float() + strides_expanded / 2 # M x N x 2
-        dist_x = (locations_expanded[:, :, 0] - centers_discret[:, :, 0]).abs()
-        dist_y = (locations_expanded[:, :, 1] - centers_discret[:, :, 1]).abs()
-        return (dist_x <= strides_expanded[:, :, 0]) & \
-            (dist_y <= strides_expanded[:, :, 0])
-
 
     def inference(self, images, clss_per_level, reg_pred_per_level, 
         agn_hm_pred_per_level, grids):
