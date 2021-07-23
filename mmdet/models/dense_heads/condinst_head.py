@@ -2,8 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (ConvModule, Scale, bias_init_with_prob, kaiming_init,
-                      normal_init)
+from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.ops.nms import batched_nms
 from mmcv.runner import force_fp32
 
@@ -44,7 +43,6 @@ def multiclass_nms(multi_bboxes,
                    max_num=-1,
                    score_factors=None):
     num_classes = multi_scores.size(1) - 1
-    bboxes = multi_bboxes[:, None].expand(multi_scores.size(0), num_classes, 4)
     kernels = multi_kernels[:, None].expand(
         multi_scores.size(0), num_classes, 169)
     bboxes = multi_bboxes[:, None].expand(multi_scores.size(0), num_classes, 4)
@@ -285,8 +283,12 @@ class CondInstHead(AnchorFreeHead):
         normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
         normal_init(self.fcos_reg, std=0.01)
         normal_init(self.fcos_centerness, std=0.01)
-        kaiming_init(self.mask_refine)
-        kaiming_init(self.mask_head)
+        for m in self.mask_refine.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_uniform_(m.weight, a=1)
+        for m in self.mask_head.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_uniform_(m.weight, a=1)
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -389,15 +391,17 @@ class CondInstHead(AnchorFreeHead):
         points_list, strides_list = self.get_points(
             featmap_sizes, bbox_preds[0].dtype, device=device)
 
-        cls_reg_targets = self.get_targets(points_list, gt_bboxes, gt_labels)
-
-        (labels_list, bbox_targets_list, gt_inds_list) = cls_reg_targets
         # gt mask
         gt_masks_list = []
         for i in range(len(gt_labels)):
             masks = gt_masks[i].masks
             masks = cls_scores[0].new_tensor(masks)
             gt_masks_list.append(masks)
+
+        cls_reg_targets = self.get_targets(points_list, gt_bboxes, gt_labels,
+                                           gt_masks_list)
+
+        (labels_list, bbox_targets_list, gt_inds_list) = cls_reg_targets
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and centerness
@@ -441,7 +445,7 @@ class CondInstHead(AnchorFreeHead):
         # classification loss
         loss_cls = self.loss_cls(
             flatten_cls_scores, flatten_labels, avg_factor=num_pos)
-        if len(pos_inds) > 0:
+        if len(pos_inds):
             pos_bbox_targets = flatten_bbox_targets[pos_inds]
             pos_bbox_pred = flatten_bbox_preds[pos_inds]
             pos_points = flatten_points[pos_inds]
@@ -453,8 +457,14 @@ class CondInstHead(AnchorFreeHead):
                                                     pos_bbox_targets)
 
             # centerness weighted iou loss
-            centerness_denorm = max(
-                reduce_mean(pos_centerness_targets.sum().detach()), 1e-6)
+        else:
+            pos_centerness_targets = flatten_cls_scores.new_zeros(1)
+
+        # avoid dead lock
+        centerness_denorm = max(
+            reduce_mean(pos_centerness_targets.sum().detach()), 1e-6)
+
+        if len(pos_inds):
             # regression loss
             loss_bbox = self.loss_bbox(
                 pos_decode_bbox_pred,
@@ -480,22 +490,16 @@ class CondInstHead(AnchorFreeHead):
             pos_inds = ((flatten_labels_i >= 0)
                         & (flatten_labels_i < self.num_classes)).nonzero(
                             as_tuple=False).squeeze(1)
+            if len(pos_inds) == 0:
+                loss_mask = loss_mask + (flatten_kernel_preds.sum() +
+                                         mask_feats.sum()) * 0
+                continue
             # mask feat
             mask_feat = mask_feats[i]
-            bbox_pred_list = [
-                bbox_preds[level][i].permute(1, 2, 0).reshape(-1, 4).detach()
-                for level in range(5)
-            ]
-            bbox_pred = torch.cat(bbox_pred_list)[pos_inds]
             points = torch.cat(points_list)[pos_inds]
-            pos_det_bboxes = distance2bbox(points, bbox_pred)
             idx_gt = gt_inds_list[i]
             mask_head_params = flatten_kernel_preds[i][pos_inds]
             strides = torch.cat(strides_list)[pos_inds]
-
-            if pos_det_bboxes.shape[0] == 0 or gt_masks_list[i].shape[0] == 0:
-                loss_mask += pos_det_bboxes[:, 0].sum() * 0
-                continue
 
             # mask loss
             num_instance = len(points)
@@ -521,10 +525,7 @@ class CondInstHead(AnchorFreeHead):
                                           gt_mask).sum()
             num_mask += len(idx_gt)
 
-        loss_mask = loss_mask / num_mask
-
-        if loss_mask == 0:
-            loss_mask = pos_det_bboxes[:, 0].sum() * 0
+        loss_mask = loss_mask / max(num_mask, 1)
 
         return dict(
             loss_cls=loss_cls,
@@ -813,7 +814,8 @@ class CondInstHead(AnchorFreeHead):
             masks.gt_(0.5)
         return det_bboxes, det_labels, masks
 
-    def get_targets(self, points, gt_bboxes_list, gt_labels_list):
+    def get_targets(self, points, gt_bboxes_list, gt_labels_list,
+                    gt_masks_list):
         assert len(points) == len(self.regress_ranges)
         num_levels = len(points)
         # expand regress ranges to align with points
@@ -833,9 +835,11 @@ class CondInstHead(AnchorFreeHead):
             self.get_targets_single,
             gt_bboxes_list,
             gt_labels_list,
+            gt_masks_list,
             points=concat_points,
             regress_ranges=concat_regress_ranges,
-            num_points_per_lvl=num_points)
+            num_points_per_lvl=num_points,
+        )
 
         # split to per img, per level
         labels_list = [labels.split(num_points, 0) for labels in labels_list]
@@ -846,8 +850,8 @@ class CondInstHead(AnchorFreeHead):
 
         return labels_list, bbox_targets_list, gt_inds_list
 
-    def get_targets_single(self, gt_bboxes, gt_labels, points, regress_ranges,
-                           num_points_per_lvl):
+    def get_targets_single(self, gt_bboxes, gt_labels, gt_masks, points,
+                           regress_ranges, num_points_per_lvl):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
 
@@ -877,10 +881,22 @@ class CondInstHead(AnchorFreeHead):
         if self.center_sampling:
             # condition1: inside a `center bbox`
             radius = self.center_sample_radius
-            center_xs = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) / 2
-            center_ys = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) / 2
+            masss_gt_masks = gt_masks.sum((1, 2))
+            _, h, w = gt_masks.shape
+            grid_h = torch.arange(h, device=gt_masks.device)[:, None]
+            grid_w = torch.arange(w, device=gt_masks.device)
+            center_ys = (gt_masks * grid_h).sum(
+                (1, 2)) / masss_gt_masks.clamp(min=1)
+            center_xs = (gt_masks * grid_w).sum(
+                (1, 2)) / masss_gt_masks.clamp(min=1)
+
+            center_xs = center_xs[None, :]
+            center_ys = center_ys[None, :]
+            # bbox_center_xs = (gt_bboxes[0,:, 0] + gt_bboxes[0,:, 2]) / 2
+            # bbox_center_ys = (gt_bboxes[0,:, 1] + gt_bboxes[0,:, 3]) / 2
             center_gts = torch.zeros_like(gt_bboxes)
-            stride = center_xs.new_zeros(center_xs.shape)
+            # num_points * num_gt
+            stride = bbox_targets.new_zeros(bbox_targets.shape[:2])
 
             # project the points on current lvl back to the `original` sizes
             lvl_begin = 0
