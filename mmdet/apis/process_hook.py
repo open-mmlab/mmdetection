@@ -48,4 +48,4 @@ class ProcessHook(Hook):
             print("--->No mosaic aug now!")
             train_loader.dataset.mosaic = False
             print("--->Add additional L1 loss now!")
-            model.head.use_l1 = True
+            model.bbox_head.use_l1 = True
