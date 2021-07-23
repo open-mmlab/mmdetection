@@ -30,8 +30,8 @@ train_pipeline = [dict(type='DefaultFormatBundle'),
                   dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],
                        meta_keys=('img_norm_cfg',))]
 
-name = 'val2017/'
-annotations = 'annotations/instances_val2017.json'
+name = 'train2017/'
+annotations = 'annotations/instances_train2017.json'
 
 sub_dataset = dict(type="COCODataset",
                    ann_file=data_root + annotations,
@@ -63,12 +63,12 @@ test_pipeline = [
             dict(type='Collect', keys=['img'])
         ])
 ]
-batch_size = 32
+batch_size = 8  # single gpu
 basic_lr_per_img = 0.01 / 64.0
 
 data = dict(
     samples_per_gpu=batch_size,
-    workers_per_gpu=4,
+    workers_per_gpu=2,
     train=train_dataset,
     test=dict(type="CocoDataset",
               ann_file=data_root + 'annotations/instances_val2017.json',
@@ -80,7 +80,7 @@ data = dict(
              pipeline=test_pipeline))
 
 # optimizer
-optimizer = dict(type='SGD', lr=batch_size * basic_lr_per_img, momentum=0.9, weight_decay=5e-4, nesterov=True,
+optimizer = dict(type='SGD', lr=0, momentum=0.9, weight_decay=5e-4, nesterov=True,
                  paramwise_cfg=dict(norm_decay_mult=0., bias_decay_mult=0.))
 # optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 optimizer_config = dict(grad_clip=None)
@@ -98,9 +98,11 @@ lr_config = dict(
     min_lr_ratio=0.05)
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 
+resume_from = None
+
 interval = 10
 evaluation = dict(interval=interval, metric='bbox')
 custom_hooks = [dict(type='ProcessHook', random_size=(10, 20), no_aug_epochs=15, eval_interval=interval, priority=48),
-                dict(type='EMAHook', priority=49)]
+                dict(type='EMAHook', priority=49, resume_from=resume_from)]
 log_config = dict(interval=50)
 checkpoint_config = dict(interval=interval)

@@ -1,11 +1,13 @@
 from mmcv.runner.hooks import HOOKS, Hook
+from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 import torch.nn as nn
 import math
 
 
 def is_parallel(model):
     # Returns True if model is of type DP or DDP
-    return type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel)
+    return type(model) in (
+    nn.parallel.DataParallel, nn.parallel.DistributedDataParallel, MMDataParallel, MMDistributedDataParallel)
 
 
 @HOOKS.register_module(force=True)
@@ -68,7 +70,7 @@ class EMAHook(Hook):
             if parameter.dtype.is_floating_point:
                 buffer_name = self.param_ema_buffer[name]
                 buffer_parameter = self.model_buffers[buffer_name]
-                buffer_parameter.mul_(decay).add_(1-decay, parameter.data)
+                buffer_parameter.mul_(decay).add_(1 - decay, parameter.data)
 
     def after_train_epoch(self, runner):
         """We load parameter values from ema backup to model before the
