@@ -18,7 +18,7 @@ model = dict(
     # test
     test_cfg=dict(
         min_bbox_size=0,
-        conf_thr=0.001,
+        conf_thr=0.01,  # TODO test 0.001 val 0.01
         nms=dict(type='nms', iou_threshold=0.65),
         max_per_img=1000)
 )
@@ -98,9 +98,9 @@ lr_config = dict(
     min_lr_ratio=0.05)
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 
-evaluation = dict(interval=10, metric='bbox')
-
-custom_hooks = [dict(type='ProcessHook', random_size=(10, 20), no_aug_epochs=15), dict(type='EMAHook', priority=49)]
-
+interval = 10
+evaluation = dict(interval=interval, metric='bbox')
+custom_hooks = [dict(type='ProcessHook', random_size=(10, 20), no_aug_epochs=15, eval_interval=interval, priority=48),
+                dict(type='EMAHook', priority=49)]
 log_config = dict(interval=50)
-checkpoint_config = dict(interval=10)
+checkpoint_config = dict(interval=interval)

@@ -368,7 +368,7 @@ class MosaicDetection(CocoDataset):
                  enable_mixup=True,
                  *args,
                  **kwargs):
-        dataset["pipeline"] = [lambda x: x]
+        dataset["pipeline"] = []
         dataset = build_from_cfg(dataset, DATASETS)
 
         self._dataset = dataset
