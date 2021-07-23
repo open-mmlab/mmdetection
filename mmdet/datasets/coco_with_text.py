@@ -1,13 +1,12 @@
 import collections
 import copy
+import editdistance
 import logging
+import numpy as np
 import os
 import string
 import subprocess
 import tempfile
-
-import editdistance
-import numpy as np
 from mmcv.utils import print_log
 from pycocotools.cocoeval import COCOeval
 from tqdm import tqdm
@@ -52,6 +51,10 @@ class CocoWithTextDataset(CocoDataset):
         self.alphabet = alphabet
         self.max_text_len = 33
         self.EOS = 1
+        self.lexicon = None
+        self.lexicon_mapping = None
+        self.lexicon_path = None
+        self.lexicon_mapping_path = None
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small or without ground truths."""
@@ -158,17 +161,29 @@ class CocoWithTextDataset(CocoDataset):
             'lexicon_mapping': None,
             'det_thr' : 0.0,
             'rec_thr' : 0.0,
-            'dataset': 'icdar15'
+            'dataset': 'icdar15',
+            'det_thr_range': None,
+            'rec_thr_range': None,
         }
         if len(metric) == 2:
             params = {k:v for k,v in [kv.split('=') for kv in metric[1].split(',')]}
             metric_params.update(params)
             metric_params['det_thr'] = float(metric_params['det_thr'])
             metric_params['rec_thr'] = float(metric_params['rec_thr'])
+            if metric_params['det_thr_range'] is not None:
+                metric_params['det_thr_range'] = np.arange(
+                    *[float(x) for x in metric_params['det_thr_range'].split('_')])
+            if metric_params['rec_thr_range'] is not None:
+                metric_params['rec_thr_range'] = np.arange(
+                    *[float(x) for x in metric_params['rec_thr_range'].split('_')])
+            if metric_params['det_thr_range'] is not None or metric_params['rec_thr_range'] is not None:
+                assert metric_params['det_thr_range'] is not None and metric_params['rec_thr_range'] is not None
+
         metric = metric[0]
 
         assert metric_params['dataset'] in ('icdar15', 'totaltext')
-        allowed_keys = {'lexicon', 'lexicon_mapping', 'det_thr', 'rec_thr', 'dataset'}
+        allowed_keys = {'lexicon', 'lexicon_mapping', 'det_thr', 'rec_thr',
+                        'dataset', 'det_thr_range', 'rec_thr_range'}
         assert all((k in allowed_keys) for k in metric_params.keys())
 
         return metric, metric_params
@@ -200,22 +215,24 @@ class CocoWithTextDataset(CocoDataset):
             filtered_predictions.append(filtered_per_image_predictions)
         return filtered_predictions
 
-    @staticmethod
-    def _read_lexicon(path):
+    def _read_lexicon(self, path):
         if not path:
             return []
-        with open(path) as read_file:
-            lexicon = [line.strip() for line in read_file]
-        return lexicon
+        if self.lexicon_path is None or self.lexicon != path:
+            with open(path) as read_file:
+                self.lexicon = [line.strip() for line in read_file]
+            self.lexicon_path = path
+        return self.lexicon
 
-    @staticmethod
-    def _read_lexicon_mapping(path):
+    def _read_lexicon_mapping(self, path):
         if not path:
             return {}
-        with open(path) as read_file:
-            lexicon_mapping = [line.strip().split(' ') for line in read_file]
-            lexicon_mapping = {pair[0].upper(): ' '.join(pair[1:]) for pair in lexicon_mapping}
-        return lexicon_mapping
+        if self.lexicon_mapping_path is None or self.lexicon_mapping_path != path:
+            with open(path) as read_file:
+                lexicon_mapping = [line.strip().split(' ') for line in read_file]
+                self.lexicon_mapping = {pair[0].upper(): ' '.join(pair[1:]) for pair in lexicon_mapping}
+            self.lexicon_mapping_path = path
+        return self.lexicon_mapping
 
     def evaluate(self,
                  results,
@@ -271,14 +288,21 @@ class CocoWithTextDataset(CocoDataset):
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
-            lexicon_path = metric_params['lexicon']
-            lexicon = self._read_lexicon(lexicon_path)
-
-            lexicon_pairs_path = metric_params['lexicon_mapping']
-            lexicon_mapping = self._read_lexicon_mapping(lexicon_pairs_path)
 
             predictions = []
-            for res in tqdm(results):
+            for img_i, res in enumerate(tqdm(results)):
+                img_id = os.path.basename(cocoGt.imgs[img_i]['filename']).split('.')[0].split('_')[-1]
+
+                lexicon_path = metric_params['lexicon']
+                if lexicon_path and '{}' in lexicon_path:
+                    lexicon_path = lexicon_path.format(img_id)
+                lexicon = self._read_lexicon(lexicon_path)
+
+                lexicon_pairs_path = metric_params['lexicon_mapping']
+                if lexicon_pairs_path and '{}' in lexicon_pairs_path:
+                    lexicon_pairs_path = lexicon_pairs_path.format(img_id)
+                lexicon_mapping = self._read_lexicon_mapping(lexicon_pairs_path)
+
                 boxes = res[0][0]
                 segms = res[1][0]
                 if len(res[2]) == 3:
@@ -310,17 +334,49 @@ class CocoWithTextDataset(CocoDataset):
             filtered_predictions = self._filter_predictions(
                 predictions, metric_params['det_thr'], metric_params['rec_thr']
             )
-            # self._dump_predictions(filtered_predictions, metric_params['dataset'])
-            recall, precision, hmean, _ = text_eval(
-                filtered_predictions, gt_annotations, score_thr,
-                show_recall_graph=False,
-                use_transcriptions=True,
-                word_spotting=metric.startswith('word_spotting'))
 
-            print(f'Text detection recall={recall} precision={precision} hmean={hmean}')
-            eval_results[metric + '/hmean'] = float(f'{hmean:.3f}')
-            eval_results[metric + '/precision'] = float(f'{precision:.3f}')
-            eval_results[metric + '/recall'] = float(f'{recall:.3f}')
+            if metric_params['det_thr_range'] is None:
+                # self._dump_predictions(filtered_predictions, metric_params['dataset'])
+                recall, precision, hmean, _ = text_eval(
+                    filtered_predictions, gt_annotations, score_thr,
+                    show_recall_graph=False,
+                    use_transcriptions=True,
+                    word_spotting=metric.startswith('word_spotting'))
+
+                print(f'Text detection recall={recall} precision={precision} hmean={hmean}')
+                eval_results[metric + '/hmean'] = float(f'{hmean:.3f}')
+                eval_results[metric + '/precision'] = float(f'{precision:.3f}')
+                eval_results[metric + '/recall'] = float(f'{recall:.3f}')
+            else:
+                best_hmean = -1
+                best_det_thr = None
+                best_rec_thr = None
+                for det_thr in tqdm(metric_params['det_thr_range']):
+                    for rec_thr in metric_params['rec_thr_range']:
+                        filtered_predictions = self._filter_predictions(
+                            predictions, det_thr, rec_thr
+                        )
+                        recall, precision, hmean, _ = text_eval(
+                            filtered_predictions, gt_annotations, score_thr,
+                            show_recall_graph=False,
+                            use_transcriptions=True,
+                            word_spotting=metric.startswith('word_spotting'))
+
+                        if hmean >= best_hmean:
+                            best_hmean = hmean
+                            best_precision = precision
+                            best_recall = recall
+                            best_det_thr = det_thr
+                            best_rec_thr = rec_thr
+
+                eval_results[metric + '/hmean'] = float(f'{best_hmean:.3f}')
+                eval_results[metric + '/precision'] = float(f'{best_precision:.3f}')
+                eval_results[metric + '/recall'] = float(f'{best_recall:.3f}')
+                eval_results[metric + '/det_thr'] = float(f'{best_det_thr:.3f}')
+                eval_results[metric + '/rec_thr'] = float(f'{best_rec_thr:.3f}')
+
+                print(f'Text detection recall={best_recall} precision={best_precision} hmean={best_hmean} @ '
+                      f'det_thr={best_det_thr} and rec_thr={best_rec_thr}')
 
         if tmp_dir is not None:
             tmp_dir.cleanup()

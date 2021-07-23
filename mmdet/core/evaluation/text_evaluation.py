@@ -43,9 +43,10 @@ def draw_gt_polygons(image, gt_polygons, gt_dont_care_nums):
 
     for point_idx, polygon in enumerate(gt_polygons):
         color = (128, 128, 128) if point_idx in gt_dont_care_nums else (255, 0, 0)
-        for i in range(4):
+        plen = len(polygon[0])
+        for i in range(plen):
             pt1 = int(polygon[0][i][0]), int(polygon[0][i][1])
-            pt2 = int(polygon[0][(i + 1) % 4][0]), int(polygon[0][(i + 1) % 4][1])
+            pt2 = int(polygon[0][(i + 1) % plen][0]), int(polygon[0][(i + 1) % plen][1])
             cv2.line(image, pt1, pt2, color, 2)
     return image
 
@@ -67,10 +68,10 @@ def draw_pr_polygons(image, pr_polygons,
                 pt1 = int(polygon[0][0][0]), int(polygon[0][0][1])
                 cv2.putText(image, pr_transcriptions[point_idx], pt1,
                             cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
-
-            for i in range(4):
+            plen = len(polygon[0])
+            for i in range(plen):
                 pt1 = int(polygon[0][i][0]), int(polygon[0][i][1])
-                pt2 = int(polygon[0][(i + 1) % 4][0]), int(polygon[0][(i + 1) % 4][1])
+                pt2 = int(polygon[0][(i + 1) % plen][0]), int(polygon[0][(i + 1) % plen][1])
                 cv2.line(image, pt1, pt2, color, 2)
     return image
 
@@ -240,6 +241,7 @@ def match_dont_care_objects(gt_polygons_list, gt_dont_care_polygon_nums,
 
     return pr_dont_care_polygon_nums
 
+
 def match_transcriptions(text_gt, text_pr, word_spotting):
     if text_gt == text_pr:
         return True
@@ -253,6 +255,7 @@ def match_transcriptions(text_gt, text_pr, word_spotting):
             return True
 
     return False
+
 
 def match(gt_polygons_list, gt_transcriptions, gt_dont_care_polygon_nums,
           pr_polygons_list, pr_transcriptions, pr_dont_care_polygon_nums,
@@ -284,8 +287,6 @@ def match(gt_polygons_list, gt_transcriptions, gt_dont_care_polygon_nums,
                         if  match_transcriptions(gt_transcriptions[gt_idx].lower(), pr_transcriptions[pr_idx].lower(), word_spotting):
                             pr_matched_nums.append(pr_idx)
                         else:
-                            print(gt_transcriptions[gt_idx],
-                                  pr_transcriptions[pr_idx])
                             pr_matched_but_not_recognized.append(pr_idx)
                     else:
                         pr_matched_nums.append(pr_idx)

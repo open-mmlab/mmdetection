@@ -11,6 +11,7 @@ from mmcv.runner import force_fp32
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
                         multi_apply, multiclass_nms)
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -281,7 +282,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             # Get top-k prediction
             nms_pre = cfg.get('nms_pre', -1)
             if 0 < nms_pre < conf_pred.size(0) and (
-                    not torch.onnx.is_in_onnx_export()):
+                    not torch.onnx.is_in_onnx_export() or not is_in_nncf_tracing()):
                 _, topk_inds = conf_pred.topk(nms_pre)
                 bbox_pred = bbox_pred[topk_inds, :]
                 cls_pred = cls_pred[topk_inds, :]

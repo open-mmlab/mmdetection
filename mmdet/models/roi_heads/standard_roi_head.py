@@ -7,6 +7,7 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 from mmdet.core.bbox.transforms import bbox2result
 from mmdet.core.mask.transforms import mask2result
+from mmdet.integration.nncf.utils import no_nncf_trace
 import numpy as np
 
 
@@ -248,7 +249,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     postprocess=True):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
-
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=False)
 
@@ -257,24 +257,25 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             det_masks = self.simple_test_mask(
                 x, img_metas, det_bboxes, det_labels, rescale=False)
 
-        if postprocess:
-            if len(det_masks) and isinstance(det_masks[0], tuple): # mask scoring rcnn
-                results = []
-                for i in range(len(det_bboxes)):
-                    det_mask, mask_scores = det_masks[i]
-                    bbox_results, segm_results = self.postprocess(
-                        det_bboxes[i], det_labels[i], det_mask, img_metas[i], rescale=rescale)
-                    masks_with_scores = (segm_results, mask_scores)
-                    results.append((bbox_results, masks_with_scores))
-                return results
+        with no_nncf_trace():
+            if postprocess:
+                if len(det_masks) and isinstance(det_masks[0], tuple): # mask scoring rcnn
+                    results = []
+                    for i in range(len(det_bboxes)):
+                        det_mask, mask_scores = det_masks[i]
+                        bbox_results, segm_results = self.postprocess(
+                            det_bboxes[i], det_labels[i], det_mask, img_metas[i], rescale=rescale)
+                        masks_with_scores = (segm_results, mask_scores)
+                        results.append((bbox_results, masks_with_scores))
+                    return results
 
-            return [self.postprocess(det_bboxes[i], det_labels[i], det_masks[i], img_metas[i], rescale=rescale)
-                    for i in range(len(det_bboxes))]
-        else:
-            if det_masks is None or None in det_masks:
-                return det_bboxes, det_labels
+                return [self.postprocess(det_bboxes[i], det_labels[i], det_masks[i], img_metas[i], rescale=rescale)
+                        for i in range(len(det_bboxes))]
             else:
-                return det_bboxes, det_labels, det_masks
+                if det_masks is None or None in det_masks:
+                    return det_bboxes, det_labels
+                else:
+                    return det_bboxes, det_labels, det_masks
 
     def postprocess(self,
                     det_bboxes,

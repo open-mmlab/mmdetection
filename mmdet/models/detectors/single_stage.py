@@ -6,7 +6,7 @@ from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
-from ...integration.nncf import no_nncf_trace
+from mmdet.integration.nncf.utils import no_nncf_trace, is_in_nncf_tracing
 
 
 @DETECTORS.register_module()
@@ -104,7 +104,7 @@ class SingleStageDetector(BaseDetector):
         with no_nncf_trace():
             bbox_results = \
                 self.bbox_head.get_bboxes(*outs, img_metas, self.test_cfg, False)
-        if torch.onnx.is_in_onnx_export():
+        if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
             return bbox_results[0]
 
         if postprocess:

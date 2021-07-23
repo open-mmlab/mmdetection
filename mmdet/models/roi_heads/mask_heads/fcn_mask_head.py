@@ -9,6 +9,7 @@ from torch.nn.modules.utils import _pair
 from mmdet.core import mask_target
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.core.utils.misc import arange
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
@@ -233,7 +234,7 @@ def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
     gy = img_y[:, :, None].expand(N, img_y.size(1), img_x.size(1))
     grid = torch.stack([gx, gy], dim=3)
 
-    if torch.onnx.is_in_onnx_export():
+    if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
         raise RuntimeError(
             'Exporting F.grid_sample from Pytorch to ONNX is not supported.')
     img_masks = F.grid_sample(

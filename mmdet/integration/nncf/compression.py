@@ -1,7 +1,6 @@
 import os
 import pathlib
 import tempfile
-from functools import partial
 
 import mmcv
 import torch
@@ -35,6 +34,7 @@ def is_checkpoint_nncf(path):
     except FileNotFoundError:
         return False
 
+
 def get_nncf_config_from_meta(path):
     """
     The function uses metadata stored in a checkpoint to restore the nncf
@@ -46,7 +46,7 @@ def get_nncf_config_from_meta(path):
 
     nncf_enable_compression = meta.get('nncf_enable_compression', False)
     assert nncf_enable_compression, \
-            'get_nncf_config_from_meta should be run for NNCF-compressed checkpoints only'
+        'get_nncf_config_from_meta should be run for NNCF-compressed checkpoints only'
 
     config_text = meta['config']
 
@@ -60,14 +60,14 @@ def get_nncf_config_from_meta(path):
     nncf_config = cfg.get('nncf_config')
 
     assert isinstance(nncf_config, dict), (
-            f'Wrong nncf_config part of the config saved in the metainfo'
-            f' of the snapshot {path}:'
-            f' nncf_config={nncf_config}')
+        f'Wrong nncf_config part of the config saved in the metainfo'
+        f' of the snapshot {path}:'
+        f' nncf_config={nncf_config}')
 
     nncf_config_part = {
-            'nncf_config': nncf_config,
-            'find_unused_parameters': True
-            }
+        'nncf_config': nncf_config,
+        'find_unused_parameters': True
+    }
     if nncf_config_part['nncf_config'].get('log_dir'):
         # TODO(LeonidBeynenson): improve work with log dir
         log_dir = tempfile.mkdtemp(prefix='nncf_output_')
@@ -76,10 +76,12 @@ def get_nncf_config_from_meta(path):
     logger.info(f'Read nncf config from meta nncf_config_part={nncf_config_part}')
     return nncf_config_part
 
+
 def wrap_nncf_model(model,
                     cfg,
                     data_loader_for_init=None,
-                    get_fake_input_func=None):
+                    get_fake_input_func=None,
+                    is_alt_ssd_export=False):
     """
     The function wraps mmdet model by NNCF
     Note that the parameter `get_fake_input_func` should be the function `get_fake_input`
@@ -90,14 +92,18 @@ def wrap_nncf_model(model,
 
     from nncf import (NNCFConfig, create_compressed_model,
                       register_default_init_args)
-    from nncf.dynamic_graph.io_handling import nncf_model_input
+    from nncf.dynamic_graph.io_handling import nncf_model_input, wrap_nncf_model_outputs_with_objwalk
+    from nncf.dynamic_graph.trace_tensor import TracedTensor
     from nncf.initialization import InitializingDataLoader
 
     class MMInitializeDataLoader(InitializingDataLoader):
+
         def get_inputs(self, dataloader_output):
             # redefined InitializingDataLoader because
             # of DataContainer format in mmdet
             kwargs = {k: v.data[0] for k, v in dataloader_output.items()}
+            kwargs['img'] = [kwargs['img']]
+            kwargs['img_metas'] = [kwargs['img_metas']]
             return (), kwargs
 
     pathlib.Path(cfg.work_dir).mkdir(parents=True, exist_ok=True)
@@ -166,25 +172,35 @@ def wrap_nncf_model(model,
         img, img_metas = fake_data["img"], fake_data["img_metas"]
         img[0] = nncf_model_input(img[0])
         if nncf_compress_postprocessing:
+            if is_alt_ssd_export:
+                img = img[0]
+                img_metas = img_metas[0]
             ctx = model.forward_export_context(img_metas)
             logger.debug(f"NNCF will compress a postprocessing part of the model")
         else:
             ctx = model.forward_dummy_context(img_metas)
             logger.debug(f"NNCF will NOT compress a postprocessing part of the model")
         with ctx:
-            model(img)
+            wrap_nncf_model_outputs_with_objwalk(model(img))
+
 
     def wrap_inputs(args, kwargs):
         # during dummy_forward
         if not len(kwargs):
-            args[0][0] = nncf_model_input(args[0][0])
-            return args, kwargs
+            if is_alt_ssd_export:
+                if not isinstance(args[0], TracedTensor):
+                    nncf_input = nncf_model_input(args[0])
+                return (nncf_input,), kwargs
+            else:
+                if not isinstance(args[0][0], TracedTensor):
+                    args[0][0] = nncf_model_input(args[0][0])
+                return args, kwargs
 
         # during building original graph
         if not kwargs.get('return_loss') and kwargs.get('forward_export'):
             return args, kwargs
 
-        # during model's forward
+        # during model's forward in export
         assert 'img' in kwargs, 'During model forward img must be in kwargs'
         img = kwargs['img']
         if isinstance(img, list):
@@ -202,68 +218,21 @@ def wrap_nncf_model(model,
 
     if 'log_dir' in nncf_config:
         os.makedirs(nncf_config['log_dir'], exist_ok=True)
-    compression_ctrl, model = create_compressed_model(model,
-                                                      nncf_config,
-                                                      dummy_forward_fn=dummy_forward,
-                                                      wrap_inputs_fn=wrap_inputs,
-                                                      resuming_state_dict=resuming_state_dict)
-    model = change_export_func_first_conv(model)
+    with model.forward_nncf_initialization_context():
+        compression_ctrl, model = create_compressed_model(model,
+                                                          nncf_config,
+                                                          dummy_forward_fn=dummy_forward,
+                                                          wrap_inputs_fn=wrap_inputs,
+                                                          resuming_state_dict=resuming_state_dict)
     model.export = export_method.__get__(model)
 
     return compression_ctrl, model
 
 
-def change_export_func_first_conv(model):
-    """ To avoid saturation issue
-    At the moment works only for mobilenet
-    """
-
-    def run_hacked_export_quantization(self, x):
-        from nncf.quantization.layers import (
-            ExportQuantizeToFakeQuantize, ExportQuantizeToONNXQuantDequant,
-            QuantizerExportMode, get_scale_zp_from_input_low_input_high)
-        from nncf.utils import no_jit_trace
-        with no_jit_trace():
-            input_range = abs(self.scale) + self.eps
-            # todo: take bias into account during input_low/input_high calculation
-            input_low = input_range * self.level_low / self.level_high
-            input_high = input_range
-
-            if self._export_mode == QuantizerExportMode.ONNX_QUANTIZE_DEQUANTIZE_PAIRS:
-                y_scale, y_zero_point = get_scale_zp_from_input_low_input_high(self.level_low,
-                                                                               self.level_high,
-                                                                               input_low,
-                                                                               input_high)
-
-        if self._export_mode == QuantizerExportMode.ONNX_QUANTIZE_DEQUANTIZE_PAIRS:
-            return ExportQuantizeToONNXQuantDequant.apply(x, y_scale, y_zero_point)
-        if self._export_mode == QuantizerExportMode.FAKE_QUANTIZE:
-            x = x / 2.0
-            return ExportQuantizeToFakeQuantize.apply(x, self.levels, input_low, input_high, input_low * 2,
-                                                      input_high * 2)
-        raise RuntimeError
-
-    logger = get_root_logger()
-    orig_model = model.get_nncf_wrapped_model()
-    try:
-        # pylint: disable=protected-access
-        module_ = orig_model.backbone.features.init_block.conv.pre_ops._modules['0']
-    except (AttributeError, KeyError) as e:
-        logger.info(f'Cannot change an export function for the first Conv due  {e}')
-        return model
-    module_.op.run_export_quantization = partial(run_hacked_export_quantization, module_.op)
-    logger.info('Change an export function for the first Conv to avoid saturation issue on AVX2, AVX512')
-    return model
-
-
-def is_compressed_model(module):
-    if not is_nncf_enabled():
-        return False
-    from nncf.nncf_network import NNCFNetwork
-    return isinstance(module, NNCFNetwork)
-
-
 def get_uncompressed_model(module):
-    if is_compressed_model(module):
+    if not is_nncf_enabled():
+        return module
+    from nncf.nncf_network import NNCFNetwork
+    if isinstance(module, NNCFNetwork):
         return module.get_nncf_wrapped_model()
     return module

@@ -7,6 +7,7 @@ from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 
 from mmdet.core.utils.misc import dummy_pad
+from mmdet.integration.nncf.utils import no_nncf_trace, is_in_nncf_tracing
 
 logger = logging.getLogger(__name__)
 
@@ -58,19 +59,21 @@ class BBoxTestMixin(object):
                            rcnn_test_cfg,
                            rescale=False):
         """Test only det bboxes without augmentation."""
-        rois = bbox2roi(proposals)
+        with no_nncf_trace():
+            rois = bbox2roi(proposals)
         bbox_results = self._bbox_forward(x, rois)
         img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
-        if torch.onnx.is_in_onnx_export():
-            det_bboxes, det_labels = self.bbox_head.get_bboxes(
-                rois,
-                bbox_results['cls_score'],
-                bbox_results['bbox_pred'],
-                img_shapes[0],
-                scale_factors[0],
-                rescale=rescale,
-                cfg=rcnn_test_cfg)
+        if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
+            with no_nncf_trace():
+                det_bboxes, det_labels = self.bbox_head.get_bboxes(
+                    rois,
+                    bbox_results['cls_score'],
+                    bbox_results['bbox_pred'],
+                    img_shapes[0],
+                    scale_factors[0],
+                    rescale=rescale,
+                    cfg=rcnn_test_cfg)
             return [det_bboxes], [det_labels]
 
         # split batch bbox prediction back to each image
@@ -197,7 +200,7 @@ class MaskTestMixin(object):
         num_imgs = len(det_bboxes)
         ori_shapes = [img_metas[0]['ori_shape']]
         scale_factors = [img_metas[0]['scale_factor']]
-        if torch.onnx.is_in_onnx_export() and det_bboxes[0].shape[0] == 0:
+        if (torch.onnx.is_in_onnx_export() or is_in_nncf_tracing()) and det_bboxes[0].shape[0] == 0:
             # If there are no detection there is nothing to do for a mask head.
             # But during ONNX export we should run mask head
             # for it to appear in the graph.
@@ -218,7 +221,7 @@ class MaskTestMixin(object):
                     torch.from_numpy(scale_factor).to(det_bboxes[0].device)
                     for scale_factor in scale_factors
                 ]
-            if torch.onnx.is_in_onnx_export():
+            if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
                 # avoid mask_pred.split with static number of prediction
                 mask_preds = []
                 _bboxes = []

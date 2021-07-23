@@ -4,6 +4,8 @@ import numpy as np
 import torch
 from six.moves import map, zip
 
+from mmdet.integration.nncf.utils import no_nncf_trace, is_in_nncf_tracing
+
 from ..mask.structures import BitmapMasks, PolygonMasks
 
 
@@ -50,7 +52,7 @@ def arange(start=0,
            layout=torch.strided,
            device=None,
            requires_grad=False):
-    if torch.onnx.is_in_onnx_export():
+    if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
         if end is None:
             raise ValueError('End of range must be defined.')
         assert out is None
@@ -93,12 +95,13 @@ def topk(x, k, dim=None, **kwargs):
     if dim is None:
         dim = x.dim() - 1
 
-    if is_in_onnx_export():
+    if is_in_onnx_export() or is_in_nncf_tracing():
         n = operators.shape_as_tensor(x)[dim].unsqueeze(0)
         if not isinstance(k, torch.Tensor):
             k = torch.tensor([k], dtype=torch.long)
-        # Workaround for ONNXRuntime: convert values to int to get minimum.
-        n = torch.min(torch.cat((k, n), dim=0).int()).long()
+        with no_nncf_trace():
+            # Workaround for ONNXRuntime: convert values to int to get minimum.
+            n = torch.min(torch.cat((k, n), dim=0).int()).long()
         # ONNX OpSet 10 does not support non-floating point input for TopK.
         original_dtype = x.dtype
         require_cast = original_dtype not in {
@@ -106,7 +109,8 @@ def topk(x, k, dim=None, **kwargs):
         }
         if require_cast:
             x = x.to(torch.float32)
-        values, keep = torch.topk(x, n, dim=dim, **kwargs)
+        with no_nncf_trace():
+            values, keep = torch.topk(x, n, dim=dim, **kwargs)
         if require_cast:
             values = values.to(original_dtype)
     else:

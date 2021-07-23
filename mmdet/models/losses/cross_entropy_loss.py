@@ -5,6 +5,8 @@ import torch.nn.functional as F
 from ..builder import LOSSES
 from .utils import weight_reduce_loss
 
+from mmdet.integration.nncf.utils import no_nncf_trace
+
 
 def cross_entropy(pred,
                   label,
@@ -119,8 +121,10 @@ def mask_cross_entropy(pred,
     # TODO: handle these two reserved arguments
     assert reduction == 'mean' and avg_factor is None
     num_rois = pred.size()[0]
-    inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
-    pred_slice = pred[inds, label].squeeze(1)
+    with no_nncf_trace():
+        inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
+        label_no_trace = label.clone().detach()
+    pred_slice = pred[inds, label_no_trace].squeeze(1)
     return F.binary_cross_entropy_with_logits(
         pred_slice, target, weight=class_weight, reduction='mean')[None]
 

@@ -24,7 +24,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from mmdet.models.builder import HEADS
-
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 
 class Encoder(nn.Module):
     def __init__(self, dim_input, dim_internal, num_layers):
@@ -266,7 +266,7 @@ class TextRecognitionHeadAttention(nn.Module):
         return decoder_outputs
 
     def forward(self, features, target=None, masks=None):
-        if torch.onnx.is_in_onnx_export():
+        if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
             return features
 
         features = self.encoder(features)

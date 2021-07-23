@@ -3,6 +3,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.models.builder import ROI_EXTRACTORS
 from mmdet.utils.deployment.symbolic import py_symbolic
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 from .base_roi_extractor import BaseRoIExtractor
 
 
@@ -65,7 +66,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
         out_size = self.roi_layers[0].output_size
         num_levels = len(feats)
         expand_dims = (-1, self.out_channels * out_size[0] * out_size[1])
-        if torch.onnx.is_in_onnx_export():
+        if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
             # Work around to export mask-rcnn to onnx
             roi_feats = rois[:, :1].clone().detach()
             roi_feats = roi_feats.expand(*expand_dims)
@@ -90,7 +91,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
 
         for i in range(num_levels):
             mask = target_lvls == i
-            if torch.onnx.is_in_onnx_export():
+            if torch.onnx.is_in_onnx_export() or is_in_nncf_tracing():
                 # To keep all roi_align nodes exported to onnx
                 # and skip nonzero op
                 mask = mask.float().unsqueeze(-1).expand(*expand_dims).reshape(
