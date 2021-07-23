@@ -28,7 +28,7 @@
 
 如果你在构建一个与任何现有方法不共享结构的全新方法，那么可以在 `configs` 文件夹下创建一个新的例如 `xxx_rcnn` 文件夹。更多细节请参考 [MMCV](https://mmcv.readthedocs.io/en/latest/understand_mmcv/config.html) 文档。
 
-## 配置文件名称样式
+## 配置文件名称风格
 
 我们遵循以下样式来命名配置文件。建议贡献者遵循相同的风格。
 
@@ -427,7 +427,7 @@ model = dict(
     roi_head=dict(...))
 ```
 
-`ResNet` 和 `HRNet` 使用不同的关键词去构建。
+基础配置的 `Mask R-CNN` 使用 `ResNet-50`，在需要将主干网络改成 `HRNet` 的时候，因为 `HRNet` 和 `ResNet` 中有不同的字段，需要使用 `_delete_=True` 将新的键去替换 `backbone` 域内所有老的键。
 
 ```python
 _base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
@@ -464,11 +464,9 @@ model = dict(
     neck=dict(...))
 ```
 
-`_delete_=True` 将用新的键去替换 `backbone` 域内所有老的键。
-
 ### 使用配置文件里的中间变量
 
-配置文件里会使用一些中间变量，例如数据集里的 `train_pipeline`/`test_pipeline`。 需要注意的是，在子配置文件里修改中间变量时，使用者需要再次传递这些变量给对应的域。例如，我们想在训练或测试时，改变 Mask R-CNN 的多尺度策略 (multi scale strategy)，`train_pipeline`/`test_pipeline` 是我们想要修改的中间变量。
+配置文件里会使用一些中间变量，例如数据集里的 `train_pipeline/test_pipeline`。我们在定义新的 `train_pipeline/test_pipeline` 之后，需要将它们传递到 `data` 里。例如，我们想在训练或测试时，改变 Mask R-CNN 的多尺度策略 (multi scale strategy)，`train_pipeline/test_pipeline` 是我们想要修改的中间变量。
 
 ```python
 _base_ = './mask_rcnn_r50_fpn_1x_coco.py'
@@ -512,7 +510,7 @@ data = dict(
 
 我们首先定义新的 `train_pipeline`/`test_pipeline` 然后传递到 `data` 里。
 
-同样的，如果我们想从 `SyncBN` 切换到 `BN` 或者 `MMSyncBN`，我们需要配置文件里的每一个 `norm_cfg`。
+同样的，如果我们想从 `SyncBN` 切换到 `BN` 或者 `MMSyncBN`，我们需要修改配置文件里的每一个  `norm_cfg`。
 
 ```python
 _base_ = './mask_rcnn_r50_fpn_1x_coco.py'
