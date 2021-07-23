@@ -871,21 +871,21 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 image_sizes.append(img_metas[i]['ori_shape'][:2])
             if self.only_proposal:
                 agn_hm_pred_per_level = [x.sigmoid() for x in agn_hm_pred_per_level]
-                proposals = self.predict_instances(
+                proposals, proposals_class = self.predict_instances(
                     grids, agn_hm_pred_per_level, reg_pred_per_level, 
                     image_sizes, [None for _ in agn_hm_pred_per_level])
             elif self.as_proposal: # category specific bbox as agnostic proposals
                 clss_per_level = [x.sigmoid() for x in clss_per_level]
-                proposals = self.predict_instances(
+                proposals, proposals_class = self.predict_instances(
                     grids, clss_per_level, reg_pred_per_level, 
                     image_sizes, agn_hm_pred_per_level)
-            if self.only_proposal or self.as_proposal:
-                for p in range(len(proposals)):
-                    proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
-                    proposals[p].objectness_logits = proposals[p].get('scores')
-                    proposals[p].remove('pred_boxes')
-                    proposals[p].remove('scores')
-                    proposals[p].remove('pred_classes')
+            # if self.only_proposal or self.as_proposal:
+            #     for p in range(len(proposals)):
+            #         proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
+            #         proposals[p].objectness_logits = proposals[p].get('scores')
+            #         proposals[p].remove('pred_boxes')
+            #         proposals[p].remove('scores')
+            #         proposals[p].remove('pred_classes')
 
             # losses = self.losses(
             #     pos_inds, labels, reg_targets, flattened_hms,
@@ -906,18 +906,18 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             for x in agn_hm_pred_per_level]
 
         if self.only_proposal:
-            proposals = self.predict_instances(
+            proposals, proposals_class = self.predict_instances(
                 grids, agn_hm_pred_per_level, reg_pred_per_level, 
                 images.image_sizes, [None for _ in agn_hm_pred_per_level])
         else:
-            proposals = self.predict_instances(
+            proposals, proposals_class = self.predict_instances(
                 grids, logits_pred, reg_pred_per_level, 
                 images.image_sizes, agn_hm_pred_per_level)
-        if self.as_proposal or self.only_proposal:
-            for p in range(len(proposals)):
-                proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
-                proposals[p].objectness_logits = proposals[p].get('scores')
-                proposals[p].remove('pred_boxes')
+        # if self.as_proposal or self.only_proposal:
+        #     for p in range(len(proposals)):
+        #         proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
+        #         proposals[p].objectness_logits = proposals[p].get('scores')
+        #         proposals[p].remove('pred_boxes')
 
         # if self.debug:
         #     debug_test(
@@ -926,7 +926,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         #         agn_hm_pred_per_level, preds=proposals,
         #         vis_thresh=self.vis_thresh, 
         #         debug_show_name=False)
-        return proposals, {}
+        return proposals, proposals_class, {}
 
 
     def predict_instances(
@@ -938,9 +938,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 grids[l], logits_pred[l], reg_pred[l] * self.strides[l],
                 image_sizes, agn_hm_pred[l], l, is_proposal=is_proposal))
         boxlists = list(zip(*sampled_boxes))
-        boxlists = [Instances.cat(boxlist) for boxlist in boxlists]
+        boxlists = [torch.cat(boxlist) for boxlist in boxlists]
         boxlists = self.nms_and_topK(
             boxlists, nms=not self.not_nms)
+        # boxes_scores_lists = boxlists[:, :5]
+        # per_box_class = boxlists[:,5]
         return boxlists
 
     def predict_single_level(
@@ -1000,12 +1002,17 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             # avoid invalid boxes in RoI heads
             detections[:, 2] = torch.max(detections[:, 2], detections[:, 0] + 0.01)
             detections[:, 3] = torch.max(detections[:, 3], detections[:, 1] + 0.01)
-            boxlist = Instances(image_sizes[i])
-            boxlist.scores = torch.sqrt(per_box_cls) \
+            # boxlist = Instances(image_sizes[i])
+            scores = torch.sqrt(per_box_cls) \
                 if self.with_agn_hm else per_box_cls # n
+            scores = torch.unsqueeze(scores,1) # n x 1
+            # per_class = torch.unsqueeze(per_class, 1)
+            # boxlist.scores = torch.sqrt(per_box_cls) \
+            #     if self.with_agn_hm else per_box_cls # n
             # import pdb; pdb.set_trace()
-            boxlist.pred_boxes = Boxes(detections)
-            boxlist.pred_classes = per_class
+            # boxlist.pred_boxes = Boxes(detections)
+            # boxlist.pred_classes = per_class
+            boxlist = torch.cat([detections, scores], dim=1)
             results.append(boxlist)
         return results
 
@@ -1023,7 +1030,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             post_nms_topk = self.post_nms_topk_train if self.training else \
                 self.post_nms_topk_test
             if num_dets > post_nms_topk:
-                cls_scores = result.scores
+                cls_scores = result[:,4]
                 image_thresh, _ = torch.kthvalue(
                     cls_scores.cpu(),
                     num_dets - post_nms_topk + 1

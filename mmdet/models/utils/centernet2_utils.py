@@ -67,14 +67,16 @@ def ml_nms(boxlist, nms_thresh, max_proposals=-1,
     """
     if nms_thresh <= 0:
         return boxlist
-    if boxlist.has('pred_boxes'):
-        boxes = boxlist.pred_boxes.tensor
-        labels = boxlist.pred_classes
-    else:
-        boxes = boxlist.proposal_boxes.tensor
-        labels = boxlist.proposal_boxes.tensor.new_zeros(
-            len(boxlist.proposal_boxes.tensor))
-    scores = boxlist.scores
+    # if boxlist.has('pred_boxes'):
+    #     boxes = boxlist.pred_boxes.tensor
+    #     labels = boxlist.pred_classes
+    # else:
+    #     boxes = boxlist.proposal_boxes.tensor
+    #     labels = boxlist.proposal_boxes.tensor.new_zeros(
+    #         len(boxlist.proposal_boxes.tensor))
+    boxes = boxlist[:,:4]
+    labels = boxlist[:,-1]
+    scores = boxlist[:,4]
     
     keep = batched_nms(boxes, scores, labels, nms_thresh)
     if max_proposals > 0:
