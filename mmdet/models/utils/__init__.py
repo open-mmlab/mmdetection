@@ -9,6 +9,7 @@ from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import SELayer
 from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DynamicConv, Transformer)
+from .csp_layer import CSPLayer
 
 __all__ = [
     'ResLayer', 'gaussian_radius', 'gen_gaussian_target',
@@ -16,5 +17,5 @@ __all__ = [
     'build_transformer', 'build_linear_layer', 'SinePositionalEncoding',
     'LearnedPositionalEncoding', 'DynamicConv', 'SimplifiedBasicBlock',
     'NormedLinear', 'NormedConv2d', 'make_divisible', 'InvertedResidual',
-    'SELayer'
+    'SELayer', 'CSPLayer'
 ]

@@ -1,88 +1,93 @@
 import torch
 import torch.nn as nn
+from mmcv.runner import BaseModule
+from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 
-from ..utils.block import BaseConv, CSPLayer, DWConv
+from ..utils import CSPLayer
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class YOLOPAFPN(nn.Module):
+class YOLOXPAFPN(BaseModule):
     """
-    YOLOv3 model. Darknet 53 is the default backbone of this model.
+    Path Aggregation Network used in YOLOX
     """
 
-    def __init__(
-        self, depth=1.0, width=1.0, in_features=("dark3", "dark4", "dark5"),
-        in_channels=[256, 512, 1024], depthwise=False, act="silu",
-    ):
-        super().__init__()
-        self.in_features = in_features
+    def __init__(self,
+                 deepen_factor=1.0,
+                 in_channels=[256, 512, 1024],
+                 out_channels=256,
+                 upsample_cfg=dict(mode='nearest'),
+                 depthwise=False,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
+                 act_cfg=dict(type='Swish'),
+                 init_cfg=None
+                 ):
+        super(YOLOXPAFPN, self).__init__(init_cfg)
         self.in_channels = in_channels
-        Conv = DWConv if depthwise else BaseConv
+        self.out_channels = out_channels
 
+        conv = DepthwiseSeparableConvModule if depthwise else ConvModule
+
+        # build top-down blocks
         self.upsample = nn.Upsample(scale_factor=2, mode="nearest")
-        self.lateral_conv0 = BaseConv(
-            int(in_channels[2] * width), int(in_channels[1] * width), 1, 1, act=act
-        )
-        self.C3_p4 = CSPLayer(
-            int(2 * in_channels[1] * width),
-            int(in_channels[1] * width),
-            round(3 * depth),
-            False,
-            depthwise=depthwise,
-            act=act,
-        )  # cat
+        self.reduce_layers = nn.ModuleList()
+        self.top_down_blocks = nn.ModuleList()
+        for idx in range(len(in_channels)-1, 0, -1):
+            self.reduce_layers.append(
+                ConvModule(in_channels[idx], in_channels[idx-1], 1,
+                           conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
+            )
+            self.top_down_blocks.append(
+                CSPLayer(in_channels[idx-1]*2, in_channels[idx-1],
+                         num_blocks=round(3 * deepen_factor),
+                         with_res_shortcut=False,
+                         use_depthwise=depthwise,
+                         conv_cfg=conv_cfg, norm_cfg=norm_cfg,
+                         act_cfg=act_cfg)
+            )
 
-        self.reduce_conv1 = BaseConv(
-            int(in_channels[1] * width), int(in_channels[0] * width), 1, 1, act=act
-        )
-        self.C3_p3 = CSPLayer(
-            int(2 * in_channels[0] * width),
-            int(in_channels[0] * width),
-            round(3 * depth),
-            False,
-            depthwise=depthwise,
-            act=act,
-        )
-
-        # bottom-up conv
-        self.bu_conv2 = Conv(
-            int(in_channels[0] * width), int(in_channels[0] * width), 3, 2, act=act
-        )
-        self.C3_n3 = CSPLayer(
-            int(2 * in_channels[0] * width),
-            int(in_channels[1] * width),
-            round(3 * depth),
-            False,
-            depthwise=depthwise,
-            act=act,
-        )
-
-        # bottom-up conv
-        self.bu_conv1 = Conv(
-            int(in_channels[1] * width), int(in_channels[1] * width), 3, 2, act=act
-        )
-        self.C3_n4 = CSPLayer(
-            int(2 * in_channels[1] * width),
-            int(in_channels[2] * width),
-            round(3 * depth),
-            False,
-            depthwise=depthwise,
-            act=act,
-        )
+        # build bottom-up blocks
+        self.downsamples = nn.ModuleList()
+        self.bottom_up_blocks = nn.ModuleList()
+        for idx in range(len(in_channels)-1):
+            self.downsamples.append(
+                conv(in_channels[idx],
+                     in_channels[idx],
+                     3,
+                     stride=2,
+                     padding=1,
+                     conv_cfg=conv_cfg,
+                     norm_cfg=norm_cfg,
+                     act_cfg=act_cfg)
+            )
+            self.bottom_up_blocks.append(
+                CSPLayer(
+                    in_channels[idx]*2,
+                    in_channels[idx+1],
+                    num_blocks=round(3 * deepen_factor),
+                    with_res_shortcut=False,
+                    use_depthwise=depthwise,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg
+                )
+            )
 
         self.stems = nn.ModuleList()
         for i in range(len(in_channels)):
             self.stems.append(
-                BaseConv(
-                    in_channels=int(in_channels[i] * width),
-                    out_channels=int(256 * width),
-                    ksize=1,
-                    stride=1,
-                    act=act,
+                ConvModule(
+                    in_channels[i],
+                    out_channels,
+                    1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg
                 ))
 
-    def forward(self, x):
+    def forward(self, inputs):
         """
         Args:
             inputs: input images.
@@ -90,28 +95,36 @@ class YOLOPAFPN(nn.Module):
         Returns:
             Tuple[Tensor]: FPN feature.
         """
+        assert len(inputs) == len(self.in_channels)
 
-        #  backbone
+        # top-down path
+        inner_outs = [inputs[-1]]
+        for idx in range(len(self.in_channels)-1, 0, -1):
+            feat_heigh = inner_outs[0]
+            feat_low = inputs[idx-1]
+            feat_heigh = self.reduce_layers[
+                len(self.in_channels)-1-idx](feat_heigh)
+            inner_outs[0] = feat_heigh
 
-        x2, x1, x0 = x
+            upsample_feat = self.upsample(feat_heigh)
 
-        fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
-        f_out0 = self.upsample(fpn_out0)  # 512/16
-        f_out0 = torch.cat([f_out0, x1], 1)  # 512->1024/16
-        f_out0 = self.C3_p4(f_out0)  # 1024->512/16
+            inner_out = self.top_down_blocks[
+                len(self.in_channels)-1-idx](
+                torch.cat([upsample_feat, feat_low], 1))
+            inner_outs.insert(0, inner_out)
 
-        fpn_out1 = self.reduce_conv1(f_out0)  # 512->256/16
-        f_out1 = self.upsample(fpn_out1)  # 256/8
-        f_out1 = torch.cat([f_out1, x2], 1)  # 256->512/8
-        pan_out2 = self.C3_p3(f_out1)  # 512->256/8
+        # bottom-up path
+        outs = [inner_outs[0]]
+        for idx in range(len(self.in_channels) - 1):
+            feat_low = outs[-1]
+            feat_height = inner_outs[idx + 1]
+            downsample_feat = self.downsamples[idx](feat_low)
+            out = self.bottom_up_blocks[idx](
+                torch.cat([downsample_feat, feat_height], 1))
+            outs.append(out)
 
-        p_out1 = self.bu_conv2(pan_out2)  # 256->256/16
-        p_out1 = torch.cat([p_out1, fpn_out1], 1)  # 256->512/16
-        pan_out1 = self.C3_n3(p_out1)  # 512->512/16
+        # out convs
+        for idx, stem in enumerate(self.stems):
+            outs[idx] = stem(outs[idx])
 
-        p_out0 = self.bu_conv1(pan_out1)  # 512->512/32
-        p_out0 = torch.cat([p_out0, fpn_out0], 1)  # 512->1024/32
-        pan_out0 = self.C3_n4(p_out0)  # 1024->1024/32
-
-        outputs = (self.stems[0](pan_out2), self.stems[1](pan_out1), self.stems[2](pan_out0))
-        return outputs
+        return tuple(outs)
