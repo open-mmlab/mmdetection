@@ -326,6 +326,7 @@ class SSDHead(AnchorHead):
         for i in range(num_images):
             all_anchors.append(torch.cat(anchor_list[i]))
 
+        # TODO: delete when the PR is approved
         # check NaN and Inf
         assert torch.isfinite(all_cls_scores).all().item(), \
             'classification scores become infinite or NaN!'
