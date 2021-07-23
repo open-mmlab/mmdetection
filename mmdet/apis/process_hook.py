@@ -90,7 +90,7 @@ def all_reduce(py_dict, op="sum", group=None):
     if world_size == 1:
         return py_dict
     if group is None:
-        group = _get_global_gloo_group
+        group = _get_global_gloo_group()
     if dist.get_world_size(group) == 1:
         return py_dict
 
