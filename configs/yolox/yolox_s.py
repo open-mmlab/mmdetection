@@ -63,12 +63,12 @@ test_pipeline = [
             dict(type='Collect', keys=['img'])
         ])
 ]
-batch_size = 8
+batch_size = 32
 basic_lr_per_img = 0.01 / 64.0
 
 data = dict(
     samples_per_gpu=batch_size,
-    workers_per_gpu=2,
+    workers_per_gpu=4,
     train=train_dataset,
     test=dict(type="CocoDataset",
               ann_file=data_root + 'annotations/instances_val2017.json',
@@ -103,3 +103,4 @@ evaluation = dict(interval=10, metric='bbox')
 custom_hooks = [dict(type='ProcessHook', random_size=(10, 20), no_aug_epochs=15), dict(type='EMAHook', priority=49)]
 
 log_config = dict(interval=50)
+checkpoint_config = dict(interval=10)
