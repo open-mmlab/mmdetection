@@ -255,10 +255,11 @@ class CSPLayer(BaseModule):
 
 @BACKBONES.register_module()
 class CSPDarknet(BaseModule):
-    # in_factor, mid_factor, out_factor, depth_factor, stride, use_shortcut, use_spp
-    arch_settings = [[1, 2, 2, 1, 2, True, False], [2, 4, 4, 3, 2, True, False],
-                     [4, 8, 8, 3, 2, True, False],
-                     [8, 16, 16, 1, 2, False, True]]
+    # in_channels, mid_channels, out_channels, depth_channels, stride, use_shortcut, use_spp
+    arch_settings = [[64, 128, 128, 3, 2, True, False],
+                     [128, 256, 256, 9, 2, True, False],
+                     [256, 512, 512, 9, 2, True, False],
+                     [512, 1024, 1024, 3, 2, False, True]]
 
     def __init__(
             self,
@@ -266,32 +267,36 @@ class CSPDarknet(BaseModule):
             widen_factor,
             out_indices=(3, 4, 5),
             use_depthwise=False,
+            arch_override=None,
             conv_cfg=None,
             norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
             act_cfg=dict(type='Swish'),
             init_cfg=None):
         super().__init__(init_cfg)
+        if arch_override:
+            self.arch_settings = arch_override
         self.out_indices = out_indices
         conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
-
-        base_channels = int(widen_factor * 64)  # 64
-        base_depth = max(round(deepen_factor * 3), 1)  # 3
 
         # stem
         self.stem = Focus(
             3,
-            base_channels,
+            int(self.arch_settings[0][0] * widen_factor),
             kernel_size=3,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
 
-        for i, (in_factor, mid_factor, out_factor, depth_factor, stride,
+        for i, (in_channels, mid_channels, out_channels, num_blocks, stride,
                 use_shortcut, use_spp) in enumerate(self.arch_settings):
+            in_channels = int(in_channels * widen_factor)
+            mid_channels = int(mid_channels * widen_factor)
+            out_channels = int(out_channels * widen_factor)
+            num_blocks = max(round(num_blocks * deepen_factor), 1)
             stage = []
             conv_layer = conv(
-                base_channels * in_factor,
-                base_channels * mid_factor,
+                in_channels,
+                mid_channels,
                 3,
                 stride=stride,
                 padding=1,
@@ -301,16 +306,16 @@ class CSPDarknet(BaseModule):
             stage.append(conv_layer)
             if use_spp:
                 spp = SPPBottleneck(
-                    base_channels * mid_factor,
-                    base_channels * mid_factor,
+                    mid_channels,
+                    mid_channels,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     act_cfg=act_cfg)
                 stage.append(spp)
             csp_layer = CSPLayer(
-                base_channels * mid_factor,
-                base_channels * out_factor,
-                num_blocks=base_depth * depth_factor,
+                mid_channels,
+                out_channels,
+                num_blocks=num_blocks,
                 with_res_shortcut=use_shortcut,
                 use_depthwise=use_depthwise,
                 conv_cfg=conv_cfg,
