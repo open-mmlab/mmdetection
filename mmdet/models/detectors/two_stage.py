@@ -135,7 +135,7 @@ class TwoStageDetector(BaseDetector):
                 x,
                 img_metas,
                 gt_bboxes,
-                gt_labels=None,
+                gt_labels,
                 gt_bboxes_ignore=gt_bboxes_ignore,
                 proposal_cfg=proposal_cfg)
             losses.update(rpn_losses)

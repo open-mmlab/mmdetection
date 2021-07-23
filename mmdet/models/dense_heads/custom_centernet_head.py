@@ -10,6 +10,7 @@ from mmdet.models import HEADS, build_loss
 from mmdet.models.utils import gaussian_radius, gen_gaussian_target
 from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
                                      transpose_and_gather_feat)
+# from mmdet.models.utils import _transpose
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
@@ -20,6 +21,9 @@ from torch.nn import functional as F
 from .centernet_head import CenterNetHead
 
 
+from mmdet.models.utils.centernet2_utils import Instances, Boxes, ml_nms
+
+INF = 100000000
 
 class Scale(nn.Module):
     def __init__(self, init_value=1.0):
@@ -91,7 +95,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.only_proposal = True
 
         self.num_classes = num_classes
-        self.INF = 100000000
         self.strides = [8, 16, 32, 64, 128]
         self.hm_min_overlap=0.8
         self.delta=(1-self.hm_min_overlap)/(1+self.hm_min_overlap)
@@ -113,6 +116,22 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.test_cfg = test_cfg
         self.fp16_enabled = False
 
+
+
+        self.more_pos = False
+
+
+        self.center_nms = False
+        self.pre_nms_topk_train = 4000
+        self.pre_nms_topk_test = 1000
+        self.nms_thresh_train = 0.9
+        self.nms_thresh_test = 0.9
+        self.post_nms_topk_train = 2000
+        self.post_nms_topk_test = 256
+        self.more_pos_topk = 9
+        self.score_thresh = 0.0001
+        self.not_nms = False
+        
 
         ##########  initialize the   1.<cls_tower>   2.<bbox_tower>   3.<share_tower>[no]  4.<bbox_pred>  5.<agn_hm>  6.<cls_logits>[no]
 
@@ -177,11 +196,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         )
 
         ### initialize the     <scales>
-        self.scales = nn.ModuleList(
-            [Scale(init_value=1.0)])
         # self.scales = nn.ModuleList(
-        #     [Scale(init_value=1.0) for _ in input_shape])
-
+        #     [Scale(init_value=1.0)])
+        # self.scales = Scale(init_value=1.0)
+        # # self.scales = nn.ModuleList(
+        # #     [Scale(init_value=1.0) for _ in input_shape])
 
         ### initialize the     <agn_hm>
         self.agn_hm = nn.Conv2d(
@@ -249,7 +268,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             torch.nn.init.normal_(self.cls_logits.weight, std=0.01)
 
 
-
     def forward(self, feats):
         """Forward features. Notice CenterNet head does not use FPN.
 
@@ -267,8 +285,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         """
         return multi_apply(self.forward_single, feats)
 
-
-
     def forward_single(self, feat):
         """Forward feature of a single level.
 
@@ -281,7 +297,21 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             agn_hms (Tensor): center predict heatmaps, the channels number is 1
 
         """
+        # feat = self.share_tower(feat)
+        # cls_tower = self.cls_tower(feat)
+        # bbox_tower = self.bbox_tower(feat)
+        # if not self.only_proposal:
+        #     clss = self.cls_logits(cls_tower)
+        # else:
+        #     clss = None
 
+        # if self.with_agn_hm:
+        #     agn_hms = self.agn_hm(bbox_tower)
+        # else:
+        #     agn_hms = None
+        # reg = self.bbox_pred(bbox_tower)
+        # reg = self.scales(reg)
+        # return clss, reg, agn_hms
         feat = self.share_tower(feat)       # not used
         cls_tower = self.cls_tower(feat)    # not used
         bbox_tower = self.bbox_tower(feat)
@@ -667,11 +697,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
           dist (M x N)
           is_*: M x N
         '''
-        dist[mask == 0] = self.INF * 1.0
+        dist[mask == 0] = INF * 1.0
         min_dist, min_inds = dist.min(dim=1) # M
         reg_targets_per_im = reg_targets[
             range(len(reg_targets)), min_inds] # M x N x 4 --> M x 4
-        reg_targets_per_im[min_dist == self.INF] = - self.INF
+        reg_targets_per_im[min_dist == INF] = - INF
         return reg_targets_per_im
 
     def assign_reg_fpn(self, reg_targets_per_im, size_ranges):
@@ -788,14 +818,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         sigmoid_clamp: float = 1e-4,
         ignore_high_fp: float = -1.,
         ):
-        """
-        Args:
-            inputs:  (sum_l N*Hl*Wl,)
-            targets: (sum_l N*Hl*Wl,)
-            pos_inds: N
-        Returns:
-            Loss tensor with the reduction option applied.
-        """
         pred = torch.clamp(inputs.sigmoid_(), min=sigmoid_clamp, max=1-sigmoid_clamp)
         neg_weights = torch.pow(1 - targets, beta)
         pos_pred = pred[pos_inds] # N
@@ -821,3 +843,324 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             return 1
         return dist.get_world_size()
 
+    def get_bboxes(self, *outs, img_metas, gt_bboxes, gt_labels):
+        
+        
+        grids = self.compute_grids(outs[-1])
+        # grids = multi_apply(self.compute_grids, feats, self.strides)
+        # shapes_per_level = grids[0].new_tensor(
+        #             [(x.shape[2], x.shape[3]) for x in outs[1]])
+        agn_hm_pred_per_level= outs[2]
+        reg_pred_per_level= outs[1]
+        clss_per_level= outs[0]
+
+        if self.training:
+            
+            # if self.more_pos:
+            #     # add more pixels as positive if \
+            #     #   1. they are within the center3x3 region of an object
+            #     #   2. their regression losses are small (<self.more_pos_thresh)
+            #     pos_inds, labels = self._add_more_pos(
+            #         reg_pred, gt_bboxes, gt_labels, shapes_per_level)
+            
+            proposals = None
+            image_sizes = []
+            for i in range(len(img_metas)):
+                image_sizes.append(img_metas[i]['ori_shape'][:2])
+            if self.only_proposal:
+                agn_hm_pred_per_level = [x.sigmoid() for x in agn_hm_pred_per_level]
+                proposals = self.predict_instances(
+                    grids, agn_hm_pred_per_level, reg_pred_per_level, 
+                    image_sizes, [None for _ in agn_hm_pred_per_level])
+            elif self.as_proposal: # category specific bbox as agnostic proposals
+                clss_per_level = [x.sigmoid() for x in clss_per_level]
+                proposals = self.predict_instances(
+                    grids, clss_per_level, reg_pred_per_level, 
+                    image_sizes, agn_hm_pred_per_level)
+            if self.only_proposal or self.as_proposal:
+                for p in range(len(proposals)):
+                    proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
+                    proposals[p].objectness_logits = proposals[p].get('scores')
+                    proposals[p].remove('pred_boxes')
+                    proposals[p].remove('scores')
+                    proposals[p].remove('pred_classes')
+
+            # losses = self.losses(
+            #     pos_inds, labels, reg_targets, flattened_hms,
+            #     logits_pred, reg_pred, agn_hm_pred)
+
+            # if self.debug:
+            #     debug_train(
+            #         [self.denormalizer(x) for x in images], 
+            #         gt_instances, flattened_hms, reg_targets, 
+            #         labels, pos_inds, shapes_per_level, grids, self.strides)
+            return proposals
+
+    def inference(self, images, clss_per_level, reg_pred_per_level, 
+        agn_hm_pred_per_level, grids):
+        logits_pred = [x.sigmoid() if x is not None else None \
+            for x in clss_per_level]
+        agn_hm_pred_per_level = [x.sigmoid() if x is not None else None \
+            for x in agn_hm_pred_per_level]
+
+        if self.only_proposal:
+            proposals = self.predict_instances(
+                grids, agn_hm_pred_per_level, reg_pred_per_level, 
+                images.image_sizes, [None for _ in agn_hm_pred_per_level])
+        else:
+            proposals = self.predict_instances(
+                grids, logits_pred, reg_pred_per_level, 
+                images.image_sizes, agn_hm_pred_per_level)
+        if self.as_proposal or self.only_proposal:
+            for p in range(len(proposals)):
+                proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
+                proposals[p].objectness_logits = proposals[p].get('scores')
+                proposals[p].remove('pred_boxes')
+
+        # if self.debug:
+        #     debug_test(
+        #         [self.denormalizer(x) for x in images], 
+        #         logits_pred, reg_pred_per_level, 
+        #         agn_hm_pred_per_level, preds=proposals,
+        #         vis_thresh=self.vis_thresh, 
+        #         debug_show_name=False)
+        return proposals, {}
+
+
+    def predict_instances(
+        self, grids, logits_pred, reg_pred, image_sizes, agn_hm_pred, 
+        is_proposal=False):
+        sampled_boxes = []
+        for l in range(len(grids)):
+            sampled_boxes.append(self.predict_single_level(
+                grids[l], logits_pred[l], reg_pred[l] * self.strides[l],
+                image_sizes, agn_hm_pred[l], l, is_proposal=is_proposal))
+        boxlists = list(zip(*sampled_boxes))
+        boxlists = [Instances.cat(boxlist) for boxlist in boxlists]
+        boxlists = self.nms_and_topK(
+            boxlists, nms=not self.not_nms)
+        return boxlists
+
+    def predict_single_level(
+        self, grids, heatmap, reg_pred, image_sizes, agn_hm, level, 
+        is_proposal=False):
+        N, C, H, W = heatmap.shape
+        # put in the same format as grids
+        if self.center_nms:
+            heatmap_nms = nn.functional.max_pool2d(
+                heatmap, (3, 3), stride=1, padding=1)
+            heatmap = heatmap * (heatmap_nms == heatmap).float()
+        heatmap = heatmap.permute(0, 2, 3, 1) # N x H x W x C
+        heatmap = heatmap.reshape(N, -1, C) # N x HW x C
+        box_regression = reg_pred.view(N, 4, H, W).permute(0, 2, 3, 1) # N x H x W x 4 
+        box_regression = box_regression.reshape(N, -1, 4)
+
+        candidate_inds = heatmap > self.score_thresh # 0.05
+        pre_nms_top_n = candidate_inds.view(N, -1).sum(1) # N
+        pre_nms_topk = self.pre_nms_topk_train if self.training else self.pre_nms_topk_test
+        pre_nms_top_n = pre_nms_top_n.clamp(max=pre_nms_topk) # N
+
+        if agn_hm is not None:
+            agn_hm = agn_hm.view(N, 1, H, W).permute(0, 2, 3, 1)
+            agn_hm = agn_hm.reshape(N, -1)
+            heatmap = heatmap * agn_hm[:, :, None]
+
+        results = []
+        for i in range(N):
+            per_box_cls = heatmap[i] # HW x C
+            per_candidate_inds = candidate_inds[i] # n
+            per_box_cls = per_box_cls[per_candidate_inds] # n
+
+            per_candidate_nonzeros = per_candidate_inds.nonzero() # n
+            per_box_loc = per_candidate_nonzeros[:, 0] # n
+            per_class = per_candidate_nonzeros[:, 1] # n
+
+            per_box_regression = box_regression[i] # HW x 4
+            per_box_regression = per_box_regression[per_box_loc] # n x 4
+            per_grids = grids[per_box_loc] # n x 2
+
+            per_pre_nms_top_n = pre_nms_top_n[i] # 1
+
+            if per_candidate_inds.sum().item() > per_pre_nms_top_n.item():
+                per_box_cls, top_k_indices = \
+                    per_box_cls.topk(per_pre_nms_top_n, sorted=False)
+                per_class = per_class[top_k_indices]
+                per_box_regression = per_box_regression[top_k_indices]
+                per_grids = per_grids[top_k_indices]
+            
+            detections = torch.stack([
+                per_grids[:, 0] - per_box_regression[:, 0],
+                per_grids[:, 1] - per_box_regression[:, 1],
+                per_grids[:, 0] + per_box_regression[:, 2],
+                per_grids[:, 1] + per_box_regression[:, 3],
+            ], dim=1) # n x 4
+
+            # avoid invalid boxes in RoI heads
+            detections[:, 2] = torch.max(detections[:, 2], detections[:, 0] + 0.01)
+            detections[:, 3] = torch.max(detections[:, 3], detections[:, 1] + 0.01)
+            boxlist = Instances(image_sizes[i])
+            boxlist.scores = torch.sqrt(per_box_cls) \
+                if self.with_agn_hm else per_box_cls # n
+            # import pdb; pdb.set_trace()
+            boxlist.pred_boxes = Boxes(detections)
+            boxlist.pred_classes = per_class
+            results.append(boxlist)
+        return results
+
+    def nms_and_topK(self, boxlists, nms=True):
+        num_images = len(boxlists)
+        results = []
+        for i in range(num_images):
+            nms_thresh = self.nms_thresh_train if self.training else \
+                self.nms_thresh_test
+            result = ml_nms(boxlists[i], nms_thresh) if nms else boxlists[i]
+            # if self.debug:
+            #     print('#proposals before nms', len(boxlists[i]))
+            #     print('#proposals after nms', len(result))
+            num_dets = len(result)
+            post_nms_topk = self.post_nms_topk_train if self.training else \
+                self.post_nms_topk_test
+            if num_dets > post_nms_topk:
+                cls_scores = result.scores
+                image_thresh, _ = torch.kthvalue(
+                    cls_scores.cpu(),
+                    num_dets - post_nms_topk + 1
+                )
+                keep = cls_scores >= image_thresh.item()
+                keep = torch.nonzero(keep).squeeze(1)
+                result = result[keep]
+            # if self.debug:
+            #     print('#proposals after filter', len(result))
+            results.append(result)
+        return results
+
+
+    def _add_more_pos(self, reg_pred, gt_instances, shapes_per_level):
+        labels, level_masks, c33_inds, c33_masks, c33_regs = \
+            self._get_c33_inds(gt_instances, shapes_per_level)
+        N, L, K = labels.shape[0], len(self.strides), 9
+        c33_inds[c33_masks == 0] = 0
+        reg_pred_c33 = reg_pred[c33_inds].detach() # N x L x K
+        invalid_reg = c33_masks == 0
+        c33_regs_expand = c33_regs.view(N * L * K, 4).clamp(min=0)
+        if N > 0:
+            with torch.no_grad():
+                c33_reg_loss = self.iou_loss(
+                    reg_pred_c33.view(N * L * K, 4), 
+                    c33_regs_expand, None,
+                    reduction='none').view(N, L, K).detach() # N x L x K
+        else:
+            c33_reg_loss = reg_pred_c33.new_zeros((N, L, K)).detach()
+        c33_reg_loss[invalid_reg] = INF # N x L x K
+        c33_reg_loss.view(N * L, K)[level_masks.view(N * L), 4] = 0 # real center
+        c33_reg_loss = c33_reg_loss.view(N, L * K)
+        if N == 0:
+            loss_thresh = c33_reg_loss.new_ones((N)).float()
+        else:
+            loss_thresh = torch.kthvalue(
+                c33_reg_loss, self.more_pos_topk, dim=1)[0] # N
+        loss_thresh[loss_thresh > self.more_pos_thresh] = self.more_pos_thresh # N
+        new_pos = c33_reg_loss.view(N, L, K) < \
+            loss_thresh.view(N, 1, 1).expand(N, L, K)
+        pos_inds = c33_inds[new_pos].view(-1) # P
+        labels = labels.view(N, 1, 1).expand(N, L, K)[new_pos].view(-1)
+        return pos_inds, labels
+        
+    
+    def _get_c33_inds(self, gt_instances, shapes_per_level):
+        '''
+        TODO (Xingyi): The current implementation is ugly. Refactor.
+        Get the center (and the 3x3 region near center) locations of each objects
+        Inputs:
+            gt_instances: [n_i], sum n_i = N
+            shapes_per_level: L x 2 [(h_l, w_l)]_L
+        '''
+        labels = []
+        level_masks = []
+        c33_inds = []
+        c33_masks = []
+        c33_regs = []
+        L = len(self.strides)
+        B = len(gt_instances)
+        shapes_per_level = shapes_per_level.long()
+        loc_per_level = (shapes_per_level[:, 0] * shapes_per_level[:, 1]).long() # L
+        level_bases = []
+        s = 0
+        for l in range(L):
+            level_bases.append(s)
+            s = s + B * loc_per_level[l]
+        level_bases = shapes_per_level.new_tensor(level_bases).long() # L
+        strides_default = shapes_per_level.new_tensor(self.strides).float() # L
+        K = 9
+        dx = shapes_per_level.new_tensor([-1, 0, 1, -1, 0, 1, -1, 0, 1]).long()
+        dy = shapes_per_level.new_tensor([-1, -1, -1, 0, 0, 0, 1, 1, 1]).long()
+        for im_i in range(B):
+            targets_per_im = gt_instances[im_i]
+            bboxes = targets_per_im.gt_boxes.tensor # n x 4
+            n = bboxes.shape[0]
+            if n == 0:
+                continue
+            centers = ((bboxes[:, [0, 1]] + bboxes[:, [2, 3]]) / 2) # n x 2
+            centers = centers.view(n, 1, 2).expand(n, L, 2)
+
+            strides = strides_default.view(1, L, 1).expand(n, L, 2) # 
+            centers_inds = (centers / strides).long() # n x L x 2
+            center_grids = centers_inds * strides + strides // 2# n x L x 2
+            l = center_grids[:, :, 0] - bboxes[:, 0].view(n, 1).expand(n, L)
+            t = center_grids[:, :, 1] - bboxes[:, 1].view(n, 1).expand(n, L)
+            r = bboxes[:, 2].view(n, 1).expand(n, L) - center_grids[:, :, 0]
+            b = bboxes[:, 3].view(n, 1).expand(n, L) - center_grids[:, :, 1] # n x L
+            reg = torch.stack([l, t, r, b], dim=2) # n x L x 4
+            reg = reg / strides_default.view(1, L, 1).expand(n, L, 4).float()
+            
+            Ws = shapes_per_level[:, 1].view(1, L).expand(n, L)
+            Hs = shapes_per_level[:, 0].view(1, L).expand(n, L)
+            expand_Ws = Ws.view(n, L, 1).expand(n, L, K)
+            expand_Hs = Hs.view(n, L, 1).expand(n, L, K)
+            label = targets_per_im.gt_classes.view(n).clone()
+            mask = reg.min(dim=2)[0] >= 0 # n x L
+            mask = mask & self.assign_fpn_level(bboxes)
+            labels.append(label) # n
+            level_masks.append(mask) # n x L
+
+            Dy = dy.view(1, 1, K).expand(n, L, K)
+            Dx = dx.view(1, 1, K).expand(n, L, K)
+            c33_ind = level_bases.view(1, L, 1).expand(n, L, K) + \
+                       im_i * loc_per_level.view(1, L, 1).expand(n, L, K) + \
+                       (centers_inds[:, :, 1:2].expand(n, L, K) + Dy) * expand_Ws + \
+                       (centers_inds[:, :, 0:1].expand(n, L, K) + Dx) # n x L x K
+            
+            c33_mask = \
+                ((centers_inds[:, :, 1:2].expand(n, L, K) + dy) < expand_Hs) & \
+                ((centers_inds[:, :, 1:2].expand(n, L, K) + dy) >= 0) & \
+                ((centers_inds[:, :, 0:1].expand(n, L, K) + dx) < expand_Ws) & \
+                ((centers_inds[:, :, 0:1].expand(n, L, K) + dx) >= 0)
+            # TODO (Xingyi): think about better way to implement this
+            # Currently it hard codes the 3x3 region
+            c33_reg = reg.view(n, L, 1, 4).expand(n, L, K, 4).clone()
+            c33_reg[:, :, [0, 3, 6], 0] -= 1
+            c33_reg[:, :, [0, 3, 6], 2] += 1
+            c33_reg[:, :, [2, 5, 8], 0] += 1
+            c33_reg[:, :, [2, 5, 8], 2] -= 1
+            c33_reg[:, :, [0, 1, 2], 1] -= 1
+            c33_reg[:, :, [0, 1, 2], 3] += 1
+            c33_reg[:, :, [6, 7, 8], 1] += 1
+            c33_reg[:, :, [6, 7, 8], 3] -= 1
+            c33_mask = c33_mask & (c33_reg.min(dim=3)[0] >= 0) # n x L x K
+            c33_inds.append(c33_ind)
+            c33_masks.append(c33_mask)
+            c33_regs.append(c33_reg)
+        
+        if len(level_masks) > 0:
+            labels = torch.cat(labels, dim=0)
+            level_masks = torch.cat(level_masks, dim=0)
+            c33_inds = torch.cat(c33_inds, dim=0).long()
+            c33_regs = torch.cat(c33_regs, dim=0)
+            c33_masks = torch.cat(c33_masks, dim=0)
+        else:
+            labels = shapes_per_level.new_zeros((0)).long()
+            level_masks = shapes_per_level.new_zeros((0, L)).bool()
+            c33_inds = shapes_per_level.new_zeros((0, L, K)).long()
+            c33_regs = shapes_per_level.new_zeros((0, L, K, 4)).float()
+            c33_masks = shapes_per_level.new_zeros((0, L, K)).bool()
+        return labels, level_masks, c33_inds, c33_masks, c33_regs # N x L, N x L x K

@@ -10,6 +10,7 @@ from .se_layer import SELayer
 from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DynamicConv, Transformer)
 
+
 __all__ = [
     'ResLayer', 'gaussian_radius', 'gen_gaussian_target',
     'DetrTransformerDecoderLayer', 'DetrTransformerDecoder', 'Transformer',
