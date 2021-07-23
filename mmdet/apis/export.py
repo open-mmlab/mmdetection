@@ -138,7 +138,7 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None,
 
     mean_values = normalize['mean']
     scale_values = normalize['std']
-    command_line = f'mo.py --input_model="{onnx_model_path}" ' \
+    command_line = f'mo --input_model="{onnx_model_path}" ' \
                    f'--mean_values="{mean_values}" ' \
                    f'--scale_values="{scale_values}" ' \
                    f'--output_dir="{output_dir_path}" ' \
@@ -156,7 +156,7 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None,
     print(command_line)
 
     try:
-        run(f'mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True, check=True)
+        run(f'mo -h', stdout=DEVNULL, stderr=DEVNULL, shell=True, check=True)
     except CalledProcessError:
         raise RuntimeError('OpenVINO Model Optimizer is not found or configured improperly')
 
@@ -164,13 +164,13 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None,
 
     if with_text:
         onnx_model_path_tr_encoder = onnx_model_path.replace('.onnx', '_text_recognition_head_encoder.onnx')
-        command_line = f'mo.py --input_model="{onnx_model_path_tr_encoder}" ' \
+        command_line = f'mo --input_model="{onnx_model_path_tr_encoder}" ' \
                        f'--output_dir="{output_dir_path}"'
         print(command_line)
         run(command_line, shell=True, check=True)
 
         onnx_model_path_tr_decoder = onnx_model_path.replace('.onnx', '_text_recognition_head_decoder.onnx')
-        command_line = f'mo.py --input_model="{onnx_model_path_tr_decoder}" ' \
+        command_line = f'mo --input_model="{onnx_model_path_tr_decoder}" ' \
                        f'--output_dir="{output_dir_path}"'
         print(command_line)
         run(command_line, shell=True, check=True)
