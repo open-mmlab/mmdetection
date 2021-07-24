@@ -188,7 +188,7 @@ class CSPDarknet(BaseModule):
         if arch_ovewrite:
             arch_setting = arch_ovewrite
         assert set(out_indices).issubset(
-            i for i in range(1, len(arch_setting)))
+            i for i in range(1, len(arch_setting)+1))
 
         self.out_indices = out_indices
         self.norm_eval = norm_eval

@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
-from loguru import logger
 
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule, bias_init_with_prob, constant_init, is_norm, normal_init
 from mmdet.core import multi_apply
@@ -499,7 +498,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                         cls_preds, bbox_preds, obj_preds, imgs,
                     )
                 except RuntimeError:
-                    logger.error(
+                    print(
                         "OOM RuntimeError is raised due to the huge memory cost during label assignment. \
                            CPU mode is applied in this batch. If you want to avoid this issue, \
                            try to reduce the batch size or image size."
