@@ -1,5 +1,3 @@
-import math
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,9 +7,6 @@ from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule, bias_init_with_pr
 from mmdet.core import multi_apply
 
 from ..builder import HEADS, build_loss
-# from .losses import IOUloss
-from ..utils.block import BaseConv, DWConv
-# from yolox.utils import bboxes_iou
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
@@ -130,6 +125,34 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
 
 @HEADS.register_module()
 class YOLOXHead(BaseDenseHead, BBoxTestMixin):
+    """YOLOXHead head used in `YOLOX <https://arxiv.org/abs/2107.08430>`_.
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        feat_channels (int): Number of hidden channels in stacking convs.
+            Default: 256
+        stacked_convs (int): Number of stacking convs of the head.
+            Default: 2.
+        strides (tuple): Downsample factor of each feature map.
+        use_depthwise (bool): Whether to depthwise separable convolution in
+            blocks. Default: False
+        dcn_on_last_conv (bool): If true, use dcn in the last layer of
+            towers. Default: False.
+        conv_bias (bool | str): If specified as `auto`, it will be decided by
+            the norm_cfg. Bias of conv will be set as True if `norm_cfg` is
+            None, otherwise False. Default: "auto".
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
+        norm_cfg (dict): Config dict for normalization layer. Default: None.
+        act_cfg (dict): Config dict for activation layer. Default: None.
+        loss_cls (dict): Config of classification loss.
+        loss_bbox (dict): Config of localization loss.
+        loss_obj (dict): Config of objectness loss.
+        train_cfg (dict): Training config of anchor head.
+        test_cfg (dict): Testing config of anchor head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+    """
 
     def __init__(self,
                  num_classes,
@@ -156,11 +179,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                  test_cfg=None,
                  init_cfg=None
                  ):
-        """
-        Args:
-            act (str): activation type of conv. Defalut value: "silu".
-            depthwise (bool): wheather apply depthwise conv in conv branch. Defalut value: False.
-        """
+
         super().__init__(init_cfg=init_cfg)
         # params from original repo, to be refactored later
         self.n_anchors = 1
