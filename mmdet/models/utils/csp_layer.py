@@ -6,16 +6,19 @@ from mmcv.runner import BaseModule
 
 
 class Bottleneck(BaseModule):
-    """Bottleneck module used in CSP layers.
+    """The basic bottleneck block used in Darknet. Each ResBlock consists of two
+    ConvModules and the input is added to the final output. Each ConvModule is
+    composed of Conv, BN, and LeakyReLU. The first convLayer has filter size
+    of 1x1 and the second one has the filter size of 3x3.
 
     Args:
         in_channels (int): The input channels of this Module.
         out_channels (int): The output channels of this Module.
         expansion (int): The kernel size of the convolution. Default: 1
-        with_res_shortcut (bool): Whether to use residual shortcut in blocks.
+        with_res_shortcut (bool): Whether to use residual shortcut.
             Default: True
-        use_depthwise (bool): Whether to use depthwise separable convolution
-            in blocks. Default: False
+        use_depthwise (bool): Whether to use depthwise separable convolution.
+            Default: False
         conv_cfg (dict): Config dict for convolution layer. Default: None,
             which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer.
@@ -57,11 +60,12 @@ class Bottleneck(BaseModule):
             with_res_shortcut and in_channels == out_channels
 
     def forward(self, x):
+        residual = x
         out = self.conv1(x)
         out = self.conv2(out)
 
         if self.with_res_shortcut:
-            return x + out
+            return out + residual
         else:
             return out
 
@@ -70,9 +74,9 @@ class CSPLayer(BaseModule):
     """Cross Stage Partial Layer.
 
     Args:
-        in_channels (int): The input channels of the CSP block.
-        out_channels (int): The output channels of the CSP block.
-        expansion (float): Ratio to adjust the number of channels of the
+        in_channels (int): The input channels of the CSP layer.
+        out_channels (int): The output channels of the CSP layer.
+        expand_ratio (float): Ratio to adjust the number of channels of the
             hidden layer. Default: 0.5
         num_blocks (int): Number of blocks. Default: 1
         with_res_shortcut (bool): Whether to use residual shortcut in blocks.
@@ -90,7 +94,7 @@ class CSPLayer(BaseModule):
     def __init__(self,
                  in_channels,
                  out_channels,
-                 expansion=0.5,
+                 expand_ratio=0.5,
                  num_blocks=1,
                  with_res_shortcut=True,
                  use_depthwise=False,
@@ -99,22 +103,22 @@ class CSPLayer(BaseModule):
                  act_cfg=dict(type='Swish'),
                  init_cfg=None):
         super().__init__(init_cfg)
-        mid_channels = int(out_channels * expansion)
-        self.conv1 = ConvModule(
+        mid_channels = int(out_channels * expand_ratio)
+        self.main_conv = ConvModule(
             in_channels,
             mid_channels,
             1,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
-        self.conv2 = ConvModule(
+        self.short_conv = ConvModule(
             in_channels,
             mid_channels,
             1,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
-        self.conv3 = ConvModule(
+        self.final_conv = ConvModule(
             2 * mid_channels,
             out_channels,
             1,
@@ -135,10 +139,10 @@ class CSPLayer(BaseModule):
         ])
 
     def forward(self, x):
-        x_1 = self.conv1(x)
-        x_1 = self.blocks(x_1)
+        x_short = self.short_conv(x)
 
-        x_2 = self.conv2(x)
+        x_main = self.main_conv(x)
+        x_main = self.blocks(x_main)
 
-        x = torch.cat((x_1, x_2), dim=1)
-        return self.conv3(x)
+        x_final = torch.cat((x_main, x_short), dim=1)
+        return self.final_conv(x_final)

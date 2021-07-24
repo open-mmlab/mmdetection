@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.runner import BaseModule
+from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..builder import BACKBONES
 from ..utils import CSPLayer
@@ -116,38 +117,94 @@ class SPPBottleneck(BaseModule):
 
 @BACKBONES.register_module()
 class CSPDarknet(BaseModule):
-    # From left to right: in_channels, mid_channels, out_channels,
-    # num_blocks, stride, use_shortcut, use_spp
-    arch_settings = [[64, 128, 3, True, False], [128, 256, 9, True, False],
-                     [256, 512, 9, True, False], [512, 1024, 3, False, True]]
+    """CSP-Darknet backbone used in YOLOv5 and YOLOX.
+
+    Args:
+        arch (str): Architechture of CSP-Darknet, from {P5, P6}.
+            Default: P5.
+        deepen_factor (float): Width multiplier, multiply number of
+            channels in each layer by this amount. Default: 1.0.
+        widen_factor (float): Depth multiplier, multiply number of
+            blocks in CSP layer by this amount. Default: 1.0.
+        out_indices (Sequence[int]): Output from which stages.
+        use_depthwise (bool): Whether to use depthwise separable convolution.
+            Default: False
+        arch_ovewrite(list): Overwrite default arch settings. Default: None.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict): Config dict for activation layer.
+            Default: dict(type='LeakyReLU', negative_slope=0.1).
+        norm_eval (bool): Whether to set norm layers to eval mode, namely,
+            freeze running stats (mean and var). Note: Effect on Batch Norm
+            and its variants only.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
+
+
+    Example:
+        >>> from mmdet.models import CSPDarknet
+        >>> import torch
+        >>> self = CSPDarknet(depth=53)
+        >>> self.eval()
+        >>> inputs = torch.rand(1, 3, 416, 416)
+        >>> level_outputs = self.forward(inputs)
+        >>> for level_out in level_outputs:
+        ...     print(tuple(level_out.shape))
+        ...
+        (1, 256, 52, 52)
+        (1, 512, 26, 26)
+        (1, 1024, 13, 13)
+    """
+    # From left to right:
+    # in_channels, out_channels, num_blocks, use_shortcut, use_spp
+    arch_settings = {
+        'P5': [[64, 128, 3, True, False],
+               [128, 256, 9, True, False],
+               [256, 512, 9, True, False],
+               [512, 1024, 3, False, True]],
+
+        'P6': [[64, 128, 3, True, False],
+               [128, 256, 9, True, False],
+               [256, 512, 9, True, False],
+               [512, 768, 3, True, False],
+               [768, 1024, 3, False, True]]
+    }
 
     def __init__(self,
-                 deepen_factor,
-                 widen_factor,
-                 out_indices=(3, 4, 5),
+                 arch='P5',
+                 deepen_factor=1.0,
+                 widen_factor=1.0,
+                 out_indices=(2, 3, 4),
                  use_depthwise=False,
-                 arch_override=None,
+                 arch_ovewrite=None,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
                  act_cfg=dict(type='Swish'),
+                 norm_eval=False,
                  init_cfg=None):
         super().__init__(init_cfg)
-        if arch_override:
-            self.arch_settings = arch_override
+        arch_setting = self.arch_settings[arch]
+        if arch_ovewrite:
+            arch_setting = arch_ovewrite
+        assert set(out_indices).issubset(
+            i for i in range(1, len(arch_setting)))
+
         self.out_indices = out_indices
+        self.norm_eval = norm_eval
         conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
 
-        # stem
         self.stem = Focus(
             3,
-            int(self.arch_settings[0][0] * widen_factor),
+            int(arch_setting[0][0] * widen_factor),
             kernel_size=3,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
+        self.layers = ['stem']
 
         for i, (in_channels, out_channels, num_blocks, use_shortcut,
-                use_spp) in enumerate(self.arch_settings):
+                use_spp) in enumerate(arch_setting):
             in_channels = int(in_channels * widen_factor)
             out_channels = int(out_channels * widen_factor)
             num_blocks = max(round(num_blocks * deepen_factor), 1)
@@ -180,14 +237,31 @@ class CSPDarknet(BaseModule):
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg)
             stage.append(csp_layer)
-            self.add_module(f'dark{i + 2}', nn.Sequential(*stage))
+            self.add_module(f'stage{i + 1}', nn.Sequential(*stage))
+            self.layers.append(f'stage{i + 1}')
+
+    def _freeze_stages(self):
+        if self.frozen_stages >= 0:
+            for i in range(self.frozen_stages):
+                m = getattr(self, self.layers[i])
+                m.eval()
+                for param in m.parameters():
+                    param.requires_grad = False
+
+    def train(self, mode=True):
+        super(CSPDarknet, self).train(mode)
+        self._freeze_stages()
+        if mode and self.norm_eval:
+            for m in self.modules():
+                if isinstance(m, _BatchNorm):
+                    m.eval()
 
     def forward(self, x):
         outs = []
         x = self.stem(x)
-        for i in range(len(self.arch_settings)):
-            stage = getattr(self, f'dark{i + 2}')
-            x = stage(x)
-            if i + 2 in self.out_indices:
+        for i, layer_name in enumerate(self.layers):
+            layer = getattr(self, layer_name)
+            x = layer(x)
+            if i in self.out_indices:
                 outs.append(x)
         return tuple(outs)
