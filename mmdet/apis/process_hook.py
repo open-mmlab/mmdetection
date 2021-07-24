@@ -103,7 +103,7 @@ def all_reduce(py_dict, op="sum", group=None):
     tensor_shapes = [py_dict[k].shape for k in py_key]
     tensor_numels = [py_dict[k].numel() for k in py_key]
 
-    flatten_tensor = torch.cat([py_dict[k].flatten() for k in py_key])
+    flatten_tensor = torch.cat([py_dict[k].flatten().float() for k in py_key])
     dist.all_reduce(flatten_tensor, op=_get_reduce_op(op))
     if op == "mean":
         flatten_tensor /= world_size
