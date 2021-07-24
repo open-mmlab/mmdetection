@@ -12,7 +12,7 @@ class CosineAnnealingWithNoAugIterLrUpdaterHook(CosineAnnealingLrUpdaterHook):
         self.min_lr = min_lr
         self.min_lr_ratio = min_lr_ratio
         self.no_aug_epochs = no_aug_epochs
-        self.base_lr = warmup_ratio * work_size
+        self.lr = warmup_ratio * work_size
         super(CosineAnnealingLrUpdaterHook, self).__init__(warmup_ratio=warmup_ratio * work_size, **kwargs)
 
     def get_warmup_lr(self, cur_iters):
@@ -43,12 +43,12 @@ class CosineAnnealingWithNoAugIterLrUpdaterHook(CosineAnnealingLrUpdaterHook):
             max_progress = runner.max_iters
 
         if self.min_lr_ratio is not None:
-            target_lr = self.base_lr * self.min_lr_ratio
+            target_lr = self.lr * self.min_lr_ratio
         else:
             target_lr = self.min_lr
 
         if progress >= max_progress - no_aug_iter:
             return self.min_lr
         else:
-            return annealing_cos(self.base_lr, target_lr,
+            return annealing_cos(self.lr, target_lr,
                                  (progress - self.warmup_iters) / (max_progress - self.warmup_iters - no_aug_iter))
