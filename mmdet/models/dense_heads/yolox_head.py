@@ -9,6 +9,7 @@ import torch.nn.functional as F
 # from yolox.utils import bboxes_iou
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
+from mmcv.ops import batched_nms
 
 # from .losses import IOUloss
 from ..utils.block import BaseConv, DWConv
@@ -40,12 +41,14 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
         if not detections.size(0):
             continue
 
-        nms_out_index = torchvision.ops.batched_nms(
-            detections[:, :4],
-            detections[:, 4] * detections[:, 5],
-            detections[:, 6],
-            nms_thre,
-        )
+        # nms_out_index = torchvision.ops.batched_nms(
+        #     detections[:, :4],
+        #     detections[:, 4] * detections[:, 5],
+        #     detections[:, 6],
+        #     nms_thre,
+        # )
+        _, nms_out_index = batched_nms(detections[:, :4], detections[:, 4] * detections[:, 5], detections[:, 6], dict(iou_threshold=nms_thre))
+
         detections = detections[nms_out_index]
         if output[i] is None:
             output[i] = detections
