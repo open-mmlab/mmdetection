@@ -48,7 +48,7 @@ class CosineAnnealingWithNoAugIterLrUpdaterHook(CosineAnnealingLrUpdaterHook):
             target_lr = self.min_lr
 
         if progress >= max_progress - no_aug_iter:
-            return self.min_lr
+            return target_lr
         else:
             return annealing_cos(self.lr, target_lr,
                                  (progress - self.warmup_iters) / (max_progress - self.warmup_iters - no_aug_iter))
