@@ -1,5 +1,7 @@
 import torch.nn as nn
 import torch
+from mmcv.utils import TORCH_VERSION
+from distutils.version import LooseVersion
 
 
 class SiLU(nn.Module):
@@ -12,7 +14,11 @@ class SiLU(nn.Module):
 
 def get_activation(name="silu", inplace=True):
     if name == "silu":
-        module = nn.SiLU(inplace=inplace)
+        if (TORCH_VERSION != 'parrots'
+                and LooseVersion(TORCH_VERSION) >= LooseVersion('1.7.0')):
+            module = nn.SiLU(inplace=inplace)
+        else:
+            module = SiLU()
     elif name == "relu":
         module = nn.ReLU(inplace=inplace)
     elif name == "lrelu":
@@ -50,6 +56,7 @@ class BaseConv(nn.Module):
 
 class DWConv(nn.Module):
     """Depthwise Conv + Conv"""
+
     def __init__(self, in_channels, out_channels, ksize, stride=1, act="silu"):
         super().__init__()
         self.dconv = BaseConv(
@@ -68,6 +75,7 @@ class DWConv(nn.Module):
 
 class SPPBottleneck(nn.Module):
     """Spatial pyramid pooling layer used in YOLOv3-SPP"""
+
     def __init__(self, in_channels, out_channels, kernel_sizes=(5, 9, 13), activation="silu"):
         super().__init__()
         hidden_channels = in_channels // 2
@@ -89,8 +97,8 @@ class CSPLayer(nn.Module):
     """C3 in yolov5, CSP Bottleneck with 3 convolutions"""
 
     def __init__(
-        self, in_channels, out_channels, n=1,
-        shortcut=True, expansion=0.5, depthwise=False, act="silu"
+            self, in_channels, out_channels, n=1,
+            shortcut=True, expansion=0.5, depthwise=False, act="silu"
     ):
         """
         Args:
@@ -121,8 +129,8 @@ class CSPLayer(nn.Module):
 class Bottleneck(nn.Module):
     # Standard bottleneck
     def __init__(
-        self, in_channels, out_channels, shortcut=True,
-        expansion=0.5, depthwise=False, act="silu"
+            self, in_channels, out_channels, shortcut=True,
+            expansion=0.5, depthwise=False, act="silu"
     ):
         super().__init__()
         hidden_channels = int(out_channels * expansion)
@@ -136,6 +144,7 @@ class Bottleneck(nn.Module):
         if self.use_add:
             y = y + x
         return y
+
 
 class Focus(nn.Module):
     """Focus width and height information into channel space."""

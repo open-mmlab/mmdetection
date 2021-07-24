@@ -66,7 +66,7 @@ class IOUloss(nn.Module):
         assert pred.shape[0] == target.shape[0]
 
         pred = pred.view(-1, 4)
-        target = target.view(-1, 4)
+        target = target.view(-1, 4).to(pred.dtype)
         tl = torch.max(
             (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
         )
@@ -344,7 +344,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
              gt_bboxes,
              gt_labels,
              img_metas,
-             gt_bboxes_ignore=None):
+             gt_bboxes_ignore=None,
+             imgs=None):
         """Compute losses of the head.
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level,
@@ -378,7 +379,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             x_shifts.append(grid[:, :, 0])
             y_shifts.append(grid[:, :, 1])
             expanded_strides.append(
-                torch.zeros(1, grid.shape[1]).fill_(stride_this_level).type_as(reg_output.type())
+                torch.zeros(1, grid.shape[1]).fill_(stride_this_level).type_as(reg_output)
             )
             if self.use_l1:
                 batch_size = reg_output.shape[0]
@@ -393,8 +394,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             outputs.append(output)
 
         loss_iou, loss_obj, loss_cls, loss_l1 = self.get_losses(
-            imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_boxes,
-            torch.cat(outputs, 1), origin_preds, dtype=origin_preds[0].dtype)
+            imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_bboxes,
+            torch.cat(outputs, 1), origin_preds, dtype=outputs[0].dtype)
 
         if self.use_l1:
             return dict(
@@ -446,7 +447,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         outputs[..., 2:4] = torch.exp(outputs[..., 2:4]) * strides
         return outputs
 
-    def get_losses(self, imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_boxes,
+    def get_losses(self, imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_bboxes,
         outputs, origin_preds, dtype):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
@@ -478,7 +479,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                 obj_target = outputs.new_zeros((total_num_anchors, 1))
                 fg_mask = outputs.new_zeros(total_num_anchors).bool()
             else:
-                gt_bboxes_per_image = gt_bboxes[batch_idx]
+                gt_bboxes_per_image = gt_bboxes[batch_idx].to(bbox_preds.dtype)
                 # convert x1,y1,x2,y2 to xywh
                 gt_bboxes_per_image = torch.stack(
                     [(gt_bboxes_per_image[:, 0] + gt_bboxes_per_image[:, 2]) * 0.5,
