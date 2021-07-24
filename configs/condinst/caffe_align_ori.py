@@ -25,8 +25,7 @@ model = dict(
         add_extra_convs='on_input',
         num_outs=5,
         relu_before_extra_convs=True,
-        init_cfg=dict(type='Caffe2Xavier', layer='Conv2d')
-    ),
+        init_cfg=dict(type='Caffe2Xavier', layer='Conv2d')),
     bbox_head=dict(
         type='CondInstHead',
         num_classes=80,
@@ -106,5 +105,14 @@ optimizer = dict(
     lr=0.01,
     momentum=0.9,
     weight_decay=0.0001,
-    paramwise_cfg=dict(norm_decay_mult=0.)
-)
+    paramwise_cfg=dict(norm_decay_mult=0.))
+
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=0.001,
+    step=[60000, 80000])
+evaluation = dict(interval=7330, metric='bbox')
+checkpoint_config = dict(interval=30000)
+runner = dict(_delete_=True, type='IterBasedRunner', max_iters=90000)
