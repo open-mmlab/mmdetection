@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torchvision
 
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule, bias_init_with_prob, constant_init, is_norm, normal_init
-from mmdet.core import multi_apply
+from mmdet.core import multi_apply, MlvlPointGenerator, multiclass_nms
 
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
@@ -201,6 +201,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         self.dcn_on_last_conv = dcn_on_last_conv
         assert conv_bias == 'auto' or isinstance(conv_bias, bool)
         self.conv_bias = conv_bias
+        self.use_sigmoid_cls = True
 
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -209,6 +210,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.loss_obj = build_loss(loss_obj)
+
+        self.prior_generator = MlvlPointGenerator(strides, offset=0)
 
         self.test_cfg = test_cfg
         self.train_cfg = train_cfg
@@ -318,8 +321,241 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                            self.multi_level_conv_reg,
                            self.multi_level_conv_obj)
 
-    # @force_fp32(apply_to=('pred_maps',))
     def get_bboxes(self,
+                   cls_scores,
+                   bbox_preds,
+                   objectnesses,
+                   img_metas=None,
+                   cfg=None,
+                   rescale=False,
+                   with_nms=True):
+        """Transform network outputs of a batch into bbox results.
+        Note: When score_factors is not None, the cls_scores are
+        usually multiplied by it then obtain the real score used in NMS,
+        such as CenterNess in FCOS, IoU branch in ATSS.
+        Args:
+            cls_scores (list[Tensor]): Classification scores for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * 4, H, W).
+            objectnesses (list[Tensor], Optional): Score factor for
+                all scale level, each is a 4D-tensor, has shape
+                (batch_size, num_priors * 1, H, W). Default None.
+            img_metas (list[dict], Optional): Image meta info. Default None.
+            cfg (mmcv.Config, Optional): Test / postprocessing configuration,
+                if None, test_cfg would be used.  Default None.
+            rescale (bool): If True, return boxes in original image space.
+                Default False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default True.
+        Returns:
+            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class label of
+                the corresponding box.
+        """
+        assert len(cls_scores) == len(bbox_preds) == len(objectnesses)
+
+        num_levels = len(cls_scores)
+
+        result_list = []
+
+        # TODO: Speed!!!
+
+        for img_id in range(len(img_metas)):
+            img_meta = img_metas[img_id]
+            cls_score_list = [cls_scores[i][img_id].detach() for i in range(num_levels)]
+            bbox_pred_list = [bbox_preds[i][img_id].detach() for i in range(num_levels)]
+            objectness_list = [objectnesses[i][img_id].detach() for i in range(num_levels)]
+
+            results = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                              objectness_list, img_meta, cfg,
+                                              rescale, with_nms)
+            result_list.append(results)
+        return result_list
+
+    def _get_bboxes_single(self,
+                           cls_score_list,
+                           bbox_pred_list,
+                           score_factor_list,
+                           img_meta,
+                           cfg,
+                           rescale=False,
+                           with_nms=True,
+                           **kwargs):
+        """Transform outputs of single image into bbox predictions.
+        Args:
+            cls_score_list (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_priors * num_classes, H, W).
+            bbox_pred_list (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has shape
+                (num_priors * 4, H, W).
+            score_factor_list (list[Tensor]): Score factor from all scale
+                levels of a single image, each item has shape
+                (num_priors * 1, H, W).
+            img_meta (dict): Image meta info.
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+        Returns:
+            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
+                is False and mlvl_score_factor is None, return mlvl_bboxes and
+                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
+                mlvl_score_factor. Usually with_nms is False is used for aug
+                test. If with_nms is True, then return the following format
+                - det_bboxes (Tensor): Predicted bboxes with shape \
+                    [num_bbox, 5], where the first 4 columns are bounding box \
+                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
+                    are scores between 0 and 1.
+                - det_labels (Tensor): Predicted labels of the corresponding \
+                    box with shape [num_bbox].
+        """
+
+        cfg = self.test_cfg if cfg is None else cfg
+        img_shape = img_meta['img_shape']
+        nms_pre = cfg.get('nms_pre', -1)
+
+        mlvl_bboxes = []
+        mlvl_scores = []
+        mlvl_score_factors = []
+
+        for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
+                zip(cls_score_list, bbox_pred_list, score_factor_list)):
+            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            featmap_size_hw = cls_score.shape[-2:]
+            cls_score = cls_score.permute(1, 2,
+                                          0).reshape(-1, self.cls_out_channels)
+            scores = cls_score.sigmoid()
+            scores_ = scores
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            score_factor = score_factor.permute(1, 2, 0).reshape(-1).sigmoid()
+
+            if 0 < nms_pre < scores.shape[0]:
+                # Get maximum scores for foreground classes.
+                # TODO: max first then mul?
+                max_scores, _ = (scores_ * score_factor[:, None]).max(dim=1)
+
+                _, topk_inds = max_scores.topk(nms_pre)
+
+                priors = self.prior_generator.sparse_priors(
+                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
+                    scores.device)
+                bbox_pred = bbox_pred[topk_inds, :]
+                scores = scores[topk_inds, :]
+
+                score_factor = score_factor[topk_inds]
+            else:
+                priors = self.prior_generator.single_level_grid_priors(
+                    featmap_size_hw, level_idx, scores.device)
+
+            bboxes = self._bbox_decode(
+                priors, bbox_pred, self.strides[level_idx])
+            mlvl_bboxes.append(bboxes)
+            mlvl_scores.append(scores)
+            mlvl_score_factors.append(score_factor)
+
+        return self._bbox_post_process(mlvl_scores, mlvl_bboxes,
+                                       img_meta['scale_factor'], cfg, rescale,
+                                       with_nms, mlvl_score_factors, **kwargs)
+
+    def _bbox_post_process(self,
+                           mlvl_scores,
+                           mlvl_bboxes,
+                           scale_factor,
+                           cfg,
+                           rescale=False,
+                           with_nms=True,
+                           mlvl_score_factors=None,
+                           **kwargs):
+        """bbox post-processing method.
+        The boxes would be rescaled to the original image scale and do
+        the nms operation. Usually with_nms is False is used for aug test.
+        Args:
+            mlvl_scores (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num, num_class).
+            mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
+                levels of a single image, each item has shape (num, 4).
+            scale_factor (ndarray, optional): Scale factor of the image arange
+                as (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+            mlvl_score_factors (list[Tensor], optional): Score factor from
+                all scale levels of a single image, each item has shape
+                (num, ). Default: None.
+        Returns:
+            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
+                is False and mlvl_score_factor is None, return mlvl_bboxes and
+                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
+                mlvl_score_factor. Usually with_nms is False is used for aug
+                test. If with_nms is True, then return the following format
+                - det_bboxes (Tensor): Predicted bboxes with shape \
+                    [num_bbox, 5], where the first 4 columns are bounding box \
+                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
+                    are scores between 0 and 1.
+                - det_labels (Tensor): Predicted labels of the corresponding \
+                    box with shape [num_bbox].
+        """
+        assert len(mlvl_scores) == len(mlvl_bboxes)
+
+        mlvl_bboxes = torch.cat(mlvl_bboxes)
+        if rescale:
+            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
+        mlvl_scores = torch.cat(mlvl_scores)
+
+        if mlvl_score_factors is not None:
+            mlvl_score_factors = torch.cat(mlvl_score_factors)
+
+        if self.use_sigmoid_cls:
+            # Add a dummy background class to the backend when using sigmoid
+            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
+            # BG cat_id: num_class
+            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
+            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
+
+        if with_nms:
+            det_bboxes, det_labels = multiclass_nms(
+                mlvl_bboxes,
+                mlvl_scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=mlvl_score_factors)
+            return det_bboxes, det_labels
+        else:
+            if mlvl_score_factors is not None:
+                return mlvl_bboxes, mlvl_scores, mlvl_score_factors
+            else:
+                return mlvl_bboxes, mlvl_scores
+
+    def _bbox_decode(self, priors, bbox_pred, stride):
+        bbox_pred[:, 2:] = bbox_pred[:, 2:].exp()
+        bbox_pred *= stride
+
+        cx = priors[:, 0] + bbox_pred[:, 0]
+        cy = priors[:, 1] + bbox_pred[:, 1]
+
+        tl_x = (cx - bbox_pred[:, 2] / 2)
+        tl_y = (cy - bbox_pred[:, 3] / 2)
+        br_x = (cx + bbox_pred[:, 2] / 2)
+        br_y = (cy + bbox_pred[:, 3] / 2)
+
+        decoded_bboxes = torch.stack([tl_x, tl_y, br_x, br_y], -1)
+        return decoded_bboxes
+
+    def get_bboxes_origin(self,
                    cls_scores,
                    bbox_preds,
                    objectnesses,
