@@ -64,7 +64,7 @@ class IOUloss(nn.Module):
         assert pred.shape[0] == target.shape[0]
 
         pred = pred.view(-1, 4)
-        target = target.view(-1, 4)
+        target = target.view(-1, 4).to(pred.dtype)
         tl = torch.max(
             (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
         )
