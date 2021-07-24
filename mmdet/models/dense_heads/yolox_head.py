@@ -222,14 +222,14 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         self.multi_level_conv_reg = nn.ModuleList()
         self.multi_level_conv_obj = nn.ModuleList()
         for _ in self.strides:
-            self.multi_level_cls_convs.append(self._init_stacked_convs())
-            self.multi_level_reg_convs.append(self._init_stacked_convs())
-            conv_cls, conv_reg, conv_obj = self._init_predictor()
+            self.multi_level_cls_convs.append(self._build_stacked_convs())
+            self.multi_level_reg_convs.append(self._build_stacked_convs())
+            conv_cls, conv_reg, conv_obj = self._build_predictor()
             self.multi_level_conv_cls.append(conv_cls)
             self.multi_level_conv_reg.append(conv_reg)
             self.multi_level_conv_obj.append(conv_obj)
 
-    def _init_stacked_convs(self):
+    def _build_stacked_convs(self):
         """Initialize conv layers of a single level head."""
         conv = DepthwiseSeparableConvModule if self.use_depthwise else ConvModule
         stacked_convs = []
@@ -252,7 +252,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                     bias=self.conv_bias))
         return nn.Sequential(*stacked_convs)
 
-    def _init_predictor(self):
+    def _build_predictor(self):
         """Initialize predictor layers of a single level head."""
         conv_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 1)
