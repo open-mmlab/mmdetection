@@ -452,7 +452,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                 obj_target = outputs.new_zeros((total_num_anchors, 1))
                 fg_mask = outputs.new_zeros(total_num_anchors).bool()
             else:
-                gt_bboxes_per_image = gt_bboxes[batch_idx]
+                gt_bboxes_per_image = gt_bboxes[batch_idx].to(bbox_preds.dtype)
                 # convert x1,y1,x2,y2 to xywh
                 gt_bboxes_per_image = torch.stack(
                     [(gt_bboxes_per_image[:, 0] + gt_bboxes_per_image[:, 2]) * 0.5,
