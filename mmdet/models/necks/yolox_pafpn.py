@@ -92,9 +92,9 @@ class YOLOXPAFPN(BaseModule):
                     norm_cfg=norm_cfg,
                     act_cfg=act_cfg))
 
-        self.stems = nn.ModuleList()
+        self.out_convs = nn.ModuleList()
         for i in range(len(in_channels)):
-            self.stems.append(
+            self.out_convs.append(
                 ConvModule(
                     in_channels[i],
                     out_channels,
@@ -106,10 +106,10 @@ class YOLOXPAFPN(BaseModule):
     def forward(self, inputs):
         """
         Args:
-            inputs: input images.
+            inputs (tuple[Tensor]): input features.
 
         Returns:
-            Tuple[Tensor]: PAN feature.
+            tuple[Tensor]: PAN feature.
         """
         assert len(inputs) == len(self.in_channels)
 
@@ -139,7 +139,7 @@ class YOLOXPAFPN(BaseModule):
             outs.append(out)
 
         # out convs
-        for idx, stem in enumerate(self.stems):
+        for idx, stem in enumerate(self.out_convs):
             outs[idx] = stem(outs[idx])
 
         return tuple(outs)
