@@ -121,25 +121,28 @@ class CSPDarknet(BaseModule):
 
     Args:
         arch (str): Architechture of CSP-Darknet, from {P5, P6}.
-            Default: P5.
+            Default: P5..
         deepen_factor (float): Width multiplier, multiply number of
             channels in each layer by this amount. Default: 1.0.
         widen_factor (float): Depth multiplier, multiply number of
             blocks in CSP layer by this amount. Default: 1.0.
         out_indices (Sequence[int]): Output from which stages.
+            Default: (2, 3, 4).
+        frozen_stages (int): Stages to be frozen (stop grad and set eval
+            mode). 1 means not freezing any parameters. Default: -1.
         use_depthwise (bool): Whether to use depthwise separable convolution.
-            Default: False
+            Default: False.
         arch_ovewrite(list): Overwrite default arch settings. Default: None.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True)
+            Default: dict(type='BN', requires_grad=True).
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+            Default: None.
 
 
     Example:
@@ -176,6 +179,7 @@ class CSPDarknet(BaseModule):
                  deepen_factor=1.0,
                  widen_factor=1.0,
                  out_indices=(2, 3, 4),
+                 frozen_stages=-1,
                  use_depthwise=False,
                  arch_ovewrite=None,
                  conv_cfg=None,
@@ -191,6 +195,8 @@ class CSPDarknet(BaseModule):
             i for i in range(1, len(arch_setting)+1))
 
         self.out_indices = out_indices
+        self.frozen_stages = frozen_stages
+        self.use_depthwise = use_depthwise
         self.norm_eval = norm_eval
         conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
 
@@ -258,7 +264,6 @@ class CSPDarknet(BaseModule):
 
     def forward(self, x):
         outs = []
-        x = self.stem(x)
         for i, layer_name in enumerate(self.layers):
             layer = getattr(self, layer_name)
             x = layer(x)
