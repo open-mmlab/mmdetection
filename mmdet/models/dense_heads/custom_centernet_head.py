@@ -871,12 +871,12 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 image_sizes.append(img_metas[i]['ori_shape'][:2])
             if self.only_proposal:
                 agn_hm_pred_per_level = [x.sigmoid() for x in agn_hm_pred_per_level]
-                proposals, proposals_class = self.predict_instances(
+                proposals = self.predict_instances(
                     grids, agn_hm_pred_per_level, reg_pred_per_level, 
                     image_sizes, [None for _ in agn_hm_pred_per_level])
             elif self.as_proposal: # category specific bbox as agnostic proposals
                 clss_per_level = [x.sigmoid() for x in clss_per_level]
-                proposals, proposals_class = self.predict_instances(
+                proposals = self.predict_instances(
                     grids, clss_per_level, reg_pred_per_level, 
                     image_sizes, agn_hm_pred_per_level)
             # if self.only_proposal or self.as_proposal:
