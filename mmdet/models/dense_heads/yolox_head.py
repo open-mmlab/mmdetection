@@ -4,51 +4,12 @@ import torch.nn.functional as F
 import torchvision
 
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule, bias_init_with_prob, constant_init, is_norm, normal_init
-from mmdet.core import multi_apply, MlvlPointGenerator, multiclass_nms
+from mmdet.core import multi_apply, MlvlPointGenerator
+from mmcv.ops.nms import batched_nms
 
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
-
-
-def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
-    box_corner = prediction.new(prediction.shape)
-    box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
-    box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
-    box_corner[:, :, 2] = prediction[:, :, 0] + prediction[:, :, 2] / 2
-    box_corner[:, :, 3] = prediction[:, :, 1] + prediction[:, :, 3] / 2
-    prediction[:, :, :4] = box_corner[:, :, :4]
-
-    output = [None for _ in range(len(prediction))]
-    for i, image_pred in enumerate(prediction):
-
-        # If none are remaining => process next image
-        if not image_pred.size(0):
-            continue
-        # Get score and class with highest confidence
-        class_conf, class_pred = torch.max(image_pred[:, 5: 5 + num_classes], 1, keepdim=True)
-
-        conf_mask = (image_pred[:, 4] * class_conf.squeeze() >= conf_thre).squeeze()
-        # _, conf_mask = torch.topk((image_pred[:, 4] * class_conf.squeeze()), 1000)
-        # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
-        detections = torch.cat((image_pred[:, :5], class_conf, class_pred.float()), 1)
-        detections = detections[conf_mask]
-        if not detections.size(0):
-            continue
-
-        nms_out_index = torchvision.ops.batched_nms(
-            detections[:, :4],
-            detections[:, 4] * detections[:, 5],
-            detections[:, 6],
-            nms_thre,
-        )
-        detections = detections[nms_out_index]
-        if output[i] is None:
-            output[i] = detections
-        else:
-            output[i] = torch.cat((output[i], detections))
-
-    return output
 
 
 class IOUloss(nn.Module):
@@ -402,31 +363,15 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             score_factor = flatten_objectness[img_id]
             bboxes = flatten_bboxes[img_id]
 
-            max_scores, _ = torch.max(cls_scores, 1)
-            valid_mask = score_factor * max_scores >= cfg.conf_thr
-
-            if self.use_sigmoid_cls:
-                # Add a dummy background class to the backend when using sigmoid
-                # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-                # BG cat_id: num_class
-                padding = cls_scores.new_zeros(cls_scores.shape[0], 1)
-                cls_scores = torch.cat([cls_scores, padding], dim=1)
-
-            det_bboxes, det_labels = multiclass_nms(
-                bboxes[valid_mask],
-                cls_scores[valid_mask],
-                cfg.score_thr,
-                cfg.nms,
-                cfg.max_per_img,
-                score_factors=score_factor[valid_mask])
-            result_list.append((det_bboxes, det_labels))
+            result_list.append(
+                self._bboxes_nms(cls_scores, bboxes, score_factor, cfg)
+            )
 
         return result_list
 
     def _bbox_decode(self, priors, bbox_preds):
         xys = (bbox_preds[..., :2] * priors[:, 2:]) + priors[:, :2]
         whs = bbox_preds[..., 2:].exp() * priors[:, 2:]
-
 
         tl_x = (xys[..., 0] - whs[..., 0] / 2)
         tl_y = (xys[..., 1] - whs[..., 1] / 2)
@@ -436,42 +381,19 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         decoded_bboxes = torch.stack([tl_x, tl_y, br_x, br_y], -1)
         return decoded_bboxes
 
-    def get_bboxes_origin(self,
-                   cls_scores,
-                   bbox_preds,
-                   objectnesses,
-                   img_metas,
-                   cfg=None,
-                   rescale=False,
-                   with_nms=True):
-        cfg = self.test_cfg if cfg is None else cfg
-        outputs = [torch.cat([reg_out, obj_out.sigmoid(), cls_out.sigmoid()], 1) \
-                            for reg_out, obj_out, cls_out in zip(bbox_preds, objectnesses, cls_scores)]
-        self.hw = [x.shape[-2:] for x in outputs]
-        # [batch, n_anchors_all, 85]
-        outputs = torch.cat([x.flatten(start_dim=2) for x in outputs], dim=2).permute(0, 2, 1)
-        prediction = self.decode_outputs(outputs, dtype=outputs[0].type())
-        dets = postprocess(prediction, self.num_classes, cfg.conf_thr, cfg.nms.iou_threshold)
+    def _bboxes_nms(self, cls_scores, bboxes, score_factor, cfg):
+        max_scores, labels = torch.max(cls_scores, 1)
+        valid_mask = score_factor * max_scores >= cfg.score_thr
 
-        imgs_det = []
-        for i in range(len(dets)):
-            scale_factor = img_metas[i]['scale_factor']
+        bboxes = bboxes[valid_mask]
+        scores = max_scores[valid_mask] * score_factor[valid_mask]
+        labels = labels[valid_mask]
 
-            out = dets[i]
-            if out is None:
-                imgs_det.append(tuple([torch.zeros((0, 5)), torch.zeros((0, ))]))
-                continue
-
-            mlvl_bboxes = out[:, :4]
-            if rescale:
-                mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-            scores = out[:, 4] * out[:, 5]
-
-            mlvl_bboxes = torch.cat([mlvl_bboxes, scores[:, None]], dim=-1)
-            mlvl_label = out[:, 6]
-
-            imgs_det.append(tuple([mlvl_bboxes, mlvl_label]))
-        return imgs_det
+        if labels.numel() == 0:
+            return bboxes, labels
+        else:
+            dets, keep = batched_nms(bboxes, scores, labels, cfg.nms)
+            return dets, labels[keep]
     
     def loss(self,
              cls_scores,
@@ -565,23 +487,6 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         output[..., :2] = (output[..., :2] + grid) * stride
         output[..., 2:4] = torch.exp(output[..., 2:4]) * stride
         return output, grid
-
-    def decode_outputs(self, outputs, dtype):
-        grids = []
-        strides = []
-        for (hsize, wsize), stride in zip(self.hw, self.strides):
-            yv, xv = torch.meshgrid([torch.arange(hsize), torch.arange(wsize)])
-            grid = torch.stack((xv, yv), 2).view(1, -1, 2)
-            grids.append(grid)
-            shape = grid.shape[:2]
-            strides.append(torch.full((*shape, 1), stride))
-
-        grids = torch.cat(grids, dim=1).type(dtype)
-        strides = torch.cat(strides, dim=1).type(dtype)
-
-        outputs[..., :2] = (outputs[..., :2] + grids) * strides
-        outputs[..., 2:4] = torch.exp(outputs[..., 2:4]) * strides
-        return outputs
 
     def get_losses(self, imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_bboxes,
         outputs, origin_preds, dtype):
