@@ -3,8 +3,6 @@ _base_ = [
     '../_base_/default_runtime.py'
 ]
 
-data_root = 'data/coco/'
-
 # model settings
 model = dict(
     type='YOLOX',
@@ -23,8 +21,22 @@ model = dict(
         max_per_img=1000)
 )
 
+# dataset settings
+dataset_type = 'MosaicMixUpDataset'
+data_root = 'data/coco/'
 img_norm_cfg = dict(mean=[0.485 * 255, 0.456 * 255, 0.406 * 255], std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
                     to_rgb=True)
+
+mosaic_pipeline = [
+    dict(type='LoadImageFromFile', to_float32=True),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='PhotoMetricDistortion'),
+    dict(
+        type='Expand',
+        mean=img_norm_cfg['mean'],
+        to_rgb=img_norm_cfg['to_rgb'],
+        ratio_range=(1, 2)),
+]
 
 train_pipeline = [dict(type='DefaultFormatBundle'),
                   dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],

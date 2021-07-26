@@ -8,6 +8,7 @@ from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
 from .builder import DATASETS
 from .coco import CocoDataset
+from .pipelines import Compose
 
 
 @DATASETS.register_module()
@@ -84,7 +85,7 @@ class ConcatDataset(_ConcatDataset):
         # Check whether all the datasets support evaluation
         for dataset in self.datasets:
             assert hasattr(dataset, 'evaluate'), \
-                    f'{type(dataset)} does not implement evaluate function'
+                f'{type(dataset)} does not implement evaluate function'
 
         if self.separate_eval:
             dataset_idx = -1
@@ -280,3 +281,21 @@ class ClassBalancedDataset:
     def __len__(self):
         """Length after repetition."""
         return len(self.repeat_indices)
+
+
+@DATASETS.register_module()
+class MosaicMixUpDataset:
+    def __init__(self, dataset, pipeline=None, mosaic=True, mixup=True):
+        self.dataset = dataset
+        self.pipeline = Compose(pipeline)
+        self.mosaic = mosaic
+        self.mixup = mixup
+
+    def __getitem__(self, idx):
+        if self.mosaic:
+            results = None
+        results = self.pipeline(results)
+        if self.mixup:
+            pass
+
+        return results
