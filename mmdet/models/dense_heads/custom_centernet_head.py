@@ -1000,8 +1000,10 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             ], dim=1) # n x 4
 
             # avoid invalid boxes in RoI heads
-            detections[:, 2] = torch.max(detections[:, 2], detections[:, 0] + 0.01)
-            detections[:, 3] = torch.max(detections[:, 3], detections[:, 1] + 0.01)
+            # detections[:, 2] = torch.max(detections[:, 2], detections[:, 0] + 0.01)
+            # detections[:, 3] = torch.max(detections[:, 3], detections[:, 1] + 0.01)
+            detections[:, 2] = torch.max(detections[:, 2].clone(), detections[:, 0].clone() + 0.01)
+            detections[:, 3] = torch.max(detections[:, 3].clone(), detections[:, 1].clone() + 0.01)
             # boxlist = Instances(image_sizes[i])
             scores = torch.sqrt(per_box_cls) \
                 if self.with_agn_hm else per_box_cls # n
