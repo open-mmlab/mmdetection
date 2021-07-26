@@ -1,10 +1,13 @@
 import bisect
 import math
 from collections import defaultdict
+import random
+import copy
 
 import numpy as np
 from mmcv.utils import print_log
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
+import cv2
 
 from .builder import DATASETS
 from .coco import CocoDataset
@@ -283,19 +286,111 @@ class ClassBalancedDataset:
         return len(self.repeat_indices)
 
 
+def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
+    bbox[:, 0::2] = np.clip(bbox[:, 0::2] * scale_ratio + padw, 0, w_max)
+    bbox[:, 1::2] = np.clip(bbox[:, 1::2] * scale_ratio + padh, 0, h_max)
+    return bbox
+
+
 @DATASETS.register_module()
 class MosaicMixUpDataset:
-    def __init__(self, dataset, pipeline=None, mosaic=True, mixup=True):
+    def __init__(self, dataset, mosaic_pipeline, mixup_pipeline, postpipeline, size=(640, 640), mosaic=True, mixup=True,
+                 mixup_scale=(0.5, 1.5), pad=114.0):
         self.dataset = dataset
-        self.pipeline = Compose(pipeline)
+        self.mosaic_pipeline = Compose(mosaic_pipeline)
+        self.mixup_pipeline = Compose(mixup_pipeline)
+        self.postprocess_pipeline = Compose(postpipeline)
         self.mosaic = mosaic
         self.mixup = mixup
+        self.mixup_scale = mixup_scale
+        self.size = size  # h,w
+        self.pad = pad
+        self.num_sample = len(dataset)
 
     def __getitem__(self, idx):
+        results = self.dataset.__getitem__(idx)
         if self.mosaic:
-            results = None
-        results = self.pipeline(results)
+            results = self.pipeline(results)
         if self.mixup:
-            pass
+            results = self._mixup(results)
+        return self.postprocess_pipeline(results)
 
-        return results
+    def _mixup(self, results):
+        cp_result = copy.deepcopy(results)
+        origin_img = cp_result['img']
+
+        jit_factor = random.uniform(*self.mixup_scale)
+        is_filp = random.uniform(0, 1) > 0.5
+
+        mixup_info = {}
+        while len(mixup_info['bboxes']) == 0:
+            index = random.randint(0, self.num_sample - 1)
+            mixup_info = copy.deepcopy(self.dataset.__getitem__(index))
+
+        img = mixup_info['img']
+        gt_bboxes = mixup_info['gt_bboxes']
+        gt_labels = mixup_info['gt_labels']
+
+        if len(img.shape) == 3:
+            cp_img = np.ones((self.size[0], self.size[1], 3)) * self.pad
+        else:
+            cp_img = np.ones(self.size) * 114.0
+
+        cp_scale_ratio = min(self.size[0] / img.shape[0], self.size[1] / img.shape[1])
+        resized_img = cv2.resize(
+            img,
+            (int(img.shape[1] * cp_scale_ratio), int(img.shape[0] * cp_scale_ratio)),
+            interpolation=cv2.INTER_LINEAR,
+        ).astype(np.float32)
+        cp_img[
+        : int(img.shape[0] * cp_scale_ratio), : int(img.shape[1] * cp_scale_ratio)
+        ] = resized_img
+        cp_img = cv2.resize(
+            cp_img,
+            (int(cp_img.shape[1] * jit_factor), int(cp_img.shape[0] * jit_factor)),
+        )
+        cp_scale_ratio *= jit_factor
+        if is_filp:
+            cp_img = cp_img[:, ::-1, :]
+
+        origin_h, origin_w = cp_img.shape[:2]
+        target_h, target_w = origin_img.shape[:2]
+        padded_img = np.zeros(
+            (max(origin_h, target_h), max(origin_w, target_w), 3)
+        ).astype(np.uint8)
+        padded_img[:origin_h, :origin_w] = cp_img
+
+        x_offset, y_offset = 0, 0
+        if padded_img.shape[0] > target_h:
+            y_offset = random.randint(0, padded_img.shape[0] - target_h - 1)
+        if padded_img.shape[1] > target_w:
+            x_offset = random.randint(0, padded_img.shape[1] - target_w - 1)
+        padded_cropped_img = padded_img[
+                             y_offset: y_offset + target_h, x_offset: x_offset + target_w
+                             ]
+
+        cp_bboxes_origin_np = adjust_box_anns(
+            cp_labels[:, :4], cp_scale_ratio, 0, 0, origin_w, origin_h
+        )
+        if is_filp:
+            cp_bboxes_origin_np[:, 0::2] = (
+                    origin_w - cp_bboxes_origin_np[:, 0::2][:, ::-1]
+            )
+        cp_bboxes_transformed_np = cp_bboxes_origin_np.copy()
+        cp_bboxes_transformed_np[:, 0::2] = np.clip(
+            cp_bboxes_transformed_np[:, 0::2] - x_offset, 0, target_w
+        )
+        cp_bboxes_transformed_np[:, 1::2] = np.clip(
+            cp_bboxes_transformed_np[:, 1::2] - y_offset, 0, target_h
+        )
+        keep_list = box_candidates(cp_bboxes_origin_np.T, cp_bboxes_transformed_np.T, 5)
+
+        if keep_list.sum() >= 1.0:
+            cls_labels = cp_labels[keep_list, 4:5]
+            box_labels = cp_bboxes_transformed_np[keep_list]
+            labels = np.hstack((box_labels, cls_labels))
+            origin_labels = np.vstack((origin_labels, labels))
+            origin_img = origin_img.astype(np.float32)
+            origin_img = 0.5 * origin_img + 0.5 * padded_cropped_img.astype(np.float32)
+
+        return dict(img=origin_img.astype(np.uint8), origin_labels=origin_labels)

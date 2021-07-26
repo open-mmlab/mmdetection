@@ -27,38 +27,28 @@ data_root = 'data/coco/'
 img_norm_cfg = dict(mean=[0.485 * 255, 0.456 * 255, 0.406 * 255], std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
                     to_rgb=True)
 
-mosaic_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='PhotoMetricDistortion'),
-    dict(
-        type='Expand',
-        mean=img_norm_cfg['mean'],
-        to_rgb=img_norm_cfg['to_rgb'],
-        ratio_range=(1, 2)),
-]
-
-train_pipeline = [dict(type='DefaultFormatBundle'),
-                  dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],
-                       meta_keys=('img_norm_cfg',))]
+train_pipeline = [
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],
+         meta_keys=('img_norm_cfg',))]
 
 name = 'train2017/'
 annotations = 'annotations/instances_train2017.json'
 
-sub_dataset = dict(type="COCODataset",
-                   ann_file=data_root + annotations,
-                   img_prefix=data_root + name,
-                   pipeline=None,
-                   filter_empty_gt=False,
-                   )
-
 train_dataset = dict(type="MosaicDetection",
-                     dataset=sub_dataset,
-                     ann_file=data_root + annotations,
-                     img_prefix=data_root + name,
-                     pipeline=train_pipeline,
-                     enable_mixup=False,  # tiny cfg
+                     dataset=dict(type="COCODataset",
+                                  ann_file=data_root + annotations,
+                                  img_prefix=data_root + name,
+                                  pipeline=[dict(type='LoadImageFromFile', to_float32=True),
+                                            dict(type='LoadAnnotations', with_bbox=True)],
+                                  filter_empty_gt=False,
+                                  ),
+                     mosaic_pipeline=[],
+                     mixup_pipeline=[],
+                     postpipeline=train_pipeline,
+                     size=(640, 640),
                      scale=(0.5, 1.5))
+
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
