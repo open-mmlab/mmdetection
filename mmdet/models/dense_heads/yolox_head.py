@@ -10,6 +10,7 @@ from mmcv.ops.nms import batched_nms
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
+from mmdet.core.bbox.assigners.sim_ota_assigner import SimOTAAssigner
 
 
 class IOUloss(nn.Module):
@@ -177,6 +178,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         self.test_cfg = test_cfg
         self.train_cfg = train_cfg
 
+        self.assigner = SimOTAAssigner(num_classes)
+
         self._init_layers()
 
     def _init_layers(self):
@@ -323,10 +326,6 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         cfg = self.test_cfg if cfg is None else cfg
         scale_factors = [img_meta['scale_factor'] for img_meta in img_metas]
 
-        num_levels = len(cls_scores)
-
-        result_list = []
-
         num_imgs = len(img_metas)
         featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
         mlvl_priors = self.prior_generator.grid_priors(
@@ -394,8 +393,153 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         else:
             dets, keep = batched_nms(bboxes, scores, labels, cfg.nms)
             return dets, labels[keep]
-    
+
     def loss(self,
+             cls_scores,
+             bbox_preds,
+             objectnesses,
+             gt_bboxes,
+             gt_labels,
+             img_metas,
+             gt_bboxes_ignore=None,
+             imgs=None
+             ):
+
+        num_imgs = len(img_metas)
+        featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
+        mlvl_priors = self.prior_generator.grid_priors(
+            featmap_sizes, cls_scores[0].device, with_stride=True)
+
+        # flatten cls_scores, bbox_preds and objectness
+        flatten_cls_scores = [
+            cls_score.permute(0, 2, 3, 1).reshape(num_imgs, -1, self.cls_out_channels)
+            for cls_score in cls_scores
+        ]
+        flatten_bbox_preds = [
+            bbox_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1, 4)
+            for bbox_pred in bbox_preds
+        ]
+        flatten_objectness = [
+            objectness.permute(0, 2, 3, 1).reshape(num_imgs, -1)
+            for objectness in objectnesses
+        ]
+
+        flatten_cls_scores = torch.cat(flatten_cls_scores, dim=1)
+        flatten_bbox_preds = torch.cat(flatten_bbox_preds, dim=1)
+        flatten_objectness = torch.cat(flatten_objectness, dim=1)
+        flatten_priors = torch.cat(mlvl_priors)
+
+        flatten_bboxes = self._bbox_decode(flatten_priors, flatten_bbox_preds)
+
+        # ----todo: refactor -----
+        num_fg = 0
+        fg_masks = []
+        cls_targets = []
+        obj_targets = []
+        reg_targets = []
+        l1_targets = []
+
+        for idx in range(num_imgs):
+            fg_mask, cls_target, obj_target, reg_target, l1_target, \
+            num_fg_img = self._get_target_single(flatten_cls_scores[idx].detach(),
+                                                 flatten_bbox_preds[idx].detach(),
+                                                 flatten_objectness[idx].detach(),
+                                                 flatten_priors,
+                                                 flatten_bboxes[idx].detach(),
+                                                 gt_bboxes[idx],
+                                                 gt_labels[idx])
+            fg_masks.append(fg_mask)
+            cls_targets.append(cls_target)
+            obj_targets.append(obj_target.to(flatten_objectness.dtype))
+            reg_targets.append(reg_target)
+            l1_targets.append(l1_target)
+            num_fg += num_fg_img
+
+        fg_masks = torch.cat(fg_masks, 0)
+        cls_targets = torch.cat(cls_targets, 0)
+        obj_targets = torch.cat(obj_targets, 0)
+        reg_targets = torch.cat(reg_targets, 0)
+        if self.use_l1:
+            l1_targets = torch.cat(l1_targets, 0)
+        num_fg = max(num_fg, 1)
+
+        loss_iou = (self.iou_loss(flatten_bboxes.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
+        loss_obj = (self.bcewithlog_loss(flatten_objectness.view(-1, 1), obj_targets)).sum() / num_fg
+        loss_cls = (
+                       self.bcewithlog_loss(flatten_cls_scores.view(-1, self.num_classes)[fg_masks], cls_targets)
+                   ).sum() / num_fg
+        if self.use_l1:
+            loss_l1 = (self.l1_loss(flatten_bbox_preds.view(-1, 4)[fg_masks], l1_targets)).sum() / num_fg
+        else:
+            loss_l1 = 0.0
+
+        reg_weight = 5.0
+
+        if self.use_l1:
+            return dict(
+                loss_cls=loss_cls,
+                loss_iou=reg_weight * loss_iou,
+                loss_obj=loss_obj,
+                loss_l1=loss_l1)
+        else:
+            return dict(
+                loss_cls=loss_cls,
+                loss_iou=reg_weight * loss_iou,
+                loss_obj=loss_obj)
+
+
+
+    def _get_target_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           objectness,
+                           priors,
+                           decoded_bboxes,
+                           gt_bboxes,
+                           gt_labels,
+                           eps=1e-8
+                           ):
+        num_priors = priors.size(0)
+        num_gts = gt_labels.size(0)
+        # No target
+        if num_gts == 0:
+            cls_target = cls_scores.new_zeros((0, self.num_classes))
+            reg_target = cls_scores.new_zeros((0, 4))
+            l1_target = cls_scores.new_zeros((0, 4))
+            obj_target = cls_scores.new_zeros((num_priors, 1))
+            fg_mask = cls_scores.new_zeros(num_priors).bool()
+            return fg_mask, cls_target, obj_target, reg_target, l1_target, 0
+
+        # TODO: prior add offset
+        gt_matched_classes, fg_mask, pred_ious_this_matching, matched_gt_inds, \
+        num_fg_img = self.assigner.assign(
+            cls_scores.sigmoid() * objectness.unsqueeze(1).sigmoid(),
+            priors,
+            decoded_bboxes,
+            gt_bboxes,
+            gt_labels)
+
+        # TODO: refactor
+        cls_target = F.one_hot(
+            gt_matched_classes.to(torch.int64), self.num_classes
+        ) * pred_ious_this_matching.unsqueeze(-1)
+        obj_target = fg_mask.unsqueeze(-1)
+        reg_target = gt_bboxes[matched_gt_inds]
+        if self.use_l1:
+            gt = gt_bboxes[matched_gt_inds]
+
+            l1_target = cls_scores.new_zeros((num_fg_img, 4))
+            l1_target[:, 0] = gt[:, 0] / priors[fg_mask][2] - priors[fg_mask][0]
+            l1_target[:, 1] = gt[:, 1] / priors[fg_mask][3] - priors[fg_mask][1]
+            l1_target[:, 2] = torch.log(gt[:, 2] / priors[fg_mask][2] + eps)
+            l1_target[:, 3] = torch.log(gt[:, 3] / priors[fg_mask][3] + eps)
+        else:
+            l1_target = None
+
+        return fg_mask, cls_target, obj_target, reg_target, l1_target, num_fg_img
+
+    
+    def loss_origin(self,
              cls_scores,
              bbox_preds,
              objectnesses,
@@ -423,22 +567,28 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             dict[str, Tensor]: A dictionary of loss components.
         """
 
-        outputs = []
-        origin_preds = []
-        x_shifts = []
-        y_shifts = []
-        expanded_strides = []
+        outputs = []  # all levels outputs
+        origin_preds = []  # origin reg pred with shape [B, N, 4], No exp on wh
+        x_shifts = []          # all level prior center x [1, N(H*W)]
+        y_shifts = []          # all level prior center y [1, N(H*W)]
+        expanded_strides = []  # all level flatten stride shape[1, N]
 
         for k, (cls_output, reg_output, obj_output, stride_this_level) \
                 in enumerate(zip(cls_scores, bbox_preds, objectnesses, self.strides)):
+            # cat each level's preds in channel dim
             output = torch.cat([reg_output, obj_output, cls_output], 1)
+            # reshape output and get priors
+            # NOTE: do exp()  * stride on reg, convert to xywh!!!!
             output, grid = self.get_output_and_grid(output, k, stride_this_level, reg_output.type())
-            # output [N, A*H*W, 5+K] (x, y, w, h, obj, classes...)
+            # single level output [B, A*H*W, 5+K] (x, y, w, h, obj, classes...)
+            # single level grid [1, N(H*W), 2]
+
             x_shifts.append(grid[:, :, 0])
             y_shifts.append(grid[:, :, 1])
             expanded_strides.append(
                 torch.zeros(1, grid.shape[1]).fill_(stride_this_level).type_as(reg_output)
             )
+
             if self.use_l1:
                 batch_size = reg_output.shape[0]
                 hsize, wsize = reg_output.shape[-2:]
@@ -447,6 +597,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                     reg_output.permute(0, 1, 3, 4, 2)
                         .reshape(batch_size, -1, 4)
                 )
+                # origin reg pred with shape [B, N, 4], No exp on wh
                 origin_preds.append(reg_output.clone())
 
             outputs.append(output)
@@ -488,18 +639,26 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         output[..., 2:4] = torch.exp(output[..., 2:4]) * stride
         return output, grid
 
-    def get_losses(self, imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_bboxes,
-        outputs, origin_preds, dtype):
-        bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
+    def get_losses(self,
+                   imgs,
+                   x_shifts,  # all level prior center x, list of [1, N(H*W)]
+                   y_shifts,  # all level prior center y, list of [1, N(H*W)]
+                   expanded_strides,  # all level flatten stride, list of shape[1, N]
+                   gt_labels,
+                   gt_bboxes,
+                   outputs,  # flatten all level outputs, tensor [B, N(all), 5+K]
+                   origin_preds,  # all level reg pred, list of [B, N, 4], No exp on wh
+                   dtype):
+        bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4] xywh
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
         cls_preds = outputs[:, :, 5:]  # [batch, n_anchors_all, n_cls]
 
         total_num_anchors = outputs.shape[1]
         x_shifts = torch.cat(x_shifts, 1)  # [1, n_anchors_all]
         y_shifts = torch.cat(y_shifts, 1)  # [1, n_anchors_all]
-        expanded_strides = torch.cat(expanded_strides, 1) # [1, n_anchors_all]
+        expanded_strides = torch.cat(expanded_strides, 1)  # [1, n_anchors_all]
         if self.use_l1:
-            origin_preds = torch.cat(origin_preds, 1) #[N, n_anchors_all, 4]
+            origin_preds = torch.cat(origin_preds, 1)  # [N, n_anchors_all, 4]
 
         cls_targets = []
         reg_targets = []
@@ -513,12 +672,16 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         for batch_idx in range(outputs.shape[0]):
             num_gt = len(gt_labels[batch_idx])
             num_gts += num_gt
+
+            # No target
             if num_gt == 0:
                 cls_target = outputs.new_zeros((0, self.num_classes))
                 reg_target = outputs.new_zeros((0, 4))
                 l1_target = outputs.new_zeros((0, 4))
                 obj_target = outputs.new_zeros((total_num_anchors, 1))
                 fg_mask = outputs.new_zeros(total_num_anchors).bool()
+
+            # have target
             else:
                 gt_bboxes_per_image = gt_bboxes[batch_idx].to(bbox_preds.dtype)
                 # convert x1,y1,x2,y2 to xywh
@@ -533,7 +696,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                 bboxes_preds_per_image = bbox_preds[batch_idx]
 
                 try:
-                    gt_matched_classes, fg_mask, pred_ious_this_matching, matched_gt_inds, num_fg_img = self.get_assignments(
+                    gt_matched_classes, fg_mask, pred_ious_this_matching, \
+                    matched_gt_inds, num_fg_img = self.get_assignments(
                         # noqa
                         batch_idx, num_gt, total_num_anchors, gt_bboxes_per_image, gt_classes,
                         bboxes_preds_per_image, expanded_strides, x_shifts, y_shifts,
@@ -677,11 +841,20 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         return gt_matched_classes, fg_mask, pred_ious_this_matching, matched_gt_inds, num_fg
 
     def get_in_boxes_info(
-            self, gt_bboxes_per_image, expanded_strides, x_shifts, y_shifts, total_num_anchors, num_gt,
+            self,
+            gt_bboxes_per_image,
+            expanded_strides,  # [1, n_anchors_all]
+            x_shifts,
+            y_shifts,
+            total_num_anchors,
+            num_gt,
     ):
+        # remove batch dim
         expanded_strides_per_image = expanded_strides[0]
         x_shifts_per_image = x_shifts[0] * expanded_strides_per_image
         y_shifts_per_image = y_shifts[0] * expanded_strides_per_image
+        # shape [n_anchors_all]
+
         x_centers_per_image = (
             (x_shifts_per_image + 0.5 * expanded_strides_per_image)
                 .unsqueeze(0)
@@ -693,11 +866,13 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                 .repeat(num_gt, 1)
         )
 
+        # x - 0.5w
         gt_bboxes_per_image_l = (
             (gt_bboxes_per_image[:, 0] - 0.5 * gt_bboxes_per_image[:, 2])
                 .unsqueeze(1)
                 .repeat(1, total_num_anchors)
         )
+        # x + 0.5w
         gt_bboxes_per_image_r = (
             (gt_bboxes_per_image[:, 0] + 0.5 * gt_bboxes_per_image[:, 2])
                 .unsqueeze(1)
@@ -726,30 +901,39 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         center_radius = 2.5
 
+        # X - center radius
         gt_bboxes_per_image_l = (gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
             1, total_num_anchors
         ) - center_radius * expanded_strides_per_image.unsqueeze(0)
+        # X
         gt_bboxes_per_image_r = (gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
             1, total_num_anchors
         ) + center_radius * expanded_strides_per_image.unsqueeze(0)
+        # Y
         gt_bboxes_per_image_t = (gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
             1, total_num_anchors
         ) - center_radius * expanded_strides_per_image.unsqueeze(0)
+        # Y
         gt_bboxes_per_image_b = (gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
             1, total_num_anchors
         ) + center_radius * expanded_strides_per_image.unsqueeze(0)
 
+        # is in center prior
         c_l = x_centers_per_image - gt_bboxes_per_image_l
+
         c_r = gt_bboxes_per_image_r - x_centers_per_image
+
         c_t = y_centers_per_image - gt_bboxes_per_image_t
+
         c_b = gt_bboxes_per_image_b - y_centers_per_image
         center_deltas = torch.stack([c_l, c_t, c_r, c_b], 2)
         is_in_centers = center_deltas.min(dim=-1).values > 0.0
         is_in_centers_all = is_in_centers.sum(dim=0) > 0
 
-        # in boxes and in centers
+        # in boxes or in centers
         is_in_boxes_anchor = is_in_boxes_all | is_in_centers_all
 
+        # both in boxes and centers
         is_in_boxes_and_center = (
                 is_in_boxes[:, is_in_boxes_anchor] & is_in_centers[:, is_in_boxes_anchor]
         )
