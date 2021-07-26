@@ -112,7 +112,6 @@ class CopyPaste:
                 x1, y1, x2, y2 = 0, 0, 0, 0
             bboxes.append((x1, y1, x2, y2))
         results['gt_bboxes'] = np.array(bboxes)
-        return bboxes
 
     def visualize(self, results, name='', draw_ignore=False):
         def draw_rect(img, bbox, color):
@@ -137,7 +136,7 @@ class CopyPaste:
         cv2.imshow(name, img)
         cv2.waitKey(0)
 
-    def rescale_paste_target(self, results, target_size):
+    def rescale(self, results, target_size):
         h, w = target_size
         image_size = results['img'].shape[:-1]
         if image_size != target_size:
@@ -172,7 +171,7 @@ class CopyPaste:
             return results
         # Apply augmentations to an image that will share masks
         h, w = results['img'].shape[:-1]
-        self.rescale_paste_target(results['copy_paste'], (h, w))
+        self.rescale(results['copy_paste'], (h, w))
         results['copy_paste'] = self.flip(results['copy_paste'])
         if self.rotate is not None:
             results['copy_paste'] = self.rotate(results['copy_paste'])

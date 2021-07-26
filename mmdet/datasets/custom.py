@@ -1,7 +1,7 @@
 import os.path as osp
 import warnings
 from collections import OrderedDict
-from random import randint
+from random import randrange
 
 import mmcv
 import numpy as np
@@ -103,6 +103,13 @@ class CustomDataset(Dataset):
 
         # processing pipeline
         self.pipeline = Compose(pipeline)
+
+        # Check if Copy-Paste augmentation is in pipeline
+        self.copypaste_aug_used = False
+        for transform in pipeline:
+            if transform['type'] == 'CopyPaste':
+                self.copypaste_aug_used = True
+                break
 
     def __len__(self):
         """Total number of samples of data."""
@@ -212,18 +219,18 @@ class CustomDataset(Dataset):
         ann_info = self.get_ann_info(idx)
         results = dict(img_info=img_info, ann_info=ann_info)
 
-        copy_past_idx = randint(0, len(self) - 1)
-        while copy_past_idx == idx:
-            copy_past_idx = randint(0, self.__len__() - 1)
-        copy_past_img_info = self.data_infos[copy_past_idx]
-        copy_past_ann_info = self.get_ann_info(copy_past_idx)
-
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
 
-        results['copy_paste'] = dict(img_info=copy_past_img_info, ann_info=copy_past_ann_info)
-        self.pre_pipeline(results['copy_paste'])
+        if self.copypaste_aug_used:
+            copy_paste_idx = randrange(len(self))
+            while copy_paste_idx == idx:
+                copy_paste_idx = randrange(len(self))
+            copy_paste_img_info = self.data_infos[copy_paste_idx]
+            copy_paste_ann_info = self.get_ann_info(copy_paste_idx)
+            results['copy_paste'] = dict(img_info=copy_paste_img_info, ann_info=copy_paste_ann_info)
+            self.pre_pipeline(results['copy_paste'])
 
         return self.pipeline(results)
 
