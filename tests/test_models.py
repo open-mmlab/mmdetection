@@ -102,7 +102,7 @@ class PublicModelsTestCase(unittest.TestCase):
                 raise AssertionError(f'{m}: {expected} (expected) - {thr} (threshold) > {actual}')
 
     def domain_check_for_custom_operations(self, config_dir):
-        config_onnx = osp.join(config_dir, 'config.onnx')
+        config_onnx = osp.join(config_dir, 'model.onnx')
         from onnx import load
         onnx_model = load(config_onnx)
 
@@ -164,7 +164,7 @@ class PublicModelsTestCase(unittest.TestCase):
             try:
                 run(f'python tools/test_exported.py '
                     f'{target_config_path} '
-                    f'{osp.join(test_dir, "config.xml")} '
+                    f'{osp.join(test_dir, "model.xml")} '
                     f'--out res.pkl --eval {metrics_str} 2>&1 | tee {log_file}',
                     stdout=log_f, stderr=PIPE, check=True, shell=True)
             except CalledProcessError as ex:
@@ -199,7 +199,7 @@ class PublicModelsTestCase(unittest.TestCase):
                 run(['python',
                     'tools/test_exported.py',
                     target_config_path,
-                    osp.join(test_dir, 'config.onnx'),
+                    osp.join(test_dir, 'model.onnx'),
                     '--out', 'res.pkl',
                     '--eval', *metrics
                     ], stdout=log_f, stderr=PIPE, check=True)

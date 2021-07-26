@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2021 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # and limitations under the License.
 
 import os.path as osp
-from mmcv.runner import dist_utils
 from packaging import version
 from subprocess import DEVNULL, CalledProcessError, run
 
@@ -24,7 +23,7 @@ from onnxoptimizer import optimize
 from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 
 from mmdet.apis import get_fake_input
-from mmdet.integration.nncf import check_nncf_is_enabled, wrap_nncf_model
+from mmdet.integration.nncf import get_uncompressed_model
 from mmdet.models import detectors
 from mmdet.utils.deployment.ssd_export_helpers import *  # noqa: F403
 from mmdet.utils.deployment.symbolic import register_extra_symbolics, register_extra_symbolics_for_openvino
@@ -32,6 +31,20 @@ from mmdet.utils.deployment.symbolic import register_extra_symbolics, register_e
 
 def get_min_opset_version():
     return 10 if version.parse(torch.__version__) < version.parse('1.7.0') else 11
+
+
+def patch_model_for_alt_ssd_export(model):
+    model._export_mode = False
+    model.onnx_export = onnx_export.__get__(model)
+    model.save_img_metas = save_img_metas.__get__(model)
+    model.forward = forward.__get__(model)
+    model.forward_export = forward_export_detector.__get__(model)
+    model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
+    model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
+
+
+def patch_nncf_model_for_alt_ssd_export(model):
+    model.onnx_export = onnx_export.__get__(model)
 
 
 def export_to_onnx(model,
@@ -51,14 +64,7 @@ def export_to_onnx(model,
         kwargs['enable_onnx_checker'] = False
 
     if alt_ssd_export:
-        assert isinstance(model, detectors.SingleStageDetector)
-
-        model.onnx_export = onnx_export.__get__(model)
-        model.forward = forward.__get__(model)
-        model.forward_export = forward_export_detector.__get__(model)
-        model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
-        model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
-
+        assert isinstance(get_uncompressed_model(model), detectors.SingleStageDetector)
         model.onnx_export(img=data['img'][0],
                           img_metas=data['img_metas'][0],
                           export_name=export_name,
@@ -207,15 +213,6 @@ def export_model(model, config, output_dir, target='openvino', onnx_opset=11,
     device = next(model.parameters()).device
     cfg = config
     fake_data = get_fake_input(cfg, device=device)
-
-    # BEGIN nncf part
-    # if cfg.get('nncf_config'):
-    #     assert not alt_ssd_export, \
-    #             'Export of NNCF-compressed model is incompatible with --alt_ssd_export'
-    #     check_nncf_is_enabled()
-    #     compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input)
-    #     compression_ctrl.prepare_for_export()
-    # END nncf part
 
     mmcv.mkdir_or_exist(osp.abspath(output_dir))
     onnx_model_path = osp.join(output_dir, cfg.get('model_name', 'model') + '.onnx')
