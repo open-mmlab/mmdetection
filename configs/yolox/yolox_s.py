@@ -3,8 +3,6 @@ _base_ = [
     '../_base_/default_runtime.py'
 ]
 
-data_root = 'data/coco/'
-
 # model settings
 model = dict(
     type='YOLOX',
@@ -23,30 +21,44 @@ model = dict(
         max_per_img=1000)
 )
 
+# dataset settings
+data_root = '/usr/videodate/dataset/subsetcoco/'
 img_norm_cfg = dict(mean=[0.485 * 255, 0.456 * 255, 0.406 * 255], std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
                     to_rgb=True)
 
-train_pipeline = [dict(type='DefaultFormatBundle'),
-                  dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],
-                       meta_keys=('img_norm_cfg',))]
+train_pipeline = [
+    dict(
+        type='PhotoMetricDistortion',
+        brightness_delta=32,
+        contrast_range=(0.5, 1.5),
+        saturation_range=(0.5, 1.5),
+        hue_delta=18),
+    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Resize', keep_ratio=True),
+    dict(type='Pad', pad_val=114.0),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],
+         meta_keys=('img_norm_cfg',))]
 
 name = 'train2017/'
 annotations = 'annotations/instances_train2017.json'
 
-sub_dataset = dict(type="COCODataset",
-                   ann_file=data_root + annotations,
-                   img_prefix=data_root + name,
-                   pipeline=None,
-                   filter_empty_gt=False,
-                   )
-
-train_dataset = dict(type="MosaicDetection",
-                     dataset=sub_dataset,
-                     ann_file=data_root + annotations,
-                     img_prefix=data_root + name,
+train_dataset = dict(type="MosaicMixUpDataset",
+                     dataset=dict(type="CocoDataset",
+                                  ann_file=data_root + annotations,
+                                  img_prefix=data_root + name,
+                                  pipeline=[dict(type='LoadImageFromFile', to_float32=True),
+                                            dict(type='LoadAnnotations', with_bbox=True)],
+                                  filter_empty_gt=False,
+                                  ),
+                     mosaic_pipeline=[],
+                     mixup_pipeline=[],
+                     mosaic=True,
+                     mixup=True,
                      pipeline=train_pipeline,
-                     enable_mixup=False,  # tiny cfg
-                     scale=(0.5, 1.5))
+                     img_scale=(640, 640),
+                     mixup_scale=(0.5, 1.5))
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
