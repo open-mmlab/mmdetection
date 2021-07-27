@@ -69,8 +69,8 @@ def build_dataset(cfg, default_args=None):
             build_dataset(cfg['dataset'], default_args), cfg['oversample_thr'])
     elif cfg['type'] == 'MosaicMixUpDataset':
         cp_cfg = copy.deepcopy(cfg)
-        cp_cfg = cp_cfg.pop('type')
-        cp_cfg = cp_cfg.pop('dataset')
+        cp_cfg.pop('type')
+        cp_cfg.pop('dataset')
         dataset = MosaicMixUpDataset(build_dataset(cfg['dataset'], default_args), **cp_cfg)
     elif isinstance(cfg.get('ann_file'), (list, tuple)):
         dataset = _concat_dataset(cfg, default_args)

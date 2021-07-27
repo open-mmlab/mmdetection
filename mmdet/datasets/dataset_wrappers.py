@@ -309,13 +309,14 @@ def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
 
 @DATASETS.register_module()
 class MosaicMixUpDataset:
-    def __init__(self, dataset, mosaic_pipeline=None, mixup_pipeline=None, postpipeline=None, img_scale=(640, 640),
+    def __init__(self, dataset, mosaic_pipeline=None, mixup_pipeline=None, pipeline=None, img_scale=(640, 640),
                  mosaic=True, mixup=True,
                  mixup_scale=(0.5, 1.5), pad_value=114.0):
         self.dataset = dataset
+        self.CLASSES = dataset.CLASSES
         self.mosaic_pipeline = Compose(mosaic_pipeline) if mosaic_pipeline is not None else None
         self.mixup_pipeline = Compose(mixup_pipeline) if mixup_pipeline is not None else None
-        self.postprocess_pipeline = Compose(postpipeline) if postpipeline is not None else None
+        self.postprocess_pipeline = Compose(pipeline) if pipeline is not None else None
         self.mosaic = mosaic
         self.mixup = mixup
         self.mixup_scale = mixup_scale
@@ -325,10 +326,13 @@ class MosaicMixUpDataset:
         self.dynamic_scale = img_scale
         self.num_sample = len(dataset)
 
+    def __len__(self):
+        return self.num_sample
+
     def __getitem__(self, idx):
         results = self.dataset[idx]
         if self.mosaic:
-            results = self.pipeline(results)
+            results = self.mosaic_pipeline(results)
         if self.mixup and results['gt_bboxes'].shape[0] > 0:
             results = self._mixup(results)
         return self.postprocess_pipeline(results)
@@ -343,7 +347,7 @@ class MosaicMixUpDataset:
         origin_gt_labels = origin_result['gt_labels']
 
         # 0. retrieve data
-        results_i = {}
+        results_i = {'gt_bboxes': []}
         while len(results_i['gt_bboxes']) == 0:
             index = random.randint(0, self.num_sample - 1)
             results_i = copy.deepcopy(self.dataset[index])
@@ -422,8 +426,8 @@ class MosaicMixUpDataset:
 
             cls_labels = gt_labels_i[keep_list]
             box_labels = cp_bboxes_transformed_np[keep_list]
-            gt_bboxes = np.hstack((origin_gt_bboxes, box_labels))
-            gt_labels = np.vstack((origin_gt_labels, cls_labels))
+            gt_bboxes = np.concatenate((origin_gt_bboxes, box_labels), axis=0)
+            gt_labels = np.concatenate((origin_gt_labels, cls_labels), axis=0)
 
             origin_result['img'] = origin_img
             origin_result['gt_bboxes'] = gt_bboxes

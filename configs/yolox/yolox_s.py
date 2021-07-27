@@ -22,7 +22,6 @@ model = dict(
 )
 
 # dataset settings
-dataset_type = 'MosaicMixUpDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(mean=[0.485 * 255, 0.456 * 255, 0.406 * 255], std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
                     to_rgb=True)
@@ -35,8 +34,8 @@ train_pipeline = [
 name = 'train2017/'
 annotations = 'annotations/instances_train2017.json'
 
-train_dataset = dict(type="MosaicDetection",
-                     dataset=dict(type="COCODataset",
+train_dataset = dict(type="MosaicMixUpDataset",
+                     dataset=dict(type="CocoDataset",
                                   ann_file=data_root + annotations,
                                   img_prefix=data_root + name,
                                   pipeline=[dict(type='LoadImageFromFile', to_float32=True),
@@ -45,10 +44,10 @@ train_dataset = dict(type="MosaicDetection",
                                   ),
                      mosaic_pipeline=[],
                      mixup_pipeline=[],
-                     postpipeline=train_pipeline,
-                     size=(640, 640),
-                     scale=(0.5, 1.5))
-
+                     mosaic=False,
+                     pipeline=train_pipeline,
+                     img_scale=(640, 640),
+                     mixup_scale=(0.5, 1.5))
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
