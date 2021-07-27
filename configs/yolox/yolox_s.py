@@ -27,6 +27,16 @@ img_norm_cfg = dict(mean=[0.485 * 255, 0.456 * 255, 0.406 * 255], std=[0.229 * 2
                     to_rgb=True)
 
 train_pipeline = [
+    dict(
+        type='PhotoMetricDistortion',
+        brightness_delta=32,
+        contrast_range=(0.5, 1.5),
+        saturation_range=(0.5, 1.5),
+        hue_delta=18),
+    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Resize', keep_ratio=True),
+    dict(type='Pad', pad_val=114.0),
+    dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],
          meta_keys=('img_norm_cfg',))]

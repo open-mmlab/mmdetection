@@ -316,7 +316,7 @@ class MosaicMixUpDataset:
         self.CLASSES = dataset.CLASSES
         self.mosaic_pipeline = Compose(mosaic_pipeline) if mosaic_pipeline is not None else None
         self.mixup_pipeline = Compose(mixup_pipeline) if mixup_pipeline is not None else None
-        self.postprocess_pipeline = Compose(pipeline) if pipeline is not None else None
+        self.pipeline = Compose(pipeline) if pipeline is not None else None
         self.mosaic = mosaic
         self.mixup = mixup
         self.mixup_scale = mixup_scale
@@ -335,7 +335,7 @@ class MosaicMixUpDataset:
             results = self.mosaic_pipeline(results)
         if self.mixup and results['gt_bboxes'].shape[0] > 0:
             results = self._mixup(results)
-        return self.postprocess_pipeline(results)
+        return self.pipeline(results)
 
     def _mixup(self, results):
         jit_factor = random.uniform(*self.mixup_scale)
@@ -434,3 +434,5 @@ class MosaicMixUpDataset:
             origin_result['gt_labels'] = gt_labels
 
         return origin_result
+
+
