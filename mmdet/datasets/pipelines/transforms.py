@@ -576,7 +576,11 @@ class Pad:
         pad_val (float, optional): Padding value, 0 by default.
     """
 
-    def __init__(self, size=None, size_divisor=None, pad2square=False, pad_val=0):
+    def __init__(self,
+                 size=None,
+                 size_divisor=None,
+                 pad2square=False,
+                 pad_val=0):
         self.size = size
         self.size_divisor = size_divisor
         self.pad_val = pad_val

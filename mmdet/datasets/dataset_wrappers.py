@@ -1,18 +1,18 @@
 import bisect
-import math
-from collections import defaultdict
-import random
 import copy
+import math
+import random
+from collections import defaultdict
 
+import mmcv
 import numpy as np
 from mmcv.utils import print_log
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
-import cv2
 
 from .builder import DATASETS
 from .coco import CocoDataset
 from .pipelines import Compose
-import mmcv
+
 
 @DATASETS.register_module()
 class ConcatDataset(_ConcatDataset):
@@ -286,48 +286,44 @@ class ClassBalancedDataset:
         return len(self.repeat_indices)
 
 
-def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
-    bbox[:, 0::2] = np.clip(bbox[:, 0::2] * scale_ratio + padw, 0, w_max)
-    bbox[:, 1::2] = np.clip(bbox[:, 1::2] * scale_ratio + padh, 0, h_max)
-    return bbox
-
-
-def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
-    # box1(4,n), box2(4,n)
+def filter_box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
     # Compute candidate boxes which include follwing 5 things:
     # box1 before augment, box2 after augment, wh_thr (pixels), aspect_ratio_thr, area_ratio
     w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
     w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
     ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
-    return (
-            (w2 > wh_thr)
+    return ((w2 > wh_thr)
             & (h2 > wh_thr)
             & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr)
-            & (ar < ar_thr)
-    )  # candidates
+            & (ar < ar_thr))
 
 
 @DATASETS.register_module()
 class MosaicMixUpDataset:
+
     def __init__(self,
                  dataset,
                  mosaic_pipeline=None,
                  mixup_pipeline=None,
                  pipeline=None,
                  img_scale=(640, 640),
-                 mosaic=True,
-                 mixup=True,
+                 enable_mosaic=True,
+                 mosaic_scale=(0.5, 1.5),
+                 enable_mixup=True,
                  mixup_scale=(0.5, 1.5),
                  pad_value=0):
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
         if hasattr(self.dataset, 'flag'):
             self.flag = dataset.flag
-        self.mosaic_pipeline = Compose(mosaic_pipeline) if mosaic_pipeline is not None else None
-        self.mixup_pipeline = Compose(mixup_pipeline) if mixup_pipeline is not None else None
+        self.mosaic_pipeline = Compose(
+            mosaic_pipeline) if mosaic_pipeline is not None else None
+        self.mixup_pipeline = Compose(
+            mixup_pipeline) if mixup_pipeline is not None else None
         self.pipeline = Compose(pipeline) if pipeline is not None else None
-        self.mosaic = mosaic
-        self.mixup = mixup
+        self.enable_mosaic = enable_mosaic
+        self.mosaic_scale = mosaic_scale
+        self.enable_mixup = enable_mixup
         self.mixup_scale = mixup_scale
         self.mixup_flip_ratio = 0.5
         self.pad_value = pad_value
@@ -340,190 +336,223 @@ class MosaicMixUpDataset:
 
     def __getitem__(self, idx):
         results = self.dataset[idx]
-        if self.mosaic:
-            results = self._mosiac(results)
+        if self.enable_mosaic:
+            results = self.mosiac(results)
             results = self.mosaic_pipeline(results)
-        if self.mixup and results['gt_bboxes'].shape[0] > 0:
-            results = self._mixup(results)
+        if self.enable_mixup and results['gt_bboxes'].shape[0] > 0:
+            results = self.mixup(results)
+        # dynamic resize
+        results['scale'] = self.dynamic_scale
         return self.pipeline(results)
 
-    def _mixup(self, results):
+    def mosiac(self, results):
+        mosaic_labels = []
+        mosaic_bboxes = []
+        mosaic_img = np.full((self.img_scale[0] * 2, self.img_scale[1] * 2, 3),
+                             self.pad_value,
+                             dtype=np.uint8)
+
+        # mosaic center x, y
+        center_x = int(random.uniform(*self.mosaic_scale) * self.img_scale[0])
+        center_y = int(random.uniform(*self.mosaic_scale) * self.img_scale[1])
+        center_position = (center_x, center_y)
+
+        indices = [random.randint(0, self.num_sample - 1) for _ in range(3)]
+
+        for i, loc in enumerate(
+            ('top_left', 'top_right', 'bottom_left', 'bottom_right')):
+            if loc == 'top_left':
+                results = copy.deepcopy(results)
+            else:
+                results = copy.deepcopy(self.dataset[indices[i - 1]])
+
+            img_i = results['img']
+            h_i, w_i = img_i.shape[:2]
+            # keep_ratio resize
+            scale_ratio_i = min(self.img_scale[0] / h_i,
+                                self.img_scale[1] / w_i)
+            img_i = mmcv.imresize(
+                img_i, (int(w_i * scale_ratio_i), int(h_i * scale_ratio_i)))
+
+            # compute the combine parameters
+            paste_coord, crop_coord = self._mosiac_combine(
+                loc, center_position, img_i.shape[:2][::-1])
+            x1_p, y1_p, x2_p, y2_p = paste_coord
+            x1_c, y1_c, x2_c, y2_c = crop_coord
+
+            # crop and paste image
+            mosaic_img[y1_p:y2_p, x1_p:x2_p] = img_i[y1_c:y2_c, x1_c:x2_c]
+
+            # adjust coordinate
+            gt_bboxes_i = results['gt_bboxes']
+            gt_labels_i = results['gt_labels']
+
+            if gt_bboxes_i.shape[0] > 0:
+                padw = x1_p - x1_c
+                padh = y1_p - y1_c
+                gt_bboxes_i[:,
+                            0::2] = scale_ratio_i * gt_bboxes_i[:, 0::2] + padw
+                gt_bboxes_i[:,
+                            1::2] = scale_ratio_i * gt_bboxes_i[:, 1::2] + padh
+
+            mosaic_bboxes.append(gt_bboxes_i)
+            mosaic_labels.append(gt_labels_i)
+
+        if len(mosaic_labels) > 0:
+            mosaic_bboxes = np.concatenate(mosaic_bboxes, 0)
+            mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0,
+                                             2 * self.img_scale[1])
+            mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0,
+                                             2 * self.img_scale[0])
+            mosaic_labels = np.concatenate(mosaic_labels, 0)
+
+        results['img'] = mosaic_img
+        results['img_shape'] = mosaic_img.shape
+        results['ori_shape'] = mosaic_img.shape
+        results['gt_bboxes'] = mosaic_bboxes
+        results['gt_labels'] = mosaic_labels
+        return results
+
+    def _mosiac_combine(self, loc, center_position_xy, img_shape_wh):
+        assert loc in ('top_left', 'top_right', 'bottom_left', 'bottom_right')
+        if loc == 'top_left':
+            # index0 to top left part of image
+            x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), max(
+                center_position_xy[1] - img_shape_wh[1], 0), \
+                             center_position_xy[0], \
+                             center_position_xy[1]
+            crop_coord = img_shape_wh[0] - (x2 - x1), img_shape_wh[1] - (
+                y2 - y1), img_shape_wh[0], img_shape_wh[1]
+
+        elif loc == 'top_right':
+            # index1 to top right part of image
+            x1, y1, x2, y2 = center_position_xy[0], max(center_position_xy[1] - img_shape_wh[1], 0), min(
+                center_position_xy[0] + img_shape_wh[0],
+                self.img_scale[1] * 2), \
+                             center_position_xy[1]
+            crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
+                img_shape_wh[0], x2 - x1), img_shape_wh[1]
+
+        elif loc == 'bottom_left':
+            # index2 to bottom left part of image
+            x1, y1, x2, y2 = max(
+                center_position_xy[0] - img_shape_wh[0],
+                0), center_position_xy[1], center_position_xy[0], min(
+                    self.img_scale[0] * 2,
+                    center_position_xy[1] + img_shape_wh[1])
+            crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
+                y2 - y1, img_shape_wh[1])
+
+        else:
+            # index3 to bottom right part of image
+            x1, y1, x2, y2 = center_position_xy[0], center_position_xy[1], min(
+                center_position_xy[0] + img_shape_wh[0],
+                self.img_scale[0] * 2), min(
+                    self.img_scale[1] * 2,
+                    center_position_xy[1] + img_shape_wh[1])
+            crop_coord = 0, 0, min(img_shape_wh[0],
+                                   x2 - x1), min(y2 - y1, img_shape_wh[1])
+
+        paste_coord = x1, y1, x2, y2
+        return paste_coord, crop_coord
+
+    def mixup(self, results):
+        results = copy.deepcopy(results)
+
         jit_factor = random.uniform(*self.mixup_scale)
         is_filp = random.uniform(0, 1) > self.mixup_flip_ratio
 
-        origin_result = results
-        origin_img = origin_result['img']
-        origin_gt_bboxes = origin_result['gt_bboxes']
-        origin_gt_labels = origin_result['gt_labels']
-
         # 0. retrieve data
-        results_i = {'gt_bboxes': []}
-        while len(results_i['gt_bboxes']) == 0:
+        gt_bboxes_i = []
+        for i in range(15):
             index = random.randint(0, self.num_sample - 1)
-            results_i = copy.deepcopy(self.dataset[index])
+            gt_bboxes_i = self.dataset.get_ann_info(index)['bboxes']
+            if len(gt_bboxes_i) != 0:
+                break
 
-        img_i = results_i['img']
-        gt_bboxes_i = results_i['gt_bboxes']
-        gt_labels_i = results_i['gt_labels']
+        if len(gt_bboxes_i) == 0:
+            return results
 
-        if len(img_i.shape) == 3:
-            cp_img = np.ones((self.dynamic_scale[0], self.dynamic_scale[1], 3)) * self.pad_value
+        retrieve_results = copy.deepcopy(self.dataset[index])
+        retrieve_img = retrieve_results['img']
+
+        if len(retrieve_img.shape) == 3:
+            out_img = np.ones((self.dynamic_scale[0], self.dynamic_scale[1],
+                               3)) * self.pad_value
         else:
-            cp_img = np.ones(self.dynamic_scale) * self.pad_value
+            out_img = np.ones(self.dynamic_scale) * self.pad_value
 
         # 1. keep_ratio resize
-        cp_scale_ratio = min(self.dynamic_scale[0] / img_i.shape[0], self.dynamic_scale[1] / img_i.shape[1])
-        resized_img = cv2.resize(
-            img_i,
-            (int(img_i.shape[1] * cp_scale_ratio), int(img_i.shape[0] * cp_scale_ratio)),
-            interpolation=cv2.INTER_LINEAR,
-        ).astype(np.float32)
+        scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
+                          self.dynamic_scale[1] / retrieve_img.shape[1])
+        retrieve_img = mmcv.imresize(
+            retrieve_img, (int(retrieve_img.shape[1] * scale_ratio),
+                           int(retrieve_img.shape[0] * scale_ratio)))
 
-        # 2. padding
-        cp_img[:int(img_i.shape[0] * cp_scale_ratio), :int(img_i.shape[1] * cp_scale_ratio)] = resized_img
+        # 2. paste
+        out_img[:retrieve_img.shape[0], :retrieve_img.shape[1]] = retrieve_img
 
-        # 3. size jit
-        cp_img = cv2.resize(
-            cp_img,
-            (int(cp_img.shape[1] * jit_factor), int(cp_img.shape[0] * jit_factor)),
-        )
-        cp_scale_ratio *= jit_factor
+        # 3. scale jit
+        scale_ratio *= jit_factor
+        out_img = mmcv.imresize(out_img, (int(out_img.shape[1] * jit_factor),
+                                          int(out_img.shape[0] * jit_factor)))
 
         # 4. flip
         if is_filp:
-            cp_img = cp_img[:, ::-1, :]
+            out_img = out_img[:, ::-1, :]
 
         # 5. random crop
-        origin_h, origin_w = cp_img.shape[:2]
+        origin_img = results['img']
+        origin_h, origin_w = out_img.shape[:2]
         target_h, target_w = origin_img.shape[:2]
         padded_img = np.zeros(
-            (max(origin_h, target_h), max(origin_w, target_w), 3)
-        ).astype(np.uint8)
-        padded_img[:origin_h, :origin_w] = cp_img
+            (max(origin_h, target_h), max(origin_w,
+                                          target_w), 3)).astype(np.uint8)
+        padded_img[:origin_h, :origin_w] = out_img
 
         x_offset, y_offset = 0, 0
         if padded_img.shape[0] > target_h:
             y_offset = random.randint(0, padded_img.shape[0] - target_h - 1)
         if padded_img.shape[1] > target_w:
             x_offset = random.randint(0, padded_img.shape[1] - target_w - 1)
-        padded_cropped_img = padded_img[
-                             y_offset: y_offset + target_h, x_offset: x_offset + target_w
-                             ]
+        padded_cropped_img = padded_img[y_offset:y_offset + target_h,
+                                        x_offset:x_offset + target_w]
 
-        # 6  adjust bbox
-        cp_bboxes_origin_np = adjust_box_anns(
-            gt_bboxes_i, cp_scale_ratio, 0, 0, origin_w, origin_h
-        )
+        # 6. adjust bbox
+        retrieve_gt_bboxes = retrieve_results['gt_bboxes']
+        retrieve_gt_bboxes[:, 0::2] = np.clip(
+            retrieve_gt_bboxes[:, 0::2] * scale_ratio, 0, origin_w)
+        retrieve_gt_bboxes[:, 1::2] = np.clip(
+            retrieve_gt_bboxes[:, 1::2] * scale_ratio, 0, origin_h)
 
         if is_filp:
-            cp_bboxes_origin_np[:, 0::2] = (
-                    origin_w - cp_bboxes_origin_np[:, 0::2][:, ::-1]
-            )
+            retrieve_gt_bboxes[:, 0::2] = (
+                origin_w - retrieve_gt_bboxes[:, 0::2][:, ::-1])
 
-        cp_bboxes_transformed_np = cp_bboxes_origin_np.copy()
-        cp_bboxes_transformed_np[:, 0::2] = np.clip(
-            cp_bboxes_transformed_np[:, 0::2] - x_offset, 0, target_w
-        )
-        cp_bboxes_transformed_np[:, 1::2] = np.clip(
-            cp_bboxes_transformed_np[:, 1::2] - y_offset, 0, target_h
-        )
-        keep_list = box_candidates(cp_bboxes_origin_np.T, cp_bboxes_transformed_np.T, 5)
+        # 7. filter
+        cp_retrieve_gt_bboxes = retrieve_gt_bboxes.copy()
+        cp_retrieve_gt_bboxes[:, 0::2] = np.clip(
+            cp_retrieve_gt_bboxes[:, 0::2] - x_offset, 0, target_w)
+        cp_retrieve_gt_bboxes[:, 1::2] = np.clip(
+            cp_retrieve_gt_bboxes[:, 1::2] - y_offset, 0, target_h)
+        keep_list = filter_box_candidates(cp_retrieve_gt_bboxes.T,
+                                          retrieve_gt_bboxes.T, 5)
 
-        # 7 mix up
+        # 8. mix up
         if keep_list.sum() >= 1.0:
             origin_img = origin_img.astype(np.float32)
-            origin_img = 0.5 * origin_img + 0.5 * padded_cropped_img.astype(np.float32)
+            mixup_img = 0.5 * origin_img + 0.5 * padded_cropped_img.astype(
+                np.float32)
 
-            cls_labels = gt_labels_i[keep_list]
-            box_labels = cp_bboxes_transformed_np[keep_list]
-            gt_bboxes = np.concatenate((origin_gt_bboxes, box_labels), axis=0)
-            gt_labels = np.concatenate((origin_gt_labels, cls_labels), axis=0)
+            retrieve_gt_labels = retrieve_results['gt_labels'][keep_list]
+            retrieve_gt_bboxes = cp_retrieve_gt_bboxes[keep_list]
+            mixup_gt_bboxes = np.concatenate(
+                (results['gt_bboxes'], retrieve_gt_bboxes), axis=0)
+            mixup_gt_labels = np.concatenate(
+                (results['gt_labels'], retrieve_gt_labels), axis=0)
 
-            origin_result['img'] = origin_img
-            origin_result['gt_bboxes'] = gt_bboxes
-            origin_result['gt_labels'] = gt_labels
+            results['img'] = mixup_img
+            results['gt_bboxes'] = mixup_gt_bboxes
+            results['gt_labels'] = mixup_gt_labels
 
-        return origin_result
-
-    def _mosiac(self, results):
-        input_h, input_w = self.img_scale[0], self.img_scale[1]
-        mosaic_labels = []
-        mosaic_img = np.full((input_h * 2, input_w * 2, 3), 114, dtype=np.uint8)
-
-        # yc, xc = s, s  # mosaic center x, y
-        xc = int(random.uniform(0.5 * self.img_scale[0], 1.5 * self.img_scale[0]))
-        yc = int(random.uniform(0.5 * self.img_scale[1], 1.5 * self.img_scale[1]))
-        indices = [None] + [random.randint(0, self.num_sample - 1) for _ in range(3)]
-
-        for i, loc in enumerate(('top_left', 'top_right', 'bottom_left', 'bottom_right')):
-            if loc != 'top_left':
-                results = copy.deepcopy(self.dataset[indices[i]])
-
-            img = results["img"]
-            gt_labels = results["gt_labels"]
-            gt_bboxes = results["gt_bboxes"]
-
-            _labels = np.concatenate([gt_bboxes, gt_labels[:, None]], axis=1, dtype=np.float)
-            # adaptive for dynamic size
-            h0, w0 = img.shape[:2]  # orig hw
-            scale = min(1. * self.img_scale[0] / h0, 1. * self.img_scale[1] / w0)
-            img = mmcv.imresize(img, (int(w0 * scale), int(h0 * scale)), return_scale=False)
-            h, w, c = img.shape
-
-            x1a, y1a, x2a, y2a, x1b, y1b, x2b, y2b = \
-                self.get_mosaic_coordinate(loc, xc, yc, w, h, input_h, input_w)
-
-            mosaic_img[y1a:y2a, x1a:x2a] = img[y1b:y2b, x1b:x2b]  # img4[ymin:ymax, xmin:xmax]
-            padw = x1a - x1b
-            padh = y1a - y1b
-
-            labels = _labels.copy()
-            if _labels.size > 0:
-                labels[:, 0] = scale * _labels[:, 0] + padw
-                labels[:, 1] = scale * _labels[:, 1] + padh
-                labels[:, 2] = scale * _labels[:, 2] + padw
-                labels[:, 3] = scale * _labels[:, 3] + padh
-            mosaic_labels.append(labels)
-
-        if len(mosaic_labels):
-            mosaic_labels = np.concatenate(mosaic_labels, 0)
-            np.clip(mosaic_labels[:, 0], 0, 2 * self.img_scale[1], out=mosaic_labels[:, 0])
-            np.clip(mosaic_labels[:, 1], 0, 2 * self.img_scale[0], out=mosaic_labels[:, 1])
-            np.clip(mosaic_labels[:, 2], 0, 2 * self.img_scale[1], out=mosaic_labels[:, 2])
-            np.clip(mosaic_labels[:, 3], 0, 2 * self.img_scale[0], out=mosaic_labels[:, 3])
-
-        img, img_shape, gt_bboxes, gt_labels = mosaic_img, mosaic_img.shape, mosaic_labels[:, :4], mosaic_labels[:, 4]
-
-        results["img"] = img
-        results["img_shape"] = img_shape
-        results["ori_shape"] = img_shape
-        results["gt_labels"] = gt_labels.astype(np.int64)
-        results["gt_bboxes"] = gt_bboxes
-
-        # import time
-        # for i in range(len(gt_bboxes)):
-        #     box = gt_bboxes[i]
-        #     x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
-        #     cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 1)
-        # cv2.imwrite(f"../image/mosaic/{time.time()}.jpg", img)
         return results
-
-    def get_mosaic_coordinate(self, loc, xc, yc, w, h, input_h, input_w):
-        # TODO update doc
-        # index0 to top left part of image
-        if loc == "top_left":
-            x1, y1, x2, y2 = max(xc - w, 0), max(yc - h, 0), xc, yc
-            small_coord = w - (x2 - x1), h - (y2 - y1), w, h
-        # index1 to top right part of image
-        elif loc == "top_right":
-            x1, y1, x2, y2 = xc, max(yc - h, 0), min(xc + w, input_w * 2), yc
-            small_coord = 0, h - (y2 - y1), min(w, x2 - x1), h
-        # index2 to bottom left part of image
-        elif loc == "bottom_left":
-            x1, y1, x2, y2 = max(xc - w, 0), yc, xc, min(input_h * 2, yc + h)
-            small_coord = w - (x2 - x1), 0, w, min(y2 - y1, h)
-        # index2 to bottom right part of image
-        elif loc == "bottom_right":
-            x1, y1, x2, y2 = xc, yc, min(xc + w, input_w * 2), min(input_h * 2, yc + h)  # noqa
-            small_coord = 0, 0, min(w, x2 - x1), min(y2 - y1, h)
-        return [x1, y1, x2, y2, *small_coord]
