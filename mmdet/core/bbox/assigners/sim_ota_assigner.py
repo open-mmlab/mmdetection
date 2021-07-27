@@ -137,7 +137,7 @@ class SimOTAAssigner(BaseAssigner):
          pred_ious_this_matching, matched_gt_inds) = \
             self.dynamic_k_matching(
                 cost_matrix, pair_wise_ious, gt_labels, num_gt, valid_mask)
-
+        # TODO: use AssignResult
         return (gt_matched_classes, valid_mask, pred_ious_this_matching,
                 matched_gt_inds, num_fg)
 
