@@ -576,17 +576,25 @@ class Pad:
         pad_val (float, optional): Padding value, 0 by default.
     """
 
-    def __init__(self, size=None, size_divisor=None, pad_val=0):
+    def __init__(self, size=None, size_divisor=None, pad2square=False, pad_val=0):
         self.size = size
         self.size_divisor = size_divisor
         self.pad_val = pad_val
-        # only one of size and size_divisor should be valid
-        assert size is not None or size_divisor is not None
-        assert size is None or size_divisor is None
+        self.pad2square = pad2square
+
+        if pad2square:
+            assert size is None and size_divisor is None, 'The size and size_divisor must be None ' \
+                                                          'when pad2square is True'
+        else:
+            assert size is not None or size_divisor is not None, 'only one of size and size_divisor should be valid'
+            assert size is None or size_divisor is None
 
     def _pad_img(self, results):
         """Pad images according to ``self.size``."""
         for key in results.get('img_fields', ['img']):
+            if self.pad2square:
+                max_size = max(results[key].shape[:2])
+                self.size = (max_size, max_size)
             if self.size is not None:
                 padded_img = mmcv.impad(
                     results[key], shape=self.size, pad_val=self.pad_val)

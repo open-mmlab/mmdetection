@@ -318,10 +318,11 @@ class MosaicMixUpDataset:
                  mosaic=True,
                  mixup=True,
                  mixup_scale=(0.5, 1.5),
-                 pad_value=114.0):
+                 pad_value=0):
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
-        self.flag =dataset.flag
+        if hasattr(self.dataset, 'flag'):
+            self.flag = dataset.flag
         self.mosaic_pipeline = Compose(mosaic_pipeline) if mosaic_pipeline is not None else None
         self.mixup_pipeline = Compose(mixup_pipeline) if mixup_pipeline is not None else None
         self.pipeline = Compose(pipeline) if pipeline is not None else None
@@ -444,32 +445,28 @@ class MosaicMixUpDataset:
 
         return origin_result
 
-    def _mosiac(self, top_left):
+    def _mosiac(self, results):
         input_h, input_w = self.img_scale[0], self.img_scale[1]
         mosaic_labels = []
         mosaic_img = np.full((input_h * 2, input_w * 2, 3), 114, dtype=np.uint8)
 
-        input_dim = self.img_scale
         # yc, xc = s, s  # mosaic center x, y
-        xc = int(random.uniform(0.5 * input_dim[0], 1.5 * input_dim[0]))
-        yc = int(random.uniform(0.5 * input_dim[1], 1.5 * input_dim[1]))
-
-        indices = [None] + [random.randint(0, len(self.dataset) - 1) for _ in range(3)]
+        xc = int(random.uniform(0.5 * self.img_scale[0], 1.5 * self.img_scale[0]))
+        yc = int(random.uniform(0.5 * self.img_scale[1], 1.5 * self.img_scale[1]))
+        indices = [None] + [random.randint(0, self.num_sample - 1) for _ in range(3)]
 
         for i, loc in enumerate(('top_left', 'top_right', 'bottom_left', 'bottom_right')):
-            if loc == 'top_left':
-                results = top_left
-            else:
-                results = self.dataset[indices[i]]
+            if loc != 'top_left':
+                results = copy.deepcopy(self.dataset[indices[i]])
 
             img = results["img"]
             gt_labels = results["gt_labels"]
             gt_bboxes = results["gt_bboxes"]
 
-            _labels = np.concatenate([gt_bboxes, gt_labels[:, None]], axis=1)
+            _labels = np.concatenate([gt_bboxes, gt_labels[:, None]], axis=1, dtype=np.float)
             # adaptive for dynamic size
             h0, w0 = img.shape[:2]  # orig hw
-            scale = min(1. * input_dim[0] / h0, 1. * input_dim[1] / w0)
+            scale = min(1. * self.img_scale[0] / h0, 1. * self.img_scale[1] / w0)
             img = mmcv.imresize(img, (int(w0 * scale), int(h0 * scale)), return_scale=False)
             h, w, c = img.shape
 
@@ -490,17 +487,18 @@ class MosaicMixUpDataset:
 
         if len(mosaic_labels):
             mosaic_labels = np.concatenate(mosaic_labels, 0)
-            np.clip(mosaic_labels[:, 0], 0, 2 * input_dim[1], out=mosaic_labels[:, 0])
-            np.clip(mosaic_labels[:, 1], 0, 2 * input_dim[0], out=mosaic_labels[:, 1])
-            np.clip(mosaic_labels[:, 2], 0, 2 * input_dim[1], out=mosaic_labels[:, 2])
-            np.clip(mosaic_labels[:, 3], 0, 2 * input_dim[0], out=mosaic_labels[:, 3])
+            np.clip(mosaic_labels[:, 0], 0, 2 * self.img_scale[1], out=mosaic_labels[:, 0])
+            np.clip(mosaic_labels[:, 1], 0, 2 * self.img_scale[0], out=mosaic_labels[:, 1])
+            np.clip(mosaic_labels[:, 2], 0, 2 * self.img_scale[1], out=mosaic_labels[:, 2])
+            np.clip(mosaic_labels[:, 3], 0, 2 * self.img_scale[0], out=mosaic_labels[:, 3])
 
         img, img_shape, gt_bboxes, gt_labels = mosaic_img, mosaic_img.shape, mosaic_labels[:, :4], mosaic_labels[:, 4]
 
         results["img"] = img
         results["img_shape"] = img_shape
         results["ori_shape"] = img_shape
-        results["gt_labels"] = gt_labels
+        results["gt_labels"] = gt_labels.astype(np.int64)
+        results["gt_bboxes"] = gt_bboxes
 
         # import time
         # for i in range(len(gt_bboxes)):

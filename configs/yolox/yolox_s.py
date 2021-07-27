@@ -22,7 +22,7 @@ model = dict(
 )
 
 # dataset settings
-data_root = '/usr/videodate/dataset/subsetcoco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(mean=[0.485 * 255, 0.456 * 255, 0.406 * 255], std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
                     to_rgb=True)
 
@@ -35,7 +35,7 @@ train_pipeline = [
         hue_delta=18),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Resize', keep_ratio=True),
-    dict(type='Pad', pad_val=114.0),
+    dict(type='Pad', pad2square=True, pad_val=114.0),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'],
