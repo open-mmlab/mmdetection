@@ -127,12 +127,12 @@ def all_reduce_norm(module):
 
 @HOOKS.register_module()
 class YoloXProcessHook(Hook):
-    def __init__(self, random_size=(14, 26), input_size=(640, 640), no_aug_epochs=15, eval_interval=1, change_size_interval=10):
+    def __init__(self, random_size=(14, 26), input_size=(640, 640), no_aug_epoch=15, eval_interval=1, change_size_interval=10):
         self.rank, world_size = get_dist_info()
         self.is_distributed = world_size > 1
         self.random_size = random_size
         self.input_size = input_size
-        self.no_aug_epochs = no_aug_epochs
+        self.no_aug_epoch = no_aug_epoch
         self.eval_interval = eval_interval
         self.change_size_interval = change_size_interval
 
@@ -147,7 +147,7 @@ class YoloXProcessHook(Hook):
         epoch = runner.epoch
         train_loader = runner.data_loader
         model = runner.model.module
-        if epoch + 1 == runner.max_epochs - self.no_aug_epochs:
+        if epoch + 1 == runner.max_epochs - self.no_aug_epoch:
             print("--->No mosaic aug now!")
             train_loader.dataset.mosaic = False
             print("--->Add additional L1 loss now!")

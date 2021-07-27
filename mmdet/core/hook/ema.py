@@ -64,7 +64,7 @@ class EMAHook(Hook):
             if parameter.dtype.is_floating_point:
                 buffer_name = self.param_ema_buffer[name]
                 buffer_parameter = self.model_buffers[buffer_name]
-                buffer_parameter.mul_(decay).add_(1 - decay, parameter.data)
+                buffer_parameter.mul_(decay).add_(parameter.data, alpha=1 - decay)
 
     def after_train_epoch(self, runner):
         """We load parameter values from ema backup to model before the

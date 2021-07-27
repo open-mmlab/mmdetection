@@ -1,6 +1,7 @@
 _base_ = './yolox_s.py'
 
 # model settings
+# 1 depth=0.33, width=0.375
 model = dict(
     backbone=dict(depth=0.33, width=0.375),
     bbox_head=dict(width=0.375)
@@ -24,9 +25,11 @@ test_pipeline = [
         ])
 ]
 
-# close mixup
+# 2 close mixup, scale=(0.5, 1.5)
 train_dataset = dict(
-    mosaic_pipeline=[],
+    mosaic_pipeline=[
+        dict(type="RandomAffineOrPerspective", scale=(0.5, 1.5))
+    ],
     enable_mixup=False)
 
 data = dict(
@@ -38,7 +41,7 @@ resume_from = None
 
 interval = 10
 evaluation = dict(interval=interval, metric='bbox')
-# random_size=(10, 20)
+# 3 random_size=(10, 20)
 custom_hooks = [
     dict(
         type='YoloXProcessHook',

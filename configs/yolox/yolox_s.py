@@ -14,11 +14,9 @@ model = dict(
         max_per_img=1000))
 
 # dataset settings
-data_root = '/usr/videodate/dataset/subsetcoco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
-    std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
-    to_rgb=True)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 train_pipeline = [
     dict(
@@ -27,9 +25,8 @@ train_pipeline = [
         contrast_range=(0.5, 1.5),
         saturation_range=(0.5, 1.5),
         hue_delta=18),
-    # dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Resize', keep_ratio=True),
-    # dict(type='Pad', pad2square=True, pad_val=114.0),
+    dict(type='Pad', pad2square=True, pad_val=114.0),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(
@@ -38,7 +35,7 @@ train_pipeline = [
         meta_keys=('img_norm_cfg', ))
 ]
 
-# enable_mixup=True
+# enable_mixup=True, scale=(0.1, 2)
 train_dataset = dict(
     type='MosaicMixUpDataset',
     dataset=dict(
@@ -51,7 +48,7 @@ train_dataset = dict(
         ],
         filter_empty_gt=False,
     ),
-    mosaic_pipeline=[dict(type="MosaicMixUpPipeline")],
+    mosaic_pipeline=[dict(type="RandomAffineOrPerspective", scale=(0.1, 2))],
     enable_mosaic=True,
     enable_mixup=True,
     pipeline=train_pipeline,

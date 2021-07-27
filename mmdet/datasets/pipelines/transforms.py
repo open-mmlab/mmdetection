@@ -1919,14 +1919,14 @@ class CutOut:
 
 
 @PIPELINES.register_module()
-class MosaicMixUpPipeline(object):
+class RandomAffineOrPerspective(object):
     def __init__(self,
                  degrees=10.0,
                  translate=0.1,
                  scale=(0.5, 1.5),
                  shear=2.0,
                  border=(0, 0),
-                 perspective = 0.0):
+                 perspective=0.0):
 
         self.degrees = degrees
         self.translate = translate
