@@ -1,7 +1,5 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 
-data_root = 'data/coco/'
-
 # model settings
 model = dict(
     type='YOLOX',
@@ -18,16 +16,25 @@ model = dict(
         nms_pre=1000,
         min_bbox_size=0,
         conf_thr=0.01,  # TODO test 0.001 val 0.01
-        score_thr=0.001,
+        score_thr=0.01,  # TODO test 0.001 val 0.01
         nms=dict(type='nms', iou_threshold=0.65),
         max_per_img=1000))
 
+# dataset settings
+data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
-    std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
-    to_rgb=True)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 train_pipeline = [
+    dict(
+        type='PhotoMetricDistortion',
+        brightness_delta=32,
+        contrast_range=(0.5, 1.5),
+        saturation_range=(0.5, 1.5),
+        hue_delta=18),
+    dict(type='Resize', keep_ratio=True),
+    dict(type='Pad', pad2square=True, pad_val=114.0),
+    dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
@@ -35,25 +42,25 @@ train_pipeline = [
         meta_keys=('img_norm_cfg', ))
 ]
 
-name = 'train2017/'
-annotations = 'annotations/instances_train2017.json'
-
-sub_dataset = dict(
-    type='COCODataset',
-    ann_file=data_root + annotations,
-    img_prefix=data_root + name,
-    pipeline=None,
-    filter_empty_gt=False,
-)
-
+# enable_mixup=True, scale=(0.1, 2)
 train_dataset = dict(
-    type='MosaicDetection',
-    dataset=sub_dataset,
-    ann_file=data_root + annotations,
-    img_prefix=data_root + name,
+    type='MosaicMixUpDataset',
+    dataset=dict(
+        type='CocoDataset',
+        ann_file=data_root + 'annotations/instances_train2017.json',
+        img_prefix=data_root + 'train2017/',
+        pipeline=[
+            dict(type='LoadImageFromFile', to_float32=True),
+            dict(type='LoadAnnotations', with_bbox=True)
+        ],
+        filter_empty_gt=False,
+    ),
+    mosaic_pipeline=[dict(type="RandomAffineOrPerspective", scale=(0.1, 2))],
+    enable_mosaic=True,
+    enable_mixup=True,
     pipeline=train_pipeline,
-    enable_mixup=True,  # tiny cfg
-    scale=(0.1, 2))
+    img_scale=(640, 640),
+    mixup_scale=(0.5, 1.5))
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -96,19 +103,18 @@ optimizer = dict(
     weight_decay=5e-4,
     nesterov=True,
     paramwise_cfg=dict(norm_decay_mult=0., bias_decay_mult=0.))
-# optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 optimizer_config = dict(grad_clip=None)
 
 # learning policy
 lr_config = dict(
     _delete_=True,
-    policy='CosineAnnealingWithNoAugIter',
+    policy='CosineAnnealingWithStop',
     warmup='exp',
     by_epoch=False,
     warmup_by_epoch=True,
     warmup_ratio=batch_size * basic_lr_per_img,
     warmup_iters=5,  # 5 epoch
-    no_aug_epochs=15,
+    no_aug_epoch=15,
     min_lr_ratio=0.05)
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 
@@ -116,11 +122,12 @@ resume_from = None
 
 interval = 10
 evaluation = dict(interval=interval, metric='bbox')
+# random_size=(14, 26)
 custom_hooks = [
     dict(
-        type='ProcessHook',
-        random_size=(10, 20),
-        no_aug_epochs=15,
+        type='YoloXProcessHook',
+        random_size=(14, 26),
+        no_aug_epoch=15,
         eval_interval=interval,
         priority=48),
     dict(type='EMAHook', priority=49, resume_from=resume_from)
