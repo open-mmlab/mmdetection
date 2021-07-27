@@ -14,8 +14,9 @@
 
 from math import inf
 
-from mmcv.runner import LrUpdaterHook
-from mmcv.runner.hooks import HOOKS, Hook
+from mmcv.runner import get_dist_info
+from mmcv.runner.hooks import HOOKS, Hook, LrUpdaterHook
+from mmcv.utils import print_log
 
 
 @HOOKS.register_module()
@@ -34,6 +35,8 @@ class EarlyStoppingHook(Hook):
 
         self.min_delta *= 1 if self.rule == 'greater' else -1
         self.best_score = self.init_value_map[self.rule]
+        _, world_size = get_dist_info()
+        self.distributed = True if world_size > 1 else False
 
     def _init_rule(self, rule, key_indicator):
         """Initialize rule, key_indicator, comparison_func, and best score.
@@ -93,7 +96,6 @@ class EarlyStoppingHook(Hook):
             self._do_check_stopping(runner)
 
     def _do_check_stopping(self, runner):
-        # skip early stopping checks before model fully warms up
         if not self._should_check_stopping(runner) or self.warmup_iters > runner.iter:
             return
 
@@ -106,7 +108,8 @@ class EarlyStoppingHook(Hook):
                 self.wait_count += 1
                 if self.wait_count >= self.patience:
                     stop_point = runner.epoch if self.by_epoch else runner.iter
-                    print(f"Early Stopping at :{stop_point} with best {self.key_indicator}: {self.best_score}")
+                    print_log(f"\nEarly Stopping at :{stop_point} with best {self.key_indicator}: {self.best_score}",
+                              logger=runner.logger)
                     runner.should_stop = True
 
     def _should_check_stopping(self, runner):
@@ -115,3 +118,100 @@ class EarlyStoppingHook(Hook):
             # No evaluation during the interval.
             return False
         return True
+
+
+@HOOKS.register_module()
+class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
+    rule_map = {'greater': lambda x, y: x > y, 'less': lambda x, y: x < y}
+    init_value_map = {'greater': -inf, 'less': inf}
+    greater_keys = ['bbox_mAP']
+    less_keys = ['loss']
+
+    def __init__(self, min_lr, interval, metric='bbox_mAP', rule=None, factor=0.1, patience=10, **kwargs):
+        super(ReduceLROnPlateauLrUpdaterHook, self).__init__(**kwargs)
+        self.interval = interval
+        self.min_lr = min_lr
+        self.factor = factor
+        self.patience = patience
+        self.metric = metric
+        self.bad_count = 0
+        self.current_lr = None
+        self._init_rule(rule, metric)
+        self.best_score = self.init_value_map[self.rule]
+
+    def _init_rule(self, rule, key_indicator):
+        """Initialize rule, key_indicator, comparison_func, and best score.
+
+        Here is the rule to determine which rule is used for key indicator
+        when the rule is not specific:
+        1. If the key indicator is in ``self.greater_keys``, the rule will be
+           specified as 'greater'.
+        2. Or if the key indicator is in ``self.less_keys``, the rule will be
+           specified as 'less'.
+        3. Or if the key indicator is equal to the substring in any one item
+           in ``self.greater_keys``, the rule will be specified as 'greater'.
+        4. Or if the key indicator is equal to the substring in any one item
+           in ``self.less_keys``, the rule will be specified as 'less'.
+
+        Args:
+            rule (str | None): Comparison rule for best score.
+            key_indicator (str | None): Key indicator to determine the
+                comparison rule.
+        """
+        if rule not in self.rule_map and rule is not None:
+            raise KeyError(f'rule must be greater, less or None, '
+                           f'but got {rule}.')
+
+        if rule is None:
+            if key_indicator != 'auto':
+                if key_indicator in self.greater_keys:
+                    rule = 'greater'
+                elif key_indicator in self.less_keys:
+                    rule = 'less'
+                elif any(key in key_indicator for key in self.greater_keys):
+                    rule = 'greater'
+                elif any(key in key_indicator for key in self.less_keys):
+                    rule = 'less'
+                else:
+                    raise ValueError(f'Cannot infer the rule for key '
+                                     f'{key_indicator}, thus a specific rule '
+                                     f'must be specified.')
+        self.rule = rule
+        self.key_indicator = key_indicator
+        if self.rule is not None:
+            self.compare_func = self.rule_map[self.rule]
+
+    def _should_check_stopping(self, runner):
+        check_time = self.every_n_epochs if self.by_epoch else self.every_n_iters
+        if not check_time(runner, self.interval):
+            # No evaluation during the interval.
+            return False
+        return True
+
+    def get_lr(self, runner, base_lr):
+        if not self._should_check_stopping(runner) or self.warmup_iters > runner.iter:
+            return base_lr
+
+        if self.current_lr is None:
+            self.current_lr = base_lr
+
+        # TODO: find a way to get metric score gracefully
+        if hasattr(runner, self.metric):
+            score = getattr(runner, self.metric, 0.0)
+        else:
+            return self.current_lr
+
+        print_log(
+            f"\nBest Score: {self.best_score}, Current Score: {score}, Patience: {self.patience}, Count: {self.bad_count}",
+            logger=runner.logger)
+        if self.compare_func(score, self.best_score):
+            self.best_score = score
+            self.bad_count = 0
+        else:
+            self.bad_count += 1
+
+        if self.bad_count >= self.patience:
+            self.bad_count = 0
+            print_log(f"\nDrop LR from: {self.current_lr}, to: {self.current_lr * self.factor}", logger=runner.logger)
+            self.current_lr = max(self.current_lr * self.factor, self.min_lr)
+        return self.current_lr

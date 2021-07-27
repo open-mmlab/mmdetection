@@ -18,12 +18,12 @@ import torch.distributed as dist
 from mmcv.runner import RUNNERS, EpochBasedRunner
 from mmcv.runner import get_dist_info
 
-
 @RUNNERS.register_module()
 class EpochRunnerWithCancel(EpochBasedRunner):
     """
     Simple modification to EpochBasedRunner to allow cancelling the training during an epoch. The cancel training hook
     should set the runner.should_stop flag to True if stopping is required.
+    # TODO: Implement cancelling of training via keyboard interrupt signal, instead of should_stop
     """
 
     def __init__(self, *args, **kwargs):

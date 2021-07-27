@@ -299,6 +299,8 @@ class EvalHook(Hook):
             results, logger=runner.logger, **self.eval_kwargs)
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
+            # TODO: Log is cleared in Logger.after_train_iter before ReduceOnPlateau could get the metric
+            setattr(runner, name, val)
         runner.log_buffer.ready = True
 
         if self.save_best is not None:
@@ -389,6 +391,11 @@ class DistEvalHook(EvalHook):
         self.tmpdir = tmpdir
         self.gpu_collect = gpu_collect
 
+    def braodcast(self, data):
+        broadcast_obj = [data]
+        dist.broadcast_object_list(broadcast_obj, src=0)
+        return broadcast_obj[0]
+
     def _do_evaluate(self, runner):
         """perform evaluation and save ckpt."""
         # Synchronization of BatchNorm's buffer (running_mean
@@ -417,13 +424,21 @@ class DistEvalHook(EvalHook):
             self.dataloader,
             tmpdir=tmpdir,
             gpu_collect=self.gpu_collect)
+        broadcast_data = None
         if runner.rank == 0:
             print('\n')
             runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
             key_score = self.evaluate(runner, results)
-
+            # TODO: Log is cleared in Logger.after_train_iter before ReduceOnPlateau could get the metric
+            for name, val in runner.log_buffer.output.items():
+                setattr(runner, name, val)
             if self.save_best:
                 self._save_ckpt(runner, key_score)
+            broadcast_data = runner.log_buffer.output[self.save_best]
+
+        score = self.braodcast(broadcast_data)
+        if runner.rank != 0:
+            setattr(runner, self.save_best, score)
 
 
 class EvalPlusBeforeRunHook(EvalHook):
