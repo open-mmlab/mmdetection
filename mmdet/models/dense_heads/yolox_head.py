@@ -12,7 +12,6 @@ from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 from mmdet.core.bbox.assigners.sim_ota_assigner import SimOTAAssigner
 
-
 class IOUloss(nn.Module):
     def __init__(self, reduction="none", loss_type="iou"):
         super(IOUloss, self).__init__()
@@ -115,6 +114,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         test_cfg (dict): Testing config of anchor head.
         init_cfg (dict or list[dict], optional): Initialization config dict.
     """
+    COUNT = 0
 
     def __init__(self,
                  num_classes,
@@ -394,7 +394,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             dets, keep = batched_nms(bboxes, scores, labels, cfg.nms)
             return dets, labels[keep]
 
-    def loss(self,
+    def loss_new(self,
              cls_scores,
              bbox_preds,
              objectnesses,
@@ -540,7 +540,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         return fg_mask, cls_target, obj_target, reg_target, l1_target, num_fg_img
 
     
-    def loss_origin(self,
+    def loss(self,
              cls_scores,
              bbox_preds,
              objectnesses,
@@ -567,6 +567,9 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+        # if self.COUNT % 50 == 0:
+        #     torch.save([cls_scores, bbox_preds, objectnesses, gt_bboxes, gt_labels, img_metas],
+        #                f'work_dirs/yolox/test_loss/loss_input{self.COUNT}.pth')
 
         outputs = []  # all levels outputs
         origin_preds = []  # origin reg pred with shape [B, N, 4], No exp on wh
@@ -606,6 +609,15 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         loss_iou, loss_obj, loss_cls, loss_l1 = self.get_losses(
             imgs, x_shifts, y_shifts, expanded_strides, gt_labels, gt_bboxes,
             torch.cat(outputs, 1), origin_preds, dtype=outputs[0].dtype)
+
+        # if self.COUNT % 50 == 0:
+        #     torch.save(dict(
+        #         loss_cls=loss_cls,
+        #         loss_iou=loss_iou,
+        #         loss_obj=loss_obj,
+        #         loss_l1=loss_l1),
+        #                f'work_dirs/yolox/test_loss/loss_output{self.COUNT}.pth')
+        # self.COUNT += 1
 
         if self.use_l1:
             return dict(
