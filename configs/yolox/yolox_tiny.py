@@ -43,7 +43,7 @@ custom_hooks = [
     dict(
         type='YoloXProcessHook',
         random_size=(10, 20),
-        no_aug_epochs=15,
+        no_aug_epoch=15,
         eval_interval=interval,
         priority=48),
     dict(type='EMAHook', priority=49, resume_from=resume_from)
