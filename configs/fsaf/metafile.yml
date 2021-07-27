@@ -5,7 +5,7 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA Titan-XP GPUs
+      Training Resources: 8x Titan-XP GPUs
       Architecture:
         - FPN
         - FSAF
@@ -19,7 +19,13 @@ Models:
     Config: configs/fsaf/fsaf_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.15
-      inference time (s/im): 0.07692
+      inference time (ms/im):
+        - value: 76.92
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -33,7 +39,13 @@ Models:
     Config: configs/fsaf/fsaf_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.08
-      inference time (s/im): 0.09259
+      inference time (ms/im):
+        - value: 92.59
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -47,7 +59,13 @@ Models:
     Config: configs/fsaf/fsaf_x101_64x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 9.38
-      inference time (s/im): 0.17857
+      inference time (ms/im):
+        - value: 178.57
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
