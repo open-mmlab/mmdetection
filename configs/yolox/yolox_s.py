@@ -110,7 +110,7 @@ lr_config = dict(
     warmup_by_epoch=True,
     warmup_ratio=batch_size * basic_lr_per_img,
     warmup_iters=5,  # 5 epoch
-    no_aug_epochs=15,
+    no_aug_epoch=15,
     min_lr_ratio=0.05)
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 
@@ -123,7 +123,7 @@ custom_hooks = [
     dict(
         type='YoloXProcessHook',
         random_size=(14, 26),
-        no_aug_epochs=15,
+        no_aug_epoch=15,
         eval_interval=interval,
         priority=48),
     dict(type='EMAHook', priority=49, resume_from=resume_from)

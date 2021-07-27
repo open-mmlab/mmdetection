@@ -127,19 +127,20 @@ def all_reduce_norm(module):
 
 @HOOKS.register_module()
 class YoloXProcessHook(Hook):
-    def __init__(self, random_size=(14, 26), input_size=(640, 640), no_aug_epochs=15, eval_interval=1):
+    def __init__(self, random_size=(14, 26), input_size=(640, 640), no_aug_epochs=15, eval_interval=1, change_size_interval=10):
         self.rank, world_size = get_dist_info()
         self.is_distributed = world_size > 1
         self.random_size = random_size
         self.input_size = input_size
         self.no_aug_epochs = no_aug_epochs
         self.eval_interval = eval_interval
+        self.change_size_interval = change_size_interval
 
     def after_train_iter(self, runner):
         progress_in_iter = runner.iter
         train_loader = runner.data_loader
         # random resizing
-        if self.random_size is not None and (progress_in_iter + 1) % 10 == 0:
+        if self.random_size is not None and (progress_in_iter + 1) % self.change_size_interval == 0:
             random_resize(self.random_size, train_loader, self.rank, self.is_distributed, self.input_size)
 
     def before_train_epoch(self, runner):
