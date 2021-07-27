@@ -292,14 +292,30 @@ def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
     return bbox
 
 
+def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
+    # box1(4,n), box2(4,n)
+    # Compute candidate boxes which include follwing 5 things:
+    # box1 before augment, box2 after augment, wh_thr (pixels), aspect_ratio_thr, area_ratio
+    w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
+    w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
+    ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
+    return (
+            (w2 > wh_thr)
+            & (h2 > wh_thr)
+            & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr)
+            & (ar < ar_thr)
+    )  # candidates
+
+
 @DATASETS.register_module()
 class MosaicMixUpDataset:
-    def __init__(self, dataset, mosaic_pipeline, mixup_pipeline, postpipeline, size=(640, 640), mosaic=True, mixup=True,
+    def __init__(self, dataset, mosaic_pipeline=None, mixup_pipeline=None, postpipeline=None, size=(640, 640),
+                 mosaic=True, mixup=True,
                  mixup_scale=(0.5, 1.5), pad=114.0):
         self.dataset = dataset
-        self.mosaic_pipeline = Compose(mosaic_pipeline)
-        self.mixup_pipeline = Compose(mixup_pipeline)
-        self.postprocess_pipeline = Compose(postpipeline)
+        self.mosaic_pipeline = Compose(mosaic_pipeline) if mosaic_pipeline is not None else None
+        self.mixup_pipeline = Compose(mixup_pipeline) if mixup_pipeline is not None else None
+        self.postprocess_pipeline = Compose(postpipeline) if postpipeline is not None else None
         self.mosaic = mosaic
         self.mixup = mixup
         self.mixup_scale = mixup_scale
@@ -308,51 +324,60 @@ class MosaicMixUpDataset:
         self.num_sample = len(dataset)
 
     def __getitem__(self, idx):
-        results = self.dataset.__getitem__(idx)
+        results = self.dataset[idx]
         if self.mosaic:
             results = self.pipeline(results)
-        if self.mixup:
+        if self.mixup and results['gt_bboxes'].shape[0] > 0:
             results = self._mixup(results)
         return self.postprocess_pipeline(results)
 
     def _mixup(self, results):
-        cp_result = copy.deepcopy(results)
-        origin_img = cp_result['img']
-
         jit_factor = random.uniform(*self.mixup_scale)
         is_filp = random.uniform(0, 1) > 0.5
 
-        mixup_info = {}
-        while len(mixup_info['bboxes']) == 0:
+        origin_result = results
+        origin_img = origin_result['img']
+        origin_gt_bboxes = origin_result['gt_bboxes']
+        origin_gt_labels = origin_result['gt_labels']
+
+        # 0. retrieve data
+        results_i = {}
+        while len(results_i['gt_bboxes']) == 0:
             index = random.randint(0, self.num_sample - 1)
-            mixup_info = copy.deepcopy(self.dataset.__getitem__(index))
+            results_i = copy.deepcopy(self.dataset[index])
 
-        img = mixup_info['img']
-        gt_bboxes = mixup_info['gt_bboxes']
-        gt_labels = mixup_info['gt_labels']
+        img_i = results_i['img']
+        gt_bboxes_i = results_i['gt_bboxes']
+        gt_labels_i = results_i['gt_labels']
 
-        if len(img.shape) == 3:
+        if len(img_i.shape) == 3:
             cp_img = np.ones((self.size[0], self.size[1], 3)) * self.pad
         else:
             cp_img = np.ones(self.size) * 114.0
 
-        cp_scale_ratio = min(self.size[0] / img.shape[0], self.size[1] / img.shape[1])
+        # 1. keep_ratio resize
+        cp_scale_ratio = min(self.size[0] / img_i.shape[0], self.size[1] / img_i.shape[1])
         resized_img = cv2.resize(
-            img,
-            (int(img.shape[1] * cp_scale_ratio), int(img.shape[0] * cp_scale_ratio)),
+            img_i,
+            (int(img_i.shape[1] * cp_scale_ratio), int(img_i.shape[0] * cp_scale_ratio)),
             interpolation=cv2.INTER_LINEAR,
         ).astype(np.float32)
-        cp_img[
-        : int(img.shape[0] * cp_scale_ratio), : int(img.shape[1] * cp_scale_ratio)
-        ] = resized_img
+
+        # 2. padding
+        cp_img[:int(img_i.shape[0] * cp_scale_ratio), :int(img_i.shape[1] * cp_scale_ratio)] = resized_img
+
+        # 3. size jit
         cp_img = cv2.resize(
             cp_img,
             (int(cp_img.shape[1] * jit_factor), int(cp_img.shape[0] * jit_factor)),
         )
         cp_scale_ratio *= jit_factor
+
+        # 4. flip
         if is_filp:
             cp_img = cp_img[:, ::-1, :]
 
+        # 5. random crop
         origin_h, origin_w = cp_img.shape[:2]
         target_h, target_w = origin_img.shape[:2]
         padded_img = np.zeros(
@@ -369,13 +394,16 @@ class MosaicMixUpDataset:
                              y_offset: y_offset + target_h, x_offset: x_offset + target_w
                              ]
 
+        # 6  adjust bbox
         cp_bboxes_origin_np = adjust_box_anns(
-            cp_labels[:, :4], cp_scale_ratio, 0, 0, origin_w, origin_h
+            gt_bboxes_i, cp_scale_ratio, 0, 0, origin_w, origin_h
         )
+
         if is_filp:
             cp_bboxes_origin_np[:, 0::2] = (
                     origin_w - cp_bboxes_origin_np[:, 0::2][:, ::-1]
             )
+
         cp_bboxes_transformed_np = cp_bboxes_origin_np.copy()
         cp_bboxes_transformed_np[:, 0::2] = np.clip(
             cp_bboxes_transformed_np[:, 0::2] - x_offset, 0, target_w
@@ -385,12 +413,18 @@ class MosaicMixUpDataset:
         )
         keep_list = box_candidates(cp_bboxes_origin_np.T, cp_bboxes_transformed_np.T, 5)
 
+        # 7 mix up
         if keep_list.sum() >= 1.0:
-            cls_labels = cp_labels[keep_list, 4:5]
-            box_labels = cp_bboxes_transformed_np[keep_list]
-            labels = np.hstack((box_labels, cls_labels))
-            origin_labels = np.vstack((origin_labels, labels))
             origin_img = origin_img.astype(np.float32)
             origin_img = 0.5 * origin_img + 0.5 * padded_cropped_img.astype(np.float32)
 
-        return dict(img=origin_img.astype(np.uint8), origin_labels=origin_labels)
+            cls_labels = gt_labels_i[keep_list]
+            box_labels = cp_bboxes_transformed_np[keep_list]
+            gt_bboxes = np.hstack((origin_gt_bboxes, box_labels))
+            gt_labels = np.vstack((origin_gt_labels, cls_labels))
+
+            origin_result['img'] = origin_img
+            origin_result['gt_bboxes'] = gt_bboxes
+            origin_result['gt_labels'] = gt_labels
+
+        return origin_result
