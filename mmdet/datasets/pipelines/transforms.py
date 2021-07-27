@@ -1911,3 +1911,11 @@ class CutOut:
                      else f'cutout_shape={self.candidates}, ')
         repr_str += f'fill_in={self.fill_in})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class MosaicMixUpPipeline(object):
+    def __init__(self,
+                 degrees=10.0,
+                 translate=0.1,
+                 scale=(0.5, 1.5)):
