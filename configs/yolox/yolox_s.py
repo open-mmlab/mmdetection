@@ -14,7 +14,7 @@ model = dict(
         max_per_img=1000))
 
 # dataset settings
-data_root = 'data/coco/'
+data_root = '/usr/videodate/dataset/subsetcoco/'
 img_norm_cfg = dict(
     mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
     std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
@@ -27,9 +27,9 @@ train_pipeline = [
         contrast_range=(0.5, 1.5),
         saturation_range=(0.5, 1.5),
         hue_delta=18),
-    dict(type='RandomFlip', flip_ratio=0.5),
+    # dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Resize', keep_ratio=True),
-    dict(type='Pad', pad2square=True, pad_val=114.0),
+    # dict(type='Pad', pad2square=True, pad_val=114.0),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(
@@ -51,7 +51,7 @@ train_dataset = dict(
         ],
         filter_empty_gt=False,
     ),
-    mosaic_pipeline=[],
+    mosaic_pipeline=[dict(type="MosaicMixUpPipeline")],
     enable_mosaic=True,
     enable_mixup=True,
     pipeline=train_pipeline,
@@ -110,7 +110,7 @@ lr_config = dict(
     warmup_by_epoch=True,
     warmup_ratio=batch_size * basic_lr_per_img,
     warmup_iters=5,  # 5 epoch
-    no_aug_epochs=15,
+    no_aug_epoch=15,
     min_lr_ratio=0.05)
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 

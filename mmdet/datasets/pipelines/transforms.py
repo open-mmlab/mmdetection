@@ -1,6 +1,6 @@
 import copy
 import inspect
-
+import cv2
 import mmcv
 import numpy as np
 from numpy import random
@@ -8,7 +8,6 @@ from numpy import random
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..builder import PIPELINES
-import cv2
 
 try:
     from imagecorruptions import corrupt
@@ -304,6 +303,7 @@ class Resize:
         self._resize_bboxes(results)
         self._resize_masks(results)
         self._resize_seg(results)
+
         return results
 
     def __repr__(self):
@@ -1996,7 +1996,7 @@ class MosaicMixUpPipeline(object):
             # create new boxes
             x = xy[:, [0, 2, 4, 6]]
             y = xy[:, [1, 3, 5, 7]]
-            xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+            xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, num_bboxes).T
 
             # clip boxes
             xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
@@ -2010,7 +2010,8 @@ class MosaicMixUpPipeline(object):
 
         results["gt_bboxes"] = gt_bboxes
         results["gt_labels"] = gt_labels
-        results["img"] = results["img"]
+        results["img"] = img
+
         return results
 
     def box_candidates(self, box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):

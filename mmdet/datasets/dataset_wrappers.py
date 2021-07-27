@@ -311,7 +311,7 @@ class MosaicMixUpDataset:
                  mosaic_scale=(0.5, 1.5),
                  enable_mixup=True,
                  mixup_scale=(0.5, 1.5),
-                 pad_value=0):
+                 pad_value=114):
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
         if hasattr(self.dataset, 'flag'):
@@ -343,7 +343,9 @@ class MosaicMixUpDataset:
             results = self.mixup(results)
         # dynamic resize
         results['scale'] = self.dynamic_scale
-        return self.pipeline(results)
+        results = self.pipeline(results)
+
+        return results
 
     def mosiac(self, results):
         mosaic_labels = []
@@ -406,11 +408,12 @@ class MosaicMixUpDataset:
                                              2 * self.img_scale[0])
             mosaic_labels = np.concatenate(mosaic_labels, 0)
 
-        results['img'] = mosaic_img
+        results['img'] = mosaic_img.astype(np.float32)
         results['img_shape'] = mosaic_img.shape
         results['ori_shape'] = mosaic_img.shape
         results['gt_bboxes'] = mosaic_bboxes
         results['gt_labels'] = mosaic_labels
+
         return results
 
     def _mosiac_combine(self, loc, center_position_xy, img_shape_wh):
