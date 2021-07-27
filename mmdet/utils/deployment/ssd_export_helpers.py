@@ -142,7 +142,7 @@ class DetectionOutput(torch.autograd.Function):
 
         return g.op(add_domain("DetectionOutput"), bbox_preds, cls_scores, priors,
                     num_classes_i=cls_out_channels, background_label_id_i=cls_out_channels - 1,
-                    top_k_i=-1,
+                    top_k_i=cfg.get('nms_pre_classwise', -1),
                     keep_top_k_i=cfg['max_per_img'],
                     confidence_threshold_f=cfg['score_thr'],
                     nms_threshold_f=cfg['nms']['iou_threshold'],
