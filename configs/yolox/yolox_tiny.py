@@ -28,7 +28,7 @@ test_pipeline = [
 # 2 close mixup, scale=(0.5, 1.5)
 train_dataset = dict(
     mosaic_pipeline=[
-        dict(type="RandomAffineOrPerspective", scale=(0.5, 1.5))
+        dict(type="RandomAffineOrPerspective", scale=(0.5, 1.5), border=(-320, -320))
     ],
     enable_mixup=False)
 
