@@ -39,6 +39,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
         loss_obj (dict): Config of objectness loss.
+        loss_l1 (dict): Config of L1 loss.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
         init_cfg (dict or list[dict], optional): Initialization config dict.
@@ -170,20 +171,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
     def forward_single(self, x, cls_convs, reg_convs, conv_cls, conv_reg,
                        conv_obj):
-        """Forward feature of a single scale level.
+        """Forward feature of a single scale level."""
 
-        Args:
-            x (Tensor): Features of a single scale level.
-
-        Returns:
-            tuple:
-                cls_score (Tensor): Cls scores for a single scale level
-                    the channels number is num_classes.
-                bbox_pred (Tensor): Box energies / deltas for a single scale
-                    level, the channels number is 4.
-                objectness (Tensor): Objectness for a single scale level,
-                    the channels number is 1.
-        """
         cls_feat = cls_convs(x)
         reg_feat = reg_convs(x)
 
@@ -221,9 +210,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                    rescale=False,
                    with_nms=True):
         """Transform network outputs of a batch into bbox results.
-        Note: When score_factors is not None, the cls_scores are
-        usually multiplied by it then obtain the real score used in NMS,
-        such as CenterNess in FCOS, IoU branch in ATSS.
+
         Args:
             cls_scores (list[Tensor]): Classification scores for all
                 scale levels, each is a 4D-tensor, has shape
@@ -233,7 +220,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                 (batch_size, num_priors * 4, H, W).
             objectnesses (list[Tensor], Optional): Score factor for
                 all scale level, each is a 4D-tensor, has shape
-                (batch_size, num_priors * 1, H, W). Default None.
+                (batch_size, 1, H, W).
             img_metas (list[dict], Optional): Image meta info. Default None.
             cfg (mmcv.Config, Optional): Test / postprocessing configuration,
                 if None, test_cfg would be used.  Default None.
@@ -327,19 +314,36 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
              gt_bboxes,
              gt_labels,
              img_metas,
-             gt_bboxes_ignore=None,
-             imgs=None):
+             gt_bboxes_ignore=None):
+        """Compute loss of the head.
 
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level,
+                each is a 4D-tensor, the channel number is
+                num_priors * num_classes.
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level, each is a 4D-tensor, the channel number is
+                num_priors * 4.
+            objectnesses (list[Tensor], Optional): Score factor for
+                all scale level, each is a 4D-tensor, has shape
+                (batch_size, 1, H, W).
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+        """
         num_imgs = len(img_metas)
         featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
         mlvl_priors = self.prior_generator.grid_priors(
             featmap_sizes, cls_scores[0].device, with_stride=True)
 
-        # flatten cls_scores, bbox_preds and objectness
-        flatten_cls_scores = [
-            cls_score.permute(0, 2, 3, 1).reshape(num_imgs, -1,
-                                                  self.cls_out_channels)
-            for cls_score in cls_scores
+        flatten_cls_preds = [
+            cls_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1,
+                                                 self.cls_out_channels)
+            for cls_pred in cls_scores
         ]
         flatten_bbox_preds = [
             bbox_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1, 4)
@@ -350,41 +354,25 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             for objectness in objectnesses
         ]
 
-        flatten_cls_scores = torch.cat(flatten_cls_scores, dim=1)
+        flatten_cls_preds = torch.cat(flatten_cls_preds, dim=1)
         flatten_bbox_preds = torch.cat(flatten_bbox_preds, dim=1)
         flatten_objectness = torch.cat(flatten_objectness, dim=1)
         flatten_priors = torch.cat(mlvl_priors)
-
         flatten_bboxes = self._bbox_decode(flatten_priors, flatten_bbox_preds)
 
-        num_total_samples = 0
-        foreground_masks = []
-        cls_targets = []
-        obj_targets = []
-        bbox_targets = []
-        l1_targets = []
+        (foreground_masks, cls_targets, obj_targets, bbox_targets, l1_targets,
+         num_fg_imgs) = multi_apply(
+             self._get_target_single, flatten_cls_preds, flatten_objectness,
+             flatten_priors.unsqueeze(0).repeat(num_imgs, 1, 1),
+             flatten_bboxes, gt_bboxes, gt_labels)
 
-        for idx in range(num_imgs):
-            (foreground_mask, cls_target, obj_target, bbox_target, l1_target,
-             num_fg_img) = self._get_target_single(
-                 flatten_cls_scores[idx].detach(),
-                 flatten_objectness[idx].detach(), flatten_priors,
-                 flatten_bboxes[idx].detach(), gt_bboxes[idx], gt_labels[idx])
-
-            foreground_masks.append(foreground_mask)
-            cls_targets.append(cls_target)
-            obj_targets.append(obj_target.to(flatten_objectness.dtype))
-            bbox_targets.append(bbox_target)
-            l1_targets.append(l1_target)
-            num_total_samples += num_fg_img
-
+        num_total_samples = max(sum(num_fg_imgs), 1)
         foreground_masks = torch.cat(foreground_masks, 0)
         cls_targets = torch.cat(cls_targets, 0)
         obj_targets = torch.cat(obj_targets, 0)
         bbox_targets = torch.cat(bbox_targets, 0)
         if self.use_l1:
             l1_targets = torch.cat(l1_targets, 0)
-        num_total_samples = max(num_total_samples, 1)
 
         loss_iou = self.loss_bbox(
             flatten_bboxes.view(-1, 4)[foreground_masks],
@@ -392,7 +380,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         loss_obj = self.loss_obj(flatten_objectness.view(-1, 1),
                                  obj_targets) / num_total_samples
         loss_cls = self.loss_cls(
-            flatten_cls_scores.view(-1, self.num_classes)[foreground_masks],
+            flatten_cls_preds.view(-1, self.num_classes)[foreground_masks],
             cls_targets) / num_total_samples
 
         if self.use_l1:
@@ -410,49 +398,63 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                 loss_cls=loss_cls, loss_iou=loss_iou, loss_obj=loss_obj)
 
     @torch.no_grad()
-    def _get_target_single(self,
-                           cls_scores,
-                           objectness,
-                           priors,
-                           decoded_bboxes,
-                           gt_bboxes,
-                           gt_labels,
-                           eps=1e-8):
+    def _get_target_single(self, cls_preds, objectness, priors, decoded_bboxes,
+                           gt_bboxes, gt_labels):
+        """Compute classification, regression, and objectness targets for
+        priors in a single image.
+
+        Args:
+            cls_preds (Tensor): Classification predictions of one image,
+                a 2D-Tensor with shape [num_priors, num_classes]
+            objectness (Tensor): Objectness predictions of one image,
+                a 1D-Tensor with shape [num_priors]
+            priors (Tensor): All priors of one image, a 2D-Tensor with shape
+                [num_priors, 4] in [cx, xy, stride_w, stride_y] format.
+            decoded_bboxes (Tensor): Decoded bboxes predictions of one image,
+                a 2D-Tensor with shape [num_priors, 4] in [tl_x, tl_y,
+                br_x, br_y] format.
+            gt_bboxes (Tensor): Ground truth bboxes of one image, a 2D-Tensor
+                with shape [num_gts, 4] in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (Tensor): Ground truth labels of one image, a Tensor
+                with shape [num_gts]
+        """
+
         num_priors = priors.size(0)
         num_gts = gt_labels.size(0)
         # No target
         if num_gts == 0:
-            cls_target = cls_scores.new_zeros((0, self.num_classes))
-            bbox_target = cls_scores.new_zeros((0, 4))
-            l1_target = cls_scores.new_zeros((0, 4))
-            obj_target = cls_scores.new_zeros((num_priors, 1))
-            fg_mask = cls_scores.new_zeros(num_priors).bool()
-            return fg_mask, cls_target, obj_target, bbox_target, l1_target, 0
+            cls_target = cls_preds.new_zeros((0, self.num_classes))
+            bbox_target = cls_preds.new_zeros((0, 4))
+            l1_target = cls_preds.new_zeros((0, 4))
+            obj_target = cls_preds.new_zeros((num_priors, 1))
+            foreground_mask = cls_preds.new_zeros(num_priors).bool()
+            return (foreground_mask, cls_target, obj_target, bbox_target,
+                    l1_target, 0)
 
         # YOLOX uses center priors with 0.5 offset to assign targets,
         # but use center priors without offset to regress bboxes.
         offset_priors = torch.cat(
             [priors[:, :2] + priors[:, 2:] * 0.5, priors[:, 2:]], dim=-1)
 
-        (gt_matched_classes, fg_mask, pred_ious_this_matching, matched_gt_inds,
-         num_fg_per_img) = self.assigner.assign(
-             cls_scores.sigmoid() * objectness.unsqueeze(1).sigmoid(),
+        (gt_matched_classes, foreground_mask, pred_ious_this_matching,
+         matched_gt_inds, num_fg_per_img) = self.assigner.assign(
+             cls_preds.sigmoid() * objectness.unsqueeze(1).sigmoid(),
              offset_priors, decoded_bboxes, gt_bboxes, gt_labels)
 
-        # iou aware classification score
+        # IOU aware classification score
         cls_target = F.one_hot(
             gt_matched_classes.to(torch.int64),
             self.num_classes) * pred_ious_this_matching.unsqueeze(-1)
-        obj_target = fg_mask.unsqueeze(-1)
+        obj_target = foreground_mask.unsqueeze(-1)
         bbox_target = gt_bboxes[matched_gt_inds]
-        l1_target = cls_scores.new_zeros((num_fg_per_img, 4))
+        l1_target = cls_preds.new_zeros((num_fg_per_img, 4))
         if self.use_l1:
             l1_target = self._get_l1_target(l1_target,
                                             gt_bboxes[matched_gt_inds],
-                                            priors[fg_mask], eps)
+                                            priors[foreground_mask])
 
-        return (fg_mask, cls_target, obj_target, bbox_target, l1_target,
-                num_fg_per_img)
+        return (foreground_mask, cls_target, obj_target, bbox_target,
+                l1_target, num_fg_per_img)
 
     def _get_l1_target(self, l1_target, gt_bboxes, priors, eps=1e-8):
         """Convert gt bboxes to center offset and log width height."""
