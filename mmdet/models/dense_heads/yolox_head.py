@@ -131,6 +131,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
+                     reduction='sum',
                      loss_weight=1.0),
                  loss_bbox=dict(type='YOLOXIoULoss',
                                 eps=1e-16,
@@ -435,7 +436,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         flatten_bboxes = self._bbox_decode(flatten_priors, flatten_bbox_preds)
 
         # ----todo: refactor -----
-        num_fg = 0
+        num_total_samples = 0
         fg_masks = []
         cls_targets = []
         obj_targets = []
@@ -456,7 +457,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             obj_targets.append(obj_target.to(flatten_objectness.dtype))
             reg_targets.append(reg_target)
             l1_targets.append(l1_target)
-            num_fg += num_fg_img
+            num_total_samples += num_fg_img
 
         fg_masks = torch.cat(fg_masks, 0)
         cls_targets = torch.cat(cls_targets, 0)
@@ -464,17 +465,14 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         reg_targets = torch.cat(reg_targets, 0)
         if self.use_l1:
             l1_targets = torch.cat(l1_targets, 0)
-        num_fg = max(num_fg, 1)
+        num_total_samples = max(num_total_samples, 1)
 
-        # loss_iou = (self.iou_loss(flatten_bboxes.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
+        loss_iou = self.loss_bbox(flatten_bboxes.view(-1, 4)[fg_masks], reg_targets) / num_total_samples
+        loss_obj = (self.bcewithlog_loss(flatten_objectness.view(-1, 1), obj_targets)).sum() / num_total_samples
+        loss_cls = self.loss_cls(flatten_cls_scores.view(-1, self.num_classes)[fg_masks], cls_targets) / num_total_samples
 
-        loss_iou = self.loss_bbox(flatten_bboxes.view(-1, 4)[fg_masks], reg_targets)/ num_fg
-        loss_obj = (self.bcewithlog_loss(flatten_objectness.view(-1, 1), obj_targets)).sum() / num_fg
-        loss_cls = (
-                       self.bcewithlog_loss(flatten_cls_scores.view(-1, self.num_classes)[fg_masks], cls_targets)
-                   ).sum() / num_fg
         if self.use_l1:
-            loss_l1 = (self.l1_loss(flatten_bbox_preds.view(-1, 4)[fg_masks], l1_targets)).sum() / num_fg
+            loss_l1 = (self.l1_loss(flatten_bbox_preds.view(-1, 4)[fg_masks], l1_targets)).sum() / num_total_samples
         else:
             loss_l1 = 0.0
 
@@ -543,7 +541,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         return fg_mask, cls_target, obj_target, reg_target, l1_target, num_fg_img
 
-    
+
     def loss_origin(self,
              cls_scores,
              bbox_preds,
