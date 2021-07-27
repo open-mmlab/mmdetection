@@ -106,7 +106,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         self.test_cfg = test_cfg
         self.train_cfg = train_cfg
 
-        self.assigner = SimOTAAssigner(num_classes)
+        self.assigner = SimOTAAssigner(center_radius=2.5)
 
         self._init_layers()
 
@@ -416,7 +416,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             gt_bboxes (Tensor): Ground truth bboxes of one image, a 2D-Tensor
                 with shape [num_gts, 4] in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (Tensor): Ground truth labels of one image, a Tensor
-                with shape [num_gts]
+                with shape [num_gts].
         """
 
         num_priors = priors.size(0)

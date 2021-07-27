@@ -231,7 +231,8 @@ def yolox_iou_loss(pred, target, eps=1e-6):
         pred (torch.Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
         target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
-        eps (float): Eps to avoid (0).
+        eps (float): A value added to the denominator for numerical
+            stability. Default 1e-6.
 
     Return:
         torch.Tensor: Loss tensor.
