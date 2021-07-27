@@ -344,7 +344,6 @@ class MosaicMixUpDataset:
         # dynamic resize
         results['scale'] = self.dynamic_scale
         results = self.pipeline(results)
-
         return results
 
     def mosiac(self, results):

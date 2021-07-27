@@ -24,8 +24,8 @@ def random_resize(random_size, data_loader, rank, is_distributed, input_size):
         dist.barrier()
         dist.broadcast(tensor, 0)
 
-    data_loader.dataset.input_size = (tensor[0].item(), tensor[1].item())
-    return data_loader.dataset.input_size
+    data_loader.dataset.dynamic_scale = (tensor[0].item(), tensor[1].item())
+    return data_loader.dataset.dynamic_scale
 
 
 ASYNC_NORM = (
@@ -148,8 +148,9 @@ class YoloXProcessHook(Hook):
         train_loader = runner.data_loader
         model = runner.model.module
         if epoch + 1 == runner.max_epochs - self.no_aug_epoch:
-            print("--->No mosaic aug now!")
-            train_loader.dataset.mosaic = False
+            print("--->No mosaic and mixup aug now!")
+            train_loader.dataset.enable_mosaic = False
+            train_loader.dataset.enable_mixup = False
             print("--->Add additional L1 loss now!")
             model.bbox_head.use_l1 = True
 
