@@ -309,9 +309,9 @@ def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
 
 @DATASETS.register_module()
 class MosaicMixUpDataset:
-    def __init__(self, dataset, mosaic_pipeline=None, mixup_pipeline=None, postpipeline=None, size=(640, 640),
+    def __init__(self, dataset, mosaic_pipeline=None, mixup_pipeline=None, postpipeline=None, img_scale=(640, 640),
                  mosaic=True, mixup=True,
-                 mixup_scale=(0.5, 1.5), pad=114.0):
+                 mixup_scale=(0.5, 1.5), pad_value=114.0):
         self.dataset = dataset
         self.mosaic_pipeline = Compose(mosaic_pipeline) if mosaic_pipeline is not None else None
         self.mixup_pipeline = Compose(mixup_pipeline) if mixup_pipeline is not None else None
@@ -319,8 +319,10 @@ class MosaicMixUpDataset:
         self.mosaic = mosaic
         self.mixup = mixup
         self.mixup_scale = mixup_scale
-        self.size = size  # h,w
-        self.pad = pad
+        self.mixup_flip_ratio = 0.5
+        self.pad_value = pad_value
+        self.img_scale = img_scale  # h,w
+        self.dynamic_scale = img_scale
         self.num_sample = len(dataset)
 
     def __getitem__(self, idx):
@@ -333,7 +335,7 @@ class MosaicMixUpDataset:
 
     def _mixup(self, results):
         jit_factor = random.uniform(*self.mixup_scale)
-        is_filp = random.uniform(0, 1) > 0.5
+        is_filp = random.uniform(0, 1) > self.mixup_flip_ratio
 
         origin_result = results
         origin_img = origin_result['img']
@@ -351,12 +353,12 @@ class MosaicMixUpDataset:
         gt_labels_i = results_i['gt_labels']
 
         if len(img_i.shape) == 3:
-            cp_img = np.ones((self.size[0], self.size[1], 3)) * self.pad
+            cp_img = np.ones((self.dynamic_scale[0], self.dynamic_scale[1], 3)) * self.pad_value
         else:
-            cp_img = np.ones(self.size) * 114.0
+            cp_img = np.ones(self.dynamic_scale) * self.pad_value
 
         # 1. keep_ratio resize
-        cp_scale_ratio = min(self.size[0] / img_i.shape[0], self.size[1] / img_i.shape[1])
+        cp_scale_ratio = min(self.dynamic_scale[0] / img_i.shape[0], self.dynamic_scale[1] / img_i.shape[1])
         resized_img = cv2.resize(
             img_i,
             (int(img_i.shape[1] * cp_scale_ratio), int(img_i.shape[0] * cp_scale_ratio)),
