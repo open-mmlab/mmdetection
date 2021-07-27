@@ -30,7 +30,7 @@ def iou_loss(pred, target, linear=False, eps=1e-6):
     """
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
     if linear:
-        loss = 1 - ious
+        loss = 1 - ious**2
     else:
         loss = -ious.log()
     return loss
@@ -216,6 +216,28 @@ def ciou_loss(pred, target, eps=1e-7):
     # CIoU
     cious = ious - (rho2 / c2 + v**2 / (1 - ious + v))
     loss = 1 - cious
+    return loss
+
+
+@mmcv.jit(derivate=True, coderize=True)
+@weighted_loss
+def yolox_iou_loss(pred, target, eps=1e-6):
+    """IoU loss.
+
+    Computing the IoU loss between a set of predicted bboxes and target bboxes.
+    Different from iou loss, this loss is `1 - iou ** 2`.
+
+    Args:
+        pred (torch.Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+            shape (n, 4).
+        target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
+        eps (float): Eps to avoid (0).
+
+    Return:
+        torch.Tensor: Loss tensor.
+    """
+    ious = bbox_overlaps(pred, target, is_aligned=True, eps=eps)
+    loss = 1 - ious**2
     return loss
 
 
@@ -436,6 +458,69 @@ class CIoULoss(nn.Module):
             assert weight.shape == pred.shape
             weight = weight.mean(-1)
         loss = self.loss_weight * ciou_loss(
+            pred,
+            target,
+            weight,
+            eps=self.eps,
+            reduction=reduction,
+            avg_factor=avg_factor,
+            **kwargs)
+        return loss
+
+
+@LOSSES.register_module()
+class YOLOXIoULoss(nn.Module):
+    """IoULoss used in YOLOX.
+
+    Different from IOULoss, this loss is `1 - iou ** 2`
+
+    Args:
+        eps (float): Eps to avoid log(0).
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+    """
+
+    def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
+        super(YOLOXIoULoss, self).__init__()
+        self.eps = eps
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+
+    def forward(self,
+                pred,
+                target,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None,
+                **kwargs):
+        """Forward function.
+
+        Args:
+            pred (torch.Tensor): The prediction.
+            target (torch.Tensor): The learning target of the prediction.
+            weight (torch.Tensor, optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None. Options are "none", "mean" and "sum".
+        """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
+        if (weight is not None) and (not torch.any(weight > 0)) and (
+                reduction != 'none'):
+            if pred.dim() == weight.dim() + 1:
+                weight = weight.unsqueeze(1)
+            return (pred * weight).sum()  # 0
+        if weight is not None and weight.dim() > 1:
+            # TODO: remove this in the future
+            # reduce the weight of shape (n, 4) to (n,) to match the
+            # iou_loss of shape (n,)
+            assert weight.shape == pred.shape
+            weight = weight.mean(-1)
+        loss = self.loss_weight * yolox_iou_loss(
             pred,
             target,
             weight,

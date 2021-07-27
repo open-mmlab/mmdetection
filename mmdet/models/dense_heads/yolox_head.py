@@ -132,7 +132,10 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+                 loss_bbox=dict(type='YOLOXIoULoss',
+                                eps=1e-16,
+                                reduction='sum',
+                                loss_weight=5.0),
                  loss_obj=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
@@ -394,7 +397,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             dets, keep = batched_nms(bboxes, scores, labels, cfg.nms)
             return dets, labels[keep]
 
-    def loss_new(self,
+    def loss(self,
              cls_scores,
              bbox_preds,
              objectnesses,
@@ -463,7 +466,9 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             l1_targets = torch.cat(l1_targets, 0)
         num_fg = max(num_fg, 1)
 
-        loss_iou = (self.iou_loss(flatten_bboxes.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
+        # loss_iou = (self.iou_loss(flatten_bboxes.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
+
+        loss_iou = self.loss_bbox(flatten_bboxes.view(-1, 4)[fg_masks], reg_targets)/ num_fg
         loss_obj = (self.bcewithlog_loss(flatten_objectness.view(-1, 1), obj_targets)).sum() / num_fg
         loss_cls = (
                        self.bcewithlog_loss(flatten_cls_scores.view(-1, self.num_classes)[fg_masks], cls_targets)
@@ -473,18 +478,16 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         else:
             loss_l1 = 0.0
 
-        reg_weight = 5.0
-
         if self.use_l1:
             return dict(
                 loss_cls=loss_cls,
-                loss_iou=reg_weight * loss_iou,
+                loss_iou=loss_iou,
                 loss_obj=loss_obj,
                 loss_l1=loss_l1)
         else:
             return dict(
                 loss_cls=loss_cls,
-                loss_iou=reg_weight * loss_iou,
+                loss_iou=loss_iou,
                 loss_obj=loss_obj)
 
     def _get_target_single(self,
@@ -529,6 +532,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         if self.use_l1:
             gt = gt_bboxes[matched_gt_inds]
 
+            # TODO: BUG! change to xywh
             l1_target = cls_scores.new_zeros((num_fg_img, 4))
             l1_target[:, 0] = gt[:, 0] / priors[fg_mask][2] - priors[fg_mask][0]
             l1_target[:, 1] = gt[:, 1] / priors[fg_mask][3] - priors[fg_mask][1]
@@ -540,7 +544,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         return fg_mask, cls_target, obj_target, reg_target, l1_target, num_fg_img
 
     
-    def loss(self,
+    def loss_origin(self,
              cls_scores,
              bbox_preds,
              objectnesses,
