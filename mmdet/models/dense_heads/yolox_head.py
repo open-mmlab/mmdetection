@@ -140,6 +140,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                  loss_obj=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
+                     reduction='sum',
                      loss_weight=1.0),
                  train_cfg=None,
                  test_cfg=None,
@@ -468,7 +469,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         num_total_samples = max(num_total_samples, 1)
 
         loss_iou = self.loss_bbox(flatten_bboxes.view(-1, 4)[fg_masks], reg_targets) / num_total_samples
-        loss_obj = (self.bcewithlog_loss(flatten_objectness.view(-1, 1), obj_targets)).sum() / num_total_samples
+        loss_obj = self.loss_obj(flatten_objectness.view(-1, 1), obj_targets) / num_total_samples
         loss_cls = self.loss_cls(flatten_cls_scores.view(-1, self.num_classes)[fg_masks], cls_targets) / num_total_samples
 
         if self.use_l1:
@@ -541,7 +542,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         return fg_mask, cls_target, obj_target, reg_target, l1_target, num_fg_img
 
-
+    # yapf: disable
     def loss_origin(self,
              cls_scores,
              bbox_preds,
@@ -986,3 +987,4 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         pred_ious_this_matching = (matching_matrix * pair_wise_ious).sum(0)[fg_mask_inboxes]
         return num_fg, gt_matched_classes, pred_ious_this_matching, matched_gt_inds
+    # yapf: enable
