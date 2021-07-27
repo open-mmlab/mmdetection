@@ -1,6 +1,6 @@
 include requirements/*.txt
 include mmdet/VERSION
-include mmdet/model-index.yml
-include mmdet/demo/*/*
-recursive-include mmdet/configs *.py *.yml
-recursive-include mmdet/tools *.sh *.py
+include mmdet/.mim/model-index.yml
+include mmdet/.mim/demo/*/*
+recursive-include mmdet/.mim/configs *.py *.yml
+recursive-include mmdet/.mim/tools *.sh *.py
