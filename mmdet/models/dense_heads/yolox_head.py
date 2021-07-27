@@ -487,8 +487,6 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                 loss_iou=reg_weight * loss_iou,
                 loss_obj=loss_obj)
 
-
-
     def _get_target_single(self,
                            cls_scores,
                            bbox_preds,
@@ -511,10 +509,13 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             return fg_mask, cls_target, obj_target, reg_target, l1_target, 0
 
         # TODO: prior add offset
+
+        offset_priors = torch.cat([priors[:, :2] + priors[:, 2:] * 0.5, priors[:, 2:]], dim=-1)
+
         gt_matched_classes, fg_mask, pred_ious_this_matching, matched_gt_inds, \
         num_fg_img = self.assigner.assign(
             cls_scores.sigmoid() * objectness.unsqueeze(1).sigmoid(),
-            priors,
+            offset_priors,
             decoded_bboxes,
             gt_bboxes,
             gt_labels)
