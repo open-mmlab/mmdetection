@@ -344,7 +344,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 36.4
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco_20210715_211619-5142f449.pth
 
   - Name: cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco
     In Collection: RegNet
@@ -361,7 +361,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 37.6
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco_20210715_211616-dcbd13f4.pth
 
   - Name: cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
     In Collection: RegNet
@@ -378,7 +378,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 39.0
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-1_20210715_211616-75f29a61.pth
 
   - Name: cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
     In Collection: RegNet
@@ -395,7 +395,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 40.0
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-3_20210715_211616-b9c2c58b.pth
 
   - Name: cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
     In Collection: RegNet
@@ -412,4 +412,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 40.0
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco_20210715_212034-cbb1be4c.pth
