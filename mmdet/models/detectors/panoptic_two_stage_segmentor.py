@@ -108,9 +108,13 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
-            out_shape = (0, self.num_things_classes, img_shapes)
-            mask_pred = det_bboxes[0].new_zeros(out_shape)
-            mask_results = dict(mask_pred=mask_pred, mask_feats=None)
+            masks = []
+            for img_shape in img_shapes:
+                out_shape = (0, self.num_things_classes) + img_shape[:2]
+                masks.append(det_bboxes[0].new_zeros(out_shape))
+            mask_pred = det_bboxes[0].new_zeros((0, 80, 28, 28))
+            mask_results = dict(
+                masks=masks, mask_pred=mask_pred, mask_feats=None)
             return mask_results
         # if det_bboxes is rescaled to the original image size, we need to
         # rescale it back to the testing scale to obtain RoIs.
@@ -153,7 +157,6 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
 
     def simple_test(self, img, img_metas, proposals=None, rescale=False):
         x = self.extract_feat(img)
-        results = dict()
 
         if proposals is None:
             proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
@@ -186,6 +189,6 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
             panoptic_result = self.panoptic_fusion_head.simple_test(
                 det_bboxes[i], det_labels[i], masks[i], logits[i])
             panoptic_result = panoptic_result.int().detach().cpu().numpy()
-            panoptic_results.append(panoptic_result)
-        results['pano_results'] = panoptic_results
-        return [results]
+            result = dict(pan_results=panoptic_result)
+            panoptic_results.append(result)
+        return panoptic_results

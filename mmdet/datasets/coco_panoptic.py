@@ -44,7 +44,7 @@ class COCOPanoptic(COCO):
                 'pip install git+https://github.com/cocodataset/'
                 'panopticapi.git.')
 
-        super(COCO, self).__init__(annotation_file)
+        super(COCOPanoptic, self).__init__(annotation_file)
 
     def createIndex(self):
         # create index
@@ -55,6 +55,7 @@ class COCOPanoptic(COCO):
         if 'annotations' in self.dataset:
             for ann, img_info in zip(self.dataset['annotations'],
                                      self.dataset['images']):
+                img_info['segm_file'] = ann['file_name']
                 for seg_ann in ann['segments_info']:
                     # to match with instance.json
                     seg_ann['image_id'] = ann['image_id']
@@ -388,11 +389,12 @@ class CocoPanopticDataset(CocoDataset):
 
     def evaluate_pan_json(self, result_files, outfile_prefix, logger=None):
         """Evaluate PQ according to the panoptic results json file."""
+        imgs = self.coco.imgs
         gt_json = self.coco.img_ann_map  # image to annotations
         gt_json = [{
             'image_id': k,
             'segments_info': v,
-            'file_name': self.formatter.format(k)
+            'file_name': imgs[k]['segm_file']
         } for k, v in gt_json.items()]
         pred_json = mmcv.load(result_files['panoptic'])
         pred_json = dict((el['image_id'], el) for el in pred_json)
