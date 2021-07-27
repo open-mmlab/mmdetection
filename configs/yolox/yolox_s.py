@@ -39,7 +39,7 @@ train_pipeline = [
     dict(
         type='Collect',
         keys=['img', 'gt_bboxes', 'gt_labels'],
-        meta_keys=('img_norm_cfg', ))
+        meta_keys=('img_norm_cfg',))
 ]
 
 # enable_mixup=True, scale=(0.1, 2)
@@ -55,7 +55,7 @@ train_dataset = dict(
         ],
         filter_empty_gt=False,
     ),
-    mosaic_pipeline=[dict(type="RandomAffineOrPerspective", scale=(0.1, 2))],
+    mosaic_pipeline=[dict(type="RandomAffineOrPerspective", scale=(0.1, 2), border=(-320, -320))],
     enable_mosaic=True,
     enable_mixup=True,
     pipeline=train_pipeline,
