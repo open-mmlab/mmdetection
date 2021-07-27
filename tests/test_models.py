@@ -320,8 +320,8 @@ class PublicModelsTestCase(unittest.TestCase):
 
     def test_openvino_dcn__faster_rcnn_r50_fpn_dconv_c3_5_1x_coco(self):
         origin_config = 'configs/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py'
-        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
-              'dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco_20200130-d68aed1e.pth'
+        url = 'https://download.openmmlab.com/mmdetection/v2.0/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco/' \
+              'faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco_20200130-d68aed1e.pth'
         self.run_openvino_export_test(origin_config, self.download_if_not_yet(url))
 
     def test_openvino_gn__mask_rcnn_r50_fpn_gn_all_2x_coco(self):
