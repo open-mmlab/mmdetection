@@ -14,6 +14,7 @@ from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
     import resource
+
     rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
     base_soft_limit = rlimit[0]
     hard_limit = rlimit[1]
@@ -53,7 +54,7 @@ def _concat_dataset(cfg, default_args=None):
 
 def build_dataset(cfg, default_args=None):
     from .dataset_wrappers import (ConcatDataset, RepeatDataset,
-                                   ClassBalancedDataset)
+                                   ClassBalancedDataset, MosaicMixUpDataset)
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'ConcatDataset':
@@ -66,6 +67,12 @@ def build_dataset(cfg, default_args=None):
     elif cfg['type'] == 'ClassBalancedDataset':
         dataset = ClassBalancedDataset(
             build_dataset(cfg['dataset'], default_args), cfg['oversample_thr'])
+    elif cfg['type'] == 'MosaicMixUpDataset':
+        cp_cfg = copy.deepcopy(cfg)
+        cp_cfg.pop('type')
+        cp_cfg.pop('dataset')
+        dataset = MosaicMixUpDataset(
+            build_dataset(cfg['dataset'], default_args), **cp_cfg)
     elif isinstance(cfg.get('ann_file'), (list, tuple)):
         dataset = _concat_dataset(cfg, default_args)
     else:

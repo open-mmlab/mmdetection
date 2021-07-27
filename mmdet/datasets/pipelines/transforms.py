@@ -1,6 +1,6 @@
 import copy
 import inspect
-
+import cv2
 import mmcv
 import numpy as np
 from numpy import random
@@ -303,6 +303,7 @@ class Resize:
         self._resize_bboxes(results)
         self._resize_masks(results)
         self._resize_seg(results)
+
         return results
 
     def __repr__(self):
@@ -576,17 +577,29 @@ class Pad:
         pad_val (float, optional): Padding value, 0 by default.
     """
 
-    def __init__(self, size=None, size_divisor=None, pad_val=0):
+    def __init__(self,
+                 size=None,
+                 size_divisor=None,
+                 pad2square=False,
+                 pad_val=0):
         self.size = size
         self.size_divisor = size_divisor
         self.pad_val = pad_val
-        # only one of size and size_divisor should be valid
-        assert size is not None or size_divisor is not None
-        assert size is None or size_divisor is None
+        self.pad2square = pad2square
+
+        if pad2square:
+            assert size is None and size_divisor is None, 'The size and size_divisor must be None ' \
+                                                          'when pad2square is True'
+        else:
+            assert size is not None or size_divisor is not None, 'only one of size and size_divisor should be valid'
+            assert size is None or size_divisor is None
 
     def _pad_img(self, results):
         """Pad images according to ``self.size``."""
         for key in results.get('img_fields', ['img']):
+            if self.pad2square:
+                max_size = max(results[key].shape[:2])
+                self.size = (max_size, max_size)
             if self.size is not None:
                 padded_img = mmcv.impad(
                     results[key], shape=self.size, pad_val=self.pad_val)
@@ -1903,3 +1916,109 @@ class CutOut:
                      else f'cutout_shape={self.candidates}, ')
         repr_str += f'fill_in={self.fill_in})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class RandomAffineOrPerspective(object):
+    def __init__(self,
+                 degrees=10.0,
+                 translate=0.1,
+                 scale=(0.5, 1.5),
+                 shear=2.0,
+                 border=(0, 0),
+                 perspective=0.0):
+
+        self.degrees = degrees
+        self.translate = translate
+        self.scale = scale
+        self.shear = shear
+        self.border = border
+        self.perspective = perspective
+
+    def __call__(self, results):
+
+        img = results["img"]
+        gt_bboxes = results["gt_bboxes"]
+        gt_labels = results["gt_labels"]
+        height = img.shape[0] + self.border[0] * 2  # shape(h,w,c)
+        width = img.shape[1] + self.border[1] * 2
+
+        # Center
+        center_matrix = np.eye(3)
+        center_matrix[0, 2] = -img.shape[1] / 2  # x translation (pixels)
+        center_matrix[1, 2] = -img.shape[0] / 2  # y translation (pixels)
+
+        # Rotation and Scale
+        rotate_matrix = np.eye(3)
+        rotate_angle = random.uniform(-self.degrees, self.degrees)
+        # a += random.choice([-180, -90, 0, 90])  # add 90deg rotations to small rotations
+        scale = random.uniform(*self.scale)
+        # s = 2 ** random.uniform(-scale, scale)
+        rotate_matrix[:2] = cv2.getRotationMatrix2D(angle=rotate_angle, center=(0, 0), scale=scale)
+
+        # Shear
+        shear_matrix = np.eye(3)
+
+        shear_matrix[0, 1] = np.tan(random.uniform(-self.shear, self.shear) * np.pi / 180)
+        shear_matrix[1, 0] = np.tan(random.uniform(-self.shear, self.shear) * np.pi / 180)
+
+        # Translation
+        translate_matrix = np.eye(3)
+        translate_matrix[0, 2] = (random.uniform(0.5 - self.translate, 0.5 + self.translate) * width)
+        translate_matrix[1, 2] = (random.uniform(0.5 - self.translate, 0.5 + self.translate) * height)
+
+        # Combined rotation matrix
+        transform_matrix = translate_matrix @ shear_matrix @ rotate_matrix @ center_matrix
+
+        ###########################
+        # For Aug out of Mosaic
+        # s = 1.
+        # M = np.eye(3)
+        ###########################
+        if self.border[0] != 0 or self.border[1] != 0 or (transform_matrix != np.eye(3)).any():  # image changed
+            if self.perspective:
+                img = cv2.warpPerspective(img, transform_matrix, dsize=(width, height), borderValue=(114, 114, 114))
+            else:  # affine
+                img = cv2.warpAffine(img, transform_matrix[:2], dsize=(width, height), borderValue=(114, 114, 114))
+
+        # Transform label coordinates
+        num_bboxes = len(gt_bboxes)
+        if num_bboxes:
+            # warp points
+            xy = np.ones((num_bboxes * 4, 3))
+            xy[:, :2] = gt_bboxes[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(num_bboxes * 4, 2)  # x1y1, x2y2, x1y2, x2y1
+            xy = xy @ transform_matrix.T  # transform
+            if self.perspective:
+                xy = (xy[:, :2] / xy[:, 2:3]).reshape(num_bboxes, 8)  # rescale
+            else:  # affine
+                xy = xy[:, :2].reshape(num_bboxes, 8)
+
+            # create new boxes
+            x = xy[:, [0, 2, 4, 6]]
+            y = xy[:, [1, 3, 5, 7]]
+            xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, num_bboxes).T
+
+            # clip boxes
+            xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
+            xy[:, [1, 3]] = xy[:, [1, 3]].clip(0, height)
+
+            # filter candidates
+            valid_index = self.box_candidates(box1=gt_bboxes[:, :4].T * scale, box2=xy.T)
+            gt_bboxes = gt_bboxes[valid_index]
+            gt_labels = gt_labels[valid_index]
+            gt_bboxes[:, :4] = xy[valid_index]
+
+        results["gt_bboxes"] = gt_bboxes
+        results["gt_labels"] = gt_labels
+        results["img"] = img
+
+        return results
+
+    def box_candidates(self, box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
+        # box1(4,n), box2(4,n)
+        # Compute candidate boxes which include follwing 5 things:
+        # box1 before augment, box2 after augment, wh_thr (pixels), aspect_ratio_thr, area_ratio
+        w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
+        w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
+        aspect_ratio = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
+        return ((w2 > wh_thr) & (h2 > wh_thr) & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr) & (aspect_ratio < ar_thr))

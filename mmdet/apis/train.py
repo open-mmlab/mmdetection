@@ -1,6 +1,5 @@
 import random
 import warnings
-
 import numpy as np
 import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
@@ -13,6 +12,106 @@ from mmdet.core import DistEvalHook, EvalHook
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.utils import get_root_logger
+
+import itertools
+
+
+def _find_tensors(obj):
+    r"""
+    Recursively find all tensors contained in the specified object.
+    """
+    if isinstance(obj, torch.Tensor):
+        return [obj]
+    if isinstance(obj, (list, tuple)):
+        return itertools.chain(*map(_find_tensors, obj))
+    if isinstance(obj, dict):
+        return itertools.chain(*map(_find_tensors, obj.values()))
+    return []
+
+
+class MyMMDistributedDataParallel(MMDistributedDataParallel):
+    """The DDP module that supports DataContainer.
+
+    MMDDP has two main differences with PyTorch DDP:
+
+    - It supports a custom type :class:`DataContainer` which allows more
+      flexible control of input data.
+    - It implement two APIs ``train_step()`` and ``val_step()``.
+    """
+
+    def to_kwargs(self, inputs, kwargs, device_id):
+        # Use `self.to_kwargs` instead of `self.scatter` in pytorch1.8
+        # to move all tensors to device_id
+        return scatter_kwargs(inputs, kwargs, [device_id], dim=self.dim)
+
+    def scatter(self, inputs, kwargs, device_ids):
+        return scatter_kwargs(inputs, kwargs, device_ids, dim=self.dim)
+
+
+from torch.nn.parallel._functions import Scatter
+from mmcv.parallel.data_container import DataContainer
+
+
+def scatter(inputs, target_gpus, dim=0):
+    """Scatter inputs to target gpus.
+
+    The only difference from original :func:`scatter` is to add support for
+    :type:`~mmcv.parallel.DataContainer`.
+    """
+
+    def scatter_map(obj):
+        if isinstance(obj, torch.Tensor):
+            return Scatter.apply(target_gpus, None, dim, obj)
+        if isinstance(obj, DataContainer):
+            if obj.cpu_only:
+                return obj.data
+            else:
+                # return Scatter.forward(target_gpus, obj.data)
+                # import pdb
+                # pdb.set_trace()
+                data = obj.data
+                if isinstance(data, list) and len(data) > 0:
+                    out = list(map(list, zip(*map(scatter_map, data))))
+                    if len(out) == 1:
+                        # img
+                        return out[0]
+                    # gt bbox ;gt label
+                    return out
+                # print(type(obj.data[0]), obj.data[0])
+                # return Scatter.apply(target_gpus, None, dim, obj.data[0])  # -------
+        if isinstance(obj, tuple) and len(obj) > 0:
+            return list(zip(*map(scatter_map, obj)))
+        if isinstance(obj, list) and len(obj) > 0:
+            out = list(map(list, zip(*map(scatter_map, obj))))
+            return out
+        if isinstance(obj, dict) and len(obj) > 0:
+            out = list(map(type(obj), zip(*map(scatter_map, obj.items()))))
+            return out
+        return [obj for targets in target_gpus]
+
+    # After scatter_map is called, a scatter_map cell will exist. This cell
+    # has a reference to the actual function scatter_map, which has references
+    # to a closure that has a reference to the scatter_map cell (because the
+    # fn is recursive). To avoid this reference cycle, we set the function to
+    # None, clearing the cell
+    try:
+        return scatter_map(inputs)
+    finally:
+        scatter_map = None
+
+
+# SAME
+def scatter_kwargs(inputs, kwargs, target_gpus, dim=0):
+    """Scatter with support for kwargs dictionary."""
+    inputs = scatter(inputs, target_gpus, dim) if inputs else []
+    kwargs = scatter(kwargs, target_gpus, dim) if kwargs else []
+    if len(inputs) < len(kwargs):
+        inputs.extend([() for _ in range(len(kwargs) - len(inputs))])
+    elif len(kwargs) < len(inputs):
+        kwargs.extend([{} for _ in range(len(inputs) - len(kwargs))])
+    inputs = tuple(inputs)
+    kwargs = tuple(kwargs)
+    return inputs, kwargs
 
 
 def set_random_seed(seed, deterministic=False):
@@ -75,7 +174,7 @@ def train_detector(model,
         find_unused_parameters = cfg.get('find_unused_parameters', False)
         # Sets the `find_unused_parameters` parameter in
         # torch.nn.parallel.DistributedDataParallel
-        model = MMDistributedDataParallel(
+        model = MyMMDistributedDataParallel(
             model.cuda(),
             device_ids=[torch.cuda.current_device()],
             broadcast_buffers=False,
