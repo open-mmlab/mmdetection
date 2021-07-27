@@ -304,6 +304,13 @@ class Resize:
         self._resize_masks(results)
         self._resize_seg(results)
 
+        img = results["img"]
+        gt_bboxes = results["gt_bboxes"]
+        import time
+        for box in gt_bboxes:
+            x1, y1, x2, y2 = box
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 1)
+        cv2.imwrite(f"../image/mosaic_aug{time.time()}.jpg", img)
         return results
 
     def __repr__(self):
@@ -1925,7 +1932,7 @@ class RandomAffineOrPerspective(object):
                  translate=0.1,
                  scale=(0.5, 1.5),
                  shear=2.0,
-                 border=(0, 0),
+                 border=(-320, -320),
                  perspective=0.0):
 
         self.degrees = degrees
@@ -1936,7 +1943,6 @@ class RandomAffineOrPerspective(object):
         self.perspective = perspective
 
     def __call__(self, results):
-
         img = results["img"]
         gt_bboxes = results["gt_bboxes"]
         gt_labels = results["gt_labels"]
