@@ -4,16 +4,13 @@ from mmcv.runner import get_dist_info
 
 
 @HOOKS.register_module()
-class CosineAnnealingWithNoAugIterLrUpdaterHook(CosineAnnealingLrUpdaterHook):
+class CosineAnnealingWithStopLrUpdaterHook(CosineAnnealingLrUpdaterHook):
 
-    def __init__(self, no_aug_epochs, min_lr=None, min_lr_ratio=None, warmup_ratio=0.1, **kwargs):
-        assert (min_lr is None) ^ (min_lr_ratio is None)
+    def __init__(self, no_aug_epoch,  warmup_ratio, **kwargs):
         _, work_size = get_dist_info()
-        self.min_lr = min_lr
-        self.min_lr_ratio = min_lr_ratio
-        self.no_aug_epochs = no_aug_epochs
+        self.no_aug_epoch = no_aug_epoch
         self.lr = warmup_ratio * work_size
-        super(CosineAnnealingLrUpdaterHook, self).__init__(warmup_ratio=warmup_ratio * work_size, **kwargs)
+        super(CosineAnnealingWithStopLrUpdaterHook, self).__init__(warmup_ratio=warmup_ratio * work_size, **kwargs)
 
     def get_warmup_lr(self, cur_iters):
         def _get_warmup_lr(cur_iters, regular_lr):
@@ -33,7 +30,7 @@ class CosineAnnealingWithNoAugIterLrUpdaterHook(CosineAnnealingLrUpdaterHook):
 
     def get_lr(self, runner, base_lr):
 
-        no_aug_iter = len(runner.data_loader) * self.no_aug_epochs
+        no_aug_iter = len(runner.data_loader) * self.no_aug_epoch
 
         if self.by_epoch:
             progress = runner.epoch

@@ -5,7 +5,6 @@ import math
 
 
 def is_parallel(model):
-    # Returns True if model is of type DP or DDP
     return type(model) in (
     nn.parallel.DataParallel, nn.parallel.DistributedDataParallel, MMDataParallel, MMDistributedDataParallel)
 
@@ -30,7 +29,6 @@ class EMAHook(Hook):
             to update ema parameters more slowly. Defaults to 100.
         resume_from (str): The checkpoint path. Defaults to None.
     """
-
     def __init__(self, decay=0.9998, interval=1, resume_from=None):
         self.interval = interval
         self.checkpoint = resume_from
@@ -45,7 +43,6 @@ class EMAHook(Hook):
         if is_parallel(model):
             model = model.module
         self.param_ema_buffer = {}
-        # self.model_parameters = dict(model.named_parameters(recurse=True))
         self.model_parameters = model.state_dict()  # BN also needs ema
         for name, value in self.model_parameters.items():
             # "." is not allowed in module's buffer name
@@ -59,10 +56,7 @@ class EMAHook(Hook):
     def after_train_iter(self, runner):
         """Update ema parameter every self.interval iterations."""
         curr_step = runner.iter
-        # We warm up the momentum considering the instability at beginning
         decay = self.decay(curr_step)
-        # momentum = min(self.momentum,
-        #                (1 + curr_step) / (self.warm_up + curr_step))
         if curr_step % self.interval != 0:
             return
         for name, parameter in self.model_parameters.items():
