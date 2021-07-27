@@ -34,7 +34,7 @@ train_dataset = dict(
     enable_mixup=False)
 
 data = dict(
-    train=dict(pipeline=train_dataset),
+    train=train_dataset,
     test=dict(pipeline=test_pipeline),
     val=dict(pipeline=test_pipeline))
 
