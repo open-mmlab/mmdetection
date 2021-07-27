@@ -1988,7 +1988,7 @@ class MosaicMixUpPipeline(object):
             xy = np.ones((num_bboxes * 4, 3))
             xy[:, :2] = gt_bboxes[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(num_bboxes * 4, 2)  # x1y1, x2y2, x1y2, x2y1
             xy = xy @ transform_matrix.T  # transform
-            if perspective:
+            if self.perspective:
                 xy = (xy[:, :2] / xy[:, 2:3]).reshape(num_bboxes, 8)  # rescale
             else:  # affine
                 xy = xy[:, :2].reshape(num_bboxes, 8)

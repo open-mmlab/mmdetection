@@ -38,6 +38,7 @@ train_pipeline = [
         meta_keys=('img_norm_cfg', ))
 ]
 
+# enable_mixup=True
 train_dataset = dict(
     type='MosaicMixUpDataset',
     dataset=dict(
@@ -98,13 +99,12 @@ optimizer = dict(
     weight_decay=5e-4,
     nesterov=True,
     paramwise_cfg=dict(norm_decay_mult=0., bias_decay_mult=0.))
-# optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 optimizer_config = dict(grad_clip=None)
 
 # learning policy
 lr_config = dict(
     _delete_=True,
-    policy='CosineAnnealingWithNoAugIter',
+    policy='CosineAnnealingWithStop',
     warmup='exp',
     by_epoch=False,
     warmup_by_epoch=True,
@@ -118,10 +118,11 @@ resume_from = None
 
 interval = 10
 evaluation = dict(interval=interval, metric='bbox')
+# random_size=(14, 26)
 custom_hooks = [
     dict(
-        type='ProcessHook',
-        random_size=(10, 20),
+        type='YoloXProcessHook',
+        random_size=(14, 26),
         no_aug_epochs=15,
         eval_interval=interval,
         priority=48),
