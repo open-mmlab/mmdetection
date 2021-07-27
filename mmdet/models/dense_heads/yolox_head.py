@@ -362,9 +362,10 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         (foreground_masks, cls_targets, obj_targets, bbox_targets, l1_targets,
          num_fg_imgs) = multi_apply(
-             self._get_target_single, flatten_cls_preds, flatten_objectness,
+             self._get_target_single, flatten_cls_preds.detach(),
+             flatten_objectness.detach(),
              flatten_priors.unsqueeze(0).repeat(num_imgs, 1, 1),
-             flatten_bboxes, gt_bboxes, gt_labels)
+             flatten_bboxes.detach(), gt_bboxes, gt_labels)
 
         num_total_samples = max(sum(num_fg_imgs), 1)
         foreground_masks = torch.cat(foreground_masks, 0)
@@ -421,6 +422,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         num_priors = priors.size(0)
         num_gts = gt_labels.size(0)
+        gt_bboxes = gt_bboxes.to(decoded_bboxes.dtype)
         # No target
         if num_gts == 0:
             cls_target = cls_preds.new_zeros((0, self.num_classes))
@@ -445,7 +447,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         cls_target = F.one_hot(
             gt_matched_classes.to(torch.int64),
             self.num_classes) * pred_ious_this_matching.unsqueeze(-1)
-        obj_target = foreground_mask.unsqueeze(-1)
+        obj_target = foreground_mask.unsqueeze(-1).to(objectness.dtype)
         bbox_target = gt_bboxes[matched_gt_inds]
         l1_target = cls_preds.new_zeros((num_fg_per_img, 4))
         if self.use_l1:
