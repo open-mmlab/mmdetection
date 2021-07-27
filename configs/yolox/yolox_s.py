@@ -3,13 +3,20 @@ _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 # model settings
 model = dict(
     type='YOLOX',
-    backbone=dict(type='YOLOPAFPN', depth=0.33, width=0.5),
-    neck=None,
-    bbox_head=dict(type='YOLOXHead', width=0.5, num_classes=80),
+    backbone=dict(type='CSPDarknet', deepen_factor=0.33, widen_factor=0.5),
+    neck=dict(
+        type='YOLOXPAFPN',
+        in_channels=[128, 256, 512],
+        out_channels=128,
+        csp_num_blocks=1),
+    bbox_head=dict(
+        type='YOLOXHead', num_classes=80, in_channels=128, feat_channels=128),
     # test
     test_cfg=dict(
+        nms_pre=1000,
         min_bbox_size=0,
         conf_thr=0.01,  # TODO test 0.001 val 0.01
+        score_thr=0.01,  # TODO test 0.001 val 0.01
         nms=dict(type='nms', iou_threshold=0.65),
         max_per_img=1000))
 

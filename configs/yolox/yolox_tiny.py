@@ -3,8 +3,9 @@ _base_ = './yolox_s.py'
 # model settings
 # 1 depth=0.33, width=0.375
 model = dict(
-    backbone=dict(depth=0.33, width=0.375),
-    bbox_head=dict(width=0.375)
+    backbone=dict(deepen_factor=0.33, widen_factor=0.375),
+    neck=dict(in_channels=[96, 192, 384], out_channels=96, csp_num_blocks=1),
+    bbox_head=dict(in_channels=96, feat_channels=96)
 )
 
 img_norm_cfg = dict(mean=[0.485 * 255, 0.456 * 255, 0.406 * 255], std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
