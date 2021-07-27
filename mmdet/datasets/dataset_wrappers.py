@@ -88,7 +88,7 @@ class ConcatDataset(_ConcatDataset):
         # Check whether all the datasets support evaluation
         for dataset in self.datasets:
             assert hasattr(dataset, 'evaluate'), \
-                    f'{type(dataset)} does not implement evaluate function'
+                f'{type(dataset)} does not implement evaluate function'
 
         if self.separate_eval:
             dataset_idx = -1
@@ -344,15 +344,6 @@ class MosaicMixUpDataset:
             results = self.mosaic_pipeline(results)
         if self.mixup and results['gt_bboxes'].shape[0] > 0:
             results = self._mixup(results)
-        #
-        # gt_bboxes = results["gt_bboxes"]
-        # img = results["img"]
-        # import cv2
-        # for i in range(len(gt_bboxes)):
-        #     box = gt_bboxes[i]
-        #     x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
-        #     cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 1)
-        # cv2.imwrite(f"../image/mosaic/{idx}.jpg", img)
         return self.pipeline(results)
 
     def _mixup(self, results):
