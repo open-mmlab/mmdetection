@@ -30,7 +30,7 @@ def iou_loss(pred, target, linear=False, eps=1e-6):
     """
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
     if linear:
-        loss = 1 - ious**2
+        loss = 1 - ious
     else:
         loss = -ious.log()
     return loss
