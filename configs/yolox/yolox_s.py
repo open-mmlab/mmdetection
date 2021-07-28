@@ -1,16 +1,23 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 
 # model settings
+init_cfg = dict(type='Kaiming',
+                layer='Conv2d',
+                a=2.23606797749979,  # sqrt(5)
+                distribution='uniform',
+                mode='fan_in',
+                nonlinearity='leaky_relu')
 model = dict(
     type='YOLOX',
-    backbone=dict(type='CSPDarknet', deepen_factor=0.33, widen_factor=0.5),
+    backbone=dict(type='CSPDarknet', deepen_factor=0.33, widen_factor=0.5, init_cfg=init_cfg),
     neck=dict(
         type='YOLOXPAFPN',
         in_channels=[128, 256, 512],
         out_channels=128,
-        csp_num_blocks=1),
+        csp_num_blocks=1,
+        init_cfg=init_cfg),
     bbox_head=dict(
-        type='YOLOXHead', num_classes=80, in_channels=128, feat_channels=128),
+        type='YOLOXHead', num_classes=80, in_channels=128, feat_channels=128, init_cfg=init_cfg),
     # test
     test_cfg=dict(
         nms_pre=1000,
