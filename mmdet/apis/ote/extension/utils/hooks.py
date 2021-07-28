@@ -44,7 +44,7 @@ class EarlyStoppingHook(Hook):
     greater_keys = ['mAP', 'acc', 'top', 'AR@', 'auc', 'precision']
     less_keys = ['loss']
 
-    def __init__(self, interval: int, metric: str = 'mAP', rule: str = None, patience: int = 3, min_delta: float = 0.0):
+    def __init__(self, interval: int, metric: str = 'mAP', rule: str = None, patience: int = 5, min_delta: float = 0.0):
         super().__init__()
         self.patience = patience
         self.interval = interval
@@ -164,7 +164,7 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
     greater_keys = ['bbox_mAP']
     less_keys = ['loss']
 
-    def __init__(self, min_lr, interval, metric='bbox_mAP', rule=None, factor=0.1, patience=10, **kwargs):
+    def __init__(self, min_lr, interval, metric='bbox_mAP', rule=None, factor=0.1, patience=3, **kwargs):
         super(ReduceLROnPlateauLrUpdaterHook, self).__init__(**kwargs)
         self.interval = interval
         self.min_lr = min_lr
