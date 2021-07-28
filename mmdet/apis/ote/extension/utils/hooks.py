@@ -21,12 +21,30 @@ from mmcv.utils import print_log
 
 @HOOKS.register_module()
 class EarlyStoppingHook(Hook):
+    """
+    Cancel training when a metric has stopped improving.
+
+    Early Stopping hook monitors a metric quantity and if no improvement is seen for a ‘patience’ number of epochs,
+    the training is cancelled.
+
+    :param interval: the number of intervals for checking early stop. The interval number should be the same as the
+                     evaluation interval. If EpochBasedRunner is used, this should be set to 1.
+                    If IterBasedRunner is used, it should be the interval number set in `evaluation` config
+    :param metric: the metric name to be monitored
+    :param rule: greater or less.  In `less` mode, training will stop when the metric has stopped decreasing
+                 and in `greater` mode it will stop when the metric has stopped increasing.
+    :param patience: Number of epochs with no improvement after which learning rate will be reduced. For example,
+                    if patience = 2, then we will ignore the first 2 epochs with no improvement,
+                    and will only cancel the training after the 3rd epoch if the metric still hasn’t improved then
+    :param min_delta: Minimal decay applied to lr. If the difference between new and old lr is smaller than eps,
+                      the update is ignored
+    """
     rule_map = {'greater': lambda x, y: x > y, 'less': lambda x, y: x < y}
     init_value_map = {'greater': -inf, 'less': inf}
     greater_keys = ['mAP', 'acc', 'top', 'AR@', 'auc', 'precision']
     less_keys = ['loss']
 
-    def __init__(self, interval, metric='mAP', rule=None, patience=3, min_delta=0.0):
+    def __init__(self, interval: int, metric: str = 'mAP', rule: str = None, patience: int = 3, min_delta: float = 0.0):
         super().__init__()
         self.patience = patience
         self.interval = interval
@@ -122,6 +140,25 @@ class EarlyStoppingHook(Hook):
 
 @HOOKS.register_module()
 class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
+    """
+    Reduce learning rate when a metric has stopped improving.
+
+    Models often benefit from reducing the learning rate by a factor of 2-10 once learning stagnates.
+    This scheduler reads a metrics quantity and if no improvement is seen for a ‘patience’ number of epochs,
+    the learning rate is reduced.
+
+    :param min_lr: minimum learning rate. The lower bound of the desired learning rate.
+    :param interval: the number of intervals for checking the hook. The interval number should be the same as the
+                     evaluation interval. If EpochBasedRunner is used, this should be set to 1.
+                    If IterBasedRunner is used, it should be the interval number set in `evaluation` config
+    :param metric: the metric name to be monitored
+    :param rule: greater or less.  In `less` mode, learning rate will be dropped if the metric has stopped decreasing
+                 and in `greater` mode it will be dropped when the metric has stopped increasing.
+    :param patience: Number of epochs with no improvement after which learning rate will be reduced. For example,
+                    if patience = 2, then we will ignore the first 2 epochs with no improvement,
+                    and will only drop LR after the 3rd epoch if the metric still hasn’t improved then
+    :param factor: Factor to be multiply with the learning rate. For example, new_lr = current_lr * factor
+    """
     rule_map = {'greater': lambda x, y: x > y, 'less': lambda x, y: x < y}
     init_value_map = {'greater': -inf, 'less': inf}
     greater_keys = ['bbox_mAP']
@@ -195,7 +232,6 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
         if self.current_lr is None:
             self.current_lr = base_lr
 
-        # TODO: find a way to get metric score gracefully
         if hasattr(runner, self.metric):
             score = getattr(runner, self.metric, 0.0)
         else:

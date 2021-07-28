@@ -18,12 +18,12 @@ import torch.distributed as dist
 from mmcv.runner import RUNNERS, EpochBasedRunner
 from mmcv.runner import get_dist_info
 
+
 @RUNNERS.register_module()
 class EpochRunnerWithCancel(EpochBasedRunner):
     """
-    Simple modification to EpochBasedRunner to allow cancelling the training during an epoch. The cancel training hook
+    Simple modification to EpochBasedRunner to allow cancelling the training during an epoch. The early stopping hook
     should set the runner.should_stop flag to True if stopping is required.
-    # TODO: Implement cancelling of training via keyboard interrupt signal, instead of should_stop
     """
 
     def __init__(self, *args, **kwargs):
@@ -32,7 +32,11 @@ class EpochRunnerWithCancel(EpochBasedRunner):
         _, world_size = get_dist_info()
         self.distributed = True if world_size > 1 else False
 
-    def stop(self):
+    def stop(self) -> bool:
+        """ Returning a boolean to break the training loop
+        This method supports distributed training by broadcasting should_stop to other ranks
+        :return: a cancellation bool
+        """
         if self.rank == 0 and self.should_stop:
             broadcast_obj = [True]
         else:
