@@ -79,15 +79,16 @@ class CopyPaste:
             return
         inds = []
         for i, bbox in enumerate(results['gt_bboxes']):
-            c = 0
+            ignore_bbox = False
             for ignore in results['gt_bboxes_ignore']:
                 x0, x1 = max(bbox[0], ignore[0]), min(bbox[2], ignore[2])
                 y0, y1 = max(bbox[1], ignore[1]), min(bbox[3], ignore[3])
                 s_intersection = (x1 - x0) * (y1 - y0)
                 s_bbox = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
                 if s_intersection > k * s_bbox:
-                    c += 1
-            if c == 0:
+                    ignore_bbox = True
+                    break
+            if not ignore_bbox:
                 inds.append(i)
         self._filter(results, inds)
         results['gt_bboxes_ignore'] = np.array([])
@@ -158,7 +159,7 @@ class CopyPaste:
         return composed_mask
 
     def __call__(self, results):
-        if not 'copy_paste' in results:
+        if 'copy_paste' not in results:
             return results
         # Get types of modified objects
         bbox_type = results['gt_bboxes'].dtype
@@ -177,7 +178,7 @@ class CopyPaste:
             results['copy_paste'] = self.rotate(results['copy_paste'])
         # Get random objects from the image
         objects_num = results['copy_paste']['gt_labels'].shape[0]
-        random_num = min(random.randint(0, int(1.1 * objects_num)), objects_num)
+        random_num = random.randint(0, objects_num)
         all_nums = list(range(objects_num))
         objects_inds = random.sample(all_nums, random_num) if not self.copy_all else all_nums
         # If list of randomly selected objects is empty do nothing

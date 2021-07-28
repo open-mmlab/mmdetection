@@ -105,10 +105,10 @@ class CustomDataset(Dataset):
         self.pipeline = Compose(pipeline)
 
         # Check if Copy-Paste augmentation is in pipeline
-        self.copypaste_aug_used = False
+        self.copy_paste_aug_used = False
         for transform in pipeline:
             if transform['type'] == 'CopyPaste':
-                self.copypaste_aug_used = True
+                self.copy_paste_aug_used = True
                 break
 
     def __len__(self):
@@ -223,7 +223,7 @@ class CustomDataset(Dataset):
             results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
 
-        if self.copypaste_aug_used:
+        if self.copy_paste_aug_used:
             copy_paste_idx = randrange(len(self))
             while copy_paste_idx == idx:
                 copy_paste_idx = randrange(len(self))
