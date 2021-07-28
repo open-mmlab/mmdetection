@@ -156,6 +156,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         return conv_cls, conv_reg, conv_obj
 
     def init_weights(self):
+        super(YOLOXHead, self).init_weights()
         # Use prior in model initialization to improve stability
         bias_init = bias_init_with_prob(0.01)
         for conv_cls, conv_obj in zip(self.multi_level_conv_cls,
