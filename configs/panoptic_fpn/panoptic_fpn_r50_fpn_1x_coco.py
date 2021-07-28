@@ -69,12 +69,13 @@ model = dict(
             num_classes=80,
             loss_mask=dict(
                 type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))),
-    stuff_head=dict(
+    semantic_head=dict(
         type='PanopticFpnHead',
         num_classes=54,
         in_channels=256,
         inner_channels=128,
-        num_stages=4,
+        start_level=0,
+        end_level=4,
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
         conv_cfg=None,
         loss_semantic=dict(
@@ -138,7 +139,7 @@ model = dict(
             max_per_img=100,
             mask_thr_binary=0.5,
             mask_overlap=0.5,
-            nms=dict(type='nms', iou_thr=0.5, class_agnostic=True),
+            nms=dict(type='nms', iou_threshold=0.5, class_agnostic=True),
             stuff_area_limit=4096)))
 
 custom_hooks = []

@@ -1,25 +1,29 @@
 from abc import ABCMeta, abstractmethod
 
-import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.runner import auto_fp16, force_fp32
+from mmcv.runner import BaseModule, auto_fp16, force_fp32
 
 from ..builder import build_loss
 from ..utils import upsample_like
 
 
-class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
+class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
+    """Base module of Semantic Head.
+
+    Args:
+        num_classes: the number of classes.
+        loss_semantic: the loss of the semantic head.
+    """
 
     def __init__(self,
                  num_classes,
-                 num_feats=-1,
+                 init_cfg=None,
                  loss_semantic=dict(
                      type='CrossEntropyLoss', ignore_index=-1,
                      loss_weight=1.0)):
-        super(BaseSemanticHead, self).__init__()
+        super(BaseSemanticHead, self).__init__(init_cfg)
         self.loss_semantic = build_loss(loss_semantic)
         self.num_classes = num_classes
-        self.num_feats = num_feats
         self.eps = 1e-6
 
     @force_fp32(apply_to=('logits', ))
@@ -48,13 +52,13 @@ class BaseSemanticHead(nn.Module, metaclass=ABCMeta):
         pass
 
     def forward_train(self, x, gt_semantic_seg):
-        fcn_output = self.forward(x[:self.num_feats])
-        logits = fcn_output['fcn_score']
+        fcn_output = self.forward(x)
+        logits = fcn_output['logits']
         return self.loss(logits, gt_semantic_seg)
 
     def simple_test(self, x, img_metas, rescale=False):
-        fcn_output = self.forward(x[:self.num_feats])
-        logits = fcn_output['fcn_score']
+        fcn_output = self.forward(x)
+        logits = fcn_output['logits']
         logits = F.interpolate(
             logits,
             size=img_metas[0]['pad_shape'][:2],

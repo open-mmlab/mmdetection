@@ -17,10 +17,8 @@ class PanopticFPN(PanopticTwoStageSegmentor):
             pretrained=None,
             init_cfg=None,
             # for panoptic segmentation
-            stuff_head=None,
-            panoptic_fusion_head=None,
-            num_things_classes=80,
-            num_stuff_classes=53):
+            semantic_head=None,
+            panoptic_fusion_head=None):
         super(PanopticFPN, self).__init__(
             backbone=backbone,
             neck=neck,
@@ -30,7 +28,5 @@ class PanopticFPN(PanopticTwoStageSegmentor):
             test_cfg=test_cfg,
             pretrained=pretrained,
             init_cfg=init_cfg,
-            stuff_head=stuff_head,
-            panoptic_fusion_head=panoptic_fusion_head,
-            num_things_classes=num_things_classes,
-            num_stuff_classes=num_stuff_classes)
+            semantic_head=semantic_head,
+            panoptic_fusion_head=panoptic_fusion_head)

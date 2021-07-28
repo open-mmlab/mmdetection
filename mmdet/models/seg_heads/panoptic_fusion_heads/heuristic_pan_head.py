@@ -24,6 +24,18 @@ class HeuristicPanHead(BasePanopticFusionHead):
         return dict()
 
     def _lay_masks(self, bboxes, labels, masks, overlap_thr=0.5):
+        """Lay instance masks to a result map.
+
+        Args:
+            bboxes: The bboxes results, (K, 4).
+            labels: The labels of bboxes, (K, ).
+            masks: The instance masks, (K, H, W).
+            overlap_thr: Threshold to determine whether two masks overlap.
+                default: 0.5.
+
+        Returns:
+            Tensor: The result map, (H, W).
+        """
         num_insts = bboxes.shape[0]
         id_map = torch.zeros(
             masks.shape[-2:], device=bboxes.device, dtype=torch.long)
@@ -67,6 +79,18 @@ class HeuristicPanHead(BasePanopticFusionHead):
 
     def simple_test(self, det_bboxes, det_labels, mask_preds, seg_logits,
                     **kwargs):
+        """Fuse the results of instance and semantic segmentations.
+
+        Args:
+            det_bboxes: The bboxes results, (K, 4).
+            det_labels: The labels of bboxes, (K,).
+            mask_preds: The masks results, (K, H, W).
+            seg_logits: The semantic segmentation results,
+                (K, num_stuff + 1, H, W).
+
+        Returns:
+            Tensor : The panoptic segmentation result, (H, W).
+        """
         mask_preds = mask_preds >= self.test_cfg.mask_thr_binary
         id_map, labels = self._lay_masks(det_bboxes, det_labels, mask_preds,
                                          self.test_cfg.mask_overlap)
