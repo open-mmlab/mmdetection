@@ -23,6 +23,10 @@ model = dict(
         num_classes=80,
         in_channel=256,
         num_features=5,
+        num_cls_convs=4,
+        num_box_convs=4,
+        num_share_convs=0,
+        use_deformable=False,
         ),
     roi_head=dict(
         type='CascadeRoIHead',
