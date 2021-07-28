@@ -4,7 +4,7 @@ _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
 init_cfg = dict(type='Kaiming',
                 layer='Conv2d',
                 a=2.23606797749979,  # sqrt(5)
-                distribution='normal',
+                distribution='uniform',
                 mode='fan_in',
                 nonlinearity='leaky_relu')
 model = dict(
