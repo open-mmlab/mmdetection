@@ -11,8 +11,9 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
     """Base module of Semantic Head.
 
     Args:
-        num_classes: the number of classes.
-        loss_semantic: the loss of the semantic head.
+        num_classes (int): the number of classes.
+        init_cfg (dict): the initialization config.
+        loss_semantic (dict): the loss of the semantic head.
     """
 
     def __init__(self,

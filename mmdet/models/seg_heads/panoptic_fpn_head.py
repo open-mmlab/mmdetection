@@ -9,6 +9,7 @@ from .base_semantic_head import BaseSemanticHead
 
 
 class PanFpnSubNet(BaseModule):
+    """The subnet of Panoptic FPN Head."""
 
     def __init__(self,
                  in_channels,
@@ -19,7 +20,8 @@ class PanFpnSubNet(BaseModule):
                  num_upsample=None,
                  init_cfg=None):
         super(PanFpnSubNet, self).__init__(init_cfg)
-        if num_upsample is None:  # performs 2x upsample after each conv module
+        # performs 2x upsample after each conv module
+        if num_upsample is None:
             num_upsample = num_layers
 
         self.num_layers = num_layers
@@ -70,8 +72,9 @@ class PanopticFpnHead(BaseSemanticHead):
         self.bg_range = bg_range
         self.fg_nums = self.fg_range[1] - self.fg_range[0] + 1
         self.bg_nums = self.bg_range[1] - self.bg_range[0] + 1
+        # Used feature layers are [start_level, end_level)
         self.start_level = start_level
-        self.end_level = end_level  # not included in the
+        self.end_level = end_level
         self.num_stages = end_level - start_level
         self.inner_channels = inner_channels
 
@@ -101,6 +104,7 @@ class PanopticFpnHead(BaseSemanticHead):
         return new_gt_seg
 
     def loss(self, logits, gt_semantic_seg):
+        # Merge thing classes to one class.
         gt_semantic_seg = self._set_things_to_void(gt_semantic_seg)
         return super(PanopticFpnHead, self).loss(logits, gt_semantic_seg)
 

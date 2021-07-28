@@ -4,7 +4,10 @@ from .panoptic_two_stage_segmentor import PanopticTwoStageSegmentor
 
 @DETECTORS.register_module()
 class PanopticFPN(PanopticTwoStageSegmentor):
-    """Implementation of Panoptic FPN."""
+    """Implementation of Panoptic FPN.
+
+    https://arxiv.org/pdf/1901.02446.
+    """
 
     def __init__(
             self,
