@@ -25,7 +25,6 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
         super(BaseSemanticHead, self).__init__(init_cfg)
         self.loss_semantic = build_loss(loss_semantic)
         self.num_classes = num_classes
-        self.eps = 1e-6
 
     @force_fp32(apply_to=('logits', ))
     def loss(self, logits, gt_semantic_seg):
@@ -47,8 +46,8 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
 
         Returns:
             dict[str, Tensor]: A dictionary, including features
-                and predicted scores. Required keys: 'fcn_scores'
-                and 'fcn_feats'.
+                and predicted scores. Required keys: 'logits'
+                and 'feats'.
         """
         pass
 

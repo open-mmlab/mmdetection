@@ -1,9 +1,9 @@
 from ..builder import DETECTORS
-from .panoptic_two_stage_segmentor import PanopticTwoStageSegmentor
+from .panoptic_two_stage_segmentor import TwoStagePanopticSegmentor
 
 
 @DETECTORS.register_module()
-class PanopticFPN(PanopticTwoStageSegmentor):
+class PanopticFPN(TwoStagePanopticSegmentor):
     """Implementation of Panoptic FPN.
 
     https://arxiv.org/pdf/1901.02446.

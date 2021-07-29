@@ -7,7 +7,7 @@ from .two_stage import TwoStageDetector
 
 
 @DETECTORS.register_module()
-class PanopticTwoStageSegmentor(TwoStageDetector):
+class TwoStagePanopticSegmentor(TwoStageDetector):
     """Base class of Two-stage Panoptic Segmentor.
 
     As well as the components in TwoStageDetector, Panoptic Segmentor has extra
@@ -27,7 +27,7 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
             # for panoptic segmentation
             semantic_head=None,
             panoptic_fusion_head=None):
-        super(PanopticTwoStageSegmentor,
+        super(TwoStagePanopticSegmentor,
               self).__init__(backbone, neck, rpn_head, roi_head, train_cfg,
                              test_cfg, pretrained, init_cfg)
         if semantic_head is not None:
@@ -174,15 +174,15 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
         bboxes, scores = self.roi_head.simple_test_bboxes(
             x, img_metas, proposal_list, None, rescale=rescale)
 
-        panoptic_cfg = self.test_cfg.panoptic
+        pan_cfg = self.test_cfg.panoptic
         # class-wise predictions
         det_bboxes = []
         det_labels = []
         for bboxe, score in zip(bboxes, scores):
             det_bbox, det_label = multiclass_nms(bboxe, score,
-                                                 panoptic_cfg.score_thr,
-                                                 panoptic_cfg.nms,
-                                                 panoptic_cfg.max_per_img)
+                                                 pan_cfg.score_thr,
+                                                 pan_cfg.nms,
+                                                 pan_cfg.max_per_img)
             det_bboxes.append(det_bbox)
             det_labels.append(det_label)
 
@@ -192,11 +192,11 @@ class PanopticTwoStageSegmentor(TwoStageDetector):
 
         logits = self.semantic_head.simple_test(x, img_metas, rescale)
 
-        panoptic_results = []
+        results = []
         for i in range(len(det_bboxes)):
-            panoptic_result = self.panoptic_fusion_head.simple_test(
+            pan_results = self.panoptic_fusion_head.simple_test(
                 det_bboxes[i], det_labels[i], masks[i], logits[i])
-            panoptic_result = panoptic_result.int().detach().cpu().numpy()
-            result = dict(pan_results=panoptic_result)
-            panoptic_results.append(result)
-        return panoptic_results
+            pan_results = pan_results.int().detach().cpu().numpy()
+            result = dict(pan_results=pan_results)
+            results.append(result)
+        return results

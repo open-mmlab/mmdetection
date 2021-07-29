@@ -6,7 +6,7 @@ from .base_panoptic_fusion_head import BasePanopticFusionHead
 
 
 @HEADS.register_module()
-class HeuristicPanHead(BasePanopticFusionHead):
+class HeuristicFusionHead(BasePanopticFusionHead):
     """Fusion Head with Heuristic method."""
 
     def __init__(self,
@@ -15,7 +15,7 @@ class HeuristicPanHead(BasePanopticFusionHead):
                  test_cfg=None,
                  init_cfg=None,
                  **kwargs):
-        super(HeuristicPanHead,
+        super(HeuristicFusionHead,
               self).__init__(num_things_classes, num_stuff_classes, test_cfg,
                              None, init_cfg, **kwargs)
 
@@ -98,7 +98,7 @@ class HeuristicPanHead(BasePanopticFusionHead):
         seg_pred = seg_logits.argmax(dim=0)
         seg_pred = seg_pred + self.num_things_classes
 
-        pano_results = seg_pred
+        pan_results = seg_pred
         instance_id = 1
         for idx in range(det_labels.shape[0]):
             _mask = id_map == (idx + 1)
@@ -107,18 +107,18 @@ class HeuristicPanHead(BasePanopticFusionHead):
             _cls = labels[idx]
             # simply trust detection
             segment_id = _cls + instance_id * INSTANCE_OFFSET
-            pano_results[_mask] = segment_id
+            pan_results[_mask] = segment_id
             instance_id += 1
 
         ids, cnts = torch.unique(
-            pano_results % INSTANCE_OFFSET, return_counts=True)
+            pan_results % INSTANCE_OFFSET, return_counts=True)
         stuff_ids = ids[ids >= self.num_things_classes]
         stuff_cnts = cnts[ids >= self.num_things_classes]
         ignore_stuff_ids = stuff_ids[
             stuff_cnts < self.test_cfg.stuff_area_limit]
 
-        assert pano_results.ndim == 2
-        pano_results[(pano_results.unsqueeze(2) == ignore_stuff_ids.reshape(
+        assert pan_results.ndim == 2
+        pan_results[(pan_results.unsqueeze(2) == ignore_stuff_ids.reshape(
             1, 1, -1)).any(dim=2)] = self.num_classes
 
-        return pano_results
+        return pan_results

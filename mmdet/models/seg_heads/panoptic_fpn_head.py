@@ -8,7 +8,7 @@ from ..builder import HEADS
 from .base_semantic_head import BaseSemanticHead
 
 
-class PanFpnSubNet(BaseModule):
+class ConvUpsample(BaseModule):
     """The subnet of Panoptic FPN Head."""
 
     def __init__(self,
@@ -19,7 +19,7 @@ class PanFpnSubNet(BaseModule):
                  norm_cfg=None,
                  num_upsample=None,
                  init_cfg=None):
-        super(PanFpnSubNet, self).__init__(init_cfg)
+        super(ConvUpsample, self).__init__(init_cfg)
         # performs 2x upsample after each conv module
         if num_upsample is None:
             num_upsample = num_layers
@@ -78,10 +78,10 @@ class PanopticFpnHead(BaseSemanticHead):
         self.num_stages = end_level - start_level
         self.inner_channels = inner_channels
 
-        self.subnet = ModuleList()
+        self.conv_upsample_layers = ModuleList()
         for i in range(start_level, end_level):
-            self.subnet.append(
-                PanFpnSubNet(
+            self.conv_upsample_layers.append(
+                ConvUpsample(
                     in_channels,
                     inner_channels,
                     num_layers=i if i > 0 else 1,
@@ -118,12 +118,12 @@ class PanopticFpnHead(BaseSemanticHead):
         # the length of features.
         assert self.num_stages <= len(x)
 
-        features = []
-        for i, subnet in enumerate(self.subnet):
-            f = subnet(x[self.start_level + i])
-            features.append(f)
+        feats = []
+        for i, layer in enumerate(self.conv_upsample_layers):
+            f = layer(x[self.start_level + i])
+            feats.append(f)
 
-        features = torch.sum(torch.stack(features, dim=0), dim=0)
-        logits = self.conv_logits(features)
-        ret = dict(logits=logits, fcn_feat=features)
+        feats = torch.sum(torch.stack(feats, dim=0), dim=0)
+        logits = self.conv_logits(feats)
+        ret = dict(logits=logits, feats=feats)
         return ret
