@@ -10,8 +10,8 @@ Please, use this version of NNCF in case of any issues.
 
 NNCF supports multiple compression algorithms but at the moment the following algorithms can be
 used in OTEDetection:
-* int8 quantization
-* filter pruning
+* [int8 quantization](https://github.com/openvinotoolkit/nncf/blob/develop/docs/compression_algorithms/Quantization.md)
+* [filter pruning](https://github.com/openvinotoolkit/nncf/blob/develop/docs/compression_algorithms/Pruning.md)
 
 To make compression of a model, NNCF gets a pre-trained model and wraps the whole PyTorch model
 and PyTorch classes used by the model (e.g. Conv2d) by its own classes.
