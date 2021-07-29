@@ -471,7 +471,8 @@ class CocoPanopticDataset(CocoDataset):
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
         eval_results = {}
 
-        outfile_prefix = tmp_dir if tmp_dir is not None else jsonfile_prefix
+        outfile_prefix = os.path.join(tmp_dir.name, 'results') \
+            if tmp_dir is not None else jsonfile_prefix
         if 'pq' in metrics:
             eval_pan_results = self.evaluate_pan_json(result_files,
                                                       outfile_prefix, logger)
