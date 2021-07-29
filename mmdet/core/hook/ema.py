@@ -16,19 +16,13 @@ class EMAHook(Hook):
 
     Use Exponential Moving Average on all parameters of model in training
     process. All parameters have a ema backup, which update by the formula
-    as below. EMAHook takes priority over EvalHook and CheckpointSaverHook.
-
-        .. math::
-
-            \text{Xema_{t+1}} = (1 - \text{momentum}) \times
-            \text{Xema_{t}} +  \text{momentum} \times X_t
+    as below. EMAHook takes priority over EvalHook and CheckpointHook.
 
     Args:
+        decay (float): Exponential decay coefficient. Default to 0.9998
         interval (int): Update ema parameter every interval iteration.
             Defaults to 1.
-        warm_up (int): During first warm_up steps, we may use smaller momentum
-            to update ema parameters more slowly. Defaults to 100.
-        resume_from (str): The checkpoint path. Defaults to None.
+        resume_from (str, Optional): The checkpoint path. Defaults to None.
     """
     def __init__(self, decay=0.9998, interval=1, resume_from=None):
         self.interval = interval

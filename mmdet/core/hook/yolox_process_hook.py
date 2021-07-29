@@ -127,6 +127,18 @@ def all_reduce_norm(module):
 
 @HOOKS.register_module()
 class YoloXProcessHook(Hook):
+    """Hooks used only by YOLOX. It implements the functions of
+    changing the image size, turning off the mosaic, switching loss,
+    and synchronizing norm.
+
+    Args:
+         random_size (tuple[int]): Random size range. It will be multiplied by 32,
+            and then change the dataset output image size. Default to (14, 26).
+         input_size (tuple[int]): input image size. Default to (640, 640).
+         no_aug_epoch (int): The epoch of close data augmentation. Default to 15.
+         eval_interval (int): Evaluation interval. Default to 1.
+         change_size_interval (int): The interval of change image size. Default to 10.
+    """
     def __init__(self, random_size=(14, 26), input_size=(640, 640), no_aug_epoch=15, eval_interval=1, change_size_interval=10):
         self.rank, world_size = get_dist_info()
         self.is_distributed = world_size > 1
@@ -137,6 +149,8 @@ class YoloXProcessHook(Hook):
         self.change_size_interval = change_size_interval
 
     def after_train_iter(self, runner):
+        """Change the dataset output image size.
+        """
         progress_in_iter = runner.iter
         train_loader = runner.data_loader
         # random resizing
@@ -144,6 +158,8 @@ class YoloXProcessHook(Hook):
             random_resize(self.random_size, train_loader, self.rank, self.is_distributed, self.input_size)
 
     def before_train_epoch(self, runner):
+        """close mosaic and mixup augmentation and additional L1 loss.
+        """
         epoch = runner.epoch
         train_loader = runner.data_loader
         model = runner.model.module
@@ -155,6 +171,7 @@ class YoloXProcessHook(Hook):
             model.bbox_head.use_l1 = True
 
     def after_train_epoch(self, runner):
+        """Synchronizing norm."""
         epoch = runner.epoch
         if (epoch + 1) % self.eval_interval == 0:
             all_reduce_norm(runner.model)

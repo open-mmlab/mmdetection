@@ -5,6 +5,12 @@ from mmcv.runner import get_dist_info
 
 @HOOKS.register_module()
 class CosineAnnealingWithStopLrUpdaterHook(CosineAnnealingLrUpdaterHook):
+    """Cosine Annealing with stop LR Scheduler used in YOLOX.
+
+    Args:
+        no_aug_epoch (int): The epoch of close data augmentation.
+        warmup_ratio (float): LR used at the beginning of warmup.
+    """
 
     def __init__(self, no_aug_epoch,  warmup_ratio, **kwargs):
         _, work_size = get_dist_info()

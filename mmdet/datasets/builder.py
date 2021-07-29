@@ -14,7 +14,6 @@ from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
     import resource
-
     rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
     base_soft_limit = rlimit[0]
     hard_limit = rlimit[1]
