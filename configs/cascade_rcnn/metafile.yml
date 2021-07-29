@@ -399,3 +399,122 @@ Models:
         Metrics:
           mask AP: 39.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_20e_coco/cascade_mask_rcnn_x101_64x4d_fpn_20e_coco_20200512_161033-bdb5126a.pth
+
+  - Name: cascade_mask_rcnn_r50_caffe_fpn_mstrain_3x_coco
+    In Collection: Cascade R-CNN
+    Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_caffe_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 5.7
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.0
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_caffe_fpn_mstrain_3x_coco/cascade_mask_rcnn_r50_caffe_fpn_mstrain_3x_coco_20210707_002651-6e29b3a6.pth
+
+  - Name: cascade_mask_rcnn_r50_fpn_mstrain_3x_coco
+    In Collection: Cascade R-CNN
+    Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 5.9
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.3
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_mstrain_3x_coco/cascade_mask_rcnn_r50_fpn_mstrain_3x_coco_20210628_164719-5bdc3824.pth
+
+  - Name: cascade_mask_rcnn_r101_caffe_fpn_mstrain_3x_coco
+    In Collection: Cascade R-CNN
+    Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_caffe_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 7.7
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.4
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r101_caffe_fpn_mstrain_3x_coco/cascade_mask_rcnn_r101_caffe_fpn_mstrain_3x_coco_20210707_002620-a5bd2389.pth
+
+  - Name: cascade_mask_rcnn_r101_fpn_mstrain_3x_coco
+    In Collection: Cascade R-CNN
+    Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 7.8
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.5
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r101_fpn_mstrain_3x_coco/cascade_mask_rcnn_r101_fpn_mstrain_3x_coco_20210628_165236-51a2d363.pth
+
+  - Name: cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco
+    In Collection: Cascade R-CNN
+    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 9.0
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.3
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 40.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco_20210706_225234-40773067.pth
+
+  - Name: cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco
+    In Collection: Cascade R-CNN
+    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 12.1
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.1
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco_20210719_180640-9ff7e76f.pth
+
+  - Name: cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco
+    In Collection: Cascade R-CNN
+    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 12.0
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.6
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 40.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco_20210719_210311-d3e64ba0.pth
