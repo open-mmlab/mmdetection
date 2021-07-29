@@ -574,6 +574,8 @@ class Pad:
     Args:
         size (tuple, optional): Fixed padding size.
         size_divisor (int, optional): The divisor of padded size.
+        pad2square (bool): Whether to pad the image into a square.
+           Currently only used for YOLOX. Default is False.
         pad_val (float, optional): Padding value, 0 by default.
     """
 
@@ -1918,6 +1920,7 @@ class CutOut:
         return repr_str
 
 
+# TODO: Refactor
 @PIPELINES.register_module()
 class RandomAffineOrPerspective(object):
     def __init__(self,
