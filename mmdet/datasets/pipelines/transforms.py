@@ -4,7 +4,7 @@ import cv2
 import mmcv
 import numpy as np
 from numpy import random
-import random
+import random as rn
 
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -2037,20 +2037,20 @@ def _distort(image):
 
     image = image.copy()
 
-    if random.randrange(2):
+    if rn.randrange(2):
         _convert(image, beta=random.uniform(-32, 32))
 
-    if random.randrange(2):
+    if rn.randrange(2):
         _convert(image, alpha=random.uniform(0.5, 1.5))
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    if random.randrange(2):
+    if rn.randrange(2):
         tmp = image[:, :, 0].astype(int) + random.randint(-18, 18)
         tmp %= 180
         image[:, :, 0] = tmp
 
-    if random.randrange(2):
+    if rn.randrange(2):
         _convert(image[:, :, 1], alpha=random.uniform(0.5, 1.5))
 
     image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
@@ -2060,7 +2060,7 @@ def _distort(image):
 
 def _mirror(image, boxes):
     _, width, _ = image.shape
-    if random.randrange(2):
+    if rn.randrange(2):
         image = image[:, ::-1]
         boxes = boxes.copy()
         boxes[:, 0::2] = width - boxes[:, 2::-2]
