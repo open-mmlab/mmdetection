@@ -300,35 +300,7 @@ def filter_box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
 
 @DATASETS.register_module()
 class MosaicMixUpDataset:
-    """MosaicMixUp dataset used in YOLOX
 
-                        mosaic transform
-                          center_x
-                ______________________________
-               \          pad     \  pad     \
-               \       ___________\          \
-               \      \           \          \
-               \      \  image1   \________  \
-               \      \           \        \ \
-               \      \           \ image2 \ \
-   center_y    \------------------\----------\
-               \    \  cropped    \          \
-               \pad \   image3    \  image4  \
-               \____\________________________\
-                    \             \
-                    \_____________\
-    Args:
-        dataset (CunstomDataset): Child of CunstomDataset which can get image and annotations by index.
-        mosaic_pipeline (pipeline): Augmentations after mosaic
-        pipeline (pipeline): Augmentations after mosaic and mixup.
-        img_scale (Sequence[int]): image size after mosaic pipeline
-        enable_mosaic (bool): enable/disable mosiac aug, controlled by yolox process hook
-        mosaic_scale (Sequence[float]): center range of mosaic output
-        enable_mixup (bool): enable/disable mixup aug, controlled by yolox process hook
-        mixup_scale (Sequence[float]): image scale factor of mixup
-        pad_value (int): pad value
-
-    """
     def __init__(self,
                  dataset,
                  mosaic_pipeline=None,
