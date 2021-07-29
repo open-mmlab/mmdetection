@@ -4,6 +4,7 @@ import cv2
 import mmcv
 import numpy as np
 from numpy import random
+import random
 
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -2025,3 +2026,56 @@ class RandomAffineOrPerspective(object):
         w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
         aspect_ratio = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
         return ((w2 > wh_thr) & (h2 > wh_thr) & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr) & (aspect_ratio < ar_thr))
+
+
+def _distort(image):
+    def _convert(image, alpha=1, beta=0):
+        tmp = image.astype(float) * alpha + beta
+        tmp[tmp < 0] = 0
+        tmp[tmp > 255] = 255
+        image[:] = tmp
+
+    image = image.copy()
+
+    if random.randrange(2):
+        _convert(image, beta=random.uniform(-32, 32))
+
+    if random.randrange(2):
+        _convert(image, alpha=random.uniform(0.5, 1.5))
+
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    if random.randrange(2):
+        tmp = image[:, :, 0].astype(int) + random.randint(-18, 18)
+        tmp %= 180
+        image[:, :, 0] = tmp
+
+    if random.randrange(2):
+        _convert(image[:, :, 1], alpha=random.uniform(0.5, 1.5))
+
+    image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+
+    return image
+
+
+def _mirror(image, boxes):
+    _, width, _ = image.shape
+    if random.randrange(2):
+        image = image[:, ::-1]
+        boxes = boxes.copy()
+        boxes[:, 0::2] = width - boxes[:, 2::-2]
+    return image, boxes
+
+
+@PIPELINES.register_module()
+class YoloXColorJit:
+    def __call__(self, results):
+        img = results["img"]
+        gt_bboxes = results["gt_bboxes"]
+
+        image_t = _distort(img)
+        image_t, boxes = _mirror(image_t, gt_bboxes)
+
+        results["gt_bboxes"] = boxes
+        results["img"] = image_t
+        return results
