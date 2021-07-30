@@ -345,3 +345,88 @@ Models:
         Metrics:
           mask AP: 39.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-4GF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-4GF_fpn_mstrain-poly_3x_coco_20210602_032621-00f0331c.pth
+
+  - Name: cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 4.3
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.6
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 36.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco_20210715_211619-5142f449.pth
+
+  - Name: cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 4.8
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.8
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 37.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco_20210715_211616-dcbd13f4.pth
+
+  - Name: cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 5.4
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.5
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-1_20210715_211616-75f29a61.pth
+
+  - Name: cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 6.4
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.8
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 40.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-3_20210715_211616-b9c2c58b.pth
+
+  - Name: cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
+    In Collection: RegNet
+    Config: configs/regnet/cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco.py
+    Metadata:
+      Training Memory (GB): 6.9
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.8
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 40.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco_20210715_212034-cbb1be4c.pth
