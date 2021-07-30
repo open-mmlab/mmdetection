@@ -8,8 +8,9 @@ model = dict(
     bbox_head=dict(in_channels=96, feat_channels=96)
 )
 
-img_norm_cfg = dict(mean=[0.485 * 255, 0.456 * 255, 0.406 * 255], std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
-                    to_rgb=True)
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
@@ -41,17 +42,18 @@ data = dict(
 resume_from = None
 
 interval = 10
-evaluation = dict(interval=interval, metric='bbox')
-# 3 random_size=(10, 20)
+# 3 ratio_range=(10, 20)
 custom_hooks = [
     dict(
-        type='YoloXProcessHook',
-        random_size=(10, 20),
+        type='YOLOXProcessHook',
+        ratio_range=(10, 20),
+        img_scale=(640, 640),
         no_aug_epoch=15,
-        eval_interval=interval,
+        sync_interval=interval,
         priority=48),
     dict(type='EMAHook', priority=49, resume_from=resume_from)
 ]
-log_config = dict(interval=50)
 checkpoint_config = dict(interval=interval)
+evaluation = dict(interval=interval, metric='bbox')
+log_config = dict(interval=50)
 

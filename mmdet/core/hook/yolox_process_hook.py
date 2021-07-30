@@ -77,6 +77,7 @@ def _get_global_gloo_group():
         return dist.group.WORLD
 
 
+# Reference from https://github.com/Megvii-BaseDetection/YOLOX/blob/main/yolox/utils/allreduce_norm.py
 def all_reduce(py_dict, op="sum", group=None):
     """
     Apply all reduce function for python dict object.
@@ -126,27 +127,26 @@ def all_reduce_norm(module):
 
 
 @HOOKS.register_module()
-class YoloXProcessHook(Hook):
-    """Hooks used only by YOLOX. It implements the functions of
-    changing the image size, turning off the mosaic, switching loss,
-    and synchronizing norm.
+class YOLOXProcessHook(Hook):
+    """Hooks used only by YOLOX. It implements that changing the image size,
+    turning off the mosaic, switching loss, and synchronizing norm.
 
     Args:
-         random_size (tuple[int]): Random size range. It will be multiplied by 32,
+         ratio_range (tuple[int]): Random ratio range. It will be multiplied by 32,
             and then change the dataset output image size. Default to (14, 26).
-         input_size (tuple[int]): input image size. Default to (640, 640).
+         img_scale (tuple[int]): input image size. Default to (640, 640).
          no_aug_epoch (int): The epoch of close data augmentation. Default to 15.
-         eval_interval (int): Evaluation interval. Default to 1.
-         change_size_interval (int): The interval of change image size. Default to 10.
+         sync_interval (int): Synchronizing norm interval. Default to 1.
+         change_scale_interval (int): The interval of change image size. Default to 10.
     """
-    def __init__(self, random_size=(14, 26), input_size=(640, 640), no_aug_epoch=15, eval_interval=1, change_size_interval=10):
+    def __init__(self, ratio_range=(14, 26), img_scale=(640, 640), no_aug_epoch=15, sync_interval=1, change_scale_interval=10):
         self.rank, world_size = get_dist_info()
         self.is_distributed = world_size > 1
-        self.random_size = random_size
-        self.input_size = input_size
+        self.ratio_range = ratio_range
+        self.img_scale = img_scale
         self.no_aug_epoch = no_aug_epoch
-        self.eval_interval = eval_interval
-        self.change_size_interval = change_size_interval
+        self.sync_interval = sync_interval
+        self.change_scale_interval = change_scale_interval
 
     def after_train_iter(self, runner):
         """Change the dataset output image size.
@@ -154,8 +154,8 @@ class YoloXProcessHook(Hook):
         progress_in_iter = runner.iter
         train_loader = runner.data_loader
         # random resizing
-        if self.random_size is not None and (progress_in_iter + 1) % self.change_size_interval == 0:
-            random_resize(self.random_size, train_loader, self.rank, self.is_distributed, self.input_size)
+        if self.ratio_range is not None and (progress_in_iter + 1) % self.change_scale_interval == 0:
+            random_resize(self.ratio_range, train_loader, self.rank, self.is_distributed, self.img_scale)
 
     def before_train_epoch(self, runner):
         """close mosaic and mixup augmentation and additional L1 loss.
@@ -173,5 +173,5 @@ class YoloXProcessHook(Hook):
     def after_train_epoch(self, runner):
         """Synchronizing norm."""
         epoch = runner.epoch
-        if (epoch + 1) % self.eval_interval == 0:
+        if (epoch + 1) % self.sync_interval == 0:
             all_reduce_norm(runner.model)
