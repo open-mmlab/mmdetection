@@ -2079,3 +2079,20 @@ class YoloXColorJit:
         results["gt_bboxes"] = boxes
         results["img"] = image_t
         return results
+
+
+@PIPELINES.register_module()
+class FilterSmallBBox:
+    def __call__(self, results):
+        gt_bboxes = results["gt_bboxes"]
+        gt_labels = results["gt_labels"]
+
+        bboxes_width = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+        bboxes_height = gt_bboxes[:, 3] - gt_bboxes[:, 1]
+        bboxes_mask = np.minimum(bboxes_width, bboxes_height) > 8
+        gt_bboxes = gt_bboxes[bboxes_mask]
+        gt_labels = gt_labels[bboxes_mask]
+
+        results["gt_bboxes"] = gt_bboxes
+        results["gt_labels"] = gt_labels
+        return results

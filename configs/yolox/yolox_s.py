@@ -42,6 +42,7 @@ train_pipeline = [
     dict(type='YoloXColorJit'),
     dict(type='Resize', keep_ratio=True),
     dict(type='Pad', pad2square=True, pad_val=114.0),
+    dict(type='FilterSmallBBox'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(
@@ -60,7 +61,7 @@ train_dataset = dict(
         ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
         pipeline=[
-            dict(type='LoadImageFromFile', to_float32=True),
+            dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         filter_empty_gt=False,
@@ -87,7 +88,7 @@ test_pipeline = [
             dict(type='Collect', keys=['img'])
         ])
 ]
-batch_size = 8  # single gpu
+batch_size = 16  # single gpu
 basic_lr_per_img = 0.01 / 64.0
 
 data = dict(

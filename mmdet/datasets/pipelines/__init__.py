@@ -11,7 +11,7 @@ from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Albu, CutOut, Expand, MinIoURandomCrop, Normalize,
                          Pad, PhotoMetricDistortion, RandomCenterCropPad,
                          RandomCrop, RandomFlip, RandomShift, Resize,
-                         SegRescale, RandomAffineOrPerspective, YoloXColorJit)
+                         SegRescale, RandomAffineOrPerspective, YoloXColorJit, FilterSmallBBox)
 
 __all__ = [
     'Compose', 'to_tensor', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
