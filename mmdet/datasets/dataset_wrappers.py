@@ -565,8 +565,8 @@ class MosaicMixUpDataset:
             cp_retrieve_gt_bboxes[:, 0::2] - x_offset, 0, target_w)
         cp_retrieve_gt_bboxes[:, 1::2] = np.clip(
             cp_retrieve_gt_bboxes[:, 1::2] - y_offset, 0, target_h)
-        keep_list = filter_box_candidates(cp_retrieve_gt_bboxes.T,
-                                          retrieve_gt_bboxes.T, 5)
+        keep_list = filter_box_candidates(retrieve_gt_bboxes.T,
+                                          cp_retrieve_gt_bboxes.T, 5)
 
         # 8. mix up
         if keep_list.sum() >= 1.0:
