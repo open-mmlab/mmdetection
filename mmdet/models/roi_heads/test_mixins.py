@@ -81,8 +81,8 @@ class BBoxTestMixin:
             det_label = rois.new_zeros((0, ), dtype=torch.long)
             if rcnn_test_cfg is None:
                 det_bbox = det_bbox[:, :4]
-                det_label = rois.new_zeros(0,
-                                           self.bbox_head.fc_cls.out_features)
+                det_label = rois.new_zeros(
+                    (0, self.bbox_head.fc_cls.out_features))
             # There is no proposal in the whole batch
             return [det_bbox] * batch_size, [det_label] * batch_size
 
