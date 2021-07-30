@@ -68,7 +68,7 @@ train_dataset = dict(
     enable_mixup=True,
     pipeline=train_pipeline,
     img_scale=(640, 640),
-    mixup_scale=(0.5, 1.5))
+    mixup_scale=(0.8, 1.6))
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
