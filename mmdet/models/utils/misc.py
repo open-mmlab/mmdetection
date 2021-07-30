@@ -9,7 +9,7 @@ def upsample_like(source, target, mode='bilinear', align_corners=False):
     (..., target_h, target_w).
 
     Args:
-        source (Tensor): The 3D/4D input source with the shape (N, H, W) or
+        source (Tensor): A 3D/4D Tensor with the shape (N, H, W) or
             (N, C, H, W).
         target (Tensor | np.ndarray): The upsampling target with the shape
             (..., target_h, target_w).
@@ -18,12 +18,12 @@ def upsample_like(source, target, mode='bilinear', align_corners=False):
         align_corners (bool): The same as the argument in F.interpolate().
 
     Returns:
-        Tensor: The up-sampled source.
+        Tensor: The upsampled source Tensor.
     """
     assert len(target.shape) >= 2
 
     def _upsample_like(source, target, mode='bilinear', align_corners=False):
-        """Upsample the logits (4D) to the shape of the target."""
+        """Upsample the source (4D) to the shape of the target."""
         target_h, target_w = target.shape[-2:]
         source_h, source_w = source.shape[-2:]
         if target_h != source_h or target_w != source_w:
