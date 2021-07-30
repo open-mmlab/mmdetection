@@ -67,6 +67,10 @@ class LoadImageFromFile(object):
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
         results['img_fields'] = ['img']
+
+        if 'copy_paste' in results:
+            self.__call__(results['copy_paste'])
+
         return results
 
     def __repr__(self):
@@ -381,6 +385,9 @@ class LoadAnnotations(object):
             results = self._load_semantic_seg(results)
         if self.with_text:
             results = self._load_texts(results)
+
+        if 'copy_paste' in results:
+            self.__call__(results['copy_paste'])
 
         return results
 
