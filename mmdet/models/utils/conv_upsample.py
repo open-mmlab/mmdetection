@@ -21,7 +21,7 @@ class ConvUpsample(BaseModule):
             which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         init_cfg (dict): Config dict for initialization. Default: None.
-        kwargs (dict): Other augments used in ConvModule.
+        kwargs (key word augments): Other augments used in ConvModule.
     """
 
     def __init__(self,
