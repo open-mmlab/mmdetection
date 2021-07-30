@@ -341,6 +341,8 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             wait_time=wait_time,
             out_file=out_file)
 
+        mmcv.imwrite(img, "demo/myresult.jpg")
+
         if not (show or out_file):
             return img
 
