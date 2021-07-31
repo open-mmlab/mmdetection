@@ -341,7 +341,7 @@ class RandomFlip:
         be ``direction[i]``ly flipped with probability of ``flip_ratio[i]``.
         E.g., ``flip_ratio=[0.3, 0.5]``, ``direction=['horizontal',
         'vertical']``, then image will be horizontally flipped with probability
-         of 0.3, vertically with probability of 0.5
+        of 0.3, vertically with probability of 0.5.
 
     Args:
         flip_ratio (float | list[float], optional): The flipping probability.
