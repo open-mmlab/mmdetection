@@ -179,3 +179,59 @@ class FocalLoss(nn.Module):
         else:
             raise NotImplementedError
         return loss_cls
+
+
+@LOSSES.register_module()
+class BinaryFocalLoss(nn.Module):
+
+    def __init__(self,
+                 alpha: float = 0.25,
+                 beta: float = 4,
+                 gamma: float = 2,
+                 pos_weight: float = 0.5,
+                 neg_weight: float = 0.5,
+                 sigmoid_clamp: float = 1e-4,
+                 ignore_high_fp: float = -1.):
+
+        """`Focal Loss <https://arxiv.org/abs/1708.02002>`_
+        """
+        super(BinaryFocalLoss, self).__init__()
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.pos_weight = pos_weight
+        self.neg_weight = neg_weight
+        self.sigmoid_clamp = sigmoid_clamp
+        self.ignore_high_fp = ignore_high_fp
+
+    def forward(self, inputs, targets, pos_inds, avg_factor=None):
+
+        """
+        Args:
+            inputs:  (sum_l N*Hl*Wl,)
+            targets: (sum_l N*Hl*Wl,)
+            pos_inds: N
+        Returns:
+            Loss tensor with the reduction option applied.
+        """
+
+        pred = torch.clamp(inputs.sigmoid(), min=self.sigmoid_clamp, max=1-self.sigmoid_clamp)
+        neg_weights = torch.pow(1 - targets, self.beta)
+        pos_pred = pred[pos_inds] # N
+        pos_loss = torch.log(pos_pred) * torch.pow(1 - pos_pred, self.gamma)
+        neg_loss = torch.log(1 - pred) * torch.pow(pred, self.gamma) * neg_weights
+        if self.ignore_high_fp > 0:
+            not_high_fp = (pred < self.ignore_high_fp).float()
+            neg_loss = not_high_fp * neg_loss
+
+        pos_loss = - pos_loss.sum()
+        neg_loss = - neg_loss.sum()
+
+        if self.alpha >= 0:
+            pos_loss = self.alpha * pos_loss
+            neg_loss = (1 - self.alpha) * neg_loss
+
+        if avg_factor:
+            pos_loss = self.pos_weight * pos_loss / avg_factor
+            neg_loss = self.neg_weight * neg_loss / avg_factor
+        return pos_loss, neg_loss
