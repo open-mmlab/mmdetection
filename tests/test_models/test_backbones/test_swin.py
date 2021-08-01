@@ -1,6 +1,26 @@
 import pytest
 import torch
-from mmseg.models.backbones import SwinTransformer
+
+from mmdet.models.backbones.swin import SwinBlock, SwinTransformer
+
+
+def test_swin_block():
+    # test SwinBlock structure and forward
+    block = SwinBlock(embed_dims=64, num_heads=4, feedforward_channels=256)
+    assert block.ffn.embed_dims == 64
+    assert block.attn.w_msa.num_heads == 4
+    assert block.ffn.feedforward_channels == 256
+    x = torch.randn(1, 56 * 56, 64)
+    x_out = block(x, (56, 56))
+    assert x_out.shape == torch.Size([1, 56 * 56, 64])
+
+    # Test BasicBlock with checkpoint forward
+    block = SwinBlock(
+        embed_dims=64, num_heads=4, feedforward_channels=256, with_cp=True)
+    assert block.with_cp
+    x = torch.randn(1, 56 * 56, 64)
+    x_out = block(x, (56, 56))
+    assert x_out.shape == torch.Size([1, 56 * 56, 64])
 
 
 def test_swin_transformer():

@@ -1,9 +1,11 @@
 import warnings
+from collections import OrderedDict
 from copy import deepcopy
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer, trunc_normal_init
 from mmcv.cnn.bricks.transformer import FFN, build_dropout
 from mmcv.cnn.utils.weight_init import constant_init
@@ -374,8 +376,10 @@ class SwinBlock(BaseModule):
         drop_path_rate (float, optional): Stochastic depth rate. Default: 0.2.
         act_cfg (dict, optional): The config dict of activation function.
             Default: dict(type='GELU').
-        norm_cfg (dict, optional): The config dict of nomalization.
+        norm_cfg (dict, optional): The config dict of normalization.
             Default: dict(type='LN').
+        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
+            memory while slowing down the training speed.
         init_cfg (dict | list | None, optional): The init config.
             Default: None.
     """
@@ -393,11 +397,13 @@ class SwinBlock(BaseModule):
                  drop_path_rate=0.,
                  act_cfg=dict(type='GELU'),
                  norm_cfg=dict(type='LN'),
+                 with_cp=False,
                  init_cfg=None):
 
         super(SwinBlock, self).__init__()
 
         self.init_cfg = init_cfg
+        self.with_cp = with_cp
 
         self.norm1 = build_norm_layer(norm_cfg, embed_dims)[1]
         self.attn = ShiftWindowMSA(
@@ -424,15 +430,24 @@ class SwinBlock(BaseModule):
             init_cfg=None)
 
     def forward(self, x, hw_shape):
-        identity = x
-        x = self.norm1(x)
-        x = self.attn(x, hw_shape)
 
-        x = x + identity
+        def _inner_forward(x):
+            identity = x
+            x = self.norm1(x)
+            x = self.attn(x, hw_shape)
 
-        identity = x
-        x = self.norm2(x)
-        x = self.ffn(x, identity=identity)
+            x = x + identity
+
+            identity = x
+            x = self.norm2(x)
+            x = self.ffn(x, identity=identity)
+
+            return x
+
+        if self.with_cp and x.requires_grad:
+            x = cp.checkpoint(_inner_forward, x)
+        else:
+            x = _inner_forward(x)
 
         return x
 
@@ -458,6 +473,8 @@ class SwinBlockSequence(BaseModule):
             Default: dict(type='GELU').
         norm_cfg (dict, optional): The config dict of nomalization.
             Default: dict(type='LN').
+        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
+            memory while slowing down the training speed.
         init_cfg (dict | list | None, optional): The init config.
             Default: None.
     """
@@ -476,6 +493,7 @@ class SwinBlockSequence(BaseModule):
                  downsample=None,
                  act_cfg=dict(type='GELU'),
                  norm_cfg=dict(type='LN'),
+                 with_cp=False,
                  init_cfg=None):
         super().__init__()
 
@@ -500,6 +518,7 @@ class SwinBlockSequence(BaseModule):
                 drop_path_rate=drop_path_rate[i],
                 act_cfg=act_cfg,
                 norm_cfg=norm_cfg,
+                with_cp=with_cp,
                 init_cfg=None)
             self.blocks.append(block)
 
@@ -654,6 +673,8 @@ class SwinTransformer(BaseModule):
             Default: dict(type='LN').
         norm_cfg (dict): Config dict for normalization layer at
             output of backone. Defaults: dict(type='LN').
+        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
+            memory while slowing down the training speed.
         pretrained (str, optional): model pretrained path. Default: None.
         init_cfg (dict, optional): The Config for initialization.
             Defaults to None.
@@ -679,6 +700,7 @@ class SwinTransformer(BaseModule):
                  use_abs_pos_embed=False,
                  act_cfg=dict(type='GELU'),
                  norm_cfg=dict(type='LN'),
+                 with_cp=False,
                  pretrained=None,
                  init_cfg=None):
         super(SwinTransformer, self).__init__()
@@ -758,6 +780,7 @@ class SwinTransformer(BaseModule):
                 downsample=downsample,
                 act_cfg=act_cfg,
                 norm_cfg=norm_cfg,
+                with_cp=with_cp,
                 init_cfg=None)
             self.stages.append(stage)
 
@@ -790,11 +813,16 @@ class SwinTransformer(BaseModule):
             ckpt = _load_checkpoint(
                 self.pretrained, logger=logger, map_location='cpu')
             if 'state_dict' in ckpt:
-                state_dict = ckpt['state_dict']
+                _state_dict = ckpt['state_dict']
             elif 'model' in ckpt:
-                state_dict = ckpt['model']
+                _state_dict = ckpt['model']
             else:
-                state_dict = ckpt
+                _state_dict = ckpt
+
+            state_dict = OrderedDict()
+            for k, v in _state_dict.items():
+                if k.startswith('backbone.'):
+                    state_dict[k[9:]] = v
 
             # strip prefix of state_dict
             if list(state_dict.keys())[0].startswith('module.'):
