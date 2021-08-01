@@ -32,7 +32,7 @@ def test_swin_transformer():
         SwinTransformer(pretrained=123)
 
     with pytest.raises(AssertionError):
-        # Because swin use non-overlapping patch embed, so the stride of patch
+        # Because swin uses non-overlapping patch embed, so the stride of patch
         # embed must be equal to patch size.
         SwinTransformer(strides=(2, 2, 2, 2), patch_size=4)
 

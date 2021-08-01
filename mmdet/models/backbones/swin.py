@@ -6,9 +6,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as cp
-from mmcv.cnn import build_conv_layer, build_norm_layer, trunc_normal_init
+from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
+                      trunc_normal_init)
 from mmcv.cnn.bricks.transformer import FFN, build_dropout
-from mmcv.cnn.utils.weight_init import constant_init
 from mmcv.runner import _load_checkpoint
 from mmcv.runner.base_module import BaseModule, ModuleList
 from torch.nn.modules.linear import Linear
@@ -94,8 +94,8 @@ class WindowMSA(BaseModule):
 
     Args:
         embed_dims (int): Number of input channels.
-        window_size (tuple[int]): The height and width of the window.
         num_heads (int): Number of attention heads.
+        window_size (tuple[int]): The height and width of the window.
         qkv_bias (bool, optional):  If True, add a learnable bias to q, k, v.
             Default: True.
         qk_scale (float | None, optional): Override default qk scale of
@@ -158,8 +158,8 @@ class WindowMSA(BaseModule):
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads,
                                   C // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[
-            2]  # make torchscript happy (cannot use tensor as tuple)
+        # make torchscript happy (cannot use tensor as tuple)
+        q, k, v = qkv[0], qkv[1], qkv[2]
 
         q = q * self.scale
         attn = (q @ k.transpose(-2, -1))
@@ -178,9 +178,7 @@ class WindowMSA(BaseModule):
             attn = attn.view(B // nW, nW, self.num_heads, N,
                              N) + mask.unsqueeze(1).unsqueeze(0)
             attn = attn.view(-1, self.num_heads, N, N)
-            attn = self.softmax(attn)
-        else:
-            attn = self.softmax(attn)
+        attn = self.softmax(attn)
 
         attn = self.attn_drop(attn)
 
@@ -197,7 +195,7 @@ class WindowMSA(BaseModule):
 
 
 class ShiftWindowMSA(BaseModule):
-    """Shift Window Multihead Self-Attention Module.
+    """Shifted Window Multihead Self-Attention Module.
 
     Args:
         embed_dims (int): Number of input channels.
@@ -268,8 +266,7 @@ class ShiftWindowMSA(BaseModule):
                 dims=(1, 2))
 
             # calculate attention mask for SW-MSA
-            img_mask = torch.zeros((1, H_pad, W_pad, 1),
-                                   device=query.device)  # 1 H W 1
+            img_mask = torch.zeros((1, H_pad, W_pad, 1), device=query.device)
             h_slices = (slice(0, -self.window_size),
                         slice(-self.window_size,
                               -self.shift_size), slice(-self.shift_size, None))
@@ -329,7 +326,6 @@ class ShiftWindowMSA(BaseModule):
         """
         Args:
             windows: (num_windows*B, window_size, window_size, C)
-            window_size (int): Window size
             H (int): Height of image
             W (int): Width of image
         Returns:
@@ -346,7 +342,6 @@ class ShiftWindowMSA(BaseModule):
         """
         Args:
             x: (B, H, W, C)
-            window_size (int): window size
         Returns:
             windows: (num_windows*B, window_size, window_size, C)
         """
@@ -365,14 +360,14 @@ class SwinBlock(BaseModule):
         embed_dims (int): The feature dimension.
         num_heads (int): Parallel attention heads.
         feedforward_channels (int): The hidden dimension for FFNs.
-        window size (int, optional): The local window scale. Default: 7.
+        window_size (int, optional): The local window scale. Default: 7.
         shift (bool): whether to shift window or not. Default False.
-        qkv_bias (int, optional): enable bias for qkv if True. Default: True.
+        qkv_bias (bool, optional): enable bias for qkv if True. Default: True.
         qk_scale (float | None, optional): Override default qk scale of
             head_dim ** -0.5 if set. Default: None.
         drop_rate (float, optional): Dropout rate. Default: 0.
         attn_drop_rate (float, optional): Attention dropout rate. Default: 0.
-        drop_path_rate (float, optional): Stochastic depth rate. Default: 0.2.
+        drop_path_rate (float, optional): Stochastic depth rate. Default: 0.
         act_cfg (dict, optional): The config dict of activation function.
             Default: dict(type='GELU').
         norm_cfg (dict, optional): The config dict of normalization.
@@ -460,7 +455,7 @@ class SwinBlockSequence(BaseModule):
         feedforward_channels (int): The hidden dimension for FFNs.
         depth (int): The number of blocks in this stage.
         window size (int): The local window scale. Default: 7.
-        qkv_bias (int): enable bias for qkv if True. Default: True.
+        qkv_bias (bool, optional): enable bias for qkv if True. Default: True.
         qk_scale (float | None, optional): Override default qk scale of
             head_dim ** -0.5 if set. Default: None.
         drop_rate (float, optional): Dropout rate. Default: 0.
