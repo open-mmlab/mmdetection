@@ -267,6 +267,7 @@ class Resize:
                     interpolation='nearest',
                     backend=self.backend)
             results['gt_semantic_seg'] = gt_seg
+            results[key] = gt_seg
 
     def __call__(self, results):
         """Call function to resize images, bounding boxes, masks, semantic
