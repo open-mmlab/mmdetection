@@ -11,7 +11,6 @@ from mmcv.cnn.bricks.transformer import FFN, build_dropout
 from mmcv.cnn.utils.weight_init import constant_init
 from mmcv.runner import _load_checkpoint
 from mmcv.runner.base_module import BaseModule, ModuleList
-from mmseg.ops import resize
 from torch.nn.modules.linear import Linear
 from torch.nn.modules.normalization import LayerNorm
 from torch.nn.modules.utils import _pair as to_2tuple
@@ -855,7 +854,7 @@ class SwinTransformer(BaseModule):
                     if L1 != L2:
                         S1 = int(L1**0.5)
                         S2 = int(L2**0.5)
-                        table_pretrained_resized = resize(
+                        table_pretrained_resized = F.interpolate(
                             table_pretrained.permute(1, 0).reshape(
                                 1, nH1, S1, S1),
                             size=(S2, S2),
