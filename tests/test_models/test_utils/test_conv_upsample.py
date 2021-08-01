@@ -4,8 +4,7 @@ import torch
 from mmdet.models.utils import ConvUpsample
 
 
-@pytest.mark.parametrize(
-    'num_layers', [0, 1, 2])
+@pytest.mark.parametrize('num_layers', [0, 1, 2])
 def test_conv_upsample(num_layers):
     num_upsample = num_layers if num_layers > 0 else 0
     num_layers = num_layers if num_layers > 0 else 1
