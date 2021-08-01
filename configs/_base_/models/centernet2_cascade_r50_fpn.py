@@ -22,27 +22,8 @@ model = dict(
         type='CustomCenterNetHead',
         num_classes=80,
         in_channel=256,
-        feat_channel=256,
-        loss_center_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
-        loss_wh=dict(type='L1Loss', loss_weight=0.1),
-        loss_offset=dict(type='L1Loss', loss_weight=1.0)),
-        # only_proposal = True,
-        # with_agn_hm = True,
-        # more_pos = False,
-        # strides = [8, 16, 32, 64, 128],
-        # sizes_of_interest = [[0,80],[64,160],[128,320],[256,640],[512,10000000]],
-        # anchor_generator=dict(
-        #     type='AnchorGenerator',
-        #     scales=[8],
-        #     ratios=[0.5, 1.0, 2.0],
-        #     strides=[4, 8, 16, 32, 64]),
-        # bbox_coder=dict(
-        #     type='DeltaXYWHBBoxCoder',
-        #     target_means=[.0, .0, .0, .0],
-        #     target_stds=[1.0, 1.0, 1.0, 1.0]),
-        # loss_cls=dict(
-        #     type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        # loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
+        num_features=5,
+        ),
     roi_head=dict(
         type='CascadeRoIHead',
         num_stages=3,
@@ -132,22 +113,6 @@ model = dict(
             dict(
                 assigner=dict(
                     type='MaxIoUAssigner',
-                    pos_iou_thr=0.5,
-                    neg_iou_thr=0.5,
-                    min_pos_iou=0.5,
-                    match_low_quality=False,
-                    ignore_iof_thr=-1),
-                sampler=dict(
-                    type='RandomSampler',
-                    num=512,
-                    pos_fraction=0.25,
-                    neg_pos_ub=-1,
-                    add_gt_as_proposals=True),
-                pos_weight=-1,
-                debug=False),
-            dict(
-                assigner=dict(
-                    type='MaxIoUAssigner',
                     pos_iou_thr=0.6,
                     neg_iou_thr=0.6,
                     min_pos_iou=0.6,
@@ -167,6 +132,22 @@ model = dict(
                     pos_iou_thr=0.7,
                     neg_iou_thr=0.7,
                     min_pos_iou=0.7,
+                    match_low_quality=False,
+                    ignore_iof_thr=-1),
+                sampler=dict(
+                    type='RandomSampler',
+                    num=512,
+                    pos_fraction=0.25,
+                    neg_pos_ub=-1,
+                    add_gt_as_proposals=True),
+                pos_weight=-1,
+                debug=False),
+            dict(
+                assigner=dict(
+                    type='MaxIoUAssigner',
+                    pos_iou_thr=0.8,
+                    neg_iou_thr=0.8,
+                    min_pos_iou=0.8,
                     match_low_quality=False,
                     ignore_iof_thr=-1),
                 sampler=dict(
