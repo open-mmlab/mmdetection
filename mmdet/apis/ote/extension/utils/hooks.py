@@ -29,7 +29,7 @@ class EarlyStoppingHook(Hook):
 
     :param interval: the number of intervals for checking early stop. The interval number should be the same as the
                      evaluation interval. If EpochBasedRunner is used, this should be set to 1.
-                    If IterBasedRunner is used, it should be the interval number set in `evaluation` config
+                     If IterBasedRunner is used, it should be the interval number set in `evaluation` config
     :param metric: the metric name to be monitored
     :param rule: greater or less.  In `less` mode, training will stop when the metric has stopped decreasing
                  and in `greater` mode it will stop when the metric has stopped increasing.
