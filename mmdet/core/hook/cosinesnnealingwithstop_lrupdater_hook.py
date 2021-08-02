@@ -4,7 +4,7 @@ from mmcv.runner import get_dist_info
 
 
 @HOOKS.register_module()
-class CosineAnnealingWithStopLrUpdaterHook(CosineAnnealingLrUpdaterHook):
+class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
     """Cosine Annealing with stop LR Scheduler used in YOLOX.
     The difference from the `CosineAnnealingLrUpdaterHook` is that
     when the current running epoch is greater than `max_epochs-no_aug_epoch`,
@@ -19,7 +19,7 @@ class CosineAnnealingWithStopLrUpdaterHook(CosineAnnealingLrUpdaterHook):
         _, work_size = get_dist_info()
         self.base_lr_ = warmup_ratio * work_size
         self.no_aug_epoch = no_aug_epoch
-        super(CosineAnnealingWithStopLrUpdaterHook, self).__init__(warmup_ratio=self.base_lr_, **kwargs)
+        super(YOLOXLrUpdaterHook, self).__init__(warmup_ratio=self.base_lr_, **kwargs)
 
     def get_warmup_lr(self, cur_iters):
         def _get_warmup_lr(cur_iters, regular_lr):
