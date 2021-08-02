@@ -24,7 +24,7 @@ class PatchMerging(BaseModule):
     Args:
         in_channels (int): The num of input channels.
         out_channels (int): The num of output channels.
-        stride (int | tuple): the stride of the sliding length in the
+        stride (int | tuple, optional): the stride of the sliding length in the
             unfold layer. Defaults: 2. (Default to be equal with kernel_size).
         bias (bool, optional): Whether to add bias in linear layer or not.
             Defaults: False.
@@ -369,8 +369,9 @@ class SwinBlock(BaseModule):
             Default: dict(type='GELU').
         norm_cfg (dict, optional): The config dict of normalization.
             Default: dict(type='LN').
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
+        with_cp (bool, optional): Use checkpoint or not. Using checkpoint
+            will save some memory while slowing down the training speed.
+            Default: False.
         init_cfg (dict | list | None, optional): The init config.
             Default: None.
     """
@@ -451,7 +452,7 @@ class SwinBlockSequence(BaseModule):
         num_heads (int): Parallel attention heads.
         feedforward_channels (int): The hidden dimension for FFNs.
         depth (int): The number of blocks in this stage.
-        window size (int): The local window scale. Default: 7.
+        window size (int, optional): The local window scale. Default: 7.
         qkv_bias (bool, optional): enable bias for qkv if True. Default: True.
         qk_scale (float | None, optional): Override default qk scale of
             head_dim ** -0.5 if set. Default: None.
@@ -464,8 +465,9 @@ class SwinBlockSequence(BaseModule):
             Default: dict(type='GELU').
         norm_cfg (dict, optional): The config dict of normalization.
             Default: dict(type='LN').
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
+        with_cp (bool, optional): Use checkpoint or not. Using checkpoint
+            will save some memory while slowing down the training speed.
+            Default: False.
         init_cfg (dict | list | None, optional): The init config.
             Default: None.
     """
@@ -664,8 +666,9 @@ class SwinTransformer(BaseModule):
             Default: dict(type='LN').
         norm_cfg (dict): Config dict for normalization layer at
             output of backone. Defaults: dict(type='LN').
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
+        with_cp (bool, optional): Use checkpoint or not. Using checkpoint
+            will save some memory while slowing down the training speed.
+            Default: False.
         pretrained (str, optional): model pretrained path. Default: None.
         init_cfg (dict, optional): The Config for initialization.
             Defaults to None.
