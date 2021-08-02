@@ -50,6 +50,8 @@ train_pipeline = [
         meta_keys=('img_norm_cfg',))
 ]
 
+img_scale = (640, 640)  # h,w
+
 # enable_mixup=True, scale=(0.1, 2)
 train_dataset = dict(
     type='MosaicMixUpDataset',
@@ -63,23 +65,23 @@ train_dataset = dict(
         ],
         filter_empty_gt=False,
     ),
-    mosaic_pipeline=[dict(type="RandomAffineOrPerspective", scale=(0.1, 2), border=(-320, -320))],
+    mosaic_pipeline=[dict(type="RandomAffineOrPerspective", scale=(0.1, 2), border=(-img_scale[0]//2, -img_scale[1]//2))],
     enable_mosaic=True,
     enable_mixup=True,
     pipeline=train_pipeline,
-    img_scale=(640, 640),
+    img_scale=img_scale,
     mixup_scale=(0.8, 1.6))
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(640, 640),
+        img_scale=img_scale,
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
-            dict(type='Pad', size=(640, 640), pad_val=114.0),
+            dict(type='Pad', size=img_scale, pad_val=114.0),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='DefaultFormatBundle'),
             dict(type='Collect', keys=['img'])
@@ -106,7 +108,7 @@ data = dict(
 # optimizer
 optimizer = dict(
     type='SGD',
-    lr=0,
+    lr=0,  # We don't need this parameter
     momentum=0.9,
     weight_decay=5e-4,
     nesterov=True,
@@ -129,16 +131,17 @@ runner = dict(type='EpochBasedRunner', max_epochs=300)
 resume_from = None
 
 interval = 10
-evaluation = dict(interval=interval, metric='bbox')
-# random_size=(14, 26)
+# ratio_range=(14, 26)
 custom_hooks = [
     dict(
-        type='YoloXProcessHook',
-        random_size=(14, 26),
+        type='YOLOXProcessHook',
+        ratio_range=(14, 26),
+        img_scale=img_scale,
         no_aug_epoch=15,
-        eval_interval=interval,
+        sync_interval=interval,
         priority=48),
-    dict(type='EMAHook', priority=49, resume_from=resume_from)
+    dict(type='ExpDecayEMAHook', priority=49, resume_from=resume_from)
 ]
-log_config = dict(interval=50)
 checkpoint_config = dict(interval=interval)
+evaluation = dict(interval=interval, metric='bbox')
+log_config = dict(interval=50)

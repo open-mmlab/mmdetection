@@ -392,6 +392,17 @@ def test_pad():
     assert img_shape[0] % 32 == 0
     assert img_shape[1] % 32 == 0
 
+    # test the size and size_divisor must be None when pad2square is True
+    with pytest.raises(AssertionError):
+        transform = dict(type='Pad', size_divisor=32, pad2square=True)
+        build_from_cfg(transform, PIPELINES)
+
+    transform = dict(type='Pad', pad2square=True)
+    transform = build_from_cfg(transform, PIPELINES)
+    results['img'] = img
+    results = transform(results)
+    assert results['img'].shape[0] == results['img'].shape[1]
+
 
 def test_normalize():
     img_norm_cfg = dict(

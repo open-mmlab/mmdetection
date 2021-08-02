@@ -287,8 +287,9 @@ class ClassBalancedDataset:
 
 
 def filter_box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
-    # Compute candidate boxes which include follwing 5 things:
-    # box1 before augment, box2 after augment, wh_thr (pixels), aspect_ratio_thr, area_ratio
+    """ Compute candidate boxes which include follwing 5 things:
+    box1 before augment, box2 after augment, wh_thr (pixels), aspect_ratio_thr, area_ratio
+    """
     w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
     w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
     ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
@@ -331,14 +332,15 @@ class MosaicMixUpDataset:
     """
     def __init__(self,
                  dataset,
+                 pipeline,
                  mosaic_pipeline=None,
                  mixup_pipeline=None,
-                 pipeline=None,
                  img_scale=(640, 640),
                  enable_mosaic=True,
                  mosaic_scale=(0.5, 1.5),
                  enable_mixup=True,
                  mixup_scale=(0.5, 1.5),
+                 mixup_flip_ratio=0.5,
                  pad_value=114):
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
@@ -348,14 +350,14 @@ class MosaicMixUpDataset:
             mosaic_pipeline) if mosaic_pipeline is not None else None
         self.mixup_pipeline = Compose(
             mixup_pipeline) if mixup_pipeline is not None else None
-        self.pipeline = Compose(pipeline) if pipeline is not None else None
+        self.pipeline = Compose(pipeline)
         self.enable_mosaic = enable_mosaic
         self.mosaic_scale = mosaic_scale
         self.enable_mixup = enable_mixup
         self.mixup_scale = mixup_scale
-        self.mixup_flip_ratio = 0.5
+        self.mixup_flip_ratio = mixup_flip_ratio
         self.pad_value = pad_value
-        self.img_scale = img_scale  # h,w
+        self.img_scale = img_scale
         self.dynamic_scale = img_scale
         self.num_sample = len(dataset)
 
@@ -366,15 +368,25 @@ class MosaicMixUpDataset:
         results = self.dataset[idx]
         if self.enable_mosaic:
             results = self.mosiac(results)
-            results = self.mosaic_pipeline(results)
+            if self.mosaic_pipeline is not None:
+                results = self.mosaic_pipeline(results)
         if self.enable_mixup and results['gt_bboxes'].shape[0] > 0:
             results = self.mixup(results)
+            if self.mixup_pipeline is not None:
+                results = self.mixup_pipeline(results)
         # dynamic resize
         results['scale'] = self.dynamic_scale
-        results = self.pipeline(results)
-        return results
+        return self.pipeline(results)
 
     def mosiac(self, results):
+        """Mosiac function.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Updated result dict.
+        """
         mosaic_labels = []
         mosaic_bboxes = []
         mosaic_img = np.full((self.img_scale[0] * 2, self.img_scale[1] * 2, 3),
@@ -487,6 +499,14 @@ class MosaicMixUpDataset:
         return paste_coord, crop_coord
 
     def mixup(self, results):
+        """Mixup function.
+
+        Args:
+            results (dict): Result dict.
+
+        Returns:
+            dict: Updated result dict.
+        """
         results = copy.deepcopy(results)
 
         jit_factor = random.uniform(*self.mixup_scale)

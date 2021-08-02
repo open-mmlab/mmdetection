@@ -1,7 +1,7 @@
-from .ema import EMAHook
-from .yolox_process_hook import YoloXProcessHook
+from .ema import ExpDecayEMAHook, LinerDecayEMAHook
+from .yolox_process_hook import YOLOXProcessHook
 from .cosinesnnealingwithstop_lrupdater_hook import CosineAnnealingWithStopLrUpdaterHook
 
 __all__ = [
-    'EMAHook', 'YoloXProcessHook', 'CosineAnnealingWithStopLrUpdaterHook'
+    'ExpDecayEMAHook', 'LinerDecayEMAHook', 'YOLOXProcessHook', 'CosineAnnealingWithStopLrUpdaterHook'
 ]

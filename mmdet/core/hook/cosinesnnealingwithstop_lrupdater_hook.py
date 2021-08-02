@@ -6,6 +6,9 @@ from mmcv.runner import get_dist_info
 @HOOKS.register_module()
 class CosineAnnealingWithStopLrUpdaterHook(CosineAnnealingLrUpdaterHook):
     """Cosine Annealing with stop LR Scheduler used in YOLOX.
+    The difference from the `CosineAnnealingLrUpdaterHook` is that
+    when the current running epoch is greater than `max_epochs-no_aug_epoch`,
+    a fixed learning rate will be used.
 
     Args:
         no_aug_epoch (int): The epoch of close data augmentation.
@@ -14,9 +17,9 @@ class CosineAnnealingWithStopLrUpdaterHook(CosineAnnealingLrUpdaterHook):
 
     def __init__(self, no_aug_epoch,  warmup_ratio, **kwargs):
         _, work_size = get_dist_info()
+        self.base_lr_ = warmup_ratio * work_size
         self.no_aug_epoch = no_aug_epoch
-        self.lr = warmup_ratio * work_size
-        super(CosineAnnealingWithStopLrUpdaterHook, self).__init__(warmup_ratio=warmup_ratio * work_size, **kwargs)
+        super(CosineAnnealingWithStopLrUpdaterHook, self).__init__(warmup_ratio=self.base_lr_, **kwargs)
 
     def get_warmup_lr(self, cur_iters):
         def _get_warmup_lr(cur_iters, regular_lr):
@@ -46,12 +49,12 @@ class CosineAnnealingWithStopLrUpdaterHook(CosineAnnealingLrUpdaterHook):
             max_progress = runner.max_iters
 
         if self.min_lr_ratio is not None:
-            target_lr = self.lr * self.min_lr_ratio
+            target_lr = self.base_lr_ * self.min_lr_ratio
         else:
             target_lr = self.min_lr
 
         if progress >= max_progress - no_aug_iter:
             return target_lr
         else:
-            return annealing_cos(self.lr, target_lr,
+            return annealing_cos(self.base_lr_, target_lr,
                                  (progress - self.warmup_iters) / (max_progress - self.warmup_iters - no_aug_iter))

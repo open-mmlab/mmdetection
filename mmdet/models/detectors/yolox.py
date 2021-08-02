@@ -4,6 +4,8 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module()
 class YOLOX(SingleStageDetector):
+    r"""Implementation of `YOLOX: Exceeding YOLO Series in 2021
+    <https://arxiv.org/abs/2107.08430>`_"""
 
     def __init__(self,
                  backbone,
