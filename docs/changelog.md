@@ -57,7 +57,6 @@ A total of 18 developers contributed to this release.
 Thanks @OceanPang, @AronLin, @hellock, @Outsider565, @RangiLyu, @ElectronicElephant, @likyoo, @BIGWangYuDong, @hhaAndroid, @noobying, @yyz561, @likyoo,
 @zeakey, @ZwwWayne, @ChenyangLiu, @johnson-magic, @qingswu, @BuxianChen
 
-
 ### v2.14.0 (29/6/2021)
 
 #### Highlights
