@@ -15,7 +15,7 @@
 import attr
 from attr import attrs
 
-from sc_sdk.configuration import TaskConfig, UIRules, Rule, Operator, Action, ModelLifecycle
+from sc_sdk.configuration import ModelConfig, UIRules, Rule, Operator, Action, ModelLifecycle
 from sc_sdk.configuration.config_element_type import ElementCategory
 from sc_sdk.configuration.elements import configurable_float, configurable_integer, configurable_boolean, selectable, \
     float_selectable, ParameterGroup, string_attribute, add_parameter_group
@@ -44,7 +44,7 @@ def configurable_str(default_value: str,
 
 
 @attrs
-class OTEDetectionConfig(TaskConfig):
+class OTEDetectionConfig(ModelConfig):
     header = string_attribute("Configuration for an object detection task")
     description = header
 
