@@ -7,30 +7,38 @@ import torch
 import unittest
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-
-from sc_sdk.entities.annotation import Annotation, AnnotationScene, AnnotationSceneKind
+from sc_sdk.entities.annotation import (Annotation, AnnotationScene,
+                                        AnnotationSceneKind)
 from sc_sdk.entities.dataset_item import DatasetItem
-from sc_sdk.entities.datasets import Dataset, Subset, NullDatasetStorage
+from sc_sdk.entities.datasets import Dataset, NullDatasetStorage, Subset
 from sc_sdk.entities.id import ID
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.inference_parameters import InferenceParameters
 from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.metrics import Performance
-from sc_sdk.entities.model import NullModel, Model, ModelStatus, NullModelStorage
-from sc_sdk.entities.optimized_model import ModelOptimizationType, ModelPrecision, OptimizedModel, TargetDevice
+from sc_sdk.entities.model import (Model, ModelStatus, NullModel,
+                                   NullModelStorage)
+from sc_sdk.entities.optimized_model import (ModelOptimizationType,
+                                             ModelPrecision, OptimizedModel,
+                                             TargetDevice)
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.shapes.box import Box
 from sc_sdk.entities.shapes.ellipse import Ellipse
 from sc_sdk.entities.shapes.polygon import Polygon
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.tests.test_helpers import generate_random_annotated_image
-from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, ExportType
+from sc_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
+                                                               IExportTask)
 from sc_sdk.utils import restricted_pickle_module
 from sc_sdk.utils.project_factory import NullProject
 
-from mmdet.apis.ote.apis.detection import OTEDetectionTask, OTEDetectionConfig, OpenVINODetectionTask
-from mmdet.apis.ote.apis.detection.config_utils import apply_template_configurable_parameters
-from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, load_template
+from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
+                                           OTEDetectionConfig,
+                                           OTEDetectionTask)
+from mmdet.apis.ote.apis.detection.config_utils import \
+    apply_template_configurable_parameters
+from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
+                                                     load_template)
 
 
 class TestOTEAPI(unittest.TestCase):
@@ -96,7 +104,7 @@ class TestOTEAPI(unittest.TestCase):
         self.assertEqual(template['task']['base'], 'mmdet.apis.ote.apis.detection.OTEDetectionTask')
         self.assertEqual(template['task']['openvino'], 'mmdet.apis.ote.apis.detection.OpenVINODetectionTask')
         self.assertEqual(template['hyper_parameters']['impl'], 'mmdet.apis.ote.apis.detection.OTEDetectionConfig')
-        configurable_parameters = OTEDetectionConfig(workspace_id=ID(), project_id=ID(), task_id=ID())
+        configurable_parameters = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
         apply_template_configurable_parameters(configurable_parameters, template)
         configurable_parameters.learning_parameters.num_iters = num_iters
         configurable_parameters.learning_parameters.num_checkpoints = 1
