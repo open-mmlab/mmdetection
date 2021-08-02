@@ -6,8 +6,9 @@ from mmcv.runner import BaseModule, ModuleList
 class ConvUpsample(BaseModule):
     """ConvUpsample performs 2x upsampling after Conv.
 
-    This module performs 2x upsampling after Conv. Upsampling will be applied
-    after the first few layers of convolution.
+    There are several `ConvModule` layers. In the first few layers, upsampling
+    will be applied after each layer of convolution. The number of upsampling
+    must be no more than the number of ConvModule layers.
 
     Args:
         in_channels (int): Number of channels in the input feature map.
@@ -15,7 +16,7 @@ class ConvUpsample(BaseModule):
         num_layers (int): Number of convolution layers.
         num_upsample (int | optional): Number of upsampling layer. Must be no
             more than num_layers. Upsampling will be applied after the first
-            'num_upsample' layers of convolution. Default: num_layers.
+            ``num_upsample`` layers of convolution. Default: ``num_layers``.
         conv_cfg (dict): Config dict for convolution layer. Default: None,
             which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
