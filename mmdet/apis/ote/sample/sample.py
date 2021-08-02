@@ -20,7 +20,7 @@ from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.datasets import Subset
 from sc_sdk.entities.id import ID
 from sc_sdk.entities.inference_parameters import InferenceParameters
-from sc_sdk.entities.model import NullModel, Model, ModelStatus
+from sc_sdk.entities.model import Model, ModelStatus, NullModel
 from sc_sdk.entities.model_storage import NullModelStorage
 from sc_sdk.entities.optimized_model import ModelOptimizationType, ModelPrecision, OptimizedModel, TargetDevice
 from sc_sdk.entities.project import NullProject
@@ -29,11 +29,10 @@ from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType
 
-from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.config_utils import apply_template_configurable_parameters
+from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
+from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, get_task_class, load_template
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
-from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, load_template, get_task_class
-
 
 logger = logger_factory.get_logger('Sample')
 
@@ -69,7 +68,7 @@ def main(args):
     logger.info(f'Validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items')
 
     logger.info('Setup environment')
-    params = OTEDetectionConfig(workspace_id=ID(), project_id=ID(), task_id=ID())
+    params = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
     apply_template_configurable_parameters(params, template)
     environment = TaskEnvironment(model=NullModel(), configurable_parameters=params, label_schema=labels_schema)
 
