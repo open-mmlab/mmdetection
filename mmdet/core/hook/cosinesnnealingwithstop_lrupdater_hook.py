@@ -5,10 +5,12 @@ from mmcv.runner import get_dist_info
 
 @HOOKS.register_module()
 class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
-    """Cosine Annealing with stop LR Scheduler used in YOLOX.
-    The difference from the `CosineAnnealingLrUpdaterHook` is that
-    when the current running epoch is greater than `max_epochs-no_aug_epoch`,
-    a fixed learning rate will be used.
+	"""There are two main differences between YOLOXLrUpdaterHook 
+	and CosineAnnealingLrUpdaterHook.
+	One is that when the current running epoch is greater than `max_epochs-no_aug_epoch`,
+    a fixed learning rate will be used in class YOLOXLrUpdaterHook.
+	The other is that the ways of calculating learning rate are different, YOLOXLrUpdaterHook
+	needs to redefine a function to realize the learning rate update.
 
     Args:
         no_aug_epoch (int): The epoch of close data augmentation.
