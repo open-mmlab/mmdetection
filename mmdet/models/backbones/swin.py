@@ -19,8 +19,11 @@ from ..builder import BACKBONES
 class PatchMerging(BaseModule):
     """Merge patch feature map.
 
-    This layer use nn.Unfold to group feature map by kernel_size, and use norm
-    and linear layer to embed grouped feature map.
+    This layer groups feature map by kernel_size, and applies norm and linear
+    layers to the grouped feature map. Our implementation uses nn.Unfold to
+    merge patch, which is about 25% faster than original implementation.
+    Instead, we need to modify pretrained models for compatibility.
+
     Args:
         in_channels (int): The num of input channels.
         out_channels (int): The num of output channels.
@@ -358,7 +361,7 @@ class SwinBlock(BaseModule):
         num_heads (int): Parallel attention heads.
         feedforward_channels (int): The hidden dimension for FFNs.
         window_size (int, optional): The local window scale. Default: 7.
-        shift (bool): whether to shift window or not. Default False.
+        shift (bool, optional): whether to shift window or not. Default False.
         qkv_bias (bool, optional): enable bias for qkv if True. Default: True.
         qk_scale (float | None, optional): Override default qk scale of
             head_dim ** -0.5 if set. Default: None.
