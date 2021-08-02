@@ -9,11 +9,8 @@ import torch.utils.checkpoint as cp
 from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
                       trunc_normal_init)
 from mmcv.cnn.bricks.transformer import FFN, build_dropout
-from mmcv.runner import _load_checkpoint
-from mmcv.runner.base_module import BaseModule, ModuleList
-from torch.nn.modules.linear import Linear
-from torch.nn.modules.normalization import LayerNorm
-from torch.nn.modules.utils import _pair as to_2tuple
+from mmcv.runner import BaseModule, ModuleList, _load_checkpoint
+from mmcv.utils import to_2tuple
 
 from ...utils import get_root_logger
 from ..builder import BACKBONES
@@ -102,7 +99,7 @@ class WindowMSA(BaseModule):
             head_dim ** -0.5 if set. Default: None.
         attn_drop_rate (float, optional): Dropout ratio of attention weight.
             Default: 0.0
-        proj_drop_rate (float, optional): Dropout ratio of output. Default: 0.0
+        proj_drop_rate (float, optional): Dropout ratio of output. Default: 0.
         init_cfg (dict | None, optional): The Config for initialization.
             Default: None.
     """
@@ -460,12 +457,12 @@ class SwinBlockSequence(BaseModule):
             head_dim ** -0.5 if set. Default: None.
         drop_rate (float, optional): Dropout rate. Default: 0.
         attn_drop_rate (float, optional): Attention dropout rate. Default: 0.
-        drop_path_rate (float, optional): Stochastic depth rate. Default: 0.2.
+        drop_path_rate (float, optional): Stochastic depth rate. Default: 0.
         downsample (BaseModule | None, optional): The downsample operation
             module. Default: None.
         act_cfg (dict, optional): The config dict of activation function.
             Default: dict(type='GELU').
-        norm_cfg (dict, optional): The config dict of nomalization.
+        norm_cfg (dict, optional): The config dict of normalization.
             Default: dict(type='LN').
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
@@ -641,7 +638,7 @@ class SwinTransformer(BaseModule):
         embed_dims (int): The feature dimension. Default: 96.
         patch_size (int | tuple[int]): Patch size. Default: 4.
         window_size (int): Window size. Default: 7.
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
+        mlp_ratio (int): Ratio of mlp hidden dim to embedding dim.
             Default: 4.
         depths (tuple[int]): Depths of each Swin Transformer stage.
             Default: (2, 2, 6, 2).
@@ -743,9 +740,10 @@ class SwinTransformer(BaseModule):
 
         # stochastic depth
         total_depth = sum(depths)
+        # stochastic depth decay rule
         dpr = [
             x.item() for x in torch.linspace(0, drop_path_rate, total_depth)
-        ]  # stochastic depth decay rule
+        ]
 
         self.stages = ModuleList()
         in_channels = embed_dims
@@ -770,15 +768,13 @@ class SwinTransformer(BaseModule):
                 qk_scale=qk_scale,
                 drop_rate=drop_rate,
                 attn_drop_rate=attn_drop_rate,
-                drop_path_rate=dpr[:depths[i]],
+                drop_path_rate=dpr[sum(depths[:i]):sum(depths[:i + 1])],
                 downsample=downsample,
                 act_cfg=act_cfg,
                 norm_cfg=norm_cfg,
                 with_cp=with_cp,
                 init_cfg=None)
             self.stages.append(stage)
-
-            dpr = dpr[depths[i]:]
             if downsample:
                 in_channels = downsample.out_channels
 
@@ -795,11 +791,11 @@ class SwinTransformer(BaseModule):
             if self.use_abs_pos_embed:
                 trunc_normal_init(self.absolute_pos_embed, std=0.02)
             for m in self.modules():
-                if isinstance(m, Linear):
+                if isinstance(m, nn.Linear):
                     trunc_normal_init(m.weight, std=.02)
                     if m.bias is not None:
                         constant_init(m.bias, 0)
-                elif isinstance(m, LayerNorm):
+                elif isinstance(m, nn.LayerNorm):
                     constant_init(m.bias, 0)
                     constant_init(m.weight, 1.0)
         elif isinstance(self.pretrained, str):
