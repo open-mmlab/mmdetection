@@ -34,8 +34,8 @@ class EarlyStoppingHook(Hook):
     :param rule: greater or less.  In `less` mode, training will stop when the metric has stopped decreasing
                  and in `greater` mode it will stop when the metric has stopped increasing.
     :param patience: Number of epochs with no improvement after which learning rate will be reduced. For example,
-                    if patience = 2, then we will ignore the first 2 epochs with no improvement,
-                    and will only cancel the training after the 3rd epoch if the metric still hasn’t improved then
+                     if patience = 2, then we will ignore the first 2 epochs with no improvement,
+                     and will only cancel the training after the 3rd epoch if the metric still hasn’t improved then
     :param min_delta: Minimal decay applied to lr. If the difference between new and old lr is smaller than eps,
                       the update is ignored
     """
