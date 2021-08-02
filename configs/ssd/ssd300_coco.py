@@ -60,5 +60,7 @@ data = dict(
 # optimizer
 optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict(_delete_=True)
-check_isfinite = dict(
-    type='CheckIsfiniteHook', interval=50, priority='VERY_LOW')
+custom_hooks = [
+    dict(type='NumClassCheckHook'),
+    dict(type='CheckIsfiniteHook', interval=50, priority='VERY_LOW')
+]
