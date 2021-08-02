@@ -2,7 +2,7 @@
 
 ## 数据流程的设计
 
-按照惯例，我们使用 `Dataset` 和 `DataLoader` 进行多线程的数据加载。`Dataset` 返回字典类型的数据，数据内容为模型 `forward` 方法的各个参数。由于在目标检测中，输入的图像数据具有不同的大小，我们在 `MMCV` 里引入一个新的 `DataContainer` 类 去收集和分发不同大小的输入数据。更多细节请参考[这里](https://github.com/open-mmlab/mmcv/blob/master/mmcv/parallel/data_container.py)。
+按照惯例，我们使用 `Dataset` 和 `DataLoader` 进行多线程的数据加载。`Dataset` 返回字典类型的数据，数据内容为模型 `forward` 方法的各个参数。由于在目标检测中，输入的图像数据具有不同的大小，我们在 `MMCV` 里引入一个新的 `DataContainer` 类去收集和分发不同大小的输入数据。更多细节请参考[这里](https://github.com/open-mmlab/mmcv/blob/master/mmcv/parallel/data_container.py)。
 
 数据的准备流程和数据集是解耦的。通常一个数据集定义了如何处理标注数据（annotations）信息，而一个数据流程定义了准备一个数据字典的所有步骤。一个流程包括一系列的操作，每个操作都把一个字典作为输入，然后再输出一个新的字典给下一个变换操作。
 
@@ -130,7 +130,7 @@ test_pipeline = [
 
 `Collect`
 
-- 增加：img_meta（img_meta 的键（key）被 `meta_keys` 指定)
+- 增加：img_metas（img_metas 的键（key）被 `meta_keys` 指定)
 - 移除：除了 `keys` 指定的键（key）之外的所有其他的键（key）
 
 ### 测试时数据增强 Test time augmentation
@@ -152,7 +152,7 @@ test_pipeline = [
             return results
     ```
 
-2. 导入一个新类，确保程序启动时会被注册进 PIPELINES：
+2. 导入这个新类，确保程序启动时它会被注册进 PIPELINES：
 
     ```python
     from .my_pipeline import MyTransform
