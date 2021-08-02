@@ -106,10 +106,10 @@ class PanopticFpnHead(BaseSemanticHead):
     def loss(self, logits, gt_semantic_seg):
         # Merge thing classes to one class.
         gt_semantic_seg = self._set_things_to_void(gt_semantic_seg)
-        return super(PanopticFpnHead, self).loss(logits, gt_semantic_seg)
+        return super().loss(logits, gt_semantic_seg)
 
     def init_weights(self):
-        super(PanopticFpnHead, self).init_weights()
+        super().init_weights()
         nn.init.normal_(self.conv_logits.weight.data, 0, 0.01)
         self.conv_logits.bias.data.zero_()
 

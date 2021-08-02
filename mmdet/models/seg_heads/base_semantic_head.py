@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 import torch.nn.functional as F
-from mmcv.runner import BaseModule, auto_fp16, force_fp32
+from mmcv.runner import BaseModule, force_fp32
 
 from ..builder import build_loss
 from ..utils import upsample_like
@@ -39,7 +39,6 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
             gt_semantic_seg.reshape(-1).long())
         return dict(loss_semantic=loss_semantic)
 
-    @auto_fp16()
     @abstractmethod
     def forward(self, x):
         """Placeholder of forward function.
