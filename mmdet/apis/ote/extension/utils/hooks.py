@@ -150,7 +150,7 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
     :param min_lr: minimum learning rate. The lower bound of the desired learning rate.
     :param interval: the number of intervals for checking the hook. The interval number should be the same as the
                      evaluation interval. If EpochBasedRunner is used, this should be set to 1.
-                    If IterBasedRunner is used, it should be the interval number set in `evaluation` config
+                     If IterBasedRunner is used, it should be the interval number set in `evaluation` config
     :param metric: the metric name to be monitored
     :param rule: greater or less.  In `less` mode, learning rate will be dropped if the metric has stopped decreasing
                  and in `greater` mode it will be dropped when the metric has stopped increasing.
