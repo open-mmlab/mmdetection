@@ -27,7 +27,7 @@ class EpochRunnerWithCancel(EpochBasedRunner):
     """
 
     def __init__(self, *args, **kwargs):
-        super(EpochRunnerWithCancel, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.should_stop = False
         _, world_size = get_dist_info()
         self.distributed = True if world_size > 1 else False
