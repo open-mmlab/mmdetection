@@ -51,7 +51,7 @@ custom_hooks = [
         no_aug_epoch=15,
         sync_interval=interval,
         priority=48),
-    dict(type='EMAHook', priority=49, resume_from=resume_from)
+    dict(type='ExpDecayEMAHook', priority=49, resume_from=resume_from)
 ]
 checkpoint_config = dict(interval=interval)
 evaluation = dict(interval=interval, metric='bbox')
