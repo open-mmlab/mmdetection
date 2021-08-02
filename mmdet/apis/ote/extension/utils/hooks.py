@@ -155,8 +155,8 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
     :param rule: greater or less.  In `less` mode, learning rate will be dropped if the metric has stopped decreasing
                  and in `greater` mode it will be dropped when the metric has stopped increasing.
     :param patience: Number of epochs with no improvement after which learning rate will be reduced. For example,
-                    if patience = 2, then we will ignore the first 2 epochs with no improvement,
-                    and will only drop LR after the 3rd epoch if the metric still hasn’t improved then
+                     if patience = 2, then we will ignore the first 2 epochs with no improvement,
+                     and will only drop LR after the 3rd epoch if the metric still hasn’t improved then
     :param factor: Factor to be multiply with the learning rate. For example, new_lr = current_lr * factor
     """
     rule_map = {'greater': lambda x, y: x > y, 'less': lambda x, y: x < y}
