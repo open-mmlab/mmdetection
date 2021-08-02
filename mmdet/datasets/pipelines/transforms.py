@@ -1,6 +1,8 @@
 import copy
 import inspect
+import math
 
+import cv2
 import mmcv
 import numpy as np
 from numpy import random
@@ -1903,3 +1905,193 @@ class CutOut:
                      else f'cutout_shape={self.candidates}, ')
         repr_str += f'fill_in={self.fill_in})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class RandomAffine(object):
+    """Random affine transform data augmentation.
+
+    This operation randomly generates affine transform matrix which including
+    rotation, translation, shear and scaling transforms.
+
+    Args:
+        rotate_degrees (float): Maximum degrees of rotation transform.
+            Default: 10.
+        translate_ratio (float): Maximum ratio of translation. Default: 0.1.
+        scaling_ratio (tuple[float]): Min and max ratio of scaling transform.
+            Default: (0.5, 1.5).
+        shear_degrees (float): Maximum degrees of shear transform. Default: 2.
+        border (tuple[int]): Distance from height and width sides of input
+            image to adjust output shape. Only used in mosaic dataset.
+            Default: (0, 0).
+        border_val (tuple[int]): Border padding values of 3 channels.
+            Default: (114, 114, 114).
+        wh_filter_thr (bool): Width and height threshold to filter bboxes.
+            If the height or width of a box is smaller than this value, it
+            will be removed. Default: 2.
+        area_ratio_filter_thr (tuple): Threshold of area ratio between
+            original bboxes and wrapped bboxes. If smaller than this value,
+            the box will be removed. Default: 0.2.
+        aspect_ratio_filter_thr (int): Aspect ratio of width and height
+            threshold to filter bboxes. If max(h/w, w/h) larger than this
+            value, the box will be removed.
+    """
+
+    def __init__(self,
+                 rotate_degrees=10.0,
+                 translate_ratio=0.1,
+                 scaling_ratio=(0.5, 1.5),
+                 shear_degrees=2.0,
+                 border=(0, 0),
+                 border_val=(114, 114, 114),
+                 wh_filter_thr=2,
+                 area_ratio_filter_thr=0.2,
+                 aspect_ratio_filter_thr=20):
+
+        self.rotate_degrees = rotate_degrees
+        self.translate_ratio = translate_ratio
+        self.scaling_ratio = scaling_ratio
+        self.shear_degrees = shear_degrees
+        self.border = border
+        self.border_val = border_val
+        self.wh_filter_thr = wh_filter_thr
+        self.area_ratio_filter_thr = area_ratio_filter_thr
+        self.aspect_ratio_filter_thr = aspect_ratio_filter_thr
+
+    def __call__(self, results):
+        img = results['img']
+        height = img.shape[0] + self.border[0] * 2
+        width = img.shape[1] + self.border[1] * 2
+
+        # Center
+        center_matrix = np.eye(3)
+        center_matrix[0, 2] = -img.shape[1] / 2  # x translation (pixels)
+        center_matrix[1, 2] = -img.shape[0] / 2  # y translation (pixels)
+
+        # Rotation
+        rotation_degree = random.uniform(-self.rotate_degrees,
+                                         self.rotate_degrees)
+        rotation_matrix = self._get_rotation_matrix(rotation_degree)
+
+        # Scaling
+        scaling_ratio = random.uniform(self.scaling_ratio[0],
+                                       self.scaling_ratio[1])
+        scaling_matrix = self._get_scaling_matrix(scaling_ratio)
+
+        # Shear
+        x_degree = random.uniform(-self.shear_degrees, self.shear_degrees)
+        y_degree = random.uniform(-self.shear_degrees, self.shear_degrees)
+        shear_matrix = self._get_shear_matrix(x_degree, y_degree)
+
+        # Translation
+        trans_x = random.uniform(0.5 - self.translate_ratio,
+                                 0.5 + self.translate_ratio) * width
+        trans_y = random.uniform(0.5 - self.translate_ratio,
+                                 0.5 + self.translate_ratio) * height
+        translate_matrix = self._get_translation_matrix(trans_x, trans_y)
+
+        warp_matrix = (
+            translate_matrix @ shear_matrix @ rotation_matrix @ scaling_matrix
+            @ center_matrix)
+
+        img = cv2.warpPerspective(
+            img,
+            warp_matrix,
+            dsize=(width, height),
+            borderValue=self.border_val)
+        results['img'] = img
+
+        for key in results.get('bbox_fields', []):
+            bboxes = results[key]
+            num_bboxes = len(bboxes)
+            if num_bboxes:
+                # homogeneous coordinates
+                xs = bboxes[:, [0, 2, 2, 0]].reshape(num_bboxes * 4)
+                ys = bboxes[:, [1, 3, 3, 1]].reshape(num_bboxes * 4)
+                ones = np.ones_like(xs)
+                points = np.vstack([xs, ys, ones])
+
+                warp_points = warp_matrix @ points
+                warp_points = warp_points[:2] / warp_points[2]
+                xs = warp_points[0].reshape(num_bboxes, 4)
+                ys = warp_points[1].reshape(num_bboxes, 4)
+
+                warp_bboxes = np.vstack(
+                    (xs.min(1), ys.min(1), xs.max(1), ys.max(1))).T
+
+                warp_bboxes[:, [0, 2]] = warp_bboxes[:, [0, 2]].clip(0, width)
+                warp_bboxes[:, [1, 3]] = warp_bboxes[:, [1, 3]].clip(0, height)
+
+                # filter bboxes
+                valid_index = self.filter_gt_bboxes(bboxes * scaling_ratio,
+                                                    warp_bboxes)
+                results[key] = warp_bboxes[valid_index]
+                if key in ['gt_bboxes']:
+                    if 'gt_labels' in results:
+                        results['gt_labels'] = results['gt_labels'][
+                            valid_index]
+                    if 'gt_masks' in results:
+                        raise NotImplementedError(
+                            'RandomAffine only supports bbox.')
+        return results
+
+    def filter_gt_bboxes(self, origin_bboxes, wrapped_bboxes):
+        origin_w = origin_bboxes[:, 2] - origin_bboxes[:, 0]
+        origin_h = origin_bboxes[:, 3] - origin_bboxes[:, 1]
+        wrapped_w = wrapped_bboxes[:, 2] - wrapped_bboxes[:, 0]
+        wrapped_h = wrapped_bboxes[:, 3] - wrapped_bboxes[:, 1]
+        aspect_ratio = np.maximum(wrapped_w / (wrapped_h + 1e-16),
+                                  wrapped_h / (wrapped_w + 1e-16))
+
+        wh_valid_idx = (wrapped_w > self.wh_filter_thr) & \
+                       (wrapped_h > self.wh_filter_thr)
+        area_valid_idx = wrapped_w * wrapped_h / (
+            origin_w * origin_h + 1e-16) > self.area_ratio_filter_thr
+        aspect_ratio_valid_idx = aspect_ratio < self.aspect_ratio_filter_thr
+        return wh_valid_idx & area_valid_idx & aspect_ratio_valid_idx
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(rotate_degrees={self.rotate_degrees}, '
+        repr_str += f'translate_ratio={self.translate_ratio}, '
+        repr_str += f'scaling_ratio={self.scaling_ratio}, '
+        repr_str += f'shear_degrees={self.shear_degrees}, '
+        repr_str += f'border={self.border}, '
+        repr_str += f'border_val={self.border_val}, '
+        repr_str += f'wh_filter_thr={self.wh_filter_thr}, '
+        repr_str += f'area_ratio_filter_thr={self.area_ratio_filter_thr}, '
+        repr_str += f'aspect_ratio_filter_thr={self.aspect_ratio_filter_thr})'
+        return repr_str
+
+    @staticmethod
+    def _get_rotation_matrix(rotate_degrees):
+        radian = math.radians(rotate_degrees)
+        rotation_matrix = np.array([[np.cos(radian), -np.sin(radian), 0.],
+                                    [np.sin(radian),
+                                     np.cos(radian), 0.], [0., 0., 1.]])
+        return rotation_matrix
+
+    @staticmethod
+    def _get_scaling_matrix(scale_ratio):
+        scaling_matrix = np.array([[scale_ratio, 0., 0.],
+                                   [0., scale_ratio, 0.], [0., 0., 1.]])
+        return scaling_matrix
+
+    @staticmethod
+    def _get_share_matrix(scale_ratio):
+        scaling_matrix = np.array([[scale_ratio, 0., 0.],
+                                   [0., scale_ratio, 0.], [0., 0., 1.]])
+        return scaling_matrix
+
+    @staticmethod
+    def _get_shear_matrix(x_shear_degrees, y_shear_degrees):
+        x_radian = math.radians(x_shear_degrees)
+        y_radian = math.radians(y_shear_degrees)
+        shear_matrix = np.array([[1, np.tan(x_radian), 0.],
+                                 [np.tan(y_radian), 1, 0.], [0., 0., 1.]])
+        return shear_matrix
+
+    @staticmethod
+    def _get_translation_matrix(x, y):
+        translation_matrix = np.array([[1, 0., x], [0., 1, y], [0., 0., 1.]])
+        return translation_matrix
