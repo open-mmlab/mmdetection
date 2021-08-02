@@ -1908,7 +1908,7 @@ class CutOut:
 
 
 @PIPELINES.register_module()
-class RandomAffine(object):
+class RandomAffine:
     """Random affine transform data augmentation.
 
     This operation randomly generates affine transform matrix which including
@@ -1947,7 +1947,9 @@ class RandomAffine(object):
                  wh_filter_thr=2,
                  area_ratio_filter_thr=0.2,
                  aspect_ratio_filter_thr=20):
-
+        assert 0 <= translate_ratio <= 1
+        assert scaling_ratio[0] <= scaling_ratio[1]
+        assert scaling_ratio[0] > 0
         self.rotate_degrees = rotate_degrees
         self.translate_ratio = translate_ratio
         self.scaling_ratio = scaling_ratio
