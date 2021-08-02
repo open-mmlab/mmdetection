@@ -14,8 +14,7 @@ def test_conv_upsample(num_layers):
         num_layers=num_layers,
         num_upsample=num_upsample,
         conv_cfg=None,
-        norm_cfg=None,
-    )
+        norm_cfg=None)
 
     size = 5
     x = torch.randn((1, 10, size, size))
