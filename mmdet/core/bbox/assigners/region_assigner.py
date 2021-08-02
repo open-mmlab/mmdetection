@@ -71,17 +71,17 @@ class RegionAssigner(BaseAssigner):
         will be assigned with -1, 0, or a positive number. -1 means don't care,
         0 means negative sample, positive number is the index (1-based) of
         assigned gt.
-        The assignment is done in following steps, the order matters.
+
+        The assignment is done in following steps, and the order matters.
 
         1. Assign every anchor to 0 (negative)
-        For each gt_bboxes:
-            2. Compute ignore flags based on ignore_region then
-                assign -1 to anchors w.r.t. ignore flags
-            3. Compute pos flags based on center_region then
-               assign gt_bboxes to anchors w.r.t. pos flags
-            4. Compute ignore flags based on adjacent anchor lvl then
-               assign -1 to anchors w.r.t. ignore flags
-            5. Assign anchor outside of image to -1
+        2. (For each gt_bboxes) Compute ignore flags based on ignore_region
+           then assign -1 to anchors w.r.t. ignore flags
+        3. (For each gt_bboxes) Compute pos flags based on center_region then
+           assign gt_bboxes to anchors w.r.t. pos flags
+        4. (For each gt_bboxes) Compute ignore flags based on adjacent anchor
+           level then assign -1 to anchors w.r.t. ignore flags
+        5. Assign anchor outside of image to -1
 
         Args:
             mlvl_anchors (list[Tensor]): Multi level anchors.

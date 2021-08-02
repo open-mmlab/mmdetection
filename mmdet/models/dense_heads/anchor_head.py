@@ -301,14 +301,15 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             tuple: Usually returns a tuple containing learning targets.
 
                 - labels_list (list[Tensor]): Labels of each level.
-                - label_weights_list (list[Tensor]): Label weights of each \
-                    level.
+                - label_weights_list (list[Tensor]): Label weights of each
+                  level.
                 - bbox_targets_list (list[Tensor]): BBox targets of each level.
                 - bbox_weights_list (list[Tensor]): BBox weights of each level.
-                - num_total_pos (int): Number of positive samples in all \
-                    images.
-                - num_total_neg (int): Number of negative samples in all \
-                    images.
+                - num_total_pos (int): Number of positive samples in all
+                  images.
+                - num_total_neg (int): Number of negative samples in all
+                  images.
+
             additional_returns: This function enables user-defined returns from
                 `self._get_targets_single`. These returns are currently refined
                 to properties at each feature map (i.e. having HxW dimension).
