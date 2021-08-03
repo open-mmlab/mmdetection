@@ -455,13 +455,14 @@ class SwinBlockSequence(BaseModule):
         num_heads (int): Parallel attention heads.
         feedforward_channels (int): The hidden dimension for FFNs.
         depth (int): The number of blocks in this stage.
-        window size (int, optional): The local window scale. Default: 7.
+        window_size (int, optional): The local window scale. Default: 7.
         qkv_bias (bool, optional): enable bias for qkv if True. Default: True.
         qk_scale (float | None, optional): Override default qk scale of
             head_dim ** -0.5 if set. Default: None.
         drop_rate (float, optional): Dropout rate. Default: 0.
         attn_drop_rate (float, optional): Attention dropout rate. Default: 0.
-        drop_path_rate (float, optional): Stochastic depth rate. Default: 0.
+        drop_path_rate (float | list[float], optional): Stochastic depth
+            rate. Default: 0.
         downsample (BaseModule | None, optional): The downsample operation
             module. Default: None.
         act_cfg (dict, optional): The config dict of activation function.
@@ -495,9 +496,11 @@ class SwinBlockSequence(BaseModule):
 
         self.init_cfg = init_cfg
 
-        drop_path_rate = drop_path_rate if isinstance(
-            drop_path_rate,
-            list) else [deepcopy(drop_path_rate) for _ in range(depth)]
+        if isinstance(drop_path_rate, list):
+            drop_path_rates = drop_path_rate
+            assert len(drop_path_rates) == depth
+        else:
+            drop_path_rates = [deepcopy(drop_path_rate) for _ in range(depth)]
 
         self.blocks = ModuleList()
         for i in range(depth):
@@ -511,7 +514,7 @@ class SwinBlockSequence(BaseModule):
                 qk_scale=qk_scale,
                 drop_rate=drop_rate,
                 attn_drop_rate=attn_drop_rate,
-                drop_path_rate=drop_path_rate[i],
+                drop_path_rate=drop_path_rates[i],
                 act_cfg=act_cfg,
                 norm_cfg=norm_cfg,
                 with_cp=with_cp,
@@ -744,9 +747,8 @@ class SwinTransformer(BaseModule):
 
         self.drop_after_pos = nn.Dropout(p=drop_rate)
 
-        # stochastic depth
+        # set stochastic depth decay rule
         total_depth = sum(depths)
-        # stochastic depth decay rule
         dpr = [
             x.item() for x in torch.linspace(0, drop_path_rate, total_depth)
         ]
@@ -847,17 +849,15 @@ class SwinTransformer(BaseModule):
                 L2, nH2 = table_current.size()
                 if nH1 != nH2:
                     logger.warning(f'Error in loading {table_key}, pass')
-                else:
-                    if L1 != L2:
-                        S1 = int(L1**0.5)
-                        S2 = int(L2**0.5)
-                        table_pretrained_resized = F.interpolate(
-                            table_pretrained.permute(1, 0).reshape(
-                                1, nH1, S1, S1),
-                            size=(S2, S2),
-                            mode='bicubic')
-                        state_dict[table_key] = table_pretrained_resized.view(
-                            nH2, L2).permute(1, 0).contiguous()
+                elif L1 != L2:
+                    S1 = int(L1**0.5)
+                    S2 = int(L2**0.5)
+                    table_pretrained_resized = F.interpolate(
+                        table_pretrained.permute(1, 0).reshape(1, nH1, S1, S1),
+                        size=(S2, S2),
+                        mode='bicubic')
+                    state_dict[table_key] = table_pretrained_resized.view(
+                        nH2, L2).permute(1, 0).contiguous()
 
             # load state_dict
             self.load_state_dict(state_dict, False)
