@@ -78,6 +78,28 @@ def test_resize():
     assert np.equal(results['img'], results['img2']).all()
     assert results['img_shape'] == (800, 1280, 3)
 
+    results_seg = {
+        'img': img,
+        'img_shape': img.shape,
+        'ori_shape': img.shape,
+        'seg1': copy.deepcopy(img),
+        'seg2': copy.deepcopy(img),
+        'seg_fields': ['seg1', 'seg2']
+    }
+    transform = dict(
+        type='Resize',
+        img_scale=(640, 400),
+        multiscale_mode='value',
+        keep_ratio=False)
+    resize_module = build_from_cfg(transform, PIPELINES)
+    results_seg = resize_module(results_seg)
+    assert results_seg['seg1'].shape == results_seg['seg2'].shape
+    assert results_seg['img_shape'] == (400, 640, 3)
+    assert results_seg['img_shape'] != results_seg['ori_shape']
+    assert results_seg['seg1'].shape == results_seg['img_shape']
+    assert np.equal(results_seg['seg1'], results_seg['seg2']).all()
+    assert np.equal(results_seg['seg2'], results_seg['gt_semantic_seg']).all()
+
 
 def test_flip():
     # test assertion for invalid flip_ratio
@@ -304,7 +326,6 @@ def test_random_crop():
 
 
 def test_min_iou_random_crop():
-
     def create_random_bboxes(num_bboxes, img_w, img_h):
         bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
         bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
@@ -559,7 +580,7 @@ def test_random_center_crop_pad():
     train_transform = dict(
         type='RandomCenterCropPad',
         crop_size=(h - 20, w - 20),
-        ratios=(1.0, ),
+        ratios=(1.0,),
         border=128,
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
