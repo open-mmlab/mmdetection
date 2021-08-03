@@ -1915,12 +1915,12 @@ class RandomAffine:
     rotation, translation, shear and scaling transforms.
 
     Args:
-        rotate_degrees (float): Maximum degrees of rotation transform.
+        rotate_degree (float): Maximum degrees of rotation transform.
             Default: 10.
         translate_ratio (float): Maximum ratio of translation. Default: 0.1.
         scaling_ratio (tuple[float]): Min and max ratio of scaling transform.
             Default: (0.5, 1.5).
-        shear_degrees (float): Maximum degrees of shear transform. Default: 2.
+        shear_degree (float): Maximum degrees of shear transform. Default: 2.
         border (tuple[int]): Distance from height and width sides of input
             image to adjust output shape. Only used in mosaic dataset.
             Default: (0, 0).
@@ -1938,10 +1938,10 @@ class RandomAffine:
     """
 
     def __init__(self,
-                 rotate_degrees=10.0,
+                 rotate_degree=10.0,
                  translate_ratio=0.1,
                  scaling_ratio=(0.5, 1.5),
-                 shear_degrees=2.0,
+                 shear_degree=2.0,
                  border=(0, 0),
                  border_val=(114, 114, 114),
                  wh_filter_thr=2,
@@ -1950,10 +1950,10 @@ class RandomAffine:
         assert 0 <= translate_ratio <= 1
         assert scaling_ratio[0] <= scaling_ratio[1]
         assert scaling_ratio[0] > 0
-        self.rotate_degrees = rotate_degrees
+        self.rotate_degree = rotate_degree
         self.translate_ratio = translate_ratio
         self.scaling_ratio = scaling_ratio
-        self.shear_degrees = shear_degrees
+        self.shear_degree = shear_degree
         self.border = border
         self.border_val = border_val
         self.wh_filter_thr = wh_filter_thr
@@ -1971,8 +1971,8 @@ class RandomAffine:
         center_matrix[1, 2] = -img.shape[0] / 2  # y translation (pixels)
 
         # Rotation
-        rotation_degree = random.uniform(-self.rotate_degrees,
-                                         self.rotate_degrees)
+        rotation_degree = random.uniform(-self.rotate_degree,
+                                         self.rotate_degree)
         rotation_matrix = self._get_rotation_matrix(rotation_degree)
 
         # Scaling
@@ -1981,8 +1981,8 @@ class RandomAffine:
         scaling_matrix = self._get_scaling_matrix(scaling_ratio)
 
         # Shear
-        x_degree = random.uniform(-self.shear_degrees, self.shear_degrees)
-        y_degree = random.uniform(-self.shear_degrees, self.shear_degrees)
+        x_degree = random.uniform(-self.shear_degree, self.shear_degree)
+        y_degree = random.uniform(-self.shear_degree, self.shear_degree)
         shear_matrix = self._get_shear_matrix(x_degree, y_degree)
 
         # Translation
@@ -2054,10 +2054,10 @@ class RandomAffine:
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'(rotate_degrees={self.rotate_degrees}, '
+        repr_str += f'(rotate_degree={self.rotate_degree}, '
         repr_str += f'translate_ratio={self.translate_ratio}, '
         repr_str += f'scaling_ratio={self.scaling_ratio}, '
-        repr_str += f'shear_degrees={self.shear_degrees}, '
+        repr_str += f'shear_degree={self.shear_degree}, '
         repr_str += f'border={self.border}, '
         repr_str += f'border_val={self.border_val}, '
         repr_str += f'wh_filter_thr={self.wh_filter_thr}, '
