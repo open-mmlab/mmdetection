@@ -25,19 +25,27 @@ def random_resize(random_size, data_loader, rank, is_distributed, input_size):
 
 
 @HOOKS.register_module()
-class RandomSizeHook(Hook):
-    """Change the image size, currently used in YOLOX.
+class SyncronizedRandomSizeHook(Hook):
+    """Change and synchronize the random image size across ranks,
+    currently used in YOLOX.
 
     Args:
-        ratio_range (tuple[int]): Random ratio range. It will be multiplied by 32,
-            and then change the dataset output image size. Default to (14, 26).
-        img_scale (tuple[int]): input image size. Default to (640, 640).
+        ratio_range (tuple[int]): Random ratio range. It will be multiplied
+            by 32, and then change the dataset output image size.
+            Default (14, 26).
+        img_scale (tuple[int]): input image size. Default (640, 640).
+        change_scale_interval (int): The interval of change image size.
+            Default 10.
     """
-    def __init__(self, ratio_range=(14, 26), img_scale=(640, 640)):
+    def __init__(self,
+                 ratio_range=(14, 26),
+                 img_scale=(640, 640),
+                 change_scale_interval=10):
         self.rank, world_size = get_dist_info()
         self.is_distributed = world_size > 1
         self.ratio_range = ratio_range
         self.img_scale = img_scale
+        self.change_scale_interval = change_scale_interval
 
     def after_train_iter(self, runner):
         """Change the dataset output image size.
@@ -45,5 +53,8 @@ class RandomSizeHook(Hook):
         progress_in_iter = runner.iter
         train_loader = runner.data_loader
         # random resizing
-        if self.ratio_range is not None and (progress_in_iter + 1) % self.change_scale_interval == 0:
-            random_resize(self.ratio_range, train_loader, self.rank, self.is_distributed, self.img_scale)
+        if self.ratio_range is not None and (
+            progress_in_iter + 1) % self.change_scale_interval == 0:
+
+            random_resize(self.ratio_range, train_loader, self.rank,
+                          self.is_distributed, self.img_scale)

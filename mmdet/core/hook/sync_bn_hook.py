@@ -41,8 +41,8 @@ def tensor2pyobj(tensor):
 
 def _get_reduce_op(op_name):
     return {
-        "sum": dist.ReduceOp.SUM,
-        "mean": dist.ReduceOp.SUM,
+        'sum': dist.ReduceOp.SUM,
+        'mean': dist.ReduceOp.SUM,
     }[op_name.lower()]
 
 
@@ -59,14 +59,16 @@ def _get_global_gloo_group():
 
 
 # Reference from https://github.com/Megvii-BaseDetection/YOLOX/blob/main/yolox/utils/allreduce_norm.py
-def all_reduce(py_dict, op="sum", group=None):
+def all_reduce(py_dict, op='sum', group=None):
     """
     Apply all reduce function for python dict object.
-    NOTE: make sure that every py_dict has the same keys and values are in the same shape.
+
+    NOTE: make sure that every py_dict has the same keys and values are
+        in the same shape.
 
     Args:
         py_dict (dict): dict to apply all reduce op.
-        op (str): operator, could be "sum" or "mean".
+        op (str): operator, could be 'sum' or 'mean'.
     """
     _, world_size = get_dist_info()
     if world_size == 1:
@@ -87,7 +89,7 @@ def all_reduce(py_dict, op="sum", group=None):
 
     flatten_tensor = torch.cat([py_dict[k].flatten().float() for k in py_key])
     dist.all_reduce(flatten_tensor, op=_get_reduce_op(op))
-    if op == "mean":
+    if op == 'mean':
         flatten_tensor /= world_size
 
     split_tensors = [
@@ -109,15 +111,13 @@ def all_reduce_norm(module):
 
 @HOOKS.register_module()
 class SyncBNHook(Hook):
-    """Synchronize BN states, currently used in YOLOX.
+    """Synchronize BN states after training epoch, currently used in YOLOX.
 
     Args:
-        sync_interval (int): Synchronizing norm interval. Default to 1.
-        change_scale_interval (int): The interval of change image size. Default to 10.
+        sync_interval (int): Synchronizing norm interval. Default 1.
     """
-    def __init__(self, sync_interval=1, change_scale_interval=10):
+    def __init__(self, sync_interval=1):
         self.sync_interval = sync_interval
-        self.change_scale_interval = change_scale_interval
 
     def after_train_epoch(self, runner):
         """Synchronizing norm."""
