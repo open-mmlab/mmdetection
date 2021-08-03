@@ -434,7 +434,7 @@ class DistEvalHook(EvalHook):
                 setattr(runner, name, val)
             if self.save_best:
                 self._save_ckpt(runner, key_score)
-            broadcast_data = runner.log_buffer.output[self.save_best]
+                broadcast_data = runner.log_buffer.output[self.save_best]
 
         score = self.braodcast(broadcast_data)
         if runner.rank != 0:
