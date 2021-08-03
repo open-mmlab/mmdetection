@@ -9,19 +9,23 @@ def is_parallel(model):
 
 class BaseEMAHook(Hook):
     r"""Exponential Moving Average Hook.
+
     Use Exponential Moving Average on all parameters of model in training
     process. All parameters have a ema backup, which update by the formula
-    as below. EMAHook takes priority over EvalHook and CheckpointHook.
+    as below. EMAHook takes priority over EvalHook and CheckpointHook. Note,
+    the original model parameters are actually saved in ema field after train.
+
     Args:
-        skip_norm_running_meanvar (bool): Whether to skip the norm parameter, it does
-           not perform the ema operation. Default to False.
+        skip_bn_running_stats (bool): Whether to skip the batchnorm running stats
+            (running_mean, running_var), it does not perform the ema operation.
+            Default to False.
         interval (int): Update ema parameter every interval iteration.
             Defaults to 1.
         resume_from (str, Optional): The checkpoint path. Defaults to None.
     """
 
-    def __init__(self, skip_norm_running_meanvar=False, interval=1, resume_from=None):
-        self.skip_norm_running_meanvar = skip_norm_running_meanvar
+    def __init__(self, skip_bn_running_stats=False, interval=1, resume_from=None):
+        self.skip_bn_running_stats = skip_bn_running_stats
         self.interval = interval
         self.checkpoint = resume_from
 
@@ -33,7 +37,7 @@ class BaseEMAHook(Hook):
         if is_parallel(model):
             model = model.module
         self.param_ema_buffer = {}
-        if self.skip_norm_running_meanvar:
+        if self.skip_bn_running_stats:
             self.model_parameters = dict(model.named_parameters(recurse=True))
         else:
             self.model_parameters = model.state_dict()
@@ -79,6 +83,20 @@ class BaseEMAHook(Hook):
             value.data.copy_(ema_buffer.data)
             ema_buffer.data.copy_(temp)
 
+@HOOKS.register_module()
+class ExpDecayEMAHook(BaseEMAHook):
+    """ Exponential decay EMAHook.
+    Args:
+        decay (float): Exponential decay coefficient. Default to 0.9998
+        total_iter (int): The total number of iterations of EMA decay.
+           Defaults to 100.
+    """
+    def __init__(self, decay=0.9998, total_iter=2000, **kwargs):
+        self.decay_fun = lambda x: decay * (1 - math.exp(-(x+1) / total_iter))
+        super(ExpDecayEMAHook, self).__init__(**kwargs)
+
+    def get_momentum(self, runner):
+        return self.decay_fun(runner.iter)
 
 @HOOKS.register_module()
 class LinerDecayEMAHook(BaseEMAHook):
