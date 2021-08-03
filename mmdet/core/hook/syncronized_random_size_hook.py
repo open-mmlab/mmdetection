@@ -7,6 +7,19 @@ from torch import distributed as dist
 
 
 def random_resize(random_size, data_loader, rank, is_distributed, input_size):
+    """Change the random image size across rank.
+
+    Args:
+        ratio_range (tuple[int]): Random ratio range. It will be multiplied
+            by 32, and then change the dataset output image size.
+        data_loader (DataLoader): Training Data Loader.
+        rank (int): Rank of the current process.
+        is_distributed (bool): Whether in distributed mode.
+        input_size (tuple[int]): Input image size.
+
+    Returns:
+        tuple[int]: Modified image size.
+    """
     tensor = torch.LongTensor(2).cuda()
 
     if rank == 0:
@@ -32,8 +45,8 @@ class SyncronizedRandomSizeHook(Hook):
     Args:
         ratio_range (tuple[int]): Random ratio range. It will be multiplied
             by 32, and then change the dataset output image size.
-            Default (14, 26).
-        img_scale (tuple[int]): input image size. Default (640, 640).
+            Defaults to (14, 26).
+        img_scale (tuple[int]): input image size. Defaults to (640, 640).
         change_scale_interval (int): The interval of change image size.
             Default 10.
     """

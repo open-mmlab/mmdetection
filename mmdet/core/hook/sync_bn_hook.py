@@ -60,8 +60,7 @@ def _get_global_gloo_group():
 
 # Reference from https://github.com/Megvii-BaseDetection/YOLOX/blob/main/yolox/utils/allreduce_norm.py
 def all_reduce(py_dict, op='sum', group=None):
-    """
-    Apply all reduce function for python dict object.
+    """Apply all reduce function for python dict object.
 
     NOTE: make sure that every py_dict has the same keys and values are
         in the same shape.
@@ -69,6 +68,9 @@ def all_reduce(py_dict, op='sum', group=None):
     Args:
         py_dict (dict): dict to apply all reduce op.
         op (str): operator, could be 'sum' or 'mean'.
+
+    Returns:
+        OrderedDict[Tensor]: reduced python dict object.
     """
     _, world_size = get_dist_info()
     if world_size == 1:
