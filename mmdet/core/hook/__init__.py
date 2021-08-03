@@ -1,7 +1,5 @@
-from .syncronized_random_size_hook import SyncronizedRandomSizeHook
+from .sync_norm_hook import SyncNormHook
+from .sync_random_size_hook import SyncRandomSizeHook
 from .yolox_mode_switch_hook import YOLOXModeSwitchHook
-from .sync_bn_hook import SyncBNHook
 
-__all__ = [
-    'SyncronizedRandomSizeHook', 'YOLOXModeSwitchHook', 'SyncBNHook'
-]
+__all__ = ['SyncRandomSizeHook', 'YOLOXModeSwitchHook', 'SyncNormHook']
