@@ -141,5 +141,5 @@ evaluation = dict(interval=5, metric='bbox')
 checkpoint_config = dict(interval=5)
 custom_hooks = [
     dict(type='NumClassCheckHook'),
-    dict(type='CheckIsfiniteHook', interval=50, priority='VERY_LOW')
+    dict(type='CheckInvalidLossHook', interval=50, priority='VERY_LOW')
 ]

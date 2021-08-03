@@ -1,3 +1,3 @@
-from .isfinite_hook import CheckIsfiniteHook
+from .checkloss_hook import CheckInvalidLossHook
 
-__all__ = ['CheckIsfiniteHook']
+__all__ = ['CheckInvalidLossHook']
