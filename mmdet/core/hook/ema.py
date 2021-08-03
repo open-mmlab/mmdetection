@@ -3,9 +3,12 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 import torch.nn as nn
 import math
 
+
 def is_parallel(model):
     return type(model) in (
-        nn.parallel.DataParallel, nn.parallel.DistributedDataParallel, MMDataParallel, MMDistributedDataParallel)
+        nn.parallel.DataParallel, nn.parallel.DistributedDataParallel,
+        MMDataParallel, MMDistributedDataParallel)
+
 
 class BaseEMAHook(Hook):
     r"""Exponential Moving Average Hook.
@@ -83,6 +86,7 @@ class BaseEMAHook(Hook):
             value.data.copy_(ema_buffer.data)
             ema_buffer.data.copy_(temp)
 
+
 @HOOKS.register_module()
 class ExpDecayEMAHook(BaseEMAHook):
     """ Exponential decay EMAHook.
@@ -97,6 +101,7 @@ class ExpDecayEMAHook(BaseEMAHook):
 
     def get_momentum(self, runner):
         return self.decay_fun(runner.iter)
+        
 
 @HOOKS.register_module()
 class LinerDecayEMAHook(BaseEMAHook):
