@@ -32,9 +32,12 @@ class EarlyStoppingHook(Hook):
     :param metric: the metric name to be monitored
     :param rule: greater or less.  In `less` mode, training will stop when the metric has stopped decreasing
                  and in `greater` mode it will stop when the metric has stopped increasing.
-    :param patience: Number of epochs with no improvement after which learning rate will be reduced. For example,
+    :param patience: Number of epochs with no improvement after which the training will be reduced. For example,
                      if patience = 2, then we will ignore the first 2 epochs with no improvement,
                      and will only cancel the training after the 3rd epoch if the metric still hasn’t improved then
+    :param iteration_patience: Number of iterations that surely will be trained after the last update before stopping.
+                     The same as patience but if iteration passed throught patience epochs is lower than
+                     iteration_patience, the training will continue for this value
     :param min_delta: Minimal decay applied to lr. If the difference between new and old lr is smaller than eps,
                       the update is ignored
     """
@@ -43,9 +46,11 @@ class EarlyStoppingHook(Hook):
     greater_keys = ['mAP', 'acc', 'top', 'AR@', 'auc', 'precision']
     less_keys = ['loss']
 
-    def __init__(self, interval: int, metric: str = 'mAP', rule: str = None, patience: int = 5, min_delta: float = 0.0):
+    def __init__(self, interval: int, metric: str = 'mAP', rule: str = None,
+                 patience: int = 5, iteration_patience: int = 500, min_delta: float = 0.0):
         super().__init__()
         self.patience = patience
+        self.iteration_patience = iteration_patience
         self.interval = interval
         self.min_delta = min_delta
         self._init_rule(rule, metric)
@@ -121,9 +126,15 @@ class EarlyStoppingHook(Hook):
             if self.compare_func(key_score - self.min_delta, self.best_score):
                 self.best_score = key_score
                 self.wait_count = 0
+                self.last_iter = runner.iter
             else:
                 self.wait_count += 1
                 if self.wait_count >= self.patience:
+                    if runner.iter - self.last_iter < self.iteration_patience:
+                        print_log(
+                            f"\nNot enough patience for stopping: {runner.iter - self.last_iter}",
+                            logger=runner.logger)
+                        return
                     stop_point = runner.epoch if self.by_epoch else runner.iter
                     print_log(f"\nEarly Stopping at :{stop_point} with best {self.key_indicator}: {self.best_score}",
                               logger=runner.logger)
@@ -155,6 +166,9 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
     :param patience: Number of epochs with no improvement after which learning rate will be reduced. For example,
                      if patience = 2, then we will ignore the first 2 epochs with no improvement,
                      and will only drop LR after the 3rd epoch if the metric still hasn’t improved then
+    :param iteration_patience: Number of iterations that surely will be trained after the last update before LR drop.
+                     The same as patience but if iteration passed throught patience epochs is lower than
+                     iteration_patience, the training will continue for this value
     :param factor: Factor to be multiply with the learning rate. For example, new_lr = current_lr * factor
     """
     rule_map = {'greater': lambda x, y: x > y, 'less': lambda x, y: x < y}
@@ -162,14 +176,17 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
     greater_keys = ['bbox_mAP']
     less_keys = ['loss']
 
-    def __init__(self, min_lr, interval, metric='bbox_mAP', rule=None, factor=0.1, patience=3, **kwargs):
+    def __init__(self, min_lr, interval, metric='bbox_mAP', rule=None, factor=0.1,
+                 patience=3, iteration_patience=300, **kwargs):
         super(ReduceLROnPlateauLrUpdaterHook, self).__init__(**kwargs)
         self.interval = interval
         self.min_lr = min_lr
         self.factor = factor
         self.patience = patience
+        self.iteration_patience = iteration_patience
         self.metric = metric
         self.bad_count = 0
+        self.last_iter = 0
         self.current_lr = None
         self._init_rule(rule, metric)
         self.best_score = self.init_value_map[self.rule]
@@ -245,7 +262,13 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
             self.bad_count += 1
 
         if self.bad_count >= self.patience:
+            if runner.iter - self.last_iter < self.iteration_patience:
+                print_log(
+                    f"\nNot enough patience for LR drop: {runner.iter - self.last_iter}",
+                    logger=runner.logger)
+                return self.current_lr
+            self.last_iter = runner.iter
             self.bad_count = 0
-            print_log(f"\nDrop LR from: {self.current_lr}, to: {self.current_lr * self.factor}", logger=runner.logger)
+            print_log(f"\nDrop LR from: {self.current_lr}, to: {max(self.current_lr * self.factor, self.min_lr)}", logger=runner.logger)
             self.current_lr = max(self.current_lr * self.factor, self.min_lr)
         return self.current_lr
