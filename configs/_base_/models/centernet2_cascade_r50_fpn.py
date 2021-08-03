@@ -23,6 +23,10 @@ model = dict(
         num_classes=80,
         in_channel=256,
         num_features=5,
+        num_cls_convs=4,
+        num_box_convs=4,
+        num_share_convs=0,
+        use_deformable=False,
         ),
     roi_head=dict(
         type='CascadeRoIHead',
@@ -32,7 +36,8 @@ model = dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
-            featmap_strides=[4, 8, 16, 32]),
+            # featmap_strides=[4, 8, 16, 32]),
+            featmap_strides=[8, 16, 32, 64, 128]),
         bbox_head=[
             dict(
                 type='Shared2FCBBoxHead',
