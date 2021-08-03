@@ -1,14 +1,13 @@
 import copy
+import os.path as osp
+
 import mmcv
 import numpy as np
-import os.path as osp
 import pytest
 import torch
 from mmcv.utils import build_from_cfg
-from unittest.mock import MagicMock, patch
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-from mmdet.datasets import DATASETS
 from mmdet.datasets.builder import PIPELINES
 
 
@@ -78,63 +77,6 @@ def test_resize():
     results = resize_module(results)
     assert np.equal(results['img'], results['img2']).all()
     assert results['img_shape'] == (800, 1280, 3)
-
-
-@patch('mmdet.datasets.CustomDataset.load_annotations', MagicMock)
-@patch('mmdet.datasets.CustomDataset._filter_imgs', MagicMock)
-@patch('mmdet.datasets.CustomDataset.__len__', MagicMock(return_value=1))
-def test_mosaic():
-    results = dict()
-    img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
-    results['img'] = img
-
-    results['img_shape'] = img.shape
-    results['ori_shape'] = img.shape
-    # TODO: add img_fields test
-    results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
-    # Set initial values for default meta_keys
-    results['pad_shape'] = img.shape
-    results['scale_factor'] = 1.0
-
-    def create_random_bboxes(num_bboxes, img_w, img_h):
-        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
-        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
-        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
-        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
-            np.int)
-        return bboxes
-
-    h, w, _ = img.shape
-    gt_bboxes = create_random_bboxes(8, w, h)
-    gt_bboxes_ignore = create_random_bboxes(2, w, h)
-    results['gt_bboxes'] = gt_bboxes
-
-    results['gt_labels'] = np.zeros(8, dtype=np.int64)
-    results['gt_bboxes_ignore'] = gt_bboxes_ignore
-    dataset = 'CustomDataset'
-    dataset_class = DATASETS.get(dataset)
-    custom_dataset = dataset_class(
-        ann_file=MagicMock(),
-        pipeline=[],
-        classes=None,
-        test_mode=True,
-        img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
-    custom_dataset.__getitem__ = MagicMock(return_value=results)
-
-    transform = dict(
-        type='Mosaic', size=(320, 320), dataset=custom_dataset, min_offset=0.2)
-
-    mosaic_module = build_from_cfg(transform, PIPELINES)
-
-    results = mosaic_module(results)
-
-    img = results['img']
-    bboxes = results['gt_bboxes']
-    print(bboxes)
-    # mmcv.imshow_bboxes(img, bboxes, show=True, out_file='img.png')
-    # mmcv.imshow_bboxes(img, gt_bboxes, show=True)
-    # mmcv.imwrite(img, "img.png")
 
 
 def test_flip():
