@@ -6,15 +6,15 @@ _base_ = [
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
-optimizer = dict(type='SGD', lr=0.0005, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=5000,
-    warmup_ratio=0.00001,
-    step=[18])
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+    warmup_iters=500,
+    warmup_ratio=0.001,
+    step=[7, 10])
+runner = dict(type='EpochBasedRunner', max_epochs=12)
 
 find_unused_parameters=True
 
