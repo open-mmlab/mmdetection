@@ -30,6 +30,39 @@ def test_ce_loss():
     loss_cls = build_loss(loss_cls_cfg)
     assert torch.allclose(loss_cls(fake_pred, fake_label), torch.tensor(200.))
 
+    # test bce_loss
+    cls_score = torch.Tensor([[-200, 100], [500, -1000], [300, -300]])
+    label = torch.Tensor([[1, 0], [0, 1], [1, 0]])
+    weight = torch.Tensor([0.6, 0.4, 0.5])
+    class_weight = torch.tensor([0.1, 0.9])  # class 0: 0.1, class 1: 0.9
+
+    # test bce_loss without class weight
+    loss_cfg = dict(
+        type='CrossEntropyLoss',
+        use_sigmoid=True,
+        reduction='mean',
+        loss_weight=1.0)
+    loss = build_loss(loss_cfg)
+    assert torch.allclose(loss(cls_score, label), torch.tensor(300.))
+    # test ce_loss with weight
+    assert torch.allclose(
+        loss(cls_score, label, weight=weight), torch.tensor(130.))
+
+    # test bce_loss with class weight
+    loss_cfg = dict(
+        type='CrossEntropyLoss',
+        use_sigmoid=True,
+        reduction='mean',
+        loss_weight=1.0,
+        class_weight=class_weight)
+    loss = build_loss(loss_cfg)
+    assert torch.allclose(loss(cls_score, label),
+                          torch.tensor(176.667)), loss(cls_score, label)
+    # test bce_loss with weight
+    assert torch.allclose(
+        loss(cls_score, label, weight=weight), torch.tensor(74.333)), loss(
+            cls_score, label, weight=weight)
+
 
 def test_varifocal_loss():
     # only sigmoid version of VarifocalLoss is implemented
