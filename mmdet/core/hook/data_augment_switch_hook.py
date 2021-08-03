@@ -3,7 +3,7 @@ from mmcv.runner.hooks import HOOKS, Hook
 
 @HOOKS.register_module()
 class DataAugmentSwitchHook(Hook):
-    """Trun off the mosaic data augment and switch off the loss, currently used in YOLOX.
+    """Trun off the mosaic data augment and switch on L1 loss to bbox_head, currently used in YOLOX.
 
     Args:
         no_aug_epoch (int): The epoch of close data augmentation. Default to 15.

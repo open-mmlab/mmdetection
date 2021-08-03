@@ -26,7 +26,7 @@ def random_resize(random_size, data_loader, rank, is_distributed, input_size):
 
 @HOOKS.register_module()
 class RandomSizeHook(Hook):
-    """Change the image size, currently used in YOLOX
+    """Change the image size, currently used in YOLOX.
 
     Args:
         ratio_range (tuple[int]): Random ratio range. It will be multiplied by 32,
