@@ -1,5 +1,62 @@
 ## Changelog
 
+### v2.15.0 (02/8/2021)
+
+#### Highlights
+
+- Support adding [MIM](https://github.com/open-mmlab/mim) dependencies during pip installation
+- Support MobileNetV2 for SSD-Lite and YOLOv3
+- Support Chinese Documentation
+
+#### New Features
+
+- Add function `upsample_like` (#5732)
+- Support to output pdf and epub format documentation (#5738)
+- Support and release Cascade Mask R-CNN 3x pre-trained models (#5645)
+- Add `ignore_index` to CrossEntropyLoss (#5646)
+- Support adding [MIM](https://github.com/open-mmlab/mim) dependencies during pip installation (#5676)
+- Add MobileNetV2 config and models for YOLOv3 (#5510)
+- Support COCO Panoptic Dataset (#5231)
+- Support ONNX export of cascade models (#5486)
+- Support DropBlock with RetinaNet (#5544)
+- Support MobileNetV2 SSD-Lite (#5526)
+
+#### Bug Fixes
+
+- Fix the device of label in multiclass_nms (#5673)
+- Fix error of backbone initialization from pre-trained checkpoint in config file (#5603, #5550)
+- Fix download links of RegNet pretrained weights (#5655)
+- Fix two-stage runtime error given empty proposal (#5559)
+- Fix flops count error in DETR (#5654)
+- Fix unittest for `NumClassCheckHook` when it is not used. (#5626)
+- Fix description bug of using custom dataset (#5546)
+- Fix bug of `multiclass_nms` that returns the global indices (#5592)
+- Fix `valid_mask` logic error in RPNHead (#5562)
+- Fix unit test error of pretrained configs (#5561)
+- Fix typo error in anchor_head.py (#5555)
+- Fix bug when using dataset wrappers (#5552)
+- Fix a typo error in demo/MMDet_Tutorial.ipynb (#5511)
+- Fixing crash in `get_root_logger` when `cfg.log_level` is not None (#5521)
+- Fix docker version (#5502)
+- Fix optimizer parameter error when using `IterBasedRunner` (#5490)
+
+#### Improvements
+
+- Add unit tests for MMTracking (#5620)
+- Add Chinese translation of documentation (#5718, #5618, #5558, #5423, #5593, #5421, #5408. #5369, #5419, #5530, #5531)
+- Update resource limit (#5697)
+- Update docstring for InstaBoost (#5640)
+- Support key `reduction_override` in all loss functions (#5515)
+- Use repeatdataset to accelerate CenterNet training (#5509)
+- Remove unnecessary code in autoassign (#5519)
+- Add documentation about `init_cfg` (#5273)
+
+#### Contributors
+
+A total of 18 developers contributed to this release.
+Thanks @OceanPang, @AronLin, @hellock, @Outsider565, @RangiLyu, @ElectronicElephant, @likyoo, @BIGWangYuDong, @hhaAndroid, @noobying, @yyz561, @likyoo,
+@zeakey, @ZwwWayne, @ChenyangLiu, @johnson-magic, @qingswu, @BuxianChen
+
 ### v2.14.0 (29/6/2021)
 
 #### Highlights
