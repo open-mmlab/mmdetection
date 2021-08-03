@@ -434,25 +434,30 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         offset_priors = torch.cat(
             [priors[:, :2] + priors[:, 2:] * 0.5, priors[:, 2:]], dim=-1)
 
-        (gt_matched_classes, foreground_mask, pred_ious_this_matching,
-         matched_gt_inds, num_fg_per_img) = self.assigner.assign(
-             cls_preds.sigmoid() * objectness.unsqueeze(1).sigmoid(),
-             offset_priors, decoded_bboxes, gt_bboxes, gt_labels)
+        assign_result = self.assigner.assign(
+            cls_preds.sigmoid() * objectness.unsqueeze(1).sigmoid(),
+            offset_priors, decoded_bboxes, gt_bboxes, gt_labels)
 
+        sampling_result = self.sampler.sample(assign_result, priors, gt_bboxes)
+        pos_inds = sampling_result.pos_inds
+        num_pos_per_img = pos_inds.size(0)
+
+        pred_ious_this_matching = assign_result.max_overlaps[pos_inds]
         # IOU aware classification score
         cls_target = F.one_hot(
-            gt_matched_classes.to(torch.int64),
+            sampling_result.pos_gt_labels,
             self.num_classes) * pred_ious_this_matching.unsqueeze(-1)
-        obj_target = foreground_mask.unsqueeze(-1).to(objectness.dtype)
-        bbox_target = gt_bboxes[matched_gt_inds]
-        l1_target = cls_preds.new_zeros((num_fg_per_img, 4))
+        obj_target = torch.zeros_like(objectness).unsqueeze(-1)
+        obj_target[pos_inds] = 1
+        bbox_target = sampling_result.pos_gt_bboxes
+        l1_target = cls_preds.new_zeros((num_pos_per_img, 4))
         if self.use_l1:
-            l1_target = self._get_l1_target(l1_target,
-                                            gt_bboxes[matched_gt_inds],
-                                            priors[foreground_mask])
-
+            l1_target = self._get_l1_target(l1_target, bbox_target,
+                                            priors[pos_inds])
+        foreground_mask = torch.zeros_like(objectness).to(torch.uint8)
+        foreground_mask[pos_inds] = 1
         return (foreground_mask, cls_target, obj_target, bbox_target,
-                l1_target, num_fg_per_img)
+                l1_target, num_pos_per_img)
 
     def _get_l1_target(self, l1_target, gt_bboxes, priors, eps=1e-8):
         """Convert gt bboxes to center offset and log width height."""
