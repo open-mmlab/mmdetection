@@ -8,6 +8,7 @@ from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmcv import build_from_cfg
 from ..builder import PIPELINES
+from .. import DATASETS
 
 try:
     from imagecorruptions import corrupt
@@ -1909,7 +1910,7 @@ class CutOut:
 @PIPELINES.register_module()
 class Mosaic:
     """Mosaic augmentation.
-    Given 4 images, them into one output image. The output image is composed of
+    Given 4 images, mosaic transform combines them into one output image. The output image is composed of
     the parts from each sub-image.
 
                           mosaic transform
@@ -1931,10 +1932,9 @@ class Mosaic:
 
     The mosaic transform step:
 
-    - choose the mosaic center as the intersection  of 4 images
+    - choose the mosaic center as the intersections of 4 images
     - Get the left top image according to the index given by dataloader,
       and ramdomly sample another 3 images from the custom dataset.
-    - sub image will be resized every 10 iters controlled by YoloXProcessHook
     - sub image will be cropped if image is larger than mosaic patch
     - mosaic transform will be disabled last several epochs
       controlled by YoloXProcessHook
@@ -1949,14 +1949,13 @@ class Mosaic:
     """
 
     def __init__(self, img_scale=(640, 640), pad_value=114, mosaic_scale=(0.5, 1.5), dataset=None):
-        assert isinstance(pad_value, int)
         assert isinstance(img_scale, tuple)
         assert isinstance(img_scale[0], int) and isinstance(img_scale[1], int)
         assert isinstance(dataset, dict)
         self.img_scale = img_scale
         self.mosaic_scale = mosaic_scale
         self.pad_value = pad_value
-        self.dataset = build_from_cfg(dataset)
+        self.dataset = build_from_cfg(dataset, DATASETS)
         self.num_sample = len(dataset)
 
     def __call__(self, results):
@@ -2031,6 +2030,18 @@ class Mosaic:
         return results
 
     def _mosaic_combine(self, loc, center_position_xy, img_shape_wh):
+        """
+        Calculate global coordinate of mosaic image and local coordinate
+        of cropped sub-image
+
+        Args:
+            loc (str): location of sub-image.
+            center_position_xy (Sequence[float]): Mosaic center
+            img_shape_wh (Sequence[int]): width and height of sub-image
+
+        Returns:
+            dict: Updated result dict.
+        """
         assert loc in ('top_left', 'top_right', 'bottom_left', 'bottom_right')
         if loc == 'top_left':
             # index0 to top left part of image
@@ -2076,7 +2087,7 @@ class Mosaic:
         repr_str += f'dataset={self.dataset})'
         return repr_str
 
-
+@PIPELINES.register_module()
 class MixUp:
     """
         The logic of mixup transform:
@@ -2097,26 +2108,22 @@ class MixUp:
     The mixup transform step:
     - Another random image is picked by dataset  and embedded in the top left patch(after padding and resizing)
     - The target of mixup transform is the weighted average of mixup image and mosaic image.
+    - mixup transform will be disabled last several epochs controlled by YoloXProcessHook
 
    Args:
        dataset (CunstomDataset): Child of CunstomDataset which can get image and annotations by index.
-       mosaic_pipeline (dict): Augmentations after mosaic
-       pipeline (pipeline): Augmentations after mosaic and mixup.
        img_scale (Sequence[int]): image size after mosaic pipeline
-       enable_mosaic (bool): enable/disable mosiac aug, controlled by yolox process hook
        mosaic_scale (Sequence[float]): center range of mosaic output
-       enable_mixup (bool): enable/disable mixup aug, controlled by yolox process hook
        mixup_scale (Sequence[float]): image scale factor of mixup
        pad_value (int): pad value
     """
     def __init__(self,
-                 img_scale,
+                 img_scale=(640, 640),
                  mixup_scale=(0.5, 1.5),
                  pad_value=114,
                  dataset=None,
-                 mixup_flip_ratio=0.5):
-
-        assert isinstance(pad_value, int)
+                 mixup_flip_ratio=0.5,
+                 eps=1e-16):
         assert isinstance(img_scale, tuple)
         assert isinstance(img_scale[0], int) and isinstance(img_scale[1], int)
         assert isinstance(dataset, dict)
@@ -2124,8 +2131,9 @@ class MixUp:
         self.pad_value = pad_value
         self.dynamic_scale = img_scale
         self.mixup_flip_ratio = mixup_flip_ratio
-        self.dataset = build_from_cfg(dataset)
+        self.dataset = build_from_cfg(dataset, DATASETS)
         self.num_sample = len(dataset)
+        self.eps = eps
 
     def __call__(self, results):
         results = self._mixup_transform(results)
@@ -2183,9 +2191,9 @@ class MixUp:
             out_img = out_img[:, ::-1, :]
 
         # 5. random crop
-        origin_img = results['img']
+        ori_img = results['img']
         origin_h, origin_w = out_img.shape[:2]
-        target_h, target_w = origin_img.shape[:2]
+        target_h, target_w = ori_img.shape[:2]
         padded_img = np.zeros((max(origin_h, target_h), max(origin_w, target_w), 3)).astype(np.uint8)
         padded_img[:origin_h, :origin_w] = out_img
 
@@ -2212,8 +2220,8 @@ class MixUp:
 
         # 8. mix up
         if keep_list.sum() >= 1.0:
-            origin_img = origin_img.astype(np.float32)
-            mixup_img = 0.5 * origin_img + 0.5 * padded_cropped_img.astype(
+            ori_img = ori_img.astype(np.float32)
+            mixup_img = 0.5 * ori_img + 0.5 * padded_cropped_img.astype(
                 np.float32)
 
             retrieve_gt_labels = retrieve_results['gt_labels'][keep_list]
@@ -2235,10 +2243,10 @@ class MixUp:
         """
         w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
         w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
-        ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
+        ar = np.maximum(w2 / (h2 + self.eps), h2 / (w2 + self.eps))  # aspect ratio
         return ((w2 > wh_thr)
                 & (h2 > wh_thr)
-                & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr)
+                & (w2 * h2 / (w1 * h1 + self.eps) > area_thr)
                 & (ar < ar_thr))
 
     def __repr__(self):

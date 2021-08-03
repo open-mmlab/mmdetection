@@ -3,8 +3,7 @@ from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
 from .coco_panoptic import CocoPanopticDataset
 from .custom import CustomDataset
-from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset,
-                               RepeatDataset, MosaicMixUpDataset)
+from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset, RepeatDataset)
 from .deepfashion import DeepFashionDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
 from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
