@@ -1,5 +1,7 @@
-from .yolox_process_hook import YOLOXProcessHook
+from .randon_size_hook import RandomSizeHook
+from .data_augment_switch_hook import DataAugmentSwitchHook
+from .sync_bn_hook import SyncBNHook
 
 __all__ = [
-    'YOLOXProcessHook'
+    'RandomSizeHook', 'DataAugmentSwitchHook', 'SyncBNHook'
 ]

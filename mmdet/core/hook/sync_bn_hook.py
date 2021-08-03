@@ -1,5 +1,4 @@
 from mmcv.runner.hooks import HOOKS, Hook
-import random
 from mmcv.runner import get_dist_info
 from collections import OrderedDict
 
@@ -8,24 +7,6 @@ from torch import distributed as dist
 from torch import nn
 import functools
 import pickle
-
-
-def random_resize(random_size, data_loader, rank, is_distributed, input_size):
-    tensor = torch.LongTensor(2).cuda()
-
-    if rank == 0:
-        size_factor = input_size[1] * 1. / input_size[0]
-        size = random.randint(*random_size)
-        size = (int(32 * size), 32 * int(size * size_factor))
-        tensor[0] = size[0]
-        tensor[1] = size[1]
-
-    if is_distributed:
-        dist.barrier()
-        dist.broadcast(tensor, 0)
-
-    data_loader.dataset.dynamic_scale = (tensor[0].item(), tensor[1].item())
-    return data_loader.dataset.dynamic_scale
 
 
 ASYNC_NORM = (
@@ -127,48 +108,16 @@ def all_reduce_norm(module):
 
 
 @HOOKS.register_module()
-class YOLOXProcessHook(Hook):
-    """Hooks used only by YOLOX. It implements that changing the image size,
-    turning off the mosaic, switching loss, and synchronizing norm.
+class SyncBNHook(Hook):
+    """Synchronize BN states, currently used in YOLOX.
 
     Args:
-        ratio_range (tuple[int]): Random ratio range. It will be multiplied by 32,
-            and then change the dataset output image size. Default to (14, 26).
-        img_scale (tuple[int]): input image size. Default to (640, 640).
-        no_aug_epoch (int): The epoch of close data augmentation. Default to 15.
         sync_interval (int): Synchronizing norm interval. Default to 1.
         change_scale_interval (int): The interval of change image size. Default to 10.
     """
-    def __init__(self, ratio_range=(14, 26), img_scale=(640, 640), no_aug_epoch=15, sync_interval=1, change_scale_interval=10):
-        self.rank, world_size = get_dist_info()
-        self.is_distributed = world_size > 1
-        self.ratio_range = ratio_range
-        self.img_scale = img_scale
-        self.no_aug_epoch = no_aug_epoch
+    def __init__(self, sync_interval=1, change_scale_interval=10):
         self.sync_interval = sync_interval
         self.change_scale_interval = change_scale_interval
-
-    def after_train_iter(self, runner):
-        """Change the dataset output image size.
-        """
-        progress_in_iter = runner.iter
-        train_loader = runner.data_loader
-        # random resizing
-        if self.ratio_range is not None and (progress_in_iter + 1) % self.change_scale_interval == 0:
-            random_resize(self.ratio_range, train_loader, self.rank, self.is_distributed, self.img_scale)
-
-    def before_train_epoch(self, runner):
-        """close mosaic and mixup augmentation and additional L1 loss.
-        """
-        epoch = runner.epoch
-        train_loader = runner.data_loader
-        model = runner.model.module
-        if epoch + 1 == runner.max_epochs - self.no_aug_epoch:
-            print("--->No mosaic and mixup aug now!")
-            train_loader.dataset.enable_mosaic = False
-            train_loader.dataset.enable_mixup = False
-            print("--->Add additional L1 loss now!")
-            model.bbox_head.use_l1 = True
 
     def after_train_epoch(self, runner):
         """Synchronizing norm."""
