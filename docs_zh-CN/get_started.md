@@ -125,11 +125,11 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 3. 安装额外的依赖以使用 Instaboost, 全景分割, 或者 LVIS 数据集
 
     ```shell
-    # for instaboost
+    # 安装 instaboost 依赖
     pip install instaboostfast
-    # for panoptic segmentation
+    # 安装全景分割依赖
     pip install git+https://github.com/cocodataset/panopticapi.git
-    # for LVIS dataset
+    # 安装 LVIS 数据集依赖
     pip install git+https://github.com/lvis-dataset/lvis-api.git
     ```
 

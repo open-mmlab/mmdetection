@@ -125,7 +125,6 @@ Or you can still install MMDetection manually:
     pip install git+https://github.com/cocodataset/panopticapi.git
     # for LVIS dataset
     pip install git+https://github.com/lvis-dataset/lvis-api.git
-
     ```
 
 **Note:**
