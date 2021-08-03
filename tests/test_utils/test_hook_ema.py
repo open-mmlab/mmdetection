@@ -120,7 +120,7 @@ def test_ema_hook():
     ema_hook = ExpDecayEMAHook(
         decay=0.9998,
         total_iter=1,
-        skip_buffer=True,
+        skip_buffers=True,
         interval=2,
         resume_from=None)
     checkpointhook = CheckpointHook(interval=1, by_epoch=True)
@@ -140,7 +140,7 @@ def test_ema_hook():
     resume_ema_hook = ExpDecayEMAHook(
         decay=0.5,
         total_iter=10,
-        skip_buffer=True,
+        skip_buffers=True,
         interval=1,
         resume_from=f'{work_dir}/epoch_1.pth')
     runner = _build_demo_runner(max_epochs=2)
