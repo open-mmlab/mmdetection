@@ -49,6 +49,8 @@ class SimOTAAssigner(BaseAssigner):
                 a 2D-Tensor with shape [num_priors, num_classes]
             priors (Tensor): All priors of one image, a 2D-Tensor with shape
                 [num_priors, 4] in [cx, xy, stride_w, stride_y] format.
+            decoded_bboxes (Tensor): Predicted bboxes, a 2D-Tensor with shape
+                [num_priors, 4] in [tl_x, tl_y, br_x, br_y] format.
             gt_bboxes (Tensor): Ground truth bboxes of one image, a 2D-Tensor
                 with shape [num_gts, 4] in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (Tensor): Ground truth labels of one image, a Tensor
@@ -103,6 +105,8 @@ class SimOTAAssigner(BaseAssigner):
                 a 2D-Tensor with shape [num_priors, num_classes]
             priors (Tensor): All priors of one image, a 2D-Tensor with shape
                 [num_priors, 4] in [cx, xy, stride_w, stride_y] format.
+            decoded_bboxes (Tensor): Predicted bboxes, a 2D-Tensor with shape
+                [num_priors, 4] in [tl_x, tl_y, br_x, br_y] format.
             gt_bboxes (Tensor): Ground truth bboxes of one image, a 2D-Tensor
                 with shape [num_gts, 4] in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (Tensor): Ground truth labels of one image, a Tensor
