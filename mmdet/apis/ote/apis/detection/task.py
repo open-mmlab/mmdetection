@@ -253,10 +253,10 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
         # Create new model if training from scratch.
         old_model = copy.deepcopy(self.model)
-        if train_parameters is not None and train_parameters.train_on_empty_model:
-            logger.info("Training from scratch, creating new model")
-            # FIXME. Isn't it an overkill? Consider calling init_weights instead.
-            self.model = self._create_model(config=config, from_scratch=True)
+        # if train_parameters is not None and train_parameters.train_on_empty_model:
+        #     logger.info("Training from scratch, creating new model")
+        #     # FIXME. Isn't it an overkill? Consider calling init_weights instead.
+        #     self.model = self._create_model(config=config, from_scratch=True)
 
         # Evaluate model performance before training.
         _, initial_performance = self._infer_detector(self.model, config, val_dataset, True)
