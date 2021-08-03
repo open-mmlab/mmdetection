@@ -1,7 +1,7 @@
-import numpy as np
 import math
 import warnings
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,12 +9,13 @@ from mmcv.cnn import (Conv2d, build_activation_layer, build_norm_layer,
                       constant_init, normal_init, trunc_normal_init)
 from mmcv.cnn.bricks.drop import build_dropout
 from mmcv.cnn.bricks.transformer import MultiheadAttention
-from mmcv.runner import BaseModule, ModuleList, Sequential, _load_checkpoint, load_state_dict
+from mmcv.runner import (BaseModule, ModuleList, Sequential, _load_checkpoint,
+                         load_state_dict)
 from torch.nn.modules.utils import _pair as to_2tuple
 
 from ...utils import get_root_logger
 from ..builder import BACKBONES
-from ..utils import PatchEmbed, pvt_convert, nchw_to_nlc, nlc_to_nchw
+from ..utils import PatchEmbed, nchw_to_nlc, nlc_to_nchw, pvt_convert
 
 
 class FFN(BaseModule):
@@ -284,8 +285,9 @@ class AbsolutePositionEmbedding(BaseModule):
         self.with_cls_token = with_cls_token
         self.output_cls_token = output_cls_token
 
-        self.pos_embed = nn.Parameter(torch.zeros(
-            1, pos_shape[0] * pos_shape[1] + with_cls_token, pos_dim))
+        self.pos_embed = nn.Parameter(
+            torch.zeros(1, pos_shape[0] * pos_shape[1] + with_cls_token,
+                        pos_dim))
         self.drop = nn.Dropout(p=drop_rate)
 
     def init_weights(self):
@@ -316,7 +318,8 @@ class AbsolutePositionEmbedding(BaseModule):
             1, pos_h, pos_w, self.pos_dim).permute(0, 3, 1, 2).contiguous()
         pos_embed_weight = F.interpolate(
             pos_embed_weight, size=input_shape, mode=mode)
-        pos_embed_weight = torch.flatten(pos_embed_weight, 2).transpose(1, 2).contiguous()
+        pos_embed_weight = torch.flatten(pos_embed_weight,
+                                         2).transpose(1, 2).contiguous()
         pos_embed = pos_embed_weight
         if self.with_cls_token and self.output_cls_token:
             pos_embed = torch.cat((cls_token_weight, pos_embed), dim=1)
@@ -355,8 +358,9 @@ class PyramidVisionTransformer(BaseModule):
             transformer encode layer. Default: [8, 4, 2, 1].
         out_indices (Sequence[int] | int): Output from which stages.
             Default: (0, 1, 2, 3).
-        mlp_ratios (Sequence[int]): The ratio of the mlp hidden dim to the embedding
-            dim of each transformer encode layer. Default: [8, 8, 4, 4].
+        mlp_ratios (Sequence[int]): The ratio of the mlp hidden dim to the
+            embedding dim of each transformer encode layer.
+            Default: [8, 8, 4, 4].
         qkv_bias (bool): Enable bias for qkv if True. Default: True.
         drop_rate (float): Probability of an element to be zeroed.
             Default 0.0
@@ -426,7 +430,7 @@ class PyramidVisionTransformer(BaseModule):
 
         if output_cls_token:
             assert with_cls_token is True, f'with_cls_token must be True if' \
-                                           f'set output_cls_token to True, but got {with_cls_token}'
+                f'set output_cls_token to True, but got {with_cls_token}'
 
         if isinstance(pretrained, str) or pretrained is None:
             warnings.warn('DeprecationWarning: pretrained is a deprecated, '
@@ -454,7 +458,8 @@ class PyramidVisionTransformer(BaseModule):
         self.with_cls_token = with_cls_token
         self.output_cls_token = output_cls_token
         if with_cls_token:
-            self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dims * num_heads[-1]))
+            self.cls_token = nn.Parameter(
+                torch.zeros(1, 1, embed_dims * num_heads[-1]))
 
         # transformer encoder
         dpr = [
@@ -483,8 +488,7 @@ class PyramidVisionTransformer(BaseModule):
                     pos_dim=embed_dims_i,
                     drop_rate=drop_rate,
                     with_cls_token=i == len(num_layers) - 1,
-                    output_cls_token=with_cls_token & output_cls_token
-                )
+                    output_cls_token=with_cls_token & output_cls_token)
                 layers.append(pos_embed)
             layers.extend([
                 TransformerEncoderLayer(
@@ -563,3 +567,25 @@ class PyramidVisionTransformer(BaseModule):
                 outs.append(x)
 
         return outs
+
+
+@BACKBONES.register_module()
+class PyramidVisionTransformerV2(PyramidVisionTransformer):
+    r"""Pyramid Vision Transformer V2 (PVTv2)
+    A PyTorch implement of : `PVTv2: Improved Baselines with Pyramid Vision
+    Transformer` -
+        https://arxiv.org/pdf/2106.13797.pdf
+
+    PVTv2 improves the original PVT by adding three designs, including
+    overlapping patch embedding, convolutional feedforward networks, and
+    linear complexity attention layers.
+    """
+
+    def __init__(self, **kwargs):
+        super(PyramidVisionTransformerV2, self).__init__(
+            patch_sizes=[7, 3, 3, 3],
+            paddings=[3, 1, 1, 1],
+            use_abs_pos_embed=False,
+            norm_after_stage=True,
+            use_conv_ffn=True,
+            **kwargs)

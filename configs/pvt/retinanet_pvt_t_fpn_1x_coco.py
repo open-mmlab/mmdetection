@@ -5,7 +5,8 @@ _base_ = [
 ]
 model = dict(
     type='RetinaNet',
-    pretrained='https://github.com/whai362/PVT/releases/download/v2/pvt_tiny.pth',
+    pretrained='https://github.com/whai362/PVT/'
+    'releases/download/v2/pvt_tiny.pth',
     backbone=dict(
         _delete_=True,
         type='PyramidVisionTransformer',

@@ -19,5 +19,5 @@ __all__ = [
     'build_transformer', 'build_linear_layer', 'SinePositionalEncoding',
     'LearnedPositionalEncoding', 'DynamicConv', 'SimplifiedBasicBlock',
     'NormedLinear', 'NormedConv2d', 'make_divisible', 'InvertedResidual',
-    'SELayer', 'PatchEmbed', 'nchw_to_nlc', 'nlc_to_nchw'
+    'SELayer', 'PatchEmbed', 'nchw_to_nlc', 'nlc_to_nchw', 'pvt_convert'
 ]
