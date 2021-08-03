@@ -1,6 +1,5 @@
 import copy
 import inspect
-
 import mmcv
 import numpy as np
 from numpy import random
@@ -715,7 +714,7 @@ class RandomCrop:
                  allow_negative_crop=False,
                  bbox_clip_border=True):
         if crop_type not in [
-                'relative_range', 'relative', 'absolute', 'absolute_range'
+            'relative_range', 'relative', 'absolute', 'absolute_range'
         ]:
             raise ValueError(f'Invalid crop_type {crop_type}.')
         if crop_type in ['absolute', 'absolute_range']:
@@ -778,7 +777,7 @@ class RandomCrop:
                 bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
                 bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
             valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
-                bboxes[:, 3] > bboxes[:, 1])
+                    bboxes[:, 3] > bboxes[:, 1])
             # If the crop does not contain any gt-bbox area and
             # allow_negative_crop is False, skip this image.
             if (key == 'gt_bboxes' and not valid_inds.any()
@@ -795,7 +794,7 @@ class RandomCrop:
             if mask_key in results:
                 results[mask_key] = results[mask_key][
                     valid_inds.nonzero()[0]].crop(
-                        np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
+                    np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
 
         # crop semantic seg
         for key in results.get('seg_fields', []):
@@ -943,7 +942,7 @@ class PhotoMetricDistortion:
                 'Only single img_fields is allowed'
         img = results['img']
         assert img.dtype == np.float32, \
-            'PhotoMetricDistortion needs the input image of dtype np.float32,'\
+            'PhotoMetricDistortion needs the input image of dtype np.float32,' \
             ' please set "to_float32=True" in "LoadImageFromFile" pipeline'
         # random brightness
         if random.randint(2):
@@ -1222,8 +1221,8 @@ class MinIoURandomCrop:
 
                 # seg fields
                 for key in results.get('seg_fields', []):
-                    results[key] = results[key][patch[1]:patch[3],
-                                                patch[0]:patch[2]]
+                    results[key] = \
+                        results[key][patch[1]:patch[3], patch[0]:patch[2]]
                 return results
 
     def __repr__(self):
@@ -1648,8 +1647,8 @@ class RandomCenterCropPad:
         """
         center = (boxes[:, :2] + boxes[:, 2:]) / 2
         mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
-            center[:, 0] < patch[2]) * (
-                center[:, 1] < patch[3])
+                center[:, 0] < patch[2]) * (
+                       center[:, 1] < patch[3])
         return mask
 
     def _crop_image_and_paste(self, image, center, size):
@@ -1699,7 +1698,7 @@ class RandomCenterCropPad:
             cropped_center_y - top, cropped_center_y + bottom,
             cropped_center_x - left, cropped_center_x + right
         ],
-                          dtype=np.float32)
+            dtype=np.float32)
 
         return cropped_img, border, patch
 
@@ -1753,7 +1752,7 @@ class RandomCenterCropPad:
                         bboxes[:, 0:4:2] = np.clip(bboxes[:, 0:4:2], 0, new_w)
                         bboxes[:, 1:4:2] = np.clip(bboxes[:, 1:4:2], 0, new_h)
                     keep = (bboxes[:, 2] > bboxes[:, 0]) & (
-                        bboxes[:, 3] > bboxes[:, 1])
+                            bboxes[:, 3] > bboxes[:, 1])
                     bboxes = bboxes[keep]
                     results[key] = bboxes
                     if key in ['gt_bboxes']:
@@ -1866,7 +1865,8 @@ class CutOut:
         assert (isinstance(cutout_shape, (list, tuple))
                 or isinstance(cutout_ratio, (list, tuple)))
         if isinstance(n_holes, tuple):
-            assert len(n_holes) == 2 and 0 <= n_holes[0] < n_holes[1]
+            assert len(n_holes) == 2 and \
+                   0 <= n_holes[0] < n_holes[1]
         else:
             n_holes = (n_holes, n_holes)
         self.n_holes = n_holes
@@ -1902,4 +1902,194 @@ class CutOut:
         repr_str += (f'cutout_ratio={self.candidates}, ' if self.with_ratio
                      else f'cutout_shape={self.candidates}, ')
         repr_str += f'fill_in={self.fill_in})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class Mosaic(object):
+    """Mosaic augmentation.
+
+    Given 4 images, Mosaic augmentation randomly crop a patch on each image
+    and combine them into one output image. The output image is composed of
+    the parts from each sub-image.
+
+                        output image
+                                cut_x
+               +-----------------------------+
+               |     image 0      | image 1  |
+               |                  |          |
+        cut_y  |------------------+----------|
+               |     image 2      | image 3  |
+               |                  |          |
+               |                  |          |
+               |                  |          |
+               |                  |          |
+               |                  |          |
+               +-----------------------------+
+
+    Args:
+        size (tuple[int]): output image size in (h,w).
+        min_offset (float | tuple[float]): Volume of the offset
+            of the cropping window. If float, both height and width are
+        dataset (torch.nn.Dataset): Dataset with augmentation pipeline.
+    """
+
+    def __init__(self, size=(640, 640), min_offset=0.2, dataset=None):
+
+        assert isinstance(size, tuple)
+        assert isinstance(size[0], int) and isinstance(size[1], int)
+        if size[0] <= 0 or size[1] <= 0:
+            raise ValueError('image size must > 0 in train mode')
+
+        if isinstance(min_offset, float):
+            assert 0 <= min_offset <= 1
+            self.min_offset = (min_offset, min_offset)
+        elif isinstance(min_offset, tuple):
+            assert isinstance(min_offset[0], float) \
+                   and isinstance(min_offset[1], float)
+            assert 0 <= min_offset[0] <= 1 and 0 <= min_offset[1] <= 1
+            self.min_offset = min_offset
+        else:
+            raise TypeError('Unsupported type for min_offset, '
+                            'should be either float or tuple[float]')
+
+        self.size = size
+        self.dataset = dataset
+        self.cropper = RandomCrop(crop_size=size)
+        self.num_sample = len(dataset)
+
+    def __call__(self, results):
+        """Call the function to mix 4 images.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with images and bounding boxes cropped.
+        """
+        # Generate the Mosaic coordinate
+        cut_y = random.randint(
+            int(self.size[0] * self.min_offset[0]),
+            int(self.size[0] * (1 - self.min_offset[0])))
+        cut_x = random.randint(
+            int(self.size[1] * self.min_offset[1]),
+            int(self.size[1] * (1 - self.min_offset[1])))
+
+        cut_position = (cut_y, cut_x)
+        tmp_result = copy.deepcopy(results)
+        # create the image buffer and mask buffer
+        tmp_result['img'] = np.zeros(
+            (self.size[0], self.size[1], *tmp_result['img'].shape[2:]),
+            dtype=tmp_result['img'].dtype)
+        for key in tmp_result.get('seg_fields', []):
+            tmp_result[key] = np.zeros(
+                (self.size[0], self.size[1], *tmp_result[key].shape[2:]),
+                dtype=tmp_result[key].dtype)
+        tmp_result['img_shape'] = self.size
+
+        out_bboxes = []
+        out_labels = []
+        out_ignores = []
+
+        for loc in ('top_left', 'top_right', 'bottom_left', 'bottom_right'):
+            if loc == 'top_left':
+                # use the current image
+                results_i = copy.deepcopy(results)
+            else:
+                # randomly sample a new image from the dataset
+                index = random.randint(self.num_sample)
+                results_i = copy.deepcopy(self.dataset.__getitem__(index))
+
+            # compute the crop parameters
+            crop_size, img_slices, paste_position = self._mosiac_combine(
+                loc, cut_position)
+
+            # randomly crop the image and segmentation mask
+            self.cropper.crop_size = crop_size
+            results_i = self.cropper(results_i)
+            # paste to the buffer image
+            tmp_result['img'][img_slices] = results_i['img'].copy()
+            for key in tmp_result.get('seg_fields', []):
+                tmp_result[key][img_slices] = results_i[key].copy()
+
+            results_i = self._adjust_coordinate(results_i, paste_position)
+
+            out_bboxes.append(results_i['gt_bboxes'])
+            out_labels.append(results_i['gt_labels'])
+            out_ignores.append(results_i['gt_bboxes_ignore'])
+
+        out_bboxes = np.concatenate(out_bboxes, axis=0)
+        out_labels = np.concatenate(out_labels, axis=0)
+        out_ignores = np.concatenate(out_ignores, axis=0)
+
+        tmp_result['gt_bboxes'] = out_bboxes
+        tmp_result['gt_labels'] = out_labels
+        tmp_result['gt_bboxes_ignore'] = out_ignores
+
+        return tmp_result
+
+    def _mosiac_combine(self, loc, cut_position):
+        """Crop the subimage, change the label and mix the image.
+
+        Args:
+            loc (str): Index for the subimage, loc in ('top_left',
+                'top_right', 'bottom_left', 'bottom_right').
+            results (dict): Result dict from loading pipeline.
+            img (numpy array): buffer for mosiac image, (H x W x 3).
+            cut_position (tuple[int]): mixing center for 4 images, (y, x).
+
+        Returns:
+            bboxes: Result dict with images and bounding boxes cropped.
+        """
+        if loc == 'top_left':
+            # Image 0: top left
+            crop_size = cut_position
+            img_slices = (slice(0, cut_position[0]), slice(0, cut_position[1]))
+            paste_position = (0, 0)
+        elif loc == 'top_right':
+            # Image 1: top right
+            crop_size = (cut_position[0], self.size[1] - cut_position[1])
+            img_slices = (slice(0, cut_position[0]),
+                          slice(cut_position[1], self.size[1]))
+            paste_position = (0, cut_position[1])
+        elif loc == 'bottom_left':
+            # Image 2: bottom left
+            crop_size = (self.size[0] - cut_position[0], cut_position[1])
+            img_slices = (slice(cut_position[0],
+                                self.size[0]), slice(0, cut_position[1]))
+            paste_position = (cut_position[0], 0)
+        elif loc == 'bottom_right':
+            # Image 3: bottom right
+            crop_size = (self.size[0] - cut_position[0],
+                         self.size[1] - cut_position[1])
+            img_slices = (slice(cut_position[0], self.size[0]),
+                          slice(cut_position[1], self.size[1]))
+            paste_position = cut_position
+
+        return crop_size, img_slices, paste_position
+
+    def _adjust_coordinate(self, results, paste_position):
+        """Convert subimage coordinate to mosaic image coordinate.
+
+         Args:
+            results (dict): Result dict from :obj:`dataset`.
+            paste_position (tuple[int]): paste up-left corner
+                coordinate (y, x) in mosaic image.
+
+        Returns:
+            results (dict): Result dict with corrected bbox
+                and mask coordinate.
+        """
+
+        for key in results.get('bbox_fields', []):
+            box = results[key]
+            box[:, 0::2] += paste_position[1]
+            box[:, 1::3] += paste_position[0]
+            results[key] = box
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'size={self.size}, '
+        repr_str += f'min_offset={self.min_offset})'
         return repr_str
