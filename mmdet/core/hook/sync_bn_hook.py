@@ -24,11 +24,11 @@ def get_async_norm_states(module):
     for name, child in module.named_modules():
         if isinstance(child, ASYNC_NORM):
             for k, v in child.state_dict().items():
-                async_norm_states[".".join([name, k])] = v
+                async_norm_states['.'.join([name, k])] = v
     return async_norm_states
 
 
-def pyobj2tensor(pyobj, device="cuda"):
+def pyobj2tensor(pyobj, device='cuda'):
     """serialize picklable python object to tensor"""
     storage = torch.ByteStorage.from_buffer(pickle.dumps(pyobj))
     return torch.ByteTensor(storage).to(device=device)
@@ -52,8 +52,8 @@ def _get_global_gloo_group():
     Return a process group based on gloo backend, containing all the ranks
     The result is cached.
     """
-    if dist.get_backend() == "nccl":
-        return dist.new_group(backend="gloo")
+    if dist.get_backend() == 'nccl':
+        return dist.new_group(backend='gloo')
     else:
         return dist.group.WORLD
 
@@ -105,7 +105,7 @@ def all_reduce_norm(module):
     All reduce norm statistics in different devices.
     """
     states = get_async_norm_states(module)
-    states = all_reduce(states, op="mean")
+    states = all_reduce(states, op='mean')
     module.load_state_dict(states, strict=False)
 
 
