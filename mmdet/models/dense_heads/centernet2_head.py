@@ -103,94 +103,6 @@ def _get_points_single(featmap_size, stride, dtype, device, flatten=False):
     return points
 
 
-def _get_bboxes_single(hm_scores,
-                       reg_preds,
-                       mlvl_points,
-                       img_shapes,
-                       scale_factors,
-                       cfg,
-                       rescale=False,
-                       with_nms=True):
-    """Transform outputs for a single image into bbox predictions.
-
-    Args:
-        hm_scores (list[Tensor]): heatmap scores of all levels for a
-            single image. Tensor shape [1, H, W]
-        reg_preds (list[Tensor]): regression predictions of all levels
-         for a single image. Tensor shape [4, H, W]
-        mlvl_points (list[Tensor]): Box reference for a single scale level
-            with shape (num_total_points, 2).
-        img_shapes (list[tuple[int]]): Shape of the input image,
-            list[(height, width, 3)].
-        scale_factors [ndarray]: Scale factor of the image arrange as
-            array[w_scale, h_scale, w_scale, h_scale].
-        cfg (mmcv.Config | None): Test / postprocessing configuration,
-            if None, test_cfg would be used.
-        rescale (bool): If True, return boxes in original image space.
-            Default: False.
-        with_nms (bool): If True, do nms before return boxes.
-            Default: True.
-
-    Returns:
-        proposal (Tensor): proposals for a single image,
-            Tensor shape (PN, 5) where PN is the number of all proposals
-            for a single image.
-    """
-
-    level_ids = []
-    mlvl_scores = []
-    mlvl_bbox_preds = []
-    for level in range(len(hm_scores)):
-        hm_score = hm_scores[level].reshape(-1)
-        reg_pred = reg_preds[level].reshape(-1, 4)
-        point = mlvl_points[level]
-
-        if cfg.get('score_thr'):
-            valid_idx = hm_score > cfg.get('score_thr')
-            valid_idx = valid_idx.nonzero(as_tuple=True)
-            hm_score = hm_score[valid_idx]
-            reg_pred = reg_pred[valid_idx]
-            point = point[valid_idx]
-
-        pre_nms_top_n = hm_score.shape[0]
-        assert cfg.get('nms_pre', -1) > 0, 'Must specify nms_pre'
-        pre_nms_top_n = min(pre_nms_top_n, cfg.get('nms_pre'))
-        if hm_score.shape[0] >= pre_nms_top_n:
-            ranked_scores, rank_inds = hm_score.sort(descending=True)
-            reg_pred = reg_pred[rank_inds][:pre_nms_top_n]
-            point = point[rank_inds][:pre_nms_top_n, :]
-            hm_score = hm_score[:pre_nms_top_n]
-
-        bboxes = distance2bbox(point, reg_pred, max_shape=img_shapes)
-        mlvl_scores.append(hm_score)
-        mlvl_bbox_preds.append(bboxes)
-        level_ids.append(
-            hm_score.new_full((hm_score.size(0),), level, dtype=torch.long))
-
-        scores = torch.cat(mlvl_scores)
-        bboxes = torch.cat(mlvl_bbox_preds)
-        nms_indices = torch.cat(level_ids)
-        min_bbox_size = cfg.get('min_bbox_size', -1)
-        if min_bbox_size >= 0:
-            w = bboxes[:, 2] - bboxes[:, 0]
-            h = bboxes[:, 3] - bboxes[:, 1]
-            valid_mask = (w > min_bbox_size) & (h > min_bbox_size)
-            if not valid_mask.all():
-                scores = scores[valid_mask]
-                bboxes = bboxes[valid_mask]
-                nms_indices = nms_indices[valid_mask]
-
-    if rescale:
-        bboxes /= bboxes.new_tensor(scale_factors).unsqueeze(1)
-
-    if with_nms and scores.size(0) > cfg.nms.get('max_num'):
-        proposals, _ = batched_nms(bboxes, scores, nms_indices, cfg.nms)
-    else:
-        proposals = torch.cat([bboxes, scores[:, None]], dim=-1)
-
-    return proposals
-
-
 @HEADS.register_module()
 class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
     """Anchor-free head used in `CenterNet2 <>`_.
@@ -399,9 +311,9 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         feature_map_sizes = [feature_map.size()[-2:] for feature_map in hm_scores]
         points = self.get_points(feature_map_sizes, reg_preds[0].dtype, reg_preds[0].device)
         hm_scores = torch.cat([x.permute(0, 2, 3, 1).reshape(-1)
-                               for x in hm_scores], dim=0)
+                               for x in hm_scores], dim=0).contiguous()
         reg_preds = torch.cat([x.permute(0, 2, 3, 1).reshape(-1, 4)
-                               for x in reg_preds], dim=0)
+                               for x in reg_preds], dim=0).contiguous()
         assert (torch.isfinite(reg_preds).all().item())
         flatten_points = torch.cat([point.repeat(len(img_metas), 1) for point in points])
 
@@ -413,7 +325,6 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         reg_inds = torch.nonzero(reg_targets.max(dim=1)[0] >= 0).squeeze(1)
         reg_preds = reg_preds[reg_inds]
         flatten_points = flatten_points[reg_inds]
-
         reg_targets_pos = reg_targets[reg_inds]
         reg_weight_map = flattened_hms.max(dim=1)[0]
         reg_weight_map = reg_weight_map[reg_inds]
@@ -423,11 +334,12 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
 
         bbox_preds = distance2bbox(flatten_points, reg_preds)
         bbox_targets = distance2bbox(flatten_points, reg_targets_pos)
+
         reg_loss = self.loss_bbox(bbox_preds, bbox_targets, reg_weight_map, reg_norm)
 
         cat_agn_heatmap = flattened_hms.max(dim=1)[0]  # M
-        pos_loss, neg_loss = self.loss_hm(hm_scores, cat_agn_heatmap, pos_indices, num_pos_avg)
-        print(hm_scores.shape, cat_agn_heatmap. shape, pos_indices.shape, bbox_targets.size(0))
+        pos_loss, neg_loss = self.loss_hm(hm_scores, cat_agn_heatmap, reg_inds, num_pos_avg)
+
 
         return dict(pos_loss=pos_loss, neg_loss=neg_loss, loss_bbox=reg_loss)
 
@@ -556,11 +468,103 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = _get_bboxes_single(hm_score_list, bbox_pred_list,
+            proposals = self._get_bboxes_single(hm_score_list, bbox_pred_list,
                                            points, img_shape,
                                            scale_factor, cfg, rescale)
             proposal_list.append(proposals)
         return proposal_list
+
+    def _get_bboxes_single(self,
+                           hm_scores,
+                           reg_preds,
+                           mlvl_points,
+                           img_shapes,
+                           scale_factors,
+                           cfg,
+                           rescale=False,
+                           with_nms=True):
+        """Transform outputs for a single image into bbox predictions.
+
+        Args:
+            hm_scores (list[Tensor]): heatmap scores of all levels for a
+                single image. Tensor shape [1, H, W]
+            reg_preds (list[Tensor]): regression predictions of all levels
+             for a single image. Tensor shape [4, H, W]
+            mlvl_points (list[Tensor]): Box reference for a single scale level
+                with shape (num_total_points, 2).
+            img_shapes (list[tuple[int]]): Shape of the input image,
+                list[(height, width, 3)].
+            scale_factors [ndarray]: Scale factor of the image arrange as
+                array[w_scale, h_scale, w_scale, h_scale].
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            proposal (Tensor): proposals for a single image,
+                Tensor shape (PN, 5) where PN is the number of all proposals
+                for a single image.
+        """
+
+        level_ids = []
+        mlvl_scores = []
+        mlvl_bbox_preds = []
+        for level in range(len(hm_scores)):
+            hm_score = hm_scores[level].reshape(-1)
+            reg_pred = reg_preds[level].reshape(-1, 4)
+            point = mlvl_points[level]
+
+            if cfg.get('score_thr'):
+                valid_idx = hm_score > cfg.get('score_thr')
+                valid_idx = valid_idx.nonzero(as_tuple=True)
+                hm_score = hm_score[valid_idx]
+                reg_pred = reg_pred[valid_idx]
+                point = point[valid_idx]
+
+            pre_nms_top_n = hm_score.shape[0]
+            assert cfg.get('nms_pre', -1) > 0, 'Must specify nms_pre'
+            pre_nms_top_n = min(pre_nms_top_n, cfg.get('nms_pre'))
+            if hm_score.shape[0] >= pre_nms_top_n:
+                ranked_scores, rank_inds = hm_score.sort(descending=True)
+                reg_pred = reg_pred[rank_inds][:pre_nms_top_n]
+                point = point[rank_inds][:pre_nms_top_n, :]
+                hm_score = hm_score[:pre_nms_top_n]
+
+            reg_pred *= self.strides[level]
+
+            bboxes = distance2bbox(point, reg_pred, max_shape=img_shapes)
+            mlvl_scores.append(hm_score)
+            mlvl_bbox_preds.append(bboxes)
+            level_ids.append(
+                hm_score.new_full((hm_score.size(0),), level, dtype=torch.long))
+
+            scores = torch.cat(mlvl_scores)
+            bboxes = torch.cat(mlvl_bbox_preds)
+            nms_indices = torch.cat(level_ids)
+            min_bbox_size = cfg.get('min_bbox_size', -1)
+            if min_bbox_size >= 0:
+                w = bboxes[:, 2] - bboxes[:, 0]
+                h = bboxes[:, 3] - bboxes[:, 1]
+                valid_mask = (w > min_bbox_size) & (h > min_bbox_size)
+                if not valid_mask.all():
+                    scores = scores[valid_mask]
+                    bboxes = bboxes[valid_mask]
+                    nms_indices = nms_indices[valid_mask]
+
+        scores = torch.sqrt(scores)
+
+        if rescale:
+            bboxes /= bboxes.new_tensor(scale_factors).unsqueeze(1)
+
+        if with_nms and scores.size(0) > cfg.nms.get('max_num'):
+            proposals, _ = batched_nms(bboxes, scores, nms_indices, cfg.nms)
+        else:
+            proposals = torch.cat([bboxes, scores[:, None]], dim=-1)
+
+        return proposals
 
     def get_points(self, featmap_sizes, dtype, device, flatten=False):
         """Get points according to feature map sizes.
