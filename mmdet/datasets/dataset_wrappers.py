@@ -280,4 +280,3 @@ class ClassBalancedDataset:
     def __len__(self):
         """Length after repetition."""
         return len(self.repeat_indices)
-
