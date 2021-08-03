@@ -1,4 +1,3 @@
-from .ema import ExpDecayEMAHook, LinerDecayEMAHook
-__all__ = [
-    'ExpDecayEMAHook', 'LinerDecayEMAHook'
-]
+from .ema import ExpDecayEMAHook, LinearDecayEMAHook
+
+__all__ = ['ExpDecayEMAHook', 'LinearDecayEMAHook']

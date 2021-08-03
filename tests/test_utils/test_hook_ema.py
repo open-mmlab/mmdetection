@@ -1,20 +1,22 @@
 """Tests the hooks with runners.
+
 CommandLine:
     pytest tests/test_utils/test_hook_eam.py
     xdoctest tests/test_utils/test_hook_eam.py zero
 """
-import tempfile
 import logging
 import shutil
+import tempfile
+
 import numpy as np
 import torch
 import torch.nn as nn
+from mmcv.runner import CheckpointHook, build_runner
 from torch.nn.init import constant_
 from torch.utils.data import DataLoader
 
-from mmcv.runner import (CheckpointHook, build_runner)
+from mmdet.core.hook import ExpDecayEMAHook
 
-from mmdet.core.hook import ExpDecayEMAHook, LinerDecayEMAHook
 
 def _build_demo_runner(runner_type='EpochBasedRunner',
                        max_epochs=1,
@@ -37,6 +39,7 @@ def _build_demo_runner_without_hook(runner_type='EpochBasedRunner',
                                     max_epochs=1,
                                     max_iters=None,
                                     multi_optimziers=False):
+
     class Model(nn.Module):
 
         def __init__(self):
@@ -58,9 +61,9 @@ def _build_demo_runner_without_hook(runner_type='EpochBasedRunner',
     if multi_optimziers:
         optimizer = {
             'model1':
-                torch.optim.SGD(model.linear.parameters(), lr=0.02, momentum=0.95),
+            torch.optim.SGD(model.linear.parameters(), lr=0.02, momentum=0.95),
             'model2':
-                torch.optim.SGD(model.conv.parameters(), lr=0.01, momentum=0.9),
+            torch.optim.SGD(model.conv.parameters(), lr=0.01, momentum=0.9),
         }
     else:
         optimizer = torch.optim.SGD(model.parameters(), lr=0.02, momentum=0.95)
@@ -76,6 +79,7 @@ def _build_demo_runner_without_hook(runner_type='EpochBasedRunner',
             max_epochs=max_epochs,
             max_iters=max_iters))
     return runner
+
 
 def test_ema_hook():
     """xdoctest -m tests/test_hooks.py test_ema_hook."""
@@ -113,8 +117,12 @@ def test_ema_hook():
     runner = _build_demo_runner()
     demo_model = DemoModel()
     runner.model = demo_model
-    ema_hook = ExpDecayEMAHook(decay=0.9998, total_iter=1,
-        skip_bn_running_stats=True, interval=2, resume_from=None)
+    ema_hook = ExpDecayEMAHook(
+        decay=0.9998,
+        total_iter=1,
+        skip_buffer=True,
+        interval=2,
+        resume_from=None)
     checkpointhook = CheckpointHook(interval=1, by_epoch=True)
     runner.register_hook(ema_hook, priority='HIGHEST')
     runner.register_hook(checkpointhook)
@@ -127,10 +135,14 @@ def test_ema_hook():
             value.fill_(1)
     assert num_eam_params == 4
     torch.save(checkpoint, f'{runner.work_dir}/epoch_1.pth')
-    
+
     work_dir = runner.work_dir
-    resume_ema_hook = ExpDecayEMAHook(decay=0.5, total_iter=10,
-        skip_bn_running_stats=True, interval=1, resume_from=f'{work_dir}/epoch_1.pth')
+    resume_ema_hook = ExpDecayEMAHook(
+        decay=0.5,
+        total_iter=10,
+        skip_buffer=True,
+        interval=1,
+        resume_from=f'{work_dir}/epoch_1.pth')
     runner = _build_demo_runner(max_epochs=2)
     runner.model = demo_model
     runner.register_hook(resume_ema_hook, priority='HIGHEST')
@@ -146,7 +158,8 @@ def test_ema_hook():
             assert value.sum() == 2
         else:
             if ('weight' in name) or ('bias' in name):
-                np.allclose(value.data.cpu().numpy().reshape(-1), desired_output, 1e-4)
+                np.allclose(value.data.cpu().numpy().reshape(-1),
+                            desired_output, 1e-4)
     assert num_eam_params == 4
     shutil.rmtree(runner.work_dir)
     shutil.rmtree(work_dir)
