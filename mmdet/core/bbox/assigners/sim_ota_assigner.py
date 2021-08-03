@@ -18,13 +18,21 @@ class SimOTAAssigner(BaseAssigner):
             to judge whether a prior is in center. Default 2.5.
         candidate_topk (int, optional): The candidate top-k which used to
             get top-k ious to calculate dynamic-k. Default 10.
+        iou_weight (int | float, optional): The scale factor for regression
+            iou cost. Default 3.0.
+        cls_weight (int | float, optional): The scale factor for classification
+            cost. Default 1.0.
     """
 
-    def __init__(self, center_radius=2.5, candidate_topk=10):
+    def __init__(self,
+                 center_radius=2.5,
+                 candidate_topk=10,
+                 iou_weight=3.0,
+                 cls_weight=1.0):
         self.center_radius = center_radius
         self.candidate_topk = candidate_topk
-        self.iou_cost_weight = 3
-        self.cls_cost_weight = 1
+        self.iou_weight = iou_weight
+        self.cls_weight = cls_weight
 
     def assign(self,
                pred_scores,
@@ -149,7 +157,7 @@ class SimOTAAssigner(BaseAssigner):
             reduction='none').sum(-1)
 
         cost_matrix = (
-            cls_cost * self.cls_cost_weight + iou_cost * self.iou_cost_weight +
+            cls_cost * self.cls_weight + iou_cost * self.iou_weight +
             (~is_in_boxes_and_center) * INF)
 
         pred_ious_this_matching, matched_gt_inds = \

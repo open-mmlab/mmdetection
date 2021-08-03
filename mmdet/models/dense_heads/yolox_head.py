@@ -357,7 +357,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         flatten_priors = torch.cat(mlvl_priors)
         flatten_bboxes = self._bbox_decode(flatten_priors, flatten_bbox_preds)
 
-        (foreground_masks, cls_targets, obj_targets, bbox_targets, l1_targets,
+        (pos_masks, cls_targets, obj_targets, bbox_targets, l1_targets,
          num_fg_imgs) = multi_apply(
              self._get_target_single, flatten_cls_preds.detach(),
              flatten_objectness.detach(),
@@ -365,35 +365,35 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
              flatten_bboxes.detach(), gt_bboxes, gt_labels)
 
         num_total_samples = max(sum(num_fg_imgs), 1)
-        foreground_masks = torch.cat(foreground_masks, 0)
+        pos_masks = torch.cat(pos_masks, 0)
         cls_targets = torch.cat(cls_targets, 0)
         obj_targets = torch.cat(obj_targets, 0)
         bbox_targets = torch.cat(bbox_targets, 0)
         if self.use_l1:
             l1_targets = torch.cat(l1_targets, 0)
 
-        loss_iou = self.loss_bbox(
-            flatten_bboxes.view(-1, 4)[foreground_masks],
+        loss_bbox = self.loss_bbox(
+            flatten_bboxes.view(-1, 4)[pos_masks],
             bbox_targets) / num_total_samples
         loss_obj = self.loss_obj(flatten_objectness.view(-1, 1),
                                  obj_targets) / num_total_samples
         loss_cls = self.loss_cls(
-            flatten_cls_preds.view(-1, self.num_classes)[foreground_masks],
+            flatten_cls_preds.view(-1, self.num_classes)[pos_masks],
             cls_targets) / num_total_samples
 
         if self.use_l1:
             loss_l1 = self.loss_l1(
-                flatten_bbox_preds.view(-1, 4)[foreground_masks],
+                flatten_bbox_preds.view(-1, 4)[pos_masks],
                 l1_targets) / num_total_samples
 
             return dict(
                 loss_cls=loss_cls,
-                loss_iou=loss_iou,
+                loss_bbox=loss_bbox,
                 loss_obj=loss_obj,
                 loss_l1=loss_l1)
         else:
             return dict(
-                loss_cls=loss_cls, loss_iou=loss_iou, loss_obj=loss_obj)
+                loss_cls=loss_cls, loss_bbox=loss_bbox, loss_obj=loss_obj)
 
     @torch.no_grad()
     def _get_target_single(self, cls_preds, objectness, priors, decoded_bboxes,
