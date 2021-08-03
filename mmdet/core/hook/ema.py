@@ -21,6 +21,9 @@ class BaseEMAHook(Hook):
         interval (int): Update ema parameter every interval iteration.
             Defaults to 1.
         resume_from (str, Optional): The checkpoint path. Defaults to None.
+        decay_fun (func, Optional): the function to change decay during early iteration
+            (also warmup) to help early training. Defaults to None, it use `decay` as a
+            constant.
     """
 
     def __init__(self, decay=0.9998, skip_buffers=False, interval=1,
