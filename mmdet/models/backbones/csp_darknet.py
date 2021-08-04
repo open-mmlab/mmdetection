@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
@@ -68,13 +70,15 @@ class SPPBottleneck(BaseModule):
         in_channels (int): The input channels of this Module.
         out_channels (int): The output channels of this Module.
         kernel_sizes (tuple[int]): Sequential of kernel sizes of pooling
-            layers. Default: (5, 9, 13)
+            layers. Default: (5, 9, 13).
         conv_cfg (dict): Config dict for convolution layer. Default: None,
             which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer.
             Default: dict(type='BN').
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='Swish').
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None.
     """
 
     def __init__(self,
@@ -133,6 +137,8 @@ class CSPDarknet(BaseModule):
         use_depthwise (bool): Whether to use depthwise separable convolution.
             Default: False.
         arch_ovewrite(list): Overwrite default arch settings. Default: None.
+        spp_kernal_sizes: (tuple[int]): Sequential of kernel sizes of SPP
+            layers. Default: (5, 9, 13).
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True).
@@ -175,11 +181,18 @@ class CSPDarknet(BaseModule):
                  frozen_stages=-1,
                  use_depthwise=False,
                  arch_ovewrite=None,
+                 spp_kernal_sizes=(5, 9, 13),
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
                  act_cfg=dict(type='Swish'),
                  norm_eval=False,
-                 init_cfg=None):
+                 init_cfg=dict(
+                     type='Kaiming',
+                     layer='Conv2d',
+                     a=math.sqrt(5),
+                     distribution='uniform',
+                     mode='fan_in',
+                     nonlinearity='leaky_relu')):
         super().__init__(init_cfg)
         arch_setting = self.arch_settings[arch]
         if arch_ovewrite:
@@ -226,6 +239,7 @@ class CSPDarknet(BaseModule):
                 spp = SPPBottleneck(
                     out_channels,
                     out_channels,
+                    kernel_sizes=spp_kernal_sizes,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     act_cfg=act_cfg)

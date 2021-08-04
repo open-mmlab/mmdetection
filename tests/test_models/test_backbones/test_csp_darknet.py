@@ -69,8 +69,12 @@ def test_csp_darknet_backbone():
     assert feat[3].shape == torch.Size((1, 256, 14, 14))
     assert feat[4].shape == torch.Size((1, 512, 7, 7))
 
-    # Test CSPDarknet-P6 forward with widen_factor=2.0
-    model = CSPDarknet(arch='P6', widen_factor=1.5, out_indices=range(0, 6))
+    # Test CSPDarknet-P6 forward with widen_factor=1.5
+    model = CSPDarknet(
+        arch='P6',
+        widen_factor=1.5,
+        out_indices=range(0, 6),
+        spp_kernal_sizes=(3, 5, 7))
     model.init_weights()
     model.train()
 
