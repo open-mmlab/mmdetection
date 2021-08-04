@@ -1,4 +1,5 @@
 import math
+import warnings
 
 import mmcv
 import torch
@@ -23,7 +24,7 @@ def iou_loss(pred, target, linear=False, mode='log', eps=1e-6):
         target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
         linear (bool, optional): If True, use linear scale of loss instead of
             log scale. Default: False.
-        mode (str): Loss scaling mode, including linear, square, and log.
+        mode (str): Loss scaling mode, including "linear", "square", and "log".
             Default: 'log'
         eps (float): Eps to avoid log(0).
 
@@ -33,6 +34,9 @@ def iou_loss(pred, target, linear=False, mode='log', eps=1e-6):
     assert mode in ['linear', 'square', 'log']
     if linear:
         mode = 'linear'
+        warnings.warn('DeprecationWarning: Setting "linear=True" in '
+                      'iou_loss is deprecated, please use "mode=`linear`" '
+                      'instead.')
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
     if mode == 'linear':
         loss = 1 - ious
@@ -240,7 +244,7 @@ class IoULoss(nn.Module):
         eps (float): Eps to avoid log(0).
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Weight of loss.
-        mode (str): Loss scaling mode, including linear, square, and log.
+        mode (str): Loss scaling mode, including "linear", "square", and "log".
             Default: 'log'
     """
 
@@ -254,6 +258,9 @@ class IoULoss(nn.Module):
         assert mode in ['linear', 'square', 'log']
         if linear:
             mode = 'linear'
+            warnings.warn('DeprecationWarning: Setting "linear=True" in '
+                          'IOULoss is deprecated, please use "mode=`linear`" '
+                          'instead.')
         self.mode = mode
         self.linear = linear
         self.eps = eps

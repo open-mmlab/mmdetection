@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -75,7 +77,13 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                  loss_l1=dict(type='L1Loss', reduction='sum', loss_weight=1.0),
                  train_cfg=None,
                  test_cfg=None,
-                 init_cfg=None):
+                 init_cfg=dict(
+                     type='Kaiming',
+                     layer='Conv2d',
+                     a=math.sqrt(5),
+                     distribution='uniform',
+                     mode='fan_in',
+                     nonlinearity='leaky_relu')):
 
         super().__init__(init_cfg=init_cfg)
         self.num_classes = num_classes
