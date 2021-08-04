@@ -1950,20 +1950,22 @@ class Mosaic:
     def __init__(self,
                  img_scale=(640, 640),
                  pad_value=114,
-                 mosaic_scale=(0.5, 1.5),
-                 dataset=None):
+                 mosaic_scale=(0.5, 1.5)
+                 ):
         assert isinstance(img_scale, tuple)
         assert isinstance(img_scale[0], int) and isinstance(img_scale[1], int)
-        assert isinstance(dataset, dict)
         self.img_scale = img_scale
         self.mosaic_scale = mosaic_scale
         self.pad_value = pad_value
-        self.dataset = build_from_cfg(dataset, DATASETS)
-        self.num_sample = len(dataset)
+
 
     def __call__(self, results):
         results = self._mosaic_transform(results)
         return results
+
+    def get_indexes(self, dataset):
+        indexs = [random.randint(0, len(dataset)) for _ in range(3)]
+        return indexs
 
     def _mosaic_transform(self, results):
         """Mosiac function.
@@ -1985,16 +1987,14 @@ class Mosaic:
         center_y = int(random.uniform(*self.mosaic_scale) * self.img_scale[1])
         center_position = (center_x, center_y)
 
-        indices = [random.randint(0, self.num_sample - 1) for _ in range(3)]
-
         for i, loc in enumerate(
             ('top_left', 'top_right', 'bottom_left', 'bottom_right')):
-            if loc == 'top_left':
-                results = copy.deepcopy(results)
+            if loc == "top_left":
+                results_patch = copy.deepcopy(results)
             else:
-                results = copy.deepcopy(self.dataset[indices[i - 1]])
+                results_patch = copy.deepcopy(results["mix_results"][i-1])
 
-            img_i = results['img']
+            img_i = results_patch['img']
             h_i, w_i = img_i.shape[:2]
             # keep_ratio resize
             scale_ratio_i = min(self.img_scale[0] / h_i,
@@ -2012,8 +2012,8 @@ class Mosaic:
             mosaic_img[y1_p:y2_p, x1_p:x2_p] = img_i[y1_c:y2_c, x1_c:x2_c]
 
             # adjust coordinate
-            gt_bboxes_i = results['gt_bboxes']
-            gt_labels_i = results['gt_labels']
+            gt_bboxes_i = results_patch['gt_bboxes']
+            gt_labels_i = results_patch['gt_labels']
 
             if gt_bboxes_i.shape[0] > 0:
                 padw = x1_p - x1_c
@@ -2099,7 +2099,6 @@ class Mosaic:
         repr_str += f'img_scale={self.img_scale}, '
         repr_str += f'mosaic_scale={self.mosaic_scale})'
         repr_str += f'pad_value={self.pad_value})'
-        repr_str += f'dataset={self.dataset})'
         return repr_str
 
 
@@ -2137,23 +2136,33 @@ class MixUp:
                  img_scale=(640, 640),
                  mixup_scale=(0.5, 1.5),
                  pad_value=114,
-                 dataset=None,
                  mixup_flip_ratio=0.5,
                  eps=1e-16):
         assert isinstance(img_scale, tuple)
         assert isinstance(img_scale[0], int) and isinstance(img_scale[1], int)
-        assert isinstance(dataset, dict)
         self.mixup_scale = mixup_scale
         self.pad_value = pad_value
         self.dynamic_scale = img_scale
         self.mixup_flip_ratio = mixup_flip_ratio
-        self.dataset = build_from_cfg(dataset, DATASETS)
-        self.num_sample = len(dataset)
         self.eps = eps
 
     def __call__(self, results):
         results = self._mixup_transform(results)
         return results
+
+    def get_indexes(self, dataset):
+        gt_bboxes_i = []
+        for i in range(15):
+            index = random.randint(0, len(dataset))
+            gt_bboxes_i = dataset.get_ann_info(index)['bboxes']
+            if len(gt_bboxes_i) != 0:
+                break
+
+        if len(gt_bboxes_i) == 0:
+            return []
+        else:
+            return random.randint(0, len(dataset))
+
 
     def _mixup_transform(self, results):
         """Mixup function.
@@ -2164,24 +2173,18 @@ class MixUp:
         Returns:
             dict: Updated result dict.
         """
+        if "mix_results" not in results:
+            return results
+
         results = copy.deepcopy(results)
+        assert len(results["mix_results"]) == 1, "Mixup only support 2 images now !"
+        retrieve_results = copy.deepcopy(results["mix_results"][0])
+        retrieve_img = retrieve_results['img']
 
         jit_factor = random.uniform(*self.mixup_scale)
         is_filp = random.uniform(0, 1) > self.mixup_flip_ratio
 
-        # 0. retrieve data
-        gt_bboxes_i = []
-        for i in range(15):
-            index = random.randint(0, self.num_sample)
-            gt_bboxes_i = self.dataset.get_ann_info(index)['bboxes']
-            if len(gt_bboxes_i) != 0:
-                break
 
-        if len(gt_bboxes_i) == 0:
-            return results
-
-        retrieve_results = copy.deepcopy(self.dataset[index])
-        retrieve_img = retrieve_results['img']
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones((self.dynamic_scale[0], self.dynamic_scale[1],

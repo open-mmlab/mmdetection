@@ -287,9 +287,9 @@ class ClassBalancedDataset:
         """Length after repetition."""
         return len(self.repeat_indices)
 
-
+@DATASETS.register_module()
 class MultiImageMixDataset:
-    def __init__(self, dataset, pipelines, dynamic_scale):
+    def __init__(self, dataset, pipelines, dynamic_scale, enable_mixaug=True):
         assert isinstance(pipelines, collections.abc.Sequence)
         self.pipelines = []
         for pipeline in pipelines:
@@ -308,6 +308,12 @@ class MultiImageMixDataset:
         self.num_sample = len(dataset)
 
         self.dynamic_scale = dynamic_scale
+        self.enable_mixaug = enable_mixaug
+
+    def disable_mixaug(self):
+        for pipeline in self.pipelines:
+            if hasattr(pipeline, "get_indexes"):
+                self.pipelines.remove(pipeline)
 
     def __len__(self):
         return self.num_sample
@@ -317,11 +323,14 @@ class MultiImageMixDataset:
         for pipeline in self.pipelines:
             if hasattr(pipeline, 'get_indexes'):
                 indexes = pipeline.get_indexes(self.dataset)
-                if isinstance(indexes, collections.abc.Sequence):
+                if not isinstance(indexes, collections.abc.Sequence):
                     indexes = [indexes]
-                mix_results = [copy.deepcopy(self.dataset[index]) for index in indexes]
-                results['mix_results'] = mix_results
+                if indexes:
+                    mix_results = [copy.deepcopy(self.dataset[index]) for index in indexes]
+                    results['mix_results'] = mix_results
                 if self.dynamic_scale is not None:
-                    results['dynamic_scale'] = self.dynamic_scale
+                    results['img_scale'] = self.dynamic_scale
             results = pipeline(results)
+        if 'mix_results' in results:
+            results.pop('mix_results')
         return results

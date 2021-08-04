@@ -53,7 +53,7 @@ def _concat_dataset(cfg, default_args=None):
 
 def build_dataset(cfg, default_args=None):
     from .dataset_wrappers import (ConcatDataset, RepeatDataset,
-                                   ClassBalancedDataset)
+                                   ClassBalancedDataset, MultiImageMixDataset)
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'ConcatDataset':
@@ -66,6 +66,10 @@ def build_dataset(cfg, default_args=None):
     elif cfg['type'] == 'ClassBalancedDataset':
         dataset = ClassBalancedDataset(
             build_dataset(cfg['dataset'], default_args), cfg['oversample_thr'])
+    elif cfg['type'] == 'MultiImageMixDataset':
+        cfg['dataset'] = build_dataset(cfg['dataset'])
+        cfg.pop('type')
+        dataset = MultiImageMixDataset(**cfg)
     elif isinstance(cfg.get('ann_file'), (list, tuple)):
         dataset = _concat_dataset(cfg, default_args)
     else:
