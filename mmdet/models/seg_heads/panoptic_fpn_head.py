@@ -1,53 +1,10 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule, ModuleList
+from mmcv.runner import ModuleList
 
 from ..builder import HEADS
+from ..utils import ConvUpsample
 from .base_semantic_head import BaseSemanticHead
-
-
-class ConvUpsample(BaseModule):
-    """The subnet of Panoptic FPN Head."""
-
-    def __init__(self,
-                 in_channels,
-                 inner_channels,
-                 num_layers=1,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 num_upsample=None,
-                 init_cfg=None):
-        super(ConvUpsample, self).__init__(init_cfg)
-        # performs 2x upsample after each conv module
-        if num_upsample is None:
-            num_upsample = num_layers
-
-        self.num_layers = num_layers
-        self.num_upsample = num_upsample
-        self.conv = ModuleList()
-        for i in range(num_layers):
-            self.conv.append(
-                ConvModule(
-                    in_channels,
-                    inner_channels,
-                    3,
-                    padding=1,
-                    stride=1,
-                    conv_cfg=conv_cfg,
-                    norm_cfg=norm_cfg))
-            in_channels = inner_channels
-
-    def forward(self, x):
-        num_upsample = self.num_upsample
-        for i in range(self.num_layers):
-            x = self.conv[i](x)
-            if num_upsample > 0:
-                num_upsample -= 1
-                x = F.interpolate(
-                    x, scale_factor=2, mode='bilinear', align_corners=False)
-        return x
 
 
 @HEADS.register_module()
