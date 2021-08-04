@@ -90,7 +90,7 @@ class ConcatDataset(_ConcatDataset):
         # Check whether all the datasets support evaluation
         for dataset in self.datasets:
             assert hasattr(dataset, 'evaluate'), \
-                    f'{type(dataset)} does not implement evaluate function'
+                f'{type(dataset)} does not implement evaluate function'
 
         if self.separate_eval:
             dataset_idx = -1
@@ -316,8 +316,11 @@ class MultiImageMixDataset:
         results = self.dataset[idx]
         for pipeline in self.pipelines:
             if hasattr(pipeline, 'get_indexes'):
-                index = pipeline.get_indexes(self.dataset)
-                results['index'] = index
+                indexes = pipeline.get_indexes(self.dataset)
+                if isinstance(indexes, collections.abc.Sequence):
+                    indexes = [indexes]
+                mix_results = [copy.deepcopy(self.dataset[index]) for index in indexes]
+                results['mix_results'] = mix_results
                 if self.dynamic_scale is not None:
                     results['dynamic_scale'] = self.dynamic_scale
             results = pipeline(results)
