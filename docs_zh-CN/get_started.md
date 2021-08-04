@@ -105,24 +105,32 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
     pip install mmcv-full
     ```
 
-2. 将 MMDetection 仓库克隆至本地：
+2. 安装 MMDetection：
+
+    你可以直接通过如下命令从 pip 安装使用 mmdetection:
+
+    ```shell
+    pip install mmdet
+    ```
+
+    或者从 git 仓库编译源码
 
     ```shell
     git clone https://github.com/open-mmlab/mmdetection.git
     cd mmdetection
-    ```
-
-3. 首先安装需要的依赖包，然后安装 MMDetection：
-
-    ```shell
     pip install -r requirements/build.txt
-    pip install -v -e .  # 或者使用 "python setup.py develop"
+    pip install -v -e .  # or "python setup.py develop"
     ```
 
-    或者，可以使用更简单的命令安装 MMDetection：
+3. 安装额外的依赖以使用 Instaboost, 全景分割, 或者 LVIS 数据集
 
     ```shell
-    pip install mmdet
+    # 安装 instaboost 依赖
+    pip install instaboostfast
+    # 安装全景分割依赖
+    pip install git+https://github.com/cocodataset/panopticapi.git
+    # 安装 LVIS 数据集依赖
+    pip install git+https://github.com/lvis-dataset/lvis-api.git
     ```
 
 **注意：**
