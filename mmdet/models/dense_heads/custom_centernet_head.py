@@ -134,21 +134,9 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.score_thresh = 0.0001
         self.not_nms = False
 
-        head_configs = {"cls": (4, False),
-                        "bbox": (4, False),
-                        "share": (0, False)}
-
-<<<<<<< HEAD
-        # centernet2, channels from ["p3", "p4", "p5", "p6", "p7"]
-        # in_channels = [s.channels for s in input_shape]
-        # assert len(set(in_channels)) == 1, \
-        #     "Each level must have the same channel!"
-        # in_channels = in_channels[0]
-=======
-        head_configs = {"cls": (num_cls_convs,False),
-                        "bbox": (num_box_convs,False),
-                        "share": (num_share_convs,False)}
->>>>>>> c98a98393bd8f1a98ad34d3956774e335f006d19
+        head_configs = {"cls": (num_cls_convs, False),
+                        "bbox": (num_box_convs, False),
+                        "share": (num_share_convs, False)}
 
         channels = {
             'cls': in_channel,
@@ -156,54 +144,15 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             'share': in_channel,
         }
 
-<<<<<<< HEAD
-        # initialize the 1.<cls_tower> 2.<bbox_tower> 3.<share_tower>
-        for head in head_configs:
-            tower = []
-            num_convs, use_deformable = head_configs[head]
-            channel = channels[head]
-            for i in range(num_convs):
-                conv_func = nn.Conv2d
-                tower.append(conv_func(
-                        in_channel if i == 0 else channel,
-                        channel,
-                        kernel_size=3, stride=1,
-                        padding=1, bias=True
-                ))
-                if norm == 'GN' and channel % 32 != 0:
-                    tower.append(nn.GroupNorm(25, channel))
-                elif norm != '':
-                    # print("please add get_norm function")
-                    tower.append(get_norm(norm, channel))
-                tower.append(nn.ReLU())
-            self.add_module('{}_tower'.format(head),
-                            nn.Sequential(*tower))
+        # init  1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
+        self._build_tower(head_configs, channels)
+        self.bbox_pred = self._build_head(in_channel, 4)
 
-        # initialize the    <bbox_pred>
-        self.bbox_pred = nn.Conv2d(
-            in_channel, 4, kernel_size=self.out_kernel,
-            stride=1, padding=self.out_kernel // 2
-        )
-
-        # initialize the     <scales>
+        # init   <scales>
         self.scales = nn.ModuleList(
             [Scale(init_value=1.0) for _ in range(num_features)])
 
-        # initialize the     <agn_hm>
-        self.agn_hm = nn.Conv2d(
-            in_channel, 1, kernel_size=self.out_kernel,
-            stride=1, padding=self.out_kernel // 2
-        )
-=======
-        self._build_tower(head_configs, channels)               # init  1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
-
-        self.bbox_pred = self._build_head(in_channel, 4)
-
-        self.scales = nn.ModuleList(                                # init   <scales>
-            [Scale(init_value=1.0) for _ in range(num_features)])
-
         self.agn_hm = self._build_head(in_channel, 1)
->>>>>>> c98a98393bd8f1a98ad34d3956774e335f006d19
 
         # initialize the <cls_logits>, config assigns it to false !
         if not self.only_proposal:
@@ -215,19 +164,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 padding=cls_kernel_size // 2,
             )
 
-<<<<<<< HEAD
-    def init_weights(self):
-        """Initialize weights of the head."""
-        # bias_init = bias_init_with_prob(0.1)
-        # self.heatmap_head[-1].bias.data.fill_(bias_init)
-        # for head in [self.wh_head, self.offset_head]:
-        #     for m in head.modules():
-        #         if isinstance(m, nn.Conv2d):
-        #             normal_init(m, std=0.001)
-
-        #  lq ##
-=======
-
     def _build_head(self, in_channel, out_channel):
         """Build head for each branch."""
         layer = nn.Conv2d(
@@ -235,7 +171,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             stride=1, padding=self.out_kernel // 2
         )
         return layer
-
 
     def _build_tower(self, head_configs, channels):
         ##### init the     1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
@@ -261,11 +196,8 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                             nn.Sequential(*tower))
 
 
-
     def init_weights(self):
         """Initialize weights of the head."""
->>>>>>> c98a98393bd8f1a98ad34d3956774e335f006d19
-
         # initialize the    1.<cls_tower>   2.<bbox_tower>    3.<share_tower>   4.<bbox_pred>
         for modules in [
             self.cls_tower, self.bbox_tower,
@@ -921,7 +853,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
         if self.only_proposal:
             proposals, proposals_class = self.predict_instances(
-                grids, agn_hm_pred_per_level, reg_pred_per_level, 
+                grids, agn_hm_pred_per_level, reg_pred_per_level,
                 images.image_sizes, [None for _ in agn_hm_pred_per_level])
         else:
             proposals, proposals_class = self.predict_instances(
@@ -1005,7 +937,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 per_class = per_class[top_k_indices]
                 per_box_regression = per_box_regression[top_k_indices]
                 per_grids = per_grids[top_k_indices]
-            
+
             detections = distance2bbox(per_grids, per_box_regression, max_shape=None)
 
             detections[:, 2] = torch.max(detections[:, 2].clone(), detections[:, 0].clone() + 0.01)
