@@ -94,23 +94,24 @@ def _get_global_gloo_group():
 
 
 def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
-    """Apply all reduce function for python dict object. The code is modified
-    from https://github.com/Megvii-
+    """Apply all reduce function for python dict object.
+
+    The code is modified from https://github.com/Megvii-
     BaseDetection/YOLOX/blob/main/yolox/utils/allreduce_norm.py.
 
-    NOTE: make sure that every py_dict has the same keys and values are
-        in the same shape.
+    NOTE: make sure that py_dict in different ranks has the same keys and
+    the values should be in the same shape.
 
     Args:
-        py_dict (dict): dict to apply all reduce op.
+        py_dict (dict): dict to be applied all reduce op.
         op (str): operator, could be 'sum' or 'mean'. Default to 'sum'
-        group (torch.distributed.group, optional): distributed group,
+        group (:obj:torch.distributed.group, optional): distributed group,
             Default to None.
-        to_float (bool): Whether to convert all dict values to float.
+        to_float (bool): Whether to convert all values of dict to float.
             Default to True.
 
     Returns:
-        OrderedDict[Tensor]: reduced python dict object.
+        OrderedDict: reduced python dict object.
     """
     _, world_size = get_dist_info()
     if world_size == 1:
