@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
@@ -25,6 +27,8 @@ class YOLOXPAFPN(BaseModule):
             Default: dict(type='BN')
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='Swish')
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None.
     """
 
     def __init__(self,
@@ -36,7 +40,13 @@ class YOLOXPAFPN(BaseModule):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
                  act_cfg=dict(type='Swish'),
-                 init_cfg=None):
+                 init_cfg=dict(
+                     type='Kaiming',
+                     layer='Conv2d',
+                     a=math.sqrt(5),
+                     distribution='uniform',
+                     mode='fan_in',
+                     nonlinearity='leaky_relu')):
         super(YOLOXPAFPN, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.out_channels = out_channels
