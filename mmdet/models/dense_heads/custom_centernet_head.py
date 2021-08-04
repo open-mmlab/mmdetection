@@ -88,12 +88,16 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                  in_channel,
                  num_classes,
                  num_features,
+                 num_cls_convs,
+                 num_box_convs,
+                 num_share_convs,
+                 use_deformable,
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
         super(CustomCenterNetHead, self).__init__(init_cfg)
         self.out_kernel = 3
-        norm = "GN"
+        self.norm = "GN"
         self.only_proposal = True
 
         self.num_classes = num_classes
@@ -134,11 +138,17 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                         "bbox": (4, False),
                         "share": (0, False)}
 
+<<<<<<< HEAD
         # centernet2, channels from ["p3", "p4", "p5", "p6", "p7"]
         # in_channels = [s.channels for s in input_shape]
         # assert len(set(in_channels)) == 1, \
         #     "Each level must have the same channel!"
         # in_channels = in_channels[0]
+=======
+        head_configs = {"cls": (num_cls_convs,False),
+                        "bbox": (num_box_convs,False),
+                        "share": (num_share_convs,False)}
+>>>>>>> c98a98393bd8f1a98ad34d3956774e335f006d19
 
         channels = {
             'cls': in_channel,
@@ -146,6 +156,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             'share': in_channel,
         }
 
+<<<<<<< HEAD
         # initialize the 1.<cls_tower> 2.<bbox_tower> 3.<share_tower>
         for head in head_configs:
             tower = []
@@ -183,6 +194,16 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             in_channel, 1, kernel_size=self.out_kernel,
             stride=1, padding=self.out_kernel // 2
         )
+=======
+        self._build_tower(head_configs, channels)               # init  1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
+
+        self.bbox_pred = self._build_head(in_channel, 4)
+
+        self.scales = nn.ModuleList(                                # init   <scales>
+            [Scale(init_value=1.0) for _ in range(num_features)])
+
+        self.agn_hm = self._build_head(in_channel, 1)
+>>>>>>> c98a98393bd8f1a98ad34d3956774e335f006d19
 
         # initialize the <cls_logits>, config assigns it to false !
         if not self.only_proposal:
@@ -194,6 +215,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 padding=cls_kernel_size // 2,
             )
 
+<<<<<<< HEAD
     def init_weights(self):
         """Initialize weights of the head."""
         # bias_init = bias_init_with_prob(0.1)
@@ -204,6 +226,45 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         #             normal_init(m, std=0.001)
 
         #  lq ##
+=======
+
+    def _build_head(self, in_channel, out_channel):
+        """Build head for each branch."""
+        layer = nn.Conv2d(
+            in_channel, out_channel, kernel_size=self.out_kernel,
+            stride=1, padding=self.out_kernel // 2
+        )
+        return layer
+
+
+    def _build_tower(self, head_configs, channels):
+        ##### init the     1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
+        for head in head_configs:
+            tower = []
+            num_convs, use_deformable = head_configs[head]
+            channel = channels[head]
+            for i in range(num_convs):
+                conv_func = nn.Conv2d
+                tower.append(conv_func(
+                        channel,
+                        channel,
+                        kernel_size=3, stride=1,
+                        padding=1, bias=True
+                ))
+                if self.norm == 'GN' and channel % 32 != 0:
+                    tower.append(nn.GroupNorm(25, channel))
+                elif self.norm != '':
+                    # print("please add get_norm function")
+                    tower.append(get_norm(self.norm, channel))
+                tower.append(nn.ReLU())
+            self.add_module('{}_tower'.format(head),
+                            nn.Sequential(*tower))
+
+
+
+    def init_weights(self):
+        """Initialize weights of the head."""
+>>>>>>> c98a98393bd8f1a98ad34d3956774e335f006d19
 
         # initialize the    1.<cls_tower>   2.<bbox_tower>    3.<share_tower>   4.<bbox_pred>
         for modules in [
