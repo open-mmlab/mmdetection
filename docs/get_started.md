@@ -116,6 +116,17 @@ Or you can still install MMDetection manually:
     pip install -v -e .  # or "python setup.py develop"
     ```
 
+3. Install extra dependencies for Instaboost, Panoptic Segmentation, or LVIS dataset
+
+    ```shell
+    # for instaboost
+    pip install instaboostfast
+    # for panoptic segmentation
+    pip install git+https://github.com/cocodataset/panopticapi.git
+    # for LVIS dataset
+    pip install git+https://github.com/lvis-dataset/lvis-api.git
+    ```
+
 **Note:**
 
 a. When specifying `-e` or `develop`, MMDetection is installed on dev mode
