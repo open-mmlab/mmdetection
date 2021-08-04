@@ -105,7 +105,7 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     Args:
         py_dict (dict): Dict to be applied all reduce op.
         op (str): Operator, could be 'sum' or 'mean'. Default: 'sum'
-        group (:obj:torch.distributed.group, optional): Distributed group,
+        group (:obj:`torch.distributed.group`, optional): Distributed group,
             Default: None.
         to_float (bool): Whether to convert all values of dict to float.
             Default: True.

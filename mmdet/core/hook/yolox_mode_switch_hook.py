@@ -11,7 +11,7 @@ class YOLOXModeSwitchHook(Hook):
 
     Args:
         last_epoch (int): The last epoch of close data augmentation and
-           switch loss. Default: 15.
+            switch loss. Default: 15.
     """
 
     def __init__(self, last_epoch=15):
