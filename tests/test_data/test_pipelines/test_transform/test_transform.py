@@ -840,10 +840,10 @@ def test_random_affine():
     results['gt_bboxes'] = gt_bboxes
     transform = dict(
         type='RandomAffine',
-        rotate_degrees=0.,
+        rotate_degree=0.,
         translate_ratio=0.,
         scaling_ratio=(1., 1.),
-        shear_degrees=0.,
+        shear_degree=0.,
         border=(0, 0),
         wh_filter_thr=2,
         aspect_ratio_filter_thr=20)
