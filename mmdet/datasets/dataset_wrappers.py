@@ -1,13 +1,19 @@
 import bisect
+import copy
 import math
+import random
 from collections import defaultdict
+import collections
 
+from mmcv.utils import build_from_cfg
+import mmcv
 import numpy as np
 from mmcv.utils import print_log
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
-from .builder import DATASETS
+from .builder import DATASETS, PIPELINES
 from .coco import CocoDataset
+from .pipelines import Compose
 
 
 @DATASETS.register_module()
@@ -280,3 +286,39 @@ class ClassBalancedDataset:
     def __len__(self):
         """Length after repetition."""
         return len(self.repeat_indices)
+
+
+class MultiImageMixDataset:
+    def __init__(self, dataset, pipelines, dynamic_scale):
+        assert isinstance(pipelines, collections.abc.Sequence)
+        self.pipelines = []
+        for pipeline in pipelines:
+            if isinstance(pipeline, dict):
+                pipeline = build_from_cfg(pipeline, PIPELINES)
+                self.pipelines.append(pipeline)
+            elif callable(pipeline):
+                self.pipelines.append(pipeline)
+            else:
+                raise TypeError('pipeline must be callable or a dict')
+
+        self.dataset = dataset
+        self.CLASSES = dataset.CLASSES
+        if hasattr(self.dataset, 'flag'):
+            self.flag = dataset.flag
+        self.num_sample = len(dataset)
+
+        self.dynamic_scale = dynamic_scale
+
+    def __len__(self):
+        return self.num_sample
+
+    def __getitem__(self, idx):
+        results = self.dataset[idx]
+        for pipeline in self.pipelines:
+            if hasattr(pipeline, 'get_indexes'):
+                index = pipeline.get_indexes(self.dataset)
+                results['index'] = index
+                if self.dynamic_scale is not None:
+                    results['dynamic_scale'] = self.dynamic_scale
+            results = pipeline(results)
+        return results
