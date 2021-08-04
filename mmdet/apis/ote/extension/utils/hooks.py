@@ -35,9 +35,10 @@ class EarlyStoppingHook(Hook):
     :param patience: Number of epochs with no improvement after which the training will be reduced. For example,
                      if patience = 2, then we will ignore the first 2 epochs with no improvement,
                      and will only cancel the training after the 3rd epoch if the metric still hasn’t improved then
-    :param iteration_patience: Number of iterations that surely will be trained after the last update before stopping.
-                     The same as patience but if iteration passed throught patience epochs is lower than
-                     iteration_patience, the training will continue for this value
+    :param iteration_patience: Number of iterations must be trained after the last improvement before training stops.
+                               The same as patience but the training continues if the number of iteration is lower than
+                               iteration_patience. This variable makes sure a model is trained enough
+                               for some iterations after the last improvement before stopping.
     :param min_delta: Minimal decay applied to lr. If the difference between new and old lr is smaller than eps,
                       the update is ignored
     """
@@ -56,6 +57,8 @@ class EarlyStoppingHook(Hook):
         self._init_rule(rule, metric)
 
         self.min_delta *= 1 if self.rule == 'greater' else -1
+        self.last_iter = 0
+        self.wait_count = 0
         self.best_score = self.init_value_map[self.rule]
         _, world_size = get_dist_info()
         self.distributed = True if world_size > 1 else False
@@ -166,9 +169,10 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
     :param patience: Number of epochs with no improvement after which learning rate will be reduced. For example,
                      if patience = 2, then we will ignore the first 2 epochs with no improvement,
                      and will only drop LR after the 3rd epoch if the metric still hasn’t improved then
-    :param iteration_patience: Number of iterations that surely will be trained after the last update before LR drop.
-                     The same as patience but if iteration passed throught patience epochs is lower than
-                     iteration_patience, the training will continue for this value
+    :param iteration_patience: Number of iterations must be trained after the last improvement before LR drops.
+                               The same as patience but the LR remains the same if the number of iteration is lower than
+                               iteration_patience. This variable makes sure a model is trained enough
+                               for some iterations after the last improvement before dropping the LR.
     :param factor: Factor to be multiply with the learning rate. For example, new_lr = current_lr * factor
     """
     rule_map = {'greater': lambda x, y: x > y, 'less': lambda x, y: x < y}
@@ -178,7 +182,7 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
 
     def __init__(self, min_lr, interval, metric='bbox_mAP', rule=None, factor=0.1,
                  patience=3, iteration_patience=300, **kwargs):
-        super(ReduceLROnPlateauLrUpdaterHook, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.interval = interval
         self.min_lr = min_lr
         self.factor = factor
@@ -269,6 +273,7 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
                 return self.current_lr
             self.last_iter = runner.iter
             self.bad_count = 0
-            print_log(f"\nDrop LR from: {self.current_lr}, to: {max(self.current_lr * self.factor, self.min_lr)}", logger=runner.logger)
+            print_log(f"\nDrop LR from: {self.current_lr}, to: {max(self.current_lr * self.factor, self.min_lr)}",
+                      logger=runner.logger)
             self.current_lr = max(self.current_lr * self.factor, self.min_lr)
         return self.current_lr
