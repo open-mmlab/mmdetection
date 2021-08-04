@@ -1,7 +1,8 @@
 import math
 
-from mmcv.runner.hooks import HOOKS, Hook
 from mmcv.parallel import is_module_wrapper
+from mmcv.runner.hooks import HOOKS, Hook
+
 
 class BaseEMAHook(Hook):
     """Exponential Moving Average Hook.
@@ -12,22 +13,27 @@ class BaseEMAHook(Hook):
     the original model parameters are actually saved in ema field after train.
 
     Args:
-        decay (float): The decay used for updating ema parameter.
-            Defaults to 0.9998. Ema paramters are updated with the formula:
-            `ema_param = decay * ema_param + (1 - decay) * cur_param`
-        skip_buffers (bool): Whether to skip the model buffers, such as batchnorm running
-            stats (running_mean, running_var), it does not perform the ema operation.
-            Default to False.
+        decay (float): The decay used for updating ema parameter. Ema's
+            parameter are updated with the formula:
+           `ema_param = decay * ema_param + (1 - decay) * cur_param`.
+            Defaults to 0.9998.
+        skip_buffers (bool): Whether to skip the model buffers, such as
+            batchnorm running stats (running_mean, running_var), it does not
+            perform the ema operation. Default to False.
         interval (int): Update ema parameter every interval iteration.
             Defaults to 1.
-        resume_from (str, Optional): The checkpoint path. Defaults to None.
-        decay_fun (func, Optional): the function to change decay during early iteration
-            (also warmup) to help early training. Defaults to None, it use `decay` as a
-            constant.
+        resume_from (str, optional): The checkpoint path. Defaults to None.
+        decay_fun (func, optional): The function to change decay during early
+            iteration (also warmup) to help early training. It uses `decay`
+            as a constant. Defaults to None.
     """
 
-    def __init__(self, decay=0.9998, skip_buffers=False, interval=1,
-        resume_from=None, decay_fun=None):
+    def __init__(self,
+                 decay=0.9998,
+                 skip_buffers=False,
+                 interval=1,
+                 resume_from=None,
+                 decay_fun=None):
         assert 0 < decay < 1
         self.decay = decay
         self.skip_buffers = skip_buffers
@@ -37,7 +43,8 @@ class BaseEMAHook(Hook):
 
     def before_run(self, runner):
         """To resume model with it's ema parameters more friendly.
-        Register ema parameter as ``named_buffer`` to model
+
+        Register ema parameter as ``named_buffer`` to model.
         """
         model = runner.model
         if is_module_wrapper(model):
@@ -70,7 +77,8 @@ class BaseEMAHook(Hook):
             if parameter.dtype.is_floating_point:
                 buffer_name = self.param_ema_buffer[name]
                 buffer_parameter = self.model_buffers[buffer_name]
-                buffer_parameter.mul_(decay).add_(parameter.data, alpha=1-decay)
+                buffer_parameter.mul_(decay).add_(
+                    parameter.data, alpha=1 - decay)
 
     def after_train_epoch(self, runner):
         """We load parameter values from ema backup to model before the
@@ -93,27 +101,29 @@ class BaseEMAHook(Hook):
 
 @HOOKS.register_module()
 class ExpDecayEMAHook(BaseEMAHook):
-    """EMAHook using exponential decay strategy
+    """EMAHook using exponential decay strategy.
 
     Args:
         total_iter (int): The total number of iterations of EMA decay.
            Defaults to 2000.
     """
+
     def __init__(self, total_iter=2000, **kwargs):
         super(ExpDecayEMAHook, self).__init__(**kwargs)
-        self.decay_fun = lambda x: self.decay * (1. - 
-                                math.exp(-(x+1) / total_iter))
-        
+        self.decay_fun = lambda x: self.decay * (1. - math.exp(-(x + 1) /
+                                                               total_iter))
+
 
 @HOOKS.register_module()
 class LinearDecayEMAHook(BaseEMAHook):
-    """EMAHook using linear decay strategy
+    """EMAHook using linear decay strategy.
 
     Args:
         warm_up (int): During first warm_up steps, we may use smaller decay
             to update ema parameters more slowly. Defaults to 100.
     """
+
     def __init__(self, warm_up=100, **kwargs):
         super(LinearDecayEMAHook, self).__init__(**kwargs)
-        self.decay_fun = lambda x: 1. - min((1. - self.decay) ** self.interval,
-                                        (1 + x) / (warm_up + x))
+        self.decay_fun = lambda x: 1. - min((1. - self.decay)**self.interval,
+                                            (1 + x) / (warm_up + x))
