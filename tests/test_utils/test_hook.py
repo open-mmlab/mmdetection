@@ -79,7 +79,9 @@ def _build_demo_runner(runner_type='EpochBasedRunner',
 @pytest.mark.parametrize('multi_optimziers', (True, False))
 def test_yolox_lrupdater_hook(multi_optimziers):
     """xdoctest -m tests/test_hooks.py test_cosine_runner_hook."""
-    YOLOXLrUpdaterHook()
+    # Only used to prevent program errors
+    YOLOXLrUpdaterHook(0, 0, min_lr_ratio=0)
+
     sys.modules['pavi'] = MagicMock()
     loader = DataLoader(torch.ones((10, 2)))
     runner = _build_demo_runner(multi_optimziers=multi_optimziers)

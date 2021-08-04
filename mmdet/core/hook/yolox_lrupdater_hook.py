@@ -11,9 +11,9 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
     There are two main differences between YOLOXLrUpdaterHook
     and CosineAnnealingLrUpdaterHook.
 
-    1. When the current running epoch is greater than
-       `max_epoch-last_epoch`, a fixed learning rate will be used
-    2. The exp warmup scheme are different with LrUpdaterHook in MMCV
+       1. When the current running epoch is greater than
+           `max_epoch-last_epoch`, a fixed learning rate will be used
+       2. The exp warmup scheme are different with LrUpdaterHook in MMCV
 
     Args:
         last_epoch (int): The number of last epoch with a fixed learning rate.
