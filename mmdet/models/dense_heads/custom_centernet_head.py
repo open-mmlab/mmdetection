@@ -395,14 +395,17 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         losses['loss_centernet_loc'] = reg_loss
 
         cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
-        agn_pos_loss, agn_neg_loss = self.loss_center_heatmap(
+
+        # agn_hm_pred_new = agn_hm_pred.clone().detach()
+
+        agn_heatmap_loss = self.loss_center_heatmap(
             agn_hm_pred,
             cat_agn_heatmap,
             pos_inds,
             avg_factor=num_pos_avg
         )
-        losses['loss_centernet_agn_pos'] = agn_pos_loss
-        losses['loss_centernet_agn_neg'] = agn_neg_loss
+        losses['loss_centernet_heatmap'] = agn_heatmap_loss
+        # losses['loss_centernet_agn_neg'] = agn_neg_loss
 
         #     losses['loss_centernet_agn_neg'] = agn_neg_loss
         # if self.with_agn_hm:
@@ -419,6 +422,19 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         #     agn_neg_loss = self.neg_weight * agn_neg_loss / num_pos_avg
         #     losses['loss_centernet_agn_pos'] = agn_pos_loss
         #     losses['loss_centernet_agn_neg'] = agn_neg_loss
+
+        # agn_pos_loss, agn_neg_loss = self.binary_heatmap_focal_loss(
+        #     agn_hm_pred_new, cat_agn_heatmap, pos_inds,
+        #     alpha=0.25, 
+        #     beta=4, 
+        #     gamma=2.0,
+        #     sigmoid_clamp=0.0001,
+        #     ignore_high_fp=0.85,
+        #     )
+        # agn_pos_loss = 0.5 * agn_pos_loss / num_pos_avg
+        # agn_neg_loss = 0.5 * agn_neg_loss / num_pos_avg
+        # losses['loss_centernet_agn_pos'] = agn_pos_loss
+        # losses['loss_centernet_agn_neg'] = agn_neg_loss
     
         # if self.debug:
         #     print('losses', losses)
@@ -791,34 +807,34 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         else:
             raise NotImplementedError    
 
-    def binary_heatmap_focal_loss(
-        self,
-        inputs,
-        targets,
-        pos_inds,
-        alpha: float = -1,
-        beta: float = 4,
-        gamma: float = 2,
-        sigmoid_clamp: float = 1e-4,
-        ignore_high_fp: float = -1.,
-        ):
-        pred = torch.clamp(inputs.sigmoid_(), min=sigmoid_clamp, max=1-sigmoid_clamp)
-        neg_weights = torch.pow(1 - targets, beta)
-        pos_pred = pred[pos_inds] # N
-        pos_loss = torch.log(pos_pred) * torch.pow(1 - pos_pred, gamma)
-        neg_loss = torch.log(1 - pred) * torch.pow(pred, gamma) * neg_weights
-        if ignore_high_fp > 0:
-            not_high_fp = (pred < ignore_high_fp).float()
-            neg_loss = not_high_fp * neg_loss
+    # def binary_heatmap_focal_loss(
+    #     self,
+    #     inputs,
+    #     targets,
+    #     pos_inds,
+    #     alpha: float = -1,
+    #     beta: float = 4,
+    #     gamma: float = 2,
+    #     sigmoid_clamp: float = 1e-4,
+    #     ignore_high_fp: float = -1.,
+    #     ):
+    #     pred = torch.clamp(inputs.sigmoid_(), min=sigmoid_clamp, max=1-sigmoid_clamp)
+    #     neg_weights = torch.pow(1 - targets, beta)
+    #     pos_pred = pred[pos_inds] # N
+    #     pos_loss = torch.log(pos_pred) * torch.pow(1 - pos_pred, gamma)
+    #     neg_loss = torch.log(1 - pred) * torch.pow(pred, gamma) * neg_weights
+    #     if ignore_high_fp > 0:
+    #         not_high_fp = (pred < ignore_high_fp).float()
+    #         neg_loss = not_high_fp * neg_loss
 
-        pos_loss = - pos_loss.sum()
-        neg_loss = - neg_loss.sum()
+    #     pos_loss = - pos_loss.sum()
+    #     neg_loss = - neg_loss.sum()
 
-        if alpha >= 0:
-            pos_loss = alpha * pos_loss
-            neg_loss = (1 - alpha) * neg_loss
+    #     if alpha >= 0:
+    #         pos_loss = alpha * pos_loss
+    #         neg_loss = (1 - alpha) * neg_loss
 
-        return pos_loss, neg_loss
+    #     return pos_loss, neg_loss
 
     def get_world_size(self) -> int:
         if not dist.is_available():

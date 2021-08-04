@@ -68,7 +68,7 @@ def custom_gaussian_focal_loss(
         pos_loss = alpha * pos_loss
         neg_loss = (1 - alpha) * neg_loss
 
-    return pos_loss, neg_loss
+    return pos_loss + neg_loss
 
 @LOSSES.register_module()
 class GaussianFocalLoss(nn.Module):
@@ -191,13 +191,14 @@ class CustomGaussianFocalLoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
-        pos_loss, neg_loss = self.loss_weight * custom_gaussian_focal_loss(
+        loss_reg = self.loss_weight * custom_gaussian_focal_loss(
             pred,
             target,
             weight,
             pos_inds=pos_inds,
             alpha=self.alpha,
             gamma=self.gamma,
+            ignore_high_fp=self.ignore_high_fp,
             reduction=reduction,
             avg_factor=avg_factor)
-        return pos_loss, neg_loss
+        return loss_reg
