@@ -1,7 +1,4 @@
 # model settings
-from torch.nn.functional import sigmoid
-
-
 model = dict(
     type='CenterNet2',
     backbone=dict(
