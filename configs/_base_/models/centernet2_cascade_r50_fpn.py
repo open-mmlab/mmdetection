@@ -32,6 +32,7 @@ model = dict(
             alpha=0.25,
             ignore_high_fp=0.85,
             loss_weight=0.5),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0)
         ),
     roi_head=dict(
         type='CascadeRoIHead',

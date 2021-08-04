@@ -96,6 +96,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                     alpha=0.25,
                     ignore_high_fp=0.85,
                     loss_weight=0.5),
+                 loss_bbox=dict(type='GIoULoss', loss_weight=1.0), 
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
@@ -114,7 +115,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         # self.pos_weight=0.5
         # self.neg_weight=0.5
         self.not_norm_reg=True
-        self.reg_weight=1.0
+        # self.reg_weight=1.0
 
         # self.hm_focal_alpha=0.25
         # self.hm_focal_beta=4
@@ -123,15 +124,13 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         # self.ignore_high_fp=0.85
 
         self.loss_center_heatmap = build_loss(loss_center_heatmap)
+        self.loss_bbox = build_loss(loss_bbox)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.fp16_enabled = False
 
-
-
         self.more_pos = False
-
 
         self.center_nms = False
         self.pre_nms_topk_train = 4000
@@ -389,9 +388,16 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         reg_weight_map = reg_weight_map * 0 + 1 \
             if self.not_norm_reg else reg_weight_map
         reg_norm = max(self.reduce_sum(reg_weight_map.sum()).item() / num_gpus, 1)
-        reg_loss = self.reg_weight * self.my_iou_loss(
-            reg_pred, reg_targets_pos, reg_weight_map,
-            reduction='sum') / reg_norm
+
+
+        reg_loss = self.loss_bbox(
+                reg_pred,
+                reg_targets_pos,
+                weight=reg_weight_map,
+                avg_factor=reg_norm)
+        # reg_loss = self.reg_weight * self.my_iou_loss(
+        #     reg_pred, reg_targets_pos, reg_weight_map,
+        #     reduction='sum') / reg_norm
         losses['loss_centernet_loc'] = reg_loss
 
         cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
