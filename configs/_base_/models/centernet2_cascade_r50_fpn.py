@@ -1,4 +1,7 @@
 # model settings
+from torch.nn.functional import sigmoid
+
+
 model = dict(
     type='CenterNet2',
     backbone=dict(
@@ -23,6 +26,15 @@ model = dict(
         num_classes=80,
         in_channel=256,
         num_features=5,
+        num_cls_convs=4,
+        num_box_convs=4,
+        num_share_convs=0,
+        use_deformable=False,
+        loss_center_heatmap=dict(
+            type='CustomGaussianFocalLoss',
+            alpha=0.25,
+            ignore_high_fp=0.85,
+            loss_weight=0.5),
         ),
     roi_head=dict(
         type='CascadeRoIHead',
@@ -32,7 +44,8 @@ model = dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
-            featmap_strides=[4, 8, 16, 32]),
+            # featmap_strides=[4, 8, 16, 32]),
+            featmap_strides=[8, 16, 32, 64, 128]),
         bbox_head=[
             dict(
                 type='Shared2FCBBoxHead',

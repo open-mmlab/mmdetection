@@ -87,12 +87,21 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                  in_channel,
                  num_classes,
                  num_features,
+                 num_cls_convs,
+                 num_box_convs,
+                 num_share_convs,
+                 use_deformable,
+                 loss_center_heatmap=dict(
+                    type='CustomGaussianFocalLoss',
+                    alpha=0.25,
+                    ignore_high_fp=0.85,
+                    loss_weight=0.5),
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
         super(CustomCenterNetHead, self).__init__(init_cfg)
         self.out_kernel = 3
-        norm = "GN"
+        self.norm = "GN"
         self.only_proposal = True
 
         self.num_classes = num_classes
@@ -102,16 +111,18 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.sizes_of_interest=[[0, 80], [64, 160], [128, 320], [256, 640], [512, 10000000]]
         self.min_radius=4
         self.with_agn_hm=True
-        self.pos_weight=0.5
-        self.neg_weight=0.5
+        # self.pos_weight=0.5
+        # self.neg_weight=0.5
         self.not_norm_reg=True
         self.reg_weight=1.0
 
-        self.hm_focal_alpha=0.25
-        self.hm_focal_beta=4
-        self.loss_gamma=2.0
-        self.sigmoid_clamp=0.0001
-        self.ignore_high_fp=0.85
+        # self.hm_focal_alpha=0.25
+        # self.hm_focal_beta=4
+        # self.loss_gamma=2.0
+        # self.sigmoid_clamp=0.0001
+        # self.ignore_high_fp=0.85
+
+        self.loss_center_heatmap = build_loss(loss_center_heatmap)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -132,35 +143,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.more_pos_topk = 9
         self.score_thresh = 0.0001
         self.not_nms = False
-        
-
-        ##########  initialize the   1.<cls_tower>   2.<bbox_tower>   3.<share_tower>[no]  4.<bbox_pred>  5.<agn_hm>  6.<cls_logits>[no]
-
-        ######################################################## origin #########################
-        # self.heatmap_head = self._build_head(in_channel, feat_channel,
-        #                                      num_classes)
-        # self.wh_head = self._build_head(in_channel, feat_channel, 2)
-        # self.offset_head = self._build_head(in_channel, feat_channel, 2)
 
 
-        ########################################################## lq #########################
-        # head_configs = {"cls": (cfg.MODEL.CENTERNET.NUM_CLS_CONVS \
-        #                         if not self.only_proposal else 0,
-        #                         cfg.MODEL.CENTERNET.USE_DEFORMABLE),
-        #                 "bbox": (cfg.MODEL.CENTERNET.NUM_BOX_CONVS,
-        #                          cfg.MODEL.CENTERNET.USE_DEFORMABLE),
-        #                 "share": (cfg.MODEL.CENTERNET.NUM_SHARE_CONVS,
-        #                           cfg.MODEL.CENTERNET.USE_DEFORMABLE)}
-
-        head_configs = {"cls": (4,False),
-                        "bbox": (4,False),
-                        "share": (0,False)}
-
-        #############  centernet2 , channels from ["p3", "p4", "p5", "p6", "p7"]'s channels, config
-        # in_channels = [s.channels for s in input_shape]
-        # assert len(set(in_channels)) == 1, \
-        #     "Each level must have the same channel!"
-        # in_channels = in_channels[0]
+        head_configs = {"cls": (num_cls_convs,False),
+                        "bbox": (num_box_convs,False),
+                        "share": (num_share_convs,False)}
 
         channels = {
             'cls': in_channel,
@@ -168,46 +155,14 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             'share': in_channel,
         }
 
-        ##### initialize the     1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
-        for head in head_configs:
-            tower = []
-            num_convs, use_deformable = head_configs[head]
-            channel = channels[head]
-            for i in range(num_convs):
-                conv_func = nn.Conv2d
-                tower.append(conv_func(
-                        in_channel if i == 0 else channel,
-                        channel,
-                        kernel_size=3, stride=1,
-                        padding=1, bias=True
-                ))
-                if norm == 'GN' and channel % 32 != 0:
-                    tower.append(nn.GroupNorm(25, channel))
-                elif norm != '':
-                    # print("please add get_norm function")
-                    tower.append(get_norm(norm, channel))
-                tower.append(nn.ReLU())
-            self.add_module('{}_tower'.format(head),
-                            nn.Sequential(*tower))
+        self._build_tower(head_configs, channels)               # init  1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
 
-        ### initialize the    <bbox_pred>
-        self.bbox_pred = nn.Conv2d(
-            in_channel, 4, kernel_size=self.out_kernel,
-            stride=1, padding=self.out_kernel // 2
-        )
+        self.bbox_pred = self._build_head(in_channel, 4)
 
-        ### initialize the     <scales>
-        # self.scales = nn.ModuleList(
-        #     [Scale(init_value=1.0)])
-        self.scales = nn.ModuleList(
+        self.scales = nn.ModuleList(                                # init   <scales>
             [Scale(init_value=1.0) for _ in range(num_features)])
 
-
-        ### initialize the     <agn_hm>
-        self.agn_hm = nn.Conv2d(
-            in_channel, 1, kernel_size=self.out_kernel,
-            stride=1, padding=self.out_kernel // 2
-        )
+        self.agn_hm = self._build_head(in_channel, 1)
 
         ### initialize the <cls_logits>, config assigns it to false !
         if not self.only_proposal:
@@ -220,27 +175,42 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             )
 
 
+    def _build_head(self, in_channel, out_channel):
+        """Build head for each branch."""
+        layer = nn.Conv2d(
+            in_channel, out_channel, kernel_size=self.out_kernel,
+            stride=1, padding=self.out_kernel // 2
+        )
+        return layer
 
-    # def _build_head(self, in_channel, feat_channel, out_channel):
-    #     """Build head for each branch."""
-    #     layer = nn.Sequential(
-    #         nn.Conv2d(in_channel, feat_channel, kernel_size=3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.Conv2d(feat_channel, out_channel, kernel_size=1))
-    #     return layer
+
+    def _build_tower(self, head_configs, channels):
+        ##### init the     1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
+        for head in head_configs:
+            tower = []
+            num_convs, use_deformable = head_configs[head]
+            channel = channels[head]
+            for i in range(num_convs):
+                conv_func = nn.Conv2d
+                tower.append(conv_func(
+                        channel,
+                        channel,
+                        kernel_size=3, stride=1,
+                        padding=1, bias=True
+                ))
+                if self.norm == 'GN' and channel % 32 != 0:
+                    tower.append(nn.GroupNorm(25, channel))
+                elif self.norm != '':
+                    # print("please add get_norm function")
+                    tower.append(get_norm(self.norm, channel))
+                tower.append(nn.ReLU())
+            self.add_module('{}_tower'.format(head),
+                            nn.Sequential(*tower))
+
 
 
     def init_weights(self):
         """Initialize weights of the head."""
-        ###################### origin ######################
-        # bias_init = bias_init_with_prob(0.1)
-        # self.heatmap_head[-1].bias.data.fill_(bias_init)
-        # for head in [self.wh_head, self.offset_head]:
-        #     for m in head.modules():
-        #         if isinstance(m, nn.Conv2d):
-        #             normal_init(m, std=0.001)
-
-        ########################  lq #####################################
 
         ### initialize the    1.<cls_tower>   2.<bbox_tower>    3.<share_tower>   4.<bbox_pred>
         for modules in [
@@ -424,20 +394,31 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             reduction='sum') / reg_norm
         losses['loss_centernet_loc'] = reg_loss
 
-        if self.with_agn_hm:
-            cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
-            agn_pos_loss, agn_neg_loss = self.binary_heatmap_focal_loss(
-                agn_hm_pred, cat_agn_heatmap, pos_inds,
-                alpha=self.hm_focal_alpha, 
-                beta=self.hm_focal_beta, 
-                gamma=self.loss_gamma,
-                sigmoid_clamp=self.sigmoid_clamp,
-                ignore_high_fp=self.ignore_high_fp,
-            )
-            agn_pos_loss = self.pos_weight * agn_pos_loss / num_pos_avg
-            agn_neg_loss = self.neg_weight * agn_neg_loss / num_pos_avg
-            losses['loss_centernet_agn_pos'] = agn_pos_loss
-            losses['loss_centernet_agn_neg'] = agn_neg_loss
+        cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
+        agn_pos_loss, agn_neg_loss = self.loss_center_heatmap(
+            agn_hm_pred,
+            cat_agn_heatmap,
+            pos_inds,
+            avg_factor=num_pos_avg
+        )
+        losses['loss_centernet_agn_pos'] = agn_pos_loss
+        losses['loss_centernet_agn_neg'] = agn_neg_loss
+
+        #     losses['loss_centernet_agn_neg'] = agn_neg_loss
+        # if self.with_agn_hm:
+        #     cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
+        #     agn_pos_loss, agn_neg_loss = self.binary_heatmap_focal_loss(
+        #         agn_hm_pred, cat_agn_heatmap, pos_inds,
+        #         alpha=self.hm_focal_alpha, 
+        #         beta=self.hm_focal_beta, 
+        #         gamma=self.loss_gamma,
+        #         sigmoid_clamp=self.sigmoid_clamp,
+        #         ignore_high_fp=self.ignore_high_fp,
+        #     )
+        #     agn_pos_loss = self.pos_weight * agn_pos_loss / num_pos_avg
+        #     agn_neg_loss = self.neg_weight * agn_neg_loss / num_pos_avg
+        #     losses['loss_centernet_agn_pos'] = agn_pos_loss
+        #     losses['loss_centernet_agn_neg'] = agn_neg_loss
     
         # if self.debug:
         #     print('losses', losses)
