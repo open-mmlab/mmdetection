@@ -38,9 +38,9 @@ def allreduce_grads(params, coalesce=True, bucket_size_mb=-1):
     Args:
         params (list[torch.Parameters]): List of parameters of a model
         coalesce (bool, optional): Whether allreduce parameters as a whole.
-            Defaults to True.
+            Default: True.
         bucket_size_mb (int, optional): Size of bucket, the unit is MB.
-            Defaults to -1.
+            Default: -1.
     """
     grads = [
         param.grad.data for param in params
@@ -73,13 +73,13 @@ def reduce_mean(tensor):
 
 
 def pyobj2tensor(pyobj, device='cuda'):
-    """serialize picklable python object to tensor."""
+    """Serialize picklable python object to tensor."""
     storage = torch.ByteStorage.from_buffer(pickle.dumps(pyobj))
     return torch.ByteTensor(storage).to(device=device)
 
 
 def tensor2pyobj(tensor):
-    """deserialize tensor to picklable python object."""
+    """Deserialize tensor to picklable python object."""
     return pickle.loads(tensor.cpu().numpy().tobytes())
 
 
@@ -103,12 +103,12 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     the values should be in the same shape.
 
     Args:
-        py_dict (dict): dict to be applied all reduce op.
-        op (str): operator, could be 'sum' or 'mean'. Default to 'sum'
-        group (:obj:torch.distributed.group, optional): distributed group,
-            Default to None.
+        py_dict (dict): Dict to be applied all reduce op.
+        op (str): Operator, could be 'sum' or 'mean'. Default: 'sum'
+        group (:obj:torch.distributed.group, optional): Distributed group,
+            Default: None.
         to_float (bool): Whether to convert all values of dict to float.
-            Default to True.
+            Default: True.
 
     Returns:
         OrderedDict: reduced python dict object.

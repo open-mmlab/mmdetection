@@ -21,7 +21,7 @@ class SyncNormHook(Hook):
     """Synchronize Norm states after training epoch, currently used in YOLOX.
 
     Args:
-        interval (int): Synchronizing norm interval. Default to 1.
+        interval (int): Synchronizing norm interval. Default: 1.
     """
 
     def __init__(self, interval=1):

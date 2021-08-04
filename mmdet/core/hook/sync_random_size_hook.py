@@ -14,9 +14,9 @@ class SyncRandomSizeHook(Hook):
     Args:
         ratio_range (tuple[int]): Random ratio range. It will be multiplied
             by 32, and then change the dataset output image size.
-            Defaults to (14, 26).
-        img_scale (tuple[int]): input image size. Defaults to (640, 640).
-        interval (int): The interval of change image size. Default to 10.
+            Default: (14, 26).
+        img_scale (tuple[int]): Size of input image. Default: (640, 640).
+        interval (int): The interval of change image size. Default: 10.
     """
 
     def __init__(self,
