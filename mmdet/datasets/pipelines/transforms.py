@@ -1,14 +1,11 @@
 import copy
 import inspect
-
 import mmcv
 import numpy as np
-from mmcv import build_from_cfg
 from numpy import random
 
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-from .. import DATASETS
 from ..builder import PIPELINES
 
 try:
