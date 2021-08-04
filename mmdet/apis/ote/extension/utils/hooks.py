@@ -14,7 +14,6 @@
 
 from math import inf
 
-from mmcv.runner import get_dist_info
 from mmcv.runner.hooks import HOOKS, Hook, LrUpdaterHook
 from mmcv.utils import print_log
 
@@ -44,10 +43,10 @@ class EarlyStoppingHook(Hook):
     """
     rule_map = {'greater': lambda x, y: x > y, 'less': lambda x, y: x < y}
     init_value_map = {'greater': -inf, 'less': inf}
-    greater_keys = ['mAP', 'acc', 'top', 'AR@', 'auc', 'precision']
+    greater_keys = ['acc', 'top', 'AR@', 'auc', 'precision', 'mAP', 'mDice', 'mIoU', 'mAcc', 'aAcc']
     less_keys = ['loss']
 
-    def __init__(self, interval: int, metric: str = 'mAP', rule: str = None,
+    def __init__(self, interval: int, metric: str = 'bbox_mAP', rule: str = None,
                  patience: int = 5, iteration_patience: int = 500, min_delta: float = 0.0):
         super().__init__()
         self.patience = patience
@@ -60,11 +59,10 @@ class EarlyStoppingHook(Hook):
         self.last_iter = 0
         self.wait_count = 0
         self.best_score = self.init_value_map[self.rule]
-        _, world_size = get_dist_info()
-        self.distributed = True if world_size > 1 else False
 
     def _init_rule(self, rule, key_indicator):
         """Initialize rule, key_indicator, comparison_func, and best score.
+
         Here is the rule to determine which rule is used for key indicator
         when the rule is not specific:
         1. If the key indicator is in ``self.greater_keys``, the rule will be
@@ -75,6 +73,7 @@ class EarlyStoppingHook(Hook):
            in ``self.greater_keys``, the rule will be specified as 'greater'.
         4. Or if the key indicator is equal to the substring in any one item
            in ``self.less_keys``, the rule will be specified as 'less'.
+
         Args:
             rule (str | None): Comparison rule for best score.
             key_indicator (str | None): Key indicator to determine the
@@ -85,23 +84,17 @@ class EarlyStoppingHook(Hook):
                            f'but got {rule}.')
 
         if rule is None:
-            if key_indicator != 'auto':
-                if key_indicator in self.greater_keys:
-                    rule = 'greater'
-                elif key_indicator in self.less_keys:
-                    rule = 'less'
-                elif any(key in key_indicator for key in self.greater_keys):
-                    rule = 'greater'
-                elif any(key in key_indicator for key in self.less_keys):
-                    rule = 'less'
-                else:
-                    raise ValueError(f'Cannot infer the rule for key '
-                                     f'{key_indicator}, thus a specific rule '
-                                     f'must be specified.')
+            if key_indicator in self.greater_keys or any(key in key_indicator for key in self.greater_keys):
+                rule = 'greater'
+            elif key_indicator in self.less_keys or any(key in key_indicator for key in self.less_keys):
+                rule = 'less'
+            else:
+                raise ValueError(f'Cannot infer the rule for key '
+                                 f'{key_indicator}, thus a specific rule '
+                                 f'must be specified.')
         self.rule = rule
         self.key_indicator = key_indicator
-        if self.rule is not None:
-            self.compare_func = self.rule_map[self.rule]
+        self.compare_func = self.rule_map[self.rule]
 
     def before_run(self, runner):
         self.by_epoch = False if runner.max_epochs is None else True
@@ -125,6 +118,10 @@ class EarlyStoppingHook(Hook):
             return
 
         if runner.rank == 0:
+            if self.key_indicator not in runner.log_buffer.output:
+                raise KeyError(f'metric {self.key_indicator} does not exist in buffer. Please check '
+                               f'{self.key_indicator} is cached in evaluation output buffer')
+
             key_score = runner.log_buffer.output[self.key_indicator]
             if self.compare_func(key_score - self.min_delta, self.best_score):
                 self.best_score = key_score
@@ -177,7 +174,7 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
     """
     rule_map = {'greater': lambda x, y: x > y, 'less': lambda x, y: x < y}
     init_value_map = {'greater': -inf, 'less': inf}
-    greater_keys = ['bbox_mAP']
+    greater_keys = ['acc', 'top', 'AR@', 'auc', 'precision', 'mAP', 'mDice', 'mIoU', 'mAcc', 'aAcc']
     less_keys = ['loss']
 
     def __init__(self, min_lr, interval, metric='bbox_mAP', rule=None, factor=0.1,
@@ -219,23 +216,17 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
                            f'but got {rule}.')
 
         if rule is None:
-            if key_indicator != 'auto':
-                if key_indicator in self.greater_keys:
-                    rule = 'greater'
-                elif key_indicator in self.less_keys:
-                    rule = 'less'
-                elif any(key in key_indicator for key in self.greater_keys):
-                    rule = 'greater'
-                elif any(key in key_indicator for key in self.less_keys):
-                    rule = 'less'
-                else:
-                    raise ValueError(f'Cannot infer the rule for key '
-                                     f'{key_indicator}, thus a specific rule '
-                                     f'must be specified.')
+            if key_indicator in self.greater_keys or any(key in key_indicator for key in self.greater_keys):
+                rule = 'greater'
+            elif key_indicator in self.less_keys or any(key in key_indicator for key in self.less_keys):
+                rule = 'less'
+            else:
+                raise ValueError(f'Cannot infer the rule for key '
+                                 f'{key_indicator}, thus a specific rule '
+                                 f'must be specified.')
         self.rule = rule
         self.key_indicator = key_indicator
-        if self.rule is not None:
-            self.compare_func = self.rule_map[self.rule]
+        self.compare_func = self.rule_map[self.rule]
 
     def _should_check_stopping(self, runner):
         check_time = self.every_n_epochs if self.by_epoch else self.every_n_iters
