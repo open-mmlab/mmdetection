@@ -91,6 +91,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                  num_box_convs,
                  num_share_convs,
                  use_deformable,
+                 loss_center_heatmap=dict(
+                    type='CustomGaussianFocalLoss',
+                    alpha=0.25,
+                    ignore_high_fp=0.85,
+                    loss_weight=0.5),
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
@@ -106,16 +111,18 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.sizes_of_interest=[[0, 80], [64, 160], [128, 320], [256, 640], [512, 10000000]]
         self.min_radius=4
         self.with_agn_hm=True
-        self.pos_weight=0.5
-        self.neg_weight=0.5
+        # self.pos_weight=0.5
+        # self.neg_weight=0.5
         self.not_norm_reg=True
         self.reg_weight=1.0
 
-        self.hm_focal_alpha=0.25
-        self.hm_focal_beta=4
-        self.loss_gamma=2.0
-        self.sigmoid_clamp=0.0001
-        self.ignore_high_fp=0.85
+        # self.hm_focal_alpha=0.25
+        # self.hm_focal_beta=4
+        # self.loss_gamma=2.0
+        # self.sigmoid_clamp=0.0001
+        # self.ignore_high_fp=0.85
+
+        self.loss_center_heatmap = build_loss(loss_center_heatmap)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -387,20 +394,31 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             reduction='sum') / reg_norm
         losses['loss_centernet_loc'] = reg_loss
 
-        if self.with_agn_hm:
-            cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
-            agn_pos_loss, agn_neg_loss = self.binary_heatmap_focal_loss(
-                agn_hm_pred, cat_agn_heatmap, pos_inds,
-                alpha=self.hm_focal_alpha, 
-                beta=self.hm_focal_beta, 
-                gamma=self.loss_gamma,
-                sigmoid_clamp=self.sigmoid_clamp,
-                ignore_high_fp=self.ignore_high_fp,
-            )
-            agn_pos_loss = self.pos_weight * agn_pos_loss / num_pos_avg
-            agn_neg_loss = self.neg_weight * agn_neg_loss / num_pos_avg
-            losses['loss_centernet_agn_pos'] = agn_pos_loss
-            losses['loss_centernet_agn_neg'] = agn_neg_loss
+        cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
+        agn_pos_loss, agn_neg_loss = self.loss_center_heatmap(
+            agn_hm_pred,
+            cat_agn_heatmap,
+            pos_inds,
+            avg_factor=num_pos_avg
+        )
+        losses['loss_centernet_agn_pos'] = agn_pos_loss
+        losses['loss_centernet_agn_neg'] = agn_neg_loss
+
+        #     losses['loss_centernet_agn_neg'] = agn_neg_loss
+        # if self.with_agn_hm:
+        #     cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
+        #     agn_pos_loss, agn_neg_loss = self.binary_heatmap_focal_loss(
+        #         agn_hm_pred, cat_agn_heatmap, pos_inds,
+        #         alpha=self.hm_focal_alpha, 
+        #         beta=self.hm_focal_beta, 
+        #         gamma=self.loss_gamma,
+        #         sigmoid_clamp=self.sigmoid_clamp,
+        #         ignore_high_fp=self.ignore_high_fp,
+        #     )
+        #     agn_pos_loss = self.pos_weight * agn_pos_loss / num_pos_avg
+        #     agn_neg_loss = self.neg_weight * agn_neg_loss / num_pos_avg
+        #     losses['loss_centernet_agn_pos'] = agn_pos_loss
+        #     losses['loss_centernet_agn_neg'] = agn_neg_loss
     
         # if self.debug:
         #     print('losses', losses)
