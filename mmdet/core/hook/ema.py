@@ -62,7 +62,7 @@ class BaseEMAHook(Hook):
 
     def after_train_iter(self, runner):
         """Update ema parameter every self.interval iterations."""
-        if runner.iter % self.interval != 0:
+        if (runner.iter + 1) % self.interval != 0:
             return
         decay = self.get_decay(runner)
         for name, parameter in self.model_parameters.items():
