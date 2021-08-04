@@ -1,14 +1,15 @@
 import copy
 import inspect
+
 import mmcv
 import numpy as np
+from mmcv import build_from_cfg
 from numpy import random
 
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-from mmcv import build_from_cfg
-from ..builder import PIPELINES
 from .. import DATASETS
+from ..builder import PIPELINES
 
 try:
     from imagecorruptions import corrupt
@@ -1908,46 +1909,49 @@ class CutOut:
 
 @PIPELINES.register_module()
 class Mosaic:
-    """Mosaic augmentation.
-    Given 4 images, mosaic transform combines them into one output image. The output image is composed of
-    the parts from each sub-image.
+    """Mosaic augmentation. Given 4 images, mosaic transform combines them into
+    one output image. The output image is composed of the parts from each sub-
+    image.
 
-                          mosaic transform
-                          center_x
-               +------------------------------+
-               |       pad        |  pad      |
-               |      +-----------+           |
-               |      |           |           |
-               |      |  image1   |--------+  |
-               |      |           |        |  |
-               |      |           | image2 |  |
-   center_y    |----+-------------+-----------|
-               |    |  cropped    |           |
-               |pad |   image3    |  image4   |
-               |    |             |           |
-               +----|-------------+-----------+
-                    |             |
-                    +-------------+
+                           mosaic transform
+                           center_x
+                +------------------------------+
+                |       pad        |  pad      |
+                |      +-----------+           |
+                |      |           |           |
+                |      |  image1   |--------+  |
+                |      |           |        |  |
+                |      |           | image2 |  |
+    center_y    |----+-------------+-----------|
+                |    |  cropped    |           |
+                |pad |   image3    |  image4   |
+                |    |             |           |
+                +----|-------------+-----------+
+                     |             |
+                     +-------------+
 
-    The mosaic transform step:
+     The mosaic transform step:
 
-    - choose the mosaic center as the intersections of 4 images
-    - Get the left top image according to the index given by dataloader,
-      and ramdomly sample another 3 images from the custom dataset.
-    - sub image will be cropped if image is larger than mosaic patch
-    - mosaic transform will be disabled last several epochs
-      controlled by YoloXProcessHook
-    Also Mosaic transform will only be used in train mode
+     - choose the mosaic center as the intersections of 4 images
+     - Get the left top image according to the index given by dataloader,
+       and ramdomly sample another 3 images from the custom dataset.
+     - sub image will be cropped if image is larger than mosaic patch
+     - mosaic transform will be disabled last several epochs
+       controlled by YoloXProcessHook
+     Also Mosaic transform will only be used in train mode
 
-   Args:
-       dataset (dict): Child of CunstomDataset which can get image and annotations by index.
-       img_scale (Sequence[int]): image size after mosaic pipeline
-       mosaic_scale (Sequence[float]): center range of mosaic output
-       pad_value (int): pad value
-
+    Args:
+        dataset (dict): Child of CunstomDataset which can get image and annotations by index.
+        img_scale (Sequence[int]): image size after mosaic pipeline
+        mosaic_scale (Sequence[float]): center range of mosaic output
+        pad_value (int): pad value
     """
 
-    def __init__(self, img_scale=(640, 640), pad_value=114, mosaic_scale=(0.5, 1.5), dataset=None):
+    def __init__(self,
+                 img_scale=(640, 640),
+                 pad_value=114,
+                 mosaic_scale=(0.5, 1.5),
+                 dataset=None):
         assert isinstance(img_scale, tuple)
         assert isinstance(img_scale[0], int) and isinstance(img_scale[1], int)
         assert isinstance(dataset, dict)
@@ -1972,7 +1976,9 @@ class Mosaic:
         """
         mosaic_labels = []
         mosaic_bboxes = []
-        mosaic_img = np.full((self.img_scale[0] * 2, self.img_scale[1] * 2, 3), self.pad_value, dtype=np.uint8)
+        mosaic_img = np.full((self.img_scale[0] * 2, self.img_scale[1] * 2, 3),
+                             self.pad_value,
+                             dtype=np.uint8)
 
         # mosaic center x, y
         center_x = int(random.uniform(*self.mosaic_scale) * self.img_scale[0])
@@ -1981,7 +1987,8 @@ class Mosaic:
 
         indices = [random.randint(0, self.num_sample - 1) for _ in range(3)]
 
-        for i, loc in enumerate(('top_left', 'top_right', 'bottom_left', 'bottom_right')):
+        for i, loc in enumerate(
+            ('top_left', 'top_right', 'bottom_left', 'bottom_right')):
             if loc == 'top_left':
                 results = copy.deepcopy(results)
             else:
@@ -1990,11 +1997,14 @@ class Mosaic:
             img_i = results['img']
             h_i, w_i = img_i.shape[:2]
             # keep_ratio resize
-            scale_ratio_i = min(self.img_scale[0] / h_i, self.img_scale[1] / w_i)
-            img_i = mmcv.imresize(img_i, (int(w_i * scale_ratio_i), int(h_i * scale_ratio_i)))
+            scale_ratio_i = min(self.img_scale[0] / h_i,
+                                self.img_scale[1] / w_i)
+            img_i = mmcv.imresize(
+                img_i, (int(w_i * scale_ratio_i), int(h_i * scale_ratio_i)))
 
             # compute the combine parameters
-            paste_coord, crop_coord = self._mosaic_combine(loc, center_position, img_i.shape[:2][::-1])
+            paste_coord, crop_coord = self._mosaic_combine(
+                loc, center_position, img_i.shape[:2][::-1])
             x1_p, y1_p, x2_p, y2_p = paste_coord
             x1_c, y1_c, x2_c, y2_c = crop_coord
 
@@ -2008,16 +2018,20 @@ class Mosaic:
             if gt_bboxes_i.shape[0] > 0:
                 padw = x1_p - x1_c
                 padh = y1_p - y1_c
-                gt_bboxes_i[:, 0::2] = scale_ratio_i * gt_bboxes_i[:, 0::2] + padw
-                gt_bboxes_i[:, 1::2] = scale_ratio_i * gt_bboxes_i[:, 1::2] + padh
+                gt_bboxes_i[:,
+                            0::2] = scale_ratio_i * gt_bboxes_i[:, 0::2] + padw
+                gt_bboxes_i[:,
+                            1::2] = scale_ratio_i * gt_bboxes_i[:, 1::2] + padh
 
             mosaic_bboxes.append(gt_bboxes_i)
             mosaic_labels.append(gt_labels_i)
 
         if len(mosaic_labels) > 0:
             mosaic_bboxes = np.concatenate(mosaic_bboxes, 0)
-            mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0, 2 * self.img_scale[1])
-            mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0, 2 * self.img_scale[0])
+            mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0,
+                                             2 * self.img_scale[1])
+            mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0,
+                                             2 * self.img_scale[0])
             mosaic_labels = np.concatenate(mosaic_labels, 0)
 
         results['img'] = mosaic_img.astype(np.float32)
@@ -2029,9 +2043,8 @@ class Mosaic:
         return results
 
     def _mosaic_combine(self, loc, center_position_xy, img_shape_wh):
-        """
-        Calculate global coordinate of mosaic image and local coordinate
-        of cropped sub-image
+        """Calculate global coordinate of mosaic image and local coordinate of
+        cropped sub-image.
 
         Args:
             loc (str): location of sub-image.
@@ -2057,7 +2070,8 @@ class Mosaic:
                              max(center_position_xy[1] - img_shape_wh[1], 0), \
                              min(center_position_xy[0] + img_shape_wh[0], self.img_scale[1] * 2), \
                              center_position_xy[1]
-            crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(img_shape_wh[0], x2 - x1), img_shape_wh[1]
+            crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
+                img_shape_wh[0], x2 - x1), img_shape_wh[1]
 
         elif loc == 'bottom_left':
             # index2 to bottom left part of image
@@ -2065,7 +2079,8 @@ class Mosaic:
                              center_position_xy[1], \
                              center_position_xy[0], \
                              min(self.img_scale[0] * 2, center_position_xy[1] + img_shape_wh[1])
-            crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(y2 - y1, img_shape_wh[1])
+            crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
+                y2 - y1, img_shape_wh[1])
 
         else:
             # index3 to bottom right part of image
@@ -2073,7 +2088,8 @@ class Mosaic:
                              center_position_xy[1], \
                              min(center_position_xy[0] + img_shape_wh[0], self.img_scale[0] * 2), \
                              min(self.img_scale[1] * 2, center_position_xy[1] + img_shape_wh[1])
-            crop_coord = 0, 0, min(img_shape_wh[0], x2 - x1), min(y2 - y1, img_shape_wh[1])
+            crop_coord = 0, 0, min(img_shape_wh[0],
+                                   x2 - x1), min(y2 - y1, img_shape_wh[1])
 
         paste_coord = x1, y1, x2, y2
         return paste_coord, crop_coord
@@ -2086,36 +2102,37 @@ class Mosaic:
         repr_str += f'dataset={self.dataset})'
         return repr_str
 
+
 @PIPELINES.register_module()
 class MixUp:
-    """
-        The logic of mixup transform:
+    """The logic of mixup transform:
 
-                        mixup transform
-               +------------------------------+
-               | mixup image   |              |
-               |      +--------|--------+     |
-               |      |        |        |     |
-               |---------------+        |     |
-               |      |  Affined mosaic |     |
-               |      |      image      |     |
-               |      |                 |     |
-               |      |                 |     |
-               |      |-----------------+     |
-               |             pad              |
-               +------------------------------+
-    The mixup transform step:
-    - Another random image is picked by dataset  and embedded in the top left patch(after padding and resizing)
-    - The target of mixup transform is the weighted average of mixup image and mosaic image.
-    - mixup transform will be disabled last several epochs controlled by YoloXProcessHook
+                         mixup transform
+                +------------------------------+
+                | mixup image   |              |
+                |      +--------|--------+     |
+                |      |        |        |     |
+                |---------------+        |     |
+                |      |  Affined mosaic |     |
+                |      |      image      |     |
+                |      |                 |     |
+                |      |                 |     |
+                |      |-----------------+     |
+                |             pad              |
+                +------------------------------+
+     The mixup transform step:
+     - Another random image is picked by dataset  and embedded in the top left patch(after padding and resizing)
+     - The target of mixup transform is the weighted average of mixup image and mosaic image.
+     - mixup transform will be disabled last several epochs controlled by YoloXProcessHook
 
-   Args:
-       dataset (CunstomDataset): Child of CunstomDataset which can get image and annotations by index.
-       img_scale (Sequence[int]): image size after mosaic pipeline
-       mosaic_scale (Sequence[float]): center range of mosaic output
-       mixup_scale (Sequence[float]): image scale factor of mixup
-       pad_value (int): pad value
+    Args:
+        dataset (CunstomDataset): Child of CunstomDataset which can get image and annotations by index.
+        img_scale (Sequence[int]): image size after mosaic pipeline
+        mosaic_scale (Sequence[float]): center range of mosaic output
+        mixup_scale (Sequence[float]): image scale factor of mixup
+        pad_value (int): pad value
     """
+
     def __init__(self,
                  img_scale=(640, 640),
                  mixup_scale=(0.5, 1.5),
@@ -2155,7 +2172,7 @@ class MixUp:
         # 0. retrieve data
         gt_bboxes_i = []
         for i in range(15):
-            index = random.randint(0, self.num_sample - 1)
+            index = random.randint(0, self.num_sample)
             gt_bboxes_i = self.dataset.get_ann_info(index)['bboxes']
             if len(gt_bboxes_i) != 0:
                 break
@@ -2167,23 +2184,25 @@ class MixUp:
         retrieve_img = retrieve_results['img']
 
         if len(retrieve_img.shape) == 3:
-            out_img = np.ones((self.dynamic_scale[0], self.dynamic_scale[1], 3)) * self.pad_value
+            out_img = np.ones((self.dynamic_scale[0], self.dynamic_scale[1],
+                               3)) * self.pad_value
         else:
             out_img = np.ones(self.dynamic_scale) * self.pad_value
 
         # 1. keep_ratio resize
         scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
                           self.dynamic_scale[1] / retrieve_img.shape[1])
-        retrieve_img = mmcv.imresize(retrieve_img,
-                                     (int(retrieve_img.shape[1] * scale_ratio),
-                                      int(retrieve_img.shape[0] * scale_ratio)))
+        retrieve_img = mmcv.imresize(
+            retrieve_img, (int(retrieve_img.shape[1] * scale_ratio),
+                           int(retrieve_img.shape[0] * scale_ratio)))
 
         # 2. paste
         out_img[:retrieve_img.shape[0], :retrieve_img.shape[1]] = retrieve_img
 
         # 3. scale jit
         scale_ratio *= jit_factor
-        out_img = mmcv.imresize(out_img, (int(out_img.shape[1] * jit_factor), int(out_img.shape[0] * jit_factor)))
+        out_img = mmcv.imresize(out_img, (int(out_img.shape[1] * jit_factor),
+                                          int(out_img.shape[0] * jit_factor)))
 
         # 4. flip
         if is_filp:
@@ -2193,29 +2212,38 @@ class MixUp:
         ori_img = results['img']
         origin_h, origin_w = out_img.shape[:2]
         target_h, target_w = ori_img.shape[:2]
-        padded_img = np.zeros((max(origin_h, target_h), max(origin_w, target_w), 3)).astype(np.uint8)
+        padded_img = np.zeros(
+            (max(origin_h, target_h), max(origin_w,
+                                          target_w), 3)).astype(np.uint8)
         padded_img[:origin_h, :origin_w] = out_img
 
         x_offset, y_offset = 0, 0
         if padded_img.shape[0] > target_h:
-            y_offset = random.randint(0, padded_img.shape[0] - target_h - 1)
+            y_offset = random.randint(0, padded_img.shape[0] - target_h)
         if padded_img.shape[1] > target_w:
-            x_offset = random.randint(0, padded_img.shape[1] - target_w - 1)
-        padded_cropped_img = padded_img[y_offset:y_offset + target_h, x_offset:x_offset + target_w]
+            x_offset = random.randint(0, padded_img.shape[1] - target_w)
+        padded_cropped_img = padded_img[y_offset:y_offset + target_h,
+                                        x_offset:x_offset + target_w]
 
         # 6. adjust bbox
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
-        retrieve_gt_bboxes[:, 0::2] = np.clip(retrieve_gt_bboxes[:, 0::2] * scale_ratio, 0, origin_w)
-        retrieve_gt_bboxes[:, 1::2] = np.clip(retrieve_gt_bboxes[:, 1::2] * scale_ratio, 0, origin_h)
+        retrieve_gt_bboxes[:, 0::2] = np.clip(
+            retrieve_gt_bboxes[:, 0::2] * scale_ratio, 0, origin_w)
+        retrieve_gt_bboxes[:, 1::2] = np.clip(
+            retrieve_gt_bboxes[:, 1::2] * scale_ratio, 0, origin_h)
 
         if is_filp:
-            retrieve_gt_bboxes[:, 0::2] = (origin_w - retrieve_gt_bboxes[:, 0::2][:, ::-1])
+            retrieve_gt_bboxes[:, 0::2] = (
+                origin_w - retrieve_gt_bboxes[:, 0::2][:, ::-1])
 
         # 7. filter
         cp_retrieve_gt_bboxes = retrieve_gt_bboxes.copy()
-        cp_retrieve_gt_bboxes[:, 0::2] = np.clip(cp_retrieve_gt_bboxes[:, 0::2] - x_offset, 0, target_w)
-        cp_retrieve_gt_bboxes[:, 1::2] = np.clip(cp_retrieve_gt_bboxes[:, 1::2] - y_offset, 0, target_h)
-        keep_list = self._filter_box_candidates(retrieve_gt_bboxes.T, cp_retrieve_gt_bboxes.T, 5)
+        cp_retrieve_gt_bboxes[:, 0::2] = np.clip(
+            cp_retrieve_gt_bboxes[:, 0::2] - x_offset, 0, target_w)
+        cp_retrieve_gt_bboxes[:, 1::2] = np.clip(
+            cp_retrieve_gt_bboxes[:, 1::2] - y_offset, 0, target_h)
+        keep_list = self._filter_box_candidates(retrieve_gt_bboxes.T,
+                                                cp_retrieve_gt_bboxes.T, 5)
 
         # 8. mix up
         if keep_list.sum() >= 1.0:
@@ -2236,13 +2264,21 @@ class MixUp:
 
         return results
 
-    def _filter_box_candidates(self, box1, box2, wh_thr=2, ar_thr=20, area_thr=0.2):
-        """ Compute candidate boxes which include follwing 5 things:
-        box1 before augment, box2 after augment, wh_thr (pixels), aspect_ratio_thr, area_ratio
+    def _filter_box_candidates(self,
+                               box1,
+                               box2,
+                               wh_thr=2,
+                               ar_thr=20,
+                               area_thr=0.2):
+        """Compute candidate boxes which include follwing 5 things:
+
+        box1 before augment, box2 after augment, wh_thr (pixels),
+        aspect_ratio_thr, area_ratio
         """
         w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
         w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
-        ar = np.maximum(w2 / (h2 + self.eps), h2 / (w2 + self.eps))  # aspect ratio
+        ar = np.maximum(w2 / (h2 + self.eps),
+                        h2 / (w2 + self.eps))  # aspect ratio
         return ((w2 > wh_thr)
                 & (h2 > wh_thr)
                 & (w2 * h2 / (w1 * h1 + self.eps) > area_thr)
