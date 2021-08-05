@@ -76,7 +76,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         logger.info(f"Scratch space created at {self.scratch_space}")
 
         self.task_environment = task_environment
-        self.hyperparams = hyperparams = task_environment.get_configurable_parameters(OTEDetectionConfig)
+        self.hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
 
         self.model_name = hyperparams.algo_backend.model_name
         self.labels = task_environment.get_labels(False)
@@ -327,7 +327,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
     def save_model(self, output_model: Model):
         buffer = io.BytesIO()
-        hyperparams = self.task_environment.get_configurable_parameters(OTEDetectionConfig)
+        hyperparams = self.task_environment.get_hyper_parameters(OTEDetectionConfig)
         hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
         labels = {label.name: label.color.rgb_tuple for label in self.labels}
         modelinfo = {'model': self.model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}

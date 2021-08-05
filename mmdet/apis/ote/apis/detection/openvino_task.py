@@ -159,7 +159,7 @@ class OpenVINODetectionInferencer(BaseOpenVINOInferencer):
 class OpenVINODetectionTask(IInferenceTask, IEvaluationTask):
     def __init__(self, task_environment: TaskEnvironment):
         self.task_environment = task_environment
-        self.hparams = self.task_environment.get_configurable_parameters(OTEDetectionConfig)
+        self.hparams = self.task_environment.get_hyper_parameters(OTEDetectionConfig)
         self.model = self.task_environment.model
         self.inferencer = self.load_inferencer()
 

@@ -70,7 +70,7 @@ def main(args):
     logger.info('Setup environment')
     params = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
     apply_template_configurable_parameters(params, template)
-    environment = TaskEnvironment(model=NullModel(), configurable_parameters=params, label_schema=labels_schema)
+    environment = TaskEnvironment(model=NullModel(), hyper_parameters=params, label_schema=labels_schema)
 
     logger.info('Create base Task')
     task_impl_path = template['task']['base']
@@ -111,7 +111,7 @@ def main(args):
             dataset,
             environment.get_model_configuration(),
             ModelOptimizationType.MO,
-            [ModelPrecision.FP32],
+            precision=[ModelPrecision.FP32],
             optimization_methods=[],
             optimization_level={},
             target_device=TargetDevice.UNSPECIFIED,
