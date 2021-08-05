@@ -32,7 +32,7 @@ def test_ce_loss():
 
     # test bce_loss
     cls_score = torch.Tensor([[-200, 100], [500, -1000], [300, -300]])
-    label = torch.Tensor([[1, 0], [0, 1], [1, 0]])
+    label = torch.Tensor([0, 1, 0]).long()
     weight = torch.Tensor([0.6, 0.4, 0.5])
     class_weight = torch.tensor([0.1, 0.9])  # class 0: 0.1, class 1: 0.9
 
