@@ -74,6 +74,6 @@ runner = dict(type='IterBasedRunner', max_iters=10000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'output'
-load_from = '/home/paul/programs/otedetection/configs/ote/custom-object-detection/mobilenetV2_ATSS/snapshot.pth'
+load_from = None
 resume_from = None
 workflow = [('train', 1)]
