@@ -9,8 +9,8 @@ import torch
 import torch.nn as nn
 from mmcv.runner import IterTimerHook, PaviLoggerHook, build_runner
 from torch.utils.data import DataLoader
-from mmdet.core.hook import YOLOXLrUpdaterHook
 
+from mmdet.core.hook import YOLOXLrUpdaterHook
 
 
 def _build_demo_runner_without_hook(runner_type='EpochBasedRunner',
@@ -111,22 +111,22 @@ def test_yolox_lrupdater_hook(multi_optimziers):
         calls = [
             call(
                 'train', {
-                    'learning_rate/model1': 0.0,
-                    'learning_rate/model2': 0.0,
+                    'learning_rate/model1': 4.000000000000001e-06,
+                    'learning_rate/model2': 4.000000000000001e-06,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 1),
             call(
                 'train', {
-                    'learning_rate/model1': 0.000144,
-                    'learning_rate/model2': 0.000144,
+                    'learning_rate/model1': 0.00019600000000000002,
+                    'learning_rate/model2': 0.00019600000000000002,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 7),
             call(
                 'train', {
-                    'learning_rate/model1': 0.000324,
-                    'learning_rate/model2': 0.000324,
+                    'learning_rate/model1': 0.0004000000000000001,
+                    'learning_rate/model2': 0.0004000000000000001,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 10)
@@ -134,20 +134,16 @@ def test_yolox_lrupdater_hook(multi_optimziers):
     else:
         calls = [
             call('train', {
-                'learning_rate': 0.0,
+                'learning_rate': 4.000000000000001e-06,
                 'momentum': 0.95
             }, 1),
             call('train', {
-                'learning_rate': 0.000144,
+                'learning_rate': 0.00019600000000000002,
                 'momentum': 0.95
             }, 7),
             call('train', {
-                'learning_rate': 0.000324,
+                'learning_rate': 0.0004000000000000001,
                 'momentum': 0.95
             }, 10)
         ]
-<<<<<<< HEAD
     hook.writer.add_scalars.assert_has_calls(calls, any_order=True)
-=======
-    hook.writer.add_scalars.assert_has_calls(calls, any_order=True)
->>>>>>> 91b65fd4cd567186e646d59fa47b8d59b2ff9de0

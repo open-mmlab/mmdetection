@@ -24,6 +24,8 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
 
     def __init__(self, last_epoch, warmup_ratio, **kwargs):
         _, work_size = get_dist_info()
+        # The best name is self.base_lr, but the name is already used
+        # internally. For the purpose of distinction, the suffix is added.
         self.base_lr_ = warmup_ratio * work_size
         self.last_epoch = last_epoch
         super(YOLOXLrUpdaterHook, self).__init__(
@@ -33,8 +35,8 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
 
         def _get_warmup_lr(cur_iters, regular_lr):
             # exp warmup scheme
-            k = self.warmup_ratio * pow(cur_iters / float(self.warmup_iters),
-                                        2)
+            k = self.warmup_ratio * pow(
+                (cur_iters + 1) / float(self.warmup_iters), 2)
             warmup_lr = [k for _lr in regular_lr]
             return warmup_lr
 
@@ -55,6 +57,8 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
         else:
             progress = runner.iter
             max_progress = runner.max_iters
+
+        progress += 1
 
         if self.min_lr_ratio is not None:
             target_lr = self.base_lr_ * self.min_lr_ratio
