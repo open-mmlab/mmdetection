@@ -19,7 +19,8 @@ class YOLOXLrUpdaterHOOK(CosineAnnealingLrUpdaterHook):
 
     def __init__(self, no_aug_epoch,  warmup_ratio, **kwargs):
         _, work_size = get_dist_info()
-		# The best name is self.base_lr, but the name is already used internally. # For the purpose of distinction, the suffix is ​​added.
+		# The best name is self.base_lr, but the name is already used internally. 
+        # For the purpose of distinction, the suffix is added.
         self.base_lr_ = warmup_ratio * work_size
         self.no_aug_epoch = no_aug_epoch
         super(YOLOXLrUpdaterHOOK, self).__init__(warmup_ratio=self.base_lr_, **kwargs)
