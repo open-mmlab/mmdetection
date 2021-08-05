@@ -389,7 +389,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             flatten_cls_preds.view(-1, self.num_classes)[pos_masks],
             cls_targets) / num_total_samples
 
-        loss_dict = dict(loss_cls=loss_cls, loss_bbox=loss_bbox, loss_obj=loss_obj)
+        loss_dict = dict(
+            loss_cls=loss_cls, loss_bbox=loss_bbox, loss_obj=loss_obj)
 
         if self.use_l1:
             loss_l1 = self.loss_l1(
@@ -448,9 +449,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
 
         pos_ious = assign_result.max_overlaps[pos_inds]
         # IOU aware classification score
-        cls_target = F.one_hot(
-            sampling_result.pos_gt_labels,
-            self.num_classes) * pos_ious.unsqueeze(-1)
+        cls_target = F.one_hot(sampling_result.pos_gt_labels,
+                               self.num_classes) * pos_ious.unsqueeze(-1)
         obj_target = torch.zeros_like(objectness).unsqueeze(-1)
         obj_target[pos_inds] = 1
         bbox_target = sampling_result.pos_gt_bboxes

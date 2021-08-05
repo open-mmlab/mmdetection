@@ -64,9 +64,9 @@ class SimOTAAssigner(BaseAssigner):
         """
         try:
             assign_result = self._assign(pred_scores, priors, decoded_bboxes,
-                                          gt_bboxes, gt_labels,
-                                          gt_bboxes_ignore, eps)
-            return assign_results
+                                         gt_bboxes, gt_labels,
+                                         gt_bboxes_ignore, eps)
+            return assign_result
         except RuntimeError:
             origin_device = pred_scores.device
             warnings.warn('OOM RuntimeError is raised due to the huge memory '
@@ -82,10 +82,11 @@ class SimOTAAssigner(BaseAssigner):
             gt_labels = gt_labels.cpu()
 
             assign_result = self._assign(pred_scores, priors, decoded_bboxes,
-                                          gt_bboxes, gt_labels,
-                                          gt_bboxes_ignore, eps)
+                                         gt_bboxes, gt_labels,
+                                         gt_bboxes_ignore, eps)
             assign_result.gt_inds = assign_result.gt_inds.to(origin_device)
-            assign_result.max_overlaps = assign_result.max_overlaps.to(origin_device)
+            assign_result.max_overlaps = assign_result.max_overlaps.to(
+                origin_device)
             assign_result.labels = assign_result.labels.to(origin_device)
 
             return assign_result
@@ -248,5 +249,5 @@ class SimOTAAssigner(BaseAssigner):
 
         matched_gt_inds = matching_matrix[fg_mask_inboxes, :].argmax(1)
         matched_pred_ious = (matching_matrix *
-                                   pairwise_ious).sum(1)[fg_mask_inboxes]
+                             pairwise_ious).sum(1)[fg_mask_inboxes]
         return matched_pred_ious, matched_gt_inds
