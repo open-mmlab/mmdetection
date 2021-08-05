@@ -22,7 +22,7 @@ def interpolate_as(source, target, mode='bilinear', align_corners=False):
     assert len(target.shape) >= 2
 
     def _interpolate_as(source, target, mode='bilinear', align_corners=False):
-        """Interpolate the source (4D) to the shape of the target."""
+        """Interpolate the `source` (4D) to the shape of the `target`."""
         target_h, target_w = target.shape[-2:]
         source_h, source_w = source.shape[-2:]
         if target_h != source_h or target_w != source_w:
