@@ -72,13 +72,13 @@ def reduce_mean(tensor):
     return tensor
 
 
-def pyobj2tensor(pyobj, device='cuda'):
+def obj2tensor(pyobj, device='cuda'):
     """Serialize picklable python object to tensor."""
     storage = torch.ByteStorage.from_buffer(pickle.dumps(pyobj))
     return torch.ByteTensor(storage).to(device=device)
 
 
-def tensor2pyobj(tensor):
+def tensor2obj(tensor):
     """Deserialize tensor to picklable python object."""
     return pickle.loads(tensor.cpu().numpy().tobytes())
 
@@ -117,16 +117,16 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     if world_size == 1:
         return py_dict
     if group is None:
-        # TODO: Is it necessary?
+        # TODO: may try not to use gloo in the future
         group = _get_global_gloo_group()
     if dist.get_world_size(group) == 1:
         return py_dict
 
     # all reduce logic across different devices.
     py_key = list(py_dict.keys())
-    py_key_tensor = pyobj2tensor(py_key)
+    py_key_tensor = obj2tensor(py_key)
     dist.broadcast(py_key_tensor, src=0)
-    py_key = tensor2pyobj(py_key_tensor)
+    py_key = tensor2obj(py_key_tensor)
 
     tensor_shapes = [py_dict[k].shape for k in py_key]
     tensor_numels = [py_dict[k].numel() for k in py_key]

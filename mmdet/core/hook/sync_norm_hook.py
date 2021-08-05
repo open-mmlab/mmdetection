@@ -7,7 +7,7 @@ from torch import nn
 from ..utils.dist_utils import all_reduce_dict
 
 
-def get_async_norm_states(module):
+def get_norm_states(module):
     async_norm_states = OrderedDict()
     for name, child in module.named_modules():
         if isinstance(child, nn.modules.batchnorm._NormBase):
@@ -35,6 +35,6 @@ class SyncNormHook(Hook):
             _, world_size = get_dist_info()
             if world_size == 1:
                 return
-            norm_states = get_async_norm_states(module)
+            norm_states = get_norm_states(module)
             norm_states = all_reduce_dict(norm_states, op='mean')
             module.load_state_dict(norm_states, strict=False)

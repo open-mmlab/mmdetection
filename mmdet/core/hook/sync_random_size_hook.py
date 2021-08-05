@@ -35,7 +35,7 @@ class SyncRandomSizeHook(Hook):
                                              1) % self.interval == 0:
             tensor = torch.LongTensor(2)
             if torch.cuda.is_available():
-                tensor = tensor.cuda()
+                tensor = tensor.to(runner.model.device)
 
             if self.rank == 0:
                 size_factor = self.img_scale[1] * 1. / self.img_scale[0]
@@ -48,6 +48,5 @@ class SyncRandomSizeHook(Hook):
                 dist.barrier()
                 dist.broadcast(tensor, 0)
 
-            # TODO
             runner.data_loader.dataset.dynamic_scale = (tensor[0].item(),
                                                         tensor[1].item())
