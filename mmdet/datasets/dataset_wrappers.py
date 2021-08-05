@@ -291,9 +291,9 @@ class MultiImageMixDataset:
     Suitable for training on multiple images mixed data augmentation like
     mosaic and mixup. For the augmentation pipeline of mixed image data,
     the `get_indexes` method needs to be provided to obtain the image
-    indexes, and you can set `skip_flags` to change the pipeline running process.
-    At the same time, we provide the `dynamic_scale` parameter to dynamically
-    change the output image size.
+    indexes, and you can set `skip_flags` to change the pipeline running
+    process. At the same time, we provide the `dynamic_scale` parameter
+    to dynamically change the output image size.
 
     Args:
         dataset (:obj:`CustomDataset`): The dataset to be mixed.
@@ -345,8 +345,8 @@ class MultiImageMixDataset:
                 if not isinstance(indexes, collections.abc.Sequence):
                     indexes = [indexes]
                 mix_results = [
-                        copy.deepcopy(self.dataset[index]) for index in indexes
-                    ]
+                    copy.deepcopy(self.dataset[index]) for index in indexes
+                ]
                 results['mix_results'] = mix_results
                 if self.dynamic_scale is not None:
                     results['img_scale'] = self.dynamic_scale

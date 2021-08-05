@@ -589,10 +589,12 @@ class Pad:
         self.pad2square = pad2square
 
         if pad2square:
-            assert size is None and size_divisor is None, 'The size and size_divisor must be None ' \
-                                                          'when pad2square is True'
+            assert size is None and size_divisor is None, \
+                'The size and size_divisor must be None ' \
+                'when pad2square is True'
         else:
-            assert size is not None or size_divisor is not None, 'only one of size and size_divisor should be valid'
+            assert size is not None or size_divisor is not None, \
+                'only one of size and size_divisor should be valid'
             assert size is None or size_divisor is None
 
     def _pad_img(self, results):
@@ -2024,15 +2026,19 @@ class Mosaic:
 
         # mosaic center x, y
         center_x = int(
-            random.uniform(*self.center_scale_ratio) * self.img_scale[0])
-        center_y = int(
             random.uniform(*self.center_scale_ratio) * self.img_scale[1])
+        center_y = int(
+            random.uniform(*self.center_scale_ratio) * self.img_scale[0])
         center_position = (center_x, center_y)
 
-        for i, loc in enumerate(('top_left',
-                                 'top_right',
-                                 'bottom_left',
-                                 'bottom_right')):
+        for i, loc in enumerate(
+                (
+                        'top_left',
+                        'top_right',
+                        'bottom_left',
+                        'bottom_right'
+                )
+        ):
             if loc == 'top_left':
                 results_patch = copy.deepcopy(results)
             else:
@@ -2092,8 +2098,9 @@ class Mosaic:
 
         Args:
             loc (str): Index for the sub-image, loc in ('top_left',
-                'top_right', 'bottom_left', 'bottom_right').
-            center_position_xy (Sequence[float]): Mixing center for 4 images, (x, y).
+              'top_right', 'bottom_left', 'bottom_right').
+            center_position_xy (Sequence[float]): Mixing center for 4 images,
+                (x, y).
             img_shape_wh (Sequence[int]): Width and height of sub-image
 
         Returns:
@@ -2126,7 +2133,7 @@ class Mosaic:
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
                              center_position_xy[1], \
                              center_position_xy[0], \
-                             min(self.img_scale[0] * 2, center_position_xy[1] +
+                             min(self.img_scale[1] * 2, center_position_xy[1] +
                                  img_shape_wh[1])
             crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
                 y2 - y1, img_shape_wh[1])
@@ -2136,8 +2143,8 @@ class Mosaic:
             x1, y1, x2, y2 = center_position_xy[0], \
                              center_position_xy[1], \
                              min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[0] * 2), \
-                             min(self.img_scale[1] * 2, center_position_xy[1] +
+                                 self.img_scale[1] * 2), \
+                             min(self.img_scale[0] * 2, center_position_xy[1] +
                                  img_shape_wh[1])
             crop_coord = 0, 0, min(img_shape_wh[0],
                                    x2 - x1), min(y2 - y1, img_shape_wh[1])
