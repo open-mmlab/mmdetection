@@ -1,5 +1,6 @@
 import mmcv
 import torch.nn as nn
+import torch
 
 from ..builder import LOSSES
 from .utils import weighted_loss
@@ -51,11 +52,11 @@ def custom_gaussian_focal_loss(
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 4.0.
     """
-    pred = nn.clamp(pred.sigmoid_(), min=sigmoid_clamp, max=1-sigmoid_clamp)
-    neg_weights = nn.pow(1 - gaussian_target, beta)
+    pred = torch.clamp(pred.sigmoid_(), min=sigmoid_clamp, max=1-sigmoid_clamp)
+    neg_weights = torch.pow(1 - gaussian_target, beta)
     pos_pred = pred[pos_inds] # N
-    pos_loss = nn.log(pos_pred) * nn.pow(1 - pos_pred, gamma)
-    neg_loss = nn.log(1 - pred) * nn.pow(pred, gamma) * neg_weights
+    pos_loss = torch.log(pos_pred) * torch.pow(1 - pos_pred, gamma)
+    neg_loss = torch.log(1 - pred) * torch.pow(pred, gamma) * neg_weights
     if ignore_high_fp > 0:
         not_high_fp = (pred < ignore_high_fp).float()
         neg_loss = not_high_fp * neg_loss
@@ -67,7 +68,7 @@ def custom_gaussian_focal_loss(
         pos_loss = alpha * pos_loss
         neg_loss = (1 - alpha) * neg_loss
 
-    return pos_loss, neg_loss
+    return pos_loss + neg_loss
 
 @LOSSES.register_module()
 class GaussianFocalLoss(nn.Module):
@@ -157,7 +158,7 @@ class CustomGaussianFocalLoss(nn.Module):
                  ignore_high_fp: float = -1.,
                  reduction='mean',
                  loss_weight=1.0):
-        super(GaussianFocalLoss, self).__init__()
+        super(CustomGaussianFocalLoss, self).__init__()
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
@@ -190,13 +191,14 @@ class CustomGaussianFocalLoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
-        pos_loss, neg_loss = self.loss_weight * custom_gaussian_focal_loss(
+        loss_reg = self.loss_weight * custom_gaussian_focal_loss(
             pred,
             target,
             weight,
             pos_inds=pos_inds,
             alpha=self.alpha,
             gamma=self.gamma,
+            ignore_high_fp=self.ignore_high_fp,
             reduction=reduction,
             avg_factor=avg_factor)
-        return pos_loss, neg_loss
+        return loss_reg
