@@ -20,7 +20,8 @@ from sc_sdk.configuration.elements import (ParameterGroup, add_parameter_group,
                                            configurable_boolean,
                                            configurable_float,
                                            configurable_integer,
-                                           string_attribute)
+                                           string_attribute,
+                                           boolean_attribute)
 from sc_sdk.configuration.elements.primitive_parameters import set_common_metadata
 from sc_sdk.configuration.ui_rules import NullUIRules, UIRules
 
@@ -141,7 +142,7 @@ class OTEDetectionConfig(ModelConfig):
     class __AlgoBackend(ParameterGroup):
         header = string_attribute("Internal Algo Backend parameters")
         description = header
-        visible_in_ui = False
+        visible_in_ui = boolean_attribute(False)
 
         template = configurable_str("template.yaml", "", editable=False, visible_in_ui=False)
         model = configurable_str("model.py", "", editable=False, visible_in_ui=False)
