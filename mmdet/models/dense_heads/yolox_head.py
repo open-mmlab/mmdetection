@@ -466,8 +466,6 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
     def _get_l1_target(self, l1_target, gt_bboxes, priors, eps=1e-8):
         """Convert gt bboxes to center offset and log width height."""
         gt_cxcywh = bbox_xyxy_to_cxcywh(gt_bboxes)
-        l1_target[:, 0] = (gt_cxcywh[:, 0] - priors[:, 0]) / priors[:, 2]
-        l1_target[:, 1] = (gt_cxcywh[:, 1] - priors[:, 1]) / priors[:, 3]
-        l1_target[:, 2] = torch.log(gt_cxcywh[:, 2] / priors[:, 2] + eps)
-        l1_target[:, 3] = torch.log(gt_cxcywh[:, 3] / priors[:, 3] + eps)
+        l1_target[:, :2] = (gt_cxcywh[:, :2] - priors[:, :2]) / priors[:, 2:]
+        l1_target[:, 2:] = torch.log(gt_cxcywh[:, 2:] / priors[:, 2:] + eps)
         return l1_target
