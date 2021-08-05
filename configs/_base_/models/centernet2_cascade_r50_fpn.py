@@ -29,7 +29,7 @@ model = dict(
         use_deformable=False,
         ),
     roi_head=dict(
-        type='CascadeRoIHead',
+        type='CustomCascadeRoIHead',
         num_stages=3,
         stage_loss_weights=[1, 0.5, 0.25],
         bbox_roi_extractor=dict(

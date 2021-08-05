@@ -771,17 +771,9 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             return 1
         return dist.get_world_size()
 
-    def get_bboxes(self, clss_per_level, reg_pred_per_level, agn_hm_pred_per_level, img_metas, cfg=None):
-        
-        grids = self.compute_grids(agn_hm_pred_per_level)
 
-        # if self.more_pos:
-        #     # add more pixels as positive if \
-        #     #   1. they are within the center3x3 region of an object
-        #     #   2. their regression losses are small (<self.more_pos_thresh)
-        #     pos_inds, labels = self._add_more_pos(
-        #         reg_pred, gt_bboxes, gt_labels, shapes_per_level)
-            
+    def get_bboxes(self, clss_per_level, reg_pred_per_level, agn_hm_pred_per_level, img_metas, cfg=None):
+        grids = self.compute_grids(agn_hm_pred_per_level)
         proposals = None
         image_sizes = []
         for i in range(len(img_metas)):
@@ -796,23 +788,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             proposals = self.predict_instances(
                 grids, clss_per_level, reg_pred_per_level,
                 image_sizes, agn_hm_pred_per_level)
-        # if self.only_proposal or self.as_proposal:
-        #     for p in range(len(proposals)):
-        #         proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
-        #         proposals[p].objectness_logits = proposals[p].get('scores')
-        #         proposals[p].remove('pred_boxes')
-        #         proposals[p].remove('scores')
-        #         proposals[p].remove('pred_classes')
-
-        # losses = self.losses(
-        #     pos_inds, labels, reg_targets, flattened_hms,
-        #     logits_pred, reg_pred, agn_hm_pred)
-
-        # if self.debug:
-        #     debug_train(
-        #         [self.denormalizer(x) for x in images], 
-        #         gt_instances, flattened_hms, reg_targets, 
-        #         labels, pos_inds, shapes_per_level, grids, self.strides)
         return proposals
 
     def inference(self, images, clss_per_level, reg_pred_per_level,
