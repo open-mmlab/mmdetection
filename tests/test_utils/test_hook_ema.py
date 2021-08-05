@@ -15,7 +15,7 @@ from mmcv.runner import CheckpointHook, build_runner
 from torch.nn.init import constant_
 from torch.utils.data import DataLoader
 
-from mmdet.core.hook import ExpDecayEMAHook
+from mmdet.core.hook import ExpMomentumEMAHook
 
 
 def _build_demo_runner(runner_type='EpochBasedRunner',
@@ -117,8 +117,8 @@ def test_ema_hook():
     runner = _build_demo_runner()
     demo_model = DemoModel()
     runner.model = demo_model
-    ema_hook = ExpDecayEMAHook(
-        decay=0.9998,
+    ema_hook = ExpMomentumEMAHook(
+        momentum=0.0002,
         total_iter=1,
         skip_buffers=True,
         interval=2,
@@ -137,8 +137,8 @@ def test_ema_hook():
     torch.save(checkpoint, f'{runner.work_dir}/epoch_1.pth')
 
     work_dir = runner.work_dir
-    resume_ema_hook = ExpDecayEMAHook(
-        decay=0.5,
+    resume_ema_hook = ExpMomentumEMAHook(
+        momentum=0.5,
         total_iter=10,
         skip_buffers=True,
         interval=1,
