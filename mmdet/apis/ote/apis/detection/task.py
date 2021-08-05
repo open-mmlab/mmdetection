@@ -93,6 +93,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         self.model = self._load_model(task_environment.model)
 
         # Extra control variables.
+        self.training_work_dir = None
         self.is_training = False
         self.should_stop = False
         self.time_monitor = None
@@ -269,12 +270,14 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             self.should_stop = False
             self.is_training = False
             self.time_monitor = None
+            self.training_work_dir = None
             return
 
         # Run training.
         self.time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda _: None)
         learning_curves = defaultdict(OTELoggerHook.Curve)
         training_config = prepare_for_training(config, train_dataset, val_dataset, self.time_monitor, learning_curves)
+        self.training_work_dir = training_config.work_dir
         mm_train_dataset = build_dataset(training_config.data.train)
         self.is_training = True
         self.model.train()
@@ -352,7 +355,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         """
         logger.info("Cancel training requested.")
         self.should_stop = True
-        stop_training_filepath = os.path.join(self.config.work_dir, '.stop_training')
+        stop_training_filepath = os.path.join(self.training_work_dir, '.stop_training')
         open(stop_training_filepath, 'a').close()
 
 
