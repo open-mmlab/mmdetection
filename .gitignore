@@ -114,8 +114,15 @@ data
 *.pkl.json
 *.log.json
 work_dirs/
+plot_results/
 
 # Pytorch
 *.pth
 *.py~
 *.sh~
+demo/myresult.jpg
+demo/mytest.png
+demo/mytest2.png
+demo/mytest3.png
+demo/mytest4.png
+demo/mytest5.png
