@@ -5,7 +5,7 @@ from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.ops import batched_nms
 from mmcv.runner import force_fp32
 
-from mmdet.core import multi_apply
+from mmdet.core import multi_apply, distance2bbox, reduce_mean
 from mmdet.models import HEADS, build_loss
 from mmdet.models.utils import gaussian_radius, gen_gaussian_target
 from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
@@ -337,14 +337,18 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 grids, shapes_per_level, gt_bboxes)
         logits_pred, reg_pred, agn_hm_pred = self._flatten_outputs(
             clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
+
+        flatten_points = torch.cat(
+            [points.repeat(len(img_metas), 1) for points in grids])        
+
         losses = self.compute_losses(
             pos_inds, reg_targets, flattened_hms,
-            logits_pred, reg_pred, agn_hm_pred)
+            logits_pred, reg_pred, agn_hm_pred, flatten_points)
 
         return losses
 
     def compute_losses(self, pos_inds, reg_targets, flattened_hms,
-        logits_pred, reg_pred, agn_hm_pred):
+        logits_pred, reg_pred, agn_hm_pred, flatten_points):
         '''
         Inputs:
             pos_inds: N
@@ -358,11 +362,14 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             C: number of classes
         '''
         assert (torch.isfinite(reg_pred).all().item())
-        num_pos_local = pos_inds.numel()
-        num_gpus = self.get_world_size()
-        total_num_pos = self.reduce_sum(
-            pos_inds.new_tensor([num_pos_local])).item()
-        num_pos_avg = max(total_num_pos / num_gpus, 1.0)
+        # num_pos_local = pos_inds.numel()
+        # num_gpus = self.get_world_size()
+        # total_num_pos = self.reduce_sum(
+        #     pos_inds.new_tensor([num_pos_local])).item()
+        # num_pos_avg = max(total_num_pos / num_gpus, 1.0)
+        num_pos_local = torch.tensor(
+            len(pos_inds), dtype=torch.float, device=reg_pred[0].device)
+        num_pos_avg = max(reduce_mean(num_pos_local), 1.0)
 
         losses = {}
         # if not self.only_proposal:
@@ -383,22 +390,27 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         reg_inds = torch.nonzero(reg_targets.max(dim=1)[0] >= 0).squeeze(1)
         reg_pred = reg_pred[reg_inds]
         reg_targets_pos = reg_targets[reg_inds]
+        flatten_points_pos = flatten_points[reg_inds] #added by mmz
         reg_weight_map = flattened_hms.max(dim=1)[0]
         reg_weight_map = reg_weight_map[reg_inds]
         reg_weight_map = reg_weight_map * 0 + 1 \
             if self.not_norm_reg else reg_weight_map
-        reg_norm = max(self.reduce_sum(reg_weight_map.sum()).item() / num_gpus, 1)
-
-
+        # reg_norm_test = max(self.reduce_sum(reg_weight_map.sum()).item() / num_gpus, 1)
+        reg_norm = max(reduce_mean(reg_weight_map.sum()).item(), 1.0)
+        pos_decoded_bbox_preds = distance2bbox(flatten_points_pos, reg_pred)
+        pos_decoded_target_preds = distance2bbox(flatten_points_pos, reg_targets_pos)
         reg_loss = self.loss_bbox(
-                reg_pred,
-                reg_targets_pos,
+                pos_decoded_bbox_preds,
+                pos_decoded_target_preds,
                 weight=reg_weight_map,
                 avg_factor=reg_norm)
-        # reg_loss = self.reg_weight * self.my_iou_loss(
+
+        # reg_loss_test = 1.0 * self.my_iou_loss(
         #     reg_pred, reg_targets_pos, reg_weight_map,
         #     reduction='sum') / reg_norm
+
         losses['loss_centernet_loc'] = reg_loss
+        # losses['loss_centernet_loc_test'] = reg_loss_test       
 
         cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
 
