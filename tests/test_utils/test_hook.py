@@ -9,8 +9,8 @@ import torch
 import torch.nn as nn
 from mmcv.runner import IterTimerHook, PaviLoggerHook, build_runner
 from torch.utils.data import DataLoader
+from mmdet.core.hook import YOLOXLrUpdaterHook
 
-from mmdetection.mmdet.core.hook.cosinesnnealingwithstop_lrupdater_hook import YOLOXLrUpdaterHook
 
 
 def _build_demo_runner_without_hook(runner_type='EpochBasedRunner',
@@ -146,4 +146,8 @@ def test_yolox_lrupdater_hook(multi_optimziers):
                 'momentum': 0.95
             }, 10)
         ]
+<<<<<<< HEAD
     hook.writer.add_scalars.assert_has_calls(calls, any_order=True)
+=======
+    hook.writer.add_scalars.assert_has_calls(calls, any_order=True)
+>>>>>>> 91b65fd4cd567186e646d59fa47b8d59b2ff9de0
