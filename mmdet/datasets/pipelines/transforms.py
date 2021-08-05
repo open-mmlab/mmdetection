@@ -1908,7 +1908,9 @@ class CutOut:
 
 @PIPELINES.register_module()
 class Mosaic:
-    """Mosaic augmentation. Given 4 images, mosaic transform combines them into
+    """Mosaic augmentation.
+
+    Given 4 images, mosaic transform combines them into
     one output image. The output image is composed of the parts from each sub-
     image.
 
@@ -1933,7 +1935,7 @@ class Mosaic:
 
          1. choose the mosaic center as the intersections of 4 images
          2. Get the left top image according to the index given by dataloader,
-            and ramdomly sample another 3 images from the custom dataset.
+            and randomly sample another 3 images from the custom dataset.
          3. sub image will be cropped if image is larger than mosaic patch
          4. mosaic transform will be disabled last several epochs
             controlled by YoloXProcessHook
@@ -1943,7 +1945,7 @@ class Mosaic:
            image. Default to (640, 640).
         center_scale_ratio (Sequence[float]): Center scale range of mosaic
            output. Default to (0.5, 1.5).
-        pad_value (int): pad value. Default to 114.
+        pad_value (int): Pad value. Default to 114.
     """
 
     def __init__(
@@ -2052,9 +2054,9 @@ class Mosaic:
         cropped sub-image.
 
         Args:
-            loc (str): location of sub-image.
+            loc (str): Location of sub-image.
             center_position_xy (Sequence[float]): Mosaic center
-            img_shape_wh (Sequence[int]): width and height of sub-image
+            img_shape_wh (Sequence[int]): Width and height of sub-image
 
         Returns:
             dict: Updated result dict.
@@ -2115,7 +2117,7 @@ class Mosaic:
 class MixUp:
     """MixUp data augmentation.
 
-    The logic of mixup transform:
+    The logic of mixup transform is as follows:
 
                          mixup transform
                 +------------------------------+
@@ -2123,7 +2125,7 @@ class MixUp:
                 |      +--------|--------+     |
                 |      |        |        |     |
                 |---------------+        |     |
-                |      |  Affined mosaic |     |
+                |      |                 |     |
                 |      |      image      |     |
                 |      |                 |     |
                 |      |                 |     |
@@ -2139,13 +2141,13 @@ class MixUp:
            image and origin image.
 
     Args:
-        img_scale (Sequence[int]): Image size after mixuo pipeline.
+        img_scale (Sequence[int]): Image size after mixup pipeline.
            Default to (640, 640).
-        scale_ratio (Sequence[float]): scale range of mixuo image.
+        scale_ratio (Sequence[float]): Scale range of mixup image.
            Default to (0.5, 1.5).
-        flip_ratio (float): Horizontal flip range of mixuo image.
+        flip_ratio (float): Horizontal flip range of mixup image.
            Default to 0.5.
-        pad_value (int): pad value. Default to 114.
+        pad_value (int): Pad value. Default to 114.
     """
 
     def __init__(self,
@@ -2173,7 +2175,7 @@ class MixUp:
         return index
 
     def _mixup_transform(self, results):
-        """Mixup function.
+        """MixUp function.
 
         Args:
             results (dict): Result dict.
@@ -2183,7 +2185,7 @@ class MixUp:
         """
         assert 'mix_results' in results
         assert len(
-            results['mix_results']) == 1, 'Mixup only support 2 images now !'
+            results['mix_results']) == 1, 'MixUp only support 2 images now !'
 
         if results['mix_results'][0]['gt_bboxes'].shape[0] == 0:
             # empty bbox
@@ -2285,14 +2287,14 @@ class MixUp:
                                wh_thr=2,
                                ar_thr=20,
                                area_thr=0.2):
-        """Compute candidate boxes which include follwing 5 things:
+        """Compute candidate boxes which include following 5 things:
 
         box1 before augment, box2 after augment, wh_thr (pixels),
         aspect_ratio_thr, area_ratio
         """
         w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
         w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
-        ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
+        ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))
         return ((w2 > wh_thr)
                 & (h2 > wh_thr)
                 & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr)

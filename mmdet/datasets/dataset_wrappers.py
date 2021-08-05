@@ -290,9 +290,9 @@ class MultiImageMixDataset:
 
     Suitable for training on multiple images mixed data augmentation like
     mosaic and mixup. For the augmentation pipeline of mixed image data,
-    the get_indexes method needs to be provided to obtain the image
-    indexes, and you can set skip_flags to change the pipeline running process.
-    At the same time, we provide the dynamic_scale parameter to dynamically
+    the `get_indexes` method needs to be provided to obtain the image
+    indexes, and you can set `skip_flags` to change the pipeline running process.
+    At the same time, we provide the `dynamic_scale` parameter to dynamically
     change the output image size.
 
     Args:
@@ -300,7 +300,7 @@ class MultiImageMixDataset:
         pipelines (Sequence[dict | callable]): Sequence of transform object or
             config dict to be composed.
         dynamic_scale (tuple[int]): The image scale can be changed dynamically.
-        skip_flags (list[bool], optional):  Sequence of bool object to be skip
+        skip_flags (list[bool], optional): Sequence of bool object to be skip
             pipeline. Default to None.
     """
 
@@ -344,11 +344,10 @@ class MultiImageMixDataset:
                 indexes = pipeline.get_indexes(self.dataset)
                 if not isinstance(indexes, collections.abc.Sequence):
                     indexes = [indexes]
-                if indexes:
-                    mix_results = [
+                mix_results = [
                         copy.deepcopy(self.dataset[index]) for index in indexes
                     ]
-                    results['mix_results'] = mix_results
+                results['mix_results'] = mix_results
                 if self.dynamic_scale is not None:
                     results['img_scale'] = self.dynamic_scale
             results = pipeline(results)
@@ -358,9 +357,21 @@ class MultiImageMixDataset:
         return results
 
     def update_skip_flags(self, skip_flags):
+        """Update skip_flags. It is called by an external hook.
+
+        Args:
+            skip_flags (list[bool]): Sequence of bool object to be skip
+              pipeline.
+        """
         assert len(skip_flags) == len(self.pipelines)
         assert all([isinstance(skip_flag, bool) for skip_flag in skip_flags])
         self.skip_flags = skip_flags
 
     def update_dynamic_scale(self, dynamic_scale):
+        """Update dynamic_scale. It is called by an external hook.
+
+        Args:
+            dynamic_scale (tuple[int]): The image scale can be
+               changed dynamically.
+        """
         self.dynamic_scale = dynamic_scale
