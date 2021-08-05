@@ -126,7 +126,7 @@ class TestOTEAPI(unittest.TestCase):
         This test should be finished in under one minute on a workstation.
         """
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=10000)
+        configurable_parameters = self.setup_configurable_parameters(template_dir, num_iters=200)
         detection_environment, dataset = self.init_environment(configurable_parameters, 250)
         detection_task = OTEDetectionTask(task_environment=detection_environment)
 
@@ -146,8 +146,8 @@ class TestOTEAPI(unittest.TestCase):
         detection_task.cancel_training()
 
         # stopping process has to happen in less than 35 seconds
-        self.assertLess(time.time() - start_time, 35, 'Expected to stop within 35 seconds.')
         train_future.result()
+        self.assertLess(time.time() - start_time, 35, 'Expected to stop within 35 seconds.')
 
         # Test stopping immediately
         start_time = time.time()
@@ -155,8 +155,8 @@ class TestOTEAPI(unittest.TestCase):
         time.sleep(1.0)
         detection_task.cancel_training()
 
-        self.assertLess(time.time() - start_time, 25)  # stopping process has to happen in less than 25 seconds
         train_future.result()
+        self.assertLess(time.time() - start_time, 25)  # stopping process has to happen in less than 25 seconds
 
     @staticmethod
     def eval(task: OTEDetectionTask, model: Model, dataset: Dataset) -> Performance:
