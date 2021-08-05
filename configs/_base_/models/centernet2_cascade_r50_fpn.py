@@ -27,7 +27,12 @@ model = dict(
         num_box_convs=4,
         num_share_convs=0,
         use_deformable=False,
-        loss_center_heatmap=dict(type='CustomGaussianFocalLoss', alpha=0.25,ignore_high_fp=0.85,loss_weight=0.5),
+        loss_center_heatmap=dict(
+            type='CustomGaussianFocalLoss',
+            alpha=0.25,
+            ignore_high_fp=0.85,
+            loss_weight=0.5),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0)
         ),
     roi_head=dict(
         type='CascadeRoIHead',
