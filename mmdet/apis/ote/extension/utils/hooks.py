@@ -253,6 +253,7 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
         if self.compare_func(score, self.best_score):
             self.best_score = score
             self.bad_count = 0
+            self.last_iter = runner.iter
         else:
             self.bad_count += 1
 
