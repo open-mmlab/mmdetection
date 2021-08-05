@@ -573,20 +573,34 @@ class Pad:
     Args:
         size (tuple, optional): Fixed padding size.
         size_divisor (int, optional): The divisor of padded size.
+        pad2square (bool): Whether to pad the image into a square.
+           Currently only used for YOLOX. Default is False.
         pad_val (float, optional): Padding value, 0 by default.
     """
 
-    def __init__(self, size=None, size_divisor=None, pad_val=0):
+    def __init__(self,
+                 size=None,
+                 size_divisor=None,
+                 pad2square=False,
+                 pad_val=0):
         self.size = size
         self.size_divisor = size_divisor
         self.pad_val = pad_val
-        # only one of size and size_divisor should be valid
-        assert size is not None or size_divisor is not None
-        assert size is None or size_divisor is None
+        self.pad2square = pad2square
+
+        if pad2square:
+            assert size is None and size_divisor is None, 'The size and size_divisor must be None ' \
+                                                          'when pad2square is True'
+        else:
+            assert size is not None or size_divisor is not None, 'only one of size and size_divisor should be valid'
+            assert size is None or size_divisor is None
 
     def _pad_img(self, results):
         """Pad images according to ``self.size``."""
         for key in results.get('img_fields', ['img']):
+            if self.pad2square:
+                max_size = max(results[key].shape[:2])
+                self.size = (max_size, max_size)
             if self.size is not None:
                 padded_img = mmcv.impad(
                     results[key], shape=self.size, pad_val=self.pad_val)
@@ -629,6 +643,7 @@ class Pad:
         repr_str = self.__class__.__name__
         repr_str += f'(size={self.size}, '
         repr_str += f'size_divisor={self.size_divisor}, '
+        repr_str += f'pad2square={self.pad2square}, '
         repr_str += f'pad_val={self.pad_val})'
         return repr_str
 
@@ -1931,19 +1946,17 @@ class Mosaic:
                      |             |
                      +-------------+
 
-     The mosaic transform step:
+     The mosaic transform steps are as follows:
 
-         1. choose the mosaic center as the intersections of 4 images
-         2. Get the left top image according to the index given by dataloader,
-            and randomly sample another 3 images from the custom dataset.
-         3. sub image will be cropped if image is larger than mosaic patch
-         4. mosaic transform will be disabled last several epochs
-            controlled by YoloXProcessHook
+         1. Choose the mosaic center as the intersections of 4 images
+         2. Get the left top image according to the index, and randomly
+            sample another 3 images from the custom dataset.
+         3. Sub image will be cropped if image is larger than mosaic patch
 
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
            image. Default to (640, 640).
-        center_scale_ratio (Sequence[float]): Center scale range of mosaic
+        center_scale_ratio (Sequence[float]): Center scale ratio of mosaic
            output. Default to (0.5, 1.5).
         pad_value (int): Pad value. Default to 114.
     """
@@ -1960,30 +1973,54 @@ class Mosaic:
         self.pad_value = pad_value
 
     def __call__(self, results):
+        """Call function to mosaic image.
+
+        Args:
+            results (dict): Result dict.
+
+        Returns:
+            dict: Result dict with mosaic transformed.
+        """
+
         results = self._mosaic_transform(results)
         return results
 
     def get_indexes(self, dataset):
+        """Call function to collect indexes.
+
+        Args:
+            dataset (:obj:`CustomDataset`): The dataset.
+
+        Returns:
+            list: indexes.
+        """
+
         indexs = [random.randint(0, len(dataset)) for _ in range(3)]
         return indexs
 
     def _mosaic_transform(self, results):
-        """Mosaic function.
+        """Mosaic transform function.
 
         Args:
-            results (dict): Result dict from loading pipeline.
+            results (dict): Result dict.
 
         Returns:
             dict: Updated result dict.
         """
-        assert 'mix_results' in results
 
+        assert 'mix_results' in results
         mosaic_labels = []
         mosaic_bboxes = []
-        mosaic_img = np.full(
-            (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
-            self.pad_value,
-            dtype=np.uint8)
+        if len(results['img'].shape) == 3:
+            mosaic_img = np.full(
+                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
+                self.pad_value,
+                dtype=np.uint8)
+        else:
+            mosaic_img = np.full(
+                (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2)),
+                self.pad_value,
+                dtype=np.uint8)
 
         # mosaic center x, y
         center_x = int(
@@ -2054,13 +2091,16 @@ class Mosaic:
         cropped sub-image.
 
         Args:
-            loc (str): Location of sub-image.
-            center_position_xy (Sequence[float]): Mosaic center
+            loc (str): Index for the sub-image, loc in ('top_left',
+                'top_right', 'bottom_left', 'bottom_right').
+            center_position_xy (Sequence[float]): Mixing center for 4 images, (x, y).
             img_shape_wh (Sequence[int]): Width and height of sub-image
 
         Returns:
-            dict: Updated result dict.
+            paste_coord (tuple): paste corner coordinate in mosaic image.
+            crop_coord (tuple): crop corner coordinate in mosaic image.
         """
+
         assert loc in ('top_left', 'top_right', 'bottom_left', 'bottom_right')
         if loc == 'top_left':
             # index0 to top left part of image
@@ -2117,8 +2157,6 @@ class Mosaic:
 class MixUp:
     """MixUp data augmentation.
 
-    The logic of mixup transform is as follows:
-
                          mixup transform
                 +------------------------------+
                 | mixup image   |              |
@@ -2133,7 +2171,7 @@ class MixUp:
                 |             pad              |
                 +------------------------------+
 
-     The mixup transform step:
+     The mixup transform steps are as follows::
 
         1. Another random image is picked by dataset and embedded in
            the top left patch(after padding and resizing)
@@ -2141,11 +2179,11 @@ class MixUp:
            image and origin image.
 
     Args:
-        img_scale (Sequence[int]): Image size after mixup pipeline.
+        img_scale (Sequence[int]): Image output size after mixup pipeline.
            Default to (640, 640).
-        scale_ratio (Sequence[float]): Scale range of mixup image.
+        scale_ratio (Sequence[float]): Scale ratio of mixup image.
            Default to (0.5, 1.5).
-        flip_ratio (float): Horizontal flip range of mixup image.
+        flip_ratio (float): Horizontal flip ratio of mixup image.
            Default to 0.5.
         pad_value (int): Pad value. Default to 114.
     """
@@ -2158,14 +2196,32 @@ class MixUp:
         assert isinstance(img_scale, tuple)
         self.dynamic_scale = img_scale
         self.scale_ratio = scale_ratio
-        self.pad_value = pad_value
         self.flip_ratio = flip_ratio
+        self.pad_value = pad_value
 
     def __call__(self, results):
+        """Call function to mixup image.
+
+        Args:
+            results (dict): Result dict.
+
+        Returns:
+            dict: Result dict with mixup transformed.
+        """
+
         results = self._mixup_transform(results)
         return results
 
     def get_indexes(self, dataset):
+        """Call function to collect indexes.
+
+        Args:
+            dataset (:obj:`CustomDataset`): The dataset.
+
+        Returns:
+            list: indexes.
+        """
+
         for i in range(15):
             index = random.randint(0, len(dataset))
             gt_bboxes_i = dataset.get_ann_info(index)['bboxes']
@@ -2175,7 +2231,7 @@ class MixUp:
         return index
 
     def _mixup_transform(self, results):
-        """MixUp function.
+        """MixUp transform function.
 
         Args:
             results (dict): Result dict.
@@ -2183,6 +2239,7 @@ class MixUp:
         Returns:
             dict: Updated result dict.
         """
+
         assert 'mix_results' in results
         assert len(
             results['mix_results']) == 1, 'MixUp only support 2 images now !'
@@ -2290,8 +2347,9 @@ class MixUp:
         """Compute candidate boxes which include following 5 things:
 
         box1 before augment, box2 after augment, wh_thr (pixels),
-        aspect_ratio_thr, area_ratio
+        aspect_ratio_thr, area_ratio.
         """
+
         w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
         w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
         ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))
