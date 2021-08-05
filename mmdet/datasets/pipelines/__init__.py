@@ -8,10 +8,10 @@ from .instaboost import InstaBoost
 from .loading import (LoadAnnotations, LoadImageFromFile, LoadImageFromWebcam,
                       LoadMultiChannelImageFromFiles, LoadProposals)
 from .test_time_aug import MultiScaleFlipAug
-from .transforms import (Albu, CutOut, Expand, MinIoURandomCrop, Normalize,
-                         Pad, PhotoMetricDistortion, RandomCenterCropPad,
-                         RandomCrop, RandomFlip, RandomShift, Resize,
-                         SegRescale, Mosaic, MixUp)
+from .transforms import (Albu, CutOut, Expand, MinIoURandomCrop, MixUp, Mosaic,
+                         Normalize, Pad, PhotoMetricDistortion,
+                         RandomCenterCropPad, RandomCrop, RandomFlip,
+                         RandomShift, Resize, SegRescale)
 
 __all__ = [
     'Compose', 'to_tensor', 'ToTensor', 'ImageToTensor', 'ToDataContainer',

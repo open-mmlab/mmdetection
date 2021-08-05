@@ -1,19 +1,15 @@
 import bisect
+import collections
 import copy
 import math
-import random
 from collections import defaultdict
-import collections
 
-from mmcv.utils import build_from_cfg
-import mmcv
 import numpy as np
-from mmcv.utils import print_log
+from mmcv.utils import build_from_cfg, print_log
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
 from .builder import DATASETS, PIPELINES
 from .coco import CocoDataset
-from .pipelines import Compose
 
 
 @DATASETS.register_module()
@@ -287,10 +283,36 @@ class ClassBalancedDataset:
         """Length after repetition."""
         return len(self.repeat_indices)
 
+
 @DATASETS.register_module()
 class MultiImageMixDataset:
-    def __init__(self, dataset, pipelines, dynamic_scale, enable_mixaug=True):
+    """A wrapper of multiple images mixed dataset.
+
+    Suitable for training on multiple images mixed data augmentation like
+    mosaic and mixup. For the augmentation pipeline of mixed image data,
+    the get_indexes method needs to be provided to obtain the image
+    indexes, and you can set skip_flags to change the pipeline running process.
+    At the same time, we provide the dynamic_scale parameter to dynamically
+    change the output image size.
+
+    Args:
+        dataset (:obj:`CustomDataset`): The dataset to be mixed.
+        pipelines (Sequence[dict | callable]): Sequence of transform object or
+            config dict to be composed.
+        dynamic_scale (tuple[int]): The image scale can be changed dynamically.
+        skip_flags (list[bool], optional):  Sequence of bool object to be skip
+            pipeline. Default to None.
+    """
+
+    def __init__(self, dataset, pipelines, dynamic_scale, skip_flags=None):
         assert isinstance(pipelines, collections.abc.Sequence)
+        if skip_flags is not None:
+            assert len(skip_flags) == len(pipelines)
+            assert all(
+                [isinstance(skip_flag, bool) for skip_flag in skip_flags])
+        else:
+            skip_flags = [False] * len(pipelines)
+        self.skip_flags = skip_flags
         self.pipelines = []
         for pipeline in pipelines:
             if isinstance(pipeline, dict):
@@ -308,29 +330,34 @@ class MultiImageMixDataset:
         self.num_sample = len(dataset)
 
         self.dynamic_scale = dynamic_scale
-        self.enable_mixaug = enable_mixaug
-
-    def disable_mixaug(self):
-        for pipeline in self.pipelines:
-            if hasattr(pipeline, "get_indexes"):
-                self.pipelines.remove(pipeline)
 
     def __len__(self):
         return self.num_sample
 
     def __getitem__(self, idx):
         results = self.dataset[idx]
-        for pipeline in self.pipelines:
+        for (pipeline, skip_flag) in zip(self.pipelines, self.skip_flags):
+            if skip_flag is True:
+                continue
+
             if hasattr(pipeline, 'get_indexes'):
                 indexes = pipeline.get_indexes(self.dataset)
                 if not isinstance(indexes, collections.abc.Sequence):
                     indexes = [indexes]
                 if indexes:
-                    mix_results = [copy.deepcopy(self.dataset[index]) for index in indexes]
+                    mix_results = [
+                        copy.deepcopy(self.dataset[index]) for index in indexes
+                    ]
                     results['mix_results'] = mix_results
                 if self.dynamic_scale is not None:
                     results['img_scale'] = self.dynamic_scale
             results = pipeline(results)
-        if 'mix_results' in results:
-            results.pop('mix_results')
+
+            if 'mix_results' in results:
+                results.pop('mix_results')
         return results
+
+    def update_skip_flags(self, skip_flags):
+        assert len(skip_flags) == len(self.pipelines)
+        assert all([isinstance(skip_flag, bool) for skip_flag in skip_flags])
+        self.skip_flags = skip_flags
