@@ -11,6 +11,8 @@ from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
+
+
 @HEADS.register_module()
 class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Cascade roi head including one bbox head and one mask head.
@@ -324,12 +326,24 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                                        img_metas[j])
                     for j in range(num_imgs)
                 ])
+        # print("proposal_list_size", proposal_list.size())
+        # print("proposal_list", proposal_list)
+        # print("cls_score_size", cls_score.size())
+        # print("cls_score", cls_score)
 
         # average scores of each image by stages
         cls_score = [
             sum([score[i] for score in ms_scores]) / float(len(ms_scores))
             for i in range(num_imgs)
         ]
+
+        cls_score = [
+            torch.mul(proposal_list[i][:,-1].repeat(cls_score[i].shape[1], 1).t(), cls_score[i])
+            for i in range(num_imgs)
+        ]
+
+        # print(cls_score[0].size(), cls_score)
+
 
         # apply bbox post-processing to each image individually
         det_bboxes = []
