@@ -1,5 +1,6 @@
 import copy
 import inspect
+
 import mmcv
 import numpy as np
 from numpy import random
@@ -942,8 +943,9 @@ class PhotoMetricDistortion:
                 'Only single img_fields is allowed'
         img = results['img']
         assert img.dtype == np.float32, \
-            'PhotoMetricDistortion needs the input image of dtype np.float32,'\
-            ' please set "to_float32=True" in "LoadImageFromFile" pipeline'
+            'PhotoMetricDistortion needs the input image of dtype ' \
+            'np.float32, please set "to_float32=True" in ' \
+            '"LoadImageFromFile" pipeline'
         # random brightness
         if random.randint(2):
             delta = random.uniform(-self.brightness_delta,
@@ -1910,7 +1912,7 @@ class Mosaic:
     one output image. The output image is composed of the parts from each sub-
     image.
 
-                           mosaic transform
+                        mosaic transform
                            center_x
                 +------------------------------+
                 |       pad        |  pad      |
@@ -1919,8 +1921,8 @@ class Mosaic:
                 |      |  image1   |--------+  |
                 |      |           |        |  |
                 |      |           | image2 |  |
-    center_y    |----+-------------+-----------|
-                |    |  cropped    |           |
+     center_y   |----+-------------+-----------|
+                |    |   cropped   |           |
                 |pad |   image3    |  image4   |
                 |    |             |           |
                 +----|-------------+-----------+
@@ -1929,32 +1931,31 @@ class Mosaic:
 
      The mosaic transform step:
 
-     - choose the mosaic center as the intersections of 4 images
-     - Get the left top image according to the index given by dataloader,
-       and ramdomly sample another 3 images from the custom dataset.
-     - sub image will be cropped if image is larger than mosaic patch
-     - mosaic transform will be disabled last several epochs
-       controlled by YoloXProcessHook
-     Also Mosaic transform will only be used in train mode
+         1. choose the mosaic center as the intersections of 4 images
+         2. Get the left top image according to the index given by dataloader,
+            and ramdomly sample another 3 images from the custom dataset.
+         3. sub image will be cropped if image is larger than mosaic patch
+         4. mosaic transform will be disabled last several epochs
+            controlled by YoloXProcessHook
 
     Args:
-        dataset (dict): Child of CunstomDataset which can get image and annotations by index.
-        img_scale (Sequence[int]): image size after mosaic pipeline
-        mosaic_scale (Sequence[float]): center range of mosaic output
-        pad_value (int): pad value
+        img_scale (Sequence[int]): Image size after mosaic pipeline of single
+           image. Default to (640, 640).
+        center_scale_ratio (Sequence[float]): Center scale range of mosaic
+           output. Default to (0.5, 1.5).
+        pad_value (int): pad value. Default to 114.
     """
 
-    def __init__(self,
-                 img_scale=(640, 640),
-                 pad_value=114,
-                 mosaic_scale=(0.5, 1.5)
-                 ):
+    def __init__(
+            self,
+            img_scale=(640, 640),
+            center_scale_ratio=(0.5, 1.5),
+            pad_value=114,
+    ):
         assert isinstance(img_scale, tuple)
-        assert isinstance(img_scale[0], int) and isinstance(img_scale[1], int)
         self.img_scale = img_scale
-        self.mosaic_scale = mosaic_scale
+        self.center_scale_ratio = center_scale_ratio
         self.pad_value = pad_value
-
 
     def __call__(self, results):
         results = self._mosaic_transform(results)
@@ -1965,7 +1966,7 @@ class Mosaic:
         return indexs
 
     def _mosaic_transform(self, results):
-        """Mosiac function.
+        """Mosaic function.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -1973,23 +1974,30 @@ class Mosaic:
         Returns:
             dict: Updated result dict.
         """
+        assert 'mix_results' in results
+
         mosaic_labels = []
         mosaic_bboxes = []
-        mosaic_img = np.full((self.img_scale[0] * 2, self.img_scale[1] * 2, 3),
-                             self.pad_value,
-                             dtype=np.uint8)
+        mosaic_img = np.full(
+            (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
+            self.pad_value,
+            dtype=np.uint8)
 
         # mosaic center x, y
-        center_x = int(random.uniform(*self.mosaic_scale) * self.img_scale[0])
-        center_y = int(random.uniform(*self.mosaic_scale) * self.img_scale[1])
+        center_x = int(
+            random.uniform(*self.center_scale_ratio) * self.img_scale[0])
+        center_y = int(
+            random.uniform(*self.center_scale_ratio) * self.img_scale[1])
         center_position = (center_x, center_y)
 
-        for i, loc in enumerate(
-            ('top_left', 'top_right', 'bottom_left', 'bottom_right')):
-            if loc == "top_left":
+        for i, loc in enumerate(('top_left',
+                                 'top_right',
+                                 'bottom_left',
+                                 'bottom_right')):
+            if loc == 'top_left':
                 results_patch = copy.deepcopy(results)
             else:
-                results_patch = copy.deepcopy(results["mix_results"][i-1])
+                results_patch = copy.deepcopy(results['mix_results'][i - 1])
 
             img_i = results_patch['img']
             h_i, w_i = img_i.shape[:2]
@@ -2015,10 +2023,10 @@ class Mosaic:
             if gt_bboxes_i.shape[0] > 0:
                 padw = x1_p - x1_c
                 padh = y1_p - y1_c
-                gt_bboxes_i[:,
-                            0::2] = scale_ratio_i * gt_bboxes_i[:, 0::2] + padw
-                gt_bboxes_i[:,
-                            1::2] = scale_ratio_i * gt_bboxes_i[:, 1::2] + padh
+                gt_bboxes_i[:, 0::2] = \
+                    scale_ratio_i * gt_bboxes_i[:, 0::2] + padw
+                gt_bboxes_i[:, 1::2] = \
+                    scale_ratio_i * gt_bboxes_i[:, 1::2] + padh
 
             mosaic_bboxes.append(gt_bboxes_i)
             mosaic_labels.append(gt_labels_i)
@@ -2031,7 +2039,7 @@ class Mosaic:
                                              2 * self.img_scale[0])
             mosaic_labels = np.concatenate(mosaic_labels, 0)
 
-        results['img'] = mosaic_img.astype(np.float32)
+        results['img'] = mosaic_img
         results['img_shape'] = mosaic_img.shape
         results['ori_shape'] = mosaic_img.shape
         results['gt_bboxes'] = mosaic_bboxes
@@ -2059,13 +2067,14 @@ class Mosaic:
                              center_position_xy[0], \
                              center_position_xy[1]
             crop_coord = img_shape_wh[0] - (x2 - x1), img_shape_wh[1] - (
-                y2 - y1), img_shape_wh[0], img_shape_wh[1]
+                    y2 - y1), img_shape_wh[0], img_shape_wh[1]
 
         elif loc == 'top_right':
             # index1 to top right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
                              max(center_position_xy[1] - img_shape_wh[1], 0), \
-                             min(center_position_xy[0] + img_shape_wh[0], self.img_scale[1] * 2), \
+                             min(center_position_xy[0] + img_shape_wh[0],
+                                 self.img_scale[1] * 2), \
                              center_position_xy[1]
             crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
                 img_shape_wh[0], x2 - x1), img_shape_wh[1]
@@ -2075,7 +2084,8 @@ class Mosaic:
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
                              center_position_xy[1], \
                              center_position_xy[0], \
-                             min(self.img_scale[0] * 2, center_position_xy[1] + img_shape_wh[1])
+                             min(self.img_scale[0] * 2, center_position_xy[1] +
+                                 img_shape_wh[1])
             crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
                 y2 - y1, img_shape_wh[1])
 
@@ -2083,8 +2093,10 @@ class Mosaic:
             # index3 to bottom right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
                              center_position_xy[1], \
-                             min(center_position_xy[0] + img_shape_wh[0], self.img_scale[0] * 2), \
-                             min(self.img_scale[1] * 2, center_position_xy[1] + img_shape_wh[1])
+                             min(center_position_xy[0] + img_shape_wh[0],
+                                 self.img_scale[0] * 2), \
+                             min(self.img_scale[1] * 2, center_position_xy[1] +
+                                 img_shape_wh[1])
             crop_coord = 0, 0, min(img_shape_wh[0],
                                    x2 - x1), min(y2 - y1, img_shape_wh[1])
 
@@ -2094,14 +2106,16 @@ class Mosaic:
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'img_scale={self.img_scale}, '
-        repr_str += f'mosaic_scale={self.mosaic_scale})'
+        repr_str += f'center_scale_ratio={self.center_scale_ratio})'
         repr_str += f'pad_value={self.pad_value})'
         return repr_str
 
 
 @PIPELINES.register_module()
 class MixUp:
-    """The logic of mixup transform:
+    """MixUp data augmentation.
+
+    The logic of mixup transform:
 
                          mixup transform
                 +------------------------------+
@@ -2116,50 +2130,47 @@ class MixUp:
                 |      |-----------------+     |
                 |             pad              |
                 +------------------------------+
+
      The mixup transform step:
-     - Another random image is picked by dataset  and embedded in the top left patch(after padding and resizing)
-     - The target of mixup transform is the weighted average of mixup image and mosaic image.
-     - mixup transform will be disabled last several epochs controlled by YoloXProcessHook
+
+        1. Another random image is picked by dataset and embedded in
+           the top left patch(after padding and resizing)
+        2. The target of mixup transform is the weighted average of mixup
+           image and origin image.
 
     Args:
-        dataset (CunstomDataset): Child of CunstomDataset which can get image and annotations by index.
-        img_scale (Sequence[int]): image size after mosaic pipeline
-        mosaic_scale (Sequence[float]): center range of mosaic output
-        mixup_scale (Sequence[float]): image scale factor of mixup
-        pad_value (int): pad value
+        img_scale (Sequence[int]): Image size after mixuo pipeline.
+           Default to (640, 640).
+        scale_ratio (Sequence[float]): scale range of mixuo image.
+           Default to (0.5, 1.5).
+        flip_ratio (float): Horizontal flip range of mixuo image.
+           Default to 0.5.
+        pad_value (int): pad value. Default to 114.
     """
 
     def __init__(self,
                  img_scale=(640, 640),
-                 mixup_scale=(0.5, 1.5),
-                 pad_value=114,
-                 mixup_flip_ratio=0.5,
-                 eps=1e-16):
+                 scale_ratio=(0.5, 1.5),
+                 flip_ratio=0.5,
+                 pad_value=114):
         assert isinstance(img_scale, tuple)
-        assert isinstance(img_scale[0], int) and isinstance(img_scale[1], int)
-        self.mixup_scale = mixup_scale
-        self.pad_value = pad_value
         self.dynamic_scale = img_scale
-        self.mixup_flip_ratio = mixup_flip_ratio
-        self.eps = eps
+        self.scale_ratio = scale_ratio
+        self.pad_value = pad_value
+        self.flip_ratio = flip_ratio
 
     def __call__(self, results):
         results = self._mixup_transform(results)
         return results
 
     def get_indexes(self, dataset):
-        gt_bboxes_i = []
         for i in range(15):
             index = random.randint(0, len(dataset))
             gt_bboxes_i = dataset.get_ann_info(index)['bboxes']
             if len(gt_bboxes_i) != 0:
                 break
 
-        if len(gt_bboxes_i) == 0:
-            return []
-        else:
-            return random.randint(0, len(dataset))
-
+        return index
 
     def _mixup_transform(self, results):
         """Mixup function.
@@ -2170,18 +2181,22 @@ class MixUp:
         Returns:
             dict: Updated result dict.
         """
-        if "mix_results" not in results:
+        assert 'mix_results' in results
+        assert len(
+            results['mix_results']) == 1, 'Mixup only support 2 images now !'
+
+        if results['mix_results'][0]['gt_bboxes'].shape[0] == 0:
+            # empty bbox
             return results
 
-        results = copy.deepcopy(results)
-        assert len(results["mix_results"]) == 1, "Mixup only support 2 images now !"
-        retrieve_results = copy.deepcopy(results["mix_results"][0])
+        if 'img_scale' in results:
+            self.dynamic_scale = results['img_scale']
+
+        retrieve_results = results['mix_results'][0]
         retrieve_img = retrieve_results['img']
 
-        jit_factor = random.uniform(*self.mixup_scale)
-        is_filp = random.uniform(0, 1) > self.mixup_flip_ratio
-
-
+        jit_factor = random.uniform(*self.scale_ratio)
+        is_filp = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
             out_img = np.ones((self.dynamic_scale[0], self.dynamic_scale[1],
@@ -2223,7 +2238,7 @@ class MixUp:
         if padded_img.shape[1] > target_w:
             x_offset = random.randint(0, padded_img.shape[1] - target_w)
         padded_cropped_img = padded_img[y_offset:y_offset + target_h,
-                                        x_offset:x_offset + target_w]
+                             x_offset:x_offset + target_w]
 
         # 6. adjust bbox
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
@@ -2234,7 +2249,7 @@ class MixUp:
 
         if is_filp:
             retrieve_gt_bboxes[:, 0::2] = (
-                origin_w - retrieve_gt_bboxes[:, 0::2][:, ::-1])
+                    origin_w - retrieve_gt_bboxes[:, 0::2][:, ::-1])
 
         # 7. filter
         cp_retrieve_gt_bboxes = retrieve_gt_bboxes.copy()
@@ -2277,18 +2292,16 @@ class MixUp:
         """
         w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
         w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
-        ar = np.maximum(w2 / (h2 + self.eps),
-                        h2 / (w2 + self.eps))  # aspect ratio
+        ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
         return ((w2 > wh_thr)
                 & (h2 > wh_thr)
-                & (w2 * h2 / (w1 * h1 + self.eps) > area_thr)
+                & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr)
                 & (ar < ar_thr))
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'base_dynamic_scale={self.dynamic_scale}, '
-        repr_str += f'mixup_scale={self.mixup_scale})'
+        repr_str += f'dynamic_scale={self.dynamic_scale}, '
+        repr_str += f'scale_ratio={self.scale_ratio})'
+        repr_str += f'flip_ratio={self.flip_ratio})'
         repr_str += f'pad_value={self.pad_value})'
-        repr_str += f'dataset={self.dataset})'
-        repr_str += f'mixup_flip_ratio={self.mixup_flip_ratio})'
         return repr_str

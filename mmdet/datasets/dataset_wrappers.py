@@ -361,3 +361,6 @@ class MultiImageMixDataset:
         assert len(skip_flags) == len(self.pipelines)
         assert all([isinstance(skip_flag, bool) for skip_flag in skip_flags])
         self.skip_flags = skip_flags
+
+    def update_dynamic_scale(self, dynamic_scale):
+        self.dynamic_scale = dynamic_scale
