@@ -58,11 +58,12 @@ class SimOTAAssigner(BaseAssigner):
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
             eps (float): A value added to the denominator for numerical
-            stability. Default 1e-7.
+                stability. Default 1e-7.
         Returns:
+            assign_result (obj:`AssignResult`): The assigned result.
         """
         try:
-            assign_results = self._assign(pred_scores, priors, decoded_bboxes,
+            assign_result = self._assign(pred_scores, priors, decoded_bboxes,
                                           gt_bboxes, gt_labels,
                                           gt_bboxes_ignore, eps)
             return assign_results
@@ -80,16 +81,14 @@ class SimOTAAssigner(BaseAssigner):
             gt_bboxes = gt_bboxes.cpu().float()
             gt_labels = gt_labels.cpu()
 
-            assign_results = self._assign(pred_scores, priors, decoded_bboxes,
+            assign_result = self._assign(pred_scores, priors, decoded_bboxes,
                                           gt_bboxes, gt_labels,
                                           gt_bboxes_ignore, eps)
-            (gt_matched_classes, valid_mask, pred_ious_this_matching,
-             matched_gt_inds, num_fg) = assign_results
+            assign_result.gt_inds = assign_result.gt_inds.to(origin_device)
+            assign_result.max_overlaps = assign_result.max_overlaps.to(origin_device)
+            assign_result.labels = assign_result.labels.to(origin_device)
 
-            return (gt_matched_classes.to(origin_device),
-                    valid_mask.to(origin_device),
-                    pred_ious_this_matching.to(origin_device),
-                    matched_gt_inds.to(origin_device), num_fg)
+            return assign_result
 
     def _assign(self,
                 pred_scores,
@@ -114,8 +113,9 @@ class SimOTAAssigner(BaseAssigner):
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
             eps (float): A value added to the denominator for numerical
-            stability. Default 1e-7.
+                stability. Default 1e-7.
         Returns:
+            :obj:`AssignResult`: The assigned result.
         """
         INF = 100000000
         num_gt = gt_bboxes.size(0)
@@ -147,8 +147,8 @@ class SimOTAAssigner(BaseAssigner):
         valid_pred_scores = pred_scores[valid_mask]
         num_valid = valid_decoded_bbox.size(0)
 
-        pair_wise_ious = bbox_overlaps(valid_decoded_bbox, gt_bboxes)
-        iou_cost = -torch.log(pair_wise_ious + eps)
+        pairwise_ious = bbox_overlaps(valid_decoded_bbox, gt_bboxes)
+        iou_cost = -torch.log(pairwise_ious + eps)
 
         gt_onehot_label = (
             F.one_hot(gt_labels.to(torch.int64),
@@ -164,9 +164,9 @@ class SimOTAAssigner(BaseAssigner):
             cls_cost * self.cls_weight + iou_cost * self.iou_weight +
             (~is_in_boxes_and_center) * INF)
 
-        pred_ious_this_matching, matched_gt_inds = \
+        matched_pred_ious, matched_gt_inds = \
             self.dynamic_k_matching(
-                cost_matrix, pair_wise_ious, num_gt, valid_mask)
+                cost_matrix, pairwise_ious, num_gt, valid_mask)
 
         # convert to AssignResult format
         assigned_gt_inds[valid_mask] = matched_gt_inds + 1
@@ -175,7 +175,7 @@ class SimOTAAssigner(BaseAssigner):
         max_overlaps = assigned_gt_inds.new_full((num_bboxes, ),
                                                  -INF,
                                                  dtype=torch.float32)
-        max_overlaps[valid_mask] = pred_ious_this_matching
+        max_overlaps[valid_mask] = matched_pred_ious
         return AssignResult(
             num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
@@ -223,10 +223,10 @@ class SimOTAAssigner(BaseAssigner):
             & is_in_cts[is_in_gts_or_centers, :])
         return is_in_gts_or_centers, is_in_boxes_and_centers
 
-    def dynamic_k_matching(self, cost, pair_wise_ious, num_gt, valid_mask):
+    def dynamic_k_matching(self, cost, pairwise_ious, num_gt, valid_mask):
         matching_matrix = torch.zeros_like(cost)
         # select candidate topk ious for dynamic-k calculation
-        topk_ious, _ = torch.topk(pair_wise_ious, self.candidate_topk, dim=0)
+        topk_ious, _ = torch.topk(pairwise_ious, self.candidate_topk, dim=0)
         # calculate dynamic k for each gt
         dynamic_ks = torch.clamp(topk_ious.sum(0).int(), min=1)
         for gt_idx in range(num_gt):
@@ -247,6 +247,6 @@ class SimOTAAssigner(BaseAssigner):
         valid_mask[valid_mask.clone()] = fg_mask_inboxes
 
         matched_gt_inds = matching_matrix[fg_mask_inboxes, :].argmax(1)
-        pred_ious_this_matching = (matching_matrix *
-                                   pair_wise_ious).sum(1)[fg_mask_inboxes]
-        return pred_ious_this_matching, matched_gt_inds
+        matched_pred_ious = (matching_matrix *
+                                   pairwise_ious).sum(1)[fg_mask_inboxes]
+        return matched_pred_ious, matched_gt_inds

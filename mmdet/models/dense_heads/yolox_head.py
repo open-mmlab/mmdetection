@@ -106,7 +106,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         self.loss_bbox = build_loss(loss_bbox)
         self.loss_obj = build_loss(loss_obj)
 
-        self.use_l1 = False
+        self.use_l1 = False  # This flag will be modified by hooks.
         self.loss_l1 = build_loss(loss_l1)
 
         self.prior_generator = MlvlPointGenerator(strides, offset=0)
@@ -389,19 +389,15 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             flatten_cls_preds.view(-1, self.num_classes)[pos_masks],
             cls_targets) / num_total_samples
 
+        loss_dict = dict(loss_cls=loss_cls, loss_bbox=loss_bbox, loss_obj=loss_obj)
+
         if self.use_l1:
             loss_l1 = self.loss_l1(
                 flatten_bbox_preds.view(-1, 4)[pos_masks],
                 l1_targets) / num_total_samples
+            loss_dict.update(loss_l1=loss_l1)
 
-            return dict(
-                loss_cls=loss_cls,
-                loss_bbox=loss_bbox,
-                loss_obj=loss_obj,
-                loss_l1=loss_l1)
-        else:
-            return dict(
-                loss_cls=loss_cls, loss_bbox=loss_bbox, loss_obj=loss_obj)
+        return loss_dict
 
     @torch.no_grad()
     def _get_target_single(self, cls_preds, objectness, priors, decoded_bboxes,
@@ -450,11 +446,11 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         pos_inds = sampling_result.pos_inds
         num_pos_per_img = pos_inds.size(0)
 
-        pred_ious_this_matching = assign_result.max_overlaps[pos_inds]
+        pos_ious = assign_result.max_overlaps[pos_inds]
         # IOU aware classification score
         cls_target = F.one_hot(
             sampling_result.pos_gt_labels,
-            self.num_classes) * pred_ious_this_matching.unsqueeze(-1)
+            self.num_classes) * pos_ious.unsqueeze(-1)
         obj_target = torch.zeros_like(objectness).unsqueeze(-1)
         obj_target[pos_inds] = 1
         bbox_target = sampling_result.pos_gt_bboxes
