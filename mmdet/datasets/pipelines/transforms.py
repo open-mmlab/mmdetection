@@ -1926,13 +1926,13 @@ class RandomAffine:
             Default: (0, 0).
         border_val (tuple[int]): Border padding values of 3 channels.
             Default: (114, 114, 114).
-        wh_filter_thr (bool): Width and height threshold to filter bboxes.
+        wh_filter_thr (float): Width and height threshold to filter bboxes.
             If the height or width of a box is smaller than this value, it
             will be removed. Default: 2.
-        area_ratio_filter_thr (tuple): Threshold of area ratio between
+        area_ratio_filter_thr (float): Threshold of area ratio between
             original bboxes and wrapped bboxes. If smaller than this value,
             the box will be removed. Default: 0.2.
-        aspect_ratio_filter_thr (int): Aspect ratio of width and height
+        aspect_ratio_filter_thr (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
             value, the box will be removed.
     """
