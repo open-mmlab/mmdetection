@@ -96,7 +96,7 @@ def test_yolox_lrupdater_hook(multi_optimziers):
         warmup_by_epoch=True,
         warmup_ratio=0.01,
         warmup_iters=5,  # 5 epoch
-        last_epoch=15,
+        num_last_epoch=15,
         min_lr_ratio=0.05)
     runner.register_hook_from_cfg(hook_cfg)
     runner.register_hook_from_cfg(dict(type='IterTimerHook'))

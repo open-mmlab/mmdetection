@@ -16,19 +16,19 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
        2. The exp warmup scheme is different with LrUpdaterHook in MMCV
 
     Args:
-        last_epoch (int): The number of epochs with a fixed learning rate
+        num_last_epoch (int): The number of epochs with a fixed learning rate
            before the end of the training.
         warmup_ratio (float): LR used at the beginning of warmup.
            This parameter does not depend on the number of GPUs, so we need
            to multiply by work_size.
     """
 
-    def __init__(self, last_epoch, warmup_ratio, **kwargs):
+    def __init__(self, num_last_epoch, warmup_ratio, **kwargs):
         _, work_size = get_dist_info()
         # The best name is self.base_lr, but the name is already used
         # internally. For the purpose of distinction, the suffix is added.
         self.base_lr_ = warmup_ratio * work_size
-        self.last_epoch = last_epoch
+        self.num_last_epoch = num_last_epoch
         super(YOLOXLrUpdaterHook, self).__init__(
             warmup_ratio=self.base_lr_, **kwargs)
 
@@ -50,7 +50,7 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
             return _get_warmup_lr(cur_iters, self.regular_lr)
 
     def get_lr(self, runner, base_lr):
-        last_iter = len(runner.data_loader) * self.last_epoch
+        last_iter = len(runner.data_loader) * self.num_last_epoch
 
         if self.by_epoch:
             progress = runner.epoch
