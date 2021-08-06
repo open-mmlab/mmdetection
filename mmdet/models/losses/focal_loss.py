@@ -211,15 +211,20 @@ class BinaryFocalLoss(nn.Module):
             inputs:  (sum_l N*Hl*Wl,)
             targets: (sum_l N*Hl*Wl,)
             pos_inds: N
+            avg_factor: Norm factor
         Returns:
             Loss tensor with the reduction option applied.
         """
 
-        pred = torch.clamp(inputs.sigmoid(), min=self.sigmoid_clamp, max=1-self.sigmoid_clamp)
+        pred = torch.clamp(inputs.sigmoid_(), min=self.sigmoid_clamp,
+                           max=1-self.sigmoid_clamp)
         neg_weights = torch.pow(1 - targets, self.beta)
-        pos_pred = pred[pos_inds] # N
-        pos_loss = torch.log(pos_pred) * torch.pow(1 - pos_pred, self.gamma)
-        neg_loss = torch.log(1 - pred) * torch.pow(pred, self.gamma) * neg_weights
+        pos_pred = pred[pos_inds]
+        pos_loss = torch.log(pos_pred) * \
+            torch.pow(1 - pos_pred, self.gamma)
+        neg_loss = torch.log(1 - pred) * \
+            torch.pow(pred, self.gamma) * neg_weights
+
         if self.ignore_high_fp > 0:
             not_high_fp = (pred < self.ignore_high_fp).float()
             neg_loss = not_high_fp * neg_loss

@@ -59,7 +59,9 @@ class SingleBiFPN(BaseModule):
 
             # generate attention weights
             setattr(self, f"weights_f{feat_level}_{inputs_offsets_str}",
-                    nn.Parameter(torch.ones(len(inputs_offsets), dtype=torch.float32), requires_grad=True))
+                    nn.Parameter(
+                        torch.ones(len(inputs_offsets),
+                                   dtype=torch.float32), requires_grad=True))
 
             # generate convolutions after combination
             self.add_module(f"outputs_f{feat_level}_{inputs_offsets_str}",
@@ -84,27 +86,37 @@ class SingleBiFPN(BaseModule):
                 input_node = feats[input_offset]
                 # reduction
                 if input_node.size(1) != self.out_channels:
-                    input_node = getattr(self, f"lateral_{input_offset}_f{feat_level}")(input_node)
+                    input_node = getattr(
+                        self, f"lateral_{input_offset}"
+                              f"_f{feat_level}")(input_node)
                 # resize
                 _, _, h, w = input_node.size()
                 if h > target_h and w > target_w:
                     height_stride_size = int((h - 1) // target_h + 1)
                     width_stride_size = int((w - 1) // target_w + 1)
                     assert height_stride_size == width_stride_size == 2
-                    input_node = F.max_pool2d(input_node, kernel_size=3, stride=2, padding=1)
+                    input_node = F.max_pool2d(
+                        input_node, kernel_size=3, stride=2, padding=1)
                 elif h <= target_h and w <= target_w:
                     if h < target_h or w < target_w:
-                        input_node = F.interpolate(input_node, size=(target_h, target_w), mode="nearest")
+                        input_node = F.interpolate(
+                            input_node,
+                            size=(target_h, target_w),
+                            mode="nearest")
                 else:
-                    raise NotImplemented
+                    raise NotImplementedError
                 input_nodes.append(input_node)
             # attention
-            weights = F.relu(getattr(self, f"weights_f{feat_level}_{inputs_offsets_str}"))
+            weights = F.relu(
+                getattr(self, f"weights_f{feat_level}_{inputs_offsets_str}"))
             norm_weights = weights / (weights.sum() + 0.0001)
             new_node = torch.stack(input_nodes, dim=-1)
             new_node = (norm_weights * new_node).sum(dim=-1)
             new_node = new_node * new_node.sigmoid()
-            feats.append(getattr(self, f"outputs_f{feat_level}_{inputs_offsets_str}")(new_node))
+            feats.append(
+                getattr(self,
+                        f"outputs_f{feat_level}"
+                        f"_{inputs_offsets_str}")(new_node))
 
         output_feats = []
         for idx in range(num_levels):
@@ -120,7 +132,8 @@ class SingleBiFPN(BaseModule):
 @NECKS.register_module()
 class BiFPN(BaseModule):
     """ The neck used in 'CenterNet2 <http://arxiv.org/abs/2103.07461>'_
-    Originally, the is was proposed  in 'EfficientDet https://arxiv.org/abs/1911.09070'_
+    Originally, the is was proposed  in
+    'EfficientDet https://arxiv.org/abs/1911.09070'_
 
     Args:
         in_channels (List[int]): Number of input channels per scale.
@@ -156,7 +169,8 @@ class BiFPN(BaseModule):
         self.num_bifpn = num_bifpn
         self.__extra_levels = nn.ModuleList()
         self.__start_level = start_level
-        self.__end_level = end_level if end_level != -1 else len(in_channels) - 1
+        self.__end_level = \
+            end_level if end_level != -1 else len(in_channels) - 1
 
         end_level = self.__end_level
         num_extra_levels = num_outs - (end_level - start_level + 1)
@@ -173,14 +187,16 @@ class BiFPN(BaseModule):
                     torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
 
             else:
-                extra_level = torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+                extra_level = torch.nn.MaxPool2d(
+                    kernel_size=3, stride=2, padding=1)
             in_channel = out_channels
             self.__extra_levels.append(extra_level)
 
         self.repeated_bifpn = nn.ModuleList()
         for i in range(num_bifpn):
             if i == 0:
-                in_channels_list = in_channels[start_level:end_level + 1] + [out_channels] * num_extra_levels
+                in_channels_list = in_channels[start_level:end_level + 1] + \
+                                   [out_channels] * num_extra_levels
             else:
                 in_channels_list = [out_channels] * num_outs
             self.repeated_bifpn.append(
@@ -192,7 +208,8 @@ class BiFPN(BaseModule):
                     act_cfg=act_cfg))
 
     def forward(self, inputs):
-        laterals = [inputs[i] for i in range(self.__start_level, self.__end_level + 1)]
+        laterals = [inputs[i] for i in range(
+            self.__start_level, self.__end_level + 1)]
         if len(self.__extra_levels) > 0:
             for extra_level in self.__extra_levels:
                 laterals.append(extra_level(laterals[-1]))
@@ -200,4 +217,3 @@ class BiFPN(BaseModule):
             laterals = self.repeated_bifpn[i](laterals)
         outs = tuple(laterals)
         return outs
-
