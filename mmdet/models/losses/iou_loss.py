@@ -1,4 +1,5 @@
 import math
+import warnings
 
 import mmcv
 import torch
@@ -11,7 +12,7 @@ from .utils import weighted_loss
 
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def iou_loss(pred, target, linear=False, eps=1e-6):
+def iou_loss(pred, target, linear=False, mode='log', eps=1e-6):
     """IoU loss.
 
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
@@ -23,16 +24,28 @@ def iou_loss(pred, target, linear=False, eps=1e-6):
         target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
         linear (bool, optional): If True, use linear scale of loss instead of
             log scale. Default: False.
+        mode (str): Loss scaling mode, including "linear", "square", and "log".
+            Default: 'log'
         eps (float): Eps to avoid log(0).
 
     Return:
         torch.Tensor: Loss tensor.
     """
-    ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
+    assert mode in ['linear', 'square', 'log']
     if linear:
+        mode = 'linear'
+        warnings.warn('DeprecationWarning: Setting "linear=True" in '
+                      'iou_loss is deprecated, please use "mode=`linear`" '
+                      'instead.')
+    ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
+    if mode == 'linear':
         loss = 1 - ious
-    else:
+    elif mode == 'square':
+        loss = 1 - ious**2
+    elif mode == 'log':
         loss = -ious.log()
+    else:
+        raise NotImplementedError
     return loss
 
 
@@ -226,19 +239,29 @@ class IoULoss(nn.Module):
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
 
     Args:
-        linear (bool): If True, use linear scale of loss instead of log scale.
-            Default: False.
+        linear (bool): If True, use linear scale of loss else determined
+            by mode. Default: False.
         eps (float): Eps to avoid log(0).
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Weight of loss.
+        mode (str): Loss scaling mode, including "linear", "square", and "log".
+            Default: 'log'
     """
 
     def __init__(self,
                  linear=False,
                  eps=1e-6,
                  reduction='mean',
-                 loss_weight=1.0):
+                 loss_weight=1.0,
+                 mode='log'):
         super(IoULoss, self).__init__()
+        assert mode in ['linear', 'square', 'log']
+        if linear:
+            mode = 'linear'
+            warnings.warn('DeprecationWarning: Setting "linear=True" in '
+                          'IOULoss is deprecated, please use "mode=`linear`" '
+                          'instead.')
+        self.mode = mode
         self.linear = linear
         self.eps = eps
         self.reduction = reduction
@@ -282,7 +305,7 @@ class IoULoss(nn.Module):
             pred,
             target,
             weight,
-            linear=self.linear,
+            mode=self.mode,
             eps=self.eps,
             reduction=reduction,
             avg_factor=avg_factor,
