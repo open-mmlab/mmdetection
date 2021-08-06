@@ -48,5 +48,5 @@ class SyncRandomSizeHook(Hook):
                 dist.barrier()
                 dist.broadcast(tensor, 0)
 
-            runner.data_loader.dataset.dynamic_scale = (tensor[0].item(),
-                                                        tensor[1].item())
+            runner.data_loader.dataset.update_dynamic_scale(
+                (tensor[0].item(), tensor[1].item()))
