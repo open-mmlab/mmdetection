@@ -26,6 +26,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                  mask_roi_extractor=None,
                  mask_head=None,
                  shared_head=None,
+                 mult_proposal_score=False,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
@@ -37,6 +38,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         self.num_stages = num_stages
         self.stage_loss_weights = stage_loss_weights
+        self.mult_proposal_score = mult_proposal_score
         super(CascadeRoIHead, self).__init__(
             bbox_roi_extractor=bbox_roi_extractor,
             bbox_head=bbox_head,
@@ -345,10 +347,21 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 rois = torch.cat(refine_rois_list)
 
         # average scores of each image by stages
-        cls_score = [
-            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-            for i in range(num_imgs)
-        ]
+        if self.mult_proposal_score:
+            proposal_score = [proposal[:,-1] for proposal in proposal_list]     
+            ms_scores = [
+                [score.softmax(-1) for score in scores]
+                for scores in ms_scores]    
+            cls_score = [
+                sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+                for i in range(num_imgs)]
+            cls_score = [(s * p[:,None]) ** 0.5 
+                         for s, p in zip(cls_score, proposal_score)]
+        else:
+            cls_score = [
+                sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+                for i in range(num_imgs)]
+        
 
         # apply bbox post-processing to each image individually
         det_bboxes = []
