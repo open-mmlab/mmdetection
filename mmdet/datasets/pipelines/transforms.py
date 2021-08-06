@@ -2197,6 +2197,15 @@ class MixUp:
         max_iters (int): The maximum number of iterations. If the number of
            iterations is greater than `max_iters`, but gt_bbox is still
            empty, then the iteration is terminated.  Default to 15.
+        min_bbox_size (float): Width and height threshold to filter bboxes.
+            If the height or width of a box is smaller than this value, it
+            will be removed. Default: 2.
+        min_area_ratio (float): Threshold of area ratio between
+            original bboxes and wrapped bboxes. If smaller than this value,
+            the box will be removed. Default: 0.2.
+        max_aspect_ratio (float): Aspect ratio of width and height
+            threshold to filter bboxes. If max(h/w, w/h) larger than this
+            value, the box will be removed.
     """
 
     def __init__(self,
@@ -2204,13 +2213,19 @@ class MixUp:
                  ratio_range=(0.5, 1.5),
                  flip_ratio=0.5,
                  pad_value=114,
-                 max_iters=15):
+                 max_iters=15,
+                 min_bbox_size=2,
+                 min_area_ratio=0.2,
+                 max_aspect_ratio=20):
         assert isinstance(img_scale, tuple)
         self.dynamic_scale = img_scale
         self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio
         self.pad_value = pad_value
         self.max_iters = max_iters
+        self.min_bbox_size = min_bbox_size
+        self.min_area_ratio = min_area_ratio
+        self.max_aspect_ratio = max_aspect_ratio
 
     def __call__(self, results):
         """Call function to make a mixup of image.
@@ -2351,25 +2366,20 @@ class MixUp:
 
         return results
 
-    def _filter_box_candidates(self,
-                               box1,
-                               box2,
-                               wh_thr=2,
-                               ar_thr=20,
-                               area_thr=0.2):
+    def _filter_box_candidates(self, bbox1, bbox2):
         """Compute candidate boxes which include following 5 things:
 
-        box1 before augment, box2 after augment, wh_thr (pixels),
-        aspect_ratio_thr, area_ratio.
+        bbox1 before augment, bbox2 after augment, min_bbox_size (pixels),
+        min_area_ratio, max_aspect_ratio.
         """
 
-        w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
-        w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
+        w1, h1 = bbox1[2] - bbox1[0], bbox1[3] - bbox1[1]
+        w2, h2 = bbox2[2] - bbox2[0], bbox2[3] - bbox2[1]
         ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))
-        return ((w2 > wh_thr)
-                & (h2 > wh_thr)
-                & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr)
-                & (ar < ar_thr))
+        return ((w2 > self.min_bbox_size)
+                & (h2 > self.min_bbox_size)
+                & (w2 * h2 / (w1 * h1 + 1e-16) > self.min_area_ratio)
+                & (ar < self.max_aspect_ratio))
 
     def __repr__(self):
         repr_str = self.__class__.__name__
