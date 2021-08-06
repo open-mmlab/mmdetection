@@ -18,13 +18,9 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
     Args:
         num_last_epochs (int): The number of epochs with a fixed learning rate
            before the end of the training.
-        warmup_ratio (float): LR used at the beginning of warmup.
-           This parameter does not depend on the number of GPUs, so we need
-           to multiply by work_size.
     """
 
     def __init__(self, num_last_epochs, **kwargs):
-        _, self.work_size = get_dist_info()
         self.num_last_epochs = num_last_epochs
         super(YOLOXLrUpdaterHook, self).__init__(**kwargs)
 
@@ -34,7 +30,7 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
             # exp warmup scheme
             k = self.warmup_ratio * pow(
                 (cur_iters + 1) / float(self.warmup_iters), 2)
-            warmup_lr = [_lr * k * self.work_size for _lr in regular_lr]
+            warmup_lr = [_lr * k for _lr in regular_lr]
             return warmup_lr
 
         if isinstance(self.regular_lr, dict):
@@ -58,15 +54,14 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
         progress += 1
 
         if self.min_lr_ratio is not None:
-            target_lr = base_lr * self.min_lr_ratio * self.work_size
+            target_lr = base_lr * self.min_lr_ratio
         else:
-            target_lr = self.min_lr * self.work_size
+            target_lr = self.min_lr
 
         if progress >= max_progress - last_iter:
             # fixed learning rate
             return target_lr
         else:
-            return annealing_cos(
-                base_lr * self.work_size, target_lr,
-                (progress - self.warmup_iters) /
-                (max_progress - self.warmup_iters - last_iter))
+            return annealing_cos(base_lr, target_lr,
+                                 (progress - self.warmup_iters) /
+                                 (max_progress - self.warmup_iters - last_iter))
