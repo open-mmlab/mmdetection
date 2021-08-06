@@ -21,7 +21,7 @@ class Focus(nn.Module):
         conv_cfg (dict): Config dict for convolution layer. Default: None,
             which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer.
-            Default: dict(type='BN').
+            Default: dict(type='BN', momentum=0.03, eps=0.001).
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='Swish').
     """
