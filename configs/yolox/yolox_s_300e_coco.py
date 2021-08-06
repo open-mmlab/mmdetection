@@ -11,6 +11,7 @@ model = dict(
         num_csp_blocks=1),
     bbox_head=dict(
         type='YOLOXHead', num_classes=80, in_channels=128, feat_channels=128),
+    train_cfg=dict(assigner=dict(type='SimOTAAssigner', center_radius=2.5)),
     # test
     test_cfg=dict(
         score_thr=0.01,  # TODO test 0.001 val 0.01
@@ -40,7 +41,7 @@ train_pipeline = [
         hue_delta=18),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Resize', keep_ratio=True),
-    dict(type='Pad', pad2square=True, pad_val=114.0),
+    dict(type='Pad', pad_to_square=True, pad_val=114.0),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
@@ -106,7 +107,8 @@ optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
     _delete_=True,
-    policy='YOLOXLr',
+    policy='YOLOX',
+    warmup='exp',
     by_epoch=False,
     warmup_by_epoch=True,
     warmup_ratio=1,

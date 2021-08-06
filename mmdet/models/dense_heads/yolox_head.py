@@ -373,7 +373,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
              flatten_bboxes.detach(), gt_bboxes, gt_labels)
 
         num_total_samples = max(sum(num_fg_imgs), 1)
-        pos_masks = torch.cat(pos_masks, 0)
+        pos_masks = torch.cat(pos_masks, 0).bool()
         cls_targets = torch.cat(cls_targets, 0)
         obj_targets = torch.cat(obj_targets, 0)
         bbox_targets = torch.cat(bbox_targets, 0)

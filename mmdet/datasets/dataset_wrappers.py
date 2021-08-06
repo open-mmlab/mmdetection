@@ -357,10 +357,12 @@ class MultiImageMixDataset:
                     copy.deepcopy(self.dataset[index]) for index in indexes
                 ]
                 results['mix_results'] = mix_results
-                if self._dynamic_scale is not None:
-                    # Used for subsequent pipeline to automatically change
-                    # the output image size. E.g MixUp, Resize.
-                    results['img_scale'] = self._dynamic_scale
+
+            if self._dynamic_scale is not None:
+                # Used for subsequent pipeline to automatically change
+                # the output image size. E.g MixUp, Resize.
+                results['scale'] = self._dynamic_scale
+
             results = transform(results)
 
             if 'mix_results' in results:

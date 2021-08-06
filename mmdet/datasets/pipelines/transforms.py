@@ -1964,19 +1964,17 @@ class Mosaic:
            image. Default to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
            output. Default to (0.5, 1.5).
-        pad_value (int): Pad value. Default to 114.
+        pad_val (int): Pad value. Default to 114.
     """
 
-    def __init__(
-            self,
-            img_scale=(640, 640),
-            center_ratio_range=(0.5, 1.5),
-            pad_value=114,
-    ):
+    def __init__(self,
+                 img_scale=(640, 640),
+                 center_ratio_range=(0.5, 1.5),
+                 pad_val=114):
         assert isinstance(img_scale, tuple)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
-        self.pad_value = pad_value
+        self.pad_val = pad_val
 
     def __call__(self, results):
         """Call function to make a mosaic of image.
@@ -2020,13 +2018,13 @@ class Mosaic:
         if len(results['img'].shape) == 3:
             mosaic_img = np.full(
                 (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
-                self.pad_value,
-                dtype=np.uint8)
+                self.pad_val,
+                dtype=results['img'].dtype)
         else:
             mosaic_img = np.full(
                 (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2)),
-                self.pad_value,
-                dtype=np.uint8)
+                self.pad_val,
+                dtype=results['img'].dtype)
 
         # mosaic center x, y
         center_x = int(
@@ -2199,7 +2197,7 @@ class MixUp:
            empty, then the iteration is terminated.  Default to 15.
         min_bbox_size (float): Width and height threshold to filter bboxes.
             If the height or width of a box is smaller than this value, it
-            will be removed. Default: 2.
+            will be removed. Default: 5.
         min_area_ratio (float): Threshold of area ratio between
             original bboxes and wrapped bboxes. If smaller than this value,
             the box will be removed. Default: 0.2.
@@ -2214,7 +2212,7 @@ class MixUp:
                  flip_ratio=0.5,
                  pad_value=114,
                  max_iters=15,
-                 min_bbox_size=2,
+                 min_bbox_size=5,
                  min_area_ratio=0.2,
                  max_aspect_ratio=20):
         assert isinstance(img_scale, tuple)
@@ -2286,10 +2284,12 @@ class MixUp:
         is_filp = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
-            out_img = np.ones((self.dynamic_scale[0], self.dynamic_scale[1],
-                               3)) * self.pad_value
+            out_img = np.ones(
+                (self.dynamic_scale[0], self.dynamic_scale[1], 3),
+                dtype=retrieve_img.dtype) * self.pad_value
         else:
-            out_img = np.ones(self.dynamic_scale) * self.pad_value
+            out_img = np.ones(
+                self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_value
 
         # 1. keep_ratio resize
         scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
@@ -2345,7 +2345,7 @@ class MixUp:
         cp_retrieve_gt_bboxes[:, 1::2] = np.clip(
             cp_retrieve_gt_bboxes[:, 1::2] - y_offset, 0, target_h)
         keep_list = self._filter_box_candidates(retrieve_gt_bboxes.T,
-                                                cp_retrieve_gt_bboxes.T, 5)
+                                                cp_retrieve_gt_bboxes.T)
 
         # 8. mix up
         if keep_list.sum() >= 1.0:
@@ -2361,6 +2361,7 @@ class MixUp:
                 (results['gt_labels'], retrieve_gt_labels), axis=0)
 
             results['img'] = mixup_img
+            results['img_shape'] = mixup_img.shape
             results['gt_bboxes'] = mixup_gt_bboxes
             results['gt_labels'] = mixup_gt_labels
 
@@ -2390,6 +2391,7 @@ class MixUp:
         return repr_str
 
 
+@PIPELINES.register_module()
 class RandomAffine:
     """Random affine transform data augmentation.
 
@@ -2488,6 +2490,7 @@ class RandomAffine:
             dsize=(width, height),
             borderValue=self.border_val)
         results['img'] = img
+        results['img_shape'] = img.shape
 
         for key in results.get('bbox_fields', []):
             bboxes = results[key]
