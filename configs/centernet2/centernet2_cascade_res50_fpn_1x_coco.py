@@ -9,7 +9,7 @@ optimizer_config = dict(
 optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001)
 
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=1,
     workers_per_gpu=2,
     )
     
