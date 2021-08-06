@@ -1,4 +1,3 @@
-from mmcv.runner import get_dist_info
 from mmcv.runner.hooks import HOOKS
 from mmcv.runner.hooks.lr_updater import (CosineAnnealingLrUpdaterHook,
                                           annealing_cos)
@@ -62,6 +61,6 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
             # fixed learning rate
             return target_lr
         else:
-            return annealing_cos(base_lr, target_lr,
-                                 (progress - self.warmup_iters) /
-                                 (max_progress - self.warmup_iters - last_iter))
+            return annealing_cos(
+                base_lr, target_lr, (progress - self.warmup_iters) /
+                (max_progress - self.warmup_iters - last_iter))
