@@ -67,9 +67,10 @@ def build_dataset(cfg, default_args=None):
         dataset = ClassBalancedDataset(
             build_dataset(cfg['dataset'], default_args), cfg['oversample_thr'])
     elif cfg['type'] == 'MultiImageMixDataset':
-        cfg['dataset'] = build_dataset(cfg['dataset'])
-        cfg.pop('type')
-        dataset = MultiImageMixDataset(**cfg)
+        cp_cfg = copy.deepcopy(cfg)
+        cp_cfg['dataset'] = build_dataset(cp_cfg['dataset'])
+        cp_cfg.pop('type')
+        dataset = MultiImageMixDataset(**cp_cfg)
     elif isinstance(cfg.get('ann_file'), (list, tuple)):
         dataset = _concat_dataset(cfg, default_args)
     else:
