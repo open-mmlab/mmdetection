@@ -1,38 +1,19 @@
-"""Tests the hooks with runners.
-
-CommandLine:
-    pytest tests/test_utils/test_hook_eam.py
-    xdoctest tests/test_utils/test_hook_eam.py zero
-"""
 import logging
 import shutil
+import sys
 import tempfile
+from unittest.mock import MagicMock, call
 
 import numpy as np
+import pytest
 import torch
 import torch.nn as nn
-from mmcv.runner import CheckpointHook, build_runner
+from mmcv.runner import (CheckpointHook, IterTimerHook, PaviLoggerHook,
+                         build_runner)
 from torch.nn.init import constant_
 from torch.utils.data import DataLoader
 
-from mmdet.core.hook import ExpMomentumEMAHook
-
-
-def _build_demo_runner(runner_type='EpochBasedRunner',
-                       max_epochs=1,
-                       max_iters=None,
-                       multi_optimziers=False):
-    log_config = dict(
-        interval=1, hooks=[
-            dict(type='TextLoggerHook'),
-        ])
-
-    runner = _build_demo_runner_without_hook(runner_type, max_epochs,
-                                             max_iters, multi_optimziers)
-
-    runner.register_checkpoint_hook(dict(interval=1))
-    runner.register_logger_hooks(log_config)
-    return runner
+from mmdet.core.hook import ExpMomentumEMAHook, YOLOXLrUpdaterHook
 
 
 def _build_demo_runner_without_hook(runner_type='EpochBasedRunner',
@@ -79,6 +60,96 @@ def _build_demo_runner_without_hook(runner_type='EpochBasedRunner',
             max_epochs=max_epochs,
             max_iters=max_iters))
     return runner
+
+
+def _build_demo_runner(runner_type='EpochBasedRunner',
+                       max_epochs=1,
+                       max_iters=None,
+                       multi_optimziers=False):
+    log_config = dict(
+        interval=1, hooks=[
+            dict(type='TextLoggerHook'),
+        ])
+
+    runner = _build_demo_runner_without_hook(runner_type, max_epochs,
+                                             max_iters, multi_optimziers)
+
+    runner.register_checkpoint_hook(dict(interval=1))
+    runner.register_logger_hooks(log_config)
+    return runner
+
+
+@pytest.mark.parametrize('multi_optimziers', (True, False))
+def test_yolox_lrupdater_hook(multi_optimziers):
+    """xdoctest -m tests/test_hooks.py test_cosine_runner_hook."""
+    # Only used to prevent program errors
+    YOLOXLrUpdaterHook(0, min_lr_ratio=0.05)
+
+    sys.modules['pavi'] = MagicMock()
+    loader = DataLoader(torch.ones((10, 2)))
+    runner = _build_demo_runner(multi_optimziers=multi_optimziers)
+
+    hook_cfg = dict(
+        type='YOLOXLrUpdaterHook',
+        warmup='exp',
+        by_epoch=False,
+        warmup_by_epoch=True,
+        warmup_ratio=1,
+        warmup_iters=5,  # 5 epoch
+        num_last_epochs=15,
+        min_lr_ratio=0.05)
+    runner.register_hook_from_cfg(hook_cfg)
+    runner.register_hook_from_cfg(dict(type='IterTimerHook'))
+    runner.register_hook(IterTimerHook())
+
+    # add pavi hook
+    hook = PaviLoggerHook(interval=1, add_graph=False, add_last_ckpt=True)
+    runner.register_hook(hook)
+    runner.run([loader], [('train', 1)])
+    shutil.rmtree(runner.work_dir)
+
+    # TODO: use a more elegant way to check values
+    assert hasattr(hook, 'writer')
+    if multi_optimziers:
+        calls = [
+            call(
+                'train', {
+                    'learning_rate/model1': 4.0000000000000003e-07,
+                    'learning_rate/model2': 2.0000000000000002e-07,
+                    'momentum/model1': 0.95,
+                    'momentum/model2': 0.9
+                }, 1),
+            call(
+                'train', {
+                    'learning_rate/model1': 1.9600000000000002e-05,
+                    'learning_rate/model2': 9.800000000000001e-06,
+                    'momentum/model1': 0.95,
+                    'momentum/model2': 0.9
+                }, 7),
+            call(
+                'train', {
+                    'learning_rate/model1': 4.000000000000001e-05,
+                    'learning_rate/model2': 2.0000000000000005e-05,
+                    'momentum/model1': 0.95,
+                    'momentum/model2': 0.9
+                }, 10)
+        ]
+    else:
+        calls = [
+            call('train', {
+                'learning_rate': 4.0000000000000003e-07,
+                'momentum': 0.95
+            }, 1),
+            call('train', {
+                'learning_rate': 1.9600000000000002e-05,
+                'momentum': 0.95
+            }, 7),
+            call('train', {
+                'learning_rate': 4.000000000000001e-05,
+                'momentum': 0.95
+            }, 10)
+        ]
+    hook.writer.add_scalars.assert_has_calls(calls, any_order=True)
 
 
 def test_ema_hook():
