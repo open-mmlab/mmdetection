@@ -12,6 +12,7 @@ Compatible MMDetection and MMCV versions are shown as below. Please install the 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
 | master              | mmcv-full>=1.3.8, <1.4.0 |
+| 2.15.0              | mmcv-full>=1.3.8, <1.4.0 |
 | 2.14.0              | mmcv-full>=1.3.8, <1.4.0 |
 | 2.13.0              | mmcv-full>=1.3.3, <1.4.0 |
 | 2.12.0              | mmcv-full>=1.3.3, <1.4.0 |
@@ -113,6 +114,17 @@ Or you can still install MMDetection manually:
     cd mmdetection
     pip install -r requirements/build.txt
     pip install -v -e .  # or "python setup.py develop"
+    ```
+
+3. Install extra dependencies for Instaboost, Panoptic Segmentation, or LVIS dataset
+
+    ```shell
+    # for instaboost
+    pip install instaboostfast
+    # for panoptic segmentation
+    pip install git+https://github.com/cocodataset/panopticapi.git
+    # for LVIS dataset
+    pip install git+https://github.com/lvis-dataset/lvis-api.git
     ```
 
 **Note:**
