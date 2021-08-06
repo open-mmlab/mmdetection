@@ -149,7 +149,7 @@ class YOLOXPAFPN(BaseModule):
             outs.append(out)
 
         # out convs
-        for idx, stem in enumerate(self.out_convs):
-            outs[idx] = stem(outs[idx])
+        for idx, conv in enumerate(self.out_convs):
+            outs[idx] = conv(outs[idx])
 
         return tuple(outs)
