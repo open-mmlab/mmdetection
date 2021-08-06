@@ -117,7 +117,7 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     if world_size == 1:
         return py_dict
     if group is None:
-        # TODO: Is it necessary?
+        # TODO: May try not to use gloo in the future
         group = _get_global_gloo_group()
     if dist.get_world_size(group) == 1:
         return py_dict

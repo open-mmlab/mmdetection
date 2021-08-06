@@ -1,4 +1,5 @@
 from .builder import build_linear_layer, build_transformer
+from .conv_upsample import ConvUpsample
 from .gaussian_target import gaussian_radius, gen_gaussian_target
 from .inverted_residual import InvertedResidual
 from .make_divisible import make_divisible
@@ -17,5 +18,5 @@ __all__ = [
     'build_transformer', 'build_linear_layer', 'SinePositionalEncoding',
     'LearnedPositionalEncoding', 'DynamicConv', 'SimplifiedBasicBlock',
     'NormedLinear', 'NormedConv2d', 'make_divisible', 'InvertedResidual',
-    'SELayer', 'upsample_like'
+    'SELayer', 'upsample_like', 'ConvUpsample'
 ]
