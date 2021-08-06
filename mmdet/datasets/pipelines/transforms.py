@@ -1915,50 +1915,52 @@ class RandomAffine:
     rotation, translation, shear and scaling transforms.
 
     Args:
-        rotate_degree (float): Maximum degrees of rotation transform.
+        max_rotate_degree (float): Maximum degrees of rotation transform.
             Default: 10.
-        translate_ratio (float): Maximum ratio of translation. Default: 0.1.
-        scaling_ratio (tuple[float]): Min and max ratio of scaling transform.
-            Default: (0.5, 1.5).
-        shear_degree (float): Maximum degrees of shear transform. Default: 2.
+        max_translate_ratio (float): Maximum ratio of translation.
+            Default: 0.1.
+        scaling_ratio_range (tuple[float]): Min and max ratio of
+            scaling transform. Default: (0.5, 1.5).
+        max_shear_degree (float): Maximum degrees of shear
+            transform. Default: 2.
         border (tuple[int]): Distance from height and width sides of input
             image to adjust output shape. Only used in mosaic dataset.
             Default: (0, 0).
         border_val (tuple[int]): Border padding values of 3 channels.
             Default: (114, 114, 114).
-        wh_filter_thr (float): Width and height threshold to filter bboxes.
+        min_bbox_size (float): Width and height threshold to filter bboxes.
             If the height or width of a box is smaller than this value, it
             will be removed. Default: 2.
-        area_ratio_filter_thr (float): Threshold of area ratio between
+        min_area_ratio (float): Threshold of area ratio between
             original bboxes and wrapped bboxes. If smaller than this value,
             the box will be removed. Default: 0.2.
-        aspect_ratio_filter_thr (float): Aspect ratio of width and height
+        max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
             value, the box will be removed.
     """
 
     def __init__(self,
-                 rotate_degree=10.0,
-                 translate_ratio=0.1,
-                 scaling_ratio=(0.5, 1.5),
-                 shear_degree=2.0,
+                 max_rotate_degree=10.0,
+                 max_translate_ratio=0.1,
+                 scaling_ratio_range=(0.5, 1.5),
+                 max_shear_degree=2.0,
                  border=(0, 0),
                  border_val=(114, 114, 114),
-                 wh_filter_thr=2,
-                 area_ratio_filter_thr=0.2,
-                 aspect_ratio_filter_thr=20):
-        assert 0 <= translate_ratio <= 1
-        assert scaling_ratio[0] <= scaling_ratio[1]
-        assert scaling_ratio[0] > 0
-        self.rotate_degree = rotate_degree
-        self.translate_ratio = translate_ratio
-        self.scaling_ratio = scaling_ratio
-        self.shear_degree = shear_degree
+                 min_bbox_size=2,
+                 min_area_ratio=0.2,
+                 max_aspect_ratio=20):
+        assert 0 <= max_translate_ratio <= 1
+        assert scaling_ratio_range[0] <= scaling_ratio_range[1]
+        assert scaling_ratio_range[0] > 0
+        self.max_rotate_degree = max_rotate_degree
+        self.max_translate_ratio = max_translate_ratio
+        self.scaling_ratio_range = scaling_ratio_range
+        self.max_shear_degree = max_shear_degree
         self.border = border
         self.border_val = border_val
-        self.wh_filter_thr = wh_filter_thr
-        self.area_ratio_filter_thr = area_ratio_filter_thr
-        self.aspect_ratio_filter_thr = aspect_ratio_filter_thr
+        self.min_bbox_size = min_bbox_size
+        self.min_area_ratio = min_area_ratio
+        self.max_aspect_ratio = max_aspect_ratio
 
     def __call__(self, results):
         img = results['img']
@@ -1971,25 +1973,27 @@ class RandomAffine:
         center_matrix[1, 2] = -img.shape[0] / 2  # y translation (pixels)
 
         # Rotation
-        rotation_degree = random.uniform(-self.rotate_degree,
-                                         self.rotate_degree)
+        rotation_degree = random.uniform(-self.max_rotate_degree,
+                                         self.max_rotate_degree)
         rotation_matrix = self._get_rotation_matrix(rotation_degree)
 
         # Scaling
-        scaling_ratio = random.uniform(self.scaling_ratio[0],
-                                       self.scaling_ratio[1])
+        scaling_ratio = random.uniform(self.scaling_ratio_range[0],
+                                       self.scaling_ratio_range[1])
         scaling_matrix = self._get_scaling_matrix(scaling_ratio)
 
         # Shear
-        x_degree = random.uniform(-self.shear_degree, self.shear_degree)
-        y_degree = random.uniform(-self.shear_degree, self.shear_degree)
+        x_degree = random.uniform(-self.max_shear_degree,
+                                  self.max_shear_degree)
+        y_degree = random.uniform(-self.max_shear_degree,
+                                  self.max_shear_degree)
         shear_matrix = self._get_shear_matrix(x_degree, y_degree)
 
         # Translation
-        trans_x = random.uniform(0.5 - self.translate_ratio,
-                                 0.5 + self.translate_ratio) * width
-        trans_y = random.uniform(0.5 - self.translate_ratio,
-                                 0.5 + self.translate_ratio) * height
+        trans_x = random.uniform(0.5 - self.max_translate_ratio,
+                                 0.5 + self.max_translate_ratio) * width
+        trans_y = random.uniform(0.5 - self.max_translate_ratio,
+                                 0.5 + self.max_translate_ratio) * height
         translate_matrix = self._get_translation_matrix(trans_x, trans_y)
 
         warp_matrix = (
@@ -2045,24 +2049,24 @@ class RandomAffine:
         aspect_ratio = np.maximum(wrapped_w / (wrapped_h + 1e-16),
                                   wrapped_h / (wrapped_w + 1e-16))
 
-        wh_valid_idx = (wrapped_w > self.wh_filter_thr) & \
-                       (wrapped_h > self.wh_filter_thr)
-        area_valid_idx = wrapped_w * wrapped_h / (
-            origin_w * origin_h + 1e-16) > self.area_ratio_filter_thr
-        aspect_ratio_valid_idx = aspect_ratio < self.aspect_ratio_filter_thr
+        wh_valid_idx = (wrapped_w > self.min_bbox_size) & \
+                       (wrapped_h > self.min_bbox_size)
+        area_valid_idx = wrapped_w * wrapped_h / (origin_w * origin_h +
+                                                  1e-16) > self.min_area_ratio
+        aspect_ratio_valid_idx = aspect_ratio < self.max_aspect_ratio
         return wh_valid_idx & area_valid_idx & aspect_ratio_valid_idx
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'(rotate_degree={self.rotate_degree}, '
-        repr_str += f'translate_ratio={self.translate_ratio}, '
-        repr_str += f'scaling_ratio={self.scaling_ratio}, '
-        repr_str += f'shear_degree={self.shear_degree}, '
+        repr_str += f'(max_rotate_degree={self.max_rotate_degree}, '
+        repr_str += f'max_translate_ratio={self.max_translate_ratio}, '
+        repr_str += f'scaling_ratio={self.scaling_ratio_range}, '
+        repr_str += f'max_shear_degree={self.max_shear_degree}, '
         repr_str += f'border={self.border}, '
         repr_str += f'border_val={self.border_val}, '
-        repr_str += f'wh_filter_thr={self.wh_filter_thr}, '
-        repr_str += f'area_ratio_filter_thr={self.area_ratio_filter_thr}, '
-        repr_str += f'aspect_ratio_filter_thr={self.aspect_ratio_filter_thr})'
+        repr_str += f'min_bbox_size={self.min_bbox_size}, '
+        repr_str += f'min_area_ratio={self.min_area_ratio}, '
+        repr_str += f'max_aspect_ratio={self.max_aspect_ratio})'
         return repr_str
 
     @staticmethod

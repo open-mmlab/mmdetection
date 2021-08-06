@@ -795,16 +795,16 @@ def test_random_shift():
 def test_random_affine():
     # test assertion for invalid translate_ratio
     with pytest.raises(AssertionError):
-        transform = dict(type='RandomAffine', translate_ratio=1.5)
+        transform = dict(type='RandomAffine', max_translate_ratio=1.5)
         build_from_cfg(transform, PIPELINES)
 
-    # test assertion for invalid scaling_ratio
+    # test assertion for invalid scaling_ratio_range
     with pytest.raises(AssertionError):
-        transform = dict(type='RandomAffine', scaling_ratio=(1.5, 0.5))
+        transform = dict(type='RandomAffine', scaling_ratio_range=(1.5, 0.5))
         build_from_cfg(transform, PIPELINES)
 
     with pytest.raises(AssertionError):
-        transform = dict(type='RandomAffine', scaling_ratio=(0, 0.5))
+        transform = dict(type='RandomAffine', scaling_ratio_range=(0, 0.5))
         build_from_cfg(transform, PIPELINES)
 
     results = dict()
@@ -840,13 +840,13 @@ def test_random_affine():
     results['gt_bboxes'] = gt_bboxes
     transform = dict(
         type='RandomAffine',
-        rotate_degree=0.,
-        translate_ratio=0.,
-        scaling_ratio=(1., 1.),
-        shear_degree=0.,
+        max_rotate_degree=0.,
+        max_translate_ratio=0.,
+        scaling_ratio_range=(1., 1.),
+        max_shear_degree=0.,
         border=(0, 0),
-        wh_filter_thr=2,
-        aspect_ratio_filter_thr=20)
+        min_bbox_size=2,
+        max_aspect_ratio=20)
     random_affine_module = build_from_cfg(transform, PIPELINES)
 
     results = random_affine_module(results)
