@@ -297,37 +297,36 @@ class MultiImageMixDataset:
 
     Args:
         dataset (:obj:`CustomDataset`): The dataset to be mixed.
-        pipelines (Sequence[dict | callable]): Sequence of transform object or
+        pipeline (Sequence[dict]): Sequence of transform object or
             config dict to be composed.
         dynamic_scale (tuple[int], optional): The image scale can be changed
             dynamically. Default to None.
-        skip_flags (list[bool], optional): Sequence of bool object to be skip
-            pipeline. Default to None.
+        skip_type_keys (list[str], optional): Sequence of type string to
+            be skip pipeline. Default to None.
     """
 
     def __init__(self,
                  dataset,
-                 pipelines,
+                 pipeline,
                  dynamic_scale=None,
-                 skip_flags=None):
-        assert isinstance(pipelines, collections.abc.Sequence)
-        if skip_flags is not None:
-            assert len(skip_flags) == len(pipelines)
-            assert all(
-                [isinstance(skip_flag, bool) for skip_flag in skip_flags])
-        else:
-            skip_flags = [False] * len(pipelines)
-        self._skip_flags = skip_flags
+                 skip_type_keys=None):
+        assert isinstance(pipeline, collections.abc.Sequence)
+        if skip_type_keys is not None:
+            assert all([
+                isinstance(skip_type_key, str)
+                for skip_type_key in skip_type_keys
+            ])
+        self._skip_type_keys = skip_type_keys
 
-        self.pipelines = []
-        for pipeline in pipelines:
-            if isinstance(pipeline, dict):
-                pipeline = build_from_cfg(pipeline, PIPELINES)
-                self.pipelines.append(pipeline)
-            elif callable(pipeline):
-                self.pipelines.append(pipeline)
+        self.pipeline = []
+        self.pipeline_types = []
+        for transform in pipeline:
+            if isinstance(transform, dict):
+                self.pipeline_types.append(transform['type'])
+                transform = build_from_cfg(transform, PIPELINES)
+                self.pipeline.append(transform)
             else:
-                raise TypeError('pipeline must be callable or a dict')
+                raise TypeError('pipeline must be a dict')
 
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
@@ -344,12 +343,14 @@ class MultiImageMixDataset:
 
     def __getitem__(self, idx):
         results = self.dataset[idx]
-        for (pipeline, skip_flag) in zip(self.pipelines, self._skip_flags):
-            if skip_flag is True:
+        for (transform, transform_type) in zip(self.pipeline,
+                                               self.pipeline_types):
+            if self._skip_type_keys is not None and \
+                    transform_type in self._skip_type_keys:
                 continue
 
-            if hasattr(pipeline, 'get_indexes'):
-                indexes = pipeline.get_indexes(self.dataset)
+            if hasattr(transform, 'get_indexes'):
+                indexes = transform.get_indexes(self.dataset)
                 if not isinstance(indexes, collections.abc.Sequence):
                     indexes = [indexes]
                 mix_results = [
@@ -357,23 +358,29 @@ class MultiImageMixDataset:
                 ]
                 results['mix_results'] = mix_results
                 if self._dynamic_scale is not None:
+                    # Used for subsequent pipeline to automatically change
+                    # the output image size. E.g MixUp, Resize.
                     results['img_scale'] = self._dynamic_scale
-            results = pipeline(results)
+            results = transform(results)
 
             if 'mix_results' in results:
                 results.pop('mix_results')
+            if 'img_scale' in results:
+                results.pop('img_scale')
+
         return results
 
-    def update_skip_flags(self, skip_flags):
-        """Update skip_flags. It is called by an external hook.
+    def update_skip_type_keys(self, skip_type_keys):
+        """Update skip_type_keys. It is called by an external hook.
 
         Args:
-            skip_flags (list[bool]): Sequence of bool object to be skip
-              pipeline.
+            skip_type_keys (list[str], optional): Sequence of type
+                string to be skip pipeline.
         """
-        assert len(skip_flags) == len(self.pipelines)
-        assert all([isinstance(skip_flag, bool) for skip_flag in skip_flags])
-        self._skip_flags = skip_flags
+        assert all([
+            isinstance(skip_type_key, str) for skip_type_key in skip_type_keys
+        ])
+        self._skip_type_keys = skip_type_keys
 
     def update_dynamic_scale(self, dynamic_scale):
         """Update dynamic_scale. It is called by an external hook.

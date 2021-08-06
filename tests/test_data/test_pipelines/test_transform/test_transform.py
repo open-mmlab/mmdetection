@@ -394,10 +394,10 @@ def test_pad():
 
     # test the size and size_divisor must be None when pad2square is True
     with pytest.raises(AssertionError):
-        transform = dict(type='Pad', size_divisor=32, pad2square=True)
+        transform = dict(type='Pad', size_divisor=32, pad_to_square=True)
         build_from_cfg(transform, PIPELINES)
 
-    transform = dict(type='Pad', pad2square=True)
+    transform = dict(type='Pad', pad_to_square=True)
     transform = build_from_cfg(transform, PIPELINES)
     results['img'] = img
     results = transform(results)

@@ -575,22 +575,22 @@ class Pad:
     Args:
         size (tuple, optional): Fixed padding size.
         size_divisor (int, optional): The divisor of padded size.
-        pad2square (bool): Whether to pad the image into a square.
-           Currently only used for YOLOX. Default is False.
+        pad_to_square (bool): Whether to pad the image into a square.
+           Currently only used for YOLOX. Default: False.
         pad_val (float, optional): Padding value, 0 by default.
     """
 
     def __init__(self,
                  size=None,
                  size_divisor=None,
-                 pad2square=False,
+                 pad_to_square=False,
                  pad_val=0):
         self.size = size
         self.size_divisor = size_divisor
         self.pad_val = pad_val
-        self.pad2square = pad2square
+        self.pad_to_square = pad_to_square
 
-        if pad2square:
+        if pad_to_square:
             assert size is None and size_divisor is None, \
                 'The size and size_divisor must be None ' \
                 'when pad2square is True'
@@ -602,7 +602,7 @@ class Pad:
     def _pad_img(self, results):
         """Pad images according to ``self.size``."""
         for key in results.get('img_fields', ['img']):
-            if self.pad2square:
+            if self.pad_to_square:
                 max_size = max(results[key].shape[:2])
                 self.size = (max_size, max_size)
             if self.size is not None:
@@ -647,7 +647,7 @@ class Pad:
         repr_str = self.__class__.__name__
         repr_str += f'(size={self.size}, '
         repr_str += f'size_divisor={self.size_divisor}, '
-        repr_str += f'pad2square={self.pad2square}, '
+        repr_str += f'pad_to_square={self.pad_to_square}, '
         repr_str += f'pad_val={self.pad_val})'
         return repr_str
 
@@ -1979,7 +1979,7 @@ class Mosaic:
         self.pad_value = pad_value
 
     def __call__(self, results):
-        """Call function to mosaic image.
+        """Call function to make a mosaic of image.
 
         Args:
             results (dict): Result dict.
@@ -1995,7 +1995,7 @@ class Mosaic:
         """Call function to collect indexes.
 
         Args:
-            dataset (:obj:`CustomDataset`): The dataset.
+            dataset (:obj:`MultiImageMixDataset`): The dataset.
 
         Returns:
             list: indexes.
@@ -2102,8 +2102,10 @@ class Mosaic:
             img_shape_wh (Sequence[int]): Width and height of sub-image
 
         Returns:
-            paste_coord (tuple): paste corner coordinate in mosaic image.
-            crop_coord (tuple): crop corner coordinate in mosaic image.
+            tuple[tuple[float]]: Corresponding coordinate of pasting and
+                cropping
+                - paste_coord (tuple): paste corner coordinate in mosaic image.
+                - crop_coord (tuple): crop corner coordinate in mosaic image.
         """
 
         assert loc in ('top_left', 'top_right', 'bottom_left', 'bottom_right')
@@ -2211,7 +2213,7 @@ class MixUp:
         self.max_iters = max_iters
 
     def __call__(self, results):
-        """Call function to mixup image.
+        """Call function to make a mixup of image.
 
         Args:
             results (dict): Result dict.
@@ -2227,7 +2229,7 @@ class MixUp:
         """Call function to collect indexes.
 
         Args:
-            dataset (:obj:`CustomDataset`): The dataset.
+            dataset (:obj:`MultiImageMixDataset`): The dataset.
 
         Returns:
             list: indexes.
