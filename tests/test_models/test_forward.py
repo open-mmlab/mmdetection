@@ -303,7 +303,11 @@ def test_two_stage_forward(cfg_file):
             result = detector.forward([one_img], [[one_meta]],
                                       return_loss=False)
             batch_results.append(result)
-
+    cascade_models = [
+        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'htc/htc_r50_fpn_1x_coco.py',
+        'scnet/scnet_r50_fpn_20e_coco.py',
+    ]
     # test empty proposal in roi_head
     with torch.no_grad():
         # test no proposal in the whole batch
@@ -314,6 +318,18 @@ def test_two_stage_forward(cfg_file):
         features = detector.extract_feats([imgs[0][None, :]] * 2)
         detector.roi_head.aug_test(features, [torch.empty((0, 4))] * 2,
                                    [[img_metas[0]]] * 2)
+
+        # test rcnn_test_cfg is None
+        if cfg_file not in cascade_models:
+            feature = detector.extract_feat(imgs[0][None, :])
+            bboxes, scores = detector.roi_head.simple_test_bboxes(
+                feature, [img_metas[0]], [torch.empty((0, 4))], None)
+            assert all([bbox.shape == torch.Size((0, 4)) for bbox in bboxes])
+            assert all([
+                score.shape == torch.Size(
+                    (0, detector.roi_head.bbox_head.fc_cls.out_features))
+                for score in scores
+            ])
 
         # test no proposal in the some image
         x1y1 = torch.randint(1, 100, (10, 2)).float()
@@ -328,6 +344,18 @@ def test_two_stage_forward(cfg_file):
         detector.roi_head.aug_test(
             features, [torch.cat([x1y1, x2y2], dim=-1),
                        torch.empty((0, 4))], [[img_metas[0]]] * 2)
+
+        # test rcnn_test_cfg is None
+        if cfg_file not in cascade_models:
+            feature = detector.extract_feat(imgs[0][None, :].repeat(
+                2, 1, 1, 1))
+            bboxes, scores = detector.roi_head.simple_test_bboxes(
+                feature, [img_metas[0]] * 2,
+                [torch.empty((0, 4)),
+                 torch.cat([x1y1, x2y2], dim=-1)], None)
+            assert bboxes[0].shape == torch.Size((0, 4))
+            assert scores[0].shape == torch.Size(
+                (0, detector.roi_head.bbox_head.fc_cls.out_features))
 
 
 @pytest.mark.parametrize(

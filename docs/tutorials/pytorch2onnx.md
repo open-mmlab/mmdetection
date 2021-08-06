@@ -24,7 +24,7 @@
 ### Prerequisite
 
 1. Install the prerequisites following [get_started.md/Prepare environment](../get_started.md).
-2. Build custom operators for ONNX Runtime and install MMCV manually following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
+2. Build custom operators for ONNX Runtime and install MMCV manually following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
 3. Install MMdetection manually following steps 2-3 in [get_started.md/Install MMdetection](../get_started.md).
 
 ### Usage
@@ -98,9 +98,9 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
   Note: onnxruntime-gpu is version-dependent on CUDA and CUDNN, please ensure that your
   environment meets the requirements.
 
-- Build custom operators for ONNX Runtime following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
+- Build custom operators for ONNX Runtime following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
 
-- Install TensorRT by referring to [How to build TensorRT plugins in MMCV](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv) (optional)
+- Install TensorRT by referring to [How to build TensorRT plugins in MMCV](https://mmcv.readthedocs.io/en/latest/deployment/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv) (optional)
 
 ### Usage
 
@@ -301,7 +301,7 @@ Notes:
 - Minimum required version of MMCV is `1.3.5`
 
 - *All models above are tested with Pytorch==1.6.0 and onnxruntime==1.5.1*, except for CornerNet. For more details about the
-torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md#known-issues) in mmcv.
+torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/onnxruntime_op.md#known-issues) in mmcv.
 
 - Though supported, it is *not recommended* to use batch inference in onnxruntime for `DETR`, because there is huge performance gap between ONNX and torch model (e.g. 33.5 vs 39.9 mAP on COCO for onnxruntime and torch respectively, with a batch size 2). The main reason for the gap is that these is non-negligible effect on the predicted regressions during batch inference for ONNX, since the predicted coordinates is normalized by `img_shape` (without padding) and should be converted to absolute format, but `img_shape` is not dynamically traceable thus the padded `img_shape_for_onnx` is used.
 
@@ -321,8 +321,8 @@ In the process of exporting the ONNX model, we set some parameters for the NMS o
 
 ## Reminders
 
-- When the input model has custom op such as `RoIAlign` and if you want to verify the exported ONNX model, you may have to build `mmcv` with [ONNXRuntime](https://mmcv.readthedocs.io/en/latest/onnxruntime_op.html) from source.
-- `mmcv.onnx.simplify` feature is based on [onnx-simplifier](https://github.com/daquexian/onnx-simplifier). If you want to try it, please refer to [onnx in `mmcv`](https://mmcv.readthedocs.io/en/latest/onnx.html) and [onnxruntime op in `mmcv`](https://mmcv.readthedocs.io/en/latest/onnxruntime_op.html) for more information.
+- When the input model has custom op such as `RoIAlign` and if you want to verify the exported ONNX model, you may have to build `mmcv` with [ONNXRuntime](https://mmcv.readthedocs.io/en/latest/deployment/onnxruntime_op.html) from source.
+- `mmcv.onnx.simplify` feature is based on [onnx-simplifier](https://github.com/daquexian/onnx-simplifier). If you want to try it, please refer to [onnx in `mmcv`](https://mmcv.readthedocs.io/en/latest/deployment/onnx.html) and [onnxruntime op in `mmcv`](https://mmcv.readthedocs.io/en/latest/deployment/onnxruntime_op.html) for more information.
 - If you meet any problem with the listed models above, please create an issue and it would be taken care of soon. For models not included in the list, please try to dig a little deeper and debug a little bit more and hopefully solve them by yourself.
 - Because this feature is experimental and may change fast, please always try with the latest `mmcv` and `mmdetecion`.
 

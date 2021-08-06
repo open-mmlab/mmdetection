@@ -13,10 +13,11 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
 
        1. When the current running epoch is greater than
            `max_epoch-last_epoch`, a fixed learning rate will be used
-       2. The exp warmup scheme are different with LrUpdaterHook in MMCV
+       2. The exp warmup scheme is different with LrUpdaterHook in MMCV
 
     Args:
-        last_epoch (int): The number of last epoch with a fixed learning rate.
+        last_epoch (int): The number of epochs with a fixed learning rate
+           before the end of the training.
         warmup_ratio (float): LR used at the beginning of warmup.
            This parameter does not depend on the number of GPUs, so we need
            to multiply by work_size.

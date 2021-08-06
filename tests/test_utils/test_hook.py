@@ -4,13 +4,16 @@ import sys
 import tempfile
 from unittest.mock import MagicMock, call
 
+import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-from mmcv.runner import IterTimerHook, PaviLoggerHook, build_runner
+from mmcv.runner import (CheckpointHook, IterTimerHook, PaviLoggerHook,
+                         build_runner)
+from torch.nn.init import constant_
 from torch.utils.data import DataLoader
 
-from mmdet.core.hook import YOLOXLrUpdaterHook
+from mmdet.core.hook import ExpMomentumEMAHook, YOLOXLrUpdaterHook
 
 
 def _build_demo_runner_without_hook(runner_type='EpochBasedRunner',
@@ -147,3 +150,87 @@ def test_yolox_lrupdater_hook(multi_optimziers):
             }, 10)
         ]
     hook.writer.add_scalars.assert_has_calls(calls, any_order=True)
+
+
+def test_ema_hook():
+    """xdoctest -m tests/test_hooks.py test_ema_hook."""
+
+    class DemoModel(nn.Module):
+
+        def __init__(self):
+            super().__init__()
+            self.conv = nn.Conv2d(
+                in_channels=1,
+                out_channels=2,
+                kernel_size=1,
+                padding=1,
+                bias=True)
+            self.bn = nn.BatchNorm2d(2)
+
+            self._init_weight()
+
+        def _init_weight(self):
+            constant_(self.conv.weight, 0)
+            constant_(self.conv.bias, 0)
+            constant_(self.bn.weight, 0)
+            constant_(self.bn.bias, 0)
+
+        def forward(self, x):
+            return self.bn(self.conv(x)).sum()
+
+        def train_step(self, x, optimizer, **kwargs):
+            return dict(loss=self(x))
+
+        def val_step(self, x, optimizer, **kwargs):
+            return dict(loss=self(x))
+
+    loader = DataLoader(torch.ones((1, 1, 1, 1)))
+    runner = _build_demo_runner()
+    demo_model = DemoModel()
+    runner.model = demo_model
+    ema_hook = ExpMomentumEMAHook(
+        momentum=0.0002,
+        total_iter=1,
+        skip_buffers=True,
+        interval=2,
+        resume_from=None)
+    checkpointhook = CheckpointHook(interval=1, by_epoch=True)
+    runner.register_hook(ema_hook, priority='HIGHEST')
+    runner.register_hook(checkpointhook)
+    runner.run([loader, loader], [('train', 1), ('val', 1)])
+    checkpoint = torch.load(f'{runner.work_dir}/epoch_1.pth')
+    num_eam_params = 0
+    for name, value in checkpoint['state_dict'].items():
+        if 'ema' in name:
+            num_eam_params += 1
+            value.fill_(1)
+    assert num_eam_params == 4
+    torch.save(checkpoint, f'{runner.work_dir}/epoch_1.pth')
+
+    work_dir = runner.work_dir
+    resume_ema_hook = ExpMomentumEMAHook(
+        momentum=0.5,
+        total_iter=10,
+        skip_buffers=True,
+        interval=1,
+        resume_from=f'{work_dir}/epoch_1.pth')
+    runner = _build_demo_runner(max_epochs=2)
+    runner.model = demo_model
+    runner.register_hook(resume_ema_hook, priority='HIGHEST')
+    checkpointhook = CheckpointHook(interval=1, by_epoch=True)
+    runner.register_hook(checkpointhook)
+    runner.run([loader, loader], [('train', 1), ('val', 1)])
+    checkpoint = torch.load(f'{runner.work_dir}/epoch_2.pth')
+    num_eam_params = 0
+    desired_output = [0.9094, 0.9094]
+    for name, value in checkpoint['state_dict'].items():
+        if 'ema' in name:
+            num_eam_params += 1
+            assert value.sum() == 2
+        else:
+            if ('weight' in name) or ('bias' in name):
+                np.allclose(value.data.cpu().numpy().reshape(-1),
+                            desired_output, 1e-4)
+    assert num_eam_params == 4
+    shutil.rmtree(runner.work_dir)
+    shutil.rmtree(work_dir)

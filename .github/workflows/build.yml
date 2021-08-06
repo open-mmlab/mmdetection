@@ -60,7 +60,9 @@ jobs:
           pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch${{matrix.torch}}/index.html
           python -c 'import mmcv; print(mmcv.__version__)'
       - name: Install unittest dependencies
-        run: pip install -r requirements/tests.txt -r requirements/optional.txt
+        run: |
+          pip install -r requirements/tests.txt -r requirements/optional.txt
+          pip install git+https://github.com/cocodataset/panopticapi.git
       - name: Build and install
         run: rm -rf .eggs && pip install -e .
       - name: Run unittests and generate coverage report
@@ -140,6 +142,7 @@ jobs:
         run: |
           pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/${{matrix.torch_version}}/index.html
           pip install -r requirements.txt
+          pip install git+https://github.com/cocodataset/panopticapi.git
           python -c 'import mmcv; print(mmcv.__version__)'
       - name: Build and install
         run: |
