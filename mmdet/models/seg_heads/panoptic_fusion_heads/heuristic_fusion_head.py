@@ -20,7 +20,7 @@ class HeuristicFusionHead(BasePanopticFusionHead):
                              None, init_cfg, **kwargs)
 
     def forward_train(self, gt_masks=None, gt_semantic_seg=None, **kwargs):
-        """HeuristicFusionHead has not training loss."""
+        """HeuristicFusionHead has no training loss."""
         return dict()
 
     def _lay_masks(self, bboxes, labels, masks, overlap_thr=0.5):

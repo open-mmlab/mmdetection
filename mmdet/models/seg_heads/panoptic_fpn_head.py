@@ -8,7 +8,7 @@ from .base_semantic_head import BaseSemanticHead
 
 
 @HEADS.register_module()
-class PanopticFpnHead(BaseSemanticHead):
+class PanopticFPNHead(BaseSemanticHead):
     """PanopticFPNHead used in Panoptic FPN."""
 
     def __init__(self,
@@ -23,7 +23,7 @@ class PanopticFpnHead(BaseSemanticHead):
                  norm_cfg=None,
                  init_cfg=None,
                  loss_semantic=dict(type='CrossEntropyLoss', loss_weight=1.0)):
-        super(PanopticFpnHead, self).__init__(num_classes, init_cfg,
+        super(PanopticFPNHead, self).__init__(num_classes, init_cfg,
                                               loss_semantic)
         self.fg_range = fg_range
         self.bg_range = bg_range

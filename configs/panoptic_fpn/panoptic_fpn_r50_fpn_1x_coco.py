@@ -70,7 +70,7 @@ model = dict(
             loss_mask=dict(
                 type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))),
     semantic_head=dict(
-        type='PanopticFpnHead',
+        type='PanopticFPNHead',
         num_classes=54,
         in_channels=256,
         inner_channels=128,

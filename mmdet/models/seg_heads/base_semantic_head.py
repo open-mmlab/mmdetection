@@ -51,13 +51,13 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
         pass
 
     def forward_train(self, x, gt_semantic_seg):
-        fcn_output = self.forward(x)
-        logits = fcn_output['logits']
+        output = self.forward(x)
+        logits = output['logits']
         return self.loss(logits, gt_semantic_seg)
 
     def simple_test(self, x, img_metas, rescale=False):
-        fcn_output = self.forward(x)
-        logits = fcn_output['logits']
+        output = self.forward(x)
+        logits = output['logits']
         logits = F.interpolate(
             logits,
             size=img_metas[0]['pad_shape'][:2],
