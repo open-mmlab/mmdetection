@@ -16,7 +16,7 @@ class DarknetBottleneck(BaseModule):
         in_channels (int): The input channels of this Module.
         out_channels (int): The output channels of this Module.
         expansion (int): The kernel size of the convolution. Default: 0.5
-        with_res_shortcut (bool): Whether to use residual shortcut.
+        add_identity (bool): Whether to add identity to the out.
             Default: True
         use_depthwise (bool): Whether to use depthwise separable convolution.
             Default: False
@@ -32,7 +32,7 @@ class DarknetBottleneck(BaseModule):
                  in_channels,
                  out_channels,
                  expansion=0.5,
-                 with_res_shortcut=True,
+                 add_identity=True,
                  use_depthwise=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
@@ -57,15 +57,15 @@ class DarknetBottleneck(BaseModule):
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
-        self.with_res_shortcut = \
-            with_res_shortcut and in_channels == out_channels
+        self.add_identity = \
+            add_identity and in_channels == out_channels
 
     def forward(self, x):
         identity = x
         out = self.conv1(x)
         out = self.conv2(out)
 
-        if self.with_res_shortcut:
+        if self.add_identity:
             return out + identity
         else:
             return out
@@ -80,7 +80,7 @@ class CSPLayer(BaseModule):
         expand_ratio (float): Ratio to adjust the number of channels of the
             hidden layer. Default: 0.5
         num_blocks (int): Number of blocks. Default: 1
-        with_res_shortcut (bool): Whether to use residual shortcut in blocks.
+        add_identity (bool): Whether to add identity in blocks.
             Default: True
         use_depthwise (bool): Whether to depthwise separable convolution in
             blocks. Default: False
@@ -97,7 +97,7 @@ class CSPLayer(BaseModule):
                  out_channels,
                  expand_ratio=0.5,
                  num_blocks=1,
-                 with_res_shortcut=True,
+                 add_identity=True,
                  use_depthwise=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
@@ -132,7 +132,7 @@ class CSPLayer(BaseModule):
                 mid_channels,
                 mid_channels,
                 1.0,
-                with_res_shortcut,
+                add_identity,
                 use_depthwise,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,

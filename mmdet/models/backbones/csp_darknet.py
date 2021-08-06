@@ -164,7 +164,7 @@ class CSPDarknet(BaseModule):
         (1, 1024, 13, 13)
     """
     # From left to right:
-    # in_channels, out_channels, num_blocks, use_shortcut, use_spp
+    # in_channels, out_channels, num_blocks, add_identity, use_spp
     arch_settings = {
         'P5': [[64, 128, 3, True, False], [128, 256, 9, True, False],
                [256, 512, 9, True, False], [512, 1024, 3, False, True]],
@@ -219,7 +219,7 @@ class CSPDarknet(BaseModule):
             act_cfg=act_cfg)
         self.layers = ['stem']
 
-        for i, (in_channels, out_channels, num_blocks, use_shortcut,
+        for i, (in_channels, out_channels, num_blocks, add_identity,
                 use_spp) in enumerate(arch_setting):
             in_channels = int(in_channels * widen_factor)
             out_channels = int(out_channels * widen_factor)
@@ -248,7 +248,7 @@ class CSPDarknet(BaseModule):
                 out_channels,
                 out_channels,
                 num_blocks=num_blocks,
-                with_res_shortcut=use_shortcut,
+                add_identity=add_identity,
                 use_depthwise=use_depthwise,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,

@@ -16,7 +16,7 @@ class YOLOXPAFPN(BaseModule):
     Args:
         in_channels (List[int]): Number of input channels per scale.
         out_channels (int): Number of output channels (used at each scale)
-        csp_num_blocks (int): Number of bottlenecks in CSPLayer. Default: 3
+        num_csp_blocks (int): Number of bottlenecks in CSPLayer. Default: 3
         use_depthwise (bool): Whether to depthwise separable convolution in
             blocks. Default: False
         upsample_cfg (dict): Config dict for interpolate layer.
@@ -34,7 +34,7 @@ class YOLOXPAFPN(BaseModule):
     def __init__(self,
                  in_channels,
                  out_channels,
-                 csp_num_blocks=3,
+                 num_csp_blocks=3,
                  use_depthwise=False,
                  upsample_cfg=dict(scale_factor=2, mode='nearest'),
                  conv_cfg=None,
@@ -70,8 +70,8 @@ class YOLOXPAFPN(BaseModule):
                 CSPLayer(
                     in_channels[idx - 1] * 2,
                     in_channels[idx - 1],
-                    num_blocks=csp_num_blocks,
-                    with_res_shortcut=False,
+                    num_blocks=num_csp_blocks,
+                    add_identity=False,
                     use_depthwise=use_depthwise,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
@@ -95,8 +95,8 @@ class YOLOXPAFPN(BaseModule):
                 CSPLayer(
                     in_channels[idx] * 2,
                     in_channels[idx + 1],
-                    num_blocks=csp_num_blocks,
-                    with_res_shortcut=False,
+                    num_blocks=num_csp_blocks,
+                    add_identity=False,
                     use_depthwise=use_depthwise,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
