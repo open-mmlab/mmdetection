@@ -117,8 +117,9 @@ class YOLOXPAFPN(BaseModule):
         """
         Args:
             inputs (tuple[Tensor]): input features.
+
         Returns:
-            tuple[Tensor]: PAN feature.
+            tuple[Tensor]: YOLOXPAFPN features.
         """
         assert len(inputs) == len(self.in_channels)
 

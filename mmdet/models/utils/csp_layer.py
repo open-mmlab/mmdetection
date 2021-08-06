@@ -4,7 +4,7 @@ from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.runner import BaseModule
 
 
-class Bottleneck(BaseModule):
+class DarknetBottleneck(BaseModule):
     """The basic bottleneck block used in Darknet.
 
     Each ResBlock consists of two ConvModules and the input is added to the
@@ -15,7 +15,7 @@ class Bottleneck(BaseModule):
     Args:
         in_channels (int): The input channels of this Module.
         out_channels (int): The output channels of this Module.
-        expansion (int): The kernel size of the convolution. Default: 1
+        expansion (int): The kernel size of the convolution. Default: 0.5
         with_res_shortcut (bool): Whether to use residual shortcut.
             Default: True
         use_depthwise (bool): Whether to use depthwise separable convolution.
@@ -61,12 +61,12 @@ class Bottleneck(BaseModule):
             with_res_shortcut and in_channels == out_channels
 
     def forward(self, x):
-        residual = x
+        identity = x
         out = self.conv1(x)
         out = self.conv2(out)
 
         if self.with_res_shortcut:
-            return out + residual
+            return out + identity
         else:
             return out
 
@@ -128,7 +128,7 @@ class CSPLayer(BaseModule):
             act_cfg=act_cfg)
 
         self.blocks = nn.Sequential(*[
-            Bottleneck(
+            DarknetBottleneck(
                 mid_channels,
                 mid_channels,
                 1.0,
