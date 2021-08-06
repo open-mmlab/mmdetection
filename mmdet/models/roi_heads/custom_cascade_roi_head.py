@@ -331,6 +331,11 @@ class CustomCascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             for i in range(num_imgs)
         ]
 
+        # multiple proposal scores
+        cls_score = [
+            (cls_score[i].t() * proposal_list[i][:, -1]).t()
+            for i in range(num_imgs)
+        ]
         # apply bbox post-processing to each image individually
         det_bboxes = []
         det_labels = []
