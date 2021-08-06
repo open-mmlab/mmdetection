@@ -10,13 +10,13 @@ class YOLOXModeSwitchHook(Hook):
     to use L1 loss in bbox_head.
 
     Args:
-        num_last_epoch (int): The number of latter epochs in the end of the
+        num_last_epochs (int): The number of latter epochs in the end of the
             training to close the data augmentation and switch to L1 loss.
             Default: 15.
     """
 
-    def __init__(self, num_last_epoch=15):
-        self.num_last_epoch = num_last_epoch
+    def __init__(self, num_last_epochs=15):
+        self.num_last_epochs = num_last_epochs
 
     def before_train_epoch(self, runner):
         """Close mosaic and mixup augmentation and switches to use L1 loss."""
@@ -25,7 +25,7 @@ class YOLOXModeSwitchHook(Hook):
         model = runner.model
         if is_module_wrapper(model):
             model = model.module
-        if (epoch + 1) == runner.max_epochs - self.num_last_epoch:
+        if (epoch + 1) == runner.max_epochs - self.num_last_epochs:
             runner.logger.info('No mosaic and mixup aug now!')
             # TODO
             train_loader.dataset.enable_mosaic = False
