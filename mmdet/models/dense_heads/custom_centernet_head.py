@@ -787,35 +787,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 image_sizes, agn_hm_pred_per_level)
         return proposals
 
-    def inference(self, images, clss_per_level, reg_pred_per_level,
-                agn_hm_pred_per_level, grids):
-        logits_pred = [x.sigmoid() if x is not None else None
-                    for x in clss_per_level]
-        agn_hm_pred_per_level = [x.sigmoid() if x is not None else None
-                    for x in agn_hm_pred_per_level]
-
-        if self.only_proposal:
-            proposals, proposals_class = self.predict_instances(
-                grids, agn_hm_pred_per_level, reg_pred_per_level,
-                images.image_sizes, [None for _ in agn_hm_pred_per_level])
-        else:
-            proposals, proposals_class = self.predict_instances(
-                grids, logits_pred, reg_pred_per_level,
-                images.image_sizes, agn_hm_pred_per_level)
-        # if self.as_proposal or self.only_proposal:
-        #     for p in range(len(proposals)):
-        #         proposals[p].proposal_boxes = proposals[p].get('pred_boxes')
-        #         proposals[p].objectness_logits = proposals[p].get('scores')
-        #         proposals[p].remove('pred_boxes')
-
-        # if self.debug:
-        #     debug_test(
-        #         [self.denormalizer(x) for x in images], 
-        #         logits_pred, reg_pred_per_level, 
-        #         agn_hm_pred_per_level, preds=proposals,
-        #         vis_thresh=self.vis_thresh, 
-        #         debug_show_name=False)
-        return proposals, proposals_class, {}
 
     def predict_instances(self, grids, logits_pred, reg_pred,
                         agn_hm_pred, is_proposal=False):
@@ -824,20 +795,17 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         #     sampled_boxes.append(self.predict_single_level(
         #         grids[l], logits_pred[l], reg_pred[l] * self.strides[l],
         #         agn_hm_pred[l], l, is_proposal=is_proposal))
-
-        sampled_boxes = multi_apply(self.predict_single_level, grids, logits_pred,
-                reg_pred * self.strides, agn_hm_pred, is_proposal=is_proposal)
-        boxlists = list(zip(*sampled_boxes))
+        # boxlists = list(zip(*sampled_boxes))
+        # boxlists = [torch.cat(boxlist) for boxlist in boxlists]
+        boxlists = multi_apply(self.predict_single_level, grids, logits_pred,
+                    reg_pred, self.strides, agn_hm_pred, is_proposal=is_proposal)
         boxlists = [torch.cat(boxlist) for boxlist in boxlists]
         final_boxlists = []
         for b in range(len(boxlists)):
             final_boxlists.append(self.nms_and_topK(boxlists[b], nms=True))
-
-        # boxes_scores_lists = boxlists[:, :5]
-        # per_box_class = boxlists[:,5]
         return final_boxlists
 
-    def predict_single_level(self, grids, heatmap, reg_pred,
+    def predict_single_level(self, grids, heatmap, reg_pred, stride,
                             agn_hm, is_proposal=False):
         N, C, H, W = heatmap.shape
         # put in the same format as grids
@@ -847,7 +815,9 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             heatmap = heatmap * (heatmap_nms == heatmap).float()
         heatmap = heatmap.permute(0, 2, 3, 1)  # N x H x W x C
         heatmap = heatmap.reshape(N, -1, C)  # N x HW x C
-        box_regression = reg_pred.view(N, 4, H, W).permute(0, 2, 3, 1)  # N x H x W x 4 
+        
+        reg_pred_ = reg_pred * stride
+        box_regression = reg_pred_.view(N, 4, H, W).permute(0, 2, 3, 1)  # N x H x W x 4 
         box_regression = box_regression.reshape(N, -1, 4)
 
         candidate_inds = heatmap > self.score_thresh  # 0.05
@@ -941,13 +911,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         """
         # if nms_thresh <= 0:
         #     return boxlist
-        # if boxlist.has('pred_boxes'):
-        #     boxes = boxlist.pred_boxes.tensor
-        #     labels = boxlist.pred_classes
-        # else:
-        #     boxes = boxlist.proposal_boxes.tensor
-        #     labels = boxlist.proposal_boxes.tensor.new_zeros(
-        #         len(boxlist.proposal_boxes.tensor))
+
         boxes = boxlist[:, :4]
         labels = boxlist[:, -1]
         scores = boxlist[:, 4]
@@ -988,8 +952,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         pos_inds = c33_inds[new_pos].view(-1) # P
         labels = labels.view(N, 1, 1).expand(N, L, K)[new_pos].view(-1)
         return pos_inds, labels
-        
-    
+
     def _get_c33_inds(self, gt_instances, shapes_per_level):
         '''
         TODO (Xingyi): The current implementation is ugly. Refactor.
