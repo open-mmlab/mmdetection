@@ -14,9 +14,9 @@ class SyncRandomSizeHook(Hook):
     Args:
         ratio_range (tuple[int]): Random ratio range. It will be multiplied
             by 32, and then change the dataset output image size.
-            Defaults to (14, 26).
-        img_scale (tuple[int]): input image size. Defaults to (640, 640).
-        interval (int): The interval of change image size. Default to 10.
+            Default: (14, 26).
+        img_scale (tuple[int]): Size of input image. Default: (640, 640).
+        interval (int): The interval of change image size. Default: 10.
     """
 
     def __init__(self,
@@ -35,7 +35,7 @@ class SyncRandomSizeHook(Hook):
                                              1) % self.interval == 0:
             tensor = torch.LongTensor(2)
             if torch.cuda.is_available():
-                tensor = tensor.cuda()
+                tensor = tensor.to(runner.model.device)
 
             if self.rank == 0:
                 size_factor = self.img_scale[1] * 1. / self.img_scale[0]
@@ -48,6 +48,5 @@ class SyncRandomSizeHook(Hook):
                 dist.barrier()
                 dist.broadcast(tensor, 0)
 
-            # TODO
             runner.data_loader.dataset.dynamic_scale = (tensor[0].item(),
                                                         tensor[1].item())

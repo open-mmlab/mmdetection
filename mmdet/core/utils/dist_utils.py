@@ -72,14 +72,14 @@ def reduce_mean(tensor):
     return tensor
 
 
-def pyobj2tensor(pyobj, device='cuda'):
-    """serialize picklable python object to tensor."""
+def obj2tensor(pyobj, device='cuda'):
+    """Serialize picklable python object to tensor."""
     storage = torch.ByteStorage.from_buffer(pickle.dumps(pyobj))
     return torch.ByteTensor(storage).to(device=device)
 
 
-def tensor2pyobj(tensor):
-    """deserialize tensor to picklable python object."""
+def tensor2obj(tensor):
+    """Deserialize tensor to picklable python object."""
     return pickle.loads(tensor.cpu().numpy().tobytes())
 
 
@@ -103,12 +103,12 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     the values should be in the same shape.
 
     Args:
-        py_dict (dict): dict to be applied all reduce op.
-        op (str): operator, could be 'sum' or 'mean'. Default to 'sum'
-        group (:obj:torch.distributed.group, optional): distributed group,
-            Default to None.
+        py_dict (dict): Dict to be applied all reduce op.
+        op (str): Operator, could be 'sum' or 'mean'. Default: 'sum'
+        group (:obj:`torch.distributed.group`, optional): Distributed group,
+            Default: None.
         to_float (bool): Whether to convert all values of dict to float.
-            Default to True.
+            Default: True.
 
     Returns:
         OrderedDict: reduced python dict object.
@@ -124,9 +124,9 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
 
     # all reduce logic across different devices.
     py_key = list(py_dict.keys())
-    py_key_tensor = pyobj2tensor(py_key)
+    py_key_tensor = obj2tensor(py_key)
     dist.broadcast(py_key_tensor, src=0)
-    py_key = tensor2pyobj(py_key_tensor)
+    py_key = tensor2obj(py_key_tensor)
 
     tensor_shapes = [py_dict[k].shape for k in py_key]
     tensor_numels = [py_dict[k].numel() for k in py_key]
