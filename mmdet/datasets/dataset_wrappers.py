@@ -299,12 +299,17 @@ class MultiImageMixDataset:
         dataset (:obj:`CustomDataset`): The dataset to be mixed.
         pipelines (Sequence[dict | callable]): Sequence of transform object or
             config dict to be composed.
-        dynamic_scale (tuple[int]): The image scale can be changed dynamically.
+        dynamic_scale (tuple[int], optional): The image scale can be changed
+            dynamically. Default to None.
         skip_flags (list[bool], optional): Sequence of bool object to be skip
             pipeline. Default to None.
     """
 
-    def __init__(self, dataset, pipelines, dynamic_scale, skip_flags=None):
+    def __init__(self,
+                 dataset,
+                 pipelines,
+                 dynamic_scale=None,
+                 skip_flags=None):
         assert isinstance(pipelines, collections.abc.Sequence)
         if skip_flags is not None:
             assert len(skip_flags) == len(pipelines)
@@ -312,7 +317,8 @@ class MultiImageMixDataset:
                 [isinstance(skip_flag, bool) for skip_flag in skip_flags])
         else:
             skip_flags = [False] * len(pipelines)
-        self.skip_flags = skip_flags
+        self._skip_flags = skip_flags
+
         self.pipelines = []
         for pipeline in pipelines:
             if isinstance(pipeline, dict):
@@ -327,16 +333,18 @@ class MultiImageMixDataset:
         self.CLASSES = dataset.CLASSES
         if hasattr(self.dataset, 'flag'):
             self.flag = dataset.flag
-        self.num_sample = len(dataset)
+        self.num_samples = len(dataset)
 
-        self.dynamic_scale = dynamic_scale
+        if dynamic_scale is not None:
+            assert isinstance(dynamic_scale, tuple)
+        self._dynamic_scale = dynamic_scale
 
     def __len__(self):
-        return self.num_sample
+        return self.num_samples
 
     def __getitem__(self, idx):
         results = self.dataset[idx]
-        for (pipeline, skip_flag) in zip(self.pipelines, self.skip_flags):
+        for (pipeline, skip_flag) in zip(self.pipelines, self._skip_flags):
             if skip_flag is True:
                 continue
 
@@ -348,8 +356,8 @@ class MultiImageMixDataset:
                     copy.deepcopy(self.dataset[index]) for index in indexes
                 ]
                 results['mix_results'] = mix_results
-                if self.dynamic_scale is not None:
-                    results['img_scale'] = self.dynamic_scale
+                if self._dynamic_scale is not None:
+                    results['img_scale'] = self._dynamic_scale
             results = pipeline(results)
 
             if 'mix_results' in results:
@@ -365,7 +373,7 @@ class MultiImageMixDataset:
         """
         assert len(skip_flags) == len(self.pipelines)
         assert all([isinstance(skip_flag, bool) for skip_flag in skip_flags])
-        self.skip_flags = skip_flags
+        self._skip_flags = skip_flags
 
     def update_dynamic_scale(self, dynamic_scale):
         """Update dynamic_scale. It is called by an external hook.
@@ -374,4 +382,5 @@ class MultiImageMixDataset:
             dynamic_scale (tuple[int]): The image scale can be
                changed dynamically.
         """
-        self.dynamic_scale = dynamic_scale
+        assert isinstance(dynamic_scale, tuple)
+        self._dynamic_scale = dynamic_scale

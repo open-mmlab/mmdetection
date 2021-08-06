@@ -1933,6 +1933,8 @@ class Mosaic:
     one output image. The output image is composed of the parts from each sub-
     image.
 
+    .. code:: text
+
                         mosaic transform
                            center_x
                 +------------------------------+
@@ -1960,7 +1962,7 @@ class Mosaic:
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
            image. Default to (640, 640).
-        center_scale_ratio (Sequence[float]): Center scale ratio of mosaic
+        center_ratio_range (Sequence[float]): Center ratio range of mosaic
            output. Default to (0.5, 1.5).
         pad_value (int): Pad value. Default to 114.
     """
@@ -1968,12 +1970,12 @@ class Mosaic:
     def __init__(
             self,
             img_scale=(640, 640),
-            center_scale_ratio=(0.5, 1.5),
+            center_ratio_range=(0.5, 1.5),
             pad_value=114,
     ):
         assert isinstance(img_scale, tuple)
         self.img_scale = img_scale
-        self.center_scale_ratio = center_scale_ratio
+        self.center_ratio_range = center_ratio_range
         self.pad_value = pad_value
 
     def __call__(self, results):
@@ -2028,19 +2030,13 @@ class Mosaic:
 
         # mosaic center x, y
         center_x = int(
-            random.uniform(*self.center_scale_ratio) * self.img_scale[1])
+            random.uniform(*self.center_ratio_range) * self.img_scale[1])
         center_y = int(
-            random.uniform(*self.center_scale_ratio) * self.img_scale[0])
+            random.uniform(*self.center_ratio_range) * self.img_scale[0])
         center_position = (center_x, center_y)
 
-        for i, loc in enumerate(
-                (
-                        'top_left',
-                        'top_right',
-                        'bottom_left',
-                        'bottom_right'
-                )
-        ):
+        loc_strs = ('top_left', 'top_right', 'bottom_left', 'bottom_right')
+        for i, loc in enumerate(loc_strs):
             if loc == 'top_left':
                 results_patch = copy.deepcopy(results)
             else:
@@ -2118,7 +2114,7 @@ class Mosaic:
                              center_position_xy[0], \
                              center_position_xy[1]
             crop_coord = img_shape_wh[0] - (x2 - x1), img_shape_wh[1] - (
-                    y2 - y1), img_shape_wh[0], img_shape_wh[1]
+                y2 - y1), img_shape_wh[0], img_shape_wh[1]
 
         elif loc == 'top_right':
             # index1 to top right part of image
@@ -2166,6 +2162,7 @@ class Mosaic:
 class MixUp:
     """MixUp data augmentation.
 
+    .. code:: text
                          mixup transform
                 +------------------------------+
                 | mixup image   |              |
@@ -2190,23 +2187,28 @@ class MixUp:
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
            Default to (640, 640).
-        scale_ratio (Sequence[float]): Scale ratio of mixup image.
+        ratio_range (Sequence[float]): Scale ratio of mixup image.
            Default to (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
            Default to 0.5.
         pad_value (int): Pad value. Default to 114.
+        max_iters (int): The maximum number of iterations. If the number of
+           iterations is greater than `max_iters`, but gt_bbox is still
+           empty, then the iteration is terminated.  Default to 15.
     """
 
     def __init__(self,
                  img_scale=(640, 640),
-                 scale_ratio=(0.5, 1.5),
+                 ratio_range=(0.5, 1.5),
                  flip_ratio=0.5,
-                 pad_value=114):
+                 pad_value=114,
+                 max_iters=15):
         assert isinstance(img_scale, tuple)
         self.dynamic_scale = img_scale
-        self.scale_ratio = scale_ratio
+        self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio
         self.pad_value = pad_value
+        self.max_iters = max_iters
 
     def __call__(self, results):
         """Call function to mixup image.
@@ -2231,7 +2233,7 @@ class MixUp:
             list: indexes.
         """
 
-        for i in range(15):
+        for i in range(self.max_iters):
             index = random.randint(0, len(dataset))
             gt_bboxes_i = dataset.get_ann_info(index)['bboxes']
             if len(gt_bboxes_i) != 0:
@@ -2263,7 +2265,7 @@ class MixUp:
         retrieve_results = results['mix_results'][0]
         retrieve_img = retrieve_results['img']
 
-        jit_factor = random.uniform(*self.scale_ratio)
+        jit_factor = random.uniform(*self.ratio_range)
         is_filp = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
@@ -2306,7 +2308,7 @@ class MixUp:
         if padded_img.shape[1] > target_w:
             x_offset = random.randint(0, padded_img.shape[1] - target_w)
         padded_cropped_img = padded_img[y_offset:y_offset + target_h,
-                             x_offset:x_offset + target_w]
+                                        x_offset:x_offset + target_w]
 
         # 6. adjust bbox
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
@@ -2317,7 +2319,7 @@ class MixUp:
 
         if is_filp:
             retrieve_gt_bboxes[:, 0::2] = (
-                    origin_w - retrieve_gt_bboxes[:, 0::2][:, ::-1])
+                origin_w - retrieve_gt_bboxes[:, 0::2][:, ::-1])
 
         # 7. filter
         cp_retrieve_gt_bboxes = retrieve_gt_bboxes.copy()
@@ -2374,6 +2376,7 @@ class MixUp:
         repr_str += f'flip_ratio={self.flip_ratio})'
         repr_str += f'pad_value={self.pad_value})'
         return repr_str
+
 
 class RandomAffine:
     """Random affine transform data augmentation.
