@@ -775,14 +775,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
     def get_bboxes(self, clss_per_level, reg_pred_per_level, agn_hm_pred_per_level, img_metas, cfg=None):
         grids = self.compute_grids(agn_hm_pred_per_level)
         proposals = None
-        image_sizes = []
-        for i in range(len(img_metas)):
-            image_sizes.append(img_metas[i]['ori_shape'][:2])
         if self.only_proposal:
             agn_hm_pred_per_level = [x.sigmoid() for x in agn_hm_pred_per_level]
             proposals = self.predict_instances(
                 grids, agn_hm_pred_per_level, reg_pred_per_level,
-                image_sizes, [None for _ in agn_hm_pred_per_level])
+                [None for _ in agn_hm_pred_per_level])
         elif self.as_proposal:  # category specific bbox as agnostic proposals
             clss_per_level = [x.sigmoid() for x in clss_per_level]
             proposals = self.predict_instances(
@@ -820,13 +817,16 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         #         debug_show_name=False)
         return proposals, proposals_class, {}
 
-    def predict_instances(self, grids, logits_pred, reg_pred, image_sizes,
+    def predict_instances(self, grids, logits_pred, reg_pred,
                         agn_hm_pred, is_proposal=False):
-        sampled_boxes = []
-        for l in range(len(grids)):
-            sampled_boxes.append(self.predict_single_level(
-                grids[l], logits_pred[l], reg_pred[l] * self.strides[l],
-                image_sizes, agn_hm_pred[l], l, is_proposal=is_proposal))
+        # sampled_boxes = []
+        # for l in range(len(grids)):
+        #     sampled_boxes.append(self.predict_single_level(
+        #         grids[l], logits_pred[l], reg_pred[l] * self.strides[l],
+        #         agn_hm_pred[l], l, is_proposal=is_proposal))
+
+        sampled_boxes = multi_apply(self.predict_single_level, grids, logits_pred,
+                reg_pred * self.strides, agn_hm_pred, is_proposal=is_proposal)
         boxlists = list(zip(*sampled_boxes))
         boxlists = [torch.cat(boxlist) for boxlist in boxlists]
         final_boxlists = []
@@ -837,8 +837,8 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         # per_box_class = boxlists[:,5]
         return final_boxlists
 
-    def predict_single_level(self, grids, heatmap, reg_pred, image_sizes,
-                            agn_hm, level, is_proposal=False):
+    def predict_single_level(self, grids, heatmap, reg_pred,
+                            agn_hm, is_proposal=False):
         N, C, H, W = heatmap.shape
         # put in the same format as grids
         if self.center_nms:
@@ -866,7 +866,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             per_candidate_inds = candidate_inds[i]  # n
             per_box_cls = per_box_cls[per_candidate_inds]  # n
 
-            per_candidate_nonzeros = per_candidate_inds.nonzero()  # n
+            per_candidate_nonzeros = per_candidate_inds.nonzero(as_tuple=False)  # n
             per_box_loc = per_candidate_nonzeros[:, 0]  # n
             per_class = per_candidate_nonzeros[:, 1]  # n
 
@@ -884,6 +884,12 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 per_grids = per_grids[top_k_indices]
 
             detections = distance2bbox(per_grids, per_box_regression, max_shape=None)
+            # detections = torch.stack([
+            #     per_grids[:, 0] - per_box_regression[:, 0],
+            #     per_grids[:, 1] - per_box_regression[:, 1],
+            #     per_grids[:, 0] + per_box_regression[:, 2],
+            #     per_grids[:, 1] + per_box_regression[:, 3],
+            # ], dim=1)  # n x 4
 
             detections[:, 2] = torch.max(detections[:, 2].clone(), detections[:, 0].clone() + 0.01)
             detections[:, 3] = torch.max(detections[:, 3].clone(), detections[:, 1].clone() + 0.01)
@@ -945,7 +951,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         boxes = boxlist[:, :4]
         labels = boxlist[:, -1]
         scores = boxlist[:, 4]
-        
+
         _, keep = batched_nms(boxes, scores.contiguous(), labels, cfg.nms)
         if max_proposals > 0:
             keep = keep[: max_proposals]
