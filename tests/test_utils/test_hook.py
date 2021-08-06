@@ -83,7 +83,7 @@ def _build_demo_runner(runner_type='EpochBasedRunner',
 def test_yolox_lrupdater_hook(multi_optimziers):
     """xdoctest -m tests/test_hooks.py test_cosine_runner_hook."""
     # Only used to prevent program errors
-    YOLOXLrUpdaterHook(0, 0, min_lr_ratio=0)
+    YOLOXLrUpdaterHook(0, min_lr_ratio=0.05)
 
     sys.modules['pavi'] = MagicMock()
     loader = DataLoader(torch.ones((10, 2)))
@@ -94,9 +94,9 @@ def test_yolox_lrupdater_hook(multi_optimziers):
         warmup='exp',
         by_epoch=False,
         warmup_by_epoch=True,
-        warmup_ratio=0.01,
+        warmup_ratio=1,
         warmup_iters=5,  # 5 epoch
-        num_last_epoch=15,
+        num_last_epochs=15,
         min_lr_ratio=0.05)
     runner.register_hook_from_cfg(hook_cfg)
     runner.register_hook_from_cfg(dict(type='IterTimerHook'))
@@ -114,22 +114,22 @@ def test_yolox_lrupdater_hook(multi_optimziers):
         calls = [
             call(
                 'train', {
-                    'learning_rate/model1': 4.000000000000001e-06,
-                    'learning_rate/model2': 4.000000000000001e-06,
+                    'learning_rate/model1': 4.0000000000000003e-07,
+                    'learning_rate/model2': 2.0000000000000002e-07,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 1),
             call(
                 'train', {
-                    'learning_rate/model1': 0.00019600000000000002,
-                    'learning_rate/model2': 0.00019600000000000002,
+                    'learning_rate/model1': 1.9600000000000002e-05,
+                    'learning_rate/model2': 9.800000000000001e-06,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 7),
             call(
                 'train', {
-                    'learning_rate/model1': 0.0004000000000000001,
-                    'learning_rate/model2': 0.0004000000000000001,
+                    'learning_rate/model1': 4.000000000000001e-05,
+                    'learning_rate/model2': 2.0000000000000005e-05,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 10)
@@ -137,15 +137,15 @@ def test_yolox_lrupdater_hook(multi_optimziers):
     else:
         calls = [
             call('train', {
-                'learning_rate': 4.000000000000001e-06,
+                'learning_rate': 4.0000000000000003e-07,
                 'momentum': 0.95
             }, 1),
             call('train', {
-                'learning_rate': 0.00019600000000000002,
+                'learning_rate': 1.9600000000000002e-05,
                 'momentum': 0.95
             }, 7),
             call('train', {
-                'learning_rate': 0.0004000000000000001,
+                'learning_rate': 4.000000000000001e-05,
                 'momentum': 0.95
             }, 10)
         ]
