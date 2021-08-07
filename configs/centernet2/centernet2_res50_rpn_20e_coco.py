@@ -53,7 +53,7 @@ model = dict(
         type='CascadeRoIHead',
         num_stages=3,
         stage_loss_weights=[1, 0.5, 0.25],
-        mult_proposal_score=True,
+        mult_proposal_score=False,
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
