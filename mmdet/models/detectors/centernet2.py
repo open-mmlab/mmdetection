@@ -39,4 +39,3 @@ class CenterNet2(TwoStageDetector):
             test_cfg=test_cfg,
             pretrained=pretrained,
             init_cfg=init_cfg)
-        self.init_weights()
