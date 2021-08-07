@@ -26,7 +26,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                  mask_roi_extractor=None,
                  mask_head=None,
                  shared_head=None,
-                 mult_proposal_score=True,
+                 mult_proposal_score=False,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
