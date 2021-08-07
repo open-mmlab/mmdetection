@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
 from mmcv.runner import ModuleList
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
@@ -21,6 +22,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def __init__(self,
                  num_stages,
                  stage_loss_weights,
+                 add_agnostic_score=False,
                  bbox_roi_extractor=None,
                  bbox_head=None,
                  mask_roi_extractor=None,
@@ -36,6 +38,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             'Shared head is not supported in Cascade RCNN anymore'
 
         self.num_stages = num_stages
+        self.add_agnostic_score = add_agnostic_score
         self.stage_loss_weights = stage_loss_weights
         super(CascadeRoIHead, self).__init__(
             bbox_roi_extractor=bbox_roi_extractor,
@@ -317,11 +320,29 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     for j in range(num_imgs)
                 ])
 
-        # average scores of each image by stages
-        cls_score = [
-            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-            for i in range(num_imgs)
-        ]
+        if self.add_agnostic_score:
+            #centernet2
+            proposal = proposal_list[0]
+            agnostic_score = proposal[:, -1]
+
+            ms_probs = []
+            #per stage socre softmax
+            for stage_score in ms_scores:
+                probs = F.softmax(stage_score[0], dim=-1)
+                ms_probs.append(probs.split([len(stage_score[0])], dim=0))
+
+            # average probs of each image by stages
+            cls_probs = [
+                sum([prob[i] for prob in ms_probs]) / float(len(ms_probs))
+                for i in range(num_imgs)
+            ]
+            cls_score = [(s * ps[:, None]) ** 0.5 for s, ps in zip(cls_probs, [agnostic_score])]
+        else:
+            # average scores of each image by stages
+            cls_score = [
+                sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+                for i in range(num_imgs)
+            ]
 
         # apply bbox post-processing to each image individually
         det_bboxes = []
