@@ -6,21 +6,23 @@ _base_ = [
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
-optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.0005, momentum=0.9, weight_decay=0.0001)
 
-# # lr_config = dict(
-# #     policy='step',
-# #     warmup='linear',
-# #     warmup_iters=5000,
-# #     warmup_ratio=0.00001,
-# #     step=[18])
-# # runner = dict(type='EpochBasedRunner', max_epochs=20)
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=100,
+    warmup_ratio=0.0001,
+    step=[3])
+runner = dict(type='EpochBasedRunner', max_epochs=6)
 
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=4,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     )
     
 find_unused_parameters=True
+
+load_from='work_dirs/newheatmap_0.005/epoch_11.pth'
 
 workflow = [('train', 1),('val', 1)]
