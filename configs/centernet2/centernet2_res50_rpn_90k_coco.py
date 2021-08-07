@@ -215,7 +215,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=24,
+    samples_per_gpu=20,
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
@@ -262,6 +262,6 @@ log_level = 'INFO'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-work_dir = os.path.join('outputs', 'CN2R50FPN')
+work_dir = 'outputs/CN2R50FPN'
 seed = 0
 gpu_ids = range(1)
