@@ -10,13 +10,11 @@ from mmdet.models import HEADS, build_loss
 from mmdet.models.utils import gaussian_radius, gen_gaussian_target
 from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
                                      transpose_and_gather_feat)
-# from mmdet.models.utils import _transpose
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
 # added by mmz
 from typing import List
-import torch.distributed as dist
 from torch.nn import functional as F
 
 
@@ -349,7 +347,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 pos_decoded_target_preds,
                 weight=reg_weight_map,
                 avg_factor=reg_norm)
-
         cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
         agn_heatmap_loss = self.loss_center_heatmap(
             agn_hm_pred,
@@ -631,7 +628,16 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         return clss, reg_pred, agn_hm_pred
 
     def get_bboxes(self, clss_per_level, reg_pred_per_level, agn_hm_pred_per_level, img_metas, cfg=None):
+        
         grids = self.compute_grids(agn_hm_pred_per_level)
+
+        # if self.more_pos:
+        #     # add more pixels as positive if \
+        #     #   1. they are within the center3x3 region of an object
+        #     #   2. their regression losses are small (<self.more_pos_thresh)
+        #     pos_inds, labels = self._add_more_pos(
+        #         reg_pred, gt_bboxes, gt_labels, shapes_per_level)
+            
         proposals = None
 
         agn_hm_pred_per_level = [x.sigmoid() for x in agn_hm_pred_per_level]
