@@ -1,1 +1,60 @@
 # 默认约定
+如果你想把MMDetection作为自己的项目进行修改的话，请检查下面的约定。
+
+## 损失
+在MMDetection中，`dict` 包含着所有的损失和评价指标，他们将会由`model(**data)`返回。
+
+例如，在bbox head中，
+```python
+class BBoxHead(nn.Module):
+    ...
+    def loss(self, ...):
+        losses = dict()
+        # classification loss
+        losses['loss_cls'] = self.loss_cls(...)
+        # classification accuracy
+        losses['acc'] = accuracy(...)
+        # bbox regression loss
+        losses['loss_bbox'] = self.loss_bbox(...)
+        return losses
+```
+
+'bbox_head.loss()'在模型正向阶段会被调用。返回的字典中包含了`'loss_bbox'`, `'loss_cls'`, `'acc'`。只有`'loss_bbox'`, `'loss_cls'`会被用于反向传播，`'acc'`只会被作为评价指标来监控训练过程。
+
+我们默认，只有那些键的名称中包含'loss'的值会被用于反向传播。这个行为可以通过修改`BaseDetector.train_step()`来改变。
+
+## 空proposals
+在MMDetection中，我们为两阶段mooing中空proposals的情况增加了特殊处理和单元测试。我们同时需要处理整个batch和单一图片中空proposals的情况。例如，在CascadeRoIHead中，
+```python
+# simple_test method
+...
+# 在整个batch中都没有proposals
+if rois.shape[0] == 0:
+    bbox_results = [[
+        np.zeros((0, 5), dtype=np.float32)
+        for _ in range(self.bbox_head[-1].num_classes)
+    ]] * num_imgs
+    if self.with_mask:
+        mask_classes = self.mask_head[-1].num_classes
+        segm_results = [[[] for _ in range(mask_classes)]
+                        for _ in range(num_imgs)]
+        results = list(zip(bbox_results, segm_results))
+    else:
+        results = bbox_results
+    return results
+...
+
+# 在单张图片中没有proposals
+for i in range(self.num_stages):
+    ...
+    if i < self.num_stages - 1:
+          for j in range(num_imgs):
+                   # 处理空proposals
+                   if rois[j].shape[0] > 0:
+                       bbox_label = cls_score[j][:, :-1].argmax(dim=1)
+                       refine_roi = self.bbox_head[i].regress_by_class(
+                            rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
+                       refine_roi_list.append(refine_roi)
+```
+如果你有自定义的`RoIHead`, 你可以参考上面的方法来处理空proposals的情况。
+If you have customized `RoIHead`, you can refer to the above method to deal with empty proposals.
