@@ -28,6 +28,7 @@ class BBoxHead(BaseModule):
                      target_means=[0., 0., 0., 0.],
                      target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
+                 mult_proposal_score=False,
                  reg_decoded_bbox=False,
                  reg_predictor_cfg=dict(type='Linear'),
                  cls_predictor_cfg=dict(type='Linear'),
@@ -48,6 +49,7 @@ class BBoxHead(BaseModule):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.reg_class_agnostic = reg_class_agnostic
+        self.mult_proposal_score = mult_proposal_score
         self.reg_decoded_bbox = reg_decoded_bbox
         self.reg_predictor_cfg = reg_predictor_cfg
         self.cls_predictor_cfg = cls_predictor_cfg
@@ -343,8 +345,11 @@ class BBoxHead(BaseModule):
         if self.custom_cls_channels:
             scores = self.loss_cls.get_activation(cls_score)
         else:
-            scores = F.softmax(
-                cls_score, dim=-1) if cls_score is not None else None
+            if self.mult_proposal_score:
+                scores = cls_score
+            else:
+                scores = F.softmax(
+                    cls_score, dim=-1) if cls_score is not None else None
         # bbox_pred would be None in some detector when with_reg is False,
         # e.g. Grid R-CNN.
         if bbox_pred is not None:

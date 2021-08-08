@@ -48,7 +48,7 @@ model = dict(
         type='CascadeRoIHead',
         num_stages=3,
         stage_loss_weights=[1, 0.5, 0.25],
-        mult_proposal_score=False,
+        mult_proposal_score=True,
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
@@ -95,6 +95,7 @@ model = dict(
                 fc_out_channels=1024,
                 roi_feat_size=7,
                 num_classes=80,
+                mult_proposal_score=True,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -191,7 +192,7 @@ train_pipeline = [
     dict(type='Resize',
          img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
                     (1333, 768), (1333, 800)],
-         multiscale_mode='value',
+         multiscale_mode = 'value',
          keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
@@ -232,7 +233,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
-evaluation = dict(interval=8000, metric='bbox')
+evaluation = dict(interval=9000, metric='bbox')
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.02/8, momentum=0.9, weight_decay=0.0001)
@@ -246,7 +247,7 @@ lr_config = dict(
 runner = dict(type='IterBasedRunner', max_iters=90000)
 
 # runtime
-checkpoint_config = dict(interval=8000)
+checkpoint_config = dict(interval=9000)
 # yapf:disable
 log_config = dict(
     interval=100,
