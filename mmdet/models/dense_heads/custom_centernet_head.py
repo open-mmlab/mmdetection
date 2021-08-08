@@ -701,10 +701,13 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             results.append(boxlist)
         return results
 
-    def nms_and_topK(self, boxlist, nms=True):
+    def nms_and_topK(self, boxlist, max_proposals=-1, nms=True):
 
         cfg = self.test_cfg
-        result = self.ml_nms(boxlist, cfg) if nms else boxlist
+        _, keep = batched_nms(boxlist[:, :4], boxlist[:, 4].contiguous(), boxlist[:, -1], cfg.nms)
+        if max_proposals > 0:
+            keep = keep[: max_proposals]
+        result = boxlist[keep]
 
         num_dets = len(result)
         post_nms_topk = self.post_nms_topk_train if self.training else \
@@ -721,27 +724,4 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
         return result
 
-    def ml_nms(self, boxlist, cfg, max_proposals=-1,
-            score_field="scores", label_field="labels"):
-        """
-        Performs non-maximum suppression on a boxlist, with scores specified
-        in a boxlist field via score_field.
-        Arguments:
-            boxlist(BoxList)
-            nms_thresh (float)
-            max_proposals (int): if > 0, then only the top max_proposals are kept
-                after non-maximum suppression
-            score_field (str)
-        """
-        # if nms_thresh <= 0:
-        #     return boxlist
 
-        boxes = boxlist[:, :4]
-        labels = boxlist[:, -1]
-        scores = boxlist[:, 4]
-
-        _, keep = batched_nms(boxes, scores.contiguous(), labels, cfg.nms)
-        if max_proposals > 0:
-            keep = keep[: max_proposals]
-        boxlist = boxlist[keep]
-        return boxlist
