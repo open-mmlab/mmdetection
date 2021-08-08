@@ -232,3 +232,31 @@ MMdetection常用到的主干网络细节如下表所示：
 ### Pre-trained Models
 
 我们还通过多尺度训练、更长的训练策略来训练用ResNet-50和[RegNetX-3.2G](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet)作为主干网络的[Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn)和[Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn)。这些模型可以作为下游任务的预训练模型。
+
+## 速度基准
+
+### 训练速度基准
+
+我们提供[analyze_logs.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/analyze_logs.py)来得到训练中每一次迭代的平均时间。示例请参考[Log Analysis](https://mmdetection.readthedocs.io/en/latest/useful_tools.html#log-analysis)。
+
+我们与其他流行框架的Mask R-CNN训练速度进行比较（数据是从[detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md/)复制而来）。mmdetection上，我们使用[mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py)进行基准测试。它与detectron2的[mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml)设置完全一样。同时，我们还提供了[模型权重](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_compare_20200518-10127928.pth)和[训练log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_20200518_105755.log.json)作为参考。为了跳过GPU预热时间，吞吐量按照100-500次迭代之间的平均吞吐量来计算。
+
+| 框架                                                                                   | 吞吐量 (img/s) |
+| -------------------------------------------------------------------------------------- | ------------------ |
+| [Detectron2](https://github.com/facebookresearch/detectron2)                           | 62                 |
+| [MMDetection](https://github.com/open-mmlab/mmdetection)                               | 61                 |
+| [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/)          | 53                 |
+| [tensorpack](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN) | 50                 |
+| [simpledet](https://github.com/TuSimple/simpledet/)                                    | 39                 |
+| [Detectron](https://github.com/facebookresearch/Detectron)                             | 19                 |
+| [matterport/Mask_RCNN](https://github.com/matterport/Mask_RCNN/)                       | 14                 |
+
+### 推理时间基准
+
+我们提供[benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py)对推理时间进行基准测试。此脚本将推理2000张图片并计算忽略前5次推理的平均推理时间。可以通过`LOG-INTERVAL`来改变log输出间隔（默认50）。
+
+```shell
+python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
+```
+
+模型库中，所有模型在基准测量推理时间时都没设置`fuse-conv-bn`, 此设置可以使推理时间更短。
