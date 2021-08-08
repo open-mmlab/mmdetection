@@ -495,8 +495,8 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         mlvl_scores = []
         mlvl_bbox_preds = []
         for level in range(len(hm_scores)):
-            hm_score = hm_scores[level].reshape(-1)
-            reg_pred = reg_preds[level].reshape(-1, 4)
+            hm_score = hm_scores[level].permute(1, 2, 0).reshape(-1)
+            reg_pred = reg_preds[level].permute(1, 2, 0).reshape(-1, 4)
             point = mlvl_points[level]
             if cfg.get('score_thr'):
                 valid_idx = hm_score > cfg.get('score_thr')
