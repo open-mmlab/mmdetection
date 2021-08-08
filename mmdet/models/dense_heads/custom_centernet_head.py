@@ -297,22 +297,22 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         shapes_per_level = grids[0].new_tensor(
                     [(x.shape[2], x.shape[3]) for x in reg_pred_per_level])
         pos_inds, reg_targets, flattened_hms = \
-            self._get_ground_truth(
+            self.get_targets(
                 grids, shapes_per_level, gt_bboxes)
-        logits_pred, reg_pred, agn_hm_pred = self._flatten_outputs(
-            clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
+        reg_pred, agn_hm_pred = self._flatten_outputs(
+            reg_pred_per_level, agn_hm_pred_per_level)
 
         flatten_points = torch.cat(
             [points.repeat(len(img_metas), 1) for points in grids])        
 
         losses = self.compute_losses(
             pos_inds, reg_targets, flattened_hms,
-            logits_pred, reg_pred, agn_hm_pred, flatten_points)
+            reg_pred, agn_hm_pred, flatten_points)
 
         return losses
 
     def compute_losses(self, pos_inds, reg_targets, flattened_hms,
-        logits_pred, reg_pred, agn_hm_pred, flatten_points):
+        reg_pred, agn_hm_pred, flatten_points):
         '''
         Inputs:
             pos_inds: N
@@ -340,6 +340,8 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         reg_weight_map = reg_weight_map * 0 + 1 \
             if self.not_norm_reg else reg_weight_map
         reg_norm = max(reduce_mean(reg_weight_map.sum()).item(), 1.0)
+
+        #added by mmz
         pos_decoded_bbox_preds = distance2bbox(flatten_points_pos, reg_pred)
         pos_decoded_target_preds = distance2bbox(flatten_points_pos, reg_targets_pos)
         reg_loss = self.loss_bbox(
@@ -379,7 +381,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             grids.append(grids_per_level)
         return grids
 
-    def _get_ground_truth(self, grids, shapes_per_level, gt_bboxes):
+    def get_targets(self, grids, shapes_per_level, gt_bboxes):
         '''
         Input:
             grids: list of tensors [(hl x wl, 2)]_l
@@ -414,9 +416,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         flattened_hms = []
         for i in range(len(gt_bboxes)):  # images
             boxes = gt_bboxes[i]  # N x 4
-            # area = gt_instances[i].gt_boxes.area() # N
             area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-            # gt_classes = gt_labels[i] # N in [0, self.num_classes]
 
             N = boxes.shape[0]
             if N == 0:
@@ -505,7 +505,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             pos_inds: N'
         '''
         pos_inds = []
-        # labels = []
         L = len(self.strides)
         B = len(gt_bboxes)
         shapes_per_level = shapes_per_level.long()
@@ -518,7 +517,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         level_bases = shapes_per_level.new_tensor(level_bases).long()  # L
         strides_default = shapes_per_level.new_tensor(self.strides).float()  # L
         for im_i in range(B):
-            # targets_per_im = gt_instances[im_i]
             bboxes = gt_bboxes[im_i]  # n x 4
             n = bboxes.shape[0]
             centers = ((bboxes[:, [0, 1]] + bboxes[:, [2, 3]]) / 2)  # n x 2
@@ -532,13 +530,9 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 centers_inds[:, :, 0]  # n x L
             is_cared_in_the_level = self.assign_fpn_level(bboxes)
             pos_ind = pos_ind[is_cared_in_the_level].view(-1)
-            # label = gt_labels.view(
-            #     n, 1).expand(n, L)[is_cared_in_the_level].view(-1)
 
             pos_inds.append(pos_ind)  # n'
-            # labels.append(label)  # n'
         pos_inds = torch.cat(pos_inds, dim=0).long()
-        # labels = torch.cat(labels, dim=0)
         return pos_inds  # N
 
     def assign_fpn_level(self, boxes):
@@ -616,30 +610,19 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         heatmaps[zeros] = 0
         return heatmaps
 
-    def _flatten_outputs(self, clss, reg_pred, agn_hm_pred):
+    def _flatten_outputs(self, reg_pred, agn_hm_pred):
         # Reshape: (N, F, Hl, Wl) -> (N, Hl, Wl, F) -> (sum_l N*Hl*Wl, F)
-
-        clss = torch.cat([x.permute(0, 2, 3, 1).reshape(-1, x.shape[1])
-                        for x in clss], 0) if clss[0] is not None else None
         reg_pred = torch.cat(
                         [x.permute(0, 2, 3, 1).reshape(-1, 4) for x in reg_pred], 0)
         agn_hm_pred = torch.cat([x.permute(0, 2, 3, 1).reshape(-1)
                         for x in agn_hm_pred], 0) if self.with_agn_hm else None
-        return clss, reg_pred, agn_hm_pred
+        return reg_pred, agn_hm_pred
 
     def get_bboxes(self, clss_per_level, reg_pred_per_level, agn_hm_pred_per_level, img_metas, cfg=None):
         
         grids = self.compute_grids(agn_hm_pred_per_level)
-
-        # if self.more_pos:
-        #     # add more pixels as positive if \
-        #     #   1. they are within the center3x3 region of an object
-        #     #   2. their regression losses are small (<self.more_pos_thresh)
-        #     pos_inds, labels = self._add_more_pos(
-        #         reg_pred, gt_bboxes, gt_labels, shapes_per_level)
             
         proposals = None
-
         agn_hm_pred_per_level = [x.sigmoid() for x in agn_hm_pred_per_level]
         proposals = self.predict_instances(
             grids, agn_hm_pred_per_level, reg_pred_per_level,
@@ -650,13 +633,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
     def predict_instances(self, grids, logits_pred, reg_pred,
                         agn_hm_pred, is_proposal=False):
-        # sampled_boxes = []
-        # for l in range(len(grids)):
-        #     sampled_boxes.append(self.predict_single_level(
-        #         grids[l], logits_pred[l], reg_pred[l] * self.strides[l],
-        #         agn_hm_pred[l], l, is_proposal=is_proposal))
-        # boxlists = list(zip(*sampled_boxes))
-        # boxlists = [torch.cat(boxlist) for boxlist in boxlists]
+
         boxlists = multi_apply(self.predict_single_level, grids, logits_pred,
                     reg_pred, self.strides, agn_hm_pred, is_proposal=is_proposal)
         boxlists = [torch.cat(boxlist) for boxlist in boxlists]
@@ -714,21 +691,12 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 per_grids = per_grids[top_k_indices]
 
             detections = distance2bbox(per_grids, per_box_regression, max_shape=None)
-            # detections = torch.stack([
-            #     per_grids[:, 0] - per_box_regression[:, 0],
-            #     per_grids[:, 1] - per_box_regression[:, 1],
-            #     per_grids[:, 0] + per_box_regression[:, 2],
-            #     per_grids[:, 1] + per_box_regression[:, 3],
-            # ], dim=1)  # n x 4
 
             detections[:, 2] = torch.max(detections[:, 2].clone(), detections[:, 0].clone() + 0.01)
             detections[:, 3] = torch.max(detections[:, 3].clone(), detections[:, 1].clone() + 0.01)
-            # boxlist = Instances(image_sizes[i])
             scores = torch.sqrt(per_box_cls) \
                 if self.with_agn_hm else per_box_cls  # n
             scores = torch.unsqueeze(scores, 1)  # n x 1
-            # per_class = torch.unsqueeze(per_class, 1)
-            # boxlist.pred_classes = per_class
             boxlist = torch.cat([detections, scores], dim=1)
             results.append(boxlist)
         return results
@@ -737,9 +705,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
         cfg = self.test_cfg
         result = self.ml_nms(boxlist, cfg) if nms else boxlist
-        # if self.debug:
-        #     print('#proposals before nms', len(boxlists[i]))
-        #     print('#proposals after nms', len(result))
+
         num_dets = len(result)
         post_nms_topk = self.post_nms_topk_train if self.training else \
             self.post_nms_topk_test
@@ -752,8 +718,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             keep = cls_scores >= image_thresh.item()
             keep = torch.nonzero(keep, as_tuple=False).squeeze(1)
             result = result[keep]
-        # if self.debug:
-        #     print('#proposals after filter', len(result))
 
         return result
 

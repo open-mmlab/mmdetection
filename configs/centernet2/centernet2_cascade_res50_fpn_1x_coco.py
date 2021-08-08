@@ -5,7 +5,7 @@ _base_ = [
 ]
 
 optimizer_config = dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=0.0001)
 
 lr_config = dict(
     policy='step',
@@ -16,8 +16,8 @@ lr_config = dict(
 runner = dict(type='EpochBasedRunner', max_epochs=12)
 
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=2,
+    samples_per_gpu=8,
+    workers_per_gpu=4,
     )
 
 train_pipeline = [
@@ -52,4 +52,4 @@ log_config = dict(
 
 find_unused_parameters = True
 
-workflow = [('train', 1), ('val', 1)]
+workflow = [('train', 1)]
