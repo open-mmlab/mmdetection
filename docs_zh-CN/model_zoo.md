@@ -260,3 +260,60 @@ python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVA
 ```
 
 模型库中，所有模型在基准测量推理时间时都没设置`fuse-conv-bn`, 此设置可以使推理时间更短。
+
+## 与Detectron2对比
+
+我们在速度和精度方面对mmdetection和[Detectron2](https://github.com/facebookresearch/detectron2.git)进行对比。对比所使用的detectron2的commit id为[185c27e](https://github.com/facebookresearch/detectron2/tree/185c27e4b4d2d4c68b5627b3765420c6d7f5a659)(30/4/2020)。
+为了公平对比，我们所有的实验都在同一机器下进行。
+
+### 硬件
+
+- 8 NVIDIA Tesla V100 (32G) GPUs
+- Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz
+
+### 软件环境
+
+- Python 3.7
+- PyTorch 1.4
+- CUDA 10.1
+- CUDNN 7.6.03
+- NCCL 2.4.08
+
+### 精度
+
+| Type                                                                                                                                   | Lr schd | Detectron2                                                                                                                             | mmdetection | Download                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py) | 1x      | [37.9](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml)                 | 38.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-5324cff8.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco_20200429_234554.log.json)             |
+| [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py)  | 1x      | [38.6 & 35.2](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml) | 38.8 & 35.4 | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json) |
+| [Retinanet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py)        | 1x      | [36.5](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml)                   | 37.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json)                     |
+
+### 训练速度
+
+训练速度使用s/iter来度量。结果越低越好。
+
+| Type         | Detectron2 | mmdetection |
+| ------------ | ---------- | ----------- |
+| Faster R-CNN | 0.210      | 0.216       |
+| Mask R-CNN   | 0.261      | 0.265       |
+| Retinanet    | 0.200      | 0.205       |
+
+### 推理速度
+
+推理速度通过单张GPU下的fps(img/s)来度量，越高越好。
+为了与Detectron2保持一致，我们所写的推理时间除去了数据加载时间。
+对于Mask RCNN，我们去除了后处理中RLE编码的时间。
+我们在括号中给出了官方给出的速度。由于硬件差异，官方给出的速度会比我们所测试得到的速度快一些。
+
+| Type         | Detectron2  | mmdetection |
+| ------------ | ----------- | ----------- |
+| Faster R-CNN | 25.6 (26.3) | 22.2        |
+| Mask R-CNN   | 22.5 (23.3) | 19.6        |
+| Retinanet    | 17.8 (18.2) | 20.6        |
+
+### 训练内存
+
+| Type         | Detectron2 | mmdetection |
+| ------------ | ---------- | ----------- |
+| Faster R-CNN | 3.0        | 3.8         |
+| Mask R-CNN   | 3.4        | 3.9         |
+| Retinanet    | 3.9        | 3.4         |
