@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import math
-from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.ops import batched_nms
 from mmcv.runner import force_fp32
 
@@ -10,53 +9,15 @@ from mmdet.models import HEADS, build_loss
 from mmdet.models.utils import gaussian_radius, gen_gaussian_target
 from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
                                      transpose_and_gather_feat)
+
+from mmcv.cnn import Scale
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
-# added by mmz
-from typing import List
 from torch.nn import functional as F
 
 
 INF = 100000000
-
-
-class Scale(nn.Module):
-    def __init__(self, init_value=1.0):
-        super(Scale, self).__init__()
-        self.scale = nn.Parameter(torch.FloatTensor([init_value]))
-
-    def forward(self, input):
-        return input * self.scale
-
-
-def get_norm(norm, out_channels):
-    """
-    Args:
-        norm (str or callable): either one of BN, SyncBN, FrozenBN, GN;
-            or a callable that takes a channel number and returns
-            the normalization layer as a nn.Module.
-
-    Returns:
-        nn.Module or None: the normalization layer
-    """
-    if norm is None:
-        return None
-    if isinstance(norm, str):
-        if len(norm) == 0:
-            return None
-        norm = {
-            # "BN": BatchNorm2d,
-            # # Fixed in https://github.com/pytorch/pytorch/pull/36382
-            # "SyncBN": NaiveSyncBatchNorm if env.TORCH_VERSION <= (1, 5)
-            # else nn.SyncBatchNorm,
-            # "FrozenBN": FrozenBatchNorm2d,
-            "GN": lambda channels: nn.GroupNorm(32, channels),
-            # for debugging:
-            "nnSyncBN": nn.SyncBatchNorm,
-            # "naiveSyncBN": NaiveSyncBatchNorm,
-        }[norm]
-    return norm(out_channels)
 
 
 @HEADS.register_module()
@@ -83,11 +44,13 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
     def __init__(self,
                  in_channel,
                  num_classes,
+                 norm,
                  num_features,
                  num_cls_convs,
                  num_box_convs,
                  num_share_convs,
                  use_deformable,
+                 only_proposal,
                  loss_center_heatmap=dict(
                     type='CustomGaussianFocalLoss',
                     alpha=0.25,
@@ -99,10 +62,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                  init_cfg=None):
         super(CustomCenterNetHead, self).__init__(init_cfg)
         self.out_kernel = 3
-        self.norm = "GN"
-        self.only_proposal = True
-
+        self.norm = norm
+        self.in_channel = in_channel
+        self.num_features = num_features
         self.num_classes = num_classes
+        self.only_proposal = only_proposal
         self.strides = [8, 16, 32, 64, 128]
         self.hm_min_overlap=0.8
         self.delta=(1-self.hm_min_overlap)/(1+self.hm_min_overlap)
@@ -129,35 +93,23 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.score_thresh = 0.0001
         self.not_nms = False
 
-        head_configs = {"cls": (num_cls_convs, False),
-                        "bbox": (num_box_convs, False),
-                        "share": (num_share_convs, False)}
-
-        channels = {
+        self.head_configs = {"cls": (num_cls_convs, use_deformable),
+                             "bbox": (num_box_convs, use_deformable),
+                             "share": (num_share_convs, use_deformable)}
+        self.channels = {
             'cls': in_channel,
             'bbox': in_channel,
             'share': in_channel,
         }
 
-        # init  1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
-        self._build_tower(head_configs, channels)
-        self.bbox_pred = self._build_head(in_channel, 4)
+        self._init_layers()
 
-        # init   <scales>
+    def _init_layers(self):
+        self._build_tower(self.head_configs, self.channels)   # init  1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
         self.scales = nn.ModuleList(
-            [Scale(init_value=1.0) for _ in range(num_features)])
-
-        self.agn_hm = self._build_head(in_channel, 1)
-
-        # initialize the <cls_logits>, config assigns it to false !
-        if not self.only_proposal:
-            cls_kernel_size = self.out_kernel
-            self.cls_logits = nn.Conv2d(
-                in_channel, self.num_classes,
-                kernel_size=cls_kernel_size,
-                stride=1,
-                padding=cls_kernel_size // 2,
-            )
+            [Scale(scale=1.0) for _ in range(self.num_features)])  # init  <scales>
+        self.agn_hm = self._build_head(self.in_channel, 1)
+        self.bbox_pred = self._build_head(self.in_channel, 4)
 
     def _build_head(self, in_channel, out_channel):
         """Build head for each branch."""
@@ -183,16 +135,12 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 ))
                 if self.norm == 'GN' and channel % 32 != 0:
                     tower.append(nn.GroupNorm(25, channel))
-                elif self.norm != '':
-                    # print("please add get_norm function")
-                    tower.append(get_norm(self.norm, channel))
                 tower.append(nn.ReLU())
             self.add_module('{}_tower'.format(head),
                             nn.Sequential(*tower))
 
     def init_weights(self):
         """Initialize weights of the head."""
-        # initialize the  1.<cls_tower> 2.<bbox_tower>  3.<share_tower>  4.<bbox_pred>
         for modules in [
             self.cls_tower, self.bbox_tower,
             self.share_tower,
@@ -204,19 +152,10 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                     torch.nn.init.constant_(layer.bias, 0)
 
         torch.nn.init.constant_(self.bbox_pred.bias, 8.)
-
-        # initialize the    <agn_hm>
-        # prior_prob = cfg.MODEL.CENTERNET.PRIOR_PROB --> 0.01 in config
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
-
         torch.nn.init.constant_(self.agn_hm.bias, bias_value)
         torch.nn.init.normal_(self.agn_hm.weight, std=0.01)
-
-        # if <cls_logits>
-        if not self.only_proposal:
-            torch.nn.init.constant_(self.cls_logits.bias, bias_value)
-            torch.nn.init.normal_(self.cls_logits.weight, std=0.01)
 
     def forward(self, feats):
         """Forward features. Notice CenterNet head does not use FPN.
@@ -233,8 +172,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             agn_hms (List[Tensor]): agn_hms predicts for all levels,
                 the channels number is 1.
         """
-        return multi_apply(self.forward_single, feats,
-                            [i for i in range(len(feats))])
+        return multi_apply(self.forward_single, feats, [i for i in range(len(feats))])
 
     def forward_single(self, feat, i):
         """Forward feature of a single level.
@@ -251,7 +189,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         feat = self.share_tower(feat)       # not used
         cls_tower = self.cls_tower(feat)    # not used
         bbox_tower = self.bbox_tower(feat)
-        # print("cls_tower:",cls_tower.size(), bbox_tower.size())
         if not self.only_proposal:
             clss = self.cls_logits(cls_tower)
         else:
@@ -259,9 +196,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         agn_hms = self.agn_hm(bbox_tower)
         reg = self.bbox_pred(bbox_tower)
         reg = self.scales[i](reg)
-        # reg = self.scales[l](reg)
         bbox_reg = F.relu(reg)
-        # print("bbox_reg",bbox_reg.size(), agn_hms.size())
         return clss, bbox_reg, agn_hms
 
     def loss(self,
