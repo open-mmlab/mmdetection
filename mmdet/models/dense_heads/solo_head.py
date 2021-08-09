@@ -1,8 +1,9 @@
+import mmcv
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.cnn.utils import bias_init_with_prob, normal_init
 from mmcv.runner import ModuleList
 
 from mmdet.core import matrix_nms, multi_apply, points_nms
@@ -75,11 +76,19 @@ class SOLOHead(BaseMaskHead):
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
         train_cfg=None,
         test_cfg=None,
-                init_cfg=[dict(type='Normal',layer='Conv2d',std=0.01),
-                  dict(type='Normal', std=0.01, bias_prob=0.01,
-                       override=dict(name='solo_ins_list')),
-                  dict(type='Normal', std=0.01, bias_prob=0.01,
-                       override=dict(name='solo_cate'))],
+        init_cfg=[
+            dict(type='Normal', layer='Conv2d', std=0.01),
+            dict(
+                type='Normal',
+                std=0.01,
+                bias_prob=0.01,
+                override=dict(name='solo_ins_list')),
+            dict(
+                type='Normal',
+                std=0.01,
+                bias_prob=0.01,
+                override=dict(name='solo_cate'))
+        ],
     ):
         super(SOLOHead, self).__init__(init_cfg)
         self.num_classes = num_classes
@@ -135,7 +144,7 @@ class SOLOHead(BaseMaskHead):
         self.solo_cate = nn.Conv2d(
             self.feat_channels, self.cate_out_channels, 3, padding=1)
 
-     @property
+    @property
     def num_levels(self):
         """int: number of feature levels that the generator will be applied"""
         return len(self.strides)
@@ -545,7 +554,7 @@ class DecoupledSOLOHead(SOLOHead):
         norm_cfg=None,
         train_cfg=None,
         test_cfg=None,
-        #TODO: check decouple solo head init cfg
+        # TODO: check decouple solo head init cfg
         init_cfg=dict(type='Normal', layer='Conv2d', std=0.01,
                       bias_prob=0.01)):
         super(DecoupledSOLOHead, self).__init__(
