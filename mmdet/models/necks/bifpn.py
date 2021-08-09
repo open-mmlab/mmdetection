@@ -160,9 +160,12 @@ class BiFPN(BaseModule):
                  end_level=-1,
                  num_bifpn=4,
                  conv_cfg=None,
-                 norm_cfg=None,
+                 norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=None,
-                 init_cfg=None):
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,)):
         super(BiFPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
         assert num_outs == 5 or num_outs == 3, NotImplementedError
