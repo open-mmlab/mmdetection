@@ -10,6 +10,17 @@ from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
+from torch.autograd.function import Function
+
+class _ScaleGradient(Function):
+    @staticmethod
+    def forward(ctx, input, scale):
+        ctx.scale = scale
+        return input
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return grad_output * ctx.scale, None
 
 @HEADS.register_module()
 class CustomCascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
@@ -132,6 +143,8 @@ class CustomCascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                         rois)
+
+        bbox_feats = _ScaleGradient.apply(bbox_feats, 1.0 / 3)
         # do not support caffe_c4 model anymore
         cls_score, bbox_pred = bbox_head(bbox_feats)
 
@@ -331,11 +344,11 @@ class CustomCascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             for i in range(num_imgs)
         ]
 
-        # multiple proposal scores
-        cls_score = [
-            (cls_score[i].t() * proposal_list[i][:, -1]).t()
-            for i in range(num_imgs)
-        ]
+        # # multiple proposal scores
+        # cls_score = [
+        #     (cls_score[i].t() * proposal_list[i][:, -1]).t()
+        #     for i in range(num_imgs)
+        # ]
         # apply bbox post-processing to each image individually
         det_bboxes = []
         det_labels = []
