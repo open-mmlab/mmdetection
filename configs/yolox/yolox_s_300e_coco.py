@@ -31,7 +31,11 @@ train_pipeline = [
         type='RandomAffine',
         scaling_ratio_range=(0.1, 2),
         border=(-img_scale[0] // 2, -img_scale[1] // 2)),
-    dict(type='MixUp', img_scale=img_scale, ratio_range=(0.8, 1.6)),
+    dict(
+        type='MixUp',
+        img_scale=img_scale,
+        ratio_range=(0.8, 1.6),
+        pad_val=114.0),
     dict(
         type='PhotoMetricDistortion',
         brightness_delta=32,

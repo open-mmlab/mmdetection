@@ -2153,8 +2153,8 @@ class Mosaic:
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'img_scale={self.img_scale}, '
-        repr_str += f'center_scale_ratio={self.center_scale_ratio})'
-        repr_str += f'pad_value={self.pad_value})'
+        repr_str += f'center_ratio_range={self.center_ratio_range})'
+        repr_str += f'pad_val={self.pad_val})'
         return repr_str
 
 
@@ -2191,7 +2191,7 @@ class MixUp:
            Default to (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
            Default to 0.5.
-        pad_value (int): Pad value. Default to 114.
+        pad_val (int): Pad value. Default to 114.
         max_iters (int): The maximum number of iterations. If the number of
            iterations is greater than `max_iters`, but gt_bbox is still
            empty, then the iteration is terminated.  Default to 15.
@@ -2210,7 +2210,7 @@ class MixUp:
                  img_scale=(640, 640),
                  ratio_range=(0.5, 1.5),
                  flip_ratio=0.5,
-                 pad_value=114,
+                 pad_val=114,
                  max_iters=15,
                  min_bbox_size=5,
                  min_area_ratio=0.2,
@@ -2219,7 +2219,7 @@ class MixUp:
         self.dynamic_scale = img_scale
         self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio
-        self.pad_value = pad_value
+        self.pad_val = pad_val
         self.max_iters = max_iters
         self.min_bbox_size = min_bbox_size
         self.min_area_ratio = min_area_ratio
@@ -2274,8 +2274,8 @@ class MixUp:
             # empty bbox
             return results
 
-        if 'img_scale' in results:
-            self.dynamic_scale = results['img_scale']
+        if 'scale' in results:
+            self.dynamic_scale = results['scale']
 
         retrieve_results = results['mix_results'][0]
         retrieve_img = retrieve_results['img']
@@ -2286,10 +2286,10 @@ class MixUp:
         if len(retrieve_img.shape) == 3:
             out_img = np.ones(
                 (self.dynamic_scale[0], self.dynamic_scale[1], 3),
-                dtype=retrieve_img.dtype) * self.pad_value
+                dtype=retrieve_img.dtype) * self.pad_val
         else:
             out_img = np.ones(
-                self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_value
+                self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_val
 
         # 1. keep_ratio resize
         scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
@@ -2385,9 +2385,13 @@ class MixUp:
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'dynamic_scale={self.dynamic_scale}, '
-        repr_str += f'scale_ratio={self.scale_ratio})'
+        repr_str += f'ratio_range={self.ratio_range})'
         repr_str += f'flip_ratio={self.flip_ratio})'
-        repr_str += f'pad_value={self.pad_value})'
+        repr_str += f'pad_val={self.pad_val})'
+        repr_str += f'max_iters={self.max_iters})'
+        repr_str += f'min_bbox_size={self.min_bbox_size})'
+        repr_str += f'min_area_ratio={self.min_area_ratio})'
+        repr_str += f'max_aspect_ratio={self.max_aspect_ratio})'
         return repr_str
 
 
