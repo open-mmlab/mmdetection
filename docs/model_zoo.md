@@ -2,7 +2,7 @@
 
 ## Mirror sites
 
-We only use aliyun to maintain the model zoo since MMDetection V2.0. The model zoo of V1.x remains in AWS and will be deprecated in the future.
+We only use aliyun to maintain the model zoo since MMDetection V2.0. The model zoo of V1.x has been deprecated.
 
 ## Common settings
 
