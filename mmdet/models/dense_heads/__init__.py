@@ -6,6 +6,7 @@ from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
 from .centernet_head import CenterNetHead
 from .centripetal_head import CentripetalHead
 from .corner_head import CornerHead
+from .condinst_head import CondInstHead
 from .deformable_detr_head import DeformableDETRHead
 from .detr_head import DETRHead
 from .embedding_rpn_head import EmbeddingRPNHead
@@ -43,5 +44,5 @@ __all__ = [
     'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'StageCascadeRPNHead',
     'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead',
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
-    'CenterNetHead'
+    'CenterNetHead', 'CondInstHead'
 ]
