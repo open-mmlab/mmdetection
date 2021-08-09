@@ -12,10 +12,8 @@ model = dict(
     bbox_head=dict(
         type='YOLOXHead', num_classes=80, in_channels=128, feat_channels=128),
     train_cfg=dict(assigner=dict(type='SimOTAAssigner', center_radius=2.5)),
-    # test
-    test_cfg=dict(
-        score_thr=0.01,  # TODO test 0.001 val 0.01
-        nms=dict(type='nms', iou_threshold=0.65)))
+    # TODO test 0.001 val 0.01
+    test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
 
 # dataset settings
 data_root = 'data/coco/'

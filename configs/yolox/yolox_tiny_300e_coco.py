@@ -58,6 +58,8 @@ data = dict(
 resume_from = None
 interval = 10
 
+# Execute in the order of insertion when the priority is the same.
+# The smaller the value, the higher the priority
 custom_hooks = [
     dict(type='YOLOXModeSwitchHook', num_last_epochs=15, priority=48),
     dict(

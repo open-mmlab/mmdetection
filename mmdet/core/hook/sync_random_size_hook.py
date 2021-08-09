@@ -20,6 +20,7 @@ class SyncRandomSizeHook(Hook):
         device (torch.device | str): device for returned tensors.
             Default: 'cuda'.
     """
+
     def __init__(self,
                  ratio_range=(14, 26),
                  img_scale=(640, 640),
