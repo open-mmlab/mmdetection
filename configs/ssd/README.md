@@ -17,8 +17,8 @@
 
 | Backbone | Size  | Style | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :------: | :---: | :---: | :-----: | :------: | :------------: | :----: | :------: |  :--------: |
-|  VGG16   |  300  | caffe |  120e   |   9.9    |  43.7          |  25.9  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ssd/ssd300_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20210604_193052-b61137df.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20210604_193052.log.json) |
-|  VGG16   |  512  | caffe |  120e   |   19.4   |  30.7          |  29.8  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ssd/ssd512_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20210604_111835-d3eba047.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20210604_111835.log.json) |
+|  VGG16   |  300  | caffe |  120e   |   9.9    |  43.7          |  25.5  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ssd/ssd300_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20210803_015428-d231a06e.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20210803_015428.log.json) |
+|  VGG16   |  512  | caffe |  120e   |   19.4   |  30.7          |  29.5  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ssd/ssd512_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20210803_022849-0a47a1ca.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20210803_022849.log.json) |
 
 ## Results and models of SSD-Lite
 
