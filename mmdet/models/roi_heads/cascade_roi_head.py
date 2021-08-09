@@ -10,7 +10,7 @@ from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
-
+import torch.nn.functional as F
 @HEADS.register_module()
 class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Cascade roi head including one bbox head and one mask head.
@@ -325,9 +325,27 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     for j in range(num_imgs)
                 ])
 
+        # # average scores of each image by stages
+        # cls_score = [
+        #     sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+        #     for i in range(num_imgs)
+        # ]
+
+        # softmax each stage
+        ms_scores = [
+            [F.softmax(score[i], dim=-1) for i in range(num_imgs)]
+            for score in ms_scores
+        ]
+
         # average scores of each image by stages
         cls_score = [
             sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+            for i in range(num_imgs)
+        ]
+
+        # multiple proposal scores
+        cls_score = [
+            (cls_score[i].t() * proposal_list[i][:, -1]).t() ** 0.5
             for i in range(num_imgs)
         ]
 
