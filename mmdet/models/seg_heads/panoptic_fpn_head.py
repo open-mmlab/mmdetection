@@ -22,7 +22,9 @@ class PanopticFPNHead(BaseSemanticHead):
                  conv_cfg=None,
                  norm_cfg=None,
                  init_cfg=None,
-                 loss_semantic=dict(type='CrossEntropyLoss', loss_weight=1.0)):
+                 loss_semantic=dict(
+                     type='CrossEntropyLoss', ignore_index=-1,
+                     loss_weight=1.0)):
         super(PanopticFPNHead, self).__init__(num_classes, init_cfg,
                                               loss_semantic)
         self.fg_range = fg_range
@@ -60,10 +62,10 @@ class PanopticFPNHead(BaseSemanticHead):
                                  new_gt_seg)
         return new_gt_seg
 
-    def loss(self, logits, gt_semantic_seg):
+    def loss(self, logits, gt_semantic_seg, label_bias=-1):
         # Merge thing classes to one class.
         gt_semantic_seg = self._set_things_to_void(gt_semantic_seg)
-        return super().loss(logits, gt_semantic_seg)
+        return super().loss(logits, gt_semantic_seg, label_bias)
 
     def init_weights(self):
         super().init_weights()

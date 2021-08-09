@@ -27,12 +27,12 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
         self.num_classes = num_classes
 
     @force_fp32(apply_to=('logits', ))
-    def loss(self, logits, gt_semantic_seg):
+    def loss(self, logits, gt_semantic_seg, label_bias=-1):
         if logits.shape[-2:] != gt_semantic_seg.shape[-2:]:
             logits = interpolate_as(logits, gt_semantic_seg)
         logits = logits.permute((0, 2, 3, 1))
-        # hard code here, minus one
-        gt_semantic_seg = gt_semantic_seg - 1
+        # make the semantic label start from 0
+        gt_semantic_seg = gt_semantic_seg + label_bias
 
         loss_semantic = self.loss_semantic(
             logits.reshape(-1, self.num_classes),  # => [NxHxW, C]

@@ -328,7 +328,7 @@ class CocoPanopticDataset(CocoDataset):
     def _pan2json(self, results, outfile_prefix):
         """Convert panoptic results to COCO panoptic json style."""
         label2cat = dict((v, k) for (k, v) in self.cat2label.items())
-        pan_json_results = []
+        pred_annotations = []
         outdir = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
 
         for idx in range(len(self)):
@@ -363,7 +363,8 @@ class CocoPanopticDataset(CocoDataset):
                 'segments_info': segm_info,
                 'file_name': segm_file
             }
-            pan_json_results.append(record)
+            pred_annotations.append(record)
+        pan_json_results = dict(annotations=pred_annotations)
         return pan_json_results
 
     def results2json(self, results, outfile_prefix):
@@ -397,7 +398,8 @@ class CocoPanopticDataset(CocoDataset):
             'file_name': imgs[k]['segm_file']
         } for k, v in gt_json.items()]
         pred_json = mmcv.load(result_files['panoptic'])
-        pred_json = dict((el['image_id'], el) for el in pred_json)
+        pred_json = dict(
+            (el['image_id'], el) for el in pred_json['annotations'])
 
         # match the gt_anns and pred_anns in the same image
         matched_annotations_list = []

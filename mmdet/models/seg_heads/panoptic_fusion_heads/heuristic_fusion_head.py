@@ -44,7 +44,7 @@ class HeuristicFusionHead(BasePanopticFusionHead):
 
         scores, bboxes = bboxes[:, -1], bboxes[:, :4]
 
-        # for unmatched shits, order by scores
+        # Sort by score to use heuristic fusion
         order = torch.argsort(-scores)
         bboxes = bboxes[order]
         labels = labels[order]
@@ -110,12 +110,12 @@ class HeuristicFusionHead(BasePanopticFusionHead):
             pan_results[_mask] = segment_id
             instance_id += 1
 
-        ids, cnts = torch.unique(
+        ids, counts = torch.unique(
             pan_results % INSTANCE_OFFSET, return_counts=True)
         stuff_ids = ids[ids >= self.num_things_classes]
-        stuff_cnts = cnts[ids >= self.num_things_classes]
+        stuff_counts = counts[ids >= self.num_things_classes]
         ignore_stuff_ids = stuff_ids[
-            stuff_cnts < self.test_cfg.stuff_area_limit]
+            stuff_counts < self.test_cfg.stuff_area_limit]
 
         assert pan_results.ndim == 2
         pan_results[(pan_results.unsqueeze(2) == ignore_stuff_ids.reshape(
