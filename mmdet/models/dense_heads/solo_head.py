@@ -23,53 +23,80 @@ def center_of_mass(mask):
 
 @HEADS.register_module()
 class SOLOHead(BaseMaskHead):
+    """SOLO mask head used in  https://arxiv.org/abs/1912.04488.
+
+    Note that although SOLO head is single-stage instance segmentors,
+    it still uses gt_bbox for calculation while getting target, but it
+    does not use gt_bbox when calculating loss.
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        feat_channels (int): Number of hidden channels. Used in child classes.
+            Default: 256
+        stacked_convs (int): Number of stacking convs of the head.
+            Default: 4
+        strides (tuple): Downsample factor of each feature map.
+        scale_ranges (tuple[tuple[int, int]]): Area range of multiple
+            level mask.
+        sigma (float): Constant scale factor to control the center region.
+        num_grids (list): Divided image into a uniform grids, each feature map
+            has a different grid value. The number of output channels is
+            grid ** 2. Default: [40, 36, 24, 16, 12]
+        cate_down_pos (int): Downsample the feature map size in which instance
+            branch Conv. Default: 0
+        loss_mask (dict): Config of mask loss.
+        loss_cls (dict): Config of classification loss.
+        norm_cfg (dict): dictionary to construct and config norm layer.
+            Default: norm_cfg=dict(type='GN', num_groups=32,
+                                   requires_grad=True).
+        train_cfg (dict): Training config of anchor head.
+        test_cfg (dict): Testing config of anchor head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+    """
 
     def __init__(
         self,
         num_classes,
         in_channels,
-        seg_feat_channels=256,
+        feat_channels=256,
         stacked_convs=4,
         strides=(4, 8, 16, 32, 64),
-        base_edge_list=(16, 32, 64, 128, 256),
+        # base_edge_list=(16, 32, 64, 128, 256),
         scale_ranges=((8, 32), (16, 64), (32, 128), (64, 256), (128, 512)),
         sigma=0.2,
         num_grids=None,
         cate_down_pos=0,
-        with_deform=False,
+        # with_deform=False,
         loss_mask=None,
         loss_cls=None,
-        conv_cfg=None,
-        norm_cfg=None,
+        # conv_cfg=None,
+        norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
         train_cfg=None,
         test_cfg=None,
-        init_cfg=None
-        # This is the First change, try to use init_cfg
-        # 31.7 mAP
-        # [dict(type='Normal', std=0.01, override=dict(name='ins_convs')),
-        #  dict(type='Normal', std=0.01, override=dict(name='cate_convs')),
-        #  dict(type='Normal', std=0.01, bias_prob=0.01,
-        #  override=dict(name='solo_ins_list')),
-        #  dict(type='Normal', std=0.01, bias_prob=0.01,
-        #  override=dict(name='solo_cate')),
-        #                    ],
+                init_cfg=[dict(type='Normal',layer='Conv2d',std=0.01),
+                  dict(type='Normal', std=0.01, bias_prob=0.01,
+                       override=dict(name='solo_ins_list')),
+                  dict(type='Normal', std=0.01, bias_prob=0.01,
+                       override=dict(name='solo_cate'))],
     ):
         super(SOLOHead, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.cate_out_channels = self.num_classes
         self.in_channels = in_channels
-        self.seg_feat_channels = seg_feat_channels
+        self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
         self.strides = strides
-        self.base_edge_list = base_edge_list
+        # self.base_edge_list = base_edge_list
         self.scale_ranges = scale_ranges
         self.sigma = sigma
         self.seg_num_grids = num_grids
         self.cate_down_pos = cate_down_pos
-        self.with_deform = with_deform
+        # self.with_deform = with_deform
         self.loss_cls = build_loss(loss_cls)
         self.loss_mask = build_loss(loss_mask)
-        self.conv_cfg = conv_cfg
+        # self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.init_cfg = init_cfg
         self.train_cfg = train_cfg
@@ -77,34 +104,24 @@ class SOLOHead(BaseMaskHead):
         self._init_layers()
 
     def _init_layers(self):
-        '''
-        Original init way
-        self.ins_convs = ModuleList(
-        init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
-        self.cate_convs = ModuleList(
-        init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
-        self.solo_ins_list = ModuleList(
-            init_cfg=dict(
-            type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01))
-        '''
         self.ins_convs = nn.ModuleList()
         self.cate_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
-            chn = self.in_channels + 2 if i == 0 else self.seg_feat_channels
+            chn = self.in_channels + 2 if i == 0 else self.feat_channels
             self.ins_convs.append(
                 ConvModule(
                     chn,
-                    self.seg_feat_channels,
+                    self.feat_channels,
                     3,
                     stride=1,
                     padding=1,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
-            chn = self.in_channels if i == 0 else self.seg_feat_channels
+            chn = self.in_channels if i == 0 else self.feat_channels
             self.cate_convs.append(
                 ConvModule(
                     chn,
-                    self.seg_feat_channels,
+                    self.feat_channels,
                     3,
                     stride=1,
                     padding=1,
@@ -113,35 +130,25 @@ class SOLOHead(BaseMaskHead):
         self.solo_ins_list = nn.ModuleList()
         for seg_num_grid in self.seg_num_grids:
             self.solo_ins_list.append(
-                nn.Conv2d(self.seg_feat_channels, seg_num_grid**2, 1))
+                nn.Conv2d(self.feat_channels, seg_num_grid**2, 1))
 
         self.solo_cate = nn.Conv2d(
-            self.seg_feat_channels, self.cate_out_channels, 3, padding=1)
+            self.feat_channels, self.cate_out_channels, 3, padding=1)
 
-    def init_weights(self):
-        # do not use init_cfg to init weights get the same acc
-        # 33.1 mAP
-        for m in self.ins_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.cate_convs:
-            normal_init(m.conv, std=0.01)
-        bias_ins = bias_init_with_prob(0.01)
-        for m in self.solo_ins_list:
-            normal_init(m, std=0.01, bias=bias_ins)
-        bias_cate = bias_init_with_prob(0.01)
-        normal_init(self.solo_cate, std=0.01, bias=bias_cate)
-
-    @property
+     @property
     def num_levels(self):
+        """int: number of feature levels that the generator will be applied"""
         return len(self.strides)
 
     def split_feats(self, feats):
+
         return (F.interpolate(feats[0], scale_factor=0.5,
                               mode='bilinear'), feats[1], feats[2], feats[3],
                 F.interpolate(
                     feats[4], size=feats[3].shape[-2:], mode='bilinear'))
 
     def forward(self, feats):
+
         assert len(feats) == self.num_levels
         new_feats = self.split_feats(feats)
         featmap_sizes = [featmap.size()[-2:] for featmap in new_feats]
@@ -301,7 +308,6 @@ class SOLOHead(BaseMaskHead):
 
             # mass center
             valid_mask_flags = gt_masks.sum(dim=-1).sum(dim=-1) > 0
-
             output_stride = stride / 2
 
             for seg_mask, gt_label, half_h, half_w, valid_mask_flag in\
@@ -311,7 +317,6 @@ class SOLOHead(BaseMaskHead):
                     continue
                 upsampled_size = (featmap_sizes[0][0] * 4,
                                   featmap_sizes[0][1] * 4)
-
                 center_h, center_w = center_of_mass(seg_mask)
 
                 coord_w = int((center_w / upsampled_size[1]) //
@@ -345,10 +350,27 @@ class SOLOHead(BaseMaskHead):
                 cate_label[top:(down + 1), left:(right + 1)] = gt_label
                 # ins
                 # TODO check whether this is consistent with cv2.resize
-                seg_mask = F.interpolate(
-                    seg_mask[None, None].float(),
-                    scale_factor=1. / output_stride,
-                    mode='nearest').bool().squeeze(0).squeeze(0)
+                # TODO: Delete later
+                # assert select.select <= 3
+                # 1.
+                # if self.select == 1:
+                #     seg_mask = F.interpolate(
+                #         seg_mask[None, None].float(),
+                #         size=(featmap_size[0], featmap_size[1]),
+                #         mode='bilinear').squeeze(0).squeeze(0).bool()
+                # # 2.
+                # elif self.select == 2:
+                #     seg_mask = F.interpolate(
+                #         seg_mask[None, None].float(),
+                #         size=(featmap_size[0], featmap_size[1]),
+                #         mode='bilinear').squeeze(0).squeeze(0)
+                #     seg_mask = seg_mask >= 0.5
+                # 3.
+                # elif self.select == 3:
+                seg_mask = np.uint8(seg_mask.cpu().numpy())
+                seg_mask = mmcv.imrescale(seg_mask, scale=1. / output_stride)
+                seg_mask = torch.from_numpy(seg_mask).to(device=device)
+
                 for i in range(top, down + 1):
                     for j in range(left, right + 1):
                         label = int(i * num_grid + j)
@@ -508,7 +530,7 @@ class DecoupledSOLOHead(SOLOHead):
         self,
         num_classes,
         in_channels,
-        seg_feat_channels=256,
+        feat_channels=256,
         stacked_convs=4,
         strides=(4, 8, 16, 32, 64),
         base_edge_list=(16, 32, 64, 128, 256),
@@ -523,12 +545,13 @@ class DecoupledSOLOHead(SOLOHead):
         norm_cfg=None,
         train_cfg=None,
         test_cfg=None,
+        #TODO: check decouple solo head init cfg
         init_cfg=dict(type='Normal', layer='Conv2d', std=0.01,
                       bias_prob=0.01)):
         super(DecoupledSOLOHead, self).__init__(
             num_classes=num_classes,
             in_channels=in_channels,
-            seg_feat_channels=seg_feat_channels,
+            feat_channels=feat_channels,
             stacked_convs=stacked_convs,
             strides=strides,
             base_edge_list=base_edge_list,
@@ -554,11 +577,11 @@ class DecoupledSOLOHead(SOLOHead):
             init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
 
         for i in range(self.stacked_convs):
-            chn = self.in_channels + 1 if i == 0 else self.seg_feat_channels
+            chn = self.in_channels + 1 if i == 0 else self.feat_channels
             self.ins_convs_x.append(
                 ConvModule(
                     chn,
-                    self.seg_feat_channels,
+                    self.feat_channels,
                     3,
                     stride=1,
                     padding=1,
@@ -567,18 +590,18 @@ class DecoupledSOLOHead(SOLOHead):
             self.ins_convs_y.append(
                 ConvModule(
                     chn,
-                    self.seg_feat_channels,
+                    self.feat_channels,
                     3,
                     stride=1,
                     padding=1,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
 
-            chn = self.in_channels if i == 0 else self.seg_feat_channels
+            chn = self.in_channels if i == 0 else self.feat_channels
             self.cate_convs.append(
                 ConvModule(
                     chn,
-                    self.seg_feat_channels,
+                    self.feat_channels,
                     3,
                     stride=1,
                     padding=1,
@@ -593,11 +616,11 @@ class DecoupledSOLOHead(SOLOHead):
                 type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01))
         for seg_num_grid in self.seg_num_grids:
             self.dsolo_ins_list_x.append(
-                nn.Conv2d(self.seg_feat_channels, seg_num_grid, 3, padding=1))
+                nn.Conv2d(self.feat_channels, seg_num_grid, 3, padding=1))
             self.dsolo_ins_list_y.append(
-                nn.Conv2d(self.seg_feat_channels, seg_num_grid, 3, padding=1))
+                nn.Conv2d(self.feat_channels, seg_num_grid, 3, padding=1))
         self.dsolo_cate = nn.Conv2d(
-            self.seg_feat_channels, self.cate_out_channels, 3, padding=1)
+            self.feat_channels, self.cate_out_channels, 3, padding=1)
 
     def forward(self, feats):
         assert len(feats) == self.num_levels
