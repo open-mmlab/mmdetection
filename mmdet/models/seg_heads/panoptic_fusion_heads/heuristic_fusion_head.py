@@ -50,32 +50,33 @@ class HeuristicFusionHead(BasePanopticFusionHead):
         labels = labels[order]
         segm_masks = masks[order]
 
-        inst_idx = 1
+        instance_id = 1
         left_labels = []
         for idx in range(bboxes.shape[0]):
             _cls = labels[idx]
             _mask = segm_masks[idx]
-            inst_id_map = torch.ones_like(_mask, dtype=torch.long) * inst_idx
+            instance_id_map = torch.ones_like(
+                _mask, dtype=torch.long) * instance_id
             area = _mask.sum()
             if area == 0:
                 continue
 
-            used = id_map > 0
-            intersect = (_mask * used).sum()
+            pasted = id_map > 0
+            intersect = (_mask * pasted).sum()
             if (intersect / (area + 1e-5)) > overlap_thr:
                 continue
 
-            _part = _mask * (~used)
-            id_map = torch.where(_part, inst_id_map, id_map)
+            _part = _mask * (~pasted)
+            id_map = torch.where(_part, instance_id_map, id_map)
             left_labels.append(_cls)
-            inst_idx += 1
+            instance_id += 1
 
         if len(left_labels) > 0:
-            inst_labels = torch.stack(left_labels)
+            instance_labels = torch.stack(left_labels)
         else:
-            inst_labels = bboxes.new_zeros((0, ), dtype=torch.long)
-        assert inst_idx == (len(inst_labels) + 1)
-        return id_map, inst_labels
+            instance_labels = bboxes.new_zeros((0, ), dtype=torch.long)
+        assert instance_id == (len(instance_labels) + 1)
+        return id_map, instance_labels
 
     def simple_test(self, det_bboxes, det_labels, mask_preds, seg_logits,
                     **kwargs):

@@ -78,7 +78,7 @@ model = dict(
         end_level=4,
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
         conv_cfg=None,
-        loss_semantic=dict(
+        loss_seg=dict(
             type='CrossEntropyLoss', ignore_index=-1, loss_weight=0.5)),
     panoptic_fusion_head=dict(
         type='HeuristicFusionHead',

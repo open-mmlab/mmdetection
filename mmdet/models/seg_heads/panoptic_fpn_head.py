@@ -9,7 +9,27 @@ from .base_semantic_head import BaseSemanticHead
 
 @HEADS.register_module()
 class PanopticFPNHead(BaseSemanticHead):
-    """PanopticFPNHead used in Panoptic FPN."""
+    """PanopticFPNHead used in Panoptic FPN.
+
+    Arg:
+        num_classes (int): Number of classes, including all stuff
+            classes and one thing class.
+        in_channels (int): Number of channels in the input feature
+            map.
+        inner_channels (int): Number of channels in inner features.
+        start_level (int): The start level of the input features
+            used in PanopticFPN.
+        end_level (int): The end level of the used features, the
+            `end_level`-th layer will not be used.
+        fg_range (tuple): Range of the foreground classes.
+        bg_range (tuple): Range of the background classes.
+        conv_cfg (dict): Dictionary to construct and config
+            conv layer. Default: None.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Use ``GN`` by default.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+        loss_seg (dict): the loss of the semantic head.
+    """
 
     def __init__(self,
                  num_classes,
@@ -20,13 +40,12 @@ class PanopticFPNHead(BaseSemanticHead):
                  fg_range=(1, 80),
                  bg_range=(81, 133),
                  conv_cfg=None,
-                 norm_cfg=None,
+                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  init_cfg=None,
-                 loss_semantic=dict(
+                 loss_seg=dict(
                      type='CrossEntropyLoss', ignore_index=-1,
                      loss_weight=1.0)):
-        super(PanopticFPNHead, self).__init__(num_classes, init_cfg,
-                                              loss_semantic)
+        super(PanopticFPNHead, self).__init__(num_classes, init_cfg, loss_seg)
         self.fg_range = fg_range
         self.bg_range = bg_range
         self.fg_nums = self.fg_range[1] - self.fg_range[0] + 1
@@ -51,6 +70,7 @@ class PanopticFPNHead(BaseSemanticHead):
         self.conv_logits = nn.Conv2d(inner_channels, num_classes, 1)
 
     def _set_things_to_void(self, gt_semantic_seg):
+        """Merge thing classes to one class."""
         gt_semantic_seg = gt_semantic_seg.int()
         fg_mask = (gt_semantic_seg >= self.fg_range[0]) * (
             gt_semantic_seg <= self.fg_range[1])
@@ -63,7 +83,10 @@ class PanopticFPNHead(BaseSemanticHead):
         return new_gt_seg
 
     def loss(self, logits, gt_semantic_seg, label_bias=-1):
-        # Merge thing classes to one class.
+        """The loss of PanopticFPN head.
+
+        Things classes will be merged to one class in PanopticFPN.
+        """
         gt_semantic_seg = self._set_things_to_void(gt_semantic_seg)
         return super().loss(logits, gt_semantic_seg, label_bias)
 
@@ -84,5 +107,5 @@ class PanopticFPNHead(BaseSemanticHead):
 
         feats = torch.sum(torch.stack(feats, dim=0), dim=0)
         logits = self.conv_logits(feats)
-        ret = dict(logits=logits, feats=feats)
-        return ret
+        out = dict(logits=logits, feats=feats)
+        return out

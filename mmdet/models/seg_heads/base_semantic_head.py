@@ -13,31 +13,43 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
     Args:
         num_classes (int): the number of classes.
         init_cfg (dict): the initialization config.
-        loss_semantic (dict): the loss of the semantic head.
+        loss_seg (dict): the loss of the semantic head.
     """
 
     def __init__(self,
                  num_classes,
                  init_cfg=None,
-                 loss_semantic=dict(
+                 loss_seg=dict(
                      type='CrossEntropyLoss', ignore_index=-1,
                      loss_weight=1.0)):
         super(BaseSemanticHead, self).__init__(init_cfg)
-        self.loss_semantic = build_loss(loss_semantic)
+        self.loss_seg = build_loss(loss_seg)
         self.num_classes = num_classes
 
     @force_fp32(apply_to=('logits', ))
-    def loss(self, logits, gt_semantic_seg, label_bias=-1):
+    def loss(self, logits, gt_semantic_seg, label_bias=1):
+        """Get the loss of semantic head.
+
+        Args:
+            logits (Tensor): The input logits with the shape (N, C, H, W).
+            gt_semantic_seg: The ground truth of semantic segmentation with
+                the shape (N, H, W).
+            label_bias: The starting number of the semantic label.
+                Default: 1.
+
+        Returns:
+            dict: the loss of semantic head.
+        """
         if logits.shape[-2:] != gt_semantic_seg.shape[-2:]:
             logits = interpolate_as(logits, gt_semantic_seg)
         logits = logits.permute((0, 2, 3, 1))
         # make the semantic label start from 0
-        gt_semantic_seg = gt_semantic_seg + label_bias
+        gt_semantic_seg = gt_semantic_seg - label_bias
 
-        loss_semantic = self.loss_semantic(
+        loss_seg = self.loss_seg(
             logits.reshape(-1, self.num_classes),  # => [NxHxW, C]
             gt_semantic_seg.reshape(-1).long())
-        return dict(loss_semantic=loss_semantic)
+        return dict(loss_seg=loss_seg)
 
     @abstractmethod
     def forward(self, x):
