@@ -131,6 +131,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                     self.feat_channels,
                     kernel_size=3,
                     padding=1,
+                    bias=True,
                     conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg))
         self.add_module('tower', nn.Sequential(*tower))
@@ -174,7 +175,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 tuple is (n,), and each element represents the class label
                 of the corresponding box.
         """
-        
+
         hm_scores, reg_preds = self(x)
         losses = self.loss(hm_scores, reg_preds, gt_bboxes)
 
@@ -271,7 +272,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             bbox_preds, bbox_targets, reg_weight_map, reg_norm)
 
         # Calculate heatmap loss
-        num_pos_local = hm_scores.new_tensor(pos_indices.size(0))
+        num_pos_local = pos_indices.size(0)
         num_pos_avg = max(reduce_mean(num_pos_local), 1.0)
         hm_loss = self.loss_hm(
             hm_scores, flattened_hms, pos_indices, num_pos_avg)
@@ -511,7 +512,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 ranked_scores, rank_inds = hm_score.sort(descending=True)
                 reg_pred = reg_pred[rank_inds][:pre_nms_top_n]
                 point = point[rank_inds][:pre_nms_top_n, :]
-                hm_score = hm_score[:pre_nms_top_n]
+                hm_score = ranked_scores[:pre_nms_top_n]
             reg_pred *= self.strides[level]
             bboxes = distance2bbox(point, reg_pred, max_shape=img_shapes)
             mlvl_scores.append(hm_score)
@@ -540,7 +541,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             proposals = torch.cat([bboxes, scores[:, None]], dim=-1)
         return proposals
 
-    def get_points(self, featmap_sizes, dtype, device, flatten=False):
+    def get_points(self, featmap_sizes, dtype, device):
         """Get points according to feature map sizes.
 
         Args:
@@ -559,9 +560,6 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             x_range = torch.arange(w, device=device).to(dtype)
             y_range = torch.arange(h, device=device).to(dtype)
             y, x = torch.meshgrid(y_range, x_range)
-            if flatten:
-                y = y.flatten()
-                x = x.flatten()
             points = torch.stack(
                 (x.reshape(-1) * stride, y.reshape(-1) * stride),
                 dim=-1) + stride // 2
