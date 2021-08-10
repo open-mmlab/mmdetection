@@ -121,7 +121,7 @@ Supported methods:
 - [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
 - [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
-
+- [x] [YOLOX (ArXix'2021)](configs/yolox/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
