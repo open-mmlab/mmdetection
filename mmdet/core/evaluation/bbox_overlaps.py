@@ -5,16 +5,16 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', eps=1e-6, extra_length=0.):
     """Calculate the ious between each bbox of bboxes1 and bboxes2.
 
     Args:
-        bboxes1(ndarray): shape (n, 4)
-        bboxes2(ndarray): shape (k, 4)
-        mode(str): iou (intersection over union) or iof (intersection
+        bboxes1 (ndarray): shape (n, 4)
+        bboxes2 (ndarray): shape (k, 4)
+        mode (str): iou (intersection over union) or iof (intersection
             over foreground)
         extra_length (float): `extra_length` should be added when calculate
             the width and height, which means w, h should be computed as
             'x2 - x1 + extra_length` and 'y2 - y1 + extra_length'.
             Default: 0.
     Returns:
-        ious(ndarray): shape (n, k)
+        ious (ndarray): shape (n, k)
     """
 
     assert mode in ['iou', 'iof']
