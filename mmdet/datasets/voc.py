@@ -81,7 +81,7 @@ class VOCDataset(XMLDataset):
                     iou_thr=iou_thr,
                     dataset=ds_name,
                     logger=logger,
-                    legacy_coordinate=True)
+                    use_legacy_coordinate=True)
                 mean_aps.append(mean_ap)
                 eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)
             eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
@@ -93,7 +93,7 @@ class VOCDataset(XMLDataset):
                 proposal_nums,
                 iou_thrs,
                 logger=logger,
-                legacy_coordinate=True)
+                use_legacy_coordinate=True)
             for i, num in enumerate(proposal_nums):
                 for j, iou_thr in enumerate(iou_thrs):
                     eval_results[f'recall@{num}@{iou_thr}'] = recalls[i, j]
