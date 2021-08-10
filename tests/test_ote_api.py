@@ -74,7 +74,7 @@ class TestOTEAPI(unittest.TestCase):
                 box_shapes.append(Annotation(Box(x1=box[0], y1=box[1], x2=box[2], y2=box[3]),
                                              labels=shape_labels))
 
-            image = Image(name=f'image_{i}', project=NullProject(), numpy=image_numpy)
+            image = Image(name=f'image_{i}', numpy=image_numpy, dataset_storage=NullDatasetStorage())
             image_identifier = ImageIdentifier(image.id)
             annotation = AnnotationScene(
                 kind=AnnotationSceneKind.ANNOTATION,

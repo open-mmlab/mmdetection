@@ -20,6 +20,7 @@ from typing import List
 import numpy as np
 from sc_sdk.entities.annotation import Annotation, AnnotationScene, AnnotationSceneKind, NullMediaIdentifier
 from sc_sdk.entities.datasets import Dataset, DatasetItem, NullDataset, Subset
+from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.label import ScoredLabel
 from sc_sdk.entities.shapes.box import Box
@@ -283,7 +284,7 @@ class MMDatasetAdapter(Dataset):
 
         shapes = [create_gt_box(*coords, self.labels[label_id]) for coords, label_id in zip(bboxes, labels)]
 
-        image = Image(name=None, project=None, numpy=item['img'])
+        image = Image(name=None, numpy=item['img'], dataset_storage=NullDatasetStorage())
         annotation_scene = AnnotationScene(kind=AnnotationSceneKind.ANNOTATION,
                                            media_identifier=NullMediaIdentifier(),
                                            annotations=shapes)
