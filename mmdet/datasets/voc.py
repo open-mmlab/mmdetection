@@ -1,6 +1,5 @@
 from collections import OrderedDict
 
-import numpy as np
 from mmcv.utils import print_log
 
 from mmdet.core import eval_map, eval_recalls
@@ -88,10 +87,9 @@ class VOCDataset(XMLDataset):
             eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
         elif metric == 'recall':
             gt_bboxes = [ann['bboxes'] for ann in annotations]
-            class_agnostic_results = [np.concatenate(item) for item in results]
             recalls = eval_recalls(
                 gt_bboxes,
-                class_agnostic_results,
+                results,
                 proposal_nums,
                 iou_thrs,
                 logger=logger,
