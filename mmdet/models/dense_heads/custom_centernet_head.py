@@ -172,7 +172,8 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             agn_hms (List[Tensor]): agn_hms predicts for all levels,
                 the channels number is 1.
         """
-        return multi_apply(self.forward_single, feats, [i for i in range(len(feats))])
+        return multi_apply(self.forward_single, feats,
+                           [i for i in range(len(feats))])
 
     def forward_single(self, feat, i):
         """Forward feature of a single level.
@@ -186,9 +187,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             agn_hms (Tensor): center predict heatmaps, the channels number is 1
 
         """
+
         feat = self.share_tower(feat)       # not used
         cls_tower = self.cls_tower(feat)    # not used
         bbox_tower = self.bbox_tower(feat)
+
         if not self.only_proposal:
             clss = self.cls_logits(cls_tower)
         else:
@@ -343,7 +346,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             for l_ in range(L)]).float()  # M
         reg_size_ranges = \
             torch.cat([shapes_per_level.new_tensor(self.sizes_of_interest[l_]).float().view(1, 2).expand(num_loc_list[l_], 2)
-                        for l_ in range(L)])  # M x 2
+                      for l_ in range(L)])  # M x 2
         grids = torch.cat(grids, dim=0)  # M x 2
         M = grids.shape[0]
 
@@ -371,10 +374,10 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             centers_expanded = centers.view(1, N, 2).expand(M, N, 2)  # MxNx2
             strides_expanded = strides.view(M, 1, 1).expand(M, N, 2)
             centers_discret = ((centers_expanded / strides_expanded).int() *
-                                strides_expanded).float() + strides_expanded / 2  # M x N x 2
+                               strides_expanded).float() + strides_expanded / 2
 
             is_peak = (((grids.view(M, 1, 2).expand(M, N, 2) -
-                        centers_discret) ** 2).sum(dim=2) == 0)  # M x N
+                         centers_discret) ** 2).sum(dim=2) == 0)  # M x N
             is_in_boxes = reg_target.min(dim=2)[0] > 0  # M x N
             is_center3x3 = self.get_center3x3(
                 grids, centers, strides) & is_in_boxes  # M x N
@@ -443,14 +446,14 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         L = len(self.strides)
         B = len(gt_bboxes)
         shapes_per_level = shapes_per_level.long()
-        loc_per_level = (shapes_per_level[:, 0] * shapes_per_level[:, 1]).long()  # L
+        loc_per_level = (shapes_per_level[:, 0] * shapes_per_level[:, 1]).long()
         level_bases = []
         s = 0
         for l in range(L):
             level_bases.append(s)
             s = s + B * loc_per_level[l]
-        level_bases = shapes_per_level.new_tensor(level_bases).long()  # L
-        strides_default = shapes_per_level.new_tensor(self.strides).float()  # L
+        level_bases = shapes_per_level.new_tensor(level_bases).long()
+        strides_default = shapes_per_level.new_tensor(self.strides).float()
         for im_i in range(B):
             bboxes = gt_bboxes[im_i]  # n x 4
             n = bboxes.shape[0]
@@ -496,11 +499,11 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             strides: M
         '''
         M, N = locations.shape[0], centers.shape[0]
-        locations_expanded = locations.view(M, 1, 2).expand(M, N, 2)  # M x N x 2
+        locations_expanded = locations.view(M, 1, 2).expand(M, N, 2)
         centers_expanded = centers.view(1, N, 2).expand(M, N, 2)  # M x N x 2
         strides_expanded = strides.view(M, 1, 1).expand(M, N, 2)  # M x N
         centers_discret = ((centers_expanded / strides_expanded).int() *
-                            strides_expanded).float() + strides_expanded / 2  # M x N x 2
+                           strides_expanded).float() + strides_expanded / 2
         dist_x = (locations_expanded[:, :, 0] - centers_discret[:, :, 0]).abs()
         dist_y = (locations_expanded[:, :, 1] - centers_discret[:, :, 1]).abs()
         return (dist_x <= strides_expanded[:, :, 0]) & \
@@ -527,7 +530,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             size_ranges: M x 2
         '''
         crit = ((reg_targets_per_im[:, :, :2] +
-                reg_targets_per_im[:, :, 2:])**2).sum(dim=2) ** 0.5 / 2  # M x N
+                reg_targets_per_im[:, :, 2:])**2).sum(dim=2) ** 0.5 / 2
         is_cared_in_the_level = (crit >= size_ranges[:, [0]]) & \
             (crit <= size_ranges[:, [1]])
         return is_cared_in_the_level
@@ -565,9 +568,8 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
         return proposals
 
-
     def predict_instances(self, grids, logits_pred, reg_pred,
-                        agn_hm_pred, is_proposal=False):
+                          agn_hm_pred, is_proposal=False):
 
         boxlists = multi_apply(self.predict_single_level, grids, logits_pred,
                     reg_pred, self.strides, agn_hm_pred, is_proposal=is_proposal)
@@ -578,7 +580,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         return final_boxlists
 
     def predict_single_level(self, grids, heatmap, reg_pred, stride,
-                            agn_hm, is_proposal=False):
+                             agn_hm, is_proposal=False):
         N, C, H, W = heatmap.shape
         # put in the same format as grids
         if self.center_nms:
@@ -587,14 +589,15 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             heatmap = heatmap * (heatmap_nms == heatmap).float()
         heatmap = heatmap.permute(0, 2, 3, 1)  # N x H x W x C
         heatmap = heatmap.reshape(N, -1, C)  # N x HW x C
-        
+
         reg_pred_ = reg_pred * stride
-        box_regression = reg_pred_.view(N, 4, H, W).permute(0, 2, 3, 1)  # N x H x W x 4 
+        box_regression = reg_pred_.view(N, 4, H, W).permute(0, 2, 3, 1)
         box_regression = box_regression.reshape(N, -1, 4)
 
         candidate_inds = heatmap > self.score_thresh  # 0.05
         pre_nms_top_n = candidate_inds.view(N, -1).sum(1)  # N
-        pre_nms_topk = self.pre_nms_topk_train if self.training else self.pre_nms_topk_test
+        pre_nms_topk = self.pre_nms_topk_train \
+            if self.training else self.pre_nms_topk_test
         pre_nms_top_n = pre_nms_top_n.clamp(max=pre_nms_topk)  # N
 
         if agn_hm is not None:
@@ -608,7 +611,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             per_candidate_inds = candidate_inds[i]  # n
             per_box_cls = per_box_cls[per_candidate_inds]  # n
 
-            per_candidate_nonzeros = per_candidate_inds.nonzero(as_tuple=False)  # n
+            per_candidate_nonzeros = per_candidate_inds.nonzero(as_tuple=False)
             per_box_loc = per_candidate_nonzeros[:, 0]  # n
             per_class = per_candidate_nonzeros[:, 1]  # n
 
@@ -626,7 +629,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 per_grids = per_grids[top_k_indices]
 
             detections = distance2bbox(per_grids, per_box_regression, max_shape=None)
-
             detections[:, 2] = torch.max(detections[:, 2].clone(), detections[:, 0].clone() + 0.01)
             detections[:, 3] = torch.max(detections[:, 3].clone(), detections[:, 1].clone() + 0.01)
             scores = torch.sqrt(per_box_cls) \
@@ -658,5 +660,4 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             result = result[keep]
 
         return result
-
 
