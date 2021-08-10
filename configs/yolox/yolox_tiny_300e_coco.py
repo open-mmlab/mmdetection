@@ -68,7 +68,11 @@ custom_hooks = [
         img_scale=img_scale,
         interval=interval,
         priority=48),
-    dict(type='SyncNormHook', interval=interval, priority=48),
+    dict(
+        type='SyncNormHook',
+        num_last_epochs=15,
+        interval=interval,
+        priority=48),
     dict(type='ExpMomentumEMAHook', resume_from=resume_from, priority=49)
 ]
 checkpoint_config = dict(interval=interval)
