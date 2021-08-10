@@ -1,59 +1,20 @@
 import torch
 import torch.nn as nn
 import math
-
 from mmcv.ops import batched_nms
-from mmdet.core import multi_apply
-from mmdet.core import distance2bbox
+from mmcv.runner import force_fp32
+
+from mmdet.core import multi_apply, distance2bbox, reduce_mean
 from mmdet.models import HEADS, build_loss
 
+from mmcv.cnn import Scale
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
-# added by mmz
-import torch.distributed as dist
 from torch.nn import functional as F
 
 
 INF = 100000000
-
-
-class Scale(nn.Module):
-    def __init__(self, init_value=1.0):
-        super(Scale, self).__init__()
-        self.scale = nn.Parameter(torch.FloatTensor([init_value]))
-
-    def forward(self, input):
-        return input * self.scale
-
-
-def get_norm(norm, out_channels):
-    """
-    Args:
-        norm (str or callable): either one of BN, SyncBN, FrozenBN, GN;
-            or a callable that takes a channel number and returns
-            the normalization layer as a nn.Module.
-
-    Returns:
-        nn.Module or None: the normalization layer
-    """
-    if norm is None:
-        return None
-    if isinstance(norm, str):
-        if len(norm) == 0:
-            return None
-        norm = {
-            # "BN": BatchNorm2d,
-            # # Fixed in https://github.com/pytorch/pytorch/pull/36382
-            # "SyncBN": NaiveSyncBatchNorm if env.TORCH_VERSION <= (1, 5)
-            # else nn.SyncBatchNorm,
-            # "FrozenBN": FrozenBatchNorm2d,
-            "GN": lambda channels: nn.GroupNorm(32, channels),
-            # for debugging:
-            "nnSyncBN": nn.SyncBatchNorm,
-            # "naiveSyncBN": NaiveSyncBatchNorm,
-        }[norm]
-    return norm(out_channels)
 
 
 @HEADS.register_module()
@@ -80,41 +41,44 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
     def __init__(self,
                  in_channel,
                  num_classes,
+                 norm,
                  num_features,
                  num_cls_convs,
                  num_box_convs,
                  num_share_convs,
                  use_deformable,
+                 only_proposal,
                  loss_center_heatmap=dict(
                     type='CustomGaussianFocalLoss',
                     alpha=0.25,
                     ignore_high_fp=0.85,
                     loss_weight=0.5),
+                 loss_bbox=dict(type='GIoULoss', loss_weight=1.0), 
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
         super(CustomCenterNetHead, self).__init__(init_cfg)
         self.out_kernel = 3
-        self.norm = "GN"
-        self.only_proposal = True
-
+        self.norm = norm
+        self.in_channel = in_channel
+        self.num_features = num_features
         self.num_classes = num_classes
+        self.only_proposal = only_proposal
         self.strides = [8, 16, 32, 64, 128]
-        self.hm_min_overlap = 0.8
-        self.delta = (1-self.hm_min_overlap)/(1+self.hm_min_overlap)
-        self.sizes_of_interest = [[0, 80], [64, 160], [128, 320], [256, 640], [512, 10000000]]
-        self.min_radius = 4
-        self.with_agn_hm = True
-        self.not_norm_reg = True
-        self.reg_weight = 1.0
+        self.hm_min_overlap=0.8
+        self.delta=(1-self.hm_min_overlap)/(1+self.hm_min_overlap)
+        self.sizes_of_interest=[[0, 80], [64, 160], [128, 320], [256, 640], [512, 10000000]]
+        self.min_radius=4
+        self.with_agn_hm=True
+        self.not_norm_reg=True
 
         self.loss_center_heatmap = build_loss(loss_center_heatmap)
+        self.loss_bbox = build_loss(loss_bbox)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
         self.fp16_enabled = False
-        self.more_pos = False
         self.center_nms = False
         self.pre_nms_topk_train = 4000
         self.pre_nms_topk_test = 1000
@@ -126,35 +90,23 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.score_thresh = 0.0001
         self.not_nms = False
 
-        head_configs = {"cls": (num_cls_convs, False),
-                        "bbox": (num_box_convs, False),
-                        "share": (num_share_convs, False)}
-
-        channels = {
+        self.head_configs = {"cls": (num_cls_convs, use_deformable),
+                             "bbox": (num_box_convs, use_deformable),
+                             "share": (num_share_convs, use_deformable)}
+        self.channels = {
             'cls': in_channel,
             'bbox': in_channel,
             'share': in_channel,
         }
 
-        # init  1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
-        self._build_tower(head_configs, channels)
-        self.bbox_pred = self._build_head(in_channel, 4)
+        self._init_layers()
 
-        # init   <scales>
+    def _init_layers(self):
+        self._build_tower(self.head_configs, self.channels)   # init  1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
         self.scales = nn.ModuleList(
-            [Scale(init_value=1.0) for _ in range(num_features)])
-
-        self.agn_hm = self._build_head(in_channel, 1)
-
-        # initialize the <cls_logits>, config assigns it to false !
-        if not self.only_proposal:
-            cls_kernel_size = self.out_kernel
-            self.cls_logits = nn.Conv2d(
-                in_channel, self.num_classes,
-                kernel_size=cls_kernel_size,
-                stride=1,
-                padding=cls_kernel_size // 2,
-            )
+            [Scale(scale=1.0) for _ in range(self.num_features)])  # init  <scales>
+        self.agn_hm = self._build_head(self.in_channel, 1)
+        self.bbox_pred = self._build_head(self.in_channel, 4)
 
     def _build_head(self, in_channel, out_channel):
         """Build head for each branch."""
@@ -180,9 +132,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 ))
                 if self.norm == 'GN' and channel % 32 != 0:
                     tower.append(nn.GroupNorm(25, channel))
-                elif self.norm != '':
-                    # print("please add get_norm function")
-                    tower.append(get_norm(self.norm, channel))
                 tower.append(nn.ReLU())
             self.add_module('{}_tower'.format(head),
                             nn.Sequential(*tower))
@@ -200,19 +149,10 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                     torch.nn.init.constant_(layer.bias, 0)
 
         torch.nn.init.constant_(self.bbox_pred.bias, 8.)
-
-        # initialize the    <agn_hm>
-        # prior_prob = cfg.MODEL.CENTERNET.PRIOR_PROB --> 0.01 in config
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
-
         torch.nn.init.constant_(self.agn_hm.bias, bias_value)
         torch.nn.init.normal_(self.agn_hm.weight, std=0.01)
-
-        # if <cls_logits>
-        if not self.only_proposal:
-            torch.nn.init.constant_(self.cls_logits.bias, bias_value)
-            torch.nn.init.normal_(self.cls_logits.weight, std=0.01)
 
     def forward(self, feats):
         """Forward features. Notice CenterNet head does not use FPN.
@@ -292,18 +232,22 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         shapes_per_level = grids[0].new_tensor(
                     [(x.shape[2], x.shape[3]) for x in reg_pred_per_level])
         pos_inds, reg_targets, flattened_hms = \
-            self._get_ground_truth(
+            self.get_targets(
                 grids, shapes_per_level, gt_bboxes)
-        logits_pred, reg_pred, agn_hm_pred = self._flatten_outputs(
-            clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
+        reg_pred, agn_hm_pred = self._flatten_outputs(
+            reg_pred_per_level, agn_hm_pred_per_level)
+
+        flatten_points = torch.cat(
+            [points.repeat(len(img_metas), 1) for points in grids])        
+
         losses = self.compute_losses(
             pos_inds, reg_targets, flattened_hms,
-            logits_pred, reg_pred, agn_hm_pred)
+            reg_pred, agn_hm_pred, flatten_points)
 
         return losses
 
     def compute_losses(self, pos_inds, reg_targets, flattened_hms,
-                       logits_pred, reg_pred, agn_hm_pred):
+        reg_pred, agn_hm_pred, flatten_points):
         '''
         Inputs:
             pos_inds: N
@@ -317,73 +261,39 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             C: number of classes
         '''
         assert (torch.isfinite(reg_pred).all().item())
-        num_pos_local = pos_inds.numel()
-        num_gpus = self.get_world_size()
-        total_num_pos = self.reduce_sum(
-            pos_inds.new_tensor([num_pos_local])).item()
-        num_pos_avg = max(total_num_pos / num_gpus, 1.0)
+        num_pos_local = torch.tensor(
+            len(pos_inds), dtype=torch.float, device=reg_pred[0].device)
+        num_pos_avg = max(reduce_mean(num_pos_local), 1.0)
 
         losses = {}
-
         reg_inds = torch.nonzero(reg_targets.max(dim=1)[0] >= 0).squeeze(1)
         reg_pred = reg_pred[reg_inds]
         reg_targets_pos = reg_targets[reg_inds]
+        flatten_points_pos = flatten_points[reg_inds] #added by mmz
         reg_weight_map = flattened_hms.max(dim=1)[0]
         reg_weight_map = reg_weight_map[reg_inds]
         reg_weight_map = reg_weight_map * 0 + 1 \
             if self.not_norm_reg else reg_weight_map
-        reg_norm = \
-            max(self.reduce_sum(reg_weight_map.sum()).item() / num_gpus, 1)
-        reg_loss = self.reg_weight * self.my_iou_loss(
-            reg_pred, reg_targets_pos, reg_weight_map,
-            reduction='sum') / reg_norm
-        losses['loss_centernet_loc'] = reg_loss
+        reg_norm = max(reduce_mean(reg_weight_map.sum()).item(), 1.0)
 
-        cat_agn_heatmap = flattened_hms.max(dim=1)[0]  # M
-
-        # agn_hm_pred_new = agn_hm_pred.clone().detach()
-
+        #added by mmz
+        pos_decoded_bbox_preds = distance2bbox(flatten_points_pos, reg_pred)
+        pos_decoded_target_preds = distance2bbox(flatten_points_pos, reg_targets_pos)
+        reg_loss = self.loss_bbox(
+                pos_decoded_bbox_preds,
+                pos_decoded_target_preds,
+                weight=reg_weight_map,
+                avg_factor=reg_norm)
+        cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
         agn_heatmap_loss = self.loss_center_heatmap(
             agn_hm_pred,
             cat_agn_heatmap,
             pos_inds,
             avg_factor=num_pos_avg
         )
+
+        losses['loss_centernet_loc'] = reg_loss
         losses['loss_centernet_heatmap'] = agn_heatmap_loss
-        # losses['loss_centernet_agn_neg'] = agn_neg_loss
-
-        #     losses['loss_centernet_agn_neg'] = agn_neg_loss
-        # if self.with_agn_hm:
-        #     cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
-        #     agn_pos_loss, agn_neg_loss = self.binary_heatmap_focal_loss(
-        #         agn_hm_pred, cat_agn_heatmap, pos_inds,
-        #         alpha=self.hm_focal_alpha,
-        #         beta=self.hm_focal_beta,
-        #         gamma=self.loss_gamma,
-        #         sigmoid_clamp=self.sigmoid_clamp,
-        #         ignore_high_fp=self.ignore_high_fp,
-        #     )
-        #     agn_pos_loss = self.pos_weight * agn_pos_loss / num_pos_avg
-        #     agn_neg_loss = self.neg_weight * agn_neg_loss / num_pos_avg
-        #     losses['loss_centernet_agn_pos'] = agn_pos_loss
-        #     losses['loss_centernet_agn_neg'] = agn_neg_loss
-
-        # agn_pos_loss, agn_neg_loss = self.binary_heatmap_focal_loss(
-        #     agn_hm_pred_new, cat_agn_heatmap, pos_inds,
-        #     alpha=0.25,
-        #     beta=4,
-        #     gamma=2.0,
-        #     sigmoid_clamp=0.0001,
-        #     ignore_high_fp=0.85,
-        #     )
-        # agn_pos_loss = 0.5 * agn_pos_loss / num_pos_avg
-        # agn_neg_loss = 0.5 * agn_neg_loss / num_pos_avg
-        # losses['loss_centernet_agn_pos'] = agn_pos_loss
-        # losses['loss_centernet_agn_neg'] = agn_neg_loss
-
-        # if self.debug:
-        #     print('losses', losses)
-        #     print('total_num_pos', total_num_pos)
         return losses
 
     def compute_grids(self, agn_hm_pred_per_level):
@@ -406,7 +316,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             grids.append(grids_per_level)
         return grids
 
-    def _get_ground_truth(self, grids, shapes_per_level, gt_bboxes):
+    def get_targets(self, grids, shapes_per_level, gt_bboxes):
         '''
         Input:
             grids: list of tensors [(hl x wl, 2)]_l
@@ -441,9 +351,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         flattened_hms = []
         for i in range(len(gt_bboxes)):  # images
             boxes = gt_bboxes[i]  # N x 4
-            # area = gt_instances[i].gt_boxes.area() # N
             area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-            # gt_classes = gt_labels[i] # N in [0, self.num_classes]
 
             N = boxes.shape[0]
             if N == 0:
@@ -483,13 +391,8 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             reg_target = self._get_reg_targets(
                 reg_target, weighted_dist2.clone(), reg_mask, area)  # M x 4
 
-            if self.only_proposal:
-                flattened_hm = self._create_agn_heatmaps_from_dist(
-                    weighted_dist2.clone())  # M x 1
-            # else:
-            #     flattened_hm = self._create_heatmaps_from_dist(
-            #         weighted_dist2.clone(), gt_classes,
-            #         channels=heatmap_channels) # M x C
+            flattened_hm = self._create_agn_heatmaps_from_dist(
+                weighted_dist2.clone())  # M x 1
 
             reg_targets.append(reg_target)
             flattened_hms.append(flattened_hm)
@@ -537,7 +440,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             pos_inds: N'
         '''
         pos_inds = []
-        # labels = []
         L = len(self.strides)
         B = len(gt_bboxes)
         shapes_per_level = shapes_per_level.long()
@@ -550,7 +452,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         level_bases = shapes_per_level.new_tensor(level_bases).long()
         strides_default = shapes_per_level.new_tensor(self.strides).float()
         for im_i in range(B):
-            # targets_per_im = gt_instances[im_i]
             bboxes = gt_bboxes[im_i]  # n x 4
             n = bboxes.shape[0]
             centers = ((bboxes[:, [0, 1]] + bboxes[:, [2, 3]]) / 2)  # n x 2
@@ -564,13 +465,9 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 centers_inds[:, :, 0]  # n x L
             is_cared_in_the_level = self.assign_fpn_level(bboxes)
             pos_ind = pos_ind[is_cared_in_the_level].view(-1)
-            # label = gt_labels.view(
-            #     n, 1).expand(n, L)[is_cared_in_the_level].view(-1)
 
             pos_inds.append(pos_ind)  # n'
-            # labels.append(label)  # n'
         pos_inds = torch.cat(pos_inds, dim=0).long()
-        # labels = torch.cat(labels, dim=0)
         return pos_inds  # N
 
     def assign_fpn_level(self, boxes):
@@ -648,88 +545,13 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         heatmaps[zeros] = 0
         return heatmaps
 
-    def _flatten_outputs(self, clss, reg_pred, agn_hm_pred):
+    def _flatten_outputs(self, reg_pred, agn_hm_pred):
         # Reshape: (N, F, Hl, Wl) -> (N, Hl, Wl, F) -> (sum_l N*Hl*Wl, F)
-
-        clss = torch.cat([x.permute(0, 2, 3, 1).reshape(-1, x.shape[1])
-                         for x in clss], 0) if clss[0] is not None else None
         reg_pred = torch.cat(
                         [x.permute(0, 2, 3, 1).reshape(-1, 4) for x in reg_pred], 0)
         agn_hm_pred = torch.cat([x.permute(0, 2, 3, 1).reshape(-1)
-                                for x in agn_hm_pred], 0) if self.with_agn_hm else None
-        return clss, reg_pred, agn_hm_pred
-
-    def reduce_sum(self, tensor):
-        world_size = self.get_world_size()
-        if world_size < 2:
-            return tensor
-        tensor = tensor.clone()
-        torch.distributed.all_reduce(tensor, op=torch.distributed.ReduceOp.SUM)
-        return tensor
-
-    def my_iou_loss(self, pred, target, weight=None, reduction='sum'):
-        pred_left = pred[:, 0]
-        pred_top = pred[:, 1]
-        pred_right = pred[:, 2]
-        pred_bottom = pred[:, 3]
-
-        target_left = target[:, 0]
-        target_top = target[:, 1]
-        target_right = target[:, 2]
-        target_bottom = target[:, 3]
-
-        target_aera = (target_left + target_right) * \
-                      (target_top + target_bottom)
-        pred_aera = (pred_left + pred_right) * \
-                    (pred_top + pred_bottom)
-
-        w_intersect = torch.min(pred_left, target_left) + \
-                      torch.min(pred_right, target_right)
-        h_intersect = torch.min(pred_bottom, target_bottom) + \
-                      torch.min(pred_top, target_top)
-
-        g_w_intersect = torch.max(pred_left, target_left) + \
-                        torch.max(pred_right, target_right)
-        g_h_intersect = torch.max(pred_bottom, target_bottom) + \
-                        torch.max(pred_top, target_top)
-        ac_uion = g_w_intersect * g_h_intersect
-
-        area_intersect = w_intersect * h_intersect
-        area_union = target_aera + pred_aera - area_intersect
-
-        ious = (area_intersect + 1.0) / (area_union + 1.0)
-        gious = ious - (ac_uion - area_union) / ac_uion
-        # if self.loc_loss_type == 'iou':
-        #     losses = -torch.log(ious)
-        # elif self.loc_loss_type == 'linear_iou':
-        #     losses = 1 - ious
-        # elif self.loc_loss_type == 'giou':
-        #     losses = 1 - gious
-        # else:
-        #     raise NotImplementedError
-        losses = 1 - gious
-        # if weight is not None:
-        #     losses = losses * weight
-        # else:
-        #     losses = losses
-
-        losses = losses * weight
-
-        if reduction == 'sum':
-            return losses.sum()
-        elif reduction == 'batch':
-            return losses.sum(dim=[1])
-        elif reduction == 'none':
-            return losses
-        else:
-            raise NotImplementedError
-
-    def get_world_size(self) -> int:
-        if not dist.is_available():
-            return 1
-        if not dist.is_initialized():
-            return 1
-        return dist.get_world_size()
+                        for x in agn_hm_pred], 0) if self.with_agn_hm else None
+        return reg_pred, agn_hm_pred
 
     def get_bboxes(self, clss_per_level, reg_pred,
                    agn_hm_pred, img_metas, cfg=None):
@@ -800,8 +622,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             scores = torch.sqrt(per_box_cls) \
                 if self.with_agn_hm else per_box_cls  # n
             scores = torch.unsqueeze(scores, 1)  # n x 1
-            # per_class = torch.unsqueeze(per_class, 1)
-            # boxlist.pred_classes = per_class
             boxlist = torch.cat([detections, scores], dim=1)
             results.append(boxlist)
         return results
@@ -814,10 +634,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             keep = keep[: max_proposals]
         result = boxlist[keep]
 
-        # result = self.ml_nms(boxlist, cfg) if nms else boxlist
-        # if self.debug:
-        #     print('#proposals before nms', len(boxlists[i]))
-        #     print('#proposals after nms', len(result))
         num_dets = len(result)
         post_nms_topk = self.post_nms_topk_train if self.training else \
             self.post_nms_topk_test
@@ -830,136 +646,5 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             keep = cls_scores >= image_thresh.item()
             keep = torch.nonzero(keep, as_tuple=False).squeeze(1)
             result = result[keep]
-        # if self.debug:
-        #     print('#proposals after filter', len(result))
 
         return result
-
-    def _add_more_pos(self, reg_pred, gt_instances, shapes_per_level):
-        labels, level_masks, c33_inds, c33_masks, c33_regs = \
-            self._get_c33_inds(gt_instances, shapes_per_level)
-        N, L, K = labels.shape[0], len(self.strides), 9
-        c33_inds[c33_masks == 0] = 0
-        reg_pred_c33 = reg_pred[c33_inds].detach()  # N x L x K
-        invalid_reg = c33_masks == 0
-        c33_regs_expand = c33_regs.view(N * L * K, 4).clamp(min=0)
-        if N > 0:
-            with torch.no_grad():
-                c33_reg_loss = self.iou_loss(
-                    reg_pred_c33.view(N * L * K, 4),
-                    c33_regs_expand, None,
-                    reduction='none').view(N, L, K).detach()  # N x L x K
-        else:
-            c33_reg_loss = reg_pred_c33.new_zeros((N, L, K)).detach()
-        c33_reg_loss[invalid_reg] = INF  # N x L x K
-        c33_reg_loss.view(N * L, K)[level_masks.view(N * L), 4] = 0  # real center
-        c33_reg_loss = c33_reg_loss.view(N, L * K)
-        if N == 0:
-            loss_thresh = c33_reg_loss.new_ones((N)).float()
-        else:
-            loss_thresh = torch.kthvalue(
-                c33_reg_loss, self.more_pos_topk, dim=1)[0]  # N
-        loss_thresh[loss_thresh > self.more_pos_thresh] = self.more_pos_thresh  # N
-        new_pos = c33_reg_loss.view(N, L, K) < \
-            loss_thresh.view(N, 1, 1).expand(N, L, K)
-        pos_inds = c33_inds[new_pos].view(-1)  # P
-        labels = labels.view(N, 1, 1).expand(N, L, K)[new_pos].view(-1)
-        return pos_inds, labels
-
-    def _get_c33_inds(self, gt_instances, shapes_per_level):
-        '''
-        TODO (Xingyi): The current implementation is ugly. Refactor.
-        Get the center (and the 3x3 region near center) locations of each objects
-        Inputs:
-            gt_instances: [n_i], sum n_i = N
-            shapes_per_level: L x 2 [(h_l, w_l)]_L
-        '''
-        labels = []
-        level_masks = []
-        c33_inds = []
-        c33_masks = []
-        c33_regs = []
-        L = len(self.strides)
-        B = len(gt_instances)
-        shapes_per_level = shapes_per_level.long()
-        loc_per_level = (shapes_per_level[:, 0] * shapes_per_level[:, 1]).long()
-        level_bases = []
-        s = 0
-        for l in range(L):
-            level_bases.append(s)
-            s = s + B * loc_per_level[l]
-        level_bases = shapes_per_level.new_tensor(level_bases).long()
-        strides_default = shapes_per_level.new_tensor(self.strides).float()
-        K = 9
-        dx = shapes_per_level.new_tensor([-1, 0, 1, -1, 0, 1, -1, 0, 1]).long()
-        dy = shapes_per_level.new_tensor([-1, -1, -1, 0, 0, 0, 1, 1, 1]).long()
-        for im_i in range(B):
-            targets_per_im = gt_instances[im_i]
-            bboxes = targets_per_im.gt_boxes.tensor
-            n = bboxes.shape[0]
-            if n == 0:
-                continue
-            centers = ((bboxes[:, [0, 1]] + bboxes[:, [2, 3]]) / 2)  # n x 2
-            centers = centers.view(n, 1, 2).expand(n, L, 2)
-
-            strides = strides_default.view(1, L, 1).expand(n, L, 2)
-            centers_inds = (centers / strides).long()  # n x L x 2
-            center_grids = centers_inds * strides + strides // 2  # n x L x 2
-            l = center_grids[:, :, 0] - bboxes[:, 0].view(n, 1).expand(n, L)
-            t = center_grids[:, :, 1] - bboxes[:, 1].view(n, 1).expand(n, L)
-            r = bboxes[:, 2].view(n, 1).expand(n, L) - center_grids[:, :, 0]
-            b = bboxes[:, 3].view(n, 1).expand(n, L) - center_grids[:, :, 1]
-            reg = torch.stack([l, t, r, b], dim=2)  # n x L x 4
-            reg = reg / strides_default.view(1, L, 1).expand(n, L, 4).float()
-
-            Ws = shapes_per_level[:, 1].view(1, L).expand(n, L)
-            Hs = shapes_per_level[:, 0].view(1, L).expand(n, L)
-            expand_Ws = Ws.view(n, L, 1).expand(n, L, K)
-            expand_Hs = Hs.view(n, L, 1).expand(n, L, K)
-            label = targets_per_im.gt_classes.view(n).clone()
-            mask = reg.min(dim=2)[0] >= 0  # n x L
-            mask = mask & self.assign_fpn_level(bboxes)
-            labels.append(label)  # n
-            level_masks.append(mask)  # n x L
-
-            Dy = dy.view(1, 1, K).expand(n, L, K)
-            Dx = dx.view(1, 1, K).expand(n, L, K)
-            c33_ind = level_bases.view(1, L, 1).expand(n, L, K) + \
-                      im_i * loc_per_level.view(1, L, 1).expand(n, L, K) + \
-                      (centers_inds[:, :, 1:2].expand(n, L, K) + Dy) * expand_Ws + \
-                      (centers_inds[:, :, 0:1].expand(n, L, K) + Dx)
-
-            c33_mask = \
-                ((centers_inds[:, :, 1:2].expand(n, L, K) + dy) < expand_Hs) & \
-                ((centers_inds[:, :, 1:2].expand(n, L, K) + dy) >= 0) & \
-                ((centers_inds[:, :, 0:1].expand(n, L, K) + dx) < expand_Ws) & \
-                ((centers_inds[:, :, 0:1].expand(n, L, K) + dx) >= 0)
-            # TODO (Xingyi): think about better way to implement this
-            # Currently it hard codes the 3x3 region
-            c33_reg = reg.view(n, L, 1, 4).expand(n, L, K, 4).clone()
-            c33_reg[:, :, [0, 3, 6], 0] -= 1
-            c33_reg[:, :, [0, 3, 6], 2] += 1
-            c33_reg[:, :, [2, 5, 8], 0] += 1
-            c33_reg[:, :, [2, 5, 8], 2] -= 1
-            c33_reg[:, :, [0, 1, 2], 1] -= 1
-            c33_reg[:, :, [0, 1, 2], 3] += 1
-            c33_reg[:, :, [6, 7, 8], 1] += 1
-            c33_reg[:, :, [6, 7, 8], 3] -= 1
-            c33_mask = c33_mask & (c33_reg.min(dim=3)[0] >= 0)
-            c33_inds.append(c33_ind)
-            c33_masks.append(c33_mask)
-            c33_regs.append(c33_reg)
-
-        if len(level_masks) > 0:
-            labels = torch.cat(labels, dim=0)
-            level_masks = torch.cat(level_masks, dim=0)
-            c33_inds = torch.cat(c33_inds, dim=0).long()
-            c33_regs = torch.cat(c33_regs, dim=0)
-            c33_masks = torch.cat(c33_masks, dim=0)
-        else:
-            labels = shapes_per_level.new_zeros((0)).long()
-            level_masks = shapes_per_level.new_zeros((0, L)).bool()
-            c33_inds = shapes_per_level.new_zeros((0, L, K)).long()
-            c33_regs = shapes_per_level.new_zeros((0, L, K, 4)).float()
-            c33_masks = shapes_per_level.new_zeros((0, L, K)).bool()
-        return labels, level_masks, c33_inds, c33_masks, c33_regs

@@ -21,27 +21,29 @@ model = dict(
     rpn_head=dict(
         type='CustomCenterNetHead',
         num_classes=80,
+        norm='BN',
         in_channel=256,
         num_features=5,
         num_cls_convs=4,
         num_box_convs=4,
         num_share_convs=0,
         use_deformable=False,
+        only_proposal=True,
         loss_center_heatmap=dict(
             type='CustomGaussianFocalLoss',
             alpha=0.25,
             ignore_high_fp=0.85,
             loss_weight=0.5),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0)
         ),
     roi_head=dict(
         type='CustomCascadeRoIHead',
         num_stages=3,
-        stage_loss_weights=[1, 0.5, 0.25],
+        stage_loss_weights=[1, 1, 1],
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
-            # featmap_strides=[4, 8, 16, 32]),
             featmap_strides=[8, 16, 32, 64, 128]),
         bbox_head=[
             dict(

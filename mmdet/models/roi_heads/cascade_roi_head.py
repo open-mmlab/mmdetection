@@ -14,6 +14,7 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 @HEADS.register_module()
 class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Cascade roi head including one bbox head and one mask head.
+
     https://arxiv.org/abs/1712.00726
     """
 
@@ -49,6 +50,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
         """Initialize box head and box roi extractor.
+
         Args:
             bbox_roi_extractor (dict): Config of box roi extractor.
             bbox_head (dict): Config of box in box head.
@@ -68,6 +70,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
         """Initialize mask head and mask roi extractor.
+
         Args:
             mask_roi_extractor (dict): Config of mask roi extractor.
             mask_head (dict): Config of mask in mask head.
@@ -208,6 +211,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 boxes can be ignored when computing the loss.
             gt_masks (None | Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
+
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
@@ -408,6 +412,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def aug_test(self, features, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
+
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
