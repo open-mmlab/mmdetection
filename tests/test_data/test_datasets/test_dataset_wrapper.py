@@ -129,3 +129,13 @@ def test_dataset_wrapper():
     for idx in range(len_a):
         results_ = multi_image_mix_dataset[idx]
         assert results_['img'].shape == (dynamic_scale[0], dynamic_scale[1], 3)
+
+    # test skip_type_keys
+    multi_image_mix_dataset = MultiImageMixDataset(
+        dataset_a,
+        pipeline,
+        dynamic_scale,
+        skip_type_keys=('MixUp', 'RandomFlip', 'Resize', 'Pad'))
+    for idx in range(len_a):
+        results_ = multi_image_mix_dataset[idx]
+        assert results_['img'].shape == (img_scale[0], img_scale[1], 3)
