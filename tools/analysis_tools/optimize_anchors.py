@@ -7,9 +7,8 @@ import torch
 from mmcv import Config
 from scipy.optimize import differential_evolution
 
-from mmdet.core.bbox.iou_calculators import bbox_overlaps
-from mmdet.core.bbox.transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
-from mmdet.datasets.builder import build_dataset
+from mmdet.core import bbox_cxcywh_to_xyxy, bbox_overlaps, bbox_xyxy_to_cxcywh
+from mmdet.datasets import build_dataset
 from mmdet.utils import get_root_logger
 
 
@@ -138,7 +137,7 @@ class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
 
     def optimize(self):
         anchors = self.kmeans_anchors()
-        self.save_result(anchors)
+        self.save_result(anchors, self.out_dir)
 
     def kmeans_anchors(self):
         self.logger.info(
@@ -177,6 +176,7 @@ class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
         return anchors
 
     def kmeans_maximization(self, bboxes, assignments, centers):
+        """Maximization part of EM algorithm(Expectation-Maximization)"""
         new_centers = torch.zeros_like(centers)
         for i in range(centers.shape[0]):
             mask = (assignments == i)
@@ -185,6 +185,7 @@ class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
         return new_centers
 
     def kmeans_expectation(self, bboxes, assignments, centers):
+        """Expectation part of EM algorithm(Expectation-Maximization)"""
         ious = bbox_overlaps(bboxes, centers)
         closest = ious.argmax(1)
         converged = (closest == assignments).all()
@@ -271,7 +272,7 @@ class YOLODEAnchorOptimizer(BaseAnchorOptimizer):
             self.logger.info(f'Result saved in {json_path}')
 
 
-if __name__ == '__main__':
+def main():
     logger = get_root_logger()
     args = parse_args()
     cfg = args.config
@@ -316,3 +317,7 @@ if __name__ == '__main__':
             f'but get {args.algorithm}')
 
     optimizer.optimize()
+
+
+if __name__ == '__main__':
+    main()
