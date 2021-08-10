@@ -29,6 +29,7 @@ model = dict(
         num_share_convs=0,
         use_deformable=False,
         only_proposal=True,
+        fpn_strides=[8, 16, 32, 64, 128],
         loss_center_heatmap=dict(
             type='CustomGaussianFocalLoss',
             alpha=0.25,

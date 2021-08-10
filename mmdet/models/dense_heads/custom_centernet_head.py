@@ -20,7 +20,7 @@ INF = 100000000
 @HEADS.register_module()
 class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
     """Objects as Points Head. CenterHead use center_point to indicate object's
-    position. Paper link <https://arxiv.org/abs/1904.07850>
+    position. Paper link <https://arxiv.org/abs/2103.07461>
 
     Args:
         in_channel (int): Number of channel in the input feature map.
@@ -48,6 +48,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                  num_share_convs,
                  use_deformable,
                  only_proposal,
+                 fpn_strides,
                  loss_center_heatmap=dict(
                      type='CustomGaussianFocalLoss',
                      alpha=0.25,
@@ -64,7 +65,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.num_features = num_features
         self.num_classes = num_classes
         self.only_proposal = only_proposal
-        self.strides = [8, 16, 32, 64, 128]
+        self.strides = fpn_strides
         self.hm_min_overlap = 0.8
         self.delta = (1-self.hm_min_overlap)/(1+self.hm_min_overlap)
         self.sizes_of_interest = [[0, 80], [64, 160],
@@ -226,8 +227,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         Returns:
             dict[str, Tensor]: which has components below:
                 - loss_centernet_loc (Tensor): loss of center heatmap.
-                - loss_centernet_agn_pos (Tensor): loss of
-                - loss_centernet_agn_neg (Tensor): loss of.
+                - loss_centernet_heatmap (Tensor): loss of
         """
         grids = self.compute_grids(agn_hm_pred_per_level)
         shapes_per_level = grids[0].new_tensor(
@@ -235,15 +235,18 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         pos_inds, reg_targets, flattened_hms = \
             self.get_targets(
                 grids, shapes_per_level, gt_bboxes)
-        reg_pred, agn_hm_pred = self._flatten_outputs(
-            reg_pred_per_level, agn_hm_pred_per_level)
 
+        # Reshape: (N, F, Hl, Wl) -> (N, Hl, Wl, F) -> (sum_l N*Hl*Wl, F)
+        flattened_reg_pred = torch.cat(
+            [x.permute(0, 2, 3, 1).reshape(-1, 4) for x in reg_pred_per_level], 0)
+        flattened_agn_hm_pred = torch.cat([x.permute(0, 2, 3, 1).reshape(-1)
+                                 for x in agn_hm_pred_per_level], 0) if self.with_agn_hm else None
         flatten_points = torch.cat(
             [points.repeat(len(img_metas), 1) for points in grids])
 
         losses = self.compute_losses(
             pos_inds, reg_targets, flattened_hms,
-            reg_pred, agn_hm_pred, flatten_points)
+            flattened_reg_pred, flattened_agn_hm_pred, flatten_points)
 
         return losses
 
@@ -254,7 +257,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             pos_inds: N
             reg_targets: M x 4
             flattened_hms: M x C
-            logits_pred: M x C
             reg_pred: M x 4
             agn_hm_pred: M x 1 or None
             N: number of positive locations in all images
@@ -270,14 +272,13 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         reg_inds = torch.nonzero(reg_targets.max(dim=1)[0] >= 0).squeeze(1)
         reg_pred = reg_pred[reg_inds]
         reg_targets_pos = reg_targets[reg_inds]
-        flatten_points_pos = flatten_points[reg_inds]  # added by mmz
+        flatten_points_pos = flatten_points[reg_inds]
         reg_weight_map = flattened_hms.max(dim=1)[0]
         reg_weight_map = reg_weight_map[reg_inds]
         reg_weight_map = reg_weight_map * 0 + 1 \
             if self.not_norm_reg else reg_weight_map
         reg_norm = max(reduce_mean(reg_weight_map.sum()).item(), 1.0)
 
-        # added by mmz
         pos_decoded_bbox_preds = distance2bbox(flatten_points_pos, reg_pred)
         pos_decoded_target_preds = distance2bbox(
             flatten_points_pos, reg_targets_pos)
@@ -333,7 +334,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             N: number of objects in all images
             M: number of pixels from all FPN levels
         '''
-
         # get positive pixel index
         pos_inds = self._get_label_inds(gt_bboxes, shapes_per_level)
 
@@ -548,14 +548,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         zeros = heatmaps < 1e-4
         heatmaps[zeros] = 0
         return heatmaps
-
-    def _flatten_outputs(self, reg_pred, agn_hm_pred):
-        # Reshape: (N, F, Hl, Wl) -> (N, Hl, Wl, F) -> (sum_l N*Hl*Wl, F)
-        reg_pred = torch.cat(
-            [x.permute(0, 2, 3, 1).reshape(-1, 4) for x in reg_pred], 0)
-        agn_hm_pred = torch.cat([x.permute(0, 2, 3, 1).reshape(-1)
-                                 for x in agn_hm_pred], 0) if self.with_agn_hm else None
-        return reg_pred, agn_hm_pred
 
     def get_bboxes(self, clss_per_level, reg_pred,
                    agn_hm_pred, img_metas, cfg=None):

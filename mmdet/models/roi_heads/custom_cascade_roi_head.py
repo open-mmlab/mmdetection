@@ -1,11 +1,12 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.runner import ModuleList
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
                         build_sampler, merge_aug_bboxes, merge_aug_masks,
-                        multiclass_nms)
+                        multiclass_nms, build_bbox_coder)
 from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
@@ -50,6 +51,7 @@ class CustomCascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         self.num_stages = num_stages
         self.stage_loss_weights = stage_loss_weights
+        self.bbox_coder = build_bbox_coder(bbox_head[-1]['bbox_coder'])
         super(CustomCascadeRoIHead, self).__init__(
             bbox_roi_extractor=bbox_roi_extractor,
             bbox_head=bbox_head,
@@ -340,22 +342,29 @@ class CustomCascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     for j in range(num_imgs)
                 ])
 
+        # softmax each stage
+        ms_scores = [
+            [F.softmax(score[i], dim=-1) for i in range(num_imgs)]
+            for score in ms_scores
+        ]
+
         # average scores of each image by stages
         cls_score = [
             sum([score[i] for score in ms_scores]) / float(len(ms_scores))
             for i in range(num_imgs)
         ]
 
-        # # multiple proposal scores
-        # cls_score = [
-        #     (cls_score[i].t() * proposal_list[i][:, -1]).t()
-        #     for i in range(num_imgs)
-        # ]
+        # multiple proposal scores
+        cls_score = [
+            (cls_score[i].t() * proposal_list[i][:, -1]).t() ** 0.5
+            for i in range(num_imgs)
+        ]
+
         # apply bbox post-processing to each image individually
         det_bboxes = []
         det_labels = []
         for i in range(num_imgs):
-            det_bbox, det_label = self.bbox_head[-1].get_bboxes(
+            det_bbox, det_label = self._get_bboxes(
                 rois[i],
                 cls_score[i],
                 bbox_pred[i],
@@ -429,6 +438,61 @@ class CustomCascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             results = ms_bbox_result['ensemble']
 
         return results
+
+    def _get_bboxes(self,
+                   rois,
+                   cls_score,
+                   bbox_pred,
+                   img_shape,
+                   scale_factor,
+                   rescale=False,
+                   cfg=None):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5).
+                last dimension 5 arrange as (batch_index, x1, y1, x2, y2).
+            cls_score (Tensor): Box scores, has shape
+                (num_boxes, num_classes + 1).
+            bbox_pred (Tensor, optional): Box energies / deltas.
+                has shape (num_boxes, num_classes * 4).
+            img_shape (Sequence[int], optional): Maximum bounds for boxes,
+                specifies (H, W, C) or (H, W).
+            scale_factor (ndarray): Scale factor of the
+               image arrange as (w_scale, h_scale, w_scale, h_scale).
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
+
+        Returns:
+            tuple[Tensor, Tensor]:
+                Fisrt tensor is `det_bboxes`, has the shape
+                (num_boxes, 5) and last
+                dimension 5 represent (tl_x, tl_y, br_x, br_y, score).
+                Second tensor is the labels with shape (num_boxes, ).
+        """
+        if bbox_pred is not None:
+            bboxes = self.bbox_coder.decode(
+                rois[..., 1:], bbox_pred, max_shape=img_shape)
+        else:
+            bboxes = rois[:, 1:].clone()
+            if img_shape is not None:
+                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
+                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
+
+        if rescale and bboxes.size(0) > 0:
+            scale_factor = bboxes.new_tensor(scale_factor)
+            bboxes = (bboxes.view(bboxes.size(0), -1, 4) / scale_factor).view(
+                bboxes.size()[0], -1)
+
+        if cfg is None:
+            return bboxes, cls_score
+        else:
+            det_bboxes, det_labels = multiclass_nms(bboxes, cls_score,
+                                                    cfg.score_thr, cfg.nms,
+                                                    cfg.max_per_img)
+
+            return det_bboxes, det_labels
 
     def aug_test(self, features, proposal_list, img_metas, rescale=False):
         """Test with augmentations.

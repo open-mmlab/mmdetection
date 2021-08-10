@@ -4,8 +4,8 @@ from .two_stage import TwoStageDetector
 
 @DETECTORS.register_module()
 class CenterNet2(TwoStageDetector):
-    r"""Implementation of `Cascade R-CNN: Delving into High Quality Object
-    Detection <https://arxiv.org/abs/1906.09756>`_"""
+    r"""Implementation of `Probabilistic two-stage detection
+    <https://arxiv.org/abs/2103.07461>`_"""
 
     def __init__(self,
                  backbone,
