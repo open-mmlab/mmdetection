@@ -244,7 +244,8 @@ class CenterNetHeadv2(AnchorFreeHead):
             loss_bbox = pos_bbox_preds.sum()
 
         cat_agn_heatmap = flatten_hms_targets.max(dim=1)[0]
-        num_pos_local = pos_inds.numel()
+        #num_pos_local = pos_inds.numel()
+        num_pos_local = flatten_agn_hm_preds.new_tensor(pos_inds.numel())
         num_pos_avg = max(reduce_mean(num_pos_local), 1.0)
         loss_agn_hm = self.loss_agn_hm(
             flatten_agn_hm_preds, cat_agn_heatmap, pos_inds, avg_factor=num_pos_avg)
@@ -423,7 +424,7 @@ class CenterNetHeadv2(AnchorFreeHead):
         num_points = points.size(0)
         num_gts = gt_bboxes.size(0)
         if num_gts == 0:
-            return torch.tensor([0]).new_full((num_points,4), - INF), \
+            return torch.tensor([0]).new_full((num_points,4), -INF), \
                    gt_bboxes.new_zeros((num_points, 1))
 
         #areas = areas[None].repeat(num_points, 1)

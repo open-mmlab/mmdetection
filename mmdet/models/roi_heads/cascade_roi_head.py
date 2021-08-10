@@ -322,21 +322,15 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         if self.add_agnostic_score:
             #centernet2
-            proposal = proposal_list[0]
-            agnostic_score = proposal[:, -1]
-
-            ms_probs = []
-            #per stage socre softmax
-            for stage_score in ms_scores:
-                probs = F.softmax(stage_score[0], dim=-1)
-                ms_probs.append(probs.split([len(stage_score[0])], dim=0))
-
-            # average probs of each image by stages
-            cls_probs = [
-                sum([prob[i] for prob in ms_probs]) / float(len(ms_probs))
-                for i in range(num_imgs)
-            ]
-            cls_score = [(s * ps[:, None]) ** 0.5 for s, ps in zip(cls_probs, [agnostic_score])]
+            proposal_score = [proposal[:, -1] for proposal in proposal_list]
+            ms_scores = [
+                [score.softmax(-1) for score in scores]
+                for scores in ms_scores]
+            cls_score = [
+                sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+                for i in range(num_imgs)]
+            cls_score = [(s * p[:, None]) ** 0.5
+                         for s, p in zip(cls_score, proposal_score)]
         else:
             # average scores of each image by stages
             cls_score = [
