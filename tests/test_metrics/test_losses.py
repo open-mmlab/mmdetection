@@ -30,11 +30,11 @@ def test_ce_loss():
     loss_cls = build_loss(loss_cls_cfg)
     assert torch.allclose(loss_cls(fake_pred, fake_label), torch.tensor(200.))
 
-    # test bce_loss
-    cls_score = torch.Tensor([[-200, 100], [500, -1000], [300, -300]])
-    label = torch.Tensor([0, 1, 0]).long()
-    weight = torch.Tensor([0.6, 0.4, 0.5])
-    class_weight = torch.tensor([0.1, 0.9])  # class 0: 0.1, class 1: 0.9
+    # test bce_loss matrix(M, C)
+    cls_score_M_C = torch.Tensor([[-200, 100], [500, -1000], [300, -300]])
+    label_M_C = torch.Tensor([0, 1, 0]).long()
+    weight_M = torch.Tensor([0.6, 0.4, 0.5])  # elemrntwise weight
+    class_weight_C = torch.tensor([0.1, 0.9])  # class 0: 0.1, class 1: 0.9
 
     # test bce_loss without class weight
     loss_cfg = dict(
@@ -43,10 +43,42 @@ def test_ce_loss():
         reduction='mean',
         loss_weight=1.0)
     loss = build_loss(loss_cfg)
-    assert torch.allclose(loss(cls_score, label), torch.tensor(300.))
-    # test ce_loss with weight
+    assert torch.allclose(loss(cls_score_M_C, label_M_C), torch.tensor(300.))
+    # test bce_loss with weight
     assert torch.allclose(
-        loss(cls_score, label, weight=weight), torch.tensor(130.))
+        loss(cls_score_M_C, label_M_C, weight=weight_M), torch.tensor(130.))
+
+    # test bce_loss with class weight
+    loss_cfg = dict(
+        type='CrossEntropyLoss',
+        use_sigmoid=True,
+        reduction='mean',
+        loss_weight=1.0,
+        class_weight=class_weight_C)
+    loss = build_loss(loss_cfg)
+    assert torch.allclose(
+        loss(cls_score_M_C, label_M_C), torch.tensor(176.667))
+    # test bce_loss with weight
+    assert torch.allclose(
+        loss(cls_score_M_C, label_M_C, weight=weight_M), torch.tensor(74.333))
+
+    # test bce_loss matrix(M)
+    cls_score_M = torch.Tensor([-200, 500, 300])
+    label_M = torch.Tensor([1, 0, 1]).long()
+    weight_M = torch.Tensor([0.1, 0.2, 0.3])  # elemrntwise weight
+    class_weight = torch.tensor([0.5])  # class 0: 0.1, class 1: 0.9
+
+    # test bce_loss without class weight
+    loss_cfg = dict(
+        type='CrossEntropyLoss',
+        use_sigmoid=True,
+        reduction='mean',
+        loss_weight=1.0)
+    loss = build_loss(loss_cfg)
+    assert torch.allclose(loss(cls_score_M, label_M), torch.tensor(233.333))
+    # test bce_loss with weight
+    assert torch.allclose(
+        loss(cls_score_M, label_M, weight=weight_M), torch.tensor(40.))
 
     # test bce_loss with class weight
     loss_cfg = dict(
@@ -56,10 +88,10 @@ def test_ce_loss():
         loss_weight=1.0,
         class_weight=class_weight)
     loss = build_loss(loss_cfg)
-    assert torch.allclose(loss(cls_score, label), torch.tensor(176.667))
+    assert torch.allclose(loss(cls_score_M, label_M), torch.tensor(116.667))
     # test bce_loss with weight
     assert torch.allclose(
-        loss(cls_score, label, weight=weight), torch.tensor(74.333))
+        loss(cls_score_M, label_M, weight=weight_M), torch.tensor(20.0))
 
 
 def test_varifocal_loss():
