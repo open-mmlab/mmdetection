@@ -22,3 +22,4 @@
 **Note**:
 
 1. The test score threshold is 0.001.
+2. We find that the performance is unstable and may fluctuate by about 0.7 mAP. We will continue to investigate and improve it.
