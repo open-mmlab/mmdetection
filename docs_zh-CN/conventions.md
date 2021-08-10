@@ -1,33 +1,32 @@
 # 默认约定
-如果你想把MMDetection作为自己的项目进行修改的话，请检查下面的约定。
+如果你想把 MMDetection 修改为自己的项目，请遵循下面的约定。
 
 ## 损失
-在MMDetection中，`dict` 包含着所有的损失和评价指标，他们将会由`model(**data)`返回。
-
+在MMDetection中，`model(**data)`的返回值是一个字典，包含着所有的损失和评价指标，他们将会由`model(**data)`返回。
 例如，在bbox head中，
 ```python
 class BBoxHead(nn.Module):
     ...
     def loss(self, ...):
         losses = dict()
-        # classification loss
+        # 分类损失
         losses['loss_cls'] = self.loss_cls(...)
-        # classification accuracy
+        # 分类准确率
         losses['acc'] = accuracy(...)
-        # bbox regression loss
+        # 边界框损失
         losses['loss_bbox'] = self.loss_bbox(...)
         return losses
 ```
 
-'bbox_head.loss()'在模型正向阶段会被调用。返回的字典中包含了`'loss_bbox'`, `'loss_cls'`, `'acc'`。只有`'loss_bbox'`, `'loss_cls'`会被用于反向传播，`'acc'`只会被作为评价指标来监控训练过程。
-
-我们默认，只有那些键的名称中包含'loss'的值会被用于反向传播。这个行为可以通过修改`BaseDetector.train_step()`来改变。
+'bbox_head.loss()'在模型forward阶段会被调用。返回的字典中包含了`'loss_bbox'`, `'loss_cls'`, `'acc'`。只有`'loss_bbox'`, `'loss_cls'`会被用于反向传播，`'acc'`只会被作为评价指标来监控训练过程。我们默认，只有那些键的名称中包含'loss'的值会被用于反向传播。这个行为可以通过修改`BaseDetector.train_step()`来改变。
 
 ## 空proposals
-在MMDetection中，我们为两阶段mooing中空proposals的情况增加了特殊处理和单元测试。我们同时需要处理整个batch和单一图片中空proposals的情况。例如，在CascadeRoIHead中，
+在MMDetection中，我们为两阶段方法中空proposals的情况增加了特殊处理和单元测试。我们同时需要处理整个batch和单一图片中空proposals的情况。例如，在CascadeRoIHead中，
+
 ```python
 # simple_test method
 ...
+
 # 在整个batch中都没有proposals
 if rois.shape[0] == 0:
     bbox_results = [[
@@ -57,4 +56,3 @@ for i in range(self.num_stages):
                        refine_roi_list.append(refine_roi)
 ```
 如果你有自定义的`RoIHead`, 你可以参考上面的方法来处理空proposals的情况。
-If you have customized `RoIHead`, you can refer to the above method to deal with empty proposals.
