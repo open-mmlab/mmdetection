@@ -226,7 +226,8 @@ def tpfp_default(det_bboxes,
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
         return tp, fp
 
-    ious = bbox_overlaps(det_bboxes, gt_bboxes, extra_length=extra_length)
+    ious = bbox_overlaps(
+        det_bboxes, gt_bboxes, use_legacy_coordinate=use_legacy_coordinate)
     # for each det, the max iou with all gts
     ious_max = ious.max(axis=1)
     # for each det, which gt overlaps most with it

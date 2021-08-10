@@ -123,16 +123,11 @@ def test_recall_overlaps():
 
     bboxes1, num_bbox = _construct_bbox()
     bboxes2, _ = _construct_bbox(num_bbox)
-    ious = recall_overlaps(bboxes1, bboxes2, 'iou', extra_length=0)
+    ious = recall_overlaps(
+        bboxes1, bboxes2, 'iou', use_legacy_coordinate=False)
     assert ious.shape == (num_bbox, num_bbox)
     assert np.all(ious >= -1) and np.all(ious <= 1)
 
-    ious = recall_overlaps(bboxes1, bboxes2, 'iou', extra_length=1)
+    ious = recall_overlaps(bboxes1, bboxes2, 'iou', use_legacy_coordinate=True)
     assert ious.shape == (num_bbox, num_bbox)
     assert np.all(ious >= -1) and np.all(ious <= 1)
-
-    # extra_length should be in (1,2)
-    with pytest.raises(AssertionError):
-        recall_overlaps(bboxes1, bboxes2, 'iou', extra_length=2)
-    with pytest.raises(AssertionError):
-        recall_overlaps(bboxes1, bboxes2, 'iou', extra_length=1.5)

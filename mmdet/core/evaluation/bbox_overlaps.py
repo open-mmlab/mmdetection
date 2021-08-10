@@ -1,7 +1,11 @@
 import numpy as np
 
 
-def bbox_overlaps(bboxes1, bboxes2, mode='iou', eps=1e-6, extra_length=0.):
+def bbox_overlaps(bboxes1,
+                  bboxes2,
+                  mode='iou',
+                  eps=1e-6,
+                  use_legacy_coordinate=False):
     """Calculate the ious between each bbox of bboxes1 and bboxes2.
 
     Args:
@@ -9,17 +13,19 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', eps=1e-6, extra_length=0.):
         bboxes2 (ndarray): shape (k, 4)
         mode (str): iou (intersection over union) or iof (intersection
             over foreground)
-        extra_length (float): `extra_length` should be added when calculate
-            the width and height, which means w, h should be computed as
-            'x2 - x1 + extra_length` and 'y2 - y1 + extra_length'.
-            Default: 0.
+        use_legacy_coordinate (bool): Whether to use coordinate system in
+            mmdet v1.x. which means width, height should be
+            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
+            Default: False.
     Returns:
         ious (ndarray): shape (n, k)
     """
 
     assert mode in ['iou', 'iof']
-    assert extra_length in (0.,
-                            1.), 'Only allow the `extra_length` to be 0 or 1'
+    if not use_legacy_coordinate:
+        extra_length = 0.
+    else:
+        extra_length = 1.
     bboxes1 = bboxes1.astype(np.float32)
     bboxes2 = bboxes2.astype(np.float32)
     rows = bboxes1.shape[0]
