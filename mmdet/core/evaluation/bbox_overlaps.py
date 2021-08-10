@@ -9,16 +9,17 @@ def bbox_overlaps(bboxes1,
     """Calculate the ious between each bbox of bboxes1 and bboxes2.
 
     Args:
-        bboxes1 (ndarray): shape (n, 4)
-        bboxes2 (ndarray): shape (k, 4)
-        mode (str): iou (intersection over union) or iof (intersection
+        bboxes1 (ndarray): Shape (n, 4)
+        bboxes2 (ndarray): Shape (k, 4)
+        mode (str): IOU (intersection over union) or IOF (intersection
             over foreground)
         use_legacy_coordinate (bool): Whether to use coordinate system in
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
             Default: False.
+
     Returns:
-        ious (ndarray): shape (n, k)
+        ious (ndarray): Shape (n, k)
     """
 
     assert mode in ['iou', 'iof']
