@@ -49,7 +49,7 @@ def test_sparse_rcnn_forward():
     from mmdet.models import build_detector
     detector = build_detector(model)
     detector.init_weights()
-    input_shape = (1, 3, 550, 550)
+    input_shape = (1, 3, 100, 100)
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[5])
     imgs = mm_inputs.pop('imgs')
     img_metas = mm_inputs.pop('img_metas')
@@ -114,7 +114,7 @@ def test_rpn_forward():
     from mmdet.models import build_detector
     detector = build_detector(model)
 
-    input_shape = (1, 3, 224, 224)
+    input_shape = (1, 3, 128, 128)
     mm_inputs = _demo_mm_inputs(input_shape)
 
     imgs = mm_inputs.pop('imgs')
@@ -160,7 +160,7 @@ def test_single_stage_forward_gpu(cfg_file):
     from mmdet.models import build_detector
     detector = build_detector(model)
 
-    input_shape = (2, 3, 224, 224)
+    input_shape = (2, 3, 128, 128)
     mm_inputs = _demo_mm_inputs(input_shape)
 
     imgs = mm_inputs.pop('imgs')
@@ -197,7 +197,7 @@ def test_faster_rcnn_ohem_forward():
     from mmdet.models import build_detector
     detector = build_detector(model)
 
-    input_shape = (1, 3, 256, 256)
+    input_shape = (1, 3, 128, 128)
 
     # Test forward train with a non-empty truth batch
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[10])
@@ -269,7 +269,7 @@ def test_two_stage_forward(cfg_file):
     from mmdet.models import build_detector
     detector = build_detector(model)
 
-    input_shape = (1, 3, 256, 256)
+    input_shape = (1, 3, 128, 128)
 
     # Test forward train with a non-empty truth batch
     mm_inputs = _demo_mm_inputs(
