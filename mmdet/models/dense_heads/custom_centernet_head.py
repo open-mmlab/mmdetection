@@ -53,7 +53,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                     alpha=0.25,
                     ignore_high_fp=0.85,
                     loss_weight=0.5),
-                 loss_bbox=dict(type='GIoULoss', loss_weight=1.0), 
+                 loss_bbox=dict(type='GIoULoss', loss_weight=1.0),
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
@@ -65,12 +65,12 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self.num_classes = num_classes
         self.only_proposal = only_proposal
         self.strides = [8, 16, 32, 64, 128]
-        self.hm_min_overlap=0.8
-        self.delta=(1-self.hm_min_overlap)/(1+self.hm_min_overlap)
-        self.sizes_of_interest=[[0, 80], [64, 160], [128, 320], [256, 640], [512, 10000000]]
-        self.min_radius=4
-        self.with_agn_hm=True
-        self.not_norm_reg=True
+        self.hm_min_overlap = 0.8
+        self.delta = (1-self.hm_min_overlap)/(1+self.hm_min_overlap)
+        self.sizes_of_interest = [[0, 80], [64, 160], [128, 320], [256, 640], [512, 10000000]]
+        self.min_radius = 4
+        self.with_agn_hm = True
+        self.not_norm_reg = True
 
         self.loss_center_heatmap = build_loss(loss_center_heatmap)
         self.loss_bbox = build_loss(loss_bbox)
@@ -102,9 +102,9 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         self._init_layers()
 
     def _init_layers(self):
-        self._build_tower(self.head_configs, self.channels)   # init  1.<cls_tower>    2.<bbox_tower>     3.<share_tower>
+        self._build_tower(self.head_configs, self.channels)
         self.scales = nn.ModuleList(
-            [Scale(scale=1.0) for _ in range(self.num_features)])  # init  <scales>
+            [Scale(scale=1.0) for _ in range(self.num_features)])
         self.agn_hm = self._build_head(self.in_channel, 1)
         self.bbox_pred = self._build_head(self.in_channel, 4)
 
@@ -238,7 +238,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             reg_pred_per_level, agn_hm_pred_per_level)
 
         flatten_points = torch.cat(
-            [points.repeat(len(img_metas), 1) for points in grids])        
+            [points.repeat(len(img_metas), 1) for points in grids])
 
         losses = self.compute_losses(
             pos_inds, reg_targets, flattened_hms,
@@ -247,7 +247,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         return losses
 
     def compute_losses(self, pos_inds, reg_targets, flattened_hms,
-        reg_pred, agn_hm_pred, flatten_points):
+                       reg_pred, agn_hm_pred, flatten_points):
         '''
         Inputs:
             pos_inds: N
@@ -269,14 +269,14 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         reg_inds = torch.nonzero(reg_targets.max(dim=1)[0] >= 0).squeeze(1)
         reg_pred = reg_pred[reg_inds]
         reg_targets_pos = reg_targets[reg_inds]
-        flatten_points_pos = flatten_points[reg_inds] #added by mmz
+        flatten_points_pos = flatten_points[reg_inds]  # added by mmz
         reg_weight_map = flattened_hms.max(dim=1)[0]
         reg_weight_map = reg_weight_map[reg_inds]
         reg_weight_map = reg_weight_map * 0 + 1 \
             if self.not_norm_reg else reg_weight_map
         reg_norm = max(reduce_mean(reg_weight_map.sum()).item(), 1.0)
 
-        #added by mmz
+        # added by mmz
         pos_decoded_bbox_preds = distance2bbox(flatten_points_pos, reg_pred)
         pos_decoded_target_preds = distance2bbox(flatten_points_pos, reg_targets_pos)
         reg_loss = self.loss_bbox(
@@ -284,7 +284,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 pos_decoded_target_preds,
                 weight=reg_weight_map,
                 avg_factor=reg_norm)
-        cat_agn_heatmap = flattened_hms.max(dim=1)[0] # M
+        cat_agn_heatmap = flattened_hms.max(dim=1)[0]  # M
         agn_heatmap_loss = self.loss_center_heatmap(
             agn_hm_pred,
             cat_agn_heatmap,

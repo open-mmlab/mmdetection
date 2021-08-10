@@ -12,6 +12,7 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 from torch.autograd.function import Function
 
+
 class _ScaleGradient(Function):
     @staticmethod
     def forward(ctx, input, scale):
@@ -21,6 +22,7 @@ class _ScaleGradient(Function):
     @staticmethod
     def backward(ctx, grad_output):
         return grad_output * ctx.scale, None
+
 
 @HEADS.register_module()
 class CustomCascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
