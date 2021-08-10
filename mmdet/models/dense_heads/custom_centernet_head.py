@@ -731,27 +731,14 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             return 1
         return dist.get_world_size()
 
-    def get_bboxes(self, clss_per_level, reg_pred_per_level,
-                   agn_hm_pred_per_level, img_metas, cfg=None):
-        grids = self.compute_grids(agn_hm_pred_per_level)
-        proposals = None
-        if self.only_proposal:
-            agn_hm_pred_per_level = \
-                [x.sigmoid() for x in agn_hm_pred_per_level]
-            proposals = self.predict_instances(
-                grids, agn_hm_pred_per_level, reg_pred_per_level,
-                [None for _ in agn_hm_pred_per_level])
-        elif self.as_proposal:  # category specific bbox as agnostic proposals
-            clss_per_level = [x.sigmoid() for x in clss_per_level]
-            proposals = self.predict_instances(
-                grids, clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
-        return proposals
+    def get_bboxes(self, clss_per_level, reg_pred,
+                   agn_hm_pred, img_metas, cfg=None):
 
-    def predict_instances(self, grids, logits_pred, reg_pred,
-                          agn_hm_pred, is_proposal=False):
+        grids = self.compute_grids(agn_hm_pred)
+        agn_hm_pred = [x.sigmoid() for x in agn_hm_pred]
 
-        boxlists = multi_apply(self.predict_single_level, grids, logits_pred,
-                    reg_pred, self.strides, agn_hm_pred, is_proposal=is_proposal)
+        boxlists = multi_apply(self.predict_single_level, grids, agn_hm_pred,
+                        reg_pred, self.strides, [None for _ in agn_hm_pred])
         boxlists = [torch.cat(boxlist) for boxlist in boxlists]
         final_boxlists = []
         for b in range(len(boxlists)):
