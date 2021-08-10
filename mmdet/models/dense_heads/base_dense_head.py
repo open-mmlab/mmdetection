@@ -4,7 +4,7 @@ import torch
 from mmcv.runner import BaseModule, force_fp32
 
 from mmdet.core import multiclass_nms
-from mmdet.core.utils import collect_mlvl_tensor_single
+from mmdet.core.utils import select_single_mlvl
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
@@ -76,11 +76,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         for img_id in range(len(img_metas)):
             img_meta = img_metas[img_id]
-            cls_score_list = collect_mlvl_tensor_single(cls_scores, img_id)
-            bbox_pred_list = collect_mlvl_tensor_single(bbox_preds, img_id)
+            cls_score_list = select_single_mlvl(cls_scores, img_id)
+            bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
             if with_score_factors:
-                score_factor_list = collect_mlvl_tensor_single(
-                    score_factors, img_id)
+                score_factor_list = select_single_mlvl(score_factors, img_id)
             else:
                 score_factor_list = [None for _ in range(num_levels)]
 
@@ -99,7 +98,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                            rescale=False,
                            with_nms=True,
                            **kwargs):
-        """Transform outputs of single image into bbox predictions.
+        """Transform outputs of a single image into bbox predictions.
 
         Args:
             cls_score_list (list[Tensor]): Box scores from all scale

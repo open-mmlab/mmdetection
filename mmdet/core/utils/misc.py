@@ -84,7 +84,7 @@ def flip_tensor(src_tensor, flip_direction):
     return out_tensor
 
 
-def collect_mlvl_tensor_single(mlvl_tensors, batch_id, detach=True):
+def select_single_mlvl(mlvl_tensors, batch_id, detach=True):
     """Extract a multi-scale single image tensor from a multi-scale batch
     tensor based on batch index.
 

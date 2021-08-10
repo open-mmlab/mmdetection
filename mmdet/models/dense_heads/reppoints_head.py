@@ -663,7 +663,7 @@ class RepPointsHead(AnchorFreeHead):
                            rescale=False,
                            with_nms=True,
                            **kwargs):
-        """Transform outputs of single image into bbox predictions.
+        """Transform outputs of a single image into bbox predictions.
 
         Args:
             cls_score_list (list[Tensor]): Box scores from all scale

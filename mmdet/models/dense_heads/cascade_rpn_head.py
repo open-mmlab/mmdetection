@@ -555,16 +555,16 @@ class StageCascadeRPNHead(RPNHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-        """Transform outputs of single image into bbox predictions.
+        """Transform outputs of a single image into bbox predictions.
 
         Args:
-            cls_scores (list[Tensor]):Box scores from all scale
+            cls_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num_anchors * num_classes, H, W).
-            bbox_preds (list[Tensor]):  Box energies / deltas from
+            bbox_preds (list[Tensor]): Box energies / deltas from
                 all scale levels of a single image, each item has
                 shape (num_anchors * 4, H, W).
-            mlvl_anchors (list[Tensor]):Box reference from all scale
+            mlvl_anchors (list[Tensor]): Box reference from all scale
                 levels of a single image, each item has shape
                 (num_total_anchors, 4).
             img_shape (tuple[int]): Shape of the input image,
