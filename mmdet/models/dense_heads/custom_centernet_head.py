@@ -805,7 +805,6 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             return 1
         return dist.get_world_size()
 
-
     def get_bboxes(self, clss_per_level, reg_pred_per_level, agn_hm_pred_per_level, img_metas, cfg=None):
         grids = self.compute_grids(agn_hm_pred_per_level)
         proposals = None
@@ -817,20 +816,12 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         elif self.as_proposal:  # category specific bbox as agnostic proposals
             clss_per_level = [x.sigmoid() for x in clss_per_level]
             proposals = self.predict_instances(
-                grids, clss_per_level, reg_pred_per_level,
-                image_sizes, agn_hm_pred_per_level)
+                grids, clss_per_level, reg_pred_per_level, agn_hm_pred_per_level)
         return proposals
-
 
     def predict_instances(self, grids, logits_pred, reg_pred,
                         agn_hm_pred, is_proposal=False):
-        # sampled_boxes = []
-        # for l in range(len(grids)):
-        #     sampled_boxes.append(self.predict_single_level(
-        #         grids[l], logits_pred[l], reg_pred[l] * self.strides[l],
-        #         agn_hm_pred[l], l, is_proposal=is_proposal))
-        # boxlists = list(zip(*sampled_boxes))
-        # boxlists = [torch.cat(boxlist) for boxlist in boxlists]
+
         boxlists = multi_apply(self.predict_single_level, grids, logits_pred,
                     reg_pred, self.strides, agn_hm_pred, is_proposal=is_proposal)
         boxlists = [torch.cat(boxlist) for boxlist in boxlists]
@@ -851,7 +842,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         heatmap = heatmap.reshape(N, -1, C)  # N x HW x C
         
         reg_pred_ = reg_pred * stride
-        box_regression = reg_pred_.view(N, 4, H, W).permute(0, 2, 3, 1)  # N x H x W x 4 
+        box_regression = reg_pred_.view(N, 4, H, W).permute(0, 2, 3, 1)  # N x H x W x 4
         box_regression = box_regression.reshape(N, -1, 4)
 
         candidate_inds = heatmap > self.score_thresh  # 0.05
@@ -888,16 +879,8 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                 per_grids = per_grids[top_k_indices]
 
             detections = distance2bbox(per_grids, per_box_regression, max_shape=None)
-            # detections = torch.stack([
-            #     per_grids[:, 0] - per_box_regression[:, 0],
-            #     per_grids[:, 1] - per_box_regression[:, 1],
-            #     per_grids[:, 0] + per_box_regression[:, 2],
-            #     per_grids[:, 1] + per_box_regression[:, 3],
-            # ], dim=1)  # n x 4
-
             detections[:, 2] = torch.max(detections[:, 2].clone(), detections[:, 0].clone() + 0.01)
             detections[:, 3] = torch.max(detections[:, 3].clone(), detections[:, 1].clone() + 0.01)
-            # boxlist = Instances(image_sizes[i])
             scores = torch.sqrt(per_box_cls) \
                 if self.with_agn_hm else per_box_cls  # n
             scores = torch.unsqueeze(scores, 1)  # n x 1
@@ -907,10 +890,15 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             results.append(boxlist)
         return results
 
-    def nms_and_topK(self, boxlist, nms=True):
+    def nms_and_topK(self, boxlist, max_proposals=-1, nms=True):
 
         cfg = self.test_cfg
-        result = self.ml_nms(boxlist, cfg) if nms else boxlist
+        _, keep = batched_nms(boxlist[:, :4], boxlist[:, 4].contiguous(), boxlist[:, -1], cfg.nms)
+        if max_proposals > 0:
+            keep = keep[: max_proposals]
+        result = boxlist[keep]
+
+        # result = self.ml_nms(boxlist, cfg) if nms else boxlist
         # if self.debug:
         #     print('#proposals before nms', len(boxlists[i]))
         #     print('#proposals after nms', len(result))
@@ -931,6 +919,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
 
         return result
 
+    '''
     def ml_nms(self, boxlist, cfg, max_proposals=-1,
             score_field="scores", label_field="labels"):
         """
@@ -955,6 +944,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             keep = keep[: max_proposals]
         boxlist = boxlist[keep]
         return boxlist
+    '''
 
     def _add_more_pos(self, reg_pred, gt_instances, shapes_per_level):
         labels, level_masks, c33_inds, c33_masks, c33_regs = \
@@ -983,7 +973,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
         loss_thresh[loss_thresh > self.more_pos_thresh] = self.more_pos_thresh  # N
         new_pos = c33_reg_loss.view(N, L, K) < \
             loss_thresh.view(N, 1, 1).expand(N, L, K)
-        pos_inds = c33_inds[new_pos].view(-1) # P
+        pos_inds = c33_inds[new_pos].view(-1)  # P
         labels = labels.view(N, 1, 1).expand(N, L, K)[new_pos].view(-1)
         return pos_inds, labels
 
@@ -1020,19 +1010,19 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             n = bboxes.shape[0]
             if n == 0:
                 continue
-            centers = ((bboxes[:, [0, 1]] + bboxes[:, [2, 3]]) / 2) # n x 2
+            centers = ((bboxes[:, [0, 1]] + bboxes[:, [2, 3]]) / 2)  # n x 2
             centers = centers.view(n, 1, 2).expand(n, L, 2)
 
-            strides = strides_default.view(1, L, 1).expand(n, L, 2) # 
-            centers_inds = (centers / strides).long() # n x L x 2
-            center_grids = centers_inds * strides + strides // 2# n x L x 2
+            strides = strides_default.view(1, L, 1).expand(n, L, 2)  # 
+            centers_inds = (centers / strides).long()  # n x L x 2
+            center_grids = centers_inds * strides + strides // 2  # n x L x 2
             l = center_grids[:, :, 0] - bboxes[:, 0].view(n, 1).expand(n, L)
             t = center_grids[:, :, 1] - bboxes[:, 1].view(n, 1).expand(n, L)
             r = bboxes[:, 2].view(n, 1).expand(n, L) - center_grids[:, :, 0]
-            b = bboxes[:, 3].view(n, 1).expand(n, L) - center_grids[:, :, 1] # n x L
-            reg = torch.stack([l, t, r, b], dim=2) # n x L x 4
+            b = bboxes[:, 3].view(n, 1).expand(n, L) - center_grids[:, :, 1]  # n x L
+            reg = torch.stack([l, t, r, b], dim=2)  # n x L x 4
             reg = reg / strides_default.view(1, L, 1).expand(n, L, 4).float()
-            
+
             Ws = shapes_per_level[:, 1].view(1, L).expand(n, L)
             Hs = shapes_per_level[:, 0].view(1, L).expand(n, L)
             expand_Ws = Ws.view(n, L, 1).expand(n, L, K)
@@ -1049,7 +1039,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
                        im_i * loc_per_level.view(1, L, 1).expand(n, L, K) + \
                        (centers_inds[:, :, 1:2].expand(n, L, K) + Dy) * expand_Ws + \
                        (centers_inds[:, :, 0:1].expand(n, L, K) + Dx) # n x L x K
-            
+
             c33_mask = \
                 ((centers_inds[:, :, 1:2].expand(n, L, K) + dy) < expand_Hs) & \
                 ((centers_inds[:, :, 1:2].expand(n, L, K) + dy) >= 0) & \
@@ -1070,7 +1060,7 @@ class CustomCenterNetHead(BaseDenseHead, BBoxTestMixin):
             c33_inds.append(c33_ind)
             c33_masks.append(c33_mask)
             c33_regs.append(c33_reg)
-        
+
         if len(level_masks) > 0:
             labels = torch.cat(labels, dim=0)
             level_masks = torch.cat(level_masks, dim=0)
