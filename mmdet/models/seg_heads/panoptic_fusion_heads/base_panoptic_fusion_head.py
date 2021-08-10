@@ -40,7 +40,7 @@ class BasePanopticFusionHead(BaseModule, metaclass=ABCMeta):
                     img_metas,
                     det_labels,
                     mask_preds,
-                    seg_logits,
+                    seg_preds,
                     det_bboxes,
                     cfg=None,
                     **kwargs):

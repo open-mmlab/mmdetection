@@ -78,7 +78,7 @@ class HeuristicFusionHead(BasePanopticFusionHead):
         assert instance_id == (len(instance_labels) + 1)
         return id_map, instance_labels
 
-    def simple_test(self, det_bboxes, det_labels, mask_preds, seg_logits,
+    def simple_test(self, det_bboxes, det_labels, mask_preds, seg_preds,
                     **kwargs):
         """Fuse the results of instance and semantic segmentations.
 
@@ -86,7 +86,7 @@ class HeuristicFusionHead(BasePanopticFusionHead):
             det_bboxes: The bboxes results, (K, 4).
             det_labels: The labels of bboxes, (K,).
             mask_preds: The masks results, (K, H, W).
-            seg_logits: The semantic segmentation results,
+            seg_preds: The semantic segmentation results,
                 (K, num_stuff + 1, H, W).
 
         Returns:
@@ -96,10 +96,10 @@ class HeuristicFusionHead(BasePanopticFusionHead):
         id_map, labels = self._lay_masks(det_bboxes, det_labels, mask_preds,
                                          self.test_cfg.mask_overlap)
 
-        seg_pred = seg_logits.argmax(dim=0)
-        seg_pred = seg_pred + self.num_things_classes
+        seg_results = seg_preds.argmax(dim=0)
+        seg_results = seg_results + self.num_things_classes
 
-        pan_results = seg_pred
+        pan_results = seg_results
         instance_id = 1
         for idx in range(det_labels.shape[0]):
             _mask = id_map == (idx + 1)

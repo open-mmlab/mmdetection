@@ -34,7 +34,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             self.semantic_head = build_head(semantic_head)
         if panoptic_fusion_head is not None:
             panoptic_cfg = test_cfg.panoptic if test_cfg is not None else None
-            panoptic_fusion_head_ = panoptic_fusion_head.copy()
+            panoptic_fusion_head_ = panoptic_fusion_head.deepcopy()
             panoptic_fusion_head_.update(test_cfg=panoptic_cfg)
             self.panoptic_fusion_head = build_head(panoptic_fusion_head_)
 
@@ -190,12 +190,12 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             x, img_metas, det_bboxes, det_labels, rescale=rescale)
         masks = mask_results['masks']
 
-        logits = self.semantic_head.simple_test(x, img_metas, rescale)
+        seg_preds = self.semantic_head.simple_test(x, img_metas, rescale)
 
         results = []
         for i in range(len(det_bboxes)):
             pan_results = self.panoptic_fusion_head.simple_test(
-                det_bboxes[i], det_labels[i], masks[i], logits[i])
+                det_bboxes[i], det_labels[i], masks[i], seg_preds[i])
             pan_results = pan_results.int().detach().cpu().numpy()
             result = dict(pan_results=pan_results)
             results.append(result)

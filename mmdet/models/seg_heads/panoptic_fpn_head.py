@@ -82,13 +82,13 @@ class PanopticFPNHead(BaseSemanticHead):
                                  new_gt_seg)
         return new_gt_seg
 
-    def loss(self, logits, gt_semantic_seg, label_bias=-1):
+    def loss(self, seg_preds, gt_semantic_seg, label_bias=-1):
         """The loss of PanopticFPN head.
 
         Things classes will be merged to one class in PanopticFPN.
         """
         gt_semantic_seg = self._set_things_to_void(gt_semantic_seg)
-        return super().loss(logits, gt_semantic_seg, label_bias)
+        return super().loss(seg_preds, gt_semantic_seg, label_bias)
 
     def init_weights(self):
         super().init_weights()
@@ -106,6 +106,6 @@ class PanopticFPNHead(BaseSemanticHead):
             feats.append(f)
 
         feats = torch.sum(torch.stack(feats, dim=0), dim=0)
-        logits = self.conv_logits(feats)
-        out = dict(logits=logits, feats=feats)
+        seg_preds = self.conv_logits(feats)
+        out = dict(seg_preds=seg_preds, feats=feats)
         return out
