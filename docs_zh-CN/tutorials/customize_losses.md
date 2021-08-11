@@ -20,7 +20,7 @@ MMDetection 为用户提供了不同的损失函数。但是默认的配置可�
 
 ## 微调损失
 
-微调一个损失主要与步骤1，3，4有关，大部分的修改可以在配置文件中指定。这里我们用[Focal Loss (FL)](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/losses/focal_loss.py)作为例子。
+微调一个损失主要与步骤1，3，4有关，大部分的修改可以在配置文件中指定。这里我们用 [Focal Loss (FL)](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/losses/focal_loss.py) 作为例子。
 下面的代码分别是构建 FL 的方法和它的配置文件，他们是一一对应的。
 
 ```python
