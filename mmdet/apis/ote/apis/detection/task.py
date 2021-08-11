@@ -57,6 +57,7 @@ from mmdet.apis.ote.apis.detection.config_utils import (patch_config, set_hyperp
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.datasets import build_dataset, build_dataloader
 from mmdet.models import build_detector
+from mmdet.parallel import MMDataCPU
 
 
 logger = logger_factory.get_logger("OTEDetectionTask")
@@ -103,7 +104,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         if model != NullModel():
             # If a model has been trained and saved for the task already, create empty model and load weights here
             buffer = io.BytesIO(model.get_data("weights.pth"))
-            model_data = torch.load(buffer)
+            model_data = torch.load(buffer, map_location=torch.device('cpu'))
 
             model = self._create_model(self.config, from_scratch=True)
 
@@ -203,8 +204,11 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                                              num_gpus=1,
                                              dist=False,
                                              shuffle=False)
-        eval_model = MMDataParallel(model.cuda(test_config.gpu_ids[0]),
-                                    device_ids=test_config.gpu_ids)
+        if torch.cuda.is_available():
+            eval_model = MMDataParallel(model.cuda(test_config.gpu_ids[0]),
+                                        device_ids=test_config.gpu_ids)
+        else:
+            eval_model = MMDataCPU(model)
         # Use a single gpu for testing. Set in both mm_val_dataloader and eval_model
         eval_predictions = single_gpu_test(eval_model, mm_val_dataloader, show=False)
 
