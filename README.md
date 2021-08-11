@@ -36,7 +36,7 @@ please refer the config file [centernet2_cascade_r50_fpn.py](https://github.com/
 log and model:
 | name | backbone | schedule | mAP | Log | Model |
 |--|--|--|--|--|--|
-| CenterNet2 | R50-FPN | 1x | 40.5 | [log](http) | [CenterNet2_1x[9doa]](https://pan.baidu.com/s/1yUnpu146aDk558vmhiNfxg)|
+| CenterNet2 | R50-FPN | 1x | 40.5 | [log](http) | [CenterNet2_1x[9doa]](https://pan.baidu.com/s/1yUnpu146aDk558vmhiNfxg)[9doa]|
 ### How To Use？
 What is MMCV？
 MMCV is a foundational library for computer vision research and supports many research projects as below:
