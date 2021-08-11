@@ -215,7 +215,7 @@ class FSAFHead(RetinaHead):
             bbox_preds[i] = bbox_preds[i].clamp(min=1e-4)
         # TODO: It may directly use the base-class loss function.
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
         batch_size = len(gt_bboxes)
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
