@@ -6,6 +6,7 @@ from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import distance2bbox, multi_apply
+from mmdet.core.anchor.point_generator import MlvlPointGenerator
 from mmdet.core.bbox import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads.atss_head import reduce_mean
@@ -159,6 +160,7 @@ class AutoAssignHead(FCOSHead):
         self.pos_loss_weight = pos_loss_weight
         self.neg_loss_weight = neg_loss_weight
         self.center_loss_weight = center_loss_weight
+        self.prior_generator = MlvlPointGenerator(self.strides, offset=0)
 
     def init_weights(self):
         """Initialize weights of the head.

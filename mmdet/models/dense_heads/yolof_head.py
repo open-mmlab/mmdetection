@@ -160,7 +160,7 @@ class YOLOFHead(AnchorHead):
             dict[str, Tensor]: A dictionary of loss components.
         """
         assert len(cls_scores) == 1
-        assert self.anchor_generator.num_levels == 1
+        assert self.prior_generator.num_levels == 1
 
         device = cls_scores[0].device
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
