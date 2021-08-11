@@ -10,11 +10,11 @@
 - 我们使用分布式训练。
 - 所有 pytorch-style 的 ImageNet 预训练主干网络来自 PyTorch 的模型库，caffe-style 的预训练主干网络来自 detectron2 最新开源的模型。
 - 为了与其他代码库公平比较，文档中所写的 GPU 内存是8个 GPU 的 `torch.cuda.max_memory_allocated()` 的最大值，此值通常小于 nvidia-smi 显示的值。 
-- 我们以网络foward和后处理的时间加和作为推理时间，不包含数据加载时间。所有结果通过[benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py)脚本计算所得。该脚本会计算推理2000张图像的平均时间。
+- 我们以网络 foward 和后处理的时间加和作为推理时间，不包含数据加载时间。所有结果通过 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 脚本计算所得。该脚本会计算推理 2000 张图像的平均时间。
 
 ## ImageNet 预训练模型
 
-通过 ImageNet 分类任务预训练的主干网络进行初始化是很常见的操作。所有预训练模型的链接都可以在 [open_mmlab](https://github.com/open-mmlab/mmcv/blob/master/mmcv/model_zoo/open_mmlab.json)中找到。根据 `img_norm_cfg` 和原始权重，我们可以将所有 ImageNet 预训练模型分为以下几种情况：
+通过 ImageNet 分类任务预训练的主干网络进行初始化是很常见的操作。所有预训练模型的链接都可以在 [open_mmlab](https://github.com/open-mmlab/mmcv/blob/master/mmcv/model_zoo/open_mmlab.json) 中找到。根据 `img_norm_cfg` 和原始权重，我们可以将所有 ImageNet 预训练模型分为以下几种情况：
 
 - TorchVision：torchvision 模型权重，包含 ResNet50, ResNet101。`img_norm_cfg` 为 `dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)`。
 - Pycls：[pycls](https://github.com/facebookresearch/pycls) 模型权重，包含 RegNetX。`img_norm_cfg` 为 `dict(
@@ -252,7 +252,7 @@ MMdetection 常用到的主干网络细节如下表所示：
 
 ### 推理时间基准
 
-我们提供 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 对推理时间进行基准测试。此脚本将推理2000张图片并计算忽略前5次推理的平均推理时间。可以通过设置 `LOG-INTERVAL` 来改变 log 输出间隔（默认50）。
+我们提供 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 对推理时间进行基准测试。此脚本将推理 2000 张图片并计算忽略前 5 次推理的平均推理时间。可以通过设置 `LOG-INTERVAL` 来改变 log 输出间隔（默认 50）。
 
 ```shell
 python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
