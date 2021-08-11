@@ -85,6 +85,37 @@ def flip_tensor(src_tensor, flip_direction):
     return out_tensor
 
 
+def select_single_mlvl(mlvl_tensors, batch_id, detach=True):
+    """Extract a multi-scale single image tensor from a multi-scale batch
+    tensor based on batch index.
+
+    Note: The default value of detach is True, because the proposal gradient
+    needs to be detached during the training of the two-stage model. E.g
+    Cascade Mask R-CNN.
+
+    Args:
+        mlvl_tensors (list[Tensor]):Batch tensor for all scale levels,
+           each is a 4D-tensor.
+        batch_id (int): batch index.
+        detach (bool): Whether detach gradient. Default True.
+
+    Returns:
+        list[Tensor]: multi-scale single image tensor.
+    """
+    assert isinstance(mlvl_tensors, (list, tuple))
+    num_levels = len(mlvl_tensors)
+
+    if detach:
+        mlvl_tensor_list = [
+            mlvl_tensors[i][batch_id].detach() for i in range(num_levels)
+        ]
+    else:
+        mlvl_tensor_list = [
+            mlvl_tensors[i][batch_id] for i in range(num_levels)
+        ]
+    return mlvl_tensor_list
+
+
 def center_of_mass(mask, esp=1e-6):
     """Calculate the centroid coordinates of the mask.
 

@@ -7,7 +7,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
-                        multi_apply, multiclass_nms, unmap)
+                        multi_apply, unmap)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -566,9 +566,11 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                           cfg,
                           rescale=False):
         cfg = self.test_cfg if cfg is None else cfg
+        nms_pre = cfg.get('nms_pre', -1)
+
         mlvl_bboxes = []
         mlvl_scores = []
-        mlvl_confidences = []
+        mlvl_confids = []
         assert len(cls_scores) == len(bbox_cls_preds) == len(
             bbox_reg_preds) == len(mlvl_anchors)
         for cls_score, bbox_cls_pred, bbox_reg_pred, anchors in zip(
@@ -585,8 +587,8 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                 -1, self.side_num * 4)
             bbox_reg_pred = bbox_reg_pred.permute(1, 2, 0).reshape(
                 -1, self.side_num * 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+
+            if 0 < nms_pre < scores.shape[0]:
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
@@ -600,24 +602,10 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                 bbox_cls_pred.contiguous(),
                 bbox_reg_pred.contiguous()
             ]
-            bboxes, confidences = self.bbox_coder.decode(
+            bboxes, confids = self.bbox_coder.decode(
                 anchors.contiguous(), bbox_preds, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-            mlvl_confidences.append(confidences)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        mlvl_confidences = torch.cat(mlvl_confidences)
-        if self.use_sigmoid_cls:
-            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes,
-            mlvl_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img,
-            score_factors=mlvl_confidences)
-        return det_bboxes, det_labels
+            mlvl_confids.append(confids)
+        return self._bbox_post_process(mlvl_scores, mlvl_bboxes, scale_factor,
+                                       cfg, rescale, True, mlvl_confids)
