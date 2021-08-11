@@ -370,6 +370,43 @@ def test_two_stage_forward(cfg_file):
                 (0, detector.roi_head.bbox_head.fc_cls.out_features))
 
 
+@pytest.mark.parametrize(
+    'cfg_file', ['ghm/retinanet_ghm_r50_fpn_1x_coco.py', 'ssd/ssd300_coco.py'])
+def test_single_stage_forward_cpu(cfg_file):
+    model = _get_detector_cfg(cfg_file)
+    model = _replace_r50_with_r18(model)
+    model.backbone.init_cfg = None
+
+    from mmdet.models import build_detector
+    detector = build_detector(model)
+
+    input_shape = (1, 3, 300, 300)
+    mm_inputs = _demo_mm_inputs(input_shape)
+
+    imgs = mm_inputs.pop('imgs')
+    img_metas = mm_inputs.pop('img_metas')
+
+    # Test forward train
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_labels = mm_inputs['gt_labels']
+    losses = detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert isinstance(losses, dict)
+
+    # Test forward test
+    with torch.no_grad():
+        img_list = [g[None, :] for g in imgs]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      return_loss=False)
+            batch_results.append(result)
+
+
 def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
                     num_items=None, num_classes=10,
                     with_semantic=False):  # yapf: disable
