@@ -158,7 +158,7 @@ def test_rpn_forward():
         # 'free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
         # 'atss/atss_r50_fpn_1x_coco.py',  # not ready for topk
         'reppoints/reppoints_moment_r50_fpn_1x_coco.py',
-        'yolo/yolov3_d53_mstrain-608_273e_coco.py'
+        'yolo/yolov3_mobilenetv2_320_300e_coco.py'
     ])
 def test_single_stage_forward_gpu(cfg_file):
     if not torch.cuda.is_available():
@@ -370,43 +370,6 @@ def test_two_stage_forward(cfg_file):
             assert bboxes[0].shape == torch.Size((0, 4))
             assert scores[0].shape == torch.Size(
                 (0, detector.roi_head.bbox_head.fc_cls.out_features))
-
-
-@pytest.mark.parametrize(
-    'cfg_file', ['ghm/retinanet_ghm_r50_fpn_1x_coco.py', 'ssd/ssd300_coco.py'])
-def test_single_stage_forward_cpu(cfg_file):
-    model = _get_detector_cfg(cfg_file)
-    model = _replace_r50_with_r18(model)
-    model.backbone.init_cfg = None
-
-    from mmdet.models import build_detector
-    detector = build_detector(model)
-
-    input_shape = (1, 3, 300, 300)
-    mm_inputs = _demo_mm_inputs(input_shape)
-
-    imgs = mm_inputs.pop('imgs')
-    img_metas = mm_inputs.pop('img_metas')
-
-    # Test forward train
-    gt_bboxes = mm_inputs['gt_bboxes']
-    gt_labels = mm_inputs['gt_labels']
-    losses = detector.forward(
-        imgs,
-        img_metas,
-        gt_bboxes=gt_bboxes,
-        gt_labels=gt_labels,
-        return_loss=True)
-    assert isinstance(losses, dict)
-
-    # Test forward test
-    with torch.no_grad():
-        img_list = [g[None, :] for g in imgs]
-        batch_results = []
-        for one_img, one_meta in zip(img_list, img_metas):
-            result = detector.forward([one_img], [[one_meta]],
-                                      return_loss=False)
-            batch_results.append(result)
 
 
 def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
