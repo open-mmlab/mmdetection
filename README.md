@@ -31,11 +31,11 @@ please refer the config file [centernet2_cascade_r50_fpn.py](https://github.com/
  
 | name | bbox_mAP|bbox_mAP_50|bbox_mAP_75|bbox_mAP_l|bbox_mAP_m|bbox_mAP_s|
 |--|--|--|--|--|--|--|
-| CenterNet2 | 40.4 | | | | | |
+| CenterNet2 | 40.5 | 56.8 | 44.6 | 21.2 | 44.1 | 55.6 |
 log and model:
-| name | backbone|epoch|mAP|Log|Model|
+| name | backbone | schedule | mAP | Log | Model |
 |--|--|--|--|--|--|
-| CenterNet2 | 40.4 |12|40.4 | | |
+| CenterNet2 | R50-FPN | 1x | 40.5 | [log](http) | [CenterNet2_1x[9doa]](https://pan.baidu.com/s/1yUnpu146aDk558vmhiNfxg)|
 ### How To Use？
 What is MMCV？
 MMCV is a foundational library for computer vision research and supports many research projects as below:
@@ -79,6 +79,7 @@ mv ./configs/_base_/models/centernet2_cascade_r50_fpn.py ${your path to mmdetect
 mv ./mmdet/models/detectors/centernet2.py ${your path to mmdetection}/mmdet/models/detectors/
 mv ./mmdet/models/dense_heads/custom_centernet_head.py ${your path to mmdetection}/mmdet/models/dense_heads/
 mv ./mmdet/models/roi_heads/custom_cascade_roi_head.py ${your path to mmdetection}/mmdet/models/roi_heads/
+mv ./mmdet/models/losses/gaussian_focal_loss.py ${your path to mmdetection}/mmdet/models/losses/
 ```
 
 
@@ -115,6 +116,16 @@ from .custom_cascade_roi_head import CustomCascadeRoIHead
 
 __all__ = [
     ..., 'CustomCascadeRoIHead'
+]
+```
+
+*mmdetection/models/roi_heads/__init__.py*
+
+```python
+...
+
+__all__ = [
+    ..., 'CustomGaussianFocalLoss'
 ]
 ```
 
