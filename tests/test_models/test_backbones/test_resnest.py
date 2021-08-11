@@ -34,10 +34,10 @@ def test_resnest_backbone():
     model.init_weights()
     model.train()
 
-    imgs = torch.randn(2, 3, 224, 224)
+    imgs = torch.randn(2, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size([2, 256, 56, 56])
-    assert feat[1].shape == torch.Size([2, 512, 28, 28])
-    assert feat[2].shape == torch.Size([2, 1024, 14, 14])
-    assert feat[3].shape == torch.Size([2, 2048, 7, 7])
+    assert feat[0].shape == torch.Size([2, 256, 8, 8])
+    assert feat[1].shape == torch.Size([2, 512, 4, 4])
+    assert feat[2].shape == torch.Size([2, 1024, 2, 2])
+    assert feat[3].shape == torch.Size([2, 2048, 1, 1])
