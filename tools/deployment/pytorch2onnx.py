@@ -124,9 +124,12 @@ def pytorch2onnx(model,
         img_list, img_meta_list = [one_img], [[one_meta]]
 
         # get pytorch output
-        pytorch_results = model(
-            img_list, img_metas=img_meta_list, return_loss=False,
-            rescale=True)[0]
+        with torch.no_grad():
+            pytorch_results = model(
+                img_list,
+                img_metas=img_meta_list,
+                return_loss=False,
+                rescale=True)[0]
 
         img_list = [_.cuda().contiguous() for _ in img_list]
         if dynamic_export:

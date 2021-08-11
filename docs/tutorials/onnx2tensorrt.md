@@ -18,7 +18,7 @@
 ### Prerequisite
 
 1. Please refer to [get_started.md](https://mmdetection.readthedocs.io/en/latest/get_started.html) for installation of MMCV and MMDetection from source.
-2. Please refer to [ONNXRuntime in mmcv](https://mmcv.readthedocs.io/en/latest/onnxruntime_op.html) and [TensorRT plugin in mmcv](https://github.com/open-mmlab/mmcv/blob/master/docs/tensorrt_plugin.md/) to install `mmcv-full` with ONNXRuntime custom ops and TensorRT plugins.
+2. Please refer to [ONNXRuntime in mmcv](https://mmcv.readthedocs.io/en/latest/deployment/onnxruntime_op.html) and [TensorRT plugin in mmcv](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/tensorrt_plugin.md/) to install `mmcv-full` with ONNXRuntime custom ops and TensorRT plugins.
 3. Use our tool [pytorch2onnx](https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html) to convert the model from PyTorch to ONNX.
 
 ### Usage
@@ -85,7 +85,9 @@ The table below lists the models that are guaranteed to be convertable to Tensor
 |    YOLOv3    |  `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`  |       Y       |        Y        |       |
 |  RetinaNet   |   `configs/retinanet/retinanet_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
 | Faster R-CNN | `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py` |       Y       |        Y        |       |
+| Cascade R-CNN| `configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py` |   Y    |   Y        |       |
 |  Mask R-CNN  |   `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
+| Cascade Mask R-CNN  |   `configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
 |  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py` |   Y    |   Y        |       |
 
 Notes:

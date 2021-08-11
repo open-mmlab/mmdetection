@@ -8,6 +8,7 @@ import torch
 from mmcv.cnn import Scale
 
 from mmdet import digit_version
+from mmdet.models import build_detector
 from mmdet.models.dense_heads import (FCOSHead, FSAFHead, RetinaHead, SSDHead,
                                       YOLOV3Head)
 from .utils import ort_validate
@@ -18,6 +19,76 @@ if digit_version(torch.__version__) <= digit_version('1.5.0'):
     pytest.skip(
         'ort backend does not support version below 1.5.0',
         allow_module_level=True)
+
+
+def test_cascade_onnx_export():
+
+    config_path = './configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+    cfg = mmcv.Config.fromfile(config_path)
+    model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
+    with torch.no_grad():
+        model.forward = partial(model.forward, img_metas=[[dict()]])
+
+        dynamic_axes = {
+            'input_img': {
+                0: 'batch',
+                2: 'width',
+                3: 'height'
+            },
+            'dets': {
+                0: 'batch',
+                1: 'num_dets',
+            },
+            'labels': {
+                0: 'batch',
+                1: 'num_dets',
+            },
+        }
+        torch.onnx.export(
+            model, [torch.rand(1, 3, 400, 500)],
+            'tmp.onnx',
+            output_names=['dets', 'labels'],
+            input_names=['input_img'],
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11,
+            dynamic_axes=dynamic_axes)
+
+
+def test_faster_onnx_export():
+
+    config_path = './configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+    cfg = mmcv.Config.fromfile(config_path)
+    model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
+    with torch.no_grad():
+        model.forward = partial(model.forward, img_metas=[[dict()]])
+
+        dynamic_axes = {
+            'input_img': {
+                0: 'batch',
+                2: 'width',
+                3: 'height'
+            },
+            'dets': {
+                0: 'batch',
+                1: 'num_dets',
+            },
+            'labels': {
+                0: 'batch',
+                1: 'num_dets',
+            },
+        }
+        torch.onnx.export(
+            model, [torch.rand(1, 3, 400, 500)],
+            'tmp.onnx',
+            output_names=['dets', 'labels'],
+            input_names=['input_img'],
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11,
+            dynamic_axes=dynamic_axes)
 
 
 def retinanet_config():

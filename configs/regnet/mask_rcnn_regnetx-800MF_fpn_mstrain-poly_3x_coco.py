@@ -4,7 +4,6 @@ _base_ = [
 ]
 
 model = dict(
-    pretrained='open-mmlab://regnetx_800mf',
     backbone=dict(
         _delete_=True,
         type='RegNet',
@@ -13,7 +12,9 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(
+            type='Pretrained', checkpoint='open-mmlab://regnetx_800mf')),
     neck=dict(
         type='FPN',
         in_channels=[64, 128, 288, 672],
