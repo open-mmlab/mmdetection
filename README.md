@@ -32,6 +32,7 @@ please refer the config file [centernet2_cascade_r50_fpn.py](https://github.com/
 | name | bbox_mAP|bbox_mAP_50|bbox_mAP_75|bbox_mAP_l|bbox_mAP_m|bbox_mAP_s|
 |--|--|--|--|--|--|--|
 | CenterNet2 | 40.5 | 56.8 | 44.6 | 21.2 | 44.1 | 55.6 |
+
 log and model:
 | name | backbone | schedule | mAP | Log | Model |
 |--|--|--|--|--|--|
