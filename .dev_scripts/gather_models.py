@@ -29,6 +29,12 @@ def process_checkpoint(in_file, out_file):
     # remove optimizer for smaller file size
     if 'optimizer' in checkpoint:
         del checkpoint['optimizer']
+
+    # remove ema state_dict
+    for key in list(checkpoint['state_dict']):
+        if key.startswith('ema_'):
+            checkpoint['state_dict'].pop(key)
+
     # if it is necessary to remove some sensitive data in checkpoint['meta'],
     # add the code here.
     if torch.__version__ >= '1.6':
