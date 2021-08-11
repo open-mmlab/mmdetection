@@ -18,7 +18,7 @@ python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MOD
 
 ## MMDetection 2.12.0
 
-MMDetection is going through big refactoring for more general and convenient usages during the releases from v2.12.0 to v2.15.0 (maybe longer).
+MMDetection is going through big refactoring for more general and convenient usages during the releases from v2.12.0 to v2.18.0 (maybe longer).
 In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV dependency, model initialization, model registry, and mask AP evaluation.
 
 ### MMCV Version
