@@ -46,7 +46,7 @@ loss_cls=dict(
 
 ### 微调超参数（步骤1）
 
-`gamma`和`beta`是Focal Loss中的两个超参数。如果我们想把`gamma`的值设为 1.5，把`alpha`的值设为 0.5，我们可以在配置文件中按照如下指定：
+`gamma` 和 `beta` 是 Focal Loss 中的两个超参数。如果我们想把 `gamma` 的值设为 1.5，把 `alpha` 的值设为 0.5，我们可以在配置文件中按照如下指定：
 
 ```python
 loss_cls=dict(
