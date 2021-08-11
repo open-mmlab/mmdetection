@@ -2186,15 +2186,15 @@ class MixUp:
 
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
-           Default to (640, 640).
+           Default: (640, 640).
         ratio_range (Sequence[float]): Scale ratio of mixup image.
-           Default to (0.5, 1.5).
+           Default: (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
-           Default to 0.5.
-        pad_val (int): Pad value. Default to 114.
+           Default: 0.5.
+        pad_val (int): Pad value. Default: 114.
         max_iters (int): The maximum number of iterations. If the number of
            iterations is greater than `max_iters`, but gt_bbox is still
-           empty, then the iteration is terminated.  Default to 15.
+           empty, then the iteration is terminated. Default: 15.
         min_bbox_size (float): Width and height threshold to filter bboxes.
             If the height or width of a box is smaller than this value, it
             will be removed. Default: 5.
@@ -2203,7 +2203,7 @@ class MixUp:
             the box will be removed. Default: 0.2.
         max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
-            value, the box will be removed.
+            value, the box will be removed. Default: 20.
     """
 
     def __init__(self,

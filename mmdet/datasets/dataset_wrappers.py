@@ -342,7 +342,7 @@ class MultiImageMixDataset:
         return self.num_samples
 
     def __getitem__(self, idx):
-        results = self.dataset[idx]
+        results = copy.deepcopy(self.dataset[idx])
         for (transform, transform_type) in zip(self.pipeline,
                                                self.pipeline_types):
             if self._skip_type_keys is not None and \
