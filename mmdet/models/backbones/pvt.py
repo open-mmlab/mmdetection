@@ -334,6 +334,7 @@ class AbsolutePositionEmbedding(BaseModule):
 @BACKBONES.register_module()
 class PyramidVisionTransformer(BaseModule):
     """Pyramid Vision Transformer (PVT)
+
     A PyTorch implement of : `Pyramid Vision Transformer: A Versatile Backbone
     for Dense Prediction without Convolutions` -
         https://arxiv.org/pdf/2102.12122.pdf
@@ -342,12 +343,12 @@ class PyramidVisionTransformer(BaseModule):
         pretrain_img_size (int | tuple[int]): The size of input image when
             pretrain. Defaults: 224.
         in_channels (int): Number of input channels. Default: 3.
-        embed_dims (int): Embedding dimension. Default: 768.
+        embed_dims (int): Embedding dimension. Default: 64.
         num_stags (int): The num of stages. Default: 4.
         num_layers (Sequence[int]): The layer number of each transformer encode
             layer. Default: [3, 4, 6, 3].
         num_heads (Sequence[int]): The attention heads of each transformer
-            encode layer. Default: [1, 2, 4, 8].
+            encode layer. Default: [1, 2, 5, 8].
         patch_sizes (Sequence[int]): The patch_size of each patch embedding.
             Default: [4, 2, 2, 2].
         strides (Sequence[int]): The stride of each patch embedding.
@@ -366,9 +367,9 @@ class PyramidVisionTransformer(BaseModule):
             Default 0.0
         attn_drop_rate (float): The drop out rate for attention layer.
             Default 0.0
-        drop_path_rate (float): stochastic depth rate. Default 0.0.
+        drop_path_rate (float): stochastic depth rate. Default 0.1.
         with_cls_token (bool): Whether concatenating class token into image
-            tokens as transformer input. Default: True.
+            tokens as transformer input. Default: False.
         output_cls_token (bool): Whether output the cls_token. If set True,
             `with_cls_token` must be True. Default: False.
         use_abs_pos_embed (bool): If True, add absolute position embedding to
@@ -392,7 +393,7 @@ class PyramidVisionTransformer(BaseModule):
                  embed_dims=64,
                  num_stages=4,
                  num_layers=[3, 4, 6, 3],
-                 num_heads=[1, 2, 4, 8],
+                 num_heads=[1, 2, 5, 8],
                  patch_sizes=[4, 2, 2, 2],
                  strides=[4, 2, 2, 2],
                  paddings=[0, 0, 0, 0],
@@ -402,8 +403,8 @@ class PyramidVisionTransformer(BaseModule):
                  qkv_bias=True,
                  drop_rate=0.,
                  attn_drop_rate=0.,
-                 drop_path_rate=0.,
-                 with_cls_token=True,
+                 drop_path_rate=0.1,
+                 with_cls_token=False,
                  output_cls_token=False,
                  use_abs_pos_embed=True,
                  norm_after_stage=False,
@@ -413,7 +414,7 @@ class PyramidVisionTransformer(BaseModule):
                  pretrain_style='official',
                  pretrained=None,
                  init_cfg=None):
-        super().__init__()
+        super().__init__(init_cfg)
 
         if isinstance(pretrain_img_size, int):
             pretrain_img_size = to_2tuple(pretrain_img_size)
@@ -432,9 +433,14 @@ class PyramidVisionTransformer(BaseModule):
             assert with_cls_token is True, f'with_cls_token must be True if' \
                 f'set output_cls_token to True, but got {with_cls_token}'
 
-        if isinstance(pretrained, str) or pretrained is None:
-            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
+        if isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            self.init_cfg = init_cfg
         else:
             raise TypeError('pretrained must be a str or None')
 
@@ -453,7 +459,6 @@ class PyramidVisionTransformer(BaseModule):
         assert max(out_indices) < self.num_stages
         self.pretrain_style = pretrain_style
         self.pretrained = pretrained
-        self.init_cfg = init_cfg
 
         self.with_cls_token = with_cls_token
         self.output_cls_token = output_cls_token
@@ -514,7 +519,7 @@ class PyramidVisionTransformer(BaseModule):
             cur += num_layer
 
     def init_weights(self):
-        if self.pretrained is None:
+        if self.init_cfg is None:
             if self.with_cls_token:
                 trunc_normal_init(self.cls_token, std=.02)
             for m in self.modules():
@@ -534,10 +539,10 @@ class PyramidVisionTransformer(BaseModule):
                         constant_init(m.bias, 0)
                 elif isinstance(m, AbsolutePositionEmbedding):
                     m.init_weights()
-        elif isinstance(self.pretrained, str):
+        else:
             logger = get_root_logger()
             checkpoint = _load_checkpoint(
-                self.pretrained, logger=logger, map_location='cpu')
+                self.init_cfg.checkpoint, logger=logger, map_location='cpu')
             if 'state_dict' in checkpoint:
                 state_dict = checkpoint['state_dict']
             elif 'model' in checkpoint:
@@ -550,7 +555,7 @@ class PyramidVisionTransformer(BaseModule):
                 # so we need to convert pretrain weights to match this
                 # implementation.
                 state_dict = pvt_convert(state_dict)
-
+            print('Seccess!')
             load_state_dict(self, state_dict, strict=False, logger=logger)
 
     def forward(self, x):
