@@ -21,6 +21,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def __init__(self,
                  num_stages,
                  stage_loss_weights,
+				 add_agnostic_score=False,
                  bbox_roi_extractor=None,
                  bbox_head=None,
                  mask_roi_extractor=None,
@@ -36,6 +37,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             'Shared head is not supported in Cascade RCNN anymore'
 
         self.num_stages = num_stages
+        self.add_agnostic_score = add_agnostic_score
         self.stage_loss_weights = stage_loss_weights
         super(CascadeRoIHead, self).__init__(
             bbox_roi_extractor=bbox_roi_extractor,
@@ -344,11 +346,23 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                         refine_rois_list.append(refined_rois)
                 rois = torch.cat(refine_rois_list)
 
-        # average scores of each image by stages
-        cls_score = [
-            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-            for i in range(num_imgs)
-        ]
+        if self.add_agnostic_score:
+            #centernet2
+            proposal_score = [proposal[:, -1] for proposal in proposal_list]
+            ms_scores = [
+                [score.softmax(-1) for score in scores]
+                for scores in ms_scores]
+            cls_score = [
+                sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+                for i in range(num_imgs)]
+            cls_score = [(s * p[:, None]) ** 0.5
+                         for s, p in zip(cls_score, proposal_score)]
+        else:
+            # average scores of each image by stages
+            cls_score = [
+                sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+                for i in range(num_imgs)
+            ]
 
         # apply bbox post-processing to each image individually
         det_bboxes = []
