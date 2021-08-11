@@ -42,9 +42,19 @@ def _get_detector_cfg(fname):
     return model
 
 
+def _replace_r50_with_r18(model):
+    """Replace ResNet50 with ResNet18 in config."""
+    model = copy.deepcopy(model)
+    if model.backbone.type == 'ResNet':
+        model.backbone.depth = 18
+        model.neck.in_channels = [64, 128, 256, 512]
+    return model
+
+
 def test_sparse_rcnn_forward():
     config_path = 'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py'
     model = _get_detector_cfg(config_path)
+    model = _replace_r50_with_r18(model)
     model.backbone.init_cfg = None
     from mmdet.models import build_detector
     detector = build_detector(model)
@@ -109,6 +119,7 @@ def test_sparse_rcnn_forward():
 
 def test_rpn_forward():
     model = _get_detector_cfg('rpn/rpn_r50_fpn_1x_coco.py')
+    model = _replace_r50_with_r18(model)
     model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
@@ -155,6 +166,7 @@ def test_single_stage_forward_gpu(cfg_file):
         pytest.skip('test requires GPU and torch+cuda')
 
     model = _get_detector_cfg(cfg_file)
+    model = _replace_r50_with_r18(model)
     model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
@@ -192,6 +204,7 @@ def test_single_stage_forward_gpu(cfg_file):
 def test_faster_rcnn_ohem_forward():
     model = _get_detector_cfg(
         'faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py')
+    model = _replace_r50_with_r18(model)
     model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
@@ -254,6 +267,7 @@ def test_two_stage_forward(cfg_file):
         with_semantic = False
 
     model = _get_detector_cfg(cfg_file)
+    model = _replace_r50_with_r18(model)
     model.backbone.init_cfg = None
 
     # Save cost
@@ -362,6 +376,7 @@ def test_two_stage_forward(cfg_file):
     'cfg_file', ['ghm/retinanet_ghm_r50_fpn_1x_coco.py', 'ssd/ssd300_coco.py'])
 def test_single_stage_forward_cpu(cfg_file):
     model = _get_detector_cfg(cfg_file)
+    model = _replace_r50_with_r18(model)
     model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
@@ -474,6 +489,7 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
 
 def test_yolact_forward():
     model = _get_detector_cfg('yolact/yolact_r50_1x8_coco.py')
+    model = _replace_r50_with_r18(model)
     model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
@@ -513,6 +529,8 @@ def test_yolact_forward():
 
 def test_detr_forward():
     model = _get_detector_cfg('detr/detr_r50_8x2_150e_coco.py')
+    model.backbone.depth = 18
+    model.bbox_head.in_channels = 512
     model.backbone.init_cfg = None
 
     from mmdet.models import build_detector
