@@ -458,7 +458,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         if self.use_l1:
             l1_target = self._get_l1_target(l1_target, bbox_target,
                                             priors[pos_inds])
-        foreground_mask = torch.zeros_like(objectness).to(torch.uint8)
+        foreground_mask = torch.zeros_like(objectness).to(torch.bool)
         foreground_mask[pos_inds] = 1
         return (foreground_mask, cls_target, obj_target, bbox_target,
                 l1_target, num_pos_per_img)
