@@ -18,7 +18,7 @@ python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MOD
 
 ## MMDetection 2.12.0
 
-MMDetection is going through big refactoring for more general and convenient usages during the releases from v2.12.0 to v2.15.0 (maybe longer).
+MMDetection is going through big refactoring for more general and convenient usages during the releases from v2.12.0 to v2.18.0 (maybe longer).
 In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV dependency, model initialization, model registry, and mask AP evaluation.
 
 ### MMCV Version
@@ -95,7 +95,7 @@ which is more natural and accurate.
   [model]_(model setting)_[backbone]_[neck]_(norm setting)_(misc)_(gpu x batch)_[schedule]_[dataset].py,
   ```
 
-  where the (`misc`) includes DCN and GCBlock, etc. More details are illustrated in the [documentation for config](config.md)
+  where the (`misc`) includes DCN and GCBlock, etc. More details are illustrated in the [documentation for config](tutorials/config)
 
 - MMDetection V2.0 uses new ResNet Caffe backbones to reduce warnings when loading pre-trained models. Most of the new backbones' weights are the same as the former ones but do not have `conv.bias`, except that they use a different `img_norm_cfg`. Thus, the new backbone will not cause warning of unexpected keys.
 

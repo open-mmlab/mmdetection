@@ -174,7 +174,7 @@ Public datasets like [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/index.h
 It is recommended to download and extract the dataset somewhere outside the project directory and symlink the dataset root to `$MMDETECTION/data` as below.
 If your folder structure is different, you may need to change the corresponding paths in config files.
 
-```plain
+```text
 mmdetection
 ├── mmdet
 ├── tools
@@ -200,7 +200,7 @@ mmdetection
 
 Some models require additional [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) datasets, such as HTC, DetectoRS and SCNet, you can download and unzip then move to the coco folder. The directory should be like this.
 
-```plain
+```text
 mmdetection
 ├── data
 │   ├── coco

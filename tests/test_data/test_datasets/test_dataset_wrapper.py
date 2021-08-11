@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import numpy as np
 
 from mmdet.datasets import (ClassBalancedDataset, ConcatDataset, CustomDataset,
-                            RepeatDataset)
+                            MultiImageMixDataset, RepeatDataset)
 
 
 def test_dataset_wrapper():
@@ -78,3 +78,64 @@ def test_dataset_wrapper():
     for idx in np.random.randint(0, len(repeat_factor_dataset), 3):
         assert repeat_factor_dataset[idx] == bisect.bisect_right(
             repeat_factors_cumsum, idx)
+
+    img_scale = (60, 60)
+    dynamic_scale = (80, 80)
+    pipeline = [
+        dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
+        dict(
+            type='RandomAffine',
+            scaling_ratio_range=(0.1, 2),
+            border=(-img_scale[0] // 2, -img_scale[1] // 2)),
+        dict(
+            type='MixUp',
+            img_scale=img_scale,
+            ratio_range=(0.8, 1.6),
+            pad_val=114.0),
+        dict(type='RandomFlip', flip_ratio=0.5),
+        dict(type='Resize', keep_ratio=True),
+        dict(type='Pad', pad_to_square=True, pad_val=114.0),
+    ]
+
+    CustomDataset.load_annotations = MagicMock()
+    results = []
+    for _ in range(2):
+        height = np.random.randint(10, 30)
+        weight = np.random.randint(10, 30)
+        img = np.ones((height, weight, 3))
+        gt_bbox = np.concatenate([
+            np.random.randint(1, 5, (2, 2)),
+            np.random.randint(1, 5, (2, 2)) + 5
+        ],
+                                 axis=1)
+        gt_labels = np.random.randint(0, 80, 2)
+        results.append(dict(gt_bboxes=gt_bbox, gt_labels=gt_labels, img=img))
+
+    CustomDataset.__getitem__ = MagicMock(side_effect=lambda idx: results[idx])
+    dataset_a = CustomDataset(
+        ann_file=MagicMock(), pipeline=[], test_mode=True, img_prefix='')
+    len_a = 2
+    cat_ids_list_a = [
+        np.random.randint(0, 80, num).tolist()
+        for num in np.random.randint(1, 20, len_a)
+    ]
+    dataset_a.data_infos = MagicMock()
+    dataset_a.data_infos.__len__.return_value = len_a
+    dataset_a.get_cat_ids = MagicMock(
+        side_effect=lambda idx: cat_ids_list_a[idx])
+
+    multi_image_mix_dataset = MultiImageMixDataset(dataset_a, pipeline,
+                                                   dynamic_scale)
+    for idx in range(len_a):
+        results_ = multi_image_mix_dataset[idx]
+        assert results_['img'].shape == (dynamic_scale[0], dynamic_scale[1], 3)
+
+    # test skip_type_keys
+    multi_image_mix_dataset = MultiImageMixDataset(
+        dataset_a,
+        pipeline,
+        dynamic_scale,
+        skip_type_keys=('MixUp', 'RandomFlip', 'Resize', 'Pad'))
+    for idx in range(len_a):
+        results_ = multi_image_mix_dataset[idx]
+        assert results_['img'].shape == (img_scale[0], img_scale[1], 3)
