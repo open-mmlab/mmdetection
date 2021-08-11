@@ -17,7 +17,7 @@
 
 | Backbone  | size   | Mem (GB) |   box AP | Config | Download |
 |:---------:|:-------:|:-------:|:-------:|:--------:|:------:|
-| YOLOX-Tiny | 416 |   3.6      |   31.6  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yolox/yolox_tiny_300e_coco.py)       |[model](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_300e_coco/yolox_tiny_300e_coco_20210806_234250-7767c025.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_300e_coco/yolox_tiny_300e_coco_20210806_234250.log.json) |
+| YOLOX-Tiny | 416 |   3.6      |   31.6  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yolox/yolox_tiny_8x8_300e_coco.py)       |[model](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_8x8_300e_coco/yolox_tiny_8x8_300e_coco_20210806_234250-4ff3b67e.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_8x8_300e_coco/yolox_tiny_8x8_300e_coco_20210806_234250.log.json) |
 
 **Note**:
 

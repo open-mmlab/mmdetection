@@ -14,9 +14,9 @@ Collections:
     README: configs/yolox/README.md
 
 Models:
-  - Name: yolox_tiny_300e_coco
+  - Name: yolox_tiny_8x8_300e_coco
     In Collection: YOLOX
-    Config: configs/yolox/yolox_tiny_300e_coco.py
+    Config: configs/yolox/yolox_tiny_8x8_300e_coco.py
     Metadata:
       Training Memory (GB): 3.6
       Epochs: 300
@@ -25,4 +25,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 31.6
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_300e_coco/yolox_tiny_300e_coco_20210806_234250-7767c025.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_8x8_300e_coco/yolox_tiny_8x8_300e_coco_20210806_234250-4ff3b67e.pth
