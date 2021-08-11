@@ -465,7 +465,7 @@ class SOLOHead(BaseMaskHead):
         # filter.
         keep = sum_masks > strides
         if keep.sum() == 0:
-            processed_results.scores = cate_scores
+            processed_results.scores = cate_scores.new_ones(0)
             processed_results.masks = cate_scores.new_zeros(0, *ori_shape[:2])
             processed_results.labels = cate_scores.new_ones(0)
             return processed_results
@@ -502,7 +502,7 @@ class SOLOHead(BaseMaskHead):
         # filter.
         keep = cate_scores >= cfg.update_thr
         if keep.sum() == 0:
-            processed_results.scores = cate_scores
+            processed_results.scores = cate_scores.new_ones(0)
             processed_results.masks = cate_scores.new_zeros(0, *ori_shape[:2])
             processed_results.labels = cate_scores.new_ones(0)
             return processed_results
@@ -992,7 +992,7 @@ class DecoupledSOLOHead(SOLOHead):
 
         # TODO proecess this case
         if len(cate_scores) == 0:
-            processed_results.scores = cate_scores
+            processed_results.scores = cate_scores.new_ones(0)
             processed_results.masks = cate_scores.new_zeros(0, *ori_shape[:2])
             processed_results.labels = cate_scores.new_ones(0)
             return processed_results
@@ -1018,7 +1018,7 @@ class DecoupledSOLOHead(SOLOHead):
 
         keep = cate_scores >= cfg.update_thr
         if keep.sum() == 0:
-            processed_results.scores = cate_scores
+            processed_results.scores = cate_scores.new_ones(0)
             processed_results.masks = cate_scores.new_zeros(0, *ori_shape[:2])
             processed_results.labels = cate_scores.new_ones(0)
             return processed_results
