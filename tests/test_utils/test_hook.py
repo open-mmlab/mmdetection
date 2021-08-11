@@ -116,22 +116,22 @@ def test_yolox_lrupdater_hook(multi_optimziers):
         calls = [
             call(
                 'train', {
-                    'learning_rate/model1': 4.0000000000000003e-07,
-                    'learning_rate/model2': 2.0000000000000002e-07,
+                    'learning_rate/model1': 8.000000000000001e-06,
+                    'learning_rate/model2': 4.000000000000001e-06,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 1),
             call(
                 'train', {
-                    'learning_rate/model1': 1.9600000000000002e-05,
-                    'learning_rate/model2': 9.800000000000001e-06,
+                    'learning_rate/model1': 0.00039200000000000004,
+                    'learning_rate/model2': 0.00019600000000000002,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 7),
             call(
                 'train', {
-                    'learning_rate/model1': 4.000000000000001e-05,
-                    'learning_rate/model2': 2.0000000000000005e-05,
+                    'learning_rate/model1': 0.0008000000000000001,
+                    'learning_rate/model2': 0.0004000000000000001,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 10)
@@ -139,15 +139,15 @@ def test_yolox_lrupdater_hook(multi_optimziers):
     else:
         calls = [
             call('train', {
-                'learning_rate': 4.0000000000000003e-07,
+                'learning_rate': 8.000000000000001e-06,
                 'momentum': 0.95
             }, 1),
             call('train', {
-                'learning_rate': 1.9600000000000002e-05,
+                'learning_rate': 0.00039200000000000004,
                 'momentum': 0.95
             }, 7),
             call('train', {
-                'learning_rate': 4.000000000000001e-05,
+                'learning_rate': 0.0008000000000000001,
                 'momentum': 0.95
             }, 10)
         ]
