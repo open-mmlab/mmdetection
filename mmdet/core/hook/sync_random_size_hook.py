@@ -37,6 +37,8 @@ class SyncRandomSizeHook(Hook):
         """Change the dataset output image size."""
         if self.ratio_range is not None and (runner.iter +
                                              1) % self.interval == 0:
+            # Due to DDP and DP get the device behavior inconsistent,
+            # so we did not get the device from runner.model.
             tensor = torch.LongTensor(2).to(self.device)
 
             if self.rank == 0:
