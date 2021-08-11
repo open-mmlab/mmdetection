@@ -114,7 +114,7 @@ def test_rpn_forward():
     from mmdet.models import build_detector
     detector = build_detector(model)
 
-    input_shape = (1, 3, 128, 128)
+    input_shape = (1, 3, 100, 100)
     mm_inputs = _demo_mm_inputs(input_shape)
 
     imgs = mm_inputs.pop('imgs')
@@ -197,7 +197,7 @@ def test_faster_rcnn_ohem_forward():
     from mmdet.models import build_detector
     detector = build_detector(model)
 
-    input_shape = (1, 3, 128, 128)
+    input_shape = (1, 3, 100, 100)
 
     # Test forward train with a non-empty truth batch
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[10])
