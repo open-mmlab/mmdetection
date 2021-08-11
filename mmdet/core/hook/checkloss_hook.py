@@ -4,19 +4,17 @@ from mmcv.runner.hooks import HOOKS, Hook
 
 @HOOKS.register_module()
 class CheckInvalidLossHook(Hook):
-    """Check Invalid Loss Hook.
+    """Check invalid loss hook.
 
     This hook will regularly check whether the loss is valid
     during training.
 
     Args:
         interval (int): Checking interval (every k iterations).
-            Default: 10.
-        after_train_iter (bool): Whether check invalid loss in
-            `after_train_iter`. Default: True.
+            Default: 50.
     """
 
-    def __init__(self, interval=10):
+    def __init__(self, interval=50):
         self.interval = interval
 
     def after_train_iter(self, runner):
