@@ -584,61 +584,6 @@ def test_detr_forward():
             batch_results.append(result)
 
 
-def test_kd_single_stage_forward():
-    model = _get_detector_cfg('ld/ld_r18_gflv1_r101_fpn_coco_1x.py')
-    model.backbone.init_cfg = None
-
-    from mmdet.models import build_detector
-    detector = build_detector(model)
-
-    input_shape = (1, 3, 100, 100)
-    mm_inputs = _demo_mm_inputs(input_shape)
-
-    imgs = mm_inputs.pop('imgs')
-    img_metas = mm_inputs.pop('img_metas')
-
-    # Test forward train with non-empty truth batch
-    detector.train()
-    gt_bboxes = mm_inputs['gt_bboxes']
-    gt_labels = mm_inputs['gt_labels']
-    losses = detector.forward(
-        imgs,
-        img_metas,
-        gt_bboxes=gt_bboxes,
-        gt_labels=gt_labels,
-        return_loss=True)
-    assert isinstance(losses, dict)
-    loss, _ = detector._parse_losses(losses)
-    assert float(loss.item()) > 0
-
-    # Test forward train with an empty truth batch
-    mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
-    imgs = mm_inputs.pop('imgs')
-    img_metas = mm_inputs.pop('img_metas')
-    gt_bboxes = mm_inputs['gt_bboxes']
-    gt_labels = mm_inputs['gt_labels']
-    losses = detector.forward(
-        imgs,
-        img_metas,
-        gt_bboxes=gt_bboxes,
-        gt_labels=gt_labels,
-        return_loss=True)
-    assert isinstance(losses, dict)
-    loss, _ = detector._parse_losses(losses)
-    assert float(loss.item()) > 0
-
-    # Test forward test
-    detector.eval()
-    with torch.no_grad():
-        img_list = [g[None, :] for g in imgs]
-        batch_results = []
-        for one_img, one_meta in zip(img_list, img_metas):
-            result = detector.forward([one_img], [[one_meta]],
-                                      rescale=True,
-                                      return_loss=False)
-            batch_results.append(result)
-
-
 def test_inference_detector():
     from mmdet.apis import inference_detector
     from mmdet.models import build_detector
