@@ -21,11 +21,20 @@ class SyncNormHook(Hook):
     """Synchronize Norm states after training epoch, currently used in YOLOX.
 
     Args:
+        num_last_epochs (int): The number of latter epochs in the end of the
+            training to switch to synchronizing norm interval. Default: 15.
         interval (int): Synchronizing norm interval. Default: 1.
     """
 
-    def __init__(self, interval=1):
+    def __init__(self, num_last_epochs=15, interval=1):
         self.interval = interval
+        self.num_last_epochs = num_last_epochs
+
+    def before_train_epoch(self, runner):
+        epoch = runner.epoch
+        if (epoch + 1) == runner.max_epochs - self.num_last_epochs:
+            # Synchronize norm every epoch.
+            self.interval = 1
 
     def after_train_epoch(self, runner):
         """Synchronizing norm."""

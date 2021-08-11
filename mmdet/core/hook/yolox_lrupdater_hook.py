@@ -32,13 +32,13 @@ class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
             warmup_lr = [_lr * k for _lr in regular_lr]
             return warmup_lr
 
-        if isinstance(self.regular_lr, dict):
+        if isinstance(self.base_lr, dict):
             lr_groups = {}
-            for key, regular_lr in self.regular_lr.items():
-                lr_groups[key] = _get_warmup_lr(cur_iters, regular_lr)
+            for key, base_lr in self.base_lr.items():
+                lr_groups[key] = _get_warmup_lr(cur_iters, base_lr)
             return lr_groups
         else:
-            return _get_warmup_lr(cur_iters, self.regular_lr)
+            return _get_warmup_lr(cur_iters, self.base_lr)
 
     def get_lr(self, runner, base_lr):
         last_iter = len(runner.data_loader) * self.num_last_epochs
