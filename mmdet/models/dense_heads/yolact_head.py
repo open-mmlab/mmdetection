@@ -168,7 +168,7 @@ class YOLACTHead(AnchorHead):
                 List[:obj:``SamplingResult``]: Sampler results for each image.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
 
@@ -332,7 +332,7 @@ class YOLACTHead(AnchorHead):
 
         device = cls_scores[0].device
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.anchor_generator.grid_anchors(
+        mlvl_anchors = self.prior_generator.grid_anchors(
             featmap_sizes, device=device)
 
         det_bboxes = []
