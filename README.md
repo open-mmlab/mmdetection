@@ -86,7 +86,7 @@ mv ./mmdet/models/losses/gaussian_focal_loss.py ${your path to mmdetection}/mmde
 
 3. **register and import module in  `__init__.py`**
 
-*mmdetection/models/detectors/__init__.py*
+*mmdetection/models/detectors/\_\_init\_\_.py*
 
 
 ```python
@@ -99,7 +99,7 @@ __all__ = [
 ```
 
 
-*mmdetection/models/dense_heads/__init__.py*
+*mmdetection/models/dense_heads/\_\_init\_\_.py*
 
 ```python
 ...
@@ -109,7 +109,7 @@ __all__ = [
     ..., 'CustomCenterNetHead'
 ]
 ```
-*mmdetection/models/roi_heads/__init__.py*
+*mmdetection/models/roi_heads/\_\_init\_\_.py*
 
 ```python
 ...
@@ -120,7 +120,7 @@ __all__ = [
 ]
 ```
 
-*mmdetection/models/roi_heads/__init__.py*
+*mmdetection/models/roi_heads/\_\_init\_\_.py*
 
 ```python
 ...
