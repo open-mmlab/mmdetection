@@ -1,6 +1,5 @@
 ## Changelog
 
-
 ### v2.15.1 (11/8/2021)
 
 #### Highlights
