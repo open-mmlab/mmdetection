@@ -26,26 +26,6 @@ from sc_sdk.configuration.elements.primitive_parameters import set_common_metada
 from sc_sdk.configuration.ui_rules import NullUIRules, UIRules
 
 
-class StringAttr:
-    category = ElementCategory.PRIMITIVES
-
-
-def configurable_str(default_value: str,
-                     header: str,
-                     description: str = 'Default integer description',
-                     warning: str = None,
-                     editable: bool = True,
-                     visible_in_ui: bool = True,
-                     affects_outcome_of: ModelLifecycle = ModelLifecycle.NONE,
-                     ui_rules: UIRules = NullUIRules()) -> int:
-    metadata = set_common_metadata(default_value=default_value, header=header, description=description, warning=warning,
-                                   editable=editable, visible_in_ui=visible_in_ui, ui_rules=ui_rules,
-                                   affects_outcome_of=affects_outcome_of, type=StringAttr)
-    return attr.ib(default=default_value,
-                   type=int,
-                   metadata=metadata)
-
-
 @attrs
 class OTEDetectionConfig(ModelConfig):
     header = string_attribute("Configuration for an object detection task")
@@ -144,10 +124,10 @@ class OTEDetectionConfig(ModelConfig):
         description = header
         visible_in_ui = boolean_attribute(False)
 
-        template = configurable_str("template.yaml", "", editable=False, visible_in_ui=False)
-        model = configurable_str("model.py", "", editable=False, visible_in_ui=False)
-        model_name = configurable_str("object detection model", "", editable=False, visible_in_ui=False)
-        data_pipeline = configurable_str("ote_data_pipeline.py", "", editable=False, visible_in_ui=False)
+        template = string_attribute("template.yaml")
+        model = string_attribute("model.py")
+        model_name = string_attribute("object detection model")
+        data_pipeline = string_attribute("ote_data_pipeline.py")
 
     learning_parameters = add_parameter_group(__LearningParameters)
     algo_backend = add_parameter_group(__AlgoBackend)
