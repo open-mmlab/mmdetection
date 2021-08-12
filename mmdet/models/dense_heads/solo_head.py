@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import ModuleList
 
 from mmdet.core import matrix_nms, multi_apply, points_nms
 from mmdet.core.results.results import InstanceResults
@@ -16,7 +15,7 @@ def center_of_mass(mask):
     h, w = mask.shape
     grid_h = torch.arange(h, device=mask.device)[:, None]
     grid_w = torch.arange(w, device=mask.device)
-    normalizer = mask.sum().float()
+    normalizer = mask.sum().float().clamp(min=1e-6)
     center_h = (mask * grid_h).sum() / normalizer
     center_w = (mask * grid_w).sum() / normalizer
     return center_h, center_w
@@ -352,24 +351,6 @@ class SOLOHead(BaseMaskHead):
 
                 cate_label[top:(down + 1), left:(right + 1)] = gt_label
                 # ins
-                # TODO check whether this is consistent with cv2.resize
-                # TODO: Delete later
-                # assert select.select <= 3
-                # 1.
-                # if self.select == 1:
-                #     seg_mask = F.interpolate(
-                #         seg_mask[None, None].float(),
-                #         size=(featmap_size[0], featmap_size[1]),
-                #         mode='bilinear').squeeze(0).squeeze(0).bool()
-                # # 2.
-                # elif self.select == 2:
-                #     seg_mask = F.interpolate(
-                #         seg_mask[None, None].float(),
-                #         size=(featmap_size[0], featmap_size[1]),
-                #         mode='bilinear').squeeze(0).squeeze(0)
-                #     seg_mask = seg_mask >= 0.5
-                # 3.
-                # elif self.select == 3:
                 seg_mask = np.uint8(seg_mask.cpu().numpy())
                 seg_mask = mmcv.imrescale(seg_mask, scale=1. / output_stride)
                 seg_mask = torch.from_numpy(seg_mask).to(device=device)
@@ -545,7 +526,6 @@ class DecoupledSOLOHead(SOLOHead):
         norm_cfg=None,
         train_cfg=None,
         test_cfg=None,
-        # TODO: check decouple solo head init cfg
         init_cfg=[
             dict(type='Normal', layer='Conv2d', std=0.01),
             dict(
@@ -583,12 +563,9 @@ class DecoupledSOLOHead(SOLOHead):
             init_cfg=init_cfg)
 
     def _init_layers(self):
-        self.ins_convs_x = ModuleList(
-            init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
-        self.ins_convs_y = ModuleList(
-            init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
-        self.cate_convs = ModuleList(
-            init_cfg=dict(type='Normal', layer='Conv2d', std=0.01))
+        self.ins_convs_x = nn.ModuleList()
+        self.ins_convs_y = nn.ModuleList()
+        self.cate_convs = nn.ModuleList()
 
         for i in range(self.stacked_convs):
             chn = self.in_channels + 1 if i == 0 else self.feat_channels
@@ -622,12 +599,8 @@ class DecoupledSOLOHead(SOLOHead):
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
 
-        self.dsolo_ins_list_x = ModuleList(
-            init_cfg=dict(
-                type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01))
-        self.dsolo_ins_list_y = ModuleList(
-            init_cfg=dict(
-                type='Normal', layer='Conv2d', std=0.01, bias_prob=0.01))
+        self.dsolo_ins_list_x = nn.ModuleList()
+        self.dsolo_ins_list_y = nn.ModuleList()
         for seg_num_grid in self.seg_num_grids:
             self.dsolo_ins_list_x.append(
                 nn.Conv2d(self.feat_channels, seg_num_grid, 3, padding=1))
@@ -996,7 +969,7 @@ class DecoupledSOLOHead(SOLOHead):
 
         # TODO proecess this case
         if len(cate_scores) == 0:
-            processed_results.scores = cate_scores.new_ones(0)
+            processed_results.scores = cate_scores.new_zeros(0)
             processed_results.masks = cate_scores.new_zeros(0, *ori_shape[:2])
             processed_results.labels = cate_scores.new_ones(0)
             return processed_results
@@ -1022,7 +995,7 @@ class DecoupledSOLOHead(SOLOHead):
 
         keep = cate_scores >= cfg.update_thr
         if keep.sum() == 0:
-            processed_results.scores = cate_scores.new_ones(0)
+            processed_results.scores = cate_scores
             processed_results.masks = cate_scores.new_zeros(0, *ori_shape[:2])
             processed_results.labels = cate_scores.new_ones(0)
             return processed_results
