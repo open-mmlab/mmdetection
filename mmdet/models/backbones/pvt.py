@@ -18,10 +18,10 @@ from ..builder import BACKBONES
 from ..utils import PatchEmbed, nchw_to_nlc, nlc_to_nchw, pvt_convert
 
 
-class FFN(BaseModule):
-    """An implementation of FFN of PVT.
+class ConvFFN(BaseModule):
+    """An implementation of ConvFFN of PVT.
 
-    The differences between this FFN & the FFN in mmcv.cnn.bricks.transformer:
+    The differences between ConvFFN & FFN:
         1. Use 1X1 Conv to replace Linear layer.
         2. Introduce 3X3 Depth-wise Conv to encode positional information.
 
@@ -50,7 +50,7 @@ class FFN(BaseModule):
                  dropout_layer=None,
                  use_conv=False,
                  init_cfg=None):
-        super(FFN, self).__init__(init_cfg)
+        super(ConvFFN, self).__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
         self.feedforward_channels = feedforward_channels
@@ -130,20 +130,20 @@ class SpatialReductionAttention(MultiheadAttention):
                  attn_drop=0.,
                  proj_drop=0.,
                  dropout_layer=None,
-                 init_cfg=None,
                  batch_first=True,
                  qkv_bias=False,
                  norm_cfg=dict(type='LN'),
-                 sr_ratio=1):
+                 sr_ratio=1,
+                 init_cfg=None):
         super().__init__(
             embed_dims,
             num_heads,
             attn_drop,
             proj_drop,
             dropout_layer=dropout_layer,
-            init_cfg=init_cfg,
             batch_first=batch_first,
-            bias=qkv_bias)
+            bias=qkv_bias,
+            init_cfg=init_cfg)
 
         self.sr_ratio = sr_ratio
         if sr_ratio > 1:
@@ -189,7 +189,7 @@ class TransformerEncoderLayer(BaseModule):
         qkv_bias (bool): enable bias for qkv if True.
             Default: True.
         act_cfg (dict): The activation config for FFNs.
-            Defalut: dict(type='GELU').
+            Default: dict(type='GELU').
         norm_cfg (dict): Config dict for normalization layer.
             Default: dict(type='LN').
         batch_first (bool): Key, Query and Value are shape of
@@ -198,9 +198,9 @@ class TransformerEncoderLayer(BaseModule):
         init_cfg (dict, optional): Initialization config dict.
             Default:None.
         sr_ratio (int): The ratio of spatial reduction of Spatial Reduction
-            Attention of Segformer. Default: 1.
+            Attention of PVT. Default: 1.
         use_conv_ffn (bool): If True, use Convolutional FFN to replace FFN.
-            Defalut: False
+            Default: False
     """
 
     def __init__(self,
@@ -215,8 +215,9 @@ class TransformerEncoderLayer(BaseModule):
                  norm_cfg=dict(type='LN'),
                  batch_first=True,
                  sr_ratio=1,
-                 use_conv_ffn=False):
-        super(TransformerEncoderLayer, self).__init__()
+                 use_conv_ffn=False,
+                 init_cfg=None):
+        super(TransformerEncoderLayer, self).__init__(init_cfg=init_cfg)
 
         # The ret[0] of build_norm_layer is norm name.
         self.norm1 = build_norm_layer(norm_cfg, embed_dims)[1]
@@ -235,7 +236,7 @@ class TransformerEncoderLayer(BaseModule):
         # The ret[0] of build_norm_layer is norm name.
         self.norm2 = build_norm_layer(norm_cfg, embed_dims)[1]
 
-        self.ffn = FFN(
+        self.ffn = ConvFFN(
             embed_dims=embed_dims,
             feedforward_channels=feedforward_channels,
             ffn_drop=drop_rate,
@@ -269,8 +270,9 @@ class AbsolutePositionEmbedding(BaseModule):
                  pos_dim,
                  drop_rate=0.,
                  with_cls_token=True,
-                 output_cls_token=False):
-        super().__init__()
+                 output_cls_token=False,
+                 init_cfg=None):
+        super().__init__(init_cfg=init_cfg)
 
         if isinstance(pos_shape, int):
             pos_shape = to_2tuple(pos_shape)
@@ -375,9 +377,9 @@ class PyramidVisionTransformer(BaseModule):
         use_abs_pos_embed (bool): If True, add absolute position embedding to
             the patch embedding. Defaults: True.
         use_conv_ffn (bool): If True, use Convolutional FFN to replace FFN.
-            Defalut: False
+            Default: False
         act_cfg (dict): The activation config for FFNs.
-            Defalut: dict(type='GELU').
+            Default: dict(type='GELU').
         norm_cfg (dict): Config dict for normalization layer.
             Default: dict(type='LN')
         pretrain_style (str): Choose to use official or mmcls pretrain weights.
@@ -414,7 +416,7 @@ class PyramidVisionTransformer(BaseModule):
                  pretrain_style='official',
                  pretrained=None,
                  init_cfg=None):
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
 
         if isinstance(pretrain_img_size, int):
             pretrain_img_size = to_2tuple(pretrain_img_size)
@@ -555,7 +557,6 @@ class PyramidVisionTransformer(BaseModule):
                 # so we need to convert pretrain weights to match this
                 # implementation.
                 state_dict = pvt_convert(state_dict)
-            print('Seccess!')
             load_state_dict(self, state_dict, strict=False, logger=logger)
 
     def forward(self, x):
@@ -577,6 +578,7 @@ class PyramidVisionTransformer(BaseModule):
 @BACKBONES.register_module()
 class PyramidVisionTransformerV2(PyramidVisionTransformer):
     r"""Pyramid Vision Transformer V2 (PVTv2)
+
     A PyTorch implement of : `PVTv2: Improved Baselines with Pyramid Vision
     Transformer` -
         https://arxiv.org/pdf/2106.13797.pdf
