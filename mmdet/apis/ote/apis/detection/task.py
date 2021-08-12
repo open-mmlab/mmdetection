@@ -23,7 +23,7 @@ from collections import defaultdict
 from typing import Optional, List, Tuple
 
 import numpy as np
-from sc_sdk.configuration import cfg_helper
+from sc_sdk.configuration import cfg_helper, ModelConfig
 from sc_sdk.configuration.helper.utils import ids_to_strings
 from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset, Subset
@@ -82,8 +82,10 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         self.model_name = hyperparams.algo_backend.model_name
         self.labels = task_environment.get_labels(False)
 
+        # TODO(ikrylov): ModelTemplate will be added to TaskEnvironment, so it must be replace.
+        template_file_path = task_environment.get_hyper_parameters(ModelConfig).algo_backend.template
+
         # Get and prepare mmdet config.
-        template_file_path = hyperparams.algo_backend.template
         base_dir = os.path.abspath(os.path.dirname(template_file_path))
         config_file_path = os.path.join(base_dir, hyperparams.algo_backend.model)
         self.config = Config.fromfile(config_file_path)
