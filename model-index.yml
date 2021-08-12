@@ -55,3 +55,4 @@ Import:
   - configs/yolact/metafile.yml
   - configs/yolo/metafile.yml
   - configs/yolof/metafile.yml
+  - configs/yolox/metafile.yml
