@@ -44,15 +44,15 @@ class SOLOHead(BaseMaskHead):
         num_grids (list): Divided image into a uniform grids, each feature map
             has a different grid value. The number of output channels is
             grid ** 2. Default: [40, 36, 24, 16, 12]
-        cate_down_pos (int): Downsample the feature map size in which instance
-            branch Conv. Default: 0
+        cls_down_index (int): The index of downsample operation in
+            classification branch. Default: 0.
         loss_mask (dict): Config of mask loss.
         loss_cls (dict): Config of classification loss.
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: norm_cfg=dict(type='GN', num_groups=32,
                                    requires_grad=True).
-        train_cfg (dict): Training config of anchor head.
-        test_cfg (dict): Testing config of anchor head.
+        train_cfg (dict): Training config of head.
+        test_cfg (dict): Testing config of head.
         init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
@@ -65,8 +65,8 @@ class SOLOHead(BaseMaskHead):
         strides=(4, 8, 16, 32, 64),
         scale_ranges=((8, 32), (16, 64), (32, 128), (64, 256), (128, 512)),
         sigma=0.2,
-        num_grids=None,
-        cate_down_pos=0,
+        num_grids=[40, 36, 24, 16, 12],
+        cls_down_index=0,
         loss_mask=None,
         loss_cls=None,
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
@@ -78,25 +78,27 @@ class SOLOHead(BaseMaskHead):
                 type='Normal',
                 std=0.01,
                 bias_prob=0.01,
-                override=dict(name='solo_ins_list')),
+                override=dict(name='conv_mask_list')),
             dict(
                 type='Normal',
                 std=0.01,
                 bias_prob=0.01,
-                override=dict(name='solo_cate'))
+                override=dict(name='conv_cls'))
         ],
     ):
         super(SOLOHead, self).__init__(init_cfg)
         self.num_classes = num_classes
-        self.cate_out_channels = self.num_classes
+        self.cls_out_channels = self.num_classes
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
         self.strides = strides
+        # number of FPN feats
+        self.num_levels = len(strides)
         self.scale_ranges = scale_ranges
         self.sigma = sigma
-        self.seg_num_grids = num_grids
-        self.cate_down_pos = cate_down_pos
+        self.num_grids = num_grids
+        self.cls_down_index = cls_down_index
         self.loss_cls = build_loss(loss_cls)
         self.loss_mask = build_loss(loss_mask)
         self.norm_cfg = norm_cfg
@@ -106,11 +108,11 @@ class SOLOHead(BaseMaskHead):
         self._init_layers()
 
     def _init_layers(self):
-        self.ins_convs = nn.ModuleList()
-        self.cate_convs = nn.ModuleList()
+        self.mask_convs = nn.ModuleList()
+        self.cls_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
             chn = self.in_channels + 2 if i == 0 else self.feat_channels
-            self.ins_convs.append(
+            self.mask_convs.append(
                 ConvModule(
                     chn,
                     self.feat_channels,
@@ -120,7 +122,7 @@ class SOLOHead(BaseMaskHead):
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
             chn = self.in_channels if i == 0 else self.feat_channels
-            self.cate_convs.append(
+            self.cls_convs.append(
                 ConvModule(
                     chn,
                     self.feat_channels,
@@ -129,20 +131,15 @@ class SOLOHead(BaseMaskHead):
                     padding=1,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
-        self.solo_ins_list = nn.ModuleList()
-        for seg_num_grid in self.seg_num_grids:
-            self.solo_ins_list.append(
-                nn.Conv2d(self.feat_channels, seg_num_grid**2, 1))
+        self.conv_mask_list = nn.ModuleList()
+        for num_grid in self.num_grids:
+            self.conv_mask_list.append(
+                nn.Conv2d(self.feat_channels, num_grid**2, 1))
 
-        self.solo_cate = nn.Conv2d(
-            self.feat_channels, self.cate_out_channels, 3, padding=1)
+        self.conv_cls = nn.Conv2d(
+            self.feat_channels, self.cls_out_channels, 3, padding=1)
 
-    @property
-    def num_levels(self):
-        """int: number of feature levels that the generator will be applied"""
-        return len(self.strides)
-
-    def split_feats(self, feats):
+    def resize_feats(self, feats):
 
         return (F.interpolate(feats[0], scale_factor=0.5,
                               mode='bilinear'), feats[1], feats[2], feats[3],
@@ -152,55 +149,54 @@ class SOLOHead(BaseMaskHead):
     def forward(self, feats):
 
         assert len(feats) == self.num_levels
-        new_feats = self.split_feats(feats)
-        featmap_sizes = [featmap.size()[-2:] for featmap in new_feats]
-        upsampled_size = (featmap_sizes[0][0] * 2, featmap_sizes[0][1] * 2)
-
-        ins_pred_maps = []
-        cate_pred_maps = []
+        feats = self.resize_feats(feats)
+        mask_preds = []
+        cls_preds = []
         for i in range(self.num_levels):
-            x = new_feats[i]
-            ins_feat = x
-            cate_feat = x
-            # ins branch
-            # concat coord
+            x = feats[i]
+            mask_feat = x
+            cls_feat = x
+            # generate and concat the coordinate
             x_range = torch.linspace(
-                -1, 1, ins_feat.shape[-1], device=ins_feat.device)
+                -1, 1, mask_feat.shape[-1], device=mask_feat.device)
             y_range = torch.linspace(
-                -1, 1, ins_feat.shape[-2], device=ins_feat.device)
+                -1, 1, mask_feat.shape[-2], device=mask_feat.device)
             y, x = torch.meshgrid(y_range, x_range)
-            y = y.expand([ins_feat.shape[0], 1, -1, -1])
-            x = x.expand([ins_feat.shape[0], 1, -1, -1])
+            y = y.expand([mask_feat.shape[0], 1, -1, -1])
+            x = x.expand([mask_feat.shape[0], 1, -1, -1])
             coord_feat = torch.cat([x, y], 1)
-            ins_feat = torch.cat([ins_feat, coord_feat], 1)
+            mask_feat = torch.cat([mask_feat, coord_feat], 1)
 
-            for _, ins_layer in enumerate(self.ins_convs):
-                ins_feat = ins_layer(ins_feat)
+            for mask_layer in (self.mask_convs):
+                mask_feat = mask_layer(mask_feat)
 
-            ins_feat = F.interpolate(ins_feat, scale_factor=2, mode='bilinear')
-            ins_pred = self.solo_ins_list[i](ins_feat)
+            mask_feat = F.interpolate(
+                mask_feat, scale_factor=2, mode='bilinear')
+            mask_pred = self.conv_mask_list[i](mask_feat)
 
-            # cate branch
-            for j, cate_layer in enumerate(self.cate_convs):
-                if j == self.cate_down_pos:
-                    seg_num_grid = self.seg_num_grids[i]
-                    cate_feat = F.interpolate(
-                        cate_feat, size=seg_num_grid, mode='bilinear')
-                cate_feat = cate_layer(cate_feat)
+            # cls branch
+            for j, cls_layer in enumerate(self.cls_convs):
+                if j == self.cls_down_index:
+                    num_grid = self.num_grids[i]
+                    cls_feat = F.interpolate(
+                        cls_feat, size=num_grid, mode='bilinear')
+                cls_feat = cls_layer(cls_feat)
 
-            cate_pred = self.solo_cate(cate_feat)
+            cls_pred = self.conv_cls(cls_feat)
             if not self.training:
-                ins_pred = F.interpolate(
-                    ins_pred.sigmoid(), size=upsampled_size, mode='bilinear')
-                cate_pred = points_nms(
-                    cate_pred.sigmoid(), kernel=2).permute(0, 2, 3, 1)
-            ins_pred_maps.append(ins_pred)
-            cate_pred_maps.append(cate_pred)
-        return ins_pred_maps, cate_pred_maps
+                feat_wh = feats[0].size()[-2:]
+                upsampl_size = (feat_wh[0] * 2, feat_wh[1] * 2)
+                mask_pred = F.interpolate(
+                    mask_pred.sigmoid(), size=upsampl_size, mode='bilinear')
+                cls_pred = points_nms(
+                    cls_pred.sigmoid(), kernel=2).permute(0, 2, 3, 1)
+            mask_preds.append(mask_pred)
+            cls_preds.append(cls_pred)
+        return mask_preds, cls_preds
 
     def loss(self,
-             ins_preds,
-             cate_preds,
+             mask_preds,
+             cls_preds,
              gt_labels,
              gt_masks,
              img_metas,
@@ -208,7 +204,7 @@ class SOLOHead(BaseMaskHead):
              gt_bboxes_ignore=None,
              **kwargs):
 
-        featmap_sizes = [featmap.size()[-2:] for featmap in ins_preds]
+        featmap_sizes = [featmap.size()[-2:] for featmap in mask_preds]
         ins_label_list, cate_label_list, ins_ind_label_list = multi_apply(
             self._get_targets_single,
             gt_bboxes,
@@ -216,37 +212,37 @@ class SOLOHead(BaseMaskHead):
             gt_masks,
             featmap_sizes=featmap_sizes)
 
-        ins_labels = [[] for _ in range(len(ins_preds))]
-        ins_pred_temp = [[] for _ in range(len(ins_preds))]
-        ins_ind_labels = [[] for _ in range(len(ins_preds))]
-        cate_labels = [[] for _ in range(len(ins_preds))]
+        ins_labels = [[] for _ in range(len(mask_preds))]
+        ins_pred_temp = [[] for _ in range(len(mask_preds))]
+        ins_ind_labels = [[] for _ in range(len(mask_preds))]
+        cate_labels = [[] for _ in range(len(mask_preds))]
         for i in range(len(ins_label_list)):
-            assert len(ins_preds) == len(ins_label_list[i])
+            assert len(mask_preds) == len(ins_label_list[i])
             for j in range(len(ins_label_list[i])):
                 ins_labels[j].append(
                     ins_label_list[i][j][ins_ind_label_list[i][j], ...])
-                ins_pred_temp[j].append(ins_preds[j][i,
-                                                     ins_ind_label_list[i][j],
-                                                     ...])
+                ins_pred_temp[j].append(mask_preds[j][i,
+                                                      ins_ind_label_list[i][j],
+                                                      ...])
                 ins_ind_labels[j].append(ins_ind_label_list[i][j].flatten())
                 cate_labels[j].append(cate_label_list[i][j].flatten())
 
         cate_pred_temp = []
         for i in range(len(ins_labels)):
             ins_labels[i] = torch.cat(ins_labels[i], dim=0)
-            ins_preds[i] = torch.cat(ins_pred_temp[i], dim=0)
+            mask_preds[i] = torch.cat(ins_pred_temp[i], dim=0)
             ins_ind_labels[i] = torch.cat(ins_ind_labels[i], dim=0)
             cate_labels[i] = torch.cat(cate_labels[i], dim=0)
-            cate_pred_temp.append(cate_preds[i].permute(0, 2, 3, 1).reshape(
-                -1, self.cate_out_channels))
-        cate_preds = cate_pred_temp
+            cate_pred_temp.append(cls_preds[i].permute(0, 2, 3, 1).reshape(
+                -1, self.cls_out_channels))
+        cls_preds = cate_pred_temp
         # ins
         flatten_ins_ind_labels = torch.cat(ins_ind_labels)
         num_ins = flatten_ins_ind_labels.sum()
 
         # dice loss
         loss_mask = []
-        for pred, target in zip(ins_preds, ins_labels):
+        for pred, target in zip(mask_preds, ins_labels):
             if pred.size()[0] == 0:
                 # make sure can get grad
                 loss_mask.append(pred.sum().unsqueeze(0))
@@ -259,9 +255,9 @@ class SOLOHead(BaseMaskHead):
 
         # cate
         flatten_cate_labels = torch.cat(cate_labels)
-        flatten_cate_preds = torch.cat(cate_preds)
+        flatten_cls_preds = torch.cat(cls_preds)
         loss_cls = self.loss_cls(
-            flatten_cate_preds, flatten_cate_labels, avg_factor=num_ins + 1)
+            flatten_cls_preds, flatten_cate_labels, avg_factor=num_ins + 1)
         return dict(loss_ins=loss_mask, loss_cate=loss_cls)
 
     def _get_targets_single(self,
@@ -280,7 +276,7 @@ class SOLOHead(BaseMaskHead):
         ins_ind_label_list = []
         for (lower_bound, upper_bound), stride, featmap_size, num_grid \
                 in zip(self.scale_ranges, self.strides,
-                       featmap_sizes, self.seg_num_grids):
+                       featmap_sizes, self.num_grids):
 
             ins_label = torch.zeros(
                 [num_grid**2, featmap_size[0], featmap_size[1]],
@@ -422,10 +418,9 @@ class SOLOHead(BaseMaskHead):
         cate_labels = inds[:, 1]
 
         # strides.
-        size_trans = cate_labels.new_tensor(
-            self.seg_num_grids).pow(2).cumsum(0)
+        size_trans = cate_labels.new_tensor(self.num_grids).pow(2).cumsum(0)
         strides = cate_scores.new_ones(size_trans[-1])
-        n_stage = len(self.seg_num_grids)
+        n_stage = len(self.num_grids)
         strides[:size_trans[0]] *= self.strides[0]
         for ind_ in range(1, n_stage):
             strides[size_trans[ind_ -
@@ -520,7 +515,7 @@ class DecoupledSOLOHead(SOLOHead):
         scale_ranges=((8, 32), (16, 64), (32, 128), (64, 256), (128, 512)),
         sigma=0.2,
         num_grids=None,
-        cate_down_pos=0,
+        cls_down_index=0,
         loss_mask=None,
         loss_cls=None,
         norm_cfg=None,
@@ -554,7 +549,7 @@ class DecoupledSOLOHead(SOLOHead):
             scale_ranges=scale_ranges,
             sigma=sigma,
             num_grids=num_grids,
-            cate_down_pos=cate_down_pos,
+            cls_down_index=cls_down_index,
             loss_mask=loss_mask,
             loss_cls=loss_cls,
             norm_cfg=norm_cfg,
@@ -601,7 +596,7 @@ class DecoupledSOLOHead(SOLOHead):
 
         self.dsolo_ins_list_x = nn.ModuleList()
         self.dsolo_ins_list_y = nn.ModuleList()
-        for seg_num_grid in self.seg_num_grids:
+        for seg_num_grid in self.num_grids:
             self.dsolo_ins_list_x.append(
                 nn.Conv2d(self.feat_channels, seg_num_grid, 3, padding=1))
             self.dsolo_ins_list_y.append(
@@ -649,8 +644,8 @@ class DecoupledSOLOHead(SOLOHead):
 
             # cate branch
             for j, cate_layer in enumerate(self.cate_convs):
-                if j == self.cate_down_pos:
-                    seg_num_grid = self.seg_num_grids[i]
+                if j == self.cls_down_index:
+                    seg_num_grid = self.num_grids[i]
                     cate_feat = F.interpolate(
                         cate_feat, size=seg_num_grid, mode='bilinear')
                 cate_feat = cate_layer(cate_feat)
@@ -755,7 +750,7 @@ class DecoupledSOLOHead(SOLOHead):
         ins_ind_label_list_xy = []
         for (lower_bound, upper_bound), stride, featmap_size, num_grid \
                 in zip(self.scale_ranges, self.strides,
-                       featmap_sizes, self.seg_num_grids):
+                       featmap_sizes, self.num_grids):
 
             ins_label = torch.zeros(
                 [num_grid**2, featmap_size[0], featmap_size[1]],
@@ -910,20 +905,20 @@ class DecoupledSOLOHead(SOLOHead):
         upsampled_size_out = (featmap_size[0] * 4, featmap_size[1] * 4)
 
         # trans trans_diff.
-        trans_size = torch.Tensor(self.seg_num_grids).pow(2).cumsum(0).long()
+        trans_size = torch.Tensor(self.num_grids).pow(2).cumsum(0).long()
         trans_diff = torch.ones(
             trans_size[-1].item(), device=cate_preds.device).long()
         num_grids = torch.ones(
             trans_size[-1].item(), device=cate_preds.device).long()
-        seg_size = torch.Tensor(self.seg_num_grids).cumsum(0).long()
+        seg_size = torch.Tensor(self.num_grids).cumsum(0).long()
         seg_diff = torch.ones(
             trans_size[-1].item(), device=cate_preds.device).long()
         strides = torch.ones(trans_size[-1].item(), device=cate_preds.device)
 
-        n_stage = len(self.seg_num_grids)
+        n_stage = len(self.num_grids)
         trans_diff[:trans_size[0]] *= 0
         seg_diff[:trans_size[0]] *= 0
-        num_grids[:trans_size[0]] *= self.seg_num_grids[0]
+        num_grids[:trans_size[0]] *= self.num_grids[0]
         strides[:trans_size[0]] *= self.strides[0]
 
         for ind_ in range(1, n_stage):
@@ -932,7 +927,7 @@ class DecoupledSOLOHead(SOLOHead):
             seg_diff[trans_size[ind_ - 1]:trans_size[ind_]] *= \
                 seg_size[ind_ - 1]
             num_grids[trans_size[ind_ - 1]:trans_size[ind_]] *= \
-                self.seg_num_grids[ind_]
+                self.num_grids[ind_]
             strides[trans_size[ind_ - 1]:trans_size[ind_]] *= \
                 self.strides[ind_]
 

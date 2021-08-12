@@ -4,7 +4,7 @@ from mmcv.runner import BaseModule
 
 
 class BaseMaskHead(BaseModule, metaclass=ABCMeta):
-    """Base class for DenseHeads."""
+    """Base class for heads used in Instance Segmentation."""
 
     def __init__(self, init_cfg):
         super(BaseMaskHead, self).__init__(init_cfg)
@@ -35,8 +35,8 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                                         'even if only one item is returned'
         loss = self.loss(
             *outs,
-            gt_masks,
             gt_labels=gt_labels,
+            gt_masks=gt_masks,
             img_metas=img_metas,
             gt_bboxes=gt_bboxes,
             gt_bboxes_ignore=gt_bboxes_ignore,
