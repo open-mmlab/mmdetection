@@ -542,36 +542,47 @@ class DecoupledSOLOHead(SOLOHead):
         feat_channels=256,
         stacked_convs=4,
         strides=(4, 8, 16, 32, 64),
-        base_edge_list=(16, 32, 64, 128, 256),
         scale_ranges=((8, 32), (16, 64), (32, 128), (64, 256), (128, 512)),
         sigma=0.2,
         num_grids=None,
         cate_down_pos=0,
-        with_deform=False,
         loss_mask=None,
         loss_cls=None,
-        conv_cfg=None,
         norm_cfg=None,
         train_cfg=None,
         test_cfg=None,
         # TODO: check decouple solo head init cfg
-        init_cfg=dict(type='Normal', layer='Conv2d', std=0.01,
-                      bias_prob=0.01)):
+        init_cfg=[
+            dict(type='Normal', layer='Conv2d', std=0.01),
+            dict(
+                type='Normal',
+                std=0.01,
+                bias_prob=0.01,
+                override=dict(name='dsolo_ins_list_x')),
+            dict(
+                type='Normal',
+                std=0.01,
+                bias_prob=0.01,
+                override=dict(name='dsolo_ins_list_y')),
+            dict(
+                type='Normal',
+                std=0.01,
+                bias_prob=0.01,
+                override=dict(name='dsolo_cate'))
+        ],
+    ):
         super(DecoupledSOLOHead, self).__init__(
             num_classes=num_classes,
             in_channels=in_channels,
             feat_channels=feat_channels,
             stacked_convs=stacked_convs,
             strides=strides,
-            base_edge_list=base_edge_list,
             scale_ranges=scale_ranges,
             sigma=sigma,
             num_grids=num_grids,
             cate_down_pos=cate_down_pos,
-            with_deform=with_deform,
             loss_mask=loss_mask,
             loss_cls=loss_cls,
-            conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
@@ -858,10 +869,9 @@ class DecoupledSOLOHead(SOLOHead):
                 # squared
                 cate_label[top:(down + 1), left:(right + 1)] = gt_label
                 # ins
-                seg_mask = F.interpolate(
-                    seg_mask[None, None].float(),
-                    scale_factor=1. / output_stride,
-                    mode='nearest').bool().squeeze(0).squeeze(0)
+                seg_mask = np.uint8(seg_mask.cpu().numpy())
+                seg_mask = mmcv.imrescale(seg_mask, scale=1. / output_stride)
+                seg_mask = torch.from_numpy(seg_mask).to(device=device)
 
                 for i in range(top, down + 1):
                     for j in range(left, right + 1):
