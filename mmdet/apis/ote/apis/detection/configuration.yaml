@@ -1,0 +1,168 @@
+algo_backend:
+  data_pipeline: ote_data_pipeline.py
+  description: Internal Algo Backend parameters
+  header: Internal Algo Backend parameters
+  model: model.py
+  model_name: object detection model
+  template: template.yaml
+  type: PARAMETER_GROUP
+  visible_in_ui: false
+description: Configuration for an object detection task
+header: Configuration for an object detection task
+id: ''
+learning_parameters:
+  batch_size:
+    affects_outcome_of: TRAINING
+    default_value: 5
+    description: The number of training samples seen in each iteration of training.
+      Increasing this value improves training time and may make the training more
+      stable. A larger batch size has higher memory requirements.
+    editable: true
+    header: Batch size
+    max_value: 512
+    min_value: 1
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 5
+    visible_in_ui: true
+    warning: Increasing this value may cause the system to use more memory than available,
+      potentially causing out of memory errors, please update with caution.
+  description: Learning Parameters
+  header: Learning Parameters
+  learning_rate:
+    affects_outcome_of: TRAINING
+    default_value: 0.01
+    description: Increasing this value will speed up training convergence but might
+      make it unstable.
+    editable: true
+    header: Learning rate
+    max_value: 0.1
+    min_value: 1.0e-07
+    type: FLOAT
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 0.01
+    visible_in_ui: true
+    warning: null
+  learning_rate_warmup_iters:
+    affects_outcome_of: TRAINING
+    default_value: 100
+    description: ''
+    editable: true
+    header: Number of iterations for learning rate warmup
+    max_value: 10000
+    min_value: 0
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 100
+    visible_in_ui: true
+    warning: null
+  num_checkpoints:
+    affects_outcome_of: NONE
+    default_value: 5
+    description: ''
+    editable: true
+    header: Number of checkpoints that is done during the single training round
+    max_value: 100
+    min_value: 1
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 5
+    visible_in_ui: true
+    warning: null
+  num_iters:
+    affects_outcome_of: TRAINING
+    default_value: 10000
+    description: Increasing this value causes the results to be more robust but training
+      time will be longer.
+    editable: true
+    header: Number of training iterations
+    max_value: 100000
+    min_value: 10
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 10000
+    visible_in_ui: true
+    warning: null
+  num_workers:
+    affects_outcome_of: NONE
+    default_value: 0
+    description: Increasing this value might improve training speed however it might
+      cause out of memory errors. If the number of workers is set to zero, data loading
+      will happen in the main training thread.
+    editable: true
+    header: Number of cpu threads to use during batch generation
+    max_value: 8
+    min_value: 0
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 0
+    visible_in_ui: true
+    warning: null
+  type: PARAMETER_GROUP
+  visible_in_ui: true
+model_storage_id: ''
+postprocessing:
+  confidence_threshold:
+    affects_outcome_of: INFERENCE
+    default_value: 0.35
+    description: This threshold only takes effect if the threshold is not set based
+      on the result.
+    editable: true
+    header: Confidence threshold
+    max_value: 1
+    min_value: 0
+    type: FLOAT
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 0.35
+    visible_in_ui: true
+    warning: null
+  description: Postprocessing
+  header: Postprocessing
+  result_based_confidence_threshold:
+    affects_outcome_of: INFERENCE
+    default_value: true
+    description: Confidence threshold is derived from the results
+    editable: true
+    header: Result based confidence threshold
+    type: BOOLEAN
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: true
+    visible_in_ui: true
+    warning: null
+  type: PARAMETER_GROUP
+  visible_in_ui: true
+type: MODEL_CONFIG
+visible_in_ui: true
+workspace_id: ''

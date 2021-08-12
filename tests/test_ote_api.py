@@ -1,12 +1,16 @@
 import io
-import numpy as np
 import os.path as osp
 import random
 import time
-import torch
 import unittest
 import warnings
 from concurrent.futures import ThreadPoolExecutor
+
+import numpy as np
+import torch
+import yaml
+
+from sc_sdk.configuration.helper import convert
 from sc_sdk.entities.annotation import (Annotation, AnnotationScene,
                                         AnnotationSceneKind)
 from sc_sdk.entities.dataset_item import DatasetItem
@@ -38,6 +42,15 @@ from mmdet.apis.ote.apis.detection.config_utils import \
     apply_template_configurable_parameters
 from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
                                                      load_template)
+
+
+def test_configuration_yaml():
+    configuration = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
+    configuration_yaml_str = convert(configuration, str)
+    configuration_yaml_converted = yaml.safe_load(configuration_yaml_str)
+    with open(osp.join('mmdet', 'apis', 'ote', 'apis', 'detection', 'configuration.yaml')) as read_file:
+        configuration_yaml_loaded = yaml.safe_load(read_file)
+    assert configuration_yaml_converted == configuration_yaml_loaded
 
 
 class TestOTEAPI(unittest.TestCase):
