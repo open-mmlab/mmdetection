@@ -90,12 +90,17 @@ def imshow_det_bboxes(img,
     mask_colors = []
     if labels.shape[0] > 0:
         if mask_color is None:
+            # Get random state before set seed, and restore random state later.
+            # Prevent loss of randomness.
+            # See: https://github.com/open-mmlab/mmdetection/issues/5844
+            state = np.random.get_state()
             # random color
             np.random.seed(42)
             mask_colors = [
                 np.random.randint(0, 256, (1, 3), dtype=np.uint8)
                 for _ in range(max(labels) + 1)
             ]
+            np.random.set_state(state)
         else:
             # specify  color
             mask_colors = [

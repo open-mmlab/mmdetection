@@ -37,7 +37,7 @@ For example, if some modification is made base on Faster R-CNN, user may first i
 
 If you are building an entirely new method that does not share the structure with any of the existing methods, you may create a folder `xxx_rcnn` under `configs`,
 
-Please refer to [mmcv](https://mmcv.readthedocs.io/en/latest/utils.html#config) for detailed documentation.
+Please refer to [mmcv](https://mmcv.readthedocs.io/en/latest/understand_mmcv/config.html) for detailed documentation.
 
 ## Config Name Style
 
@@ -99,10 +99,8 @@ For more detailed usage and the corresponding alternative for each modules, plea
 ```python
 model = dict(
     type='MaskRCNN',  # The name of detector
-    pretrained=
-    'torchvision://resnet50',  # The ImageNet pretrained backbone to be loaded
     backbone=dict(  # The config of backbone
-        type='ResNet',  # The type of the backbone, refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/backbones/resnet.py#L288 for more details.
+        type='ResNet',  # The type of the backbone, refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/backbones/resnet.py#L308 for more details.
         depth=50,  # The depth of backbone, usually it is 50 or 101 for ResNet and ResNext backbones.
         num_stages=4,  # Number of stages of the backbone.
         out_indices=(0, 1, 2, 3),  # The index of output feature maps produced in each stages
@@ -111,7 +109,8 @@ model = dict(
             type='BN',  # Type of norm layer, usually it is BN or GN
             requires_grad=True),  # Whether to train the gamma and beta in BN
         norm_eval=True,  # Whether to freeze the statistics in BN
-        style='pytorch'),  # The style of backbone, 'pytorch' means that stride 2 layers are in 3x3 conv, 'caffe' means stride 2 layers are in 1x1 convs.
+        style='pytorch'， # The style of backbone, 'pytorch' means that stride 2 layers are in 3x3 conv, 'caffe' means stride 2 layers are in 1x1 convs.
+    	init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # The ImageNet pretrained backbone to be loaded
     neck=dict(
         type='FPN',  # The neck of detector is FPN. We also support 'NASFPN', 'PAFPN', etc. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/necks/fpn.py#L10 for more details.
         in_channels=[256, 512, 1024, 2048],  # The input channels, this is consistent with the output channels of backbone
@@ -165,7 +164,7 @@ model = dict(
             loss_bbox=dict(  # Config of loss function for the regression branch.
                 type='L1Loss',  # Type of loss, we also support many IoU Losses and smooth L1-loss, etc.
                 loss_weight=1.0)),  # Loss weight of the regression branch.
-        mask_roi_extractor=dict(  # RoI feature extractor for bbox regression.
+        mask_roi_extractor=dict(  # RoI feature extractor for mask generation.
             type='SingleRoIExtractor',  # Type of the RoI feature extractor, most of methods uses SingleRoIExtractor.
             roi_layer=dict(  # Config of RoI Layer that extracts features for instance segmentation
                 type='RoIAlign',  # Type of RoI Layer, DeformRoIPoolingPack and ModulatedDeformRoIPoolingPack are also supported
@@ -206,8 +205,8 @@ model = dict(
             nms_pre=2000,  # The number of boxes before NMS
             nms_post=1000,  # The number of boxes to be kept by NMS, Only work in `GARPNHead`.
             max_per_img=1000,  # The number of boxes to be kept after NMS.
-            nms=dict( # Config of nms
-                type='nms',  #Type of nms
+            nms=dict( # Config of NMS
+                type='nms',  # Type of NMS
                 iou_threshold=0.7 # NMS threshold
                 ),
             min_bbox_size=0),  # The allowed minimal box size
@@ -235,15 +234,15 @@ model = dict(
             nms_pre=1000,  # The number of boxes before NMS
             nms_post=1000,  # The number of boxes to be kept by NMS, Only work in `GARPNHead`.
             max_per_img=1000,  # The number of boxes to be kept after NMS.
-            nms=dict( # Config of nms
-                type='nms',  #Type of nms
+            nms=dict( # Config of NMS
+                type='nms',  #Type of NMS
                 iou_threshold=0.7 # NMS threshold
                 ),
             min_bbox_size=0),  # The allowed minimal box size
         rcnn=dict(  # The config for the roi heads.
             score_thr=0.05,  # Threshold to filter out boxes
-            nms=dict(  # Config of nms in the second stage
-                type='nms',  # Type of nms
+            nms=dict(  # Config of NMS in the second stage
+                type='nms',  # Type of NMS
                 iou_thr=0.5),  # NMS threshold
             max_per_img=100,  # Max number of detections of each image
             mask_thr_binary=0.5))  # Threshold of mask prediction
@@ -400,7 +399,9 @@ lr_config = dict(  # Learning rate scheduler config used to register LrUpdater h
     warmup_ratio=
     0.001,  # The ratio of the starting learning rate used for warmup
     step=[8, 11])  # Steps to decay the learning rate
-runner = dict(type='EpochBasedRunner', max_epochs=12) # Runner that runs the workflow in total max_epochs
+runner = dict(
+    type='EpochBasedRunner', # Type of runner to use (i.e. IterBasedRunner or EpochBasedRunner)
+    max_epochs=12) # Runner that runs the workflow in total max_epochs. For IterBasedRunner use `max_iters`
 checkpoint_config = dict(  # Config to set the checkpoint hook, Refer to https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/checkpoint.py for implementation.
     interval=1)  # The save interval is 1
 log_config = dict(  # config to register logger hook
@@ -422,7 +423,7 @@ work_dir = 'work_dir'  # Directory to save the model checkpoints and logs for th
 ### Ignore some fields in the base configs
 
 Sometimes, you may set `_delete_=True` to ignore some of fields in base configs.
-You may refer to [mmcv](https://mmcv.readthedocs.io/en/latest/utils.html#inherit-from-base-config-with-ignored-fields) for simple illustration.
+You may refer to [mmcv](https://mmcv.readthedocs.io/en/latest/understand_mmcv/config.html#inherit-from-base-config-with-ignored-fields) for simple illustration.
 
 In MMDetection, for example, to change the backbone of Mask R-CNN with the following config.
 
@@ -530,3 +531,14 @@ data = dict(
 ```
 
 We first define the new `train_pipeline`/`test_pipeline` and pass them into `data`.
+
+Similarly, if we would like to switch from `SyncBN` to `BN` or `MMSyncBN`, we need to substitute every `norm_cfg` in the config.
+
+```python
+_base_ = './mask_rcnn_r50_fpn_1x_coco.py'
+norm_cfg = dict(type='BN', requires_grad=True)
+model = dict(
+    backbone=dict(norm_cfg=norm_cfg),
+    neck=dict(norm_cfg=norm_cfg),
+    ...)
+```

@@ -74,6 +74,18 @@ class BBoxTestMixin:
         """
 
         rois = bbox2roi(proposals)
+
+        if rois.shape[0] == 0:
+            batch_size = len(proposals)
+            det_bbox = rois.new_zeros(0, 5)
+            det_label = rois.new_zeros((0, ), dtype=torch.long)
+            if rcnn_test_cfg is None:
+                det_bbox = det_bbox[:, :4]
+                det_label = rois.new_zeros(
+                    (0, self.bbox_head.fc_cls.out_features))
+            # There is no proposal in the whole batch
+            return [det_bbox] * batch_size, [det_label] * batch_size
+
         bbox_results = self._bbox_forward(x, rois)
         img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
@@ -101,14 +113,24 @@ class BBoxTestMixin:
         det_bboxes = []
         det_labels = []
         for i in range(len(proposals)):
-            det_bbox, det_label = self.bbox_head.get_bboxes(
-                rois[i],
-                cls_score[i],
-                bbox_pred[i],
-                img_shapes[i],
-                scale_factors[i],
-                rescale=rescale,
-                cfg=rcnn_test_cfg)
+            if rois[i].shape[0] == 0:
+                # There is no proposal in the single image
+                det_bbox = rois[i].new_zeros(0, 5)
+                det_label = rois[i].new_zeros((0, ), dtype=torch.long)
+                if rcnn_test_cfg is None:
+                    det_bbox = det_bbox[:, :4]
+                    det_label = rois[i].new_zeros(
+                        (0, self.bbox_head.fc_cls.out_features))
+
+            else:
+                det_bbox, det_label = self.bbox_head.get_bboxes(
+                    rois[i],
+                    cls_score[i],
+                    bbox_pred[i],
+                    img_shapes[i],
+                    scale_factors[i],
+                    rescale=rescale,
+                    cfg=rcnn_test_cfg)
             det_bboxes.append(det_bbox)
             det_labels.append(det_label)
         return det_bboxes, det_labels
@@ -141,10 +163,16 @@ class BBoxTestMixin:
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas, rcnn_test_cfg)
-        det_bboxes, det_labels = multiclass_nms(merged_bboxes, merged_scores,
-                                                rcnn_test_cfg.score_thr,
-                                                rcnn_test_cfg.nms,
-                                                rcnn_test_cfg.max_per_img)
+        if merged_bboxes.shape[0] == 0:
+            # There is no proposal in the single image
+            det_bboxes = merged_bboxes.new_zeros(0, 5)
+            det_labels = merged_bboxes.new_zeros((0, ), dtype=torch.long)
+        else:
+            det_bboxes, det_labels = multiclass_nms(merged_bboxes,
+                                                    merged_scores,
+                                                    rcnn_test_cfg.score_thr,
+                                                    rcnn_test_cfg.nms,
+                                                    rcnn_test_cfg.max_per_img)
         return det_bboxes, det_labels
 
 

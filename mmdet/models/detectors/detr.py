@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 
 from ..builder import DETECTORS
@@ -18,6 +20,27 @@ class DETR(SingleStageDetector):
                  init_cfg=None):
         super(DETR, self).__init__(backbone, None, bbox_head, train_cfg,
                                    test_cfg, pretrained, init_cfg)
+
+    # over-write `forward_dummy` because:
+    # the forward of bbox_head requires img_metas
+    def forward_dummy(self, img):
+        """Used for computing network flops.
+
+        See `mmdetection/tools/analysis_tools/get_flops.py`
+        """
+        warnings.warn('Warning! MultiheadAttention in DETR does not '
+                      'support flops computation! Do not use the '
+                      'results in your papers!')
+
+        batch_size, _, height, width = img.shape
+        dummy_img_metas = [
+            dict(
+                batch_input_shape=(height, width),
+                img_shape=(height, width, 3)) for _ in range(batch_size)
+        ]
+        x = self.extract_feat(img)
+        outs = self.bbox_head(x, dummy_img_metas)
+        return outs
 
     # over-write `onnx_export` because:
     # (1) the forward of bbox_head requires img_metas
