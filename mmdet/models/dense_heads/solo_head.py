@@ -374,7 +374,7 @@ class SOLOHead(BaseMaskHead):
         results_list = []
         for img_id in range(len(img_metas)):
             cate_pred_list = [
-                cate_preds[i][img_id].view(-1, self.cate_out_channels)
+                cate_preds[i][img_id].view(-1, self.cls_out_channels)
                 for i in range(num_levels)
             ]
             seg_pred_list = [seg_preds[i][img_id] for i in range(num_levels)]
@@ -602,11 +602,11 @@ class DecoupledSOLOHead(SOLOHead):
             self.dsolo_ins_list_y.append(
                 nn.Conv2d(self.feat_channels, seg_num_grid, 3, padding=1))
         self.dsolo_cate = nn.Conv2d(
-            self.feat_channels, self.cate_out_channels, 3, padding=1)
+            self.feat_channels, self.cls_out_channels, 3, padding=1)
 
     def forward(self, feats):
         assert len(feats) == self.num_levels
-        new_feats = self.split_feats(feats)
+        new_feats = self.resize_feats(feats)
         featmap_sizes = [featmap.size()[-2:] for featmap in new_feats]
         upsampled_size = (featmap_sizes[0][0] * 2, featmap_sizes[0][1] * 2)
 
@@ -706,7 +706,7 @@ class DecoupledSOLOHead(SOLOHead):
             ins_preds_y_final[i] = torch.cat(ins_preds_y_final[i], dim=0)
             cate_labels[i] = torch.cat(cate_labels[i], dim=0)
             cate_pred_temp.append(cate_preds[i].permute(0, 2, 3, 1).reshape(
-                -1, self.cate_out_channels))
+                -1, self.cls_out_channels))
         cate_preds = cate_pred_temp
 
         num_ins = 0.
@@ -868,8 +868,7 @@ class DecoupledSOLOHead(SOLOHead):
         results_list = []
         for img_id in range(len(img_metas)):
             cate_pred_list = [
-                cate_preds[i][img_id].view(-1,
-                                           self.cate_out_channels).detach()
+                cate_preds[i][img_id].view(-1, self.cls_out_channels).detach()
                 for i in range(num_levels)
             ]
             seg_pred_list_x = [

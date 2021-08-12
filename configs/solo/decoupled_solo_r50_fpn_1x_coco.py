@@ -13,7 +13,7 @@ model = dict(
         scale_ranges=((1, 96), (48, 192), (96, 384), (192, 768), (384, 2048)),
         sigma=0.2,
         num_grids=[40, 36, 24, 16, 12],
-        cate_down_pos=0,
+        cls_down_index=0,
         loss_mask=dict(type='DiceLoss', use_sigmoid=True, loss_weight=3.0),
         loss_cls=dict(
             type='FocalLoss',
