@@ -326,6 +326,7 @@ def test_random_crop():
 
 
 def test_min_iou_random_crop():
+
     def create_random_bboxes(num_bboxes, img_w, img_h):
         bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
         bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
@@ -580,7 +581,7 @@ def test_random_center_crop_pad():
     train_transform = dict(
         type='RandomCenterCropPad',
         crop_size=(h - 20, w - 20),
-        ratios=(1.0,),
+        ratios=(1.0, ),
         border=128,
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
