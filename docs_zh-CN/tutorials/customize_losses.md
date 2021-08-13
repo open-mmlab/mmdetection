@@ -58,7 +58,7 @@ loss_cls=dict(
 
 ### 微调归纳方式（步骤3）
 
-Focal Loss默认的归纳方式是 `mean`。如果我们想把归纳方式从 `mean` 改成 `sum`，我们可以在配置文件中按照如下指定：
+Focal Loss 默认的归纳方式是 `mean`。如果我们想把归纳方式从 `mean` 改成 `sum`，我们可以在配置文件中按照如下指定：
 
 ```python
 loss_cls=dict(
