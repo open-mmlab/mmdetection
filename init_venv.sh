@@ -40,20 +40,34 @@ if [ -e "$CUDA_HOME" ]; then
   fi
 fi
 
-if [[ -z ${CUDA_VERSION} ]]; then
-  echo "CUDA was not found, installing dependencies in CPU-only mode. If you want to use CUDA, set CUDA_HOME and CUDA_VERSION beforehand."
-else
-  echo "Using CUDA_VERSION ${CUDA_VERSION}"
-fi
-
-# Remove dots from CUDA version string, if any.
-CUDA_VERSION_CODE=$(echo ${CUDA_VERSION} | sed -e "s/\.//" -e "s/\(...\).*/\1/")
-
 # install PyTorch and MMCV.
 export TORCH_VERSION=1.8.1
 export TORCHVISION_VERSION=0.9.1
 export NUMPY_VERSION=1.19.5
 export MMCV_VERSION=1.3.0
+
+if [[ -z ${CUDA_VERSION} ]]; then
+  echo "CUDA was not found, installing dependencies in CPU-only mode. If you want to use CUDA, set CUDA_HOME and CUDA_VERSION beforehand."
+else
+  # Remove dots from CUDA version string, if any.
+  CUDA_VERSION_CODE=$(echo ${CUDA_VERSION} | sed -e "s/\.//" -e "s/\(...\).*/\1/")
+  echo "Using CUDA_VERSION ${CUDA_VERSION}"
+  if [[ "${CUDA_VERSION_CODE}" != "111" ]] && [[ "${CUDA_VERSION_CODE}" != "102" ]] ; then
+    echo "CUDA version must be either 10.2 or 11.1"
+    exit 1
+  fi
+  if [[ "${CUDA_VERSION_CODE}" == "102" ]] ; then
+    if [[ "${TORCH_VERSION}" != "1.8.1" ]] && [[ "${TORCH_VERSION}" != "1.9.0" ]]; then
+      echo "if CUDA version is 10.2, then PyTorch must be either 1.8.1 or 1.9.0"
+      exit 1
+    fi
+  elif [[ "${CUDA_VERSION_CODE}" == "111" ]] ; then
+    if [[ "${TORCH_VERSION}" != "1.9.0" ]]; then
+      echo "if CUDA version is 11.1, then PyTorch must be 1.9.0"
+      exit 1
+    fi
+  fi
+fi
 
 pip install wheel
 
