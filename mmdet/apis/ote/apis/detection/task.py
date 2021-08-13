@@ -464,7 +464,10 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             try:
                 from torch.jit._trace import TracerWarning
                 warnings.filterwarnings("ignore", category=TracerWarning)
-                model = self.model.cuda(self.config.gpu_ids[0])
+                if torch.cuda.is_available():
+                    model = self.model.cuda(self.config.gpu_ids[0])
+                else:
+                    model = self.model.cpu()
                 export_model(model, self.config, tempdir,
                              target='openvino', precision=optimized_model_precision.name)
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
