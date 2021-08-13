@@ -53,7 +53,8 @@ def retrieve_data_cfg(config_path, skip_type, cfg_options):
         from mmcv.utils import import_modules_from_strings
         import_modules_from_strings(**cfg['custom_imports'])
     train_data_cfg = cfg.data.train
-    while 'dataset' in train_data_cfg:
+    while 'dataset' in train_data_cfg and train_data_cfg[
+            'type'] != 'MultiImageMixDataset':
         train_data_cfg = train_data_cfg['dataset']
     train_data_cfg['pipeline'] = [
         x for x in train_data_cfg.pipeline if x['type'] not in skip_type
