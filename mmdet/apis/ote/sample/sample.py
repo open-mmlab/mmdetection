@@ -16,10 +16,11 @@ import argparse
 import os.path as osp
 import sys
 
+from ote_sdk.entities.id import ID
+from ote_sdk.entities.inference_parameters import InferenceParameters
+
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.datasets import Subset
-from sc_sdk.entities.id import ID
-from sc_sdk.entities.inference_parameters import InferenceParameters
 from sc_sdk.entities.model import Model, ModelStatus, NullModel
 from sc_sdk.entities.model_storage import NullModelStorage
 from sc_sdk.entities.optimized_model import ModelOptimizationType, ModelPrecision, OptimizedModel, TargetDevice
@@ -78,7 +79,7 @@ def main(args):
     task = task_cls(task_environment=environment)
 
     logger.info('Set hyperparameters')
-    task.hyperparams.learning_parameters.num_iters = 1000
+    task.hyperparams.learning_parameters.num_iters = 10
 
     logger.info('Train model')
     output_model = Model(

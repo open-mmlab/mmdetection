@@ -23,19 +23,30 @@ from collections import defaultdict
 from typing import Optional, List, Tuple
 
 import numpy as np
+
+from ote_sdk.entities.inference_parameters import InferenceParameters
+from ote_sdk.entities.metrics import (CurveMetric,
+                                      LineChartInfo,
+                                      MetricsGroup,
+                                      Performance,
+                                      ScoreMetric,
+                                      InfoMetric,
+                                      VisualizationType,
+                                      VisualizationInfo)
+from ote_sdk.entities.shapes.box import Box
+from ote_sdk.entities.train_parameters import TrainParameters
+from ote_sdk.entities.label import ScoredLabel
+
 from sc_sdk.configuration import cfg_helper, ModelConfig
 from sc_sdk.configuration.helper.utils import ids_to_strings
 from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset, Subset
-from sc_sdk.entities.inference_parameters import InferenceParameters
-from sc_sdk.entities.metrics import CurveMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric, InfoMetric, \
-    VisualizationType, VisualizationInfo
 from sc_sdk.entities.optimized_model import OptimizedModel, ModelPrecision
 from sc_sdk.entities.task_environment import TaskEnvironment
-from sc_sdk.entities.train_parameters import TrainParameters
-from sc_sdk.entities.label import ScoredLabel
+
+
 from sc_sdk.entities.model import Model, ModelStatus, NullModel
-from sc_sdk.entities.shapes.box import Box
+
 from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
 from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
