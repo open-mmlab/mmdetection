@@ -28,7 +28,7 @@ class BBoxHead(nn.Module):
 
 ## 空 proposals
 
-在 MMDetection 中，我们为两阶段方法中空proposals的情况增加了特殊处理和单元测试。我们同时需要处理整个 batch 和单一图片中空 proposals 的情况。例如，在 CascadeRoIHead 中，
+在 MMDetection 中，我们为两阶段方法中空 proposals 的情况增加了特殊处理和单元测试。我们同时需要处理整个 batch 和单一图片中空 proposals 的情况。例如，在 CascadeRoIHead 中，
 
 ```python
 # 简单的测试
