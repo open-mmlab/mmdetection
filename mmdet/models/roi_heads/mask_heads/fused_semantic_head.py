@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule, auto_fp16, force_fp32
 
-from mmdet.models.builder import HEADS
+from mmdet.models.builder import HEADS, build_loss
 
 
 @HEADS.register_module()
@@ -30,10 +30,12 @@ class FusedSemanticHead(BaseModule):
                  in_channels=256,
                  conv_out_channels=256,
                  num_classes=183,
-                 ignore_label=255,
-                 loss_weight=0.2,
                  conv_cfg=None,
                  norm_cfg=None,
+                 loss_seg=dict(
+                     type='CrossEntropyLoss',
+                     ignore_index=255,
+                     loss_weight=0.2),
                  init_cfg=dict(
                      type='Kaiming', override=dict(name='conv_logits'))):
         super(FusedSemanticHead, self).__init__(init_cfg)
@@ -43,8 +45,6 @@ class FusedSemanticHead(BaseModule):
         self.in_channels = in_channels
         self.conv_out_channels = conv_out_channels
         self.num_classes = num_classes
-        self.ignore_label = ignore_label
-        self.loss_weight = loss_weight
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
@@ -79,7 +79,7 @@ class FusedSemanticHead(BaseModule):
             norm_cfg=self.norm_cfg)
         self.conv_logits = nn.Conv2d(conv_out_channels, self.num_classes, 1)
 
-        self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_label)
+        self.criterion = build_loss(loss_seg)
 
     @auto_fp16()
     def forward(self, feats):
@@ -102,5 +102,4 @@ class FusedSemanticHead(BaseModule):
     def loss(self, mask_pred, labels):
         labels = labels.squeeze(1).long()
         loss_semantic_seg = self.criterion(mask_pred, labels)
-        loss_semantic_seg *= self.loss_weight
         return loss_semantic_seg
