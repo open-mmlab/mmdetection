@@ -606,6 +606,7 @@ def test_resnet_backbone():
 
     # Test ResNet50 zero initialization of residual
     model = ResNet(50, zero_init_residual=True)
+    model.init_weights()
     for m in model.modules():
         if isinstance(m, Bottleneck):
             assert assert_params_all_zeros(m.norm3)

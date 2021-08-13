@@ -41,5 +41,6 @@ def test_detectorrs_resnet_backbone():
 
     with pytest.raises(TypeError):
         # pretrained mast be a str or None
-        DetectoRS_ResNet(
+        model = DetectoRS_ResNet(
             **detectorrs_cfg, pretrained=['Pretrained'], init_cfg=None)
+        model.init_weights()
