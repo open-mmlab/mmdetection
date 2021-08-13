@@ -1,10 +1,8 @@
 import copy
 import warnings
 
-import numpy as np
 import torch
 
-from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -138,52 +136,15 @@ class SingleStageInstanceSegmentor(BaseDetector):
         if self.bbox_head:
             # det_results is a obj:`InstanceResults`
             outs = self.bbox_head(feat)
-            det_results = self.bbox_head.get_bboxes(
+            results_list = self.bbox_head.get_bboxes(
                 *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)
-            # clone is necessary to avoid inplace modification later
-            collect_bbox_results_list = [
-                bbox2result(item.bboxes.clone(), item.labels.clone(),
-                            self.bbox_head.num_classes) for item in det_results
-            ]
-            # mapping bboxes to current resolution
-            if rescale:
-                for item in det_results:
-                    scale_factor = item.bboxes.new_tensor(item.scale_factor)
-                    item.bboxes[:, :4] = item.bboxes[:, :4] * scale_factor
         else:
-            det_results = None
-            collect_bbox_results_list = []
+            results_list = None
 
-        mask_results_list = self.mask_head.simple_test(
-            feat, img_metas, rescale=rescale, det_results=det_results)
+        results_list = self.mask_head.simple_test(
+            feat, img_metas, rescale=rescale, det_results=results_list)
 
-        collect_mask_results_list = []
-
-        for mask_results in mask_results_list:
-            collect_mask_results = [[]
-                                    for _ in range(self.mask_head.num_classes)]
-
-            mask_results = mask_results.numpy()
-            masks = mask_results.masks
-
-            labels = mask_results.labels
-            num_masks = masks.shape[0]
-            for idx in range(num_masks):
-                collect_mask_results[labels[idx]].append(masks[idx])
-            collect_mask_results_list.append(collect_mask_results)
-
-            if not self.bbox_head:
-                # add dummy det_results
-                scores = mask_results.scores
-                bboxes = np.zeros((num_masks, 5), dtype=np.float32)
-                bboxes[:, -1] = scores
-                collect_bbox_result = [
-                    bboxes[labels == i, :]
-                    for i in range(self.mask_head.num_classes)
-                ]
-                collect_bbox_results_list.append(collect_bbox_result)
-
-        return list(zip(collect_bbox_results_list, collect_mask_results_list))
+        return results_list
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError

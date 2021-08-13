@@ -11,6 +11,7 @@ from mmcv.image import tensor2imgs
 from mmcv.runner import get_dist_info
 
 from mmdet.core import encode_mask_results
+from mmdet.core.results.results import DetectionResults
 
 
 def single_gpu_test(model,
@@ -54,9 +55,14 @@ def single_gpu_test(model,
                     show=show,
                     out_file=out_file,
                     score_thr=show_score_thr)
+        # Currently only solo will run this branch,
+        # but in the future, the outputs of all the model would
+        # be unified as :obj:`DetectionResults`
+        if isinstance(result[0], DetectionResults):
+            result = [item.format_results() for item in result]
 
         # encode mask results
-        if isinstance(result[0], tuple):
+        elif isinstance(result[0], tuple):
             result = [(bbox_results, encode_mask_results(mask_results))
                       for bbox_results, mask_results in result]
         results.extend(result)
@@ -95,8 +101,15 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
+
+            # Currently only solo will run this branch,
+            # but in the future, the outputs of all the model would
+            # be unified as :obj:`DetectionResults`
+            if isinstance(result[0], DetectionResults):
+                result = [item.format_results() for item in result]
+
             # encode mask results
-            if isinstance(result[0], tuple):
+            elif isinstance(result[0], tuple):
                 result = [(bbox_results, encode_mask_results(mask_results))
                           for bbox_results, mask_results in result]
         results.extend(result)

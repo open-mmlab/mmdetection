@@ -501,7 +501,7 @@ class DetectionResults(InstanceResults):
         return new_results
 
     def format_results(self):
-        results_dict = dict()
+
         assert 'scores' in self._results_field
         assert 'labels' in self._results_field
 
@@ -511,22 +511,23 @@ class DetectionResults(InstanceResults):
             '(bboxes, masks) when format the results '
 
         labels = self.labels.detach().cpu().numpy()
-        if 'bboxes' in self._results_field:
-            # format bboxes results
-            if len(self) == 0:
-                bbox_results = [
-                    np.zeros((0, 5), dtype=np.float32)
-                    for _ in range(self.num_classes)
-                ]
-            else:
-                det_bboxes = torch.cat([self.bboxes, self.scores[:, None]],
-                                       dim=-1)
-                det_bboxes = det_bboxes.detach().cpu().numpy()
-                bbox_results = [
-                    det_bboxes[labels == i, :] for i in range(self.num_classes)
-                ]
 
-            results_dict['bbox_results'] = bbox_results
+        # format bboxes results
+        if len(self) == 0:
+            bbox_results = [
+                np.zeros((0, 5), dtype=np.float32)
+                for _ in range(self.num_classes)
+            ]
+        else:
+            if 'bbox' not in self:
+                # add dummy bbox
+                self.bboxes = self.scores.new_zeros(len(self), 4)
+            det_bboxes = torch.cat([self.bboxes, self.scores[:, None]], dim=-1)
+            det_bboxes = det_bboxes.detach().cpu().numpy()
+            bbox_results = [
+                det_bboxes[labels == i, :] for i in range(self.num_classes)
+            ]
+
         if 'masks' in self._results_field:
             masks = self.masks.detach().cpu().numpy()
             mask_results = [[] for _ in range(self.num_classes)]
@@ -538,6 +539,7 @@ class DetectionResults(InstanceResults):
                              dtype='uint8'))[0]
 
                 mask_results[labels[idx]].append(encode_mask)
-            results_dict['mask_results'] = mask_results
+            return bbox_results, mask_results
 
-        return results_dict
+        else:
+            return bbox_results
