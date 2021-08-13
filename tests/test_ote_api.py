@@ -1,10 +1,13 @@
 import io
+import json
+import os
 import os.path as osp
 import random
 import time
 import unittest
 import warnings
 from concurrent.futures import ThreadPoolExecutor
+from subprocess import run
 
 import numpy as np
 import torch
@@ -53,6 +56,73 @@ def test_configuration_yaml():
     with open(osp.join('mmdet', 'apis', 'ote', 'apis', 'detection', 'configuration.yaml')) as read_file:
         configuration_yaml_loaded = yaml.safe_load(read_file)
     assert configuration_yaml_converted == configuration_yaml_loaded
+
+
+class SampleTestCase(unittest.TestCase):
+    root_dir = '/tmp'
+    coco_dir = osp.join(root_dir, 'data/coco')
+    snapshots_dir = osp.join(root_dir, 'snapshots')
+
+    custom_operations = ['ExperimentalDetectronROIFeatureExtractor',
+                         'PriorBox', 'PriorBoxClustered', 'DetectionOutput',
+                         'DeformableConv2D']
+
+    @staticmethod
+    def shorten_annotation(src_path, dst_path, num_images):
+        with open(src_path) as read_file:
+            content = json.load(read_file)
+            selected_indexes = sorted([item['id'] for item in content['images']])
+            selected_indexes = selected_indexes[:num_images]
+            content['images'] = [item for item in content['images'] if
+                                 item['id'] in selected_indexes]
+            content['annotations'] = [item for item in content['annotations'] if
+                                      item['image_id'] in selected_indexes]
+            content['licenses'] = [item for item in content['licenses'] if
+                                   item['id'] in selected_indexes]
+
+        with open(dst_path, 'w') as write_file:
+            json.dump(content, write_file)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.test_on_full = False
+        os.makedirs(cls.coco_dir, exist_ok=True)
+        if not osp.exists(osp.join(cls.coco_dir, 'val2017.zip')):
+            run(f'wget --no-verbose http://images.cocodataset.org/zips/val2017.zip -P {cls.coco_dir}',
+            check=True, shell=True)
+        if not osp.exists(osp.join(cls.coco_dir, 'val2017')):
+            run(f'unzip {osp.join(cls.coco_dir, "val2017.zip")} -d {cls.coco_dir}', check=True, shell=True)
+        if not osp.exists(osp.join(cls.coco_dir, "annotations_trainval2017.zip")):
+            run(f'wget --no-verbose http://images.cocodataset.org/annotations/annotations_trainval2017.zip -P {cls.coco_dir}',
+            check=True, shell=True)
+        if not osp.exists(osp.join(cls.coco_dir, 'annotations/instances_val2017.json')):
+            run(f'unzip -o {osp.join(cls.coco_dir, "annotations_trainval2017.zip")} -d {cls.coco_dir}',
+            check=True, shell=True)
+
+        if cls.test_on_full:
+            cls.shorten_to = 5000
+        else:
+            cls.shorten_to = 100
+
+        cls.shorten_annotation(osp.join(cls.coco_dir, 'annotations/instances_val2017.json'),
+                               osp.join(cls.coco_dir, 'annotations/instances_val2017.json'),
+                               cls.shorten_to)
+
+    def test_sample_on_cpu(self):
+        output = run('export CUDA_VISIBLE_DEVICES=;'
+                     'python mmdet/apis/ote/sample/sample.py '
+                     f'--data-dir {self.coco_dir}/.. '
+                     '--export configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml',
+                     shell=True, check=True)
+        assert output.returncode == 0
+
+    def test_sample_on_gpu(self):
+        output = run('export CUDA_VISIBLE_DEVICES=0;'
+                     'python mmdet/apis/ote/sample/sample.py '
+                     f'--data-dir {self.coco_dir}/.. '
+                     '--export configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml',
+                     shell=True, check=True)
+        assert output.returncode == 0
 
 
 class TestOTEAPI(unittest.TestCase):
