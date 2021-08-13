@@ -31,7 +31,6 @@ def test_resnest_backbone():
     # Test ResNeSt with radix 2, reduction_factor 4
     model = ResNeSt(
         depth=50, radix=2, reduction_factor=4, out_indices=(0, 1, 2, 3))
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(2, 3, 32, 32)

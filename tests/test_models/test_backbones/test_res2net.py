@@ -50,7 +50,6 @@ def test_res2net_backbone():
     for m in model.modules():
         if is_block(m):
             assert m.scales == 4
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)

@@ -333,14 +333,12 @@ def test_resnest_stem():
 
     # Test stem_channels=128
     model = ResNet(depth=50, stem_channels=128)
-    model.init_weights()
     model.train()
     assert model.conv1.out_channels == 128
     assert model.layer1[0].conv1.in_channels == 128
 
     # Test V1d stem_channels
     model = ResNetV1d(depth=50, stem_channels=128)
-    model.init_weights()
     model.train()
     assert model.stem[0].out_channels == 64
     assert model.stem[1].num_features == 64
@@ -387,7 +385,6 @@ def test_resnet_backbone():
     with pytest.raises(TypeError):
         # pretrained must be a string path
         model = ResNet(50, pretrained=0)
-        model.init_weights()
 
     with pytest.raises(AssertionError):
         # Style must be in ['pytorch', 'caffe']
@@ -395,21 +392,18 @@ def test_resnet_backbone():
 
     # Test ResNet50 norm_eval=True
     model = ResNet(50, norm_eval=True)
-    model.init_weights()
     model.train()
     assert check_norm_state(model.modules(), False)
 
     # Test ResNet50 with torchvision pretrained weight
     model = ResNet(
         depth=50, norm_eval=True, pretrained='torchvision://resnet50')
-    model.init_weights()
     model.train()
     assert check_norm_state(model.modules(), False)
 
     # Test ResNet50 with first stage frozen
     frozen_stages = 1
     model = ResNet(50, frozen_stages=frozen_stages)
-    model.init_weights()
     model.train()
     assert model.norm1.training is False
     for layer in [model.conv1, model.norm1]:
@@ -426,7 +420,6 @@ def test_resnet_backbone():
     # Test ResNet50V1d with first stage frozen
     model = ResNetV1d(depth=50, frozen_stages=frozen_stages)
     assert len(model.stem) == 9
-    model.init_weights()
     model.train()
     assert check_norm_state(model.stem, False)
     for param in model.stem.parameters():
@@ -441,7 +434,6 @@ def test_resnet_backbone():
 
     # Test ResNet18 forward
     model = ResNet(18)
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
@@ -463,7 +455,6 @@ def test_resnet_backbone():
     for m in model.modules():
         if is_norm(m):
             assert isinstance(m, _BatchNorm)
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
@@ -476,7 +467,6 @@ def test_resnet_backbone():
 
     # Test ResNet50 with layers 1, 2, 3 out forward
     model = ResNet(50, out_indices=(0, 1, 2))
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
@@ -491,7 +481,6 @@ def test_resnet_backbone():
     for m in model.modules():
         if is_block(m):
             assert m.with_cp
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
@@ -508,7 +497,6 @@ def test_resnet_backbone():
     for m in model.modules():
         if is_norm(m):
             assert isinstance(m, GroupNorm)
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
@@ -560,7 +548,6 @@ def test_resnet_backbone():
             assert m.nonlocal_block.in_channels == 512
             assert m.gen_attention_block.in_channels == 512
             assert not hasattr(m, 'context_block')
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
@@ -607,7 +594,6 @@ def test_resnet_backbone():
             assert not hasattr(m, 'context_block')
             assert not hasattr(m, 'context_block1')
             assert not hasattr(m, 'context_block2')
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
@@ -620,7 +606,6 @@ def test_resnet_backbone():
 
     # Test ResNet50 zero initialization of residual
     model = ResNet(50, zero_init_residual=True)
-    model.init_weights()
     for m in model.modules():
         if isinstance(m, Bottleneck):
             assert assert_params_all_zeros(m.norm3)
@@ -638,7 +623,6 @@ def test_resnet_backbone():
 
     # Test ResNetV1d forward
     model = ResNetV1d(depth=50)
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)

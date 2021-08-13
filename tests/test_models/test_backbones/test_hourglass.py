@@ -27,7 +27,6 @@ def test_hourglass_backbone():
         num_stacks=1,
         stage_channels=(64, 64, 96, 96, 96, 128),
         feat_channel=64)
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 256, 256)
@@ -40,7 +39,6 @@ def test_hourglass_backbone():
         num_stacks=2,
         stage_channels=(64, 64, 96, 96, 96, 128),
         feat_channel=64)
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 256, 256)

@@ -171,7 +171,6 @@ def test_trident_resnet_backbone():
         TridentResNet(50, num_stages=4, **tridentresnet_config)
 
     model = TridentResNet(50, num_stages=3, **tridentresnet_config)
-    model.init_weights()
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
