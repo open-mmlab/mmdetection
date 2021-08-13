@@ -272,7 +272,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             bbox_preds, bbox_targets, reg_weight_map, reg_norm)
 
         # Calculate heatmap loss
-        num_pos_local = pos_indices.size(0)
+        num_pos_local = hm_scores.new_tensor(pos_indices.size(0)).float()
         num_pos_avg = max(reduce_mean(num_pos_local), 1.0)
         hm_loss = self.loss_hm(
             hm_scores, flattened_hms, pos_indices, num_pos_avg)
