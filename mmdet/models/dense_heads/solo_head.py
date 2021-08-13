@@ -399,27 +399,41 @@ class SOLOHead(BaseMaskHead):
         return mlvl_mask_targets, mlvl_labels, mlvl_pos_masks
 
     def get_masks(self,
-                  seg_preds,
-                  cate_preds,
+                  mask_preds,
+                  cls_preds,
                   img_metas,
                   rescale=None,
                   **kwargs):
-        assert len(seg_preds) == len(cate_preds)
-        num_levels = len(cate_preds)
+        """
+
+        Args:
+            mask_preds:
+            cls_preds:
+            img_metas:
+            rescale:
+            **kwargs:
+
+        Returns:
+            list[:obj:`DetectionResults`]
+        """
+        assert len(mask_preds) == len(cls_preds)
+        num_levels = len(cls_preds)
 
         results_list = []
         for img_id in range(len(img_metas)):
-            cate_pred_list = [
-                cate_preds[i][img_id].view(-1, self.cls_out_channels)
-                for i in range(num_levels)
+            cls_pred_list = [
+                cls_preds[lvl][img_id].view(-1, self.cls_out_channels)
+                for lvl in range(num_levels)
             ]
-            seg_pred_list = [seg_preds[i][img_id] for i in range(num_levels)]
+            mask_pred_list = [
+                mask_preds[lvl][img_id] for lvl in range(num_levels)
+            ]
 
-            cate_pred_list = torch.cat(cate_pred_list, dim=0)
-            seg_pred_list = torch.cat(seg_pred_list, dim=0)
+            cls_pred_list = torch.cat(cls_pred_list, dim=0)
+            mask_pred_list = torch.cat(mask_pred_list, dim=0)
 
             results = self._get_masks_single(
-                cate_pred_list, seg_pred_list, img_meta=img_metas[img_id])
+                cls_pred_list, mask_pred_list, img_meta=img_metas[img_id])
             results_list.append(results)
 
         return results_list
