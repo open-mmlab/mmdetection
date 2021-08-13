@@ -55,7 +55,7 @@ for i in range(self.num_stages):
     ...
     if i < self.num_stages - 1:
           for j in range(num_imgs):
-                   # 处理空proposals
+                   # 处理空 proposals
                    if rois[j].shape[0] > 0:
                        bbox_label = cls_score[j][:, :-1].argmax(dim=1)
                        refine_roi = self.bbox_head[i].regress_by_class(
