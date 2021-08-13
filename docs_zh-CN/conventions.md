@@ -6,7 +6,7 @@
 
 在 MMDetection 中，`model(**data)`的返回值是一个字典，包含着所有的损失和评价指标，他们将会由`model(**data)`返回。
 
-例如，在bbox head中，
+例如，在 bbox head 中，
 
 ```python
 class BBoxHead(nn.Module):
@@ -22,13 +22,13 @@ class BBoxHead(nn.Module):
         return losses
 ```
 
-'bbox_head.loss()'在模型forward阶段会被调用。返回的字典中包含了`'loss_bbox'`, `'loss_cls'`, `'acc'`。只有`'loss_bbox'`, `'loss_cls'`会被用于反向传播，`'acc'`只会被作为评价指标来监控训练过程。
+'bbox_head.loss()' 在模型forward阶段会被调用。返回的字典中包含了 `'loss_bbox'`, `'loss_cls'`, `'acc'`。只有 `'loss_bbox'`, `'loss_cls'` 会被用于反向传播，`'acc'` 只会被作为评价指标来监控训练过程。
 
-我们默认，只有那些键的名称中包含'loss'的值会被用于反向传播。这个行为可以通过修改`BaseDetector.train_step()`来改变。
+我们默认，只有那些键的名称中包含 'loss' 的值会被用于反向传播。这个行为可以通过修改 `BaseDetector.train_step()` 来改变。
 
-## 空proposals
+## 空 proposals
 
-在MMDetection中，我们为两阶段方法中空proposals的情况增加了特殊处理和单元测试。我们同时需要处理整个batch和单一图片中空proposals的情况。例如，在CascadeRoIHead中，
+在 MMDetection 中，我们为两阶段方法中空proposals的情况增加了特殊处理和单元测试。我们同时需要处理整个 batch 和单一图片中空 proposals 的情况。例如，在 CascadeRoIHead 中，
 
 ```python
 # 简单的测试
@@ -62,4 +62,4 @@ for i in range(self.num_stages):
                             rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
                        refine_roi_list.append(refine_roi)
 ```
-如果你有自定义的`RoIHead`, 你可以参考上面的方法来处理空proposals的情况。
+如果你有自定义的 `RoIHead`, 你可以参考上面的方法来处理空 proposals 的情况。
