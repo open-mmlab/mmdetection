@@ -3,6 +3,7 @@ import itertools
 from itertools import chain
 
 import numpy as np
+import pycocotools.mask as mask_util
 import torch
 
 from mmdet.utils.util_mixins import NiceRepr
@@ -95,9 +96,20 @@ class Results(NiceRepr):
         meta = copy.deepcopy(meta)
         for k, v in meta.items():
             if k in self._meta_info_field:
-                raise KeyError(
-                    f'img_meta_info {k} has been set as '
-                    f'{getattr(self, k)} before, which is immutable ')
+                ori_value = getattr(self, k)
+                if isinstance(ori_value, (torch.Tensor, np.ndarray)):
+                    if (ori_value == v).all():
+                        continue
+                    else:
+                        raise KeyError(
+                            f'img_meta_info {k} has been set as '
+                            f'{getattr(self, k)} before, which is immutable ')
+                elif ori_value == v:
+                    continue
+                else:
+                    raise KeyError(
+                        f'img_meta_info {k} has been set as '
+                        f'{getattr(self, k)} before, which is immutable ')
             else:
                 self._meta_info_field.add(k)
                 self.__dict__[k] = v
@@ -249,6 +261,31 @@ class Results(NiceRepr):
                 v = v.detach().cpu().numpy()
             new_results[k] = v
         return new_results
+
+    def format_results(self):
+        """The protocols for serializing the value in `results_field`,
+        Generally the value would be converted into a format suitable for
+        multi-GPU synchronization.
+
+        Returns:
+            dict
+        """
+        results_dict = {}
+
+        for name, results in self.results_field.items():
+            if hasattr(results, 'format_results'):
+                update_dict = results.format_results()
+            else:
+                update_dict = {name: results}
+
+            assert not set(update_dict.keys()) & \
+                set(results_dict.keys()), f'Find' \
+                f' duplicate keys ' \
+                f'{set(update_dict.keys()) & set(results_dict.keys())} ' \
+                f'when format the {self}'
+            results_dict.update(update_dict)
+
+        return results_dict
 
     def __nice__(self):
         repr = '\n \n  META INFORMATION \n'
@@ -439,3 +476,68 @@ class InstanceResults(Results):
                 return len(v)
         else:
             raise AssertionError('This is an empty `InstanceResults`.')
+
+
+class DetectionResults(InstanceResults):
+    """A standard results for detection task, It specify several keys for
+    detection such `bboxes`,`scores`, `labels` and `masks`, etc.
+
+    And overloaded `format_results` can convert these value to a format which
+    is suitable for multi-GPU synchronization
+    """
+
+    def __init__(self, meta=None, num_classes=80, **kwargs):
+        super(DetectionResults, self).__init__(meta=meta)
+        extra_metas = dict(num_classes=num_classes)
+        for k, v in kwargs.items():
+            extra_metas[k] = v
+        self.add_meta_info(extra_metas)
+
+    def new_results(self):
+        """Return a new results with same image meta information and empty
+        results_field."""
+        new_results = self.__class__(num_classes=self.num_classes)
+        new_results.add_meta_info(self.meta_info_field)
+        return new_results
+
+    def format_results(self):
+        results_dict = dict()
+        assert 'scores' in self._results_field
+        assert 'labels' in self._results_field
+
+        assert 'bboxes' in self._results_field or \
+            'masks' in self._results_field, \
+            'DetectionResults at least contains one of ' \
+            '(bboxes, masks) when format the results '
+
+        labels = self.labels.detach().cpu().numpy()
+        if 'bboxes' in self._results_field:
+            # format bboxes results
+            if len(self) == 0:
+                bbox_results = [
+                    np.zeros((0, 5), dtype=np.float32)
+                    for _ in range(self.num_classes)
+                ]
+            else:
+                det_bboxes = torch.cat([self.bboxes, self.scores[:, None]],
+                                       dim=-1)
+                det_bboxes = det_bboxes.detach().cpu().numpy()
+                bbox_results = [
+                    det_bboxes[labels == i, :] for i in range(self.num_classes)
+                ]
+
+            results_dict['bbox_results'] = bbox_results
+        if 'masks' in self._results_field:
+            masks = self.masks.detach().cpu().numpy()
+            mask_results = [[] for _ in range(self.num_classes)]
+            num_masks = len(self)
+            for idx in range(num_masks):
+                mask = masks[idx]
+                encode_mask = mask_util.encode(
+                    np.array(mask[:, :, np.newaxis], order='F',
+                             dtype='uint8'))[0]
+
+                mask_results[labels[idx]].append(encode_mask)
+            results_dict['mask_results'] = mask_results
+
+        return results_dict

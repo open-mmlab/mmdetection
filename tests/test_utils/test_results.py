@@ -1,21 +1,101 @@
+import copy
+
 import numpy as np
 import pytest
 import torch
 
-from mmdet.core.results.results import InstanceResults, Results
+from mmdet.core.results.results import (DetectionResults, InstanceResults,
+                                        Results)
+
+
+@pytest.mark.parametrize('num_instances', [
+    1,
+    8,
+    3,
+    40,
+])
+@pytest.mark.parametrize('num_classes', [
+    10,
+    80,
+    3,
+    4,
+])
+def test_detection_results(num_instances, num_classes):
+    # test init
+    img_meta = dict(img_size=(100, 120), file_name='temp')
+    det_resutls = DetectionResults(
+        img_meta, num_classes=num_classes, task='det')
+    assert det_resutls.img_size == (100, 120)
+    assert det_resutls.num_classes == num_classes
+    assert det_resutls.task == 'det'
+
+    # test new_results
+    new_det_results = det_resutls.new_results()
+    assert new_det_results.num_classes == det_resutls.num_classes
+    assert new_det_results.file_name == 'temp'
+
+    # test format of det_results
+    det_resutls.bboxes = torch.rand(num_instances, 4)
+    det_resutls.scores = torch.rand(num_instances)
+    det_resutls.labels = torch.randint(0, num_classes, (num_instances, ))
+
+    det_results_dict = det_resutls.format_results()
+    assert 'bbox_results' in det_results_dict
+    bbox_results = det_results_dict['bbox_results']
+    assert len(bbox_results) == num_classes
+
+    for i in range(num_classes):
+        num_instance_each_class = (det_resutls.labels == i).sum()
+        assert num_instance_each_class == len(bbox_results[i])
+
+    det_resutls.masks = torch.rand(num_instances, 5, 5) > 0.5
+
+    format_mask_resutls = det_resutls.format_results()
+    assert 'mask_results' in format_mask_resutls
+    mask_resutls = format_mask_resutls['mask_results']
+    for i in range(num_classes):
+        num_instance_each_class = (det_resutls.labels == i).sum()
+        assert num_instance_each_class == len(mask_resutls[i])
+
+    top_level_results = Results()
+    top_level_results.temp = torch.rand(num_instances)
+    keypoints_results = InstanceResults()
+    keypoints_results.keypoints = torch.rand(num_instances, 3, 3)
+    keypoints_results.keypoints_scores = torch.rand(num_instances)
+    top_level_results.keypoints = keypoints_results
+    top_level_results.det_resutls = det_resutls
+
+    top_resutls_dict = top_level_results.format_results()
+    assert 'keypoints' in top_resutls_dict
+    assert 'keypoints_scores' in top_resutls_dict
+    assert 'mask_results' in top_resutls_dict
+    mask_resutls = top_resutls_dict['mask_results']
+    for i in range(num_classes):
+        num_instance_each_class = (
+            top_level_results.det_resutls.labels == i).sum()
+        assert num_instance_each_class == len(mask_resutls[i])
+    assert 'bbox_results' in top_resutls_dict
+    bbox_results = top_resutls_dict['bbox_results']
+    for i in range(num_classes):
+        num_instance_each_class = (
+            top_level_results.det_resutls.labels == i).sum()
+        assert num_instance_each_class == len(bbox_results[i])
 
 
 def test_results():
     # test init
     meta_info = dict(
-        img_size=[256, 256], path='dadfaff', scale_factor=np.array([1.5, 1.5]))
+        img_size=[256, 256],
+        path='dadfaff',
+        scale_factor=np.array([1.5, 1.5]),
+        img_shape=torch.rand(4))
 
     results = Results(meta_info)
 
     # Test `meta_info_keys` and `results_keys`
     assert 'img_size' in results.meta_info_keys
     assert 'path' in results.meta_info_keys
-    assert len(results.meta_info_keys) == 3
+    assert len(results.meta_info_keys) == 4
 
     results.tmp = torch.rand(2, 3)
     assert 'tmp' in results
@@ -23,21 +103,32 @@ def test_results():
     assert 'tmp' in results.results_keys
 
     for k, v in results.meta_info_field.items():
-        if isinstance(v, np.ndarray):
+        if isinstance(v, (np.ndarray, torch.Tensor)):
             assert (results.meta_info_field[k] == meta_info[k]).all()
         else:
             assert results.meta_info_field[k] == meta_info[k]
 
     # test `add_meta_info`
     # attribute in `_meta_info_field` is immutable once initialized
+    results.add_meta_info(meta_info)
     with pytest.raises(KeyError):
-        results.add_meta_info(meta_info)
+        duplicate_meta_info = copy.deepcopy(meta_info)
+        duplicate_meta_info['path'] = 'dada'
+        results.add_meta_info(duplicate_meta_info)
+    with pytest.raises(KeyError):
+        duplicate_meta_info = copy.deepcopy(meta_info)
+        duplicate_meta_info['scale_factor'] = np.array([1.5, 1.6])
+        results.add_meta_info(duplicate_meta_info)
+    with pytest.raises(KeyError):
+        duplicate_meta_info = copy.deepcopy(meta_info)
+        duplicate_meta_info['scale_factor'] = np.array([1.5, 1.6])
+        results.add_meta_info(duplicate_meta_info)
 
     new_meta = dict(padding_shape=(1000, 1000))
     results.add_meta_info(new_meta)
     meta_info.update(new_meta)
     for k, v in results.meta_info_field.items():
-        if isinstance(v, np.ndarray):
+        if isinstance(v, (np.ndarray, torch.Tensor)):
             assert (results.meta_info_field[k] == meta_info[k]).all()
         else:
             assert results.meta_info_field[k] == meta_info[k]
@@ -47,7 +138,7 @@ def test_results():
     new_results = results.new_results()
     assert len(new_results.results_field) == 0
     for k, v in new_results.meta_info_field.items():
-        if isinstance(v, np.ndarray):
+        if isinstance(v, (np.ndarray, torch.Tensor)):
             assert (results.meta_info_field[k] == new_results[k]).all()
         else:
             assert results.meta_info_field[k] == new_results[k]
@@ -193,7 +284,7 @@ def test_results():
     meta_info_field = new_results.meta_info_field
     assert len(results_field) == len(new_results.results_field)
     for key in new_results._meta_info_field:
-        if isinstance(new_results[key], np.ndarray):
+        if isinstance(new_results[key], (np.ndarray, torch.Tensor)):
             assert (new_results[key] == meta_info_field[key]).all()
         else:
             assert (new_results[key] == meta_info_field[key])
@@ -224,7 +315,7 @@ def test_results():
     double_results.long = torch.LongTensor(1, 2, 3, 4)
     double_results.bool = torch.BoolTensor(1, 2, 3, 4)
     double_results = results.to(torch.double)
-    for k, v in double_results.items():
+    for k, v in double_results.results_field.items():
         if isinstance(v, torch.Tensor):
             assert v.dtype is torch.double
 
@@ -267,6 +358,53 @@ def test_results():
         for value in numpy_results.results_field.values():
             assert isinstance(value, np.ndarray)
 
+    # test format the resutls
+    results.format_results() is results.results_field
+
+    results1 = results.new_results()
+    results1.masks = torch.rand(3, 5, 5)
+    results1.labels = torch.rand(3)
+    results2 = results1.new_results()
+    results2.bboxes = torch.rand(3, 4)
+    results2.center = torch.rand(3)
+
+    top_level_results = results.new_results()
+    top_level_results.results1 = results1
+    top_level_results.results2 = results2
+
+    top_level_results.temp_bbox = torch.rand(5, 4)
+
+    format_results = top_level_results.format_results()
+    assert 'masks' in format_results
+    assert format_results['masks'] is results1.masks
+    assert 'labels' in format_results
+    assert format_results['labels'] is results1.labels
+
+    assert 'bboxes' in format_results
+    assert format_results['bboxes'] is results2.bboxes
+
+    assert 'center' in format_results
+    assert format_results['center'] is results2.center
+
+    assert 'temp_bbox' in format_results
+    assert format_results['temp_bbox'] is top_level_results.temp_bbox
+
+    # assert duplicate keys
+    results1.results2 = results2
+    with pytest.raises(AssertionError):
+        top_level_results.format_results()
+    del results1.results2
+
+    results3 = results1.new_results()
+    results3.keypoints = torch.rand(3, 2, 2)
+    results3.keypoints_scores = torch.rand(3)
+    results2.results3 = results3
+    format_results = top_level_results.format_results()
+    assert 'keypoints' in format_results
+    assert 'keypoints_scores' in format_results
+    assert format_results['keypoints'] is results3.keypoints
+    assert format_results['keypoints_scores'] is results3.keypoints_scores
+
     results['_c'] = 10000
     results.get('dad', None) is None
     assert hasattr(results, '_c')
@@ -305,7 +443,7 @@ def test_results():
 
     if torch.cuda.is_available():
         cuda_resutls = results.cuda()
-        for k, v in cuda_resutls.items():
+        for k, v in cuda_resutls.results_field.items():
             if isinstance(v, torch.Tensor):
                 assert v.is_cuda
 
