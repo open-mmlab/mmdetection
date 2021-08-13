@@ -50,7 +50,7 @@ if rois.shape[0] == 0:
     return results
 ...
 
-# 在单张图片中没有proposals
+# 在单张图片中没有 proposals
 for i in range(self.num_stages):
     ...
     if i < self.num_stages - 1:
