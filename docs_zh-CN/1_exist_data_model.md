@@ -333,8 +333,25 @@ bash tools/dist_test.sh \
 生成的 png 和 txt 文件在 `./mask_rcnn_cityscapes_test_results` 文件夹下。
 
 ### 不使用 Ground Truth 标注进行测试
-MMDetection 支持在不使用 ground-truth 标注的情况下对模型进行测试，这需要用到 `CocoDataset`。如果你的数据集格式不是 COCO 格式的，请将其转化成 COCO 格式。
-比如，你的数据集格式是 VOC，你可以使用 `tools` 内的脚本直接将其转化成 COCO 格式。
+MMDetection 支持在不使用 ground-truth 标注的情况下对模型进行测试，这需要用到 `CocoDataset`。如果你的数据集格式不是 COCO 格式的，请将其转化成 COCO 格式。如果你的数据集格式是 VOC 或者 Cityscapes，你可以使用 [tools/dataset_converters](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters) 内的脚本直接将其转化成 COCO 格式。如果是其他格式，可以使用 [images2coco 脚本](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/images2coco.py) 进行转换。
+
+```shell
+python tools/dataset_converters/images2coco.py \
+    ${IMG_PATH} \
+    ${CLASSES} \
+    ${OUT} \
+    [--exclude-extensions]
+```
+
+参数：
+
+- `IMG_PATH`: 图片根路径。
+- `CLASSES`: 类列表文本文件名。文本中每一行存储一个类别。
+- `OUT`: 输出 json 文件名。 默认保存目录和 `IMG_PATH` 在同一级。
+- `exclude-extensions`: 待排除的文件后缀名。
+
+
+在转换完成后，使用如下命令进行测试
 
 ```shell
 # 单 GPU 测试
