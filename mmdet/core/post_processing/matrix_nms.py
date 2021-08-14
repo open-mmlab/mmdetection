@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 
 
 def matrix_nms(seg_masks,
@@ -61,18 +60,3 @@ def matrix_nms(seg_masks,
     # update the score.
     cate_scores_update = cate_scores * decay_coefficient
     return cate_scores_update
-
-
-def points_nms(heat, kernel=2):
-    """
-    Point NMS
-    Args:
-        heat (Tensor): shape (b, n, h, w)
-        kernel (int): kernel size, must be 2
-    Returns:
-        Tensor: cate_pred, tensors of shape (b, n, h, w)
-    """
-    hmax = nn.functional.max_pool2d(
-        heat, (kernel, kernel), stride=1, padding=1)
-    keep = (hmax[:, :, :-1, :-1] == heat).float()
-    return heat * keep

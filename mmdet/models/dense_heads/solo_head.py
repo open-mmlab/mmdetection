@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
-from mmdet.core import matrix_nms, multi_apply, points_nms
+from mmdet.core import matrix_nms, multi_apply
 from mmdet.core.results.results import DetectionResults
 from mmdet.models.builder import HEADS, build_loss
 from .base_mask_head import BaseMaskHead
@@ -190,8 +190,13 @@ class SOLOHead(BaseMaskHead):
                 upsampled_size = (feat_wh[0] * 2, feat_wh[1] * 2)
                 mask_pred = F.interpolate(
                     mask_pred.sigmoid(), size=upsampled_size, mode='bilinear')
-                cls_pred = points_nms(
-                    cls_pred.sigmoid(), kernel=2).permute(0, 2, 3, 1)
+                cls_pred = cls_pred.sigmoid()
+                # get local maximum
+                local_max = F.max_pool2d(cls_pred, 2, stride=1, padding=1)
+                keep_mask = local_max[:, :, :-1, :-1] == cls_pred
+                cls_pred = cls_pred * keep_mask
+                cls_pred = cls_pred.permute(0, 2, 3, 1)
+
             mask_preds.append(mask_pred)
             cls_preds.append(cls_pred)
         return mask_preds, cls_preds
