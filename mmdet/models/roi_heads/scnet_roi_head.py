@@ -379,7 +379,7 @@ class SCNetRoIHead(CascadeRoIHead):
                     if rois[j].shape[0] > 0:
                         bbox_label = cls_score[j][:, :-1].argmax(dim=1)
                         refine_rois = bbox_head.regress_by_class(
-                            rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
+                            rois[j], bbox_label, bbox_pred[j], img_metas[j])
                         refine_rois_list.append(refine_rois)
                 rois = torch.cat(refine_rois_list)
 

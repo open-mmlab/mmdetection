@@ -340,7 +340,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     if rois[j].shape[0] > 0:
                         bbox_label = cls_score[j][:, :-1].argmax(dim=1)
                         refined_rois = self.bbox_head[i].regress_by_class(
-                            rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
+                            rois[j], bbox_label, bbox_pred[j], img_metas[j])
                         refine_rois_list.append(refined_rois)
                 rois = torch.cat(refine_rois_list)
 
