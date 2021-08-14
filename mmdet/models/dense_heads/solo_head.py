@@ -456,7 +456,7 @@ class SOLOHead(BaseMaskHead):
         """
 
         def empty_results(results, cls_scores):
-            results.scores = cls_scores
+            results.scores = cls_scores.new_ones(0)
             results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
             results.labels = cls_scores.new_ones(0)
             return results

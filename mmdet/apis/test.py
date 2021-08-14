@@ -25,7 +25,15 @@ def single_gpu_test(model,
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
+
+            # Currently only solo will return :obj:`DetectionResults`
+            # but in the future, the outputs of all the model would
+            # be unified as :obj:`DetectionResults`
             result = model(return_loss=False, rescale=True, **data)
+
+        # Avoid CUDA OOM
+        if isinstance(result[0], DetectionResults):
+            result = [item.cpu() for item in result]
 
         batch_size = len(result)
         if show or out_dir:
@@ -55,20 +63,23 @@ def single_gpu_test(model,
                     show=show,
                     out_file=out_file,
                     score_thr=show_score_thr)
-        # Currently only solo will run this branch,
-        # but in the future, the outputs of all the model would
-        # be unified as :obj:`DetectionResults`
-        if isinstance(result[0], DetectionResults):
-            result = [item.format_results() for item in result]
 
         # encode mask results
-        elif isinstance(result[0], tuple):
+        if isinstance(result[0], tuple):
             result = [(bbox_results, encode_mask_results(mask_results))
                       for bbox_results, mask_results in result]
+
         results.extend(result)
 
         for _ in range(batch_size):
             prog_bar.update()
+
+    # Currently only solo will run this branch,
+    # but in the future, the outputs of all the model would
+    # be unified as :obj:`DetectionResults`
+    if isinstance(results[0], DetectionResults):
+        results = [item.format_results() for item in results]
+
     return results
 
 
@@ -100,13 +111,15 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     time.sleep(2)  # This line can prevent deadlock problem in some cases.
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(return_loss=False, rescale=True, **data)
 
-            # Currently only solo will run this branch,
+            # Currently only solo will return :obj:`DetectionResults`
             # but in the future, the outputs of all the model would
             # be unified as :obj:`DetectionResults`
+            result = model(return_loss=False, rescale=True, **data)
+
+            # Avoid CUDA OOM
             if isinstance(result[0], DetectionResults):
-                result = [item.format_results() for item in result]
+                result = [item.cpu() for item in result]
 
             # encode mask results
             elif isinstance(result[0], tuple):
@@ -118,6 +131,9 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             batch_size = len(result)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
+
+    if isinstance(results[0], DetectionResults):
+        results = [item.format_results() for item in results]
 
     # collect results from all ranks
     if gpu_collect:
