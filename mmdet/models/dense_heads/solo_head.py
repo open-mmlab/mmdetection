@@ -93,11 +93,13 @@ class SOLOHead(BaseMaskHead):
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
         self.strides = strides
+        self.num_grids = num_grids
         # number of FPN feats
         self.num_levels = len(strides)
+        assert self.num_levels == len(self.strides)
         self.scale_ranges = scale_ranges
         self.pos_scale = pos_scale
-        self.num_grids = num_grids
+
         self.cls_down_index = cls_down_index
         self.loss_cls = build_loss(loss_cls)
         self.loss_mask = build_loss(loss_mask)
@@ -450,9 +452,11 @@ class SOLOHead(BaseMaskHead):
             :obj:`DetectionResults`: Processed results. Usually
             contains following keys.
 
-                - scores (Tensor):
-                - labels (Tensor):
-                - masks (Tensor):
+                - scores (Tensor): Classification scores, has shape
+                    (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                    shape (num_instances, h, w).
         """
 
         def empty_results(results, cls_scores):
@@ -482,22 +486,17 @@ class SOLOHead(BaseMaskHead):
         inds = score_mask.nonzero()
         cls_labels = inds[:, 1]
 
-        # strides.
-        size_trans = cls_labels.new_tensor(self.num_grids).pow(2).cumsum(0)
-        strides = cls_scores.new_ones(size_trans[-1])
-        n_stage = len(self.num_grids)
-        strides[:size_trans[0]] *= self.strides[0]
-        for ind_ in range(1, n_stage):
-            strides[size_trans[ind_ -
-                               1]:size_trans[ind_]] *= self.strides[ind_]
+        # Filter the mask which area is smaller than
+        # stride
+        lvl_inteval = cls_labels.new_tensor(self.num_grids).pow(2).cumsum(0)
+        strides = cls_scores.new_ones(lvl_inteval[-1])
+        strides[:lvl_inteval[0]] *= self.strides[0]
+        for lvl in range(1, self.num_levels):
+            strides[lvl_inteval[lvl - 1]:lvl_inteval[lvl]] *= self.strides[lvl]
         strides = strides[inds[:, 0]]
-
-        # masks.
         mask_preds = mask_preds[inds[:, 0]]
         masks = mask_preds > cfg.mask_thr
         sum_masks = masks.sum((1, 2)).float()
-
-        # filter.
         keep = sum_masks > strides
         if keep.sum() == 0:
             return empty_results(results, cls_scores)
