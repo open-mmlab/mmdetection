@@ -218,6 +218,8 @@ class HRNet(BaseModule):
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+        multiscale_output (bool): whether to output multi-level features. If
+            False, only the first level feature will be output. Default: True.
         pretrained (str, optional): model pretrained path. Default: None
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None
@@ -272,6 +274,7 @@ class HRNet(BaseModule):
                  norm_eval=True,
                  with_cp=False,
                  zero_init_residual=False,
+                 multiscale_output=True,
                  pretrained=None,
                  init_cfg=None):
         super(HRNet, self).__init__(init_cfg)
@@ -372,7 +375,7 @@ class HRNet(BaseModule):
         self.transition3 = self._make_transition_layer(pre_stage_channels,
                                                        num_channels)
         self.stage4, pre_stage_channels = self._make_stage(
-            self.stage4_cfg, num_channels)
+            self.stage4_cfg, num_channels, multiscale_output=multiscale_output)
 
     @property
     def norm1(self):
