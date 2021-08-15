@@ -27,5 +27,5 @@ __all__ = [
     'l1_loss', 'isr_p', 'carl_loss', 'AssociativeEmbeddingLoss',
     'GaussianFocalLoss', 'QualityFocalLoss', 'DistributionFocalLoss',
     'VarifocalLoss', 'KnowledgeDistillationKLDivLoss', 'SeesawLoss',
-    BinaryFocalLoss
+    'BinaryFocalLoss',
 ]
