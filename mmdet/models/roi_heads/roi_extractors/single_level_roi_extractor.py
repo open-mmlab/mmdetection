@@ -1,4 +1,5 @@
 import torch
+import warnings
 from mmcv.runner import force_fp32
 
 from mmdet.models.builder import ROI_EXTRACTORS
@@ -28,9 +29,11 @@ class SingleRoIExtractor(BaseRoIExtractor):
                  featmap_strides,
                  finest_scale=56,
                  init_cfg=None):
-        super(SingleRoIExtractor, self).__init__(roi_layer, out_channels,
-                                                 featmap_strides, init_cfg)
+        super(SingleRoIExtractor, self).__init__(
+            roi_layer, out_channels, featmap_strides, init_cfg)
         self.finest_scale = finest_scale
+        if featmap_strides[0] != 4 and finest_scale == 56:
+            warnings.warn(f'Starting strides and finest_scale may not match.')
 
     def map_roi_levels(self, rois, num_levels):
         """Map rois to corresponding feature levels by scales.

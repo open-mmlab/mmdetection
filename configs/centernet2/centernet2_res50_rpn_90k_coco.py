@@ -53,7 +53,8 @@ model = dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
-            featmap_strides=[8, 16, 32, 64, 128]),
+            featmap_strides=[8, 16, 32, 64, 128],
+            finest_scale=112),
         bbox_head=[
             dict(
                 type='Shared2FCBBoxHead',
@@ -111,7 +112,6 @@ model = dict(
     train_cfg=dict(
         rpn=dict(
             nms_pre=4000,
-            max_per_img=2000,
             score_thr=0.0001,
             min_bbox_size=0,
             nms=dict(
