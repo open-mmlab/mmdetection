@@ -4,13 +4,8 @@ import torch.nn.functional as F
 from mmcv.cnn import Scale
 from mmcv.runner import force_fp32
 import math
-from mmcv.cnn import ConvModule
 
-import warnings
-from mmcv.cnn import initialize
-from mmcv import ConfigDict
-
-from mmdet.core import distance2bbox, multi_apply, multiclass_nms, reduce_mean
+from mmdet.core import distance2bbox, multi_apply, reduce_mean
 from mmdet.models import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 from mmcv.ops import batched_nms

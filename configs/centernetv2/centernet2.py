@@ -17,6 +17,7 @@ model = dict(
         out_channels=256,
         start_level=1,
         add_extra_convs='on_output',
+        relu_before_extra_convs=True,
         num_outs=5),
     rpn_head=dict(
         type='CenterNetHeadv2',
@@ -34,7 +35,7 @@ model = dict(
             beta=0.25,
             sigmoid_clamp=1e-4,
             ignore_high_fp=0.85,
-            loss_weight=1.0),
+            loss_weight=0.5),
         conv_bias=True),
     roi_head=dict(
         type='CascadeRoIHead',
@@ -45,7 +46,8 @@ model = dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
-            featmap_strides=[8, 16, 32, 64, 128]),
+            featmap_strides=[8, 16, 32, 64, 128],
+            finest_scale=112),
         bbox_head=[
             dict(
                 type='Shared2FCBBoxHead',
@@ -163,7 +165,7 @@ model = dict(
             nms=dict(type='nms', iou_threshold=0.9),
             min_bbox_size=0),
         rcnn=dict(
-            score_thr=0.01,
+            score_thr=0.05,
             nms=dict(type='nms', iou_threshold=0.7),
             max_per_img=100)))
 
@@ -243,7 +245,7 @@ data = dict(
         ]))
 evaluation = dict(interval=9000, metric='bbox')
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=dict(max_norm=1, norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='step',
     warmup='linear',

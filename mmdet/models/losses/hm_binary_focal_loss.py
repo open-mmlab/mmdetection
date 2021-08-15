@@ -40,7 +40,7 @@ def binary_heatmap_focal_loss(pred, target_pos_inds, alpha=2.0, gamma=4.0, beta=
         pos_loss = beta * pos_loss
         neg_loss = (1 - beta) * neg_loss
 
-    loss = 0.5*pos_loss + 0.5*neg_loss
+    loss = pos_loss + neg_loss
 
     return loss
 
@@ -105,7 +105,7 @@ class HeatmapBinaryFocalLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
         target_pos_inds = [target, pos_inds]
-        loss_reg = self.loss_weight * binary_heatmap_focal_loss(
+        loss_agn_hm = self.loss_weight * binary_heatmap_focal_loss(
             pred,
             target_pos_inds,
             alpha=self.alpha,
@@ -115,4 +115,4 @@ class HeatmapBinaryFocalLoss(nn.Module):
             ignore_high_fp=self.ignore_high_fp,
             reduction=reduction,
             avg_factor=avg_factor)
-        return loss_reg
+        return loss_agn_hm
