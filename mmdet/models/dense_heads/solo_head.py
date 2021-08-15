@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
-from mmdet.core import matrix_nms, multi_apply
+from mmdet.core import mask_matrix_nms, multi_apply
 from mmdet.core.results.results import DetectionResults
 from mmdet.models.builder import HEADS, build_loss
 from .base_mask_head import BaseMaskHead
@@ -149,7 +149,6 @@ class SOLOHead(BaseMaskHead):
                     feats[4], size=feats[3].shape[-2:], mode='bilinear'))
 
     def forward(self, feats):
-
         assert len(feats) == self.num_levels
         feats = self.resize_feats(feats)
         mask_preds = []
@@ -185,6 +184,7 @@ class SOLOHead(BaseMaskHead):
                 cls_feat = cls_layer(cls_feat)
 
             cls_pred = self.conv_cls(cls_feat)
+
             if not self.training:
                 feat_wh = feats[0].size()[-2:]
                 upsampled_size = (feat_wh[0] * 2, feat_wh[1] * 2)
@@ -210,7 +210,21 @@ class SOLOHead(BaseMaskHead):
              gt_bboxes=None,
              gt_bboxes_ignore=None,
              **kwargs):
+        """
 
+        Args:
+            mlvl_mask_preds:
+            mlvl_cls_preds:
+            gt_labels:
+            gt_masks:
+            img_metas:
+            gt_bboxes:
+            gt_bboxes_ignore:
+            **kwargs:
+
+        Returns:
+
+        """
         num_levels = self.num_levels
         num_imgs = len(gt_labels)
 
@@ -222,8 +236,8 @@ class SOLOHead(BaseMaskHead):
             gt_masks,
             featmap_sizes=featmap_sizes)
 
-        # before outside list means multi images
-        # after outside list means multi levels
+        # change from the outside list means multi images
+        # to  outside list means multi levels
         mlvl_pos_mask_targets = [[] for _ in range(num_levels)]
         mlvl_pos_mask_preds = [[] for _ in range(num_levels)]
         mlvl_pos_masks = [[] for _ in range(num_levels)]
@@ -249,7 +263,6 @@ class SOLOHead(BaseMaskHead):
             temp_mlvl_cls_preds.append(mlvl_cls_preds[lvl].permute(
                 0, 2, 3, 1).reshape(-1, self.cls_out_channels))
 
-        # ins
         flatten_pos_masks = torch.cat(mlvl_pos_masks)
         num_pos = flatten_pos_masks.sum()
 
@@ -293,16 +306,16 @@ class SOLOHead(BaseMaskHead):
             Tuple: Usually returns a tuple containing targets for predictions.
 
                 - mlvl_mask_targets (list[Tensor]): Each element represent
-                    the binary mask targets for all points in this
-                    level, has shape (num_grid**2, out_h, out_w)
+                  the binary mask targets for all points in this
+                  level, has shape (num_grid**2, out_h, out_w)
                 - mlvl_labels (list[Tensor]): Each element is
-                    classification labels for all
-                    points in this level, has shape
-                    (num_grid, num_grid)
+                  classification labels for all
+                  points in this level, has shape
+                  (num_grid, num_grid)
                 - mlvl_pos_masks (list[Tensor]): Each element is
-                    a `BoolTensor` to represent whether the
-                    corresponding point in single level
-                    is positive, has shape (num_grid **2)
+                  a `BoolTensor` to represent whether the
+                  corresponding point in single level
+                  is positive, has shape (num_grid **2)
         """
         device = gt_labels[0].device
         gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
@@ -408,17 +421,29 @@ class SOLOHead(BaseMaskHead):
                   img_metas,
                   rescale=None,
                   **kwargs):
-        """
+        """Get multi-image mask results.
 
         Args:
-            mask_preds:
-            cls_preds:
-            img_metas:
-            rescale:
-            **kwargs:
+            mask_preds (list[Tensor]): Multi-level mask prediction.
+                Each element in the list has shape
+                (batch_size, num_grids**2 ,h ,w)
+            cls_preds (list[Tensor]): Multi-level scores. Each element
+                in the list has shape
+                (batch_size ,num_grids ,num_grids, num_classes).
+            img_metas (list[dict]): Meta information of all images.
+            rescale (bool): Whether to rescale all results to
+                the original image scale.
 
         Returns:
-            list[:obj:`DetectionResults`]
+            list[:obj:`DetectionResults`]: Processed results of multiple
+            images.Each :obj:`DetectionResults` usually contains
+            following keys.
+
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
         """
         assert len(mask_preds) == len(cls_preds)
         num_levels = len(cls_preds)
@@ -454,17 +479,18 @@ class SOLOHead(BaseMaskHead):
             cfg (dict): Config used in test phase.
 
         Returns:
-            :obj:`DetectionResults`: Processed results. Usually
-            contains following keys.
+            :obj:`DetectionResults`: Processed results of single image.
+             it usually contains following keys.
 
                 - scores (Tensor): Classification scores, has shape
-                    (num_instance,)
+                  (num_instance,)
                 - labels (Tensor): Has shape (num_instances,).
                 - masks (Tensor): Processed mask results, has
-                    shape (num_instances, h, w).
+                  shape (num_instances, h, w).
         """
 
         def empty_results(results, cls_scores):
+            """Generate a empty results."""
             results.scores = cls_scores.new_ones(0)
             results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
             results.labels = cls_scores.new_ones(0)
@@ -484,15 +510,14 @@ class SOLOHead(BaseMaskHead):
 
         score_mask = (cls_preds > cfg.score_thr)
         cls_scores = cls_preds[score_mask]
-
         if len(cls_scores) == 0:
             return empty_results(results, cls_scores)
 
         inds = score_mask.nonzero()
         cls_labels = inds[:, 1]
 
-        # Filter the mask which area is smaller than
-        # stride
+        # Filter the mask mask with an area is smaller than
+        # stride of corresponding feature level
         lvl_inteval = cls_labels.new_tensor(self.num_grids).pow(2).cumsum(0)
         strides = cls_scores.new_ones(lvl_inteval[-1])
         strides[:lvl_inteval[0]] *= self.strides[0]
@@ -505,62 +530,37 @@ class SOLOHead(BaseMaskHead):
         keep = sum_masks > strides
         if keep.sum() == 0:
             return empty_results(results, cls_scores)
-
-        masks = masks[keep, ...]
-        mask_preds = mask_preds[keep, ...]
+        masks = masks[keep]
+        mask_preds = mask_preds[keep]
         sum_masks = sum_masks[keep]
         cls_scores = cls_scores[keep]
         cls_labels = cls_labels[keep]
 
         # maskness.
-        mask_scores = (mask_preds * masks.float()).sum((1, 2)) / sum_masks
+        mask_scores = (mask_preds * masks).sum((1, 2)) / sum_masks
         cls_scores *= mask_scores
 
-        # sort and keep top nms_pre
-        sort_inds = torch.argsort(cls_scores, descending=True)
-        if len(sort_inds) > cfg.nms_pre:
-            sort_inds = sort_inds[:cfg.nms_pre]
-        masks = masks[sort_inds, :, :]
-        mask_preds = mask_preds[sort_inds, :, :]
-        sum_masks = sum_masks[sort_inds]
-        cls_scores = cls_scores[sort_inds]
-        cls_labels = cls_labels[sort_inds]
-
-        # Matrix NMS
-        cls_scores = matrix_nms(
+        scores, labels, _, keep_inds = mask_matrix_nms(
             masks,
             cls_labels,
             cls_scores,
+            mask_area=sum_masks,
+            nms_pre=cfg.nms_pre,
+            max_num=cfg.max_per_img,
             kernel=cfg.kernel,
             sigma=cfg.sigma,
-            sum_masks=sum_masks)
-
-        # filter.
-        keep = cls_scores >= cfg.update_thr
-        if not keep.any():
-            return empty_results(results, cls_scores)
-        mask_preds = mask_preds[keep, :, :]
-        cls_scores = cls_scores[keep]
-        cls_labels = cls_labels[keep]
-
-        # sort and keep top_k
-        sort_inds = torch.argsort(cls_scores, descending=True)
-        if len(sort_inds) > cfg.max_per_img:
-            sort_inds = sort_inds[:cfg.max_per_img]
-        mask_preds = mask_preds[sort_inds, :, :]
-        cls_scores = cls_scores[sort_inds]
-        cls_labels = cls_labels[sort_inds]
-
+            update_thr=cfg.update_thr)
+        mask_preds = mask_preds[keep_inds]
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(0), size=upsampled_size,
             mode='bilinear')[:, :, :h, :w]
-        masks = F.interpolate(
+        mask_preds = F.interpolate(
             mask_preds, size=ori_shape[:2], mode='bilinear').squeeze(0)
-        masks = masks > cfg.mask_thr
+        masks = mask_preds > cfg.mask_thr
 
         results.masks = masks
-        results.labels = cls_labels
-        results.scores = cls_scores
+        results.labels = labels
+        results.scores = scores
 
         return results
 

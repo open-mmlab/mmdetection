@@ -1,52 +1,83 @@
 import torch
 
 
-def matrix_nms(seg_masks,
-               cate_labels,
-               cate_scores,
-               kernel='gaussian',
-               sigma=2.0,
-               sum_masks=None):
+def mask_matrix_nms(masks,
+                    labels,
+                    scores,
+                    update_thr=-1,
+                    nms_pre=-1,
+                    max_num=-1,
+                    kernel='gaussian',
+                    sigma=2.0,
+                    mask_area=None):
     """Matrix NMS for multi-class masks.
 
     Args:
-        seg_masks (Tensor): shape (n, h, w)
-        cate_labels (Tensor): shape (n), mask labels in descending order
-        cate_scores (Tensor): shape (n), mask scores in descending order
+        masks (Tensor): Has shape (num_instances, h, w)
+        labels (Tensor): Labels of corresponding masks,
+            has shape (num_instances,).
+        scores (Tensor): Mask scores in descending order Has shape (n),
+        update_thr (float): Score threshold to filter the masks
+            after matrix nms. Default: -1.
+        nms_pre (int): The max number of instance to do the matrix nms.
+            Default: -1.
+        max_num (int, optional): if there are more than max_num masks after
+            matrix, only top max_num will be kept. Default to -1.
         kernel (str):  'linear' or 'gaussian'
         sigma (float): std in gaussian method
-        sum_masks (Tensor): The sum of seg_masks
+        mask_area (Tensor): The sum of seg_masks
 
     Returns:
-        Tensor: cate_scores_update, tensors of shape (n)
+        tuple(Tensor): Processed mask results.
+
+            - scores (Tensor): Updated scores.
+            - labels (Tensor): Remained labels.
+            - masks (Tensor): Remained masks.
+            - keep_inds (Tensor): The indexs number of
+              the remaining mask in the input mask.
     """
-    n_samples = len(cate_labels)
-    if n_samples == 0:
-        return []
-    if sum_masks is None:
-        sum_masks = seg_masks.sum((1, 2)).float()
-    seg_masks = seg_masks.reshape(n_samples, -1).float()
+    if len(labels) == 0:
+        return scores.new_zeros(0), labels.new_zeros(0), masks.new_zeros(
+            0, *masks.shape[-2:]), labels.new_zeros(0)
+    if mask_area is None:
+        mask_area = masks.sum((1, 2)).float()
+
+    # sort and keep top nms_pre
+    scores, sort_inds = torch.sort(scores, descending=True)
+
+    keep_inds = sort_inds
+    if nms_pre > 0 and len(sort_inds) > nms_pre:
+        sort_inds = sort_inds[:nms_pre]
+        keep_inds = keep_inds[:nms_pre]
+        scores = scores[:nms_pre]
+    masks = masks[sort_inds]
+    mask_area = mask_area[sort_inds]
+    labels = labels[sort_inds]
+
+    num_masks = len(labels)
+    flatten_masks = masks.reshape(num_masks, -1).float()
     # inter.
-    inter_matrix = torch.mm(seg_masks, seg_masks.transpose(1, 0))
-    # union.
-    sum_masks_x = sum_masks.expand(n_samples, n_samples)
-    # iou.
-    iou_matrix = (inter_matrix / (sum_masks_x + sum_masks_x.transpose(1, 0) -
-                                  inter_matrix)).triu(diagonal=1)
+    inter_matrix = torch.mm(flatten_masks, flatten_masks.transpose(1, 0))
+    expanded_mask_area = mask_area.expand(num_masks, num_masks)
+    # Upper triangle iou matrix.
+    iou_matrix = (inter_matrix /
+                  (expanded_mask_area + expanded_mask_area.transpose(1, 0) -
+                   inter_matrix)).triu(diagonal=1)
     # label_specific matrix.
-    cate_labels_x = cate_labels.expand(n_samples, n_samples)
-    label_matrix = (cate_labels_x == cate_labels_x.transpose(
-        1, 0)).float().triu(diagonal=1)
+    expanded_labels = labels.expand(num_masks, num_masks)
+    # Upper triangle label matrix.
+    label_matrix = (expanded_labels == expanded_labels.transpose(
+        1, 0)).triu(diagonal=1)
 
     # IoU compensation
     compensate_iou, _ = (iou_matrix * label_matrix).max(0)
-    compensate_iou = compensate_iou.expand(n_samples,
-                                           n_samples).transpose(1, 0)
+    compensate_iou = compensate_iou.expand(num_masks,
+                                           num_masks).transpose(1, 0)
 
     # IoU decay
     decay_iou = iou_matrix * label_matrix
 
-    # matrix nms
+    # Calculate the decay_coefficient
     if kernel == 'gaussian':
         decay_matrix = torch.exp(-1 * sigma * (decay_iou**2))
         compensate_matrix = torch.exp(-1 * sigma * (compensate_iou**2))
@@ -58,5 +89,26 @@ def matrix_nms(seg_masks,
         raise NotImplementedError(
             f'{kernel} kernel is not supported in matrix nms!')
     # update the score.
-    cate_scores_update = cate_scores * decay_coefficient
-    return cate_scores_update
+    scores = scores * decay_coefficient
+
+    if update_thr > 0:
+        keep = scores >= update_thr
+        keep_inds = keep_inds[keep]
+        if not keep.any():
+            return scores.new_zeros(0), labels.new_zeros(0), masks.new_zeros(
+                0, *masks.shape[-2:]), labels.new_zeros(0)
+        masks = masks[keep]
+        scores = scores[keep]
+        labels = labels[keep]
+
+    # sort and keep top max_num
+    scores, sort_inds = torch.sort(scores, descending=True)
+    keep_inds = keep_inds[sort_inds]
+    if max_num > 0 and len(sort_inds) > max_num:
+        sort_inds = sort_inds[:max_num]
+        keep_inds = keep_inds[:max_num]
+        scores = scores[:max_num]
+    masks = masks[sort_inds]
+    labels = labels[sort_inds]
+
+    return scores, labels, masks, keep_inds
