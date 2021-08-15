@@ -147,8 +147,8 @@ class SOLOHead(BaseMaskHead):
     def forward(self, feats):
         assert len(feats) == self.num_levels
         feats = self.resize_feats(feats)
-        mask_preds = []
-        cls_preds = []
+        mlvl_mask_preds = []
+        mlvl_cls_preds = []
         for i in range(self.num_levels):
             x = feats[i]
             mask_feat = x
@@ -193,9 +193,9 @@ class SOLOHead(BaseMaskHead):
                 cls_pred = cls_pred * keep_mask
                 cls_pred = cls_pred.permute(0, 2, 3, 1)
 
-            mask_preds.append(mask_pred)
-            cls_preds.append(cls_pred)
-        return mask_preds, cls_preds
+            mlvl_mask_preds.append(mask_pred)
+            mlvl_cls_preds.append(cls_pred)
+        return mlvl_mask_preds, mlvl_cls_preds
 
     def loss(self,
              mlvl_mask_preds,
@@ -414,12 +414,8 @@ class SOLOHead(BaseMaskHead):
             mlvl_pos_masks.append(pos_mask)
         return mlvl_mask_targets, mlvl_labels, mlvl_pos_masks
 
-    def get_masks(self,
-                  mlvl_mask_preds,
-                  mlvl_cls_preds,
-                  img_metas,
-                  rescale=None,
-                  **kwargs):
+    def get_results(self, mlvl_mask_preds, mlvl_cls_preds, img_metas,
+                    **kwargs):
         """Get multi-image mask results.
 
         Args:
@@ -430,8 +426,6 @@ class SOLOHead(BaseMaskHead):
                 in the list has shape
                 (batch_size ,num_grids ,num_grids, num_classes).
             img_metas (list[dict]): Meta information of all images.
-            rescale (bool): Whether to rescale all results to
-                the original image scale.
 
         Returns:
             list[:obj:`DetectionResults`]: Processed results of multiple
@@ -460,13 +454,13 @@ class SOLOHead(BaseMaskHead):
             cls_pred_list = torch.cat(cls_pred_list, dim=0)
             mask_pred_list = torch.cat(mask_pred_list, dim=0)
 
-            results = self._get_masks_single(
+            results = self._get_results_single(
                 cls_pred_list, mask_pred_list, img_meta=img_metas[img_id])
             results_list.append(results)
 
         return results_list
 
-    def _get_masks_single(self, cls_preds, mask_preds, img_meta, cfg=None):
+    def _get_results_single(self, cls_preds, mask_preds, img_meta, cfg=None):
         """Get processed mask related results of single image.
 
         Args:
@@ -905,13 +899,13 @@ class DecoupledSOLOHead(SOLOHead):
         return ins_label_list, cate_label_list, \
             ins_ind_label_list, ins_ind_label_list_xy
 
-    def get_masks(self,
-                  seg_preds_x,
-                  seg_preds_y,
-                  cate_preds,
-                  img_metas,
-                  rescale=None,
-                  **kwargs):
+    def get_results(self,
+                    seg_preds_x,
+                    seg_preds_y,
+                    cate_preds,
+                    img_metas,
+                    rescale=None,
+                    **kwargs):
         assert len(seg_preds_x) == len(cate_preds)
         num_levels = len(cate_preds)
 
@@ -941,8 +935,8 @@ class DecoupledSOLOHead(SOLOHead):
             results_list.append(results)
         return results_list
 
-    def _get_masks_single(self, cate_preds, seg_preds_x, seg_preds_y, img_meta,
-                          cfg):
+    def _get_results_single(self, cate_preds, seg_preds_x, seg_preds_y,
+                            img_meta, cfg):
 
         def empty_results(results, cls_scores):
             """Generate a empty results."""

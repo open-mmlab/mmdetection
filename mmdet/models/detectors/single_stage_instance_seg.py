@@ -103,7 +103,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         if self.bbox_head:
             # bbox_head_results is a tuple
             bbox_head_preds = self.bbox_head(x)
-            # positive_infos is a obj:`InstanceResults`
+            # positive_infos is a obj:`DetectionResults`
             # It contains the information about the positive samples
             # CondInst, Yolact
             det_losses, positive_infos = self.bbox_head.loss(
@@ -131,10 +131,28 @@ class SingleStageInstanceSegmentor(BaseDetector):
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
-        """Test function without test-time augmentation."""
+        """Test function without test-time augmentation.
+
+        Args:
+            img (torch.Tensor): Images with shape (Batch_size, C, H, W).
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[:obj:`DetectionResults`]: Processed results of multiple
+            images.Each :obj:`DetectionResults` usually contains
+            following keys.
+
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
+        """
         feat = self.extract_feat(img)
         if self.bbox_head:
-            # det_results is a obj:`InstanceResults`
+            # det_results is a obj:`DetectionResults`
             outs = self.bbox_head(feat)
             results_list = self.bbox_head.get_bboxes(
                 *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)

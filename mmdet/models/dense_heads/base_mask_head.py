@@ -4,7 +4,7 @@ from mmcv.runner import BaseModule
 
 
 class BaseMaskHead(BaseModule, metaclass=ABCMeta):
-    """Base class for heads used in Instance Segmentation."""
+    """Base class for heads used in One-Stage Instance Segmentation."""
 
     def __init__(self, init_cfg):
         super(BaseMaskHead, self).__init__(init_cfg)
@@ -14,7 +14,8 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_masks(self, **kwargs):
+    def get_results(self, **kwargs):
+        """Get precessed :obj:`DetectionResults` of multiple images."""
         pass
 
     def forward_train(self,
@@ -62,7 +63,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 Results of each image after the post process.
 
         Returns:
-            list[obj:`InstanceResults`]: Instance segmentation
+            list[obj:`DetectionResults`]: Instance segmentation
                 results of each image after the post process.
         """
         if det_results is None:
@@ -70,6 +71,6 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
         else:
             outs = self(feats, det_results=det_results)
         mask_inputs = outs + (img_metas, )
-        mask_results_list = self.get_masks(
+        results_list = self.get_results(
             *mask_inputs, rescale=rescale, det_results=det_results, **kwargs)
-        return mask_results_list
+        return results_list
