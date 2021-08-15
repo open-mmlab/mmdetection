@@ -122,9 +122,10 @@ class CenterPrior(nn.Module):
 
 @HEADS.register_module()
 class AutoAssignHead(FCOSHead):
-    """AutoAssignHead head used in `AutoAssign.
+    """AutoAssignHead head used in AutoAssign.
 
-    <https://arxiv.org/abs/2007.03496>`_.
+    More details can be found in the `paper
+    <https://arxiv.org/abs/2007.03496>`_ .
 
     Args:
         force_topk (bool): Used in center prior initialization to
