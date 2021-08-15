@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale
-from mmcv.runner import force_fp32
 from mmcv.ops import batched_nms
+from mmcv.runner import force_fp32
 
-from mmdet.core import distance2bbox, multi_apply,  reduce_mean
+from mmdet.core import distance2bbox, multi_apply, reduce_mean
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin

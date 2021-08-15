@@ -1,5 +1,6 @@
-import torch
 import warnings
+
+import torch
 from mmcv.runner import force_fp32
 
 from mmdet.models.builder import ROI_EXTRACTORS
