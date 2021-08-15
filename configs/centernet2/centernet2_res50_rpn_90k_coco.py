@@ -10,8 +10,7 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch',
-        init_cfg=dict(type='Pretrained',
-                      checkpoint='torchvision://resnet50')),
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -29,8 +28,8 @@ model = dict(
         not_norm_reg=True,
         dcn_on_last_conv=False,
         strides=[8, 16, 32, 64, 128],
-        regress_ranges=((0, 64), (64, 128), (128, 256),
-                        (256, 512), (512, 1e8)),
+        regress_ranges=((0, 64), (64, 128), (128, 256), (256, 512), (512,
+                                                                     1e8)),
         loss_hm=dict(
             type='BinaryFocalLoss',
             alpha=0.25,
@@ -40,10 +39,7 @@ model = dict(
             neg_weight=0.5,
             sigmoid_clamp=1e-4,
             ignore_high_fp=0.85),
-        loss_bbox=dict(
-            type='GIoULoss',
-            reduction='mean',
-            loss_weight=1.0)),
+        loss_bbox=dict(type='GIoULoss', reduction='mean', loss_weight=1.0)),
     roi_head=dict(
         type='CascadeRoIHead',
         num_stages=3,
@@ -114,26 +110,24 @@ model = dict(
             nms_pre=4000,
             score_thr=0.0001,
             min_bbox_size=0,
-            nms=dict(
-                type='nms',
-                iou_threshold=0.9,
-                max_num=2000)),
-        rcnn=[dict(
-            assigner=dict(
-                type='MaxIoUAssigner',
-                pos_iou_thr=0.6,
-                neg_iou_thr=0.6,
-                min_pos_iou=0.6,
-                match_low_quality=False,
-                ignore_iof_thr=-1),
-            sampler=dict(
-                type='RandomSampler',
-                num=512,
-                pos_fraction=0.25,
-                neg_pos_ub=-1,
-                add_gt_as_proposals=True),
-            pos_weight=-1,
-            debug=False),
+            nms=dict(type='nms', iou_threshold=0.9, max_num=2000)),
+        rcnn=[
+            dict(
+                assigner=dict(
+                    type='MaxIoUAssigner',
+                    pos_iou_thr=0.6,
+                    neg_iou_thr=0.6,
+                    min_pos_iou=0.6,
+                    match_low_quality=False,
+                    ignore_iof_thr=-1),
+                sampler=dict(
+                    type='RandomSampler',
+                    num=512,
+                    pos_fraction=0.25,
+                    neg_pos_ub=-1,
+                    add_gt_as_proposals=True),
+                pos_weight=-1,
+                debug=False),
             dict(
                 assigner=dict(
                     type='MaxIoUAssigner',
@@ -172,10 +166,7 @@ model = dict(
             nms_pre=1000,
             score_thr=0.0001,
             min_bbox_size=0,
-            nms=dict(
-                type='nms',
-                iou_threshold=0.9,
-                max_num=256)),
+            nms=dict(type='nms', iou_threshold=0.9, max_num=256)),
         rcnn=dict(
             score_thr=0.05,
             nms=dict(type='nms', iou_threshold=0.7),
@@ -189,11 +180,12 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize',
-         img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                    (1333, 768), (1333, 800)],
-         multiscale_mode='value',
-         keep_ratio=True),
+    dict(
+        type='Resize',
+        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
+                   (1333, 768), (1333, 800)],
+        multiscale_mode='value',
+        keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -236,14 +228,11 @@ data = dict(
 evaluation = dict(interval=9000, metric='bbox')
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.02/8, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.02 / 8, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    step=[60000, 80000])
+    policy='step', warmup='linear', warmup_iters=500, step=[60000, 80000])
 runner = dict(type='IterBasedRunner', max_iters=90000)
 
 # runtime
