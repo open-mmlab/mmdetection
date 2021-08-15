@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..builder import LOSSES
+from .utils import weight_reduce_loss
 
 
 def _expand_onehot_labels(labels, label_weights, label_channels):
@@ -30,9 +31,16 @@ class GHMC(nn.Module):
         momentum (float): The parameter for moving average.
         use_sigmoid (bool): Can only be true for BCE based loss now.
         loss_weight (float): The weight of the total GHM-C loss.
+        reduction (str): Options are "none", "mean" and "sum".
+            Defaults to "mean"
     """
 
-    def __init__(self, bins=10, momentum=0, use_sigmoid=True, loss_weight=1.0):
+    def __init__(self,
+                 bins=10,
+                 momentum=0,
+                 use_sigmoid=True,
+                 loss_weight=1.0,
+                 reduction='mean'):
         super(GHMC, self).__init__()
         self.bins = bins
         self.momentum = momentum
@@ -46,8 +54,14 @@ class GHMC(nn.Module):
         if not self.use_sigmoid:
             raise NotImplementedError
         self.loss_weight = loss_weight
+        self.reduction = reduction
 
-    def forward(self, pred, target, label_weight, *args, **kwargs):
+    def forward(self,
+                pred,
+                target,
+                label_weight,
+                reduction_override=None,
+                **kwargs):
         """Calculate the GHM-C loss.
 
         Args:
@@ -57,9 +71,15 @@ class GHMC(nn.Module):
                 Binary class target for each sample.
             label_weight (float tensor of size [batch_num, class_num]):
                 the value is 1 if the sample is valid and 0 if ignored.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None.
         Returns:
             The gradient harmonized loss.
         """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
         # the target should be binary class label
         if pred.dim() != target.dim():
             target, label_weight = _expand_onehot_labels(
@@ -90,7 +110,9 @@ class GHMC(nn.Module):
             weights = weights / n
 
         loss = F.binary_cross_entropy_with_logits(
-            pred, target, weights, reduction='sum') / tot
+            pred, target, reduction='none')
+        loss = weight_reduce_loss(
+            loss, weights, reduction=reduction, avg_factor=tot)
         return loss * self.loss_weight
 
 
@@ -108,9 +130,16 @@ class GHMR(nn.Module):
         bins (int): Number of the unit regions for distribution calculation.
         momentum (float): The parameter for moving average.
         loss_weight (float): The weight of the total GHM-R loss.
+        reduction (str): Options are "none", "mean" and "sum".
+            Defaults to "mean"
     """
 
-    def __init__(self, mu=0.02, bins=10, momentum=0, loss_weight=1.0):
+    def __init__(self,
+                 mu=0.02,
+                 bins=10,
+                 momentum=0,
+                 loss_weight=1.0,
+                 reduction='mean'):
         super(GHMR, self).__init__()
         self.mu = mu
         self.bins = bins
@@ -122,9 +151,15 @@ class GHMR(nn.Module):
             acc_sum = torch.zeros(bins)
             self.register_buffer('acc_sum', acc_sum)
         self.loss_weight = loss_weight
+        self.reduction = reduction
 
     # TODO: support reduction parameter
-    def forward(self, pred, target, label_weight, avg_factor=None):
+    def forward(self,
+                pred,
+                target,
+                label_weight,
+                avg_factor=None,
+                reduction_override=None):
         """Calculate the GHM-R loss.
 
         Args:
@@ -135,9 +170,15 @@ class GHMR(nn.Module):
                 The target regression values with the same size of pred.
             label_weight (float tensor of size [batch_num, 4 (* class_num)]):
                 The weight of each sample, 0 if ignored.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None.
         Returns:
             The gradient harmonized loss.
         """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
         mu = self.mu
         edges = self.edges
         mmt = self.momentum
@@ -166,7 +207,6 @@ class GHMR(nn.Module):
                     weights[inds] = tot / num_in_bin
         if n > 0:
             weights /= n
-
-        loss = loss * weights
-        loss = loss.sum() / tot
+        loss = weight_reduce_loss(
+            loss, weights, reduction=reduction, avg_factor=tot)
         return loss * self.loss_weight

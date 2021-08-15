@@ -346,9 +346,11 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         img_shapes = img_metas[0]['img_shape_for_onnx']
 
         rois = proposals
+
         batch_index = torch.arange(
             rois.size(0), device=rois.device).float().view(-1, 1, 1).expand(
                 rois.size(0), rois.size(1), 1)
+
         rois = torch.cat([batch_index, rois[..., :4]], dim=-1)
         batch_size = rois.shape[0]
         num_proposals_per_img = rois.shape[1]

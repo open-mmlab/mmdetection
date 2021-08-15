@@ -8,10 +8,11 @@ from .hungarian_assigner import HungarianAssigner
 from .max_iou_assigner import MaxIoUAssigner
 from .point_assigner import PointAssigner
 from .region_assigner import RegionAssigner
+from .sim_ota_assigner import SimOTAAssigner
 from .uniform_assigner import UniformAssigner
 
 __all__ = [
     'BaseAssigner', 'MaxIoUAssigner', 'ApproxMaxIoUAssigner', 'AssignResult',
     'PointAssigner', 'ATSSAssigner', 'CenterRegionAssigner', 'GridAssigner',
-    'HungarianAssigner', 'RegionAssigner', 'UniformAssigner'
+    'HungarianAssigner', 'RegionAssigner', 'UniformAssigner', 'SimOTAAssigner'
 ]

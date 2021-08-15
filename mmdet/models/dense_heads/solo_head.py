@@ -208,22 +208,25 @@ class SOLOHead(BaseMaskHead):
              gt_masks,
              img_metas,
              gt_bboxes=None,
-             gt_bboxes_ignore=None,
              **kwargs):
-        """
+        """Calculate the loss of total batch.
 
         Args:
-            mlvl_mask_preds:
-            mlvl_cls_preds:
-            gt_labels:
-            gt_masks:
-            img_metas:
-            gt_bboxes:
-            gt_bboxes_ignore:
-            **kwargs:
+            mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
+                Each element in the list has shape
+                (batch_size, num_grids**2 ,h ,w)
+            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
+                in the list has shape
+                (batch_size ,num_grids ,num_grids, num_classes).
+            gt_labels (list[Tensor]): Labels of multiple images.
+            gt_masks (list[Tensor]): Ground truth masks of multiple images.
+                Each has shape (num_instances, h, w)
+            img_metas (list[dict]): Meta information of multiple images.
+            gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
+                images. Default: None.
 
         Returns:
-
+            dict[str, Tensor]: A dictionary of loss components.
         """
         num_levels = self.num_levels
         num_imgs = len(gt_labels)
@@ -236,8 +239,8 @@ class SOLOHead(BaseMaskHead):
             gt_masks,
             featmap_sizes=featmap_sizes)
 
-        # change from the outside list means multi images
-        # to  outside list means multi levels
+        # change from the outside list meaning multi images
+        # to the outside list meaning multi levels
         mlvl_pos_mask_targets = [[] for _ in range(num_levels)]
         mlvl_pos_mask_preds = [[] for _ in range(num_levels)]
         mlvl_pos_masks = [[] for _ in range(num_levels)]
@@ -416,18 +419,18 @@ class SOLOHead(BaseMaskHead):
         return mlvl_mask_targets, mlvl_labels, mlvl_pos_masks
 
     def get_masks(self,
-                  mask_preds,
-                  cls_preds,
+                  mlvl_mask_preds,
+                  mlvl_cls_preds,
                   img_metas,
                   rescale=None,
                   **kwargs):
         """Get multi-image mask results.
 
         Args:
-            mask_preds (list[Tensor]): Multi-level mask prediction.
+            mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
                 Each element in the list has shape
                 (batch_size, num_grids**2 ,h ,w)
-            cls_preds (list[Tensor]): Multi-level scores. Each element
+            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
                 (batch_size ,num_grids ,num_grids, num_classes).
             img_metas (list[dict]): Meta information of all images.
@@ -445,17 +448,17 @@ class SOLOHead(BaseMaskHead):
                 - masks (Tensor): Processed mask results, has
                   shape (num_instances, h, w).
         """
-        assert len(mask_preds) == len(cls_preds)
-        num_levels = len(cls_preds)
+        assert len(mlvl_mask_preds) == len(mlvl_cls_preds)
+        num_levels = len(mlvl_cls_preds)
 
         results_list = []
         for img_id in range(len(img_metas)):
             cls_pred_list = [
-                cls_preds[lvl][img_id].view(-1, self.cls_out_channels)
+                mlvl_cls_preds[lvl][img_id].view(-1, self.cls_out_channels)
                 for lvl in range(num_levels)
             ]
             mask_pred_list = [
-                mask_preds[lvl][img_id] for lvl in range(num_levels)
+                mlvl_mask_preds[lvl][img_id] for lvl in range(num_levels)
             ]
 
             cls_pred_list = torch.cat(cls_pred_list, dim=0)

@@ -33,6 +33,7 @@ from .vfnet import VFNet
 from .yolact import YOLACT
 from .yolo import YOLOV3
 from .yolof import YOLOF
+from .yolox import YOLOX
 
 __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
@@ -40,6 +41,6 @@ __all__ = [
     'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade', 'RetinaNet', 'FCOS',
     'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector', 'FOVEA', 'FSAF',
     'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA', 'YOLOV3', 'YOLACT',
-    'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet',
-    'DeformableDETR', 'AutoAssign', 'YOLOF', 'SOLO', 'CenterNet'
+    'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
+    'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX'
 ]
