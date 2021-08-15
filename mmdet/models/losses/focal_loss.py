@@ -235,10 +235,10 @@ class BinaryFocalLoss(nn.Module):
         if self.alpha >= 0:
             pos_loss = self.alpha * pos_loss
             neg_loss = (1 - self.alpha) * neg_loss
-        
+
         pos_loss = self.pos_weight * pos_loss
         neg_loss = self.neg_weight * neg_loss
-        
+
         if avg_factor:
             pos_loss /= avg_factor
             neg_loss /= avg_factor
