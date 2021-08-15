@@ -9,9 +9,16 @@ from ..builder import NECKS
 class SingleBiFPN(BaseModule):
     """
     Single layer of BiFPN
+
+     Args:
+        in_channels (List[int]): Number of input channels per scale.
+        out_channels (int): Number of output channels (used at each scale).
+        conv_cfg (dict): Config dict for convolution layer.
+        norm_cfg (dict): Config dict for normalization layer.
+        act_cfg (dict): Config dict for activation layer.
     """
     def __init__(self,
-                 in_channels_list,
+                 in_channels,
                  out_channels,
                  conv_cfg=None,
                  norm_cfg=None,
@@ -19,7 +26,7 @@ class SingleBiFPN(BaseModule):
         super(SingleBiFPN, self).__init__()
         self.out_channels = out_channels
 
-        if len(in_channels_list) == 5:
+        if len(in_channels) == 5:
             self.nodes = [
                 {'feat_level': 3, 'inputs_offsets': [3, 4]},
                 {'feat_level': 2, 'inputs_offsets': [2, 5]},
@@ -30,7 +37,7 @@ class SingleBiFPN(BaseModule):
                 {'feat_level': 3, 'inputs_offsets': [3, 5, 10]},
                 {'feat_level': 4, 'inputs_offsets': [4, 11]},
             ]
-        elif len(in_channels_list) == 3:
+        elif len(in_channels) == 3:
             self.nodes = [
                 {'feat_level': 1, 'inputs_offsets': [1, 2]},
                 {'feat_level': 0, 'inputs_offsets': [0, 3]},
@@ -40,7 +47,7 @@ class SingleBiFPN(BaseModule):
         else:
             raise NotImplementedError
 
-        node_info = in_channels_list.copy()
+        node_info = in_channels.copy()
         for fnode in self.nodes:
             feat_level = fnode["feat_level"]
             inputs_offsets = fnode["inputs_offsets"]
@@ -131,25 +138,39 @@ class SingleBiFPN(BaseModule):
 
 @NECKS.register_module()
 class BiFPN(BaseModule):
-    """ The neck used in 'CenterNet2 <http://arxiv.org/abs/2103.07461>'_
-    Originally, the is was proposed  in
-    'EfficientDet https://arxiv.org/abs/1911.09070'_
+    """ The neck proposed in 'EfficientDet https://arxiv.org/abs/1911.09070'_
 
     Args:
         in_channels (List[int]): Number of input channels per scale.
-        out_channels (int): Number of output channels (used at each scale)
+        out_channels (int): Number of output channels (used at each scale).
         num_outs (int): Number of output scales (implemented case 3 and 5).
         start_level (int): Index of the start input backbone level used to
             build the feature pyramid. Default: 0.
         end_level (int): Index of the end input backbone level (inclusive) to
             build the feature pyramid. Default: -1, which means the last level.
-        num_outs (int): Number of output features
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Config dict for normalization layer. Default: None.
-        act_cfg (dict): Config dict for activation layer in ConvModule.
-            Default: None.
+        num_bifpn (int): Number of bifpn layers.
+        conv_cfg (dict): Config dict for convolution layer.
+        norm_cfg (dict): Config dict for normalization layer.
+        act_cfg (dict): Config dict for activation layer.
         init_cfg (dict or list[dict], optional): Initialization config dict.
 
+     Example:
+        >>> import torch
+        >>> from mmdet.models.necks import BiFPN
+        >>> in_channels = [64, 128, 256]
+        >>> scales = [8, 16, 32]
+        >>> num_outs = 5
+        >>> inputs = [torch.rand(1, c, s, s)
+        ...           for c, s in zip(in_channels, scales)]
+        >>> self = BiFPN(in_channels, 256, num_outs).eval()
+        >>> outputs = self.forward(inputs)
+        >>> for i in range(len(outputs)):
+        ...     print(f'outputs[{i}].shape = {outputs[i].shape}')
+        outputs[0].shape = torch.Size([1, 256, 8, 8])
+        outputs[1].shape = torch.Size([1, 256, 16, 16])
+        outputs[2].shape = torch.Size([1, 256, 32, 32])
+        outputs[3].shape = torch.Size([1, 256, 16, 16])
+        outputs[4].shape = torch.Size([1, 256, 8, 8])
     """
 
     def __init__(self,
@@ -170,12 +191,12 @@ class BiFPN(BaseModule):
         assert isinstance(in_channels, list)
         assert num_outs == 5 or num_outs == 3, NotImplementedError
         self.num_bifpn = num_bifpn
-        self.__extra_levels = nn.ModuleList()
-        self.__start_level = start_level
-        self.__end_level = \
+        self.extra_levels = nn.ModuleList()
+        self.start_level = start_level
+        self.end_level = \
             end_level if end_level != -1 else len(in_channels) - 1
 
-        end_level = self.__end_level
+        end_level = self.end_level
         num_extra_levels = num_outs - (end_level - start_level + 1)
         in_channel = in_channels[end_level]
         for i in range(num_extra_levels):
@@ -193,18 +214,18 @@ class BiFPN(BaseModule):
                 extra_level = torch.nn.MaxPool2d(
                     kernel_size=3, stride=2, padding=1)
             in_channel = out_channels
-            self.__extra_levels.append(extra_level)
+            self.extra_levels.append(extra_level)
 
         self.repeated_bifpn = nn.ModuleList()
         for i in range(num_bifpn):
             if i == 0:
-                in_channels_list = in_channels[start_level:end_level + 1] + \
+                in_channels = in_channels[start_level:end_level + 1] + \
                                    [out_channels] * num_extra_levels
             else:
-                in_channels_list = [out_channels] * num_outs
+                in_channels = [out_channels] * num_outs
             self.repeated_bifpn.append(
                 SingleBiFPN(
-                    in_channels_list,
+                    in_channels,
                     out_channels,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
@@ -212,9 +233,9 @@ class BiFPN(BaseModule):
 
     def forward(self, inputs):
         laterals = [inputs[i] for i in range(
-            self.__start_level, self.__end_level + 1)]
-        if len(self.__extra_levels) > 0:
-            for extra_level in self.__extra_levels:
+            self.start_level, self.end_level + 1)]
+        if len(self.extra_levels) > 0:
+            for extra_level in self.extra_levels:
                 laterals.append(extra_level(laterals[-1]))
         for i in range(self.num_bifpn):
             laterals = self.repeated_bifpn[i](laterals)
