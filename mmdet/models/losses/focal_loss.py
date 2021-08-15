@@ -194,8 +194,9 @@ class BinaryFocalLoss(nn.Module):
                  ignore_high_fp=-1.,
                  reduction='mean'):
 
-        """ A Gaussian heatmap focal loss calculation, it use a small
-            portion of points as positive sample points.
+        """A Gaussian heatmap focal loss calculation, it use a small portion of
+        points as positive sample points.
+
             `Probabilistic two-stage detection
             <https://arxiv.org/abs/2103.07461>`_
             `Focal Loss

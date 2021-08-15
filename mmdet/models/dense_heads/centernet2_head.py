@@ -15,7 +15,9 @@ INF = 1e8
 
 @HEADS.register_module()
 class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
-    """ RPN head used in `Probabilistic two-stage detection
+
+    """RPN head used in `Probabilistic two-stage detection.
+
         <https://arxiv.org/abs/2103.07461>`_.
 
     Args:
@@ -154,7 +156,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                       gt_bboxes_ignore=None,
                       proposal_cfg=None,
                       **kwargs):
-        """ Calculate and return losses.
+        """Calculate and return losses.
 
         Args:
             x (list[Tensor]): Features from FPN.
@@ -226,17 +228,17 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
 
     @force_fp32(apply_to=('hm_scores', 'reg_preds'))
     def loss(self, hm_scores, reg_preds, gt_bboxes):
-        """ Compute losses.
+        """Compute losses.
 
-         Args:
-             hm_scores (list[Tensor]): Heatmap predictions for each fpn
+        Args:
+            hm_scores (list[Tensor]): Heatmap predictions for each fpn
                 level, each list item has shape [B, 1, H, W].
-             reg_preds (list[Tensor]): Regression predictions for each
+            reg_preds (list[Tensor]): Regression predictions for each
                 fpn level, each list item has shape [B, 4, H, W].
-             gt_bboxes (list[Tensor]): Ground truth bboxes of each image,
+            gt_bboxes (list[Tensor]): Ground truth bboxes of each image,
                 each has shape (numberOfGtboxesInTheImage, 4).
-         Returns:
-             losses (dict): Losses of CenterNet2 head, including pos_loss
+        Returns:
+            losses (dict): Losses of CenterNet2 head, including pos_loss
                 neg_loss, calculated by BinaryFocalLoss and regression loss.
         """
 
