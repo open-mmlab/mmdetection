@@ -30,8 +30,8 @@ class SingleRoIExtractor(BaseRoIExtractor):
                  featmap_strides,
                  finest_scale=56,
                  init_cfg=None):
-        super(SingleRoIExtractor, self).__init__(
-            roi_layer, out_channels, featmap_strides, init_cfg)
+        super(SingleRoIExtractor, self).__init__(roi_layer, out_channels,
+                                                 featmap_strides, init_cfg)
         self.finest_scale = finest_scale
         if featmap_strides[0] != 4 and finest_scale == 56:
             warnings.warn('Starting strides and finest_scale may not match.')

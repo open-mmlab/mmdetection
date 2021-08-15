@@ -56,48 +56,42 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         >>> assert len(hm_score) == len(self.scales)
     """  # noqa: E501
 
-    def __init__(self,
-                 num_classes,
-                 in_channels,
-                 feat_channels=288,
-                 stacked_convs=4,
-                 dcn_on_last_conv=True,
-                 strides=(8, 16, 32, 64, 128),
-                 regress_ranges=((0, 64), (64, 128), (128, 256), (256, 512),
-                                 (512, INF)),
-                 min_radius=4,
-                 hm_min_overlap=0.8,
-                 original_dis_map=True,
-                 not_norm_reg=False,
-                 loss_hm=dict(
-                     type='BinaryFocalLoss',
-                     alpha=0.25,
-                     beta=4,
-                     gamma=2,
-                     pos_weight=0.5,
-                     neg_weight=0.5,
-                     sigmoid_clamp=1e-4,
-                     ignore_high_fp=0.85),
-                 loss_bbox=dict(type='GIoULoss', loss_weight=1.0),
-                 conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 train_cfg=None,
-                 test_cfg=None,
-                 init_cfg=dict(
-                     type='Normal',
-                     layer='Conv2d',
-                     std=0.01,
-                     override=[
-                         dict(
-                             type='Normal',
-                             name='hm_head',
-                             std=0.01,
-                             bias_prob=0.01),
-                         dict(
-                             type='Normal',
-                             name='reg_head',
-                             std=0.01,
-                             bias=8.)])):
+    def __init__(
+        self,
+        num_classes,
+        in_channels,
+        feat_channels=288,
+        stacked_convs=4,
+        dcn_on_last_conv=True,
+        strides=(8, 16, 32, 64, 128),
+        regress_ranges=((0, 64), (64, 128), (128, 256), (256, 512), (512,
+                                                                     INF)),
+        min_radius=4,
+        hm_min_overlap=0.8,
+        original_dis_map=True,
+        not_norm_reg=False,
+        loss_hm=dict(
+            type='BinaryFocalLoss',
+            alpha=0.25,
+            beta=4,
+            gamma=2,
+            pos_weight=0.5,
+            neg_weight=0.5,
+            sigmoid_clamp=1e-4,
+            ignore_high_fp=0.85),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0),
+        conv_cfg=None,
+        norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+        train_cfg=None,
+        test_cfg=None,
+        init_cfg=dict(
+            type='Normal',
+            layer='Conv2d',
+            std=0.01,
+            override=[
+                dict(type='Normal', name='hm_head', std=0.01, bias_prob=0.01),
+                dict(type='Normal', name='reg_head', std=0.01, bias=8.)
+            ])):
         super(CenterNet2Head, self).__init__(init_cfg)
         self.num_classes = num_classes
         self.regress_ranges = regress_ranges
@@ -243,14 +237,14 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         """
 
         feature_map_sizes = [score.size()[-2:] for score in hm_scores]
-        points = self.get_points(
-            feature_map_sizes, reg_preds[0].dtype, reg_preds[0].device)
+        points = self.get_points(feature_map_sizes, reg_preds[0].dtype,
+                                 reg_preds[0].device)
         hm_scores = torch.cat(
-            [x.permute(0, 2, 3, 1).reshape(-1)
-             for x in hm_scores], dim=0).contiguous()
+            [x.permute(0, 2, 3, 1).reshape(-1) for x in hm_scores],
+            dim=0).contiguous()
         reg_preds = torch.cat(
-            [x.permute(0, 2, 3, 1).reshape(-1, 4)
-             for x in reg_preds], dim=0).contiguous()
+            [x.permute(0, 2, 3, 1).reshape(-1, 4) for x in reg_preds],
+            dim=0).contiguous()
         assert (torch.isfinite(reg_preds).all().item())
         pos_indices, reg_targets, flattened_hms = \
             self.get_targets(points, gt_bboxes)
@@ -270,14 +264,14 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         flatten_points = flatten_points[reg_indices]
         bbox_preds = distance2bbox(flatten_points, reg_preds)
         bbox_targets = distance2bbox(flatten_points, reg_targets_pos)
-        reg_loss = self.loss_bbox(
-            bbox_preds, bbox_targets, reg_weight_map, reg_norm)
+        reg_loss = self.loss_bbox(bbox_preds, bbox_targets, reg_weight_map,
+                                  reg_norm)
 
         # Calculate heatmap loss
         num_pos_local = hm_scores.new_tensor(pos_indices.size(0)).float()
         num_pos_avg = max(reduce_mean(num_pos_local), 1.0)
-        hm_loss = self.loss_hm(
-            hm_scores, flattened_hms, pos_indices, num_pos_avg)
+        hm_loss = self.loss_hm(hm_scores, flattened_hms, pos_indices,
+                               num_pos_avg)
         losses = dict(
             pos_loss=hm_loss[0], neg_loss=hm_loss[1], loss_bbox=reg_loss)
 
@@ -306,10 +300,12 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         num_loc_list = [len(loc) for loc in points]
         strides = torch.cat([
             points[0].new_ones(num_loc_list[level]) * self.strides[level]
-            for level in range(num_level)]).float()
-        reg_size_ranges = torch.cat(
-            [points[0].new_tensor(self.regress_ranges[i]).float().view(
-                1, 2).expand(num_loc_list[i], 2) for i in range(num_level)])
+            for level in range(num_level)
+        ]).float()
+        reg_size_ranges = torch.cat([
+            points[0].new_tensor(self.regress_ranges[i]).float().view(
+                1, 2).expand(num_loc_list[i], 2) for i in range(num_level)
+        ])
         points = torch.cat(points, dim=0)
         m = points.shape[0]
         reg_targets = []
@@ -336,37 +332,36 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 ((centers_expanded / strides_expanded).int() *
                  strides_expanded).float() + strides_expanded / 2
             is_peak = (((points.view(m, 1, 2).expand(m, n, 2) -
-                         centers_discrete) ** 2).sum(dim=2) == 0)
+                         centers_discrete)**2).sum(dim=2) == 0)
             is_in_boxes = reg_target.min(dim=2)[0] > 0
 
             # Get neighbour 3x3 points
             expanded_points = points.view(m, 1, 2).expand(m, n, 2)
             dist_x = (expanded_points[:, :, 0] - centers_discrete[:, :, 0])
             dist_y = (expanded_points[:, :, 1] - centers_discrete[:, :, 1])
-            is_center3x3 = (
-                    (dist_x.abs() <= strides_expanded[:, :, 0])
-                    & (dist_y.abs() <= strides_expanded[:, :, 1])
-                    & is_in_boxes)
+            is_center3x3 = ((dist_x.abs() <= strides_expanded[:, :, 0])
+                            & (dist_y.abs() <= strides_expanded[:, :, 1])
+                            & is_in_boxes)
 
             # Use half diagonal length to assign boxes into different level
             # of feature maps.
-            half_diagonal = ((reg_target[:, :, :2] +
-                              reg_target[:, :, 2:]) ** 2).sum(dim=2) ** 0.5 / 2
+            half_diagonal = ((reg_target[:, :, :2] + reg_target[:, :, 2:])**
+                             2).sum(dim=2)**0.5 / 2
             is_cared_in_the_level = (
-                    (half_diagonal >= reg_size_ranges[:, [0]])
-                    & (half_diagonal <= reg_size_ranges[:, [1]]))
+                (half_diagonal >= reg_size_ranges[:, [0]])
+                & (half_diagonal <= reg_size_ranges[:, [1]]))
 
             # Although the original author call it the 'weighted' square
             # of distance, it is more like a 'normed' one.
             dist2 = ((points.view(m, 1, 2).expand(m, n, 2) -
-                      centers_expanded) ** 2).sum(dim=2)
+                      centers_expanded)**2).sum(dim=2)
             if self.original_dis_map:
                 dist2[is_peak] = 0
             else:
                 dist2[is_peak & is_cared_in_the_level] = 0
             delta = (1 - self.hm_min_overlap) / (1 + self.hm_min_overlap)
-            radius2 = delta ** 2 * 2 * area
-            radius2 = torch.clamp(radius2, min=self.min_radius ** 2)
+            radius2 = delta**2 * 2 * area
+            radius2 = torch.clamp(radius2, min=self.min_radius**2)
             weighted_dist2 = dist2 / radius2.view(1, n).expand(m, n)
 
             # Get regression targets
@@ -375,7 +370,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             dist[reg_mask == 0] = INF * 1.0
             min_dist, min_inds = dist.min(dim=1)
             reg_targets_per_im = reg_target[range(len(reg_target)), min_inds]
-            reg_targets_per_im[min_dist == INF] = - INF
+            reg_targets_per_im[min_dist == INF] = -INF
             reg_targets.append(reg_targets_per_im)
 
             # Get heatmap targets
@@ -404,8 +399,8 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         reg_targets = torch.cat([x for x in reg_targets_list])
         flattened_hms = torch.cat([x for x in flattened_hms_list])
         pos_indices = torch.cat([x for x in pos_indices_list])
-        pos_indices = torch.tensor(
-            range(pos_indices.size(0))).long()[pos_indices]
+        pos_indices = torch.tensor(range(
+            pos_indices.size(0))).long()[pos_indices]
         return pos_indices, reg_targets, flattened_hms
 
     @force_fp32(apply_to=('hm_scores', 'reg_preds'))
@@ -448,27 +443,28 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         for img_id in range(len(img_metas)):
             hm_score_list = [
                 hm_scores[i][img_id].detach().sigmoid_()
-                for i in range(num_levels)]
-            bbox_pred_list = [reg_preds[i][img_id].detach()
-                              for i in range(num_levels)]
+                for i in range(num_levels)
+            ]
+            bbox_pred_list = [
+                reg_preds[i][img_id].detach() for i in range(num_levels)
+            ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self._get_bboxes_single(
-                hm_score_list, bbox_pred_list, points,
-                img_shape, scale_factor, cfg, rescale)
+            proposals = self._get_bboxes_single(hm_score_list, bbox_pred_list,
+                                                points, img_shape,
+                                                scale_factor, cfg, rescale)
             proposal_list.append(proposals)
         return proposal_list
 
-    def _get_bboxes_single(
-            self,
-            hm_scores,
-            reg_preds,
-            mlvl_points,
-            img_shapes,
-            scale_factors,
-            cfg,
-            rescale=False,
-            with_nms=True):
+    def _get_bboxes_single(self,
+                           hm_scores,
+                           reg_preds,
+                           mlvl_points,
+                           img_shapes,
+                           scale_factors,
+                           cfg,
+                           rescale=False,
+                           with_nms=True):
         """Transform outputs for a single image into bbox predictions.
 
         Args:
@@ -520,8 +516,9 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             mlvl_scores.append(hm_score)
             mlvl_bbox_preds.append(bboxes)
             level_ids.append(
-                hm_score.new_full(
-                    (hm_score.size(0),), level, dtype=torch.long))
+                hm_score.new_full((hm_score.size(0), ),
+                                  level,
+                                  dtype=torch.long))
             scores = torch.cat(mlvl_scores)
             bboxes = torch.cat(mlvl_bbox_preds)
             nms_indices = torch.cat(level_ids)
