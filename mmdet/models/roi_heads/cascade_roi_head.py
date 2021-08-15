@@ -443,8 +443,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def aug_test(self, features, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
 
-        If rescale is False, then returned bboxes and masks will fit the scale
-        of imgs[0].
+        If rescale is False, then returned bboxes and masks will fit the
+        scale of imgs[0].
         """
         rcnn_test_cfg = self.test_cfg
         aug_bboxes = []

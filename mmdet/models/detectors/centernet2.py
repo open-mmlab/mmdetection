@@ -4,7 +4,8 @@ from .two_stage import TwoStageDetector
 
 @DETECTORS.register_module()
 class CenterNet2(TwoStageDetector):
-    """Implementation of `Probabilistic two-stage detection
+    """Implementation of `Probabilistic two-stage detection.
+
         <https://arxiv.org/abs/2103.07461>`_.
 
     Slightly different from original models:
@@ -18,7 +19,6 @@ class CenterNet2(TwoStageDetector):
 
     For openmmdet, Currently the detector, including CenterNet2Head
     DOES NOT support onnix export.
-
     """
 
     def __init__(self,
