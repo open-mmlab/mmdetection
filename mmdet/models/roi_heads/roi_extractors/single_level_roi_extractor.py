@@ -33,7 +33,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
             roi_layer, out_channels, featmap_strides, init_cfg)
         self.finest_scale = finest_scale
         if featmap_strides[0] != 4 and finest_scale == 56:
-            warnings.warn(f'Starting strides and finest_scale may not match.')
+            warnings.warn('Starting strides and finest_scale may not match.')
 
     def map_roi_levels(self, rois, num_levels):
         """Map rois to corresponding feature levels by scales.
