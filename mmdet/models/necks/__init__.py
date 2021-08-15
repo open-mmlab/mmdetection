@@ -1,4 +1,3 @@
-from .bifpn import BiFPN
 from .bfp import BFP
 from .channel_mapper import ChannelMapper
 from .ct_resnet_neck import CTResNetNeck
