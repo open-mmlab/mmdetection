@@ -9,7 +9,7 @@
 - 所有模型都是在 `coco_2017_train` 上训练，在 `coco_2017_val` 上测试。
 - 我们使用分布式训练。
 - 所有 pytorch-style 的 ImageNet 预训练主干网络来自 PyTorch 的模型库，caffe-style 的预训练主干网络来自 detectron2 最新开源的模型。
-- 为了与其他代码库公平比较，文档中所写的 GPU 内存是8个 GPU 的 `torch.cuda.max_memory_allocated()` 的最大值，此值通常小于 nvidia-smi 显示的值。 
+- 为了与其他代码库公平比较，文档中所写的 GPU 内存是8个 GPU 的 `torch.cuda.max_memory_allocated()` 的最大值，此值通常小于 nvidia-smi 显示的值。
 - 我们以网络 foward 和后处理的时间加和作为推理时间，不包含数据加载时间。所有结果通过 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 脚本计算所得。该脚本会计算推理 2000 张图像的平均时间。
 
 ## ImageNet 预训练模型
@@ -196,6 +196,7 @@ MMdetection 常用到的主干网络细节如下表所示：
 ### CentripetalNet
 
 请参考 [CentripetalNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/centripetalnet)。
+
 ### ResNeSt
 
 请参考 [ResNeSt](https://github.com/open-mmlab/mmdetection/blob/master/configs/resnest)。
@@ -238,7 +239,7 @@ MMdetection 常用到的主干网络细节如下表所示：
 
 我们提供 [analyze_logs.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/analyze_logs.py) 来得到训练中每一次迭代的平均时间。示例请参考 [Log Analysis](https://mmdetection.readthedocs.io/en/latest/useful_tools.html#log-analysis)。
 
-我们与其他流行框架的 Mask R-CNN 训练速度进行比较（数据是从 [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md/) 复制而来）。在 mmdetection 中，我们使用 [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py) 进行基准测试。它与 detectron2 的 [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) 设置完全一样。同时，我们还提供了[模型权重](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_compare_20200518-10127928.pth)和[训练 log ](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_20200518_105755.log.json)作为参考。为了跳过 GPU 预热时间，吞吐量按照100-500次迭代之间的平均吞吐量来计算。
+我们与其他流行框架的 Mask R-CNN 训练速度进行比较（数据是从 [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md/) 复制而来）。在 mmdetection 中，我们使用 [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py) 进行基准测试。它与 detectron2 的 [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) 设置完全一样。同时，我们还提供了[模型权重](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_compare_20200518-10127928.pth)和[训练 log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_20200518_105755.log.json) 作为参考。为了跳过 GPU 预热时间，吞吐量按照100-500次迭代之间的平均吞吐量来计算。
 
 | 框架                                                                                   | 吞吐量 (img/s) |
 | -------------------------------------------------------------------------------------- | ------------------ |
