@@ -185,15 +185,40 @@ class FocalLoss(nn.Module):
 class BinaryFocalLoss(nn.Module):
 
     def __init__(self,
-                 alpha: float = 0.25,
-                 beta: float = 4,
-                 gamma: float = 2,
-                 pos_weight: float = 0.5,
-                 neg_weight: float = 0.5,
-                 sigmoid_clamp: float = 1e-4,
-                 ignore_high_fp: float = -1.):
+                 alpha=0.25,
+                 beta=4.,
+                 gamma=2.,
+                 pos_weight=0.5,
+                 neg_weight=0.5,
+                 sigmoid_clamp=1e-4,
+                 ignore_high_fp=-1.,
+                 reduction='mean'):
 
-        """`Focal Loss <https://arxiv.org/abs/1708.02002>`_
+        """ A Gaussian heatmap focal loss calculation, it use a small
+            portion of points as positive sample points.
+            `Probabilistic two-stage detection
+            <https://arxiv.org/abs/2103.07461>`_
+            `Focal Loss
+            <https://arxiv.org/abs/1708.02002>`_
+
+        Args:
+            alpha (float, optional): A balanced form for Focal Loss.
+                Defaults to 0.25.
+            beta (float, optional): The beta for calculating the negative
+                sample points loss modulating factor. Defaults to 4.0.
+            gamma (float, optional): he gamma for calculating the positive
+                sample points loss modulating factor. Defaults to 2.0.
+            pos_weight (str, optional): Weight of positive sample points
+                loss.
+            neg_weight (str, optional): Weight of negative sample points
+                loss.
+            sigmoid_clamp (float, optional): A value used to determine
+                clamp range.
+            ignore_high_fp (float, optional): A threshold to ignore sample
+                points with high positive scores when calculating negative
+                loss.
+            reduction (string, optional): The method used to reduce the
+                loss into a scalar. Defaults to 'sum' for heatmap loss.
         """
         super(BinaryFocalLoss, self).__init__()
         self.alpha = alpha
@@ -203,19 +228,30 @@ class BinaryFocalLoss(nn.Module):
         self.neg_weight = neg_weight
         self.sigmoid_clamp = sigmoid_clamp
         self.ignore_high_fp = ignore_high_fp
+        self.reduction = reduction
 
-    def forward(self, inputs, targets, pos_inds, avg_factor=None):
+    def forward(self,
+                inputs,
+                targets,
+                pos_inds,
+                avg_factor=None,
+                reduction_override=None):
 
         """
         Args:
-            inputs:  (sum_l N*Hl*Wl,)
-            targets: (sum_l N*Hl*Wl,)
-            pos_inds: N
-            avg_factor: Norm factor
+            inputs (torch.Tensor): Flattened heatmap prediction.
+            targets (torch.Tensor): Flattened target heatmap.
+            pos_inds (torch.Tensor): Indices of positive sample points.
+            avg_factor (torch.Tensor): Average factor that is used to
+                average the loss. Defaults to None.
+            reduction_override (string): Override reduction.
         Returns:
             Loss tensor with the reduction option applied.
         """
 
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
         pred = torch.clamp(inputs.sigmoid_(), min=self.sigmoid_clamp,
                            max=1-self.sigmoid_clamp)
         neg_weights = torch.pow(1 - targets, self.beta)
@@ -229,17 +265,13 @@ class BinaryFocalLoss(nn.Module):
             not_high_fp = (pred < self.ignore_high_fp).float()
             neg_loss = not_high_fp * neg_loss
 
-        pos_loss = - pos_loss.sum()
-        neg_loss = - neg_loss.sum()
-
         if self.alpha >= 0:
-            pos_loss = self.alpha * pos_loss
-            neg_loss = (1 - self.alpha) * neg_loss
+            pos_loss = - self.alpha * pos_loss
+            neg_loss = - (1 - self.alpha) * neg_loss
 
-        pos_loss = self.pos_weight * pos_loss
-        neg_loss = self.neg_weight * neg_loss
+        pos_loss = weight_reduce_loss(
+            pos_loss, self.pos_weight, reduction, avg_factor)
+        neg_loss = weight_reduce_loss(
+            neg_loss, self.pos_weight, reduction, avg_factor)
 
-        if avg_factor:
-            pos_loss /= avg_factor
-            neg_loss /= avg_factor
         return pos_loss, neg_loss
