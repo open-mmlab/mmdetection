@@ -23,11 +23,7 @@ def center_of_mass(mask):
 
 @HEADS.register_module()
 class SOLOHead(BaseMaskHead):
-    """SOLO mask head used in  https://arxiv.org/abs/1912.04488.
-
-    Note that although SOLO head is single-stage instance segmentors,
-    it still uses gt_bbox for calculation while getting target, but it
-    does not use gt_bbox when calculating loss.
+    """SOLO mask head used in  `<https://arxiv.org/abs/1912.04488>`_ .
 
     Args:
         num_classes (int): Number of categories excluding the background
@@ -142,7 +138,7 @@ class SOLOHead(BaseMaskHead):
             self.feat_channels, self.cls_out_channels, 3, padding=1)
 
     def resize_feats(self, feats):
-
+        """Downsample the first feat and upsample last feat in feats."""
         return (F.interpolate(feats[0], scale_factor=0.5,
                               mode='bilinear'), feats[1], feats[2], feats[3],
                 F.interpolate(
@@ -528,6 +524,7 @@ class SOLOHead(BaseMaskHead):
             strides[lvl_inteval[lvl - 1]:lvl_inteval[lvl]] *= self.strides[lvl]
         strides = strides[inds[:, 0]]
         mask_preds = mask_preds[inds[:, 0]]
+
         masks = mask_preds > cfg.mask_thr
         sum_masks = masks.sum((1, 2)).float()
         keep = sum_masks > strides
@@ -568,5 +565,482 @@ class SOLOHead(BaseMaskHead):
         return results
 
 
-class DecoupledSOLOHead():
-    pass
+@HEADS.register_module()
+class DecoupledSOLOHead(SOLOHead):
+    """Decoupled SOLO mask head used in  `<https://arxiv.org/abs/1912.04488>`_.
+
+    Args:
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+    """
+
+    def __init__(self,
+                 *args,
+                 init_cfg=[
+                     dict(type='Normal', layer='Conv2d', std=0.01),
+                     dict(
+                         type='Normal',
+                         std=0.01,
+                         bias_prob=0.01,
+                         override=dict(name='conv_mask_list_x')),
+                     dict(
+                         type='Normal',
+                         std=0.01,
+                         bias_prob=0.01,
+                         override=dict(name='conv_mask_list_y')),
+                     dict(
+                         type='Normal',
+                         std=0.01,
+                         bias_prob=0.01,
+                         override=dict(name='conv_cls'))
+                 ],
+                 **kwargs):
+        super(DecoupledSOLOHead, self).__init__(
+            *args, init_cfg=init_cfg, **kwargs)
+
+    def _init_layers(self):
+        self.mask_convs_x = nn.ModuleList()
+        self.mask_convs_y = nn.ModuleList()
+        self.cls_convs = nn.ModuleList()
+
+        for i in range(self.stacked_convs):
+            chn = self.in_channels + 1 if i == 0 else self.feat_channels
+            self.mask_convs_x.append(
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
+            self.mask_convs_y.append(
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
+
+            chn = self.in_channels if i == 0 else self.feat_channels
+            self.cls_convs.append(
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
+
+        self.conv_mask_list_x = nn.ModuleList()
+        self.conv_mask_list_y = nn.ModuleList()
+        for num_grid in self.num_grids:
+            self.conv_mask_list_x.append(
+                nn.Conv2d(self.feat_channels, num_grid, 3, padding=1))
+            self.conv_mask_list_y.append(
+                nn.Conv2d(self.feat_channels, num_grid, 3, padding=1))
+        self.conv_cls = nn.Conv2d(
+            self.feat_channels, self.cls_out_channels, 3, padding=1)
+
+    def forward(self, feats):
+        assert len(feats) == self.num_levels
+        feats = self.resize_feats(feats)
+        mask_preds_x = []
+        mask_preds_y = []
+        cls_preds = []
+        for i in range(self.num_levels):
+            x = feats[i]
+            mask_feat = x
+            cls_feat = x
+            # generate and concat the coordinate
+            x_range = torch.linspace(
+                -1, 1, mask_feat.shape[-1], device=mask_feat.device)
+            y_range = torch.linspace(
+                -1, 1, mask_feat.shape[-2], device=mask_feat.device)
+            y, x = torch.meshgrid(y_range, x_range)
+            y = y.expand([mask_feat.shape[0], 1, -1, -1])
+            x = x.expand([mask_feat.shape[0], 1, -1, -1])
+            mask_feat_x = torch.cat([mask_feat, x], 1)
+            mask_feat_y = torch.cat([mask_feat, y], 1)
+
+            for mask_layer_x, mask_layer_y in \
+                    zip(self.mask_convs_x, self.mask_convs_y):
+                mask_feat_x = mask_layer_x(mask_feat_x)
+                mask_feat_y = mask_layer_y(mask_feat_y)
+
+            mask_feat_x = F.interpolate(
+                mask_feat_x, scale_factor=2, mode='bilinear')
+            mask_feat_y = F.interpolate(
+                mask_feat_y, scale_factor=2, mode='bilinear')
+
+            mask_pred_x = self.conv_mask_list_x[i](mask_feat_x)
+            mask_pred_y = self.conv_mask_list_y[i](mask_feat_y)
+
+            # cls branch
+            for j, cls_layer in enumerate(self.cls_convs):
+                if j == self.cls_down_index:
+                    num_grid = self.num_grids[i]
+                    cls_feat = F.interpolate(
+                        cls_feat, size=num_grid, mode='bilinear')
+                cls_feat = cls_layer(cls_feat)
+
+            cls_pred = self.conv_cls(cls_feat)
+
+            if not self.training:
+                feat_wh = feats[0].size()[-2:]
+                upsampled_size = (feat_wh[0] * 2, feat_wh[1] * 2)
+                mask_pred_x = F.interpolate(
+                    mask_pred_x.sigmoid(),
+                    size=upsampled_size,
+                    mode='bilinear')
+                mask_pred_y = F.interpolate(
+                    mask_pred_y.sigmoid(),
+                    size=upsampled_size,
+                    mode='bilinear')
+                cls_pred = cls_pred.sigmoid()
+                # get local maximum
+                local_max = F.max_pool2d(cls_pred, 2, stride=1, padding=1)
+                keep_mask = local_max[:, :, :-1, :-1] == cls_pred
+                cls_pred = cls_pred * keep_mask
+                cls_pred = cls_pred.permute(0, 2, 3, 1)
+
+            mask_preds_x.append(mask_pred_x)
+            mask_preds_y.append(mask_pred_y)
+            cls_preds.append(cls_pred)
+        return mask_preds_x, mask_preds_y, cls_preds
+
+    def loss(self,
+             ins_preds_x,
+             ins_preds_y,
+             cate_preds,
+             gt_labels,
+             gt_masks,
+             img_metas,
+             gt_bboxes=None,
+             gt_bboxes_ignore=None,
+             **kwargs):
+        featmap_sizes = [featmap.size()[-2:] for featmap in ins_preds_x]
+
+        ins_label_list, cate_label_list, \
+            ins_ind_label_list, ins_ind_label_list_xy = \
+            multi_apply(self._get_targets_single,
+                        gt_bboxes,
+                        gt_labels,
+                        gt_masks,
+                        featmap_sizes=featmap_sizes)
+
+        # ins
+        ins_labels = [[] for _ in range(len(ins_preds_x))]
+        ins_preds_x_final = [[] for _ in range(len(ins_preds_x))]
+        ins_preds_y_final = [[] for _ in range(len(ins_preds_x))]
+        cate_labels = [[] for _ in range(len(ins_preds_x))]
+        for i in range(len(ins_label_list)):
+            assert len(ins_preds_x) == len(ins_label_list[i])
+            for j in range(len(ins_label_list[i])):
+                ins_labels[j].append(
+                    ins_label_list[i][j][ins_ind_label_list[i][j], ...])
+                ins_preds_x_final[j].append(
+                    ins_preds_x[j][i, ins_ind_label_list_xy[i][j][:, 1], ...])
+                ins_preds_y_final[j].append(
+                    ins_preds_y[j][i, ins_ind_label_list_xy[i][j][:, 0], ...])
+                cate_labels[j].append(cate_label_list[i][j].flatten())
+
+        cate_pred_temp = []
+        for i in range(len(ins_labels)):
+            ins_labels[i] = torch.cat(ins_labels[i], dim=0)
+            ins_preds_x_final[i] = torch.cat(ins_preds_x_final[i], dim=0)
+            ins_preds_y_final[i] = torch.cat(ins_preds_y_final[i], dim=0)
+            cate_labels[i] = torch.cat(cate_labels[i], dim=0)
+            cate_pred_temp.append(cate_preds[i].permute(0, 2, 3, 1).reshape(
+                -1, self.cls_out_channels))
+        cate_preds = cate_pred_temp
+
+        num_ins = 0.
+        # dice loss
+        loss_mask = []
+        for pred_x, pred_y, target in \
+                zip(ins_preds_x_final, ins_preds_y_final, ins_labels):
+            mask_n = pred_x.size(0)
+            if mask_n == 0:
+                # make sure can get grad
+                loss_mask.append((pred_x.sum() + pred_y.sum()).unsqueeze(0))
+                continue
+            num_ins += mask_n
+            loss_mask.append(self.loss_mask((pred_x, pred_y), target))
+        if num_ins > 0:
+            loss_mask = torch.cat(loss_mask).sum() / num_ins
+        else:
+            loss_mask = torch.cat(loss_mask).mean()
+
+        # cate
+        flatten_cate_labels = torch.cat(cate_labels)
+        flatten_cate_preds = torch.cat(cate_preds)
+
+        loss_cls = self.loss_cls(
+            flatten_cate_preds, flatten_cate_labels, avg_factor=num_ins + 1)
+        return dict(loss_mask=loss_mask, loss_cate=loss_cls)
+
+    def _get_targets_single(self,
+                            gt_bboxes_raw,
+                            gt_labels_raw,
+                            gt_masks_raw,
+                            featmap_sizes=None):
+
+        device = gt_labels_raw[0].device
+        # ins
+        gt_areas = torch.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0]) *
+                              (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
+        ins_label_list = []
+        cate_label_list = []
+        ins_ind_label_list = []
+        ins_ind_label_list_xy = []
+        for (lower_bound, upper_bound), stride, featmap_size, num_grid \
+                in zip(self.scale_ranges, self.strides,
+                       featmap_sizes, self.num_grids):
+
+            ins_label = torch.zeros(
+                [num_grid**2, featmap_size[0], featmap_size[1]],
+                dtype=torch.uint8,
+                device=device)
+            # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+            cate_label = torch.zeros([num_grid, num_grid],
+                                     dtype=torch.int64,
+                                     device=device) + self.num_classes
+            ins_ind_label = torch.zeros([num_grid**2],
+                                        dtype=torch.bool,
+                                        device=device)
+
+            hit_indices = ((gt_areas >= lower_bound) &
+                           (gt_areas <= upper_bound)).nonzero().flatten()
+
+            if len(hit_indices) == 0:
+                ins_label = torch.zeros([1, featmap_size[0], featmap_size[1]],
+                                        dtype=torch.uint8,
+                                        device=device)
+                ins_label_list.append(ins_label)
+                cate_label_list.append(cate_label)
+                ins_ind_label = torch.zeros([1],
+                                            dtype=torch.bool,
+                                            device=device)
+                ins_ind_label_list.append(ins_ind_label)
+                ins_ind_label_list_xy.append(
+                    (cate_label - self.num_classes).nonzero())
+                continue
+            gt_bboxes = gt_bboxes_raw[hit_indices]
+            gt_labels = gt_labels_raw[hit_indices]
+            gt_masks = gt_masks_raw[hit_indices, ...]
+
+            half_ws = 0.5 * (gt_bboxes[:, 2] -
+                             gt_bboxes[:, 0]) * self.pos_scale
+            half_hs = 0.5 * (gt_bboxes[:, 3] -
+                             gt_bboxes[:, 1]) * self.pos_scale
+
+            output_stride = stride / 2
+
+            for seg_mask, gt_label, half_h, half_w in \
+                    zip(gt_masks, gt_labels, half_hs, half_ws):
+
+                if seg_mask.sum() < 10:
+                    continue
+                # mass center
+
+                upsampled_size = (featmap_sizes[0][0] * 4,
+                                  featmap_sizes[0][1] * 4)
+                center_h, center_w = center_of_mass(seg_mask)
+
+                coord_w = int(
+                    (center_w / upsampled_size[1]) // (1. / num_grid))
+                coord_h = int(
+                    (center_h / upsampled_size[0]) // (1. / num_grid))
+
+                # left, top, right, down
+                top_box = max(
+                    0,
+                    int(((center_h - half_h) / upsampled_size[0]) //
+                        (1. / num_grid)))
+                down_box = min(
+                    num_grid - 1,
+                    int(((center_h + half_h) / upsampled_size[0]) //
+                        (1. / num_grid)))
+                left_box = max(
+                    0,
+                    int(((center_w - half_w) / upsampled_size[1]) //
+                        (1. / num_grid)))
+                right_box = min(
+                    num_grid - 1,
+                    int(((center_w + half_w) / upsampled_size[1]) //
+                        (1. / num_grid)))
+
+                top = max(top_box, coord_h - 1)
+                down = min(down_box, coord_h + 1)
+                left = max(coord_w - 1, left_box)
+                right = min(right_box, coord_w + 1)
+
+                # squared
+                cate_label[top:(down + 1), left:(right + 1)] = gt_label
+                # ins
+                seg_mask = np.uint8(seg_mask.cpu().numpy())
+                seg_mask = mmcv.imrescale(seg_mask, scale=1. / output_stride)
+                seg_mask = torch.from_numpy(seg_mask).to(device=device)
+
+                for i in range(top, down + 1):
+                    for j in range(left, right + 1):
+                        label = int(i * num_grid + j)
+                        ins_label[label, :seg_mask.shape[0], :seg_mask.
+                                  shape[1]] = seg_mask
+                        ins_ind_label[label] = True
+
+            ins_label = ins_label[ins_ind_label]
+            ins_label_list.append(ins_label)
+
+            cate_label_list.append(cate_label)
+
+            ins_ind_label = ins_ind_label[ins_ind_label]
+            ins_ind_label_list.append(ins_ind_label)
+
+            ins_ind_label_list_xy.append(
+                (cate_label - self.num_classes).nonzero())
+        return ins_label_list, cate_label_list, \
+            ins_ind_label_list, ins_ind_label_list_xy
+
+    def get_masks(self,
+                  seg_preds_x,
+                  seg_preds_y,
+                  cate_preds,
+                  img_metas,
+                  rescale=None,
+                  **kwargs):
+        assert len(seg_preds_x) == len(cate_preds)
+        num_levels = len(cate_preds)
+
+        results_list = []
+        for img_id in range(len(img_metas)):
+            cate_pred_list = [
+                cate_preds[i][img_id].view(-1, self.cls_out_channels).detach()
+                for i in range(num_levels)
+            ]
+            seg_pred_list_x = [
+                seg_preds_x[i][img_id] for i in range(num_levels)
+            ]
+            seg_pred_list_y = [
+                seg_preds_y[i][img_id] for i in range(num_levels)
+            ]
+
+            cate_pred_list = torch.cat(cate_pred_list, dim=0)
+            seg_pred_list_x = torch.cat(seg_pred_list_x, dim=0)
+            seg_pred_list_y = torch.cat(seg_pred_list_y, dim=0)
+
+            results = self._get_masks_single(
+                cate_pred_list,
+                seg_pred_list_x,
+                seg_pred_list_y,
+                img_meta=img_metas[img_id],
+                cfg=self.test_cfg)
+            results_list.append(results)
+        return results_list
+
+    def _get_masks_single(self, cate_preds, seg_preds_x, seg_preds_y, img_meta,
+                          cfg):
+
+        def empty_results(results, cls_scores):
+            """Generate a empty results."""
+            results.scores = cls_scores.new_ones(0)
+            results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
+            results.labels = cls_scores.new_ones(0)
+            return results
+
+        cfg = self.test_cfg if cfg is None else cfg
+
+        results = DetectionResults(img_meta, num_classes=self.num_classes)
+        img_shape = results.img_shape
+        ori_shape = results.ori_shape
+
+        h, w, _ = img_shape
+        featmap_size = seg_preds_x.size()[-2:]
+        upsampled_size = (featmap_size[0] * 4, featmap_size[1] * 4)
+
+        # trans trans_diff.
+        trans_size = torch.Tensor(self.num_grids).pow(2).cumsum(0).long()
+        trans_diff = torch.ones(
+            trans_size[-1].item(), device=cate_preds.device).long()
+        num_grids = torch.ones(
+            trans_size[-1].item(), device=cate_preds.device).long()
+        seg_size = torch.Tensor(self.num_grids).cumsum(0).long()
+        seg_diff = torch.ones(
+            trans_size[-1].item(), device=cate_preds.device).long()
+        strides = torch.ones(trans_size[-1].item(), device=cate_preds.device)
+
+        n_stage = len(self.num_grids)
+        trans_diff[:trans_size[0]] *= 0
+        seg_diff[:trans_size[0]] *= 0
+        num_grids[:trans_size[0]] *= self.num_grids[0]
+        strides[:trans_size[0]] *= self.strides[0]
+
+        for ind_ in range(1, n_stage):
+            trans_diff[trans_size[ind_ - 1]:trans_size[ind_]] *= \
+                trans_size[ind_ - 1]
+            seg_diff[trans_size[ind_ - 1]:trans_size[ind_]] *= \
+                seg_size[ind_ - 1]
+            num_grids[trans_size[ind_ - 1]:trans_size[ind_]] *= \
+                self.num_grids[ind_]
+            strides[trans_size[ind_ - 1]:trans_size[ind_]] *= \
+                self.strides[ind_]
+
+        # process.
+        inds = (cate_preds > cfg.score_thr)
+        cls_scores = cate_preds[inds]
+
+        inds = inds.nonzero()
+        trans_diff = torch.index_select(trans_diff, dim=0, index=inds[:, 0])
+        seg_diff = torch.index_select(seg_diff, dim=0, index=inds[:, 0])
+        num_grids = torch.index_select(num_grids, dim=0, index=inds[:, 0])
+        strides = torch.index_select(strides, dim=0, index=inds[:, 0])
+
+        y_inds = (inds[:, 0] - trans_diff) // num_grids
+        x_inds = (inds[:, 0] - trans_diff) % num_grids
+        y_inds += seg_diff
+        x_inds += seg_diff
+
+        cate_labels = inds[:, 1]
+        mask_preds = seg_preds_x[x_inds, ...] * seg_preds_y[y_inds, ...]
+
+        masks = mask_preds > cfg.mask_thr
+        sum_masks = masks.sum((1, 2)).float()
+        keep = sum_masks > strides
+        if keep.sum() == 0:
+            return empty_results(results, cls_scores)
+        masks = masks[keep]
+        mask_preds = mask_preds[keep]
+        sum_masks = sum_masks[keep]
+        cls_scores = cls_scores[keep]
+        cls_labels = cate_labels[keep]
+
+        # maskness.
+        mask_scores = (mask_preds * masks).sum((1, 2)) / sum_masks
+        cls_scores *= mask_scores
+
+        scores, labels, _, keep_inds = mask_matrix_nms(
+            masks,
+            cls_labels,
+            cls_scores,
+            mask_area=sum_masks,
+            nms_pre=cfg.nms_pre,
+            max_num=cfg.max_per_img,
+            kernel=cfg.kernel,
+            sigma=cfg.sigma,
+            update_thr=cfg.update_thr)
+        mask_preds = mask_preds[keep_inds]
+        mask_preds = F.interpolate(
+            mask_preds.unsqueeze(0), size=upsampled_size,
+            mode='bilinear')[:, :, :h, :w]
+        mask_preds = F.interpolate(
+            mask_preds, size=ori_shape[:2], mode='bilinear').squeeze(0)
+        masks = mask_preds > cfg.mask_thr
+
+        results.masks = masks
+        results.labels = labels
+        results.scores = scores
+
+        return results

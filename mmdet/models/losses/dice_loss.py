@@ -8,13 +8,14 @@ from ..builder import LOSSES
 @LOSSES.register_module()
 class DiceLoss(nn.Module):
 
-    def __init__(self, use_sigmoid=True, loss_weight=1.0):
-        """`Dice Loss <https://arxiv.org/abs/1912.04488>`
+    def __init__(self, use_sigmoid=True, loss_weight=1.0, eps=1e-3):
+        """`Dice Loss `<https://arxiv.org/abs/1912.04488>`_ .
 
         Args:
             use_sigmoid (bool, optional): Whether to the prediction is
                 used for sigmoid or softmax. Defaults to True.
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
+            eps (float): To avoid deivde zero. Default 1e-3.
         """
         super(DiceLoss, self).__init__()
         self.use_sigmoid = use_sigmoid
