@@ -273,7 +273,8 @@ class SOLOHead(BaseMaskHead):
             if pred.size()[0] == 0:
                 loss_mask.append(pred.sum().unsqueeze(0))
                 continue
-            loss_mask.append(self.loss_mask(pred, target))
+            loss_mask.append(
+                self.loss_mask(pred, target, reduction_override='none'))
         if num_pos > 0:
             loss_mask = torch.cat(loss_mask).sum() / num_pos
         else:
@@ -796,7 +797,13 @@ class DecoupledSOLOHead(SOLOHead):
                 loss_mask.append((pred_x.sum() + pred_y.sum()).unsqueeze(0))
                 continue
             num_pos += num_masks
-            loss_mask.append(self.loss_mask((pred_x, pred_y), target))
+            pred_mask = pred_y.sigmoid() * pred_x.sigmoid()
+            loss_mask.append(
+                self.loss_mask(
+                    pred_mask,
+                    target,
+                    reduction_override='none',
+                    has_acted=True))
         if num_pos > 0:
             loss_mask = torch.cat(loss_mask).sum() / num_pos
         else:
