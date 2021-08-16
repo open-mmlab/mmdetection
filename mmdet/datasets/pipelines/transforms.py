@@ -2079,6 +2079,11 @@ class Mosaic:
             mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0,
                                              2 * self.img_scale[0])
             mosaic_labels = np.concatenate(mosaic_labels, 0)
+            
+            mosaic_filter = np.prod(mosaic_bboxes[:, 2:4] - \
+                                    mosaic_bboxes[:, 0:2] > 2,  axis=1) == 1
+            mosaic_bboxes = mosaic_bboxes[mosaic_filter]
+            mosaic_labels = mosaic_labels[mosaic_filter]
 
         results['img'] = mosaic_img
         results['img_shape'] = mosaic_img.shape
