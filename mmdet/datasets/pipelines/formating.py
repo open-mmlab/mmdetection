@@ -92,7 +92,7 @@ class ImageToTensor:
             img = results[key]
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
-            results[key] = to_tensor(img.transpose(2, 0, 1))
+            results[key] = (to_tensor(img.transpose(2, 0, 1))).contiguous()
         return results
 
     def __repr__(self):
