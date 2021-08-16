@@ -1,58 +1,61 @@
 # Description.
 name: Custom Object Detection Gen2 ATSS
-domain: Object Detection
+task_type: DETECTION
+task_family: VISION
+instantiation: "CLASS"
 summary: Custom Object Detection Model M Gen 2
 
 # Algo backend.
 # Would be better to have something more precise and self-contained, e.g.:  docker image or path to Python venv activation script?
 framework: OTEDetection v2.9.1
 
+dependencies:
+- source: ../../../../mmdet/apis/ote/apis/detection/configuration.yaml
+  destination: configuration.yaml
+
 # Should be revisited?
-applications:
+application:
   ~
 
-# Optional? requirements to the dataset. Should be revisited?
-dataset_requirements:
-  ~
+# # Optional? requirements to the dataset. Should be revisited?
+# dataset_requirements:
+#   ~
 
 # Task implementation.
-task:
+entrypoints:
   base: mmdet.apis.ote.apis.detection.OTEDetectionTask
   openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
 
 # Task and hyperparameters.
 hyper_parameters:
-  impl: mmdet.apis.ote.apis.detection.OTEDetectionConfig
-  # Would be good to have different groups of parameters:
-  # - Basic: Shown to the user in the first place and editable by him.
-  # - Advanced: Editable by the user used the "advanced" section.
-  # - Hidden/internal: non-editable by the user. Used to pass some parameters to the Task at its initilization.
-  params:
+  base_path: "configuration.yaml"
+  parameter_overrides:
     learning_parameters:
-      batch_size: 10
-      learning_rate: 0.01
-      learning_rate_warmup_iters: 200
-    algo_backend:
-      model: model.py
+      batch_size:
+        default_value: 10
+      learning_rate:
+        default_value: 0.01
+      learning_rate_warmup_iters:
+        default_value: 200
 
-# Available model optimizations and their configuration.
-optimization:
-  output_format:
-    onnx:
-      default: true
-    openvino:
-      default: true
-      input_format: BGR
-      normalize_input: true
-      precision: FP32
-      pot: ~
-  nncf:
-    quantization:
-      config: compression_config.json
-      default: false
-    sparsity:
-      config: compression_config.json
-      default: false
+# # Available model optimizations and their configuration.
+# optimization:
+#   output_format:
+#     onnx:
+#       default: true
+#     openvino:
+#       default: true
+#       input_format: BGR
+#       normalize_input: true
+#       precision: FP32
+#       pot: ~
+#   nncf:
+#     quantization:
+#       config: compression_config.json
+#       default: false
+#     sparsity:
+#       config: compression_config.json
+#       default: false
 
 # Training resources.
 max_nodes: 1
@@ -61,20 +64,20 @@ training_targets:
   - CPU
 
 # Inference options. Defined by OpenVINO capabilities, not Algo Backend or Platform.
-inference_target:
+inference_targets:
   - CPU
-  - iGPU
+  - GPU
   - VPU
 
-# Some meta information, which may be used for model recommendation. In general, metrics are non-static, hence has to be updated.
-metrics:
-  - display_name: Size​
-    key: size​
-    unit: Mp​
-    # FIXME
-    value: 1.99
-  - display_name: Complexity​
-    key: complexity​
-    unit: GFLOPs​
-    # FIXME
-    value: 3.42
+# # Some meta information, which may be used for model recommendation. In general, metrics are non-static, hence has to be updated.
+# metrics:
+#   - display_name: Size​
+#     key: size​
+#     unit: Mp​
+#     # FIXME
+#     value: 1.99
+#   - display_name: Complexity​
+#     key: complexity​
+#     unit: GFLOPs​
+#     # FIXME
+#     value: 3.42

@@ -29,6 +29,7 @@ from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.model import (Model, ModelStatus, NullModel,
                                    NullModelStorage)
+from sc_sdk.entities.model_template import parse_model_template
 from sc_sdk.entities.optimized_model import (ModelOptimizationType,
                                              ModelPrecision, OptimizedModel,
                                              TargetDevice)
@@ -48,6 +49,26 @@ from mmdet.apis.ote.apis.detection.config_utils import \
 from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
                                                      load_template)
 
+
+class ModelTemplate(unittest.TestCase):
+
+    def test_reading_mnv2_ssd_256(self):
+        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml', '1')
+
+    def test_reading_mnv2_ssd_384(self):
+        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-384x384/template.yaml', '1')
+
+    def test_reading_mnv2_ssd_512(self):
+        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-512x512/template.yaml', '1')
+
+    def test_reading_mnv2_ssd(self):
+        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_SSD/template.yaml', '1')
+
+    def test_reading_mnv2_atss(self):
+        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_ATSS/template.yaml', '1')
+
+    def test_reading_resnet50_vfnet(self):
+        parse_model_template('./configs/ote/custom-object-detection/resnet50_VFNet/template.yaml', '1')
 
 def test_configuration_yaml():
     configuration = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
