@@ -276,7 +276,9 @@ def parse_args():
     parser.add_argument(
         '--skip-postprocess',
         action='store_true',
-        help='Whether to export model without post process.')
+        help='Whether to export model without post process. Experimental '
+        'option. We do not guarantee the correctness of the exported '
+        'model.')
     args = parser.parse_args()
     return args
 
