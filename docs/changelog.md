@@ -1,5 +1,31 @@
 ## Changelog
 
+### v2.15.1 (11/8/2021)
+
+#### Highlights
+
+- Support [YOLOX](https://arxiv.org/abs/2107.08430)
+
+#### New Features
+
+- Support [YOLOX](https://arxiv.org/abs/2107.08430)(#5756, #5758, #5760, #5767, #5770, #5774, #5777, #5808, #5828, #5848)
+
+#### Bug Fixes
+
+- Update correct SSD models. (#5789)
+- Fix casting error in mask structure (#5820)
+- Fix MMCV deployment documentation links. (#5790)
+
+#### Improvements
+
+- Use dynamic MMCV download link in TorchServe dockerfile (#5779)
+- Rename the function `upsample_like` to `interpolate_as` for more general usage (#5788)
+
+#### Contributors
+
+A total of 14 developers contributed to this release.
+Thanks @HAOCHENYE, @xiaohu2015, @HsLOL, @zhiqwang, @Adamdad, @shinya7y, @Johnson-Wang, @RangiLyu, @jshilong, @mmeendez8, @AronLin, @BIGWangYuDong, @hhaAndroid, @ZwwWayne
+
 ### v2.15.0 (02/8/2021)
 
 #### Highlights

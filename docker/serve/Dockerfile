@@ -4,7 +4,7 @@ ARG CUDNN="7"
 FROM pytorch/pytorch:${PYTORCH}-cuda${CUDA}-cudnn${CUDNN}-devel
 
 ARG MMCV="1.3.8"
-ARG MMDET="2.15.0"
+ARG MMDET="2.15.1"
 
 ENV PYTHONUNBUFFERED TRUE
 
@@ -24,7 +24,9 @@ RUN export FORCE_CUDA=1
 RUN pip install torchserve torch-model-archiver
 
 # MMLAB
-RUN pip install mmcv-full==${MMCV} -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
+ARG PYTORCH
+ARG CUDA
+RUN ["/bin/bash", "-c", "pip install mmcv-full==${MMCV} -f https://download.openmmlab.com/mmcv/dist/cu${CUDA//./}/torch${PYTORCH}/index.html"]
 RUN pip install mmdet==${MMDET}
 
 RUN useradd -m model-server \
