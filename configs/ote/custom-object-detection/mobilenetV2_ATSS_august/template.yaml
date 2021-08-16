@@ -1,0 +1,78 @@
+# Description.
+name: Custom Object Detection Gen2 ATSS
+domain: Object Detection
+summary: Custom Object Detection Model M Gen 2
+
+# Algo backend.
+# Would be better to have something more precise and self-contained, e.g.:  docker image or path to Python venv activation script?
+framework: OTEDetection v2.9.1
+
+# Should be revisited?
+applications:
+  ~
+
+# Optional? requirements to the dataset. Should be revisited?
+dataset_requirements:
+  ~
+
+# Task implementation.
+task:
+  base: mmdet.apis.ote.apis.detection.OTEDetectionTask
+  openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
+
+# Task and hyperparameters.
+hyper_parameters:
+  impl: mmdet.apis.ote.apis.detection.OTEDetectionConfig
+  # Would be good to have different groups of parameters:
+  # - Basic: Shown to the user in the first place and editable by him.
+  # - Advanced: Editable by the user used the "advanced" section.
+  # - Hidden/internal: non-editable by the user. Used to pass some parameters to the Task at its initilization.
+  params:
+    learning_parameters:
+      batch_size: 9
+      learning_rate: 0.009
+      learning_rate_warmup_iters: 200
+    algo_backend:
+      model: model.py
+
+# Available model optimizations and their configuration.
+optimization:
+  output_format:
+    onnx:
+      default: true
+    openvino:
+      default: true
+      input_format: BGR
+      normalize_input: true
+      precision: FP32
+      pot: ~
+  nncf:
+    quantization:
+      config: compression_config.json
+      default: false
+    sparsity:
+      config: compression_config.json
+      default: false
+
+# Training resources.
+max_nodes: 1
+training_targets:
+  - GPU
+  - CPU
+
+# Inference options. Defined by OpenVINO capabilities, not Algo Backend or Platform.
+inference_target:
+  - CPU
+  - iGPU
+  - VPU
+
+# Some meta information, which may be used for model recommendation. In general, metrics are non-static, hence has to be updated.
+metrics:
+  - display_name: Size
+    key: size
+    unit: Mp
+    value: 2.37
+  - display_name: Complexity
+    key: complexity
+    unit: GFLOPs
+    value: 10.43
