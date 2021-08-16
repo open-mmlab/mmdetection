@@ -1,3 +1,5 @@
+import warnings
+
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
@@ -32,6 +34,8 @@ class FusedSemanticHead(BaseModule):
                  num_classes=183,
                  conv_cfg=None,
                  norm_cfg=None,
+                 ignore_label=None,
+                 loss_weight=None,
                  loss_seg=dict(
                      type='CrossEntropyLoss',
                      ignore_index=255,
@@ -78,7 +82,14 @@ class FusedSemanticHead(BaseModule):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg)
         self.conv_logits = nn.Conv2d(conv_out_channels, self.num_classes, 1)
-
+        if ignore_label:
+            loss_seg['ignore_index'] = ignore_label
+        if loss_weight:
+            loss_seg['loss_weight'] = loss_weight
+        if ignore_label or loss_weight:
+            warnings.warn('``ignore_label`` and ``loss_weight`` would be '
+                          'deprecated soon. Please set ``ingore_index`` and '
+                          '``loss_weight`` in ``loss_seg`` instead.')
         self.criterion = build_loss(loss_seg)
 
     @auto_fp16()
