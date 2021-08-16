@@ -191,7 +191,6 @@ class SOLOHead(BaseMaskHead):
                 local_max = F.max_pool2d(cls_pred, 2, stride=1, padding=1)
                 keep_mask = local_max[:, :, :-1, :-1] == cls_pred
                 cls_pred = cls_pred * keep_mask
-                cls_pred = cls_pred.permute(0, 2, 3, 1)
 
             mlvl_mask_preds.append(mask_pred)
             mlvl_cls_preds.append(cls_pred)
@@ -213,7 +212,7 @@ class SOLOHead(BaseMaskHead):
                 (batch_size, num_grids**2 ,h ,w)
             mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
-                (batch_size ,num_grids ,num_grids, num_classes).
+                (batch_size, num_classes, num_grids ,num_grids).
             gt_labels (list[Tensor]): Labels of multiple images.
             gt_masks (list[Tensor]): Ground truth masks of multiple images.
                 Each has shape (num_instances, h, w)
@@ -428,7 +427,7 @@ class SOLOHead(BaseMaskHead):
                 (batch_size, num_grids**2 ,h ,w)
             mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
-                (batch_size ,num_grids ,num_grids, num_classes).
+                (batch_size, num_classes, num_grids ,num_grids).
             img_metas (list[dict]): Meta information of all images.
 
         Returns:
@@ -442,6 +441,7 @@ class SOLOHead(BaseMaskHead):
                 - masks (Tensor): Processed mask results, has
                   shape (num_instances, h, w).
         """
+        mlvl_cls_preds = [item.permute(0, 2, 3, 1) for item in mlvl_cls_preds]
         assert len(mlvl_mask_preds) == len(mlvl_cls_preds)
         num_levels = len(mlvl_cls_preds)
 
@@ -515,11 +515,12 @@ class SOLOHead(BaseMaskHead):
 
         # Filter the mask mask with an area is smaller than
         # stride of corresponding feature level
-        lvl_inteval = cls_labels.new_tensor(self.num_grids).pow(2).cumsum(0)
-        strides = cls_scores.new_ones(lvl_inteval[-1])
-        strides[:lvl_inteval[0]] *= self.strides[0]
+        lvl_interval = cls_labels.new_tensor(self.num_grids).pow(2).cumsum(0)
+        strides = cls_scores.new_ones(lvl_interval[-1])
+        strides[:lvl_interval[0]] *= self.strides[0]
         for lvl in range(1, self.num_levels):
-            strides[lvl_inteval[lvl - 1]:lvl_inteval[lvl]] *= self.strides[lvl]
+            strides[lvl_interval[lvl -
+                                 1]:lvl_interval[lvl]] *= self.strides[lvl]
         strides = strides[inds[:, 0]]
         mask_preds = mask_preds[inds[:, 0]]
 
@@ -702,7 +703,6 @@ class DecoupledSOLOHead(SOLOHead):
                 local_max = F.max_pool2d(cls_pred, 2, stride=1, padding=1)
                 keep_mask = local_max[:, :, :-1, :-1] == cls_pred
                 cls_pred = cls_pred * keep_mask
-                cls_pred = cls_pred.permute(0, 2, 3, 1)
 
             mask_preds_x.append(mask_pred_x)
             mask_preds_y.append(mask_pred_y)
@@ -717,8 +717,29 @@ class DecoupledSOLOHead(SOLOHead):
              gt_masks,
              img_metas,
              gt_bboxes=None,
-             gt_bboxes_ignore=None,
              **kwargs):
+        """Calculate the loss of total batch.
+
+        Args:
+            mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
+                from x branch. Each element in the list has shape
+                (batch_size, num_grids ,h ,w).
+            mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
+                from y branch. Each element in the list has shape
+                (batch_size, num_grids ,h ,w).
+            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
+                in the list has shape
+                (batch_size, num_classes, num_grids ,num_grids).
+            gt_labels (list[Tensor]): Labels of multiple images.
+            gt_masks (list[Tensor]): Ground truth masks of multiple images.
+                Each has shape (num_instances, h, w)
+            img_metas (list[dict]): Meta information of multiple images.
+            gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
+                images. Default: None.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         num_levels = self.num_levels
         num_imgs = len(gt_labels)
         featmap_sizes = [featmap.size()[-2:] for featmap in mlvl_mask_preds_x]
@@ -833,49 +854,100 @@ class DecoupledSOLOHead(SOLOHead):
         return mlvl_pos_mask_targets, mlvl_labels, mlvl_xy_pos_indexes
 
     def get_results(self,
-                    seg_preds_x,
-                    seg_preds_y,
-                    cate_preds,
+                    mlvl_mask_preds_x,
+                    mlvl_mask_preds_y,
+                    mlvl_cls_preds,
                     img_metas,
                     rescale=None,
                     **kwargs):
-        assert len(seg_preds_x) == len(cate_preds)
-        num_levels = len(cate_preds)
+        """Get multi-image mask results.
+
+        Args:
+            mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
+                from x branch. Each element in the list has shape
+                (batch_size, num_grids ,h ,w).
+            mlvl_mask_preds_y (list[Tensor]): Multi-level mask prediction
+                from y branch. Each element in the list has shape
+                (batch_size, num_grids ,h ,w).
+            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
+                in the list has shape
+                (batch_size, num_classes ,num_grids ,num_grids).
+            img_metas (list[dict]): Meta information of all images.
+
+        Returns:
+            list[:obj:`DetectionResults`]: Processed results of multiple
+            images.Each :obj:`DetectionResults` usually contains
+            following keys.
+
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
+        """
+        mlvl_cls_preds = [item.permute(0, 2, 3, 1) for item in mlvl_cls_preds]
+        assert len(mlvl_mask_preds_x) == len(mlvl_cls_preds)
+        num_levels = len(mlvl_cls_preds)
 
         results_list = []
         for img_id in range(len(img_metas)):
-            cate_pred_list = [
-                cate_preds[i][img_id].view(-1, self.cls_out_channels).detach()
+            cls_pred_list = [
+                mlvl_cls_preds[i][img_id].view(-1,
+                                               self.cls_out_channels).detach()
                 for i in range(num_levels)
             ]
-            seg_pred_list_x = [
-                seg_preds_x[i][img_id] for i in range(num_levels)
+            mask_pred_list_x = [
+                mlvl_mask_preds_x[i][img_id] for i in range(num_levels)
             ]
-            seg_pred_list_y = [
-                seg_preds_y[i][img_id] for i in range(num_levels)
+            mask_pred_list_y = [
+                mlvl_mask_preds_y[i][img_id] for i in range(num_levels)
             ]
 
-            cate_pred_list = torch.cat(cate_pred_list, dim=0)
-            seg_pred_list_x = torch.cat(seg_pred_list_x, dim=0)
-            seg_pred_list_y = torch.cat(seg_pred_list_y, dim=0)
+            cls_pred_list = torch.cat(cls_pred_list, dim=0)
+            mask_pred_list_x = torch.cat(mask_pred_list_x, dim=0)
+            mask_pred_list_y = torch.cat(mask_pred_list_y, dim=0)
 
             results = self._get_results_single(
-                cate_pred_list,
-                seg_pred_list_x,
-                seg_pred_list_y,
+                cls_pred_list,
+                mask_pred_list_x,
+                mask_pred_list_y,
                 img_meta=img_metas[img_id],
                 cfg=self.test_cfg)
             results_list.append(results)
         return results_list
 
-    def _get_results_single(self, cate_preds, seg_preds_x, seg_preds_y,
+    def _get_results_single(self, cls_preds, mask_preds_x, mask_preds_y,
                             img_meta, cfg):
+        """Get processed mask related results of single image.
 
-        def empty_results(results, cls_scores):
+        Args:
+            cls_preds (Tensor): Classification score of all points
+                in single image, has shape (num_points, num_classes).
+            mask_preds_x (Tensor): Mask prediction of x branch of
+                all points in single image, has shape
+                (sum_num_grids, feat_h, feat_w).
+            mask_preds_y (Tensor): Mask prediction of y branch of
+                all points in single image, has shape
+                (sum_num_grids, feat_h, feat_w).
+            img_meta (dict): Meta information of corresponding image.
+            cfg (dict): Config used in test phase.
+
+        Returns:
+            :obj:`DetectionResults`: Processed results of single image.
+             it usually contains following keys.
+
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
+        """
+
+        def empty_results(results, cls_preds):
             """Generate a empty results."""
-            results.scores = cls_scores.new_ones(0)
-            results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
-            results.labels = cls_scores.new_ones(0)
+            results.scores = cls_preds.new_ones(0)
+            results.masks = cls_preds.new_zeros(0, *results.ori_shape[:2])
+            results.labels = cls_preds.new_ones(0)
             return results
 
         cfg = self.test_cfg if cfg is None else cfg
@@ -883,75 +955,69 @@ class DecoupledSOLOHead(SOLOHead):
         results = DetectionResults(img_meta, num_classes=self.num_classes)
         img_shape = results.img_shape
         ori_shape = results.ori_shape
-
         h, w, _ = img_shape
-        featmap_size = seg_preds_x.size()[-2:]
+        featmap_size = mask_preds_x.size()[-2:]
         upsampled_size = (featmap_size[0] * 4, featmap_size[1] * 4)
 
-        # trans trans_diff.
-        trans_size = torch.Tensor(self.num_grids).pow(2).cumsum(0).long()
-        trans_diff = torch.ones(
-            trans_size[-1].item(), device=cate_preds.device).long()
-        num_grids = torch.ones(
-            trans_size[-1].item(), device=cate_preds.device).long()
-        seg_size = torch.Tensor(self.num_grids).cumsum(0).long()
-        seg_diff = torch.ones(
-            trans_size[-1].item(), device=cate_preds.device).long()
-        strides = torch.ones(trans_size[-1].item(), device=cate_preds.device)
+        score_mask = (cls_preds > cfg.score_thr)
+        cls_preds = cls_preds[score_mask]
+        inds = score_mask.nonzero()
+        lvl_interval = inds.new_tensor(self.num_grids).pow(2).cumsum(0)
+        num_all_points = lvl_interval[-1]
+        lvl_start_index = inds.new_ones(num_all_points)
+        num_grids = inds.new_ones(num_all_points)
+        seg_size = inds.new_tensor(self.num_grids).cumsum(0)
+        mask_lvl_start_index = inds.new_ones(num_all_points)
+        strides = inds.new_ones(num_all_points)
 
-        n_stage = len(self.num_grids)
-        trans_diff[:trans_size[0]] *= 0
-        seg_diff[:trans_size[0]] *= 0
-        num_grids[:trans_size[0]] *= self.num_grids[0]
-        strides[:trans_size[0]] *= self.strides[0]
+        lvl_start_index[:lvl_interval[0]] *= 0
+        mask_lvl_start_index[:lvl_interval[0]] *= 0
+        num_grids[:lvl_interval[0]] *= self.num_grids[0]
+        strides[:lvl_interval[0]] *= self.strides[0]
 
-        for ind_ in range(1, n_stage):
-            trans_diff[trans_size[ind_ - 1]:trans_size[ind_]] *= \
-                trans_size[ind_ - 1]
-            seg_diff[trans_size[ind_ - 1]:trans_size[ind_]] *= \
-                seg_size[ind_ - 1]
-            num_grids[trans_size[ind_ - 1]:trans_size[ind_]] *= \
-                self.num_grids[ind_]
-            strides[trans_size[ind_ - 1]:trans_size[ind_]] *= \
-                self.strides[ind_]
+        for lvl in range(1, self.num_levels):
+            lvl_start_index[lvl_interval[lvl - 1]:lvl_interval[lvl]] *= \
+                lvl_interval[lvl - 1]
+            mask_lvl_start_index[lvl_interval[lvl - 1]:lvl_interval[lvl]] *= \
+                seg_size[lvl - 1]
+            num_grids[lvl_interval[lvl - 1]:lvl_interval[lvl]] *= \
+                self.num_grids[lvl]
+            strides[lvl_interval[lvl - 1]:lvl_interval[lvl]] *= \
+                self.strides[lvl]
 
-        # process.
-        inds = (cate_preds > cfg.score_thr)
-        cls_scores = cate_preds[inds]
+        lvl_start_index = lvl_start_index[inds[:, 0]]
+        mask_lvl_start_index = mask_lvl_start_index[inds[:, 0]]
+        num_grids = num_grids[inds[:, 0]]
+        strides = strides[inds[:, 0]]
 
-        inds = inds.nonzero()
-        trans_diff = torch.index_select(trans_diff, dim=0, index=inds[:, 0])
-        seg_diff = torch.index_select(seg_diff, dim=0, index=inds[:, 0])
-        num_grids = torch.index_select(num_grids, dim=0, index=inds[:, 0])
-        strides = torch.index_select(strides, dim=0, index=inds[:, 0])
+        y_lvl_offset = (inds[:, 0] - lvl_start_index) // num_grids
+        x_lvl_offset = (inds[:, 0] - lvl_start_index) % num_grids
+        y_inds = mask_lvl_start_index + y_lvl_offset
+        x_inds = mask_lvl_start_index + x_lvl_offset
 
-        y_inds = (inds[:, 0] - trans_diff) // num_grids
-        x_inds = (inds[:, 0] - trans_diff) % num_grids
-        y_inds += seg_diff
-        x_inds += seg_diff
-
-        cate_labels = inds[:, 1]
-        mask_preds = seg_preds_x[x_inds, ...] * seg_preds_y[y_inds, ...]
+        cls_labels = inds[:, 1]
+        mask_preds = mask_preds_x[x_inds, ...] * mask_preds_y[y_inds, ...]
 
         masks = mask_preds > cfg.mask_thr
         sum_masks = masks.sum((1, 2)).float()
         keep = sum_masks > strides
         if keep.sum() == 0:
-            return empty_results(results, cls_scores)
+            return empty_results(results, cls_preds)
+
         masks = masks[keep]
         mask_preds = mask_preds[keep]
         sum_masks = sum_masks[keep]
-        cls_scores = cls_scores[keep]
-        cls_labels = cate_labels[keep]
+        cls_preds = cls_preds[keep]
+        cls_labels = cls_labels[keep]
 
         # maskness.
         mask_scores = (mask_preds * masks).sum((1, 2)) / sum_masks
-        cls_scores *= mask_scores
+        cls_preds *= mask_scores
 
         scores, labels, _, keep_inds = mask_matrix_nms(
             masks,
             cls_labels,
-            cls_scores,
+            cls_preds,
             mask_area=sum_masks,
             nms_pre=cfg.nms_pre,
             max_num=cfg.max_per_img,
