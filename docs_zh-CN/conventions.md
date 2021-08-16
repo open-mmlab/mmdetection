@@ -4,7 +4,7 @@
 
 ## 损失
 
-在 MMDetection 中，`model(**data)`的返回值是一个字典，包含着所有的损失和评价指标，他们将会由`model(**data)`返回。
+在 MMDetection 中，`model(**data)` 的返回值是一个字典，包含着所有的损失和评价指标，他们将会由 `model(**data)` 返回。
 
 例如，在 bbox head 中，
 
@@ -22,7 +22,7 @@ class BBoxHead(nn.Module):
         return losses
 ```
 
-'bbox_head.loss()' 在模型forward阶段会被调用。返回的字典中包含了 `'loss_bbox'`, `'loss_cls'`, `'acc'`。只有 `'loss_bbox'`, `'loss_cls'` 会被用于反向传播，`'acc'` 只会被作为评价指标来监控训练过程。
+'bbox_head.loss()' 在模型 forward 阶段会被调用。返回的字典中包含了 `'loss_bbox'`,`'loss_cls'`,`'acc'`。只有 `'loss_bbox'`, `'loss_cls'` 会被用于反向传播，`'acc'` 只会被作为评价指标来监控训练过程。
 
 我们默认，只有那些键的名称中包含 'loss' 的值会被用于反向传播。这个行为可以通过修改 `BaseDetector.train_step()` 来改变。
 
@@ -34,7 +34,7 @@ class BBoxHead(nn.Module):
 # 简单的测试
 ...
 
-# 在整个batch中都没有proposals
+# 在整个 batch中 都没有 proposals
 if rois.shape[0] == 0:
     bbox_results = [[
         np.zeros((0, 5), dtype=np.float32)
