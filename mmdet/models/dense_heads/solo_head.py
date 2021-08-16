@@ -228,7 +228,11 @@ class SOLOHead(BaseMaskHead):
         num_imgs = len(gt_labels)
 
         featmap_sizes = [featmap.size()[-2:] for featmap in mlvl_mask_preds]
-        mask_targets, labels, pos_masks = multi_apply(
+
+        # `BoolTensor` in `pos_masks` represent
+        # whether the corresponding point is
+        # positive
+        pos_mask_targets, labels, pos_masks = multi_apply(
             self._get_targets_single,
             gt_bboxes,
             gt_labels,
@@ -242,15 +246,16 @@ class SOLOHead(BaseMaskHead):
         mlvl_pos_masks = [[] for _ in range(num_levels)]
         mlvl_labels = [[] for _ in range(num_levels)]
         for img_id in range(num_imgs):
-            assert num_levels == len(mask_targets[img_id])
+            assert num_levels == len(pos_mask_targets[img_id])
             for lvl in range(num_levels):
                 mlvl_pos_mask_targets[lvl].append(
-                    mask_targets[img_id][lvl][pos_masks[img_id][lvl], ...])
+                    pos_mask_targets[img_id][lvl])
                 mlvl_pos_mask_preds[lvl].append(
                     mlvl_mask_preds[lvl][img_id, pos_masks[img_id][lvl], ...])
                 mlvl_pos_masks[lvl].append(pos_masks[img_id][lvl].flatten())
                 mlvl_labels[lvl].append(labels[img_id][lvl].flatten())
 
+        # cat miltiple image
         temp_mlvl_cls_preds = []
         for lvl in range(num_levels):
             mlvl_pos_mask_targets[lvl] = torch.cat(
@@ -262,9 +267,7 @@ class SOLOHead(BaseMaskHead):
             temp_mlvl_cls_preds.append(mlvl_cls_preds[lvl].permute(
                 0, 2, 3, 1).reshape(-1, self.cls_out_channels))
 
-        flatten_pos_masks = torch.cat(mlvl_pos_masks)
-        num_pos = flatten_pos_masks.sum()
-
+        num_pos = sum(item.sum() for item in mlvl_pos_masks)
         # dice loss
         loss_mask = []
         for pred, target in zip(mlvl_pos_mask_preds, mlvl_pos_mask_targets):
@@ -281,7 +284,7 @@ class SOLOHead(BaseMaskHead):
         flatten_cls_preds = torch.cat(temp_mlvl_cls_preds)
         loss_cls = self.loss_cls(
             flatten_cls_preds, flatten_labels, avg_factor=num_pos + 1)
-        return dict(loss_ins=loss_mask, loss_cate=loss_cls)
+        return dict(loss_mask=loss_mask, loss_cls=loss_cls)
 
     def _get_targets_single(self,
                             gt_bboxes,
@@ -304,13 +307,13 @@ class SOLOHead(BaseMaskHead):
         Returns:
             Tuple: Usually returns a tuple containing targets for predictions.
 
-                - mlvl_mask_targets (list[Tensor]): Each element represent
-                  the binary mask targets for all points in this
-                  level, has shape (num_grid**2, out_h, out_w)
+                - mlvl_pos_mask_targets (list[Tensor]): Each element represent
+                  the binary mask targets for positive points in this
+                  level, has shape (num_pos, out_h, out_w)
                 - mlvl_labels (list[Tensor]): Each element is
                   classification labels for all
                   points in this level, has shape
-                  (num_grid, num_grid)
+                  (num_grid, num_grid).
                 - mlvl_pos_masks (list[Tensor]): Each element is
                   a `BoolTensor` to represent whether the
                   corresponding point in single level
@@ -320,7 +323,7 @@ class SOLOHead(BaseMaskHead):
         gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
                               (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
 
-        mlvl_mask_targets = []
+        mlvl_pos_mask_targets = []
         mlvl_labels = []
         mlvl_pos_masks = []
         for (lower_bound, upper_bound), stride, featmap_size, num_grid \
@@ -342,7 +345,8 @@ class SOLOHead(BaseMaskHead):
             gt_inds = ((gt_areas >= lower_bound) &
                        (gt_areas <= upper_bound)).nonzero().flatten()
             if len(gt_inds) == 0:
-                mlvl_mask_targets.append(mask_target)
+                mlvl_pos_mask_targets.append(
+                    mask_target.new_zeros(0, featmap_size[0], featmap_size[1]))
                 mlvl_labels.append(labels)
                 mlvl_pos_masks.append(pos_mask)
                 continue
@@ -409,10 +413,10 @@ class SOLOHead(BaseMaskHead):
                         mask_target[index, :gt_mask.shape[0], :gt_mask.
                                     shape[1]] = gt_mask
                         pos_mask[index] = True
-            mlvl_mask_targets.append(mask_target)
+            mlvl_pos_mask_targets.append(mask_target[pos_mask])
             mlvl_labels.append(labels)
             mlvl_pos_masks.append(pos_mask)
-        return mlvl_mask_targets, mlvl_labels, mlvl_pos_masks
+        return mlvl_pos_mask_targets, mlvl_labels, mlvl_pos_masks
 
     def get_results(self, mlvl_mask_preds, mlvl_cls_preds, img_metas,
                     **kwargs):
@@ -777,15 +781,15 @@ class DecoupledSOLOHead(SOLOHead):
         return dict(loss_mask=loss_mask, loss_cate=loss_cls)
 
     def _get_targets_single(self,
-                            gt_bboxes_raw,
-                            gt_labels_raw,
-                            gt_masks_raw,
+                            gt_bboxes,
+                            gt_labels,
+                            gt_masks,
                             featmap_sizes=None):
 
-        device = gt_labels_raw[0].device
+        device = gt_labels[0].device
         # ins
-        gt_areas = torch.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0]) *
-                              (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
+        gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
+                              (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
         ins_label_list = []
         cate_label_list = []
         ins_ind_label_list = []
@@ -822,19 +826,19 @@ class DecoupledSOLOHead(SOLOHead):
                 ins_ind_label_list_xy.append(
                     (cate_label - self.num_classes).nonzero())
                 continue
-            gt_bboxes = gt_bboxes_raw[hit_indices]
-            gt_labels = gt_labels_raw[hit_indices]
-            gt_masks = gt_masks_raw[hit_indices, ...]
+            hit_gt_bboxes = gt_bboxes[hit_indices]
+            hit_gt_labels = gt_labels[hit_indices]
+            hit_gt_masks = gt_masks[hit_indices, ...]
 
-            half_ws = 0.5 * (gt_bboxes[:, 2] -
-                             gt_bboxes[:, 0]) * self.pos_scale
-            half_hs = 0.5 * (gt_bboxes[:, 3] -
-                             gt_bboxes[:, 1]) * self.pos_scale
+            half_ws = 0.5 * (hit_gt_bboxes[:, 2] -
+                             hit_gt_bboxes[:, 0]) * self.pos_scale
+            half_hs = 0.5 * (hit_gt_bboxes[:, 3] -
+                             hit_gt_bboxes[:, 1]) * self.pos_scale
 
             output_stride = stride / 2
 
             for seg_mask, gt_label, half_h, half_w in \
-                    zip(gt_masks, gt_labels, half_hs, half_ws):
+                    zip(hit_gt_masks, hit_gt_labels, half_hs, half_ws):
 
                 if seg_mask.sum() < 10:
                     continue
@@ -892,6 +896,7 @@ class DecoupledSOLOHead(SOLOHead):
             cate_label_list.append(cate_label)
 
             ins_ind_label = ins_ind_label[ins_ind_label]
+            assert ins_ind_label.all()
             ins_ind_label_list.append(ins_ind_label)
 
             ins_ind_label_list_xy.append(
@@ -926,7 +931,7 @@ class DecoupledSOLOHead(SOLOHead):
             seg_pred_list_x = torch.cat(seg_pred_list_x, dim=0)
             seg_pred_list_y = torch.cat(seg_pred_list_y, dim=0)
 
-            results = self._get_masks_single(
+            results = self._get_results_single(
                 cate_pred_list,
                 seg_pred_list_x,
                 seg_pred_list_y,
