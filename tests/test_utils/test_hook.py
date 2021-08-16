@@ -298,9 +298,8 @@ def test_check_invalid_loss_hook(set_loss):
             and not set_loss['set_loss_inf']:
         # check loss is valid
         runner.run([loader], [('train', 1)])
-        shutil.rmtree(runner.work_dir)
     else:
         # check loss is nan or inf
         with pytest.raises(AssertionError):
             runner.run([loader], [('train', 1)])
-            shutil.rmtree(runner.work_dir)
+    shutil.rmtree(runner.work_dir)
