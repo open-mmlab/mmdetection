@@ -207,20 +207,31 @@ class HRNet(BaseModule):
     arXiv: https://arxiv.org/abs/1904.04514
 
     Args:
-        extra (dict): detailed configuration for each stage of HRNet.
+        extra (dict): Detailed configuration for each stage of HRNet.
+            There must be 4 stages, the configuration for each stage must have
+            5 keys:
+
+                - num_modules(int): The number of HRModule in this stage.
+                - num_branches(int): The number of branches in the HRModule.
+                - block(str): The type of convolution block.
+                - num_blocks(tuple): The number of blocks in each branch.
+                    The length must be equal to num_branches.
+                - num_channels(tuple): the number of channels in each branch.
+                    The length must be equal to num_branches.
         in_channels (int): Number of input image channels. Default: 3.
-        conv_cfg (dict): dictionary to construct and config conv layer.
-        norm_cfg (dict): dictionary to construct and config norm layer.
+        conv_cfg (dict): Dictionary to construct and config conv layer.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
-        zero_init_residual (bool): whether to use zero init for last norm layer
+        zero_init_residual (bool): Whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
-        multiscale_output (bool): whether to output multi-level features. If
-            False, only the first level feature will be output. Default: True.
-        pretrained (str, optional): model pretrained path. Default: None
+        multiscale_output (bool): Whether to output multi-level features
+            produced by multiple branches. If False, only the first level
+            feature will be output. Default: True.
+        pretrained (str, optional): Model pretrained path. Default: None
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None
 
@@ -297,6 +308,16 @@ class HRNet(BaseModule):
                 ]
         else:
             raise TypeError('pretrained must be a str or None')
+
+        # Assert configurations of 4 stages are in extra
+        assert 'stage1' in extra and 'stage2' in extra \
+               and 'stage3' in extra and 'stage4' in extra
+        # Assert whether the length of `num_blocks` and `num_channels` are
+        # equal to `num_branches`
+        for i in range(4):
+            cfg = extra[f'stage{i + 1}']
+            assert len(cfg['num_blocks']) == cfg['num_branches'] and \
+                   len(cfg['num_channels']) == cfg['num_branches']
 
         self.extra = extra
         self.conv_cfg = conv_cfg
