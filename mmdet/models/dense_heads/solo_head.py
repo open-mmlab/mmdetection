@@ -255,7 +255,7 @@ class SOLOHead(BaseMaskHead):
                 mlvl_pos_masks[lvl].append(pos_masks[img_id][lvl].flatten())
                 mlvl_labels[lvl].append(labels[img_id][lvl].flatten())
 
-        # cat miltiple image
+        # cat multiple image
         temp_mlvl_cls_preds = []
         for lvl in range(num_levels):
             mlvl_pos_mask_targets[lvl] = torch.cat(
@@ -710,199 +710,127 @@ class DecoupledSOLOHead(SOLOHead):
         return mask_preds_x, mask_preds_y, cls_preds
 
     def loss(self,
-             ins_preds_x,
-             ins_preds_y,
-             cate_preds,
+             mlvl_mask_preds_x,
+             mlvl_mask_preds_y,
+             mlvl_cls_preds,
              gt_labels,
              gt_masks,
              img_metas,
              gt_bboxes=None,
              gt_bboxes_ignore=None,
              **kwargs):
-        featmap_sizes = [featmap.size()[-2:] for featmap in ins_preds_x]
+        num_levels = self.num_levels
+        num_imgs = len(gt_labels)
+        featmap_sizes = [featmap.size()[-2:] for featmap in mlvl_mask_preds_x]
 
-        ins_label_list, cate_label_list, \
-            ins_ind_label_list, ins_ind_label_list_xy = \
+        pos_mask_targets, labels, \
+            xy_pos_indexes = \
             multi_apply(self._get_targets_single,
                         gt_bboxes,
                         gt_labels,
                         gt_masks,
                         featmap_sizes=featmap_sizes)
 
-        # ins
-        ins_labels = [[] for _ in range(len(ins_preds_x))]
-        ins_preds_x_final = [[] for _ in range(len(ins_preds_x))]
-        ins_preds_y_final = [[] for _ in range(len(ins_preds_x))]
-        cate_labels = [[] for _ in range(len(ins_preds_x))]
-        for i in range(len(ins_label_list)):
-            assert len(ins_preds_x) == len(ins_label_list[i])
-            for j in range(len(ins_label_list[i])):
-                ins_labels[j].append(
-                    ins_label_list[i][j][ins_ind_label_list[i][j], ...])
-                ins_preds_x_final[j].append(
-                    ins_preds_x[j][i, ins_ind_label_list_xy[i][j][:, 1], ...])
-                ins_preds_y_final[j].append(
-                    ins_preds_y[j][i, ins_ind_label_list_xy[i][j][:, 0], ...])
-                cate_labels[j].append(cate_label_list[i][j].flatten())
+        # change from the outside list meaning multi images
+        # to the outside list meaning multi levels
+        mlvl_pos_mask_targets = [[] for _ in range(num_levels)]
+        mlvl_pos_mask_preds_x = [[] for _ in range(num_levels)]
+        mlvl_pos_mask_preds_y = [[] for _ in range(num_levels)]
+        mlvl_labels = [[] for _ in range(num_levels)]
+        for img_id in range(num_imgs):
 
-        cate_pred_temp = []
-        for i in range(len(ins_labels)):
-            ins_labels[i] = torch.cat(ins_labels[i], dim=0)
-            ins_preds_x_final[i] = torch.cat(ins_preds_x_final[i], dim=0)
-            ins_preds_y_final[i] = torch.cat(ins_preds_y_final[i], dim=0)
-            cate_labels[i] = torch.cat(cate_labels[i], dim=0)
-            cate_pred_temp.append(cate_preds[i].permute(0, 2, 3, 1).reshape(
-                -1, self.cls_out_channels))
-        cate_preds = cate_pred_temp
+            for lvl in range(num_levels):
+                mlvl_pos_mask_targets[lvl].append(
+                    pos_mask_targets[img_id][lvl])
+                mlvl_pos_mask_preds_x[lvl].append(
+                    mlvl_mask_preds_x[lvl][img_id,
+                                           xy_pos_indexes[img_id][lvl][:, 1]])
+                mlvl_pos_mask_preds_y[lvl].append(
+                    mlvl_mask_preds_y[lvl][img_id,
+                                           xy_pos_indexes[img_id][lvl][:, 0]])
+                mlvl_labels[lvl].append(labels[img_id][lvl].flatten())
 
-        num_ins = 0.
+        # cat multiple image
+        temp_mlvl_cls_preds = []
+        for lvl in range(num_levels):
+            mlvl_pos_mask_targets[lvl] = torch.cat(
+                mlvl_pos_mask_targets[lvl], dim=0)
+            mlvl_pos_mask_preds_x[lvl] = torch.cat(
+                mlvl_pos_mask_preds_x[lvl], dim=0)
+            mlvl_pos_mask_preds_y[lvl] = torch.cat(
+                mlvl_pos_mask_preds_y[lvl], dim=0)
+            mlvl_labels[lvl] = torch.cat(mlvl_labels[lvl], dim=0)
+            temp_mlvl_cls_preds.append(mlvl_cls_preds[lvl].permute(
+                0, 2, 3, 1).reshape(-1, self.cls_out_channels))
+
+        num_pos = 0.
         # dice loss
         loss_mask = []
         for pred_x, pred_y, target in \
-                zip(ins_preds_x_final, ins_preds_y_final, ins_labels):
-            mask_n = pred_x.size(0)
-            if mask_n == 0:
+                zip(mlvl_pos_mask_preds_x,
+                    mlvl_pos_mask_preds_y, mlvl_pos_mask_targets):
+            num_masks = pred_x.size(0)
+            if num_masks == 0:
                 # make sure can get grad
                 loss_mask.append((pred_x.sum() + pred_y.sum()).unsqueeze(0))
                 continue
-            num_ins += mask_n
+            num_pos += num_masks
             loss_mask.append(self.loss_mask((pred_x, pred_y), target))
-        if num_ins > 0:
-            loss_mask = torch.cat(loss_mask).sum() / num_ins
+        if num_pos > 0:
+            loss_mask = torch.cat(loss_mask).sum() / num_pos
         else:
             loss_mask = torch.cat(loss_mask).mean()
 
         # cate
-        flatten_cate_labels = torch.cat(cate_labels)
-        flatten_cate_preds = torch.cat(cate_preds)
+        flatten_labels = torch.cat(mlvl_labels)
+        flatten_cls_preds = torch.cat(temp_mlvl_cls_preds)
 
         loss_cls = self.loss_cls(
-            flatten_cate_preds, flatten_cate_labels, avg_factor=num_ins + 1)
-        return dict(loss_mask=loss_mask, loss_cate=loss_cls)
+            flatten_cls_preds, flatten_labels, avg_factor=num_pos + 1)
+        return dict(loss_mask=loss_mask, loss_cls=loss_cls)
 
     def _get_targets_single(self,
                             gt_bboxes,
                             gt_labels,
                             gt_masks,
                             featmap_sizes=None):
+        """Compute targets for predictions of single image.
 
-        device = gt_labels[0].device
-        # ins
-        gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
-                              (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
-        ins_label_list = []
-        cate_label_list = []
-        ins_ind_label_list = []
-        ins_ind_label_list_xy = []
-        for (lower_bound, upper_bound), stride, featmap_size, num_grid \
-                in zip(self.scale_ranges, self.strides,
-                       featmap_sizes, self.num_grids):
+        Args:
+            gt_bboxes (Tensor): Ground truth bbox of each instance,
+                shape (num_gts, 4).
+            gt_labels (Tensor): Ground truth label of each instance,
+                shape (num_gts,).
+            gt_masks (Tensor): Ground truth mask of each instance,
+                shape (num_gts, h, w).
+            featmap_sizes (list[:obj:`torch.size`]): Size of each
+                feature map from feature pyramid, each element
+                means (feat_h, feat_w). Default: None.
 
-            ins_label = torch.zeros(
-                [num_grid**2, featmap_size[0], featmap_size[1]],
-                dtype=torch.uint8,
-                device=device)
-            # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-            cate_label = torch.zeros([num_grid, num_grid],
-                                     dtype=torch.int64,
-                                     device=device) + self.num_classes
-            ins_ind_label = torch.zeros([num_grid**2],
-                                        dtype=torch.bool,
-                                        device=device)
+        Returns:
+            Tuple: Usually returns a tuple containing targets for predictions.
 
-            hit_indices = ((gt_areas >= lower_bound) &
-                           (gt_areas <= upper_bound)).nonzero().flatten()
+                - mlvl_pos_mask_targets (list[Tensor]): Each element represent
+                  the binary mask targets for positive points in this
+                  level, has shape (num_pos, out_h, out_w)
+                - mlvl_labels (list[Tensor]): Each element is
+                  classification labels for all
+                  points in this level, has shape
+                  (num_grid, num_grid).
+                - mlvl_xy_pos_indexes (list[Tensor]): Each element
+                  in the list contains the index of positive samples in
+                  corresponding level, has shape (num_pos, 2), last
+                  dimension 2 present (index_x, index_y).
+        """
+        mlvl_pos_mask_targets, mlvl_labels, \
+            mlvl_pos_masks = \
+            super()._get_targets_single(gt_bboxes, gt_labels, gt_masks,
+                                        featmap_sizes=featmap_sizes)
 
-            if len(hit_indices) == 0:
-                ins_label = torch.zeros([1, featmap_size[0], featmap_size[1]],
-                                        dtype=torch.uint8,
-                                        device=device)
-                ins_label_list.append(ins_label)
-                cate_label_list.append(cate_label)
-                ins_ind_label = torch.zeros([1],
-                                            dtype=torch.bool,
-                                            device=device)
-                ins_ind_label_list.append(ins_ind_label)
-                ins_ind_label_list_xy.append(
-                    (cate_label - self.num_classes).nonzero())
-                continue
-            hit_gt_bboxes = gt_bboxes[hit_indices]
-            hit_gt_labels = gt_labels[hit_indices]
-            hit_gt_masks = gt_masks[hit_indices, ...]
+        mlvl_xy_pos_indexes = [(item - self.num_classes).nonzero()
+                               for item in mlvl_labels]
 
-            half_ws = 0.5 * (hit_gt_bboxes[:, 2] -
-                             hit_gt_bboxes[:, 0]) * self.pos_scale
-            half_hs = 0.5 * (hit_gt_bboxes[:, 3] -
-                             hit_gt_bboxes[:, 1]) * self.pos_scale
-
-            output_stride = stride / 2
-
-            for seg_mask, gt_label, half_h, half_w in \
-                    zip(hit_gt_masks, hit_gt_labels, half_hs, half_ws):
-
-                if seg_mask.sum() < 10:
-                    continue
-                # mass center
-
-                upsampled_size = (featmap_sizes[0][0] * 4,
-                                  featmap_sizes[0][1] * 4)
-                center_h, center_w = center_of_mass(seg_mask)
-
-                coord_w = int(
-                    (center_w / upsampled_size[1]) // (1. / num_grid))
-                coord_h = int(
-                    (center_h / upsampled_size[0]) // (1. / num_grid))
-
-                # left, top, right, down
-                top_box = max(
-                    0,
-                    int(((center_h - half_h) / upsampled_size[0]) //
-                        (1. / num_grid)))
-                down_box = min(
-                    num_grid - 1,
-                    int(((center_h + half_h) / upsampled_size[0]) //
-                        (1. / num_grid)))
-                left_box = max(
-                    0,
-                    int(((center_w - half_w) / upsampled_size[1]) //
-                        (1. / num_grid)))
-                right_box = min(
-                    num_grid - 1,
-                    int(((center_w + half_w) / upsampled_size[1]) //
-                        (1. / num_grid)))
-
-                top = max(top_box, coord_h - 1)
-                down = min(down_box, coord_h + 1)
-                left = max(coord_w - 1, left_box)
-                right = min(right_box, coord_w + 1)
-
-                # squared
-                cate_label[top:(down + 1), left:(right + 1)] = gt_label
-                # ins
-                seg_mask = np.uint8(seg_mask.cpu().numpy())
-                seg_mask = mmcv.imrescale(seg_mask, scale=1. / output_stride)
-                seg_mask = torch.from_numpy(seg_mask).to(device=device)
-
-                for i in range(top, down + 1):
-                    for j in range(left, right + 1):
-                        label = int(i * num_grid + j)
-                        ins_label[label, :seg_mask.shape[0], :seg_mask.
-                                  shape[1]] = seg_mask
-                        ins_ind_label[label] = True
-
-            ins_label = ins_label[ins_ind_label]
-            ins_label_list.append(ins_label)
-
-            cate_label_list.append(cate_label)
-
-            ins_ind_label = ins_ind_label[ins_ind_label]
-            assert ins_ind_label.all()
-            ins_ind_label_list.append(ins_ind_label)
-
-            ins_ind_label_list_xy.append(
-                (cate_label - self.num_classes).nonzero())
-        return ins_label_list, cate_label_list, \
-            ins_ind_label_list, ins_ind_label_list_xy
+        return mlvl_pos_mask_targets, mlvl_labels, mlvl_xy_pos_indexes
 
     def get_results(self,
                     seg_preds_x,
