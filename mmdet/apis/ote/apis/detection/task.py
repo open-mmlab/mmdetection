@@ -93,8 +93,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         self.model_name = hyperparams.algo_backend.model_name
         self.labels = task_environment.get_labels(False)
 
-        # TODO(ikrylov): ModelTemplate will be added to TaskEnvironment, so it must be replace.
-        template_file_path = task_environment.get_hyper_parameters(ModelConfig).algo_backend.template
+        template_file_path = task_environment.model_template.model_template_path
 
         # Get and prepare mmdet config.
         base_dir = os.path.abspath(os.path.dirname(template_file_path))

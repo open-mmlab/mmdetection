@@ -1,12 +1,3 @@
-algo_backend:
-  data_pipeline: ote_data_pipeline.py
-  description: Internal Algo Backend parameters
-  header: Internal Algo Backend parameters
-  model: model.py
-  model_name: object detection model
-  template: template.yaml
-  type: PARAMETER_GROUP
-  visible_in_ui: false
 description: Configuration for an object detection task
 header: Configuration for an object detection task
 id: ''

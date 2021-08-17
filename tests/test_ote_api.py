@@ -20,7 +20,7 @@ from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
 
-from sc_sdk.configuration.helper import convert
+from sc_sdk.configuration.helper import convert, create
 from sc_sdk.entities.annotation import (Annotation, AnnotationScene,
                                         AnnotationSceneKind)
 from sc_sdk.entities.dataset_item import DatasetItem
@@ -45,7 +45,7 @@ from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
                                            OTEDetectionConfig,
                                            OTEDetectionTask)
 from mmdet.apis.ote.apis.detection.config_utils import \
-    apply_template_configurable_parameters
+    apply_template_configurable_parameters, override_parameters, set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
                                                      load_template)
 
@@ -76,6 +76,7 @@ def test_configuration_yaml():
     configuration_yaml_converted = yaml.safe_load(configuration_yaml_str)
     with open(osp.join('mmdet', 'apis', 'ote', 'apis', 'detection', 'configuration.yaml')) as read_file:
         configuration_yaml_loaded = yaml.safe_load(read_file)
+    del configuration_yaml_converted['algo_backend']
     assert configuration_yaml_converted == configuration_yaml_loaded
 
 
@@ -206,11 +207,18 @@ class TestOTEAPI(unittest.TestCase):
 
     def setup_configurable_parameters(self, template_dir, num_iters=250):
         template = load_template(osp.join(template_dir, 'template.yaml'))
-        self.assertEqual(template['task']['base'], 'mmdet.apis.ote.apis.detection.OTEDetectionTask')
-        self.assertEqual(template['task']['openvino'], 'mmdet.apis.ote.apis.detection.OpenVINODetectionTask')
-        self.assertEqual(template['hyper_parameters']['impl'], 'mmdet.apis.ote.apis.detection.OTEDetectionConfig')
-        hyper_parameters = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
-        apply_template_configurable_parameters(hyper_parameters, template)
+
+        # TODO(ikrylov): Have a look at similar substitution mechanism that should be in SDK (already???)
+        conf_yaml = [dep['source'] for dep in template['dependencies'] if dep['destination'] == template['hyper_parameters']['base_path']][0]
+        conf_yaml = osp.join(template_dir, conf_yaml)
+        hyper_parameters = load_template(conf_yaml)
+        # Load Template-specific parameters overrides.
+        parameter_overrides = template['hyper_parameters'].get('parameter_overrides', {})
+        # Override Task-specific parameters by Template-specific overrides.
+        override_parameters(parameter_overrides, hyper_parameters)
+        # Sync values with new default values.
+        set_values_as_default(hyper_parameters)
+        hyper_parameters = create(hyper_parameters)
         hyper_parameters.learning_parameters.num_iters = num_iters
         hyper_parameters.learning_parameters.num_checkpoints = 1
         hyper_parameters.postprocessing.result_based_confidence_threshold = False
@@ -233,6 +241,10 @@ class TestOTEAPI(unittest.TestCase):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
         hyper_parameters = self.setup_configurable_parameters(template_dir, num_iters=500)
         detection_environment, dataset = self.init_environment(hyper_parameters, 250)
+
+        # TODO(ikrylov): in near future there should be ModelTemplate as part of Env.
+        model_template = parse_model_template(os.path.join(template_dir, 'template.yaml'), '1')
+        setattr(detection_environment, 'model_template', model_template)
         detection_task = OTEDetectionTask(task_environment=detection_environment)
 
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='train_thread')
@@ -295,6 +307,10 @@ class TestOTEAPI(unittest.TestCase):
         """
         hyper_parameters = self.setup_configurable_parameters(template_dir, num_iters=150)
         detection_environment, dataset = self.init_environment(hyper_parameters, 250)
+
+        # TODO(ikrylov): in near future there should be ModelTemplate as part of Env.
+        model_template = parse_model_template(os.path.join(template_dir, 'template.yaml'), '1')
+        setattr(detection_environment, 'model_template', model_template)
         val_dataset = dataset.get_subset(Subset.VALIDATION)
         task = OTEDetectionTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
