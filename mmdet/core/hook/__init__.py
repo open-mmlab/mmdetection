@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .ema import ExpMomentumEMAHook, LinearMomentumEMAHook
 from .sync_norm_hook import SyncNormHook
 from .sync_random_size_hook import SyncRandomSizeHook

@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 """pytest tests/test_loss_compatibility.py."""
 import copy
 from os.path import dirname, exists, join

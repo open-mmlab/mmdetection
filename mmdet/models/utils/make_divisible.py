@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 def make_divisible(value, divisor, min_value=None, min_ratio=0.9):
     """Make divisible function.
 

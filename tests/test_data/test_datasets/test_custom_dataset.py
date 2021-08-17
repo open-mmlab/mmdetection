@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from unittest.mock import MagicMock, patch
 
 import pytest

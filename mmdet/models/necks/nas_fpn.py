@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops.merge_cells import GlobalPoolingCell, SumCell
