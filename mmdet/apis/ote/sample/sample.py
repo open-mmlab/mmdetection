@@ -32,8 +32,7 @@ from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType
 
-from mmdet.apis.ote.apis.detection.config_utils import apply_template_configurable_parameters, override_parameters, set_values_as_default
-from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
+from mmdet.apis.ote.apis.detection.config_utils import override_parameters, set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, get_task_class, load_template
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
 
@@ -139,7 +138,7 @@ def main(args):
 
         logger.info('Create OpenVINO Task')
         environment.model = exported_model
-        openvino_task_impl_path = template['task']['openvino']
+        openvino_task_impl_path = template['entrypoints']['openvino']
         openvino_task_cls = get_task_class(openvino_task_impl_path)
         openvino_task = openvino_task_cls(environment)
 

@@ -44,8 +44,7 @@ from sc_sdk.utils.project_factory import NullProject
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
                                            OTEDetectionConfig,
                                            OTEDetectionTask)
-from mmdet.apis.ote.apis.detection.config_utils import \
-    apply_template_configurable_parameters, override_parameters, set_values_as_default
+from mmdet.apis.ote.apis.detection.config_utils import override_parameters, set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
                                                      load_template)
 
