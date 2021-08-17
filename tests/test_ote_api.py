@@ -171,11 +171,12 @@ class TestOTEAPI(unittest.TestCase):
     Collection of tests for OTE API and OTE Model Templates
     """
 
-    def init_environment(self, params, number_of_images=500):
+    def init_environment(self, params, model_template, number_of_images=500):
         labels_names = ('rectangle', 'ellipse', 'triangle')
         labels_schema = generate_label_schema(labels_names)
         labels_list = labels_schema.get_labels(False)
-        environment = TaskEnvironment(model=NullModel(), hyper_parameters=params, label_schema=labels_schema)
+        environment = TaskEnvironment(model=NullModel(), hyper_parameters=params, label_schema=labels_schema,
+                                      model_template=model_template)
 
         warnings.filterwarnings('ignore', message='.* coordinates .* are out of bounds.*')
         items = []
@@ -239,7 +240,7 @@ class TestOTEAPI(unittest.TestCase):
         hyper_parameters.learning_parameters.num_checkpoints = 1
         hyper_parameters.postprocessing.result_based_confidence_threshold = False
         hyper_parameters.postprocessing.confidence_threshold = 0.1
-        return hyper_parameters
+        return hyper_parameters, model_template
 
     def test_cancel_training_detection(self):
         """
@@ -255,12 +256,9 @@ class TestOTEAPI(unittest.TestCase):
         This test should be finished in under one minute on a workstation.
         """
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        hyper_parameters = self.setup_configurable_parameters(template_dir, num_iters=500)
-        detection_environment, dataset = self.init_environment(hyper_parameters, 250)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=500)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
-        # TODO(ikrylov): in near future there should be ModelTemplate as part of Env.
-        model_template = parse_model_template(os.path.join(template_dir, 'template.yaml'), '1')
-        setattr(detection_environment, 'model_template', model_template)
         detection_task = OTEDetectionTask(task_environment=detection_environment)
 
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='train_thread')
@@ -321,12 +319,9 @@ class TestOTEAPI(unittest.TestCase):
             difference between the original and the reloaded model is smaller than 1e-4. Ideally there should be no
             difference at all.
         """
-        hyper_parameters = self.setup_configurable_parameters(template_dir, num_iters=150)
-        detection_environment, dataset = self.init_environment(hyper_parameters, 250)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=150)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
-        # TODO(ikrylov): in near future there should be ModelTemplate as part of Env.
-        model_template = parse_model_template(os.path.join(template_dir, 'template.yaml'), '1')
-        setattr(detection_environment, 'model_template', model_template)
         val_dataset = dataset.get_subset(Subset.VALIDATION)
         task = OTEDetectionTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
