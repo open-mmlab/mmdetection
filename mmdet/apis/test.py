@@ -11,6 +11,7 @@ from mmcv.image import tensor2imgs
 from mmcv.runner import get_dist_info
 
 from mmdet.core import encode_mask_results
+from mmdet.core.results.results import DetectionResults
 
 
 def single_gpu_test(model,
@@ -24,7 +25,15 @@ def single_gpu_test(model,
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
+
+            # Currently only SOLO will return :obj:`DetectionResults`
+            # but in the future, the outputs of all the models would
+            # be unified as :obj:`DetectionResults`
             result = model(return_loss=False, rescale=True, **data)
+
+        # Avoid CUDA OOM, Currently only used in SOLO
+        if isinstance(result[0], DetectionResults):
+            result = [item.cpu() for item in result]
 
         batch_size = len(result)
         if show or out_dir:
@@ -59,10 +68,24 @@ def single_gpu_test(model,
         if isinstance(result[0], tuple):
             result = [(bbox_results, encode_mask_results(mask_results))
                       for bbox_results, mask_results in result]
+
         results.extend(result)
 
         for _ in range(batch_size):
             prog_bar.update()
+
+    # Currently only SOLO will run this branch,
+    if isinstance(results[0], DetectionResults):
+        format_results = []
+        for item in results:
+            format_item = item.format_results()
+            if 'mask_results' in format_item:
+                format_results.append(
+                    (format_item['bbox_results'], format_item['mask_results']))
+            else:
+                format_results.append(format_item['bbox_results'])
+        results = format_results
+
     return results
 
 
@@ -94,9 +117,18 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     time.sleep(2)  # This line can prevent deadlock problem in some cases.
     for i, data in enumerate(data_loader):
         with torch.no_grad():
+
+            # Currently only solo will return :obj:`DetectionResults`
+            # but in the future, the outputs of all the models would
+            # be unified as :obj:`DetectionResults`
             result = model(return_loss=False, rescale=True, **data)
+
+            # Avoid CUDA OOM
+            if isinstance(result[0], DetectionResults):
+                result = [item.cpu() for item in result]
+
             # encode mask results
-            if isinstance(result[0], tuple):
+            elif isinstance(result[0], tuple):
                 result = [(bbox_results, encode_mask_results(mask_results))
                           for bbox_results, mask_results in result]
         results.extend(result)
@@ -105,6 +137,18 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             batch_size = len(result)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
+
+    # Avoid CUDA OOM, Currently only used in SOLO
+    if isinstance(results[0], DetectionResults):
+        format_results = []
+        for item in results:
+            format_item = item.format_results()
+            if 'mask_results' in format_item:
+                format_results.append(
+                    (format_item['bbox_results'], format_item['mask_results']))
+            else:
+                format_results.append(format_item['bbox_results'])
+        results = format_results
 
     # collect results from all ranks
     if gpu_collect:
