@@ -13,10 +13,13 @@
 # and limitations under the License.
 
 import importlib
+import os
+import subprocess
+import tempfile
 import yaml
-
 from sc_sdk.entities.label import Color, Label, distinct_colors
-from sc_sdk.entities.label_schema import LabelSchema, LabelGroup, LabelGroupType
+from sc_sdk.entities.label_schema import (LabelGroup, LabelGroupType,
+                                          LabelSchema)
 
 
 def generate_label_schema(label_names):
@@ -45,3 +48,21 @@ def get_task_class(path):
     module_name, class_name = path.rsplit('.', 1)
     module = importlib.import_module(module_name)
     return getattr(module, class_name)
+
+
+def reload_hyper_parameters(model_template):
+    """ This function copies template.yaml file and its configuration.yaml dependency to temporal folder.
+        Then it re-loads hyper parameters from copied template.yaml file.
+        This function should not be used in general case, it is assumed that
+        the 'configuration.yaml' should be in the same folder as 'template.yaml' file.
+    """
+
+    template_file = model_template.model_template_path
+    template_dir = os.path.dirname(template_file)
+    temp_folder = tempfile.mkdtemp()
+    conf_yaml = [dep.source for dep in model_template.dependencies if dep.destination == model_template.hyper_parameters.base_path][0]
+    conf_yaml = os.path.join(template_dir, conf_yaml)
+    subprocess.run(f'cp {conf_yaml} {temp_folder}', check=True, shell=True)
+    subprocess.run(f'cp {template_file} {temp_folder}', check=True, shell=True)
+    model_template.hyper_parameters.load_parameters(os.path.join(temp_folder, 'template.yaml'))
+    assert model_template.hyper_parameters.data

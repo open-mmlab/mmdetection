@@ -1,25 +1,21 @@
 import io
 import json
+import numpy as np
 import os
 import os.path as osp
 import random
+import tempfile
 import time
+import torch
 import unittest
 import warnings
-from concurrent.futures import ThreadPoolExecutor
-from subprocess import run
-
-import numpy as np
-import torch
 import yaml
-
+from concurrent.futures import ThreadPoolExecutor
 from ote_sdk.entities.id import ID
-from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
-
 from sc_sdk.configuration.helper import convert, create
 from sc_sdk.entities.annotation import (Annotation, AnnotationScene,
                                         AnnotationSceneKind)
@@ -34,19 +30,19 @@ from sc_sdk.entities.optimized_model import (ModelOptimizationType,
                                              ModelPrecision, OptimizedModel,
                                              TargetDevice)
 from sc_sdk.entities.resultset import ResultSet
-
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.tests.test_helpers import generate_random_annotated_image
 from sc_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
                                                                IExportTask)
 from sc_sdk.utils.project_factory import NullProject
+from subprocess import run
 
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
                                            OTEDetectionConfig,
                                            OTEDetectionTask)
-from mmdet.apis.ote.apis.detection.config_utils import override_parameters, set_values_as_default
+from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
-                                                     load_template)
+                                                     reload_hyper_parameters)
 
 
 class ModelTemplate(unittest.TestCase):
@@ -78,6 +74,30 @@ def test_configuration_yaml():
     del configuration_yaml_converted['algo_backend']
     assert configuration_yaml_converted == configuration_yaml_loaded
 
+def test_set_values_as_default():
+    template_dir = './configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/'
+    template_file = osp.join(template_dir, 'template.yaml')
+    model_template = parse_model_template(template_file, '1')
+
+    # Here we have to reload parameters manually because
+    # `parse_model_template` was called when `configuration.yaml` was not near `template.yaml.`
+    if not model_template.hyper_parameters.data:
+        reload_hyper_parameters(model_template)
+
+    hyper_parameters = model_template.hyper_parameters.data
+    # value that comes from template.yaml
+    default_value = hyper_parameters['learning_parameters']['batch_size']['default_value']
+    # value that comes from OTEDetectionConfig
+    value = hyper_parameters['learning_parameters']['batch_size']['value']
+    assert value == 5
+    assert default_value == 64
+
+    # after this call value must be equal to default_value
+    set_values_as_default(hyper_parameters)
+    value = hyper_parameters['learning_parameters']['batch_size']['value']
+    assert default_value == value
+    hyper_parameters = create(hyper_parameters)
+    assert default_value == hyper_parameters.learning_parameters.batch_size
 
 class SampleTestCase(unittest.TestCase):
     root_dir = '/tmp'
@@ -205,17 +225,14 @@ class TestOTEAPI(unittest.TestCase):
         return environment, dataset
 
     def setup_configurable_parameters(self, template_dir, num_iters=250):
-        template = load_template(osp.join(template_dir, 'template.yaml'))
+        model_template = parse_model_template(osp.join(template_dir, 'template.yaml'), '1')
 
-        # TODO(ikrylov): Have a look at similar substitution mechanism that should be in SDK (already???)
-        conf_yaml = [dep['source'] for dep in template['dependencies'] if dep['destination'] == template['hyper_parameters']['base_path']][0]
-        conf_yaml = osp.join(template_dir, conf_yaml)
-        hyper_parameters = load_template(conf_yaml)
-        # Load Template-specific parameters overrides.
-        parameter_overrides = template['hyper_parameters'].get('parameter_overrides', {})
-        # Override Task-specific parameters by Template-specific overrides.
-        override_parameters(parameter_overrides, hyper_parameters)
-        # Sync values with new default values.
+        # Here we have to reload parameters manually because
+        # `parse_model_template` was called when `configuration.yaml` was not near `template.yaml.`
+        if not model_template.hyper_parameters.data:
+            reload_hyper_parameters(model_template)
+
+        hyper_parameters = model_template.hyper_parameters.data
         set_values_as_default(hyper_parameters)
         hyper_parameters = create(hyper_parameters)
         hyper_parameters.learning_parameters.num_iters = num_iters

@@ -13,15 +13,30 @@
 # and limitations under the License.
 
 
-from .config_utils import (patch_config, set_hyperparams, prepare_for_training, prepare_for_testing,
-    config_from_string, config_to_string, save_config_to_file, apply_template_configurable_parameters, override_parameters, set_values_as_default)
+from .config_utils import (config_from_string, config_to_string, patch_config,
+                           prepare_for_testing, prepare_for_training,
+                           save_config_to_file, set_hyperparams,
+                           set_values_as_default)
 from .configuration import OTEDetectionConfig
-from .ote_utils import generate_label_schema, load_template, get_task_class
-from .task import OTEDetectionTask
 from .openvino_task import OpenVINODetectionTask
+from .ote_utils import (generate_label_schema, get_task_class, load_template,
+                        reload_hyper_parameters)
+from .task import OTEDetectionTask
 
-
-__all__ = [OTEDetectionConfig, OTEDetectionTask, patch_config, set_hyperparams, prepare_for_training,
-    prepare_for_testing, config_from_string, config_to_string, save_config_to_file,
-    apply_template_configurable_parameters, generate_label_schema, load_template, get_task_class,
-    OpenVINODetectionTask, override_parameters, set_values_as_default]
+__all__ = [
+    config_from_string,
+    config_to_string,
+    generate_label_schema,
+    get_task_class,
+    load_template,
+    OpenVINODetectionTask,
+    OTEDetectionConfig,
+    OTEDetectionTask,
+    patch_config,
+    prepare_for_testing,
+    prepare_for_training,
+    reload_hyper_parameters,
+    save_config_to_file,
+    set_hyperparams,
+    set_values_as_default,
+    ]

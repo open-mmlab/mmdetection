@@ -13,27 +13,29 @@
 # and limitations under the License.
 
 import argparse
+import os
 import os.path as osp
 import sys
-
-from ote_sdk.entities.id import ID
 from ote_sdk.entities.inference_parameters import InferenceParameters
-
 from sc_sdk.configuration.helper import create
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.datasets import Subset
 from sc_sdk.entities.model import Model, ModelStatus, NullModel
 from sc_sdk.entities.model_storage import NullModelStorage
 from sc_sdk.entities.model_template import parse_model_template
-from sc_sdk.entities.optimized_model import ModelOptimizationType, ModelPrecision, OptimizedModel, TargetDevice
+from sc_sdk.entities.optimized_model import (ModelOptimizationType,
+                                             ModelPrecision, OptimizedModel,
+                                             TargetDevice)
 from sc_sdk.entities.project import NullProject
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType
 
-from mmdet.apis.ote.apis.detection.config_utils import override_parameters, set_values_as_default
-from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, get_task_class, load_template
+from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
+from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
+                                                     get_task_class,
+                                                     reload_hyper_parameters)
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
 
 logger = logger_factory.get_logger('Sample')
@@ -49,9 +51,6 @@ def parse_args():
 
 
 def main(args):
-    logger.info('Load model template')
-    template = load_template(args.template_file_path)
-
     logger.info('Initialize dataset')
     dataset = MMDatasetAdapter(
         train_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
@@ -69,27 +68,26 @@ def main(args):
     logger.info(f'Train dataset: {len(dataset.get_subset(Subset.TRAINING))} items')
     logger.info(f'Validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items')
 
-    logger.info('Setup environment')
+    logger.info('Load model template')
+    model_template = parse_model_template(args.template_file_path, '1')
 
-    # TODO(ikrylov): Have a look at similar substitution mechanism that should be in SDK (already???)
-    conf_yaml = [dep['source'] for dep in template['dependencies'] if dep['destination'] == template['hyper_parameters']['base_path']][0]
-    conf_yaml = osp.join(osp.dirname(args.template_file_path), conf_yaml)
-    hyper_parameters = load_template(conf_yaml)
-    # Load Template-specific parameters overrides.
-    parameter_overrides = template['hyper_parameters'].get('parameter_overrides', {})
-    # Override Task-specific parameters by Template-specific overrides.
-    override_parameters(parameter_overrides, hyper_parameters)
-    # Sync values with new default values.
+    # Here we have to reload parameters manually because
+    # `parse_model_template` was called when `configuration.yaml` was not near `template.yaml.`
+    if not model_template.hyper_parameters.data:
+        reload_hyper_parameters(model_template)
+
+    hyper_parameters = model_template.hyper_parameters.data
     set_values_as_default(hyper_parameters)
+
+    logger.info('Setup environment')
     params = create(hyper_parameters)
     environment = TaskEnvironment(model=NullModel(), hyper_parameters=params, label_schema=labels_schema)
 
     # TODO(ikrylov): in near future there should be ModelTemplate as part of Env.
-    model_template = parse_model_template(args.template_file_path, '1')
     setattr(environment, 'model_template', model_template)
 
     logger.info('Create base Task')
-    task_impl_path = template['entrypoints']['base']
+    task_impl_path = model_template.entrypoints.base
     task_cls = get_task_class(task_impl_path)
     task = task_cls(task_environment=environment)
 
@@ -138,7 +136,7 @@ def main(args):
 
         logger.info('Create OpenVINO Task')
         environment.model = exported_model
-        openvino_task_impl_path = template['entrypoints']['openvino']
+        openvino_task_impl_path = model_template.entrypoints.openvino
         openvino_task_cls = get_task_class(openvino_task_impl_path)
         openvino_task = openvino_task_cls(environment)
 

@@ -12,40 +12,21 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from collections import defaultdict
 import copy
 import glob
 import os
 import tempfile
-from typing import Optional, List
-
+from collections import defaultdict
 from mmcv import Config, ConfigDict
-from sc_sdk.entities.datasets import Dataset, Subset
+from sc_sdk.entities.datasets import Dataset
 from sc_sdk.entities.label import Label
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
+from typing import List, Optional
 
 from .configuration import OTEDetectionConfig
 
-
 logger = logger_factory.get_logger("OTEDetectionTask")
-
-
-def apply_template_configurable_parameters(params: OTEDetectionConfig, template: dict):
-
-    def xset(obj, d: dict):
-        for k, v in d.items():
-            if isinstance(v, dict):
-                xset(getattr(obj, k), v)
-            else:
-                # if hasattr(getattr(obj, k), 'value'):
-                #     getattr(obj, k).value = type(getattr(obj, k).value)(v)
-                # else:
-                setattr(obj, k, v)
-
-    hyper_params = template['hyper_parameters']['params']
-    xset(params, hyper_params)
-    params.algo_backend.model_name = template['name']
 
 
 def patch_config(config: Config, work_dir: str, labels: List[Label], random_seed: Optional[int] = None):
@@ -234,27 +215,10 @@ def remove_from_config(config, key: str):
             raise ValueError(f'Unknown config type {type(config)}')
 
 
-def override_parameters(overrides, parameters, allow_value=False):
-    allowed_keys = {'default_value'}
-    if allow_value:
-        allowed_keys.add('value')
-    for k, v in overrides.items():
-        if isinstance(v, dict):
-            if k in parameters.keys():
-                override_parameters(v, parameters[k], allow_value)
-            else:
-                raise ValueError(f'The "{k}" is not in original parameters.')
-        else:
-            if k in allowed_keys:
-                parameters[k] = v
-            else:
-                raise ValueError(f'The "{k}" is not in allowed_keys: {allowed_keys}')
-
-
 def set_values_as_default(parameters):
-    for k, v in parameters.items():
+    for v in parameters.values():
         if isinstance(v, dict) and 'value' not in v:
-          set_values_as_default(v)
+            set_values_as_default(v)
         elif isinstance(v, dict) and 'value' in v:
             if v['value'] != v['default_value']:
                 v['value'] = v['default_value']
