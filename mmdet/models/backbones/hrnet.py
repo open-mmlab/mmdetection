@@ -231,7 +231,7 @@ class HRNet(BaseModule):
         multiscale_output (bool): Whether to output multi-level features
             produced by multiple branches. If False, only the first level
             feature will be output. Default: True.
-        pretrained (str, optional): Model pretrained path. Default: None
+        pretrained (str, optional): Model pretrained path. Default: None.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None.
 
