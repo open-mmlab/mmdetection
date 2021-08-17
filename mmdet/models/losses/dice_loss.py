@@ -42,13 +42,11 @@ class DiceLoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (torch.Tensor):
-                The prediction,  if torch.Tensor, shape (n, h, w)
-                if tuple, each param is torch.Tensor with shape (n, w, h)
+            pred (torch.Tensor): The prediction, has shape (n, *)
             target (torch.Tensor): The learning label of the prediction,
-                shape (n, h, w).
+                shape (n, *), same shape of pred.
             weight (torch.Tensor, optional): The weight of loss for each
-                prediction. Defaults to None.
+                prediction, has shape (n,). Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
             reduction_override (str, optional): The reduction method used to
@@ -78,7 +76,10 @@ class DiceLoss(nn.Module):
         b = torch.sum(input * input, 1) + self.eps
         c = torch.sum(target * target, 1) + self.eps
         d = (2 * a) / (b + c)
-        loss_cls = self.loss_weight * (1 - d)
+        loss = self.loss_weight * (1 - d)
+        if weight is not None:
+            assert weight.ndim == loss.ndim
+            assert len(weight) == len(pred)
 
-        loss = weight_reduce_loss(loss_cls, weight, reduction, avg_factor)
+        loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
         return loss
