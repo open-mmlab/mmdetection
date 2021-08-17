@@ -193,7 +193,6 @@ class BinaryFocalLoss(nn.Module):
                  sigmoid_clamp=1e-4,
                  ignore_high_fp=-1.,
                  reduction='mean'):
-
         """A Gaussian heatmap focal loss calculation, it use a small portion of
         points as positive sample points.
 
@@ -237,7 +236,6 @@ class BinaryFocalLoss(nn.Module):
                 pos_inds,
                 avg_factor=None,
                 reduction_override=None):
-
         """
         Args:
             inputs (torch.Tensor): Flattened heatmap prediction.
@@ -253,8 +251,10 @@ class BinaryFocalLoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
-        pred = torch.clamp(inputs.sigmoid_(), min=self.sigmoid_clamp,
-                           max=1-self.sigmoid_clamp)
+        pred = torch.clamp(
+            inputs.sigmoid_(),
+            min=self.sigmoid_clamp,
+            max=1 - self.sigmoid_clamp)
         neg_weights = torch.pow(1 - targets, self.beta)
         pos_pred = pred[pos_inds]
         pos_loss = torch.log(pos_pred) * \
@@ -267,12 +267,12 @@ class BinaryFocalLoss(nn.Module):
             neg_loss = not_high_fp * neg_loss
 
         if self.alpha >= 0:
-            pos_loss = - self.alpha * pos_loss
-            neg_loss = - (1 - self.alpha) * neg_loss
+            pos_loss = -self.alpha * pos_loss
+            neg_loss = -(1 - self.alpha) * neg_loss
 
-        pos_loss = weight_reduce_loss(
-            pos_loss, self.pos_weight, reduction, avg_factor)
-        neg_loss = weight_reduce_loss(
-            neg_loss, self.pos_weight, reduction, avg_factor)
+        pos_loss = weight_reduce_loss(pos_loss, self.pos_weight, reduction,
+                                      avg_factor)
+        neg_loss = weight_reduce_loss(neg_loss, self.pos_weight, reduction,
+                                      avg_factor)
 
         return pos_loss, neg_loss

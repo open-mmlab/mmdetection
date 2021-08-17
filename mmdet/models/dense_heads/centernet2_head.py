@@ -345,8 +345,8 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
 
             # Use half diagonal length to assign boxes into different level
             # of feature maps.
-            half_diagonal = ((reg_target[:, :, :2] + reg_target[:, :, 2:]) **
-                             2).sum(dim=2)**0.5 / 2
+            target_hw = reg_target[:, :, :2] + reg_target[:, :, 2:]
+            half_diagonal = (target_hw**2).sum(dim=2)**0.5 / 2
             is_cared_in_the_level = (
                 (half_diagonal >= reg_size_ranges[:, [0]])
                 & (half_diagonal <= reg_size_ranges[:, [1]]))

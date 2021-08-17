@@ -349,18 +349,19 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         # average scores of each image by stages
         if self.mult_proposal_score:
             proposal_score = [proposal[:, -1] for proposal in proposal_list]
-            ms_scores = [
-                [score.softmax(-1) for score in scores]
-                for scores in ms_scores]
+            ms_scores = [[score.softmax(-1) for score in scores]
+                         for scores in ms_scores]
             cls_score = [
                 sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-                for i in range(num_imgs)]
-            cls_score = [(s * p[:, None]) ** 0.5
+                for i in range(num_imgs)
+            ]
+            cls_score = [(s * p[:, None])**0.5
                          for s, p in zip(cls_score, proposal_score)]
         else:
             cls_score = [
                 sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-                for i in range(num_imgs)]
+                for i in range(num_imgs)
+            ]
 
         # apply bbox post-processing to each image individually
         det_bboxes = []
@@ -443,8 +444,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def aug_test(self, features, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
 
-        If rescale is False, then returned bboxes and masks will fit the
-        scale of imgs[0].
+        If rescale is False, then returned bboxes and masks will fit the scale
+        of imgs[0].
         """
         rcnn_test_cfg = self.test_cfg
         aug_bboxes = []
@@ -595,7 +596,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             batch_index = torch.arange(
                 det_bboxes.size(0),
                 device=det_bboxes.device).float().view(-1, 1, 1).expand(
-                det_bboxes.size(0), det_bboxes.size(1), 1)
+                    det_bboxes.size(0), det_bboxes.size(1), 1)
             rois = det_bboxes[..., :4]
             mask_rois = torch.cat([batch_index, rois], dim=-1)
             mask_rois = mask_rois.view(-1, 5)
