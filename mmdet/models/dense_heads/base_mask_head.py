@@ -101,3 +101,18 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
         results_list = self.get_results(
             *mask_inputs, rescale=rescale, det_results=det_results, **kwargs)
         return results_list
+
+    def onnx_export(self, img, img_metas):
+        """Test function without test-time augmentation.
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            Tensor: The segmentation results of shape [N, num_bboxes,
+                image_height, image_width].
+        """
+        raise NotImplementedError(f'{self.__class__.__name__} does '
+                                  f'not support ONNX EXPORT')
