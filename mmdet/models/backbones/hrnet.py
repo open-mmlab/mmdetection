@@ -223,11 +223,11 @@ class HRNet(BaseModule):
         norm_cfg (dict): Dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
-            and its variants only.
+            and its variants only. Default: True.
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
+            memory while slowing down the training speed. Default: False.
         zero_init_residual (bool): Whether to use zero init for last norm layer
-            in resblocks to let them behave as identity.
+            in resblocks to let them behave as identity. Default: False.
         multiscale_output (bool): Whether to output multi-level features
             produced by multiple branches. If False, only the first level
             feature will be output. Default: True.
