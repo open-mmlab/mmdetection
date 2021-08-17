@@ -30,8 +30,8 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
         """
 
         Args:
-            x (list[Tensor]): Features from FPN. Each has shape
-                (b, c, h, w).
+            x (list[Tensor] | tuple[Tensor]): Features from FPN.
+                Each has shape (B, C, H, W).
             gt_labels (Tensor): Ground truth labels of each box,
                 shape (num_gts,).
             gt_masks (None | Tensor) : true segmentation masks for each box
@@ -84,8 +84,10 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             img_metas (list[dict]): List of image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
-            det_results (list[obj:`InstanceResults`]): Detection
-                Results of each image after the post process.
+            det_results (list[obj:`DetectionResults`]): Detection
+                Results of each image after the post process.Would
+                only be used in detect-segment fashion algorithm,
+                like `YOLACT`.
 
         Returns:
             list[obj:`DetectionResults`]: Instance segmentation
