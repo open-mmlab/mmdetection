@@ -26,12 +26,12 @@ def single_gpu_test(model,
     for i, data in enumerate(data_loader):
         with torch.no_grad():
 
-            # Currently only solo will return :obj:`DetectionResults`
-            # but in the future, the outputs of all the model would
+            # Currently only SOLO will return :obj:`DetectionResults`
+            # but in the future, the outputs of all the models would
             # be unified as :obj:`DetectionResults`
             result = model(return_loss=False, rescale=True, **data)
 
-        # Avoid CUDA OOM
+        # Avoid CUDA OOM, Currently only used in SOLO
         if isinstance(result[0], DetectionResults):
             result = [item.cpu() for item in result]
 
@@ -74,11 +74,17 @@ def single_gpu_test(model,
         for _ in range(batch_size):
             prog_bar.update()
 
-    # Currently only solo will run this branch,
-    # but in the future, the outputs of all the model would
-    # be unified as :obj:`DetectionResults`
+    # Currently only SOLO will run this branch,
     if isinstance(results[0], DetectionResults):
-        results = [item.format_results() for item in results]
+        format_results = []
+        for item in results:
+            format_item = item.format_results()
+            if 'mask_results' in format_item:
+                format_results.append(
+                    (format_item['bbox_results'], format_item['mask_results']))
+            else:
+                format_results.append(format_item['bbox_results'])
+        results = format_results
 
     return results
 
@@ -113,7 +119,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
         with torch.no_grad():
 
             # Currently only solo will return :obj:`DetectionResults`
-            # but in the future, the outputs of all the model would
+            # but in the future, the outputs of all the models would
             # be unified as :obj:`DetectionResults`
             result = model(return_loss=False, rescale=True, **data)
 
@@ -132,8 +138,17 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 
+    # Currently only SOLO will run this branch,
     if isinstance(results[0], DetectionResults):
-        results = [item.format_results() for item in results]
+        format_results = []
+        for item in results:
+            format_item = item.format_results()
+            if 'mask_results' in format_item:
+                format_results.append(
+                    (format_item['bbox_results'], format_item['mask_results']))
+            else:
+                format_results.append(format_item['bbox_results'])
+        results = format_results
 
     # collect results from all ranks
     if gpu_collect:

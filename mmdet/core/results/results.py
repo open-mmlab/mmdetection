@@ -501,7 +501,7 @@ class DetectionResults(InstanceResults):
         return new_results
 
     def format_results(self):
-
+        results_dict = dict()
         assert 'scores' in self._results_field
         assert 'labels' in self._results_field
 
@@ -519,14 +519,17 @@ class DetectionResults(InstanceResults):
                 for _ in range(self.num_classes)
             ]
         else:
-            if 'bbox' not in self:
-                # add dummy bbox
+            if 'bboxes' not in self:
+                # creat dummy bbox results to pass the scores
                 self.bboxes = self.scores.new_zeros(len(self), 4)
+
             det_bboxes = torch.cat([self.bboxes, self.scores[:, None]], dim=-1)
             det_bboxes = det_bboxes.detach().cpu().numpy()
             bbox_results = [
                 det_bboxes[labels == i, :] for i in range(self.num_classes)
             ]
+
+        results_dict['bbox_results'] = bbox_results
 
         if 'masks' in self._results_field:
             masks = self.masks.detach().cpu().numpy()
@@ -539,7 +542,6 @@ class DetectionResults(InstanceResults):
                              dtype='uint8'))[0]
 
                 mask_results[labels[idx]].append(encode_mask)
-            return bbox_results, mask_results
+            results_dict['mask_results'] = mask_results
 
-        else:
-            return bbox_results
+        return results_dict
