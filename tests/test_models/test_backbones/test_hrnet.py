@@ -1,10 +1,56 @@
 import pytest
 import torch
 
-from mmdet.models.backbones.hrnet import HRNet
+from mmdet.models.backbones.hrnet import HRModule, HRNet
+from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 
 
-def test_hourglass_backbone():
+@pytest.mark.parametrize('block', [BasicBlock, Bottleneck])
+def test_hrmodule(block):
+    # Test multiscale forward
+    num_channles = (32, 64)
+    in_channels = [c * block.expansion for c in num_channles]
+    hrmodule = HRModule(
+        num_branches=2,
+        blocks=block,
+        in_channels=in_channels,
+        num_blocks=(4, 4),
+        num_channels=num_channles,
+    )
+
+    feats = [
+        torch.randn(1, in_channels[0], 64, 64),
+        torch.randn(1, in_channels[1], 32, 32)
+    ]
+    feats = hrmodule(feats)
+
+    assert len(feats) == 2
+    assert feats[0].shape == torch.Size([1, in_channels[0], 64, 64])
+    assert feats[1].shape == torch.Size([1, in_channels[1], 32, 32])
+
+    # Test single scale forward
+    num_channles = (32, 64)
+    in_channels = [c * block.expansion for c in num_channles]
+    hrmodule = HRModule(
+        num_branches=2,
+        blocks=block,
+        in_channels=in_channels,
+        num_blocks=(4, 4),
+        num_channels=num_channles,
+        multiscale_output=False,
+    )
+
+    feats = [
+        torch.randn(1, in_channels[0], 64, 64),
+        torch.randn(1, in_channels[1], 32, 32)
+    ]
+    feats = hrmodule(feats)
+
+    assert len(feats) == 1
+    assert feats[0].shape == torch.Size([1, in_channels[0], 64, 64])
+
+
+def test_hrnet_backbone():
     # only have 3 stages
     extra = dict(
         stage1=dict(
@@ -48,10 +94,10 @@ def test_hourglass_backbone():
     model.train()
 
     imgs = torch.randn(1, 3, 256, 256)
-    feat = model(imgs)
-    assert len(feat) == 4
-    assert feat[0].shape == torch.Size([1, 32, 64, 64])
-    assert feat[3].shape == torch.Size([1, 256, 8, 8])
+    feats = model(imgs)
+    assert len(feats) == 4
+    assert feats[0].shape == torch.Size([1, 32, 64, 64])
+    assert feats[3].shape == torch.Size([1, 256, 8, 8])
 
     # Test single scale output
     model = HRNet(extra=extra, multiscale_output=False)
@@ -59,6 +105,6 @@ def test_hourglass_backbone():
     model.train()
 
     imgs = torch.randn(1, 3, 256, 256)
-    feat = model(imgs)
-    assert len(feat) == 1
-    assert feat[0].shape == torch.Size([1, 32, 64, 64])
+    feats = model(imgs)
+    assert len(feats) == 1
+    assert feats[0].shape == torch.Size([1, 32, 64, 64])

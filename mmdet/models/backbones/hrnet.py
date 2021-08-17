@@ -203,8 +203,8 @@ class HRModule(BaseModule):
 class HRNet(BaseModule):
     """HRNet backbone.
 
-    High-Resolution Representations for Labeling Pixels and Regions
-    arXiv: https://arxiv.org/abs/1904.04514
+    `High-Resolution Representations for Labeling Pixels and Regions
+    arXiv: <https://arxiv.org/abs/1904.04514>`_.
 
     Args:
         extra (dict): Detailed configuration for each stage of HRNet.
@@ -233,7 +233,7 @@ class HRNet(BaseModule):
             feature will be output. Default: True.
         pretrained (str, optional): Model pretrained path. Default: None
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+            Default: None.
 
     Example:
         >>> from mmdet.models import HRNet
