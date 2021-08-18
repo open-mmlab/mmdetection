@@ -87,8 +87,10 @@ class EvalHook(Hook):
         assert isinstance(by_epoch, bool), '``by_epoch`` should be a boolean'
 
         if start is not None and start < 0:
-            raise ValueError(f'The evaluation start epoch {start} is smaller '
-                             f'than 0')
+            warnings.warn(
+                f'The evaluation start epoch {start} is smaller than 0, '
+                f'use 0 instead', UserWarning)
+            start = 0
 
         self.dataloader = dataloader
         self.interval = interval
