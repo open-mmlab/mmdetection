@@ -132,7 +132,8 @@ class EarlyStoppingHook(Hook):
                 if self.wait_count >= self.patience:
                     if runner.iter - self.last_iter < self.iteration_patience:
                         print_log(
-                            f"\nNot enough patience for stopping: {runner.iter - self.last_iter}",
+                            f"\nNumber of iterations after the last improvement is less than iteration_patience, too "
+                            f"early for stopping: {runner.iter - self.last_iter} < {self.iteration_patience}",
                             logger=runner.logger)
                         return
                     stop_point = runner.epoch if self.by_epoch else runner.iter
@@ -260,7 +261,8 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
         if self.bad_count >= self.patience:
             if runner.iter - self.last_iter < self.iteration_patience:
                 print_log(
-                    f"\nNot enough patience for LR drop: {runner.iter - self.last_iter}",
+                    f"\nNumber of iterations after the last improvement is less than iteration_patience, too early "
+                    f"for LR drop: {runner.iter - self.last_iter} < {self.iteration_patience}",
                     logger=runner.logger)
                 return self.current_lr
             self.last_iter = runner.iter
