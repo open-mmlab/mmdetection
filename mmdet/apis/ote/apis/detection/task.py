@@ -84,32 +84,32 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
         """
         logger.info(f"Loading OTEDetectionTask.")
-        self.scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
-        logger.info(f"Scratch space created at {self.scratch_space}")
+        self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
+        logger.info(f"Scratch space created at {self._scratch_space}")
 
-        self.task_environment = task_environment
-        self.hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
+        self._task_environment = task_environment
+        self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
 
-        self.model_name = hyperparams.algo_backend.model_name
-        self.labels = task_environment.get_labels(False)
+        self._model_name = hyperparams.algo_backend.model_name
+        self._labels = task_environment.get_labels(False)
 
         template_file_path = task_environment.model_template.model_template_path
 
         # Get and prepare mmdet config.
         base_dir = os.path.abspath(os.path.dirname(template_file_path))
         config_file_path = os.path.join(base_dir, hyperparams.algo_backend.model)
-        self.config = Config.fromfile(config_file_path)
-        patch_config(self.config, self.scratch_space, self.labels, random_seed=42)
-        set_hyperparams(self.config, hyperparams)
+        self._config = Config.fromfile(config_file_path)
+        patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
+        set_hyperparams(self._config, hyperparams)
 
         # Create and initialize PyTorch model.
-        self.model = self._load_model(task_environment.model)
+        self._model = self._load_model(task_environment.model)
 
         # Extra control variables.
-        self.training_work_dir = None
-        self.is_training = False
-        self.should_stop = False
-        self.time_monitor = None
+        self._training_work_dir = None
+        self._is_training = False
+        self._should_stop = False
+        self._time_monitor = None
 
 
     def _load_model(self, model: Model):
@@ -118,20 +118,20 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             buffer = io.BytesIO(model.get_data("weights.pth"))
             model_data = torch.load(buffer, map_location=torch.device('cpu'))
 
-            model = self._create_model(self.config, from_scratch=True)
+            model = self._create_model(self._config, from_scratch=True)
 
             try:
                 model.load_state_dict(model_data['model'])
                 logger.info(f"Loaded model weights from Task Environment")
-                logger.info(f"Model architecture: {self.model_name}")
+                logger.info(f"Model architecture: {self._model_name}")
             except BaseException as ex:
                 raise ValueError("Could not load the saved model. The model file structure is invalid.") \
                     from ex
         else:
             # If there is no trained model yet, create model with pretrained weights as defined in the model config
             # file.
-            model = self._create_model(self.config, from_scratch=False)
-            logger.info(f"No trained model in project yet. Created new model with '{self.model_name}' "
+            model = self._create_model(self._config, from_scratch=False)
+            logger.info(f"No trained model in project yet. Created new model with '{self._model_name}' "
                         f"architecture and general-purpose pretrained weights.")
         return model
 
@@ -165,13 +165,13 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
     def infer(self, dataset: Dataset, inference_parameters: Optional[InferenceParameters] = None) -> Dataset:
         """ Analyzes a dataset using the latest inference model. """
-        set_hyperparams(self.config, self.hyperparams)
+        set_hyperparams(self._config, self._hyperparams)
 
         is_evaluation = inference_parameters is not None and inference_parameters.is_evaluation
         confidence_threshold = self._get_confidence_threshold(is_evaluation)
         logger.info(f'Confidence threshold {confidence_threshold}')
 
-        prediction_results, _ = self._infer_detector(self.model, self.config, dataset, False)
+        prediction_results, _ = self._infer_detector(self._model, self._config, dataset, False)
 
         # Loop over dataset again to assign predictions. Convert from MMDetection format to OTE format
         for dataset_item, output in zip(dataset, prediction_results):
@@ -189,7 +189,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                     if probability < confidence_threshold:
                         continue
 
-                    assigned_label = [ScoredLabel(self.labels[label_idx],
+                    assigned_label = [ScoredLabel(self._labels[label_idx],
                                                   probability=probability)]
                     if coords[3] - coords[1] <= 0 or coords[2] - coords[0] <= 0:
                         continue
@@ -234,7 +234,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                  output_result_set: ResultSet,
                  evaluation_metric: Optional[str] = None):
         """ Computes performance on a resultset """
-        params = self.hyperparams
+        params = self._hyperparams
 
         result_based_confidence_threshold = params.postprocessing.result_based_confidence_threshold
 
@@ -254,7 +254,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                 else:
                     raise ValueError(f"Cannot compute metrics: Invalid confidence threshold!")
 
-            # self.task_environment.set_configurable_parameters(params)
+            # self._task_environment.set_configurable_parameters(params)
         logger.info(f"F-measure after evaluation: {f_measure_metrics.f_measure.value}")
         return f_measure_metrics.get_performance()
 
@@ -262,65 +262,65 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
     def train(self, dataset: Dataset, output_model: Model, train_parameters: Optional[TrainParameters] = None):
         """ Trains a model on a dataset """
 
-        set_hyperparams(self.config, self.hyperparams)
+        set_hyperparams(self._config, self._hyperparams)
 
         train_dataset = dataset.get_subset(Subset.TRAINING)
         val_dataset = dataset.get_subset(Subset.VALIDATION)
-        config = self.config
+        config = self._config
 
         # Create new model if training from scratch.
-        old_model = copy.deepcopy(self.model)
+        old_model = copy.deepcopy(self._model)
         # if train_parameters is not None and train_parameters.train_on_empty_model:
         #     logger.info("Training from scratch, creating new model")
         #     # FIXME. Isn't it an overkill? Consider calling init_weights instead.
-        #     self.model = self._create_model(config=config, from_scratch=True)
+        #     self._model = self._create_model(config=config, from_scratch=True)
 
         # Evaluate model performance before training.
-        _, initial_performance = self._infer_detector(self.model, config, val_dataset, True)
+        _, initial_performance = self._infer_detector(self._model, config, val_dataset, True)
 
         # Check for stop signal between pre-eval and training. If training is cancelled at this point,
         # old_model should be restored.
-        if self.should_stop:
+        if self._should_stop:
             logger.info('Training cancelled.')
-            self.model = old_model
-            self.should_stop = False
-            self.is_training = False
-            self.time_monitor = None
-            self.training_work_dir = None
+            self._model = old_model
+            self._should_stop = False
+            self._is_training = False
+            self._time_monitor = None
+            self._training_work_dir = None
             return
 
         # Run training.
-        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda _: None)
+        self._time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda _: None)
         learning_curves = defaultdict(OTELoggerHook.Curve)
-        training_config = prepare_for_training(config, train_dataset, val_dataset, self.time_monitor, learning_curves)
-        self.training_work_dir = training_config.work_dir
+        training_config = prepare_for_training(config, train_dataset, val_dataset, self._time_monitor, learning_curves)
+        self._training_work_dir = training_config.work_dir
         mm_train_dataset = build_dataset(training_config.data.train)
-        self.is_training = True
-        self.model.train()
-        train_detector(model=self.model, dataset=mm_train_dataset, cfg=training_config, validate=True)
+        self._is_training = True
+        self._model.train()
+        train_detector(model=self._model, dataset=mm_train_dataset, cfg=training_config, validate=True)
 
         # Check for stop signal when training has stopped. If should_stop is true, training was cancelled and no new
         # model should be returned. Old train model is restored.
-        if self.should_stop:
+        if self._should_stop:
             logger.info('Training cancelled.')
-            self.model = old_model
-            self.should_stop = False
-            self.is_training = False
-            self.time_monitor = None
+            self._model = old_model
+            self._should_stop = False
+            self._is_training = False
+            self._time_monitor = None
             return
 
         # Load the best weights and check if model has improved.
         training_metrics = self._generate_training_metrics_group(learning_curves)
         best_checkpoint_path = os.path.join(training_config.work_dir, 'latest.pth')
         best_checkpoint = torch.load(best_checkpoint_path)
-        self.model.load_state_dict(best_checkpoint['state_dict'])
+        self._model.load_state_dict(best_checkpoint['state_dict'])
 
         # Evaluate model performance after training.
-        _, final_performance = self._infer_detector(self.model, config, val_dataset, True)
+        _, final_performance = self._infer_detector(self._model, config, val_dataset, True)
         improved = final_performance > initial_performance
 
         # Return a new model if model has improved, or there is no model yet.
-        if improved or isinstance(self.task_environment.model, NullModel):
+        if improved or isinstance(self._task_environment.model, NullModel):
             if improved:
                 logger.info("Training finished, and it has an improved model")
             else:
@@ -335,18 +335,18 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         else:
             logger.info("Model performance has not improved while training. No new model has been saved.")
             # Restore old training model if training from scratch and not improved
-            self.model = old_model
+            self._model = old_model
 
-        self.is_training = False
-        self.time_monitor = None
+        self._is_training = False
+        self._time_monitor = None
 
 
     def save_model(self, output_model: Model):
         buffer = io.BytesIO()
-        hyperparams = self.task_environment.get_hyper_parameters(OTEDetectionConfig)
+        hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
         hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
-        labels = {label.name: label.color.rgb_tuple for label in self.labels}
-        modelinfo = {'model': self.model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
+        labels = {label.name: label.color.rgb_tuple for label in self._labels}
+        modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
         torch.save(modelinfo, buffer)
         output_model.set_data("weights.pth", buffer.getvalue())
 
@@ -357,8 +357,8 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
         :return: training progress in percent
         """
-        if self.time_monitor is not None:
-            return self.time_monitor.get_progress()
+        if self._time_monitor is not None:
+            return self._time_monitor.get_progress()
         return -1.0
 
 
@@ -370,8 +370,8 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         will therefore take some time.
         """
         logger.info("Cancel training requested.")
-        self.should_stop = True
-        stop_training_filepath = os.path.join(self.training_work_dir, '.stop_training')
+        self._should_stop = True
+        stop_training_filepath = os.path.join(self._training_work_dir, '.stop_training')
         open(stop_training_filepath, 'a').close()
 
 
@@ -384,7 +384,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         output: List[MetricsGroup] = []
 
         # Model architecture
-        architecture = InfoMetric(name='Model architecture', value=self.model_name)
+        architecture = InfoMetric(name='Model architecture', value=self._model_name)
         visualization_info_architecture = VisualizationInfo(name="Model architecture",
                                                             visualisation_type=VisualizationType.TEXT)
         output.append(MetricsGroup(metrics=[architecture],
@@ -410,7 +410,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         :return confidence_threshold: float, threshold for prediction confidence
         """
 
-        hyperparams = self.hyperparams
+        hyperparams = self._hyperparams
         confidence_threshold = hyperparams.postprocessing.confidence_threshold
         result_based_confidence_threshold = hyperparams.postprocessing.result_based_confidence_threshold
         if is_evaluation:
@@ -464,10 +464,10 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                 from torch.jit._trace import TracerWarning
                 warnings.filterwarnings("ignore", category=TracerWarning)
                 if torch.cuda.is_available():
-                    model = self.model.cuda(self.config.gpu_ids[0])
+                    model = self._model.cuda(self._config.gpu_ids[0])
                 else:
-                    model = self.model.cpu()
-                export_model(model, self.config, tempdir,
+                    model = self._model.cpu()
+                export_model(model, self._config, tempdir,
                              target='openvino', precision=optimized_model_precision.name)
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
                 xml_file = [f for f in os.listdir(tempdir) if f.endswith('.xml')][0]
@@ -484,5 +484,5 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         """
         Remove model checkpoints and mmdet logs
         """
-        if os.path.exists(self.scratch_space):
-            shutil.rmtree(self.scratch_space, ignore_errors=False)
+        if os.path.exists(self._scratch_space):
+            shutil.rmtree(self._scratch_space, ignore_errors=False)

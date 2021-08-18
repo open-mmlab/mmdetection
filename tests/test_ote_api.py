@@ -4,7 +4,6 @@ import numpy as np
 import os
 import os.path as osp
 import random
-import tempfile
 import time
 import torch
 import unittest
@@ -274,7 +273,7 @@ class TestOTEAPI(unittest.TestCase):
         start_time = time.time()
         train_future = executor.submit(detection_task.train, dataset, output_model)
         # give train_thread some time to initialize the model
-        while not detection_task.is_training:
+        while not detection_task._is_training:
             time.sleep(10)
         detection_task.cancel_training()
 
@@ -285,7 +284,7 @@ class TestOTEAPI(unittest.TestCase):
         # Test stopping immediately (as soon as training is started).
         start_time = time.time()
         train_future = executor.submit(detection_task.train, dataset, output_model)
-        while not detection_task.is_training:
+        while not detection_task._is_training:
             time.sleep(0.1)
         detection_task.cancel_training()
 
@@ -376,8 +375,8 @@ class TestOTEAPI(unittest.TestCase):
             dataset,
             detection_environment.get_model_configuration(),
             model_status=ModelStatus.NOT_READY)
-        task.hyperparams.learning_parameters.num_iters = 10
-        task.hyperparams.learning_parameters.num_checkpoints = 1
+        task._hyperparams.learning_parameters.num_iters = 10
+        task._hyperparams.learning_parameters.num_checkpoints = 1
         task.train(dataset, new_model)
         self.assertTrue(first_model.model_status)
         self.assertNotEqual(first_model, new_model)
@@ -386,7 +385,7 @@ class TestOTEAPI(unittest.TestCase):
         new_model.model_status = ModelStatus.NOT_IMPROVED
         detection_environment.model = first_model
         task = OTEDetectionTask(detection_environment)
-        self.assertEqual(task.task_environment.model.id, first_model.id)
+        self.assertEqual(task._task_environment.model.id, first_model.id)
 
         print('Reevaluating model.')
         # Performance should be the same after reloading
