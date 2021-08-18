@@ -7,6 +7,7 @@ from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss,
                                  KnowledgeDistillationKLDivLoss, L1Loss,
                                  MSELoss, QualityFocalLoss, SeesawLoss,
                                  SmoothL1Loss, VarifocalLoss)
+from mmdet.models.losses.dice_loss import DiceLoss
 from mmdet.models.losses.ghm_loss import GHMC, GHMR
 from mmdet.models.losses.iou_loss import (BoundedIoULoss, CIoULoss, DIoULoss,
                                           GIoULoss, IoULoss)
@@ -27,7 +28,7 @@ def test_iou_type_loss_zeros_weight(loss_class):
     BalancedL1Loss, BoundedIoULoss, CIoULoss, CrossEntropyLoss, DIoULoss,
     FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss, GaussianFocalLoss,
     GIoULoss, IoULoss, L1Loss, QualityFocalLoss, VarifocalLoss, GHMR, GHMC,
-    SmoothL1Loss, KnowledgeDistillationKLDivLoss
+    SmoothL1Loss, KnowledgeDistillationKLDivLoss, DiceLoss
 ])
 def test_loss_with_reduction_override(loss_class):
     pred = torch.rand((10, 4))
@@ -152,3 +153,54 @@ def test_loss_with_ignore_index(use_sigmoid):
 
     assert torch.allclose(loss, loss_with_ignore)
     assert torch.allclose(loss, loss_with_forward_ignore)
+
+
+@pytest.mark.parametrize('loss_class', [DiceLoss])
+def test_dice_loss(loss_class):
+
+    pred = torch.rand((10, 4, 4))
+    target = torch.rand((10, 4, 4))
+    weight = torch.rand((10))
+
+    # Test loss forward
+    loss = loss_class()(pred, target)
+    assert isinstance(loss, torch.Tensor)
+
+    # Test loss forward with weight
+    loss = loss_class()(pred, target, weight)
+    assert isinstance(loss, torch.Tensor)
+
+    # Test loss forward with reduction_override
+    loss = loss_class()(pred, target, reduction_override='mean')
+    assert isinstance(loss, torch.Tensor)
+
+    # Test loss forward with avg_factor
+    loss = loss_class()(pred, target, avg_factor=10)
+    assert isinstance(loss, torch.Tensor)
+
+    with pytest.raises(ValueError):
+        # loss can evaluate with avg_factor only if
+        # reduction is None, 'none' or 'mean'.
+        reduction_override = 'sum'
+        loss_class()(
+            pred, target, avg_factor=10, reduction_override=reduction_override)
+
+    # Test loss forward with avg_factor and reduction
+    for reduction_override in [None, 'none', 'mean']:
+        loss_class()(
+            pred, target, avg_factor=10, reduction_override=reduction_override)
+        assert isinstance(loss, torch.Tensor)
+
+    # Test loss forward with has_acted=False and use_sigmoid=False
+    with pytest.raises(NotImplementedError):
+        loss_class(use_sigmoid=False)(pred, target, has_acted=False)
+
+    # Test loss forward with weight.ndim != loss.ndim
+    with pytest.raises(AssertionError):
+        weight = torch.rand((2, 8))
+        loss_class()(pred, target, weight)
+
+    # Test loss forward with len(weight) != len(pred)
+    with pytest.raises(AssertionError):
+        weight = torch.rand((8))
+        loss_class()(pred, target, weight)
