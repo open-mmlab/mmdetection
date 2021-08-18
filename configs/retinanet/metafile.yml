@@ -66,6 +66,18 @@ Models:
           box AP: 37.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_2x_coco/retinanet_r50_fpn_2x_coco_20200131-fdb43119.pth
 
+  - Name: retinanet_r50_fpn_mstrain_3x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r50_fpn_mstrain_640-800_3x_coco.py
+    Metadata:
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_mstrain_3x_coco/retinanet_r50_fpn_mstrain_3x_coco_20210718_220633-88476508.pth
+
   - Name: retinanet_r101_caffe_fpn_1x_coco
     In Collection: RetinaNet
     Config: configs/retinanet/retinanet_r101_caffe_fpn_1x_coco.py
@@ -85,6 +97,18 @@ Models:
         Metrics:
           box AP: 38.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_caffe_fpn_1x_coco/retinanet_r101_caffe_fpn_1x_coco_20200531-b428fa0f.pth
+
+  - Name: retinanet_r101_caffe_fpn_mstrain_3x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r101_caffe_fpn_1x_coco.py
+    Metadata:
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_caffe_fpn_mstrain_3x_coco/retinanet_r101_caffe_fpn_mstrain_3x_coco_20210721_063439-88a8a944.pth
 
   - Name: retinanet_r101_fpn_1x_coco
     In Collection: RetinaNet
@@ -125,6 +149,19 @@ Models:
         Metrics:
           box AP: 38.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_2x_coco/retinanet_r101_fpn_2x_coco_20200131-5560aee8.pth
+
+  - Name: retinanet_r101_fpn_mstrain_3x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r101_fpn_2x_coco.py
+    Metadata:
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_mstrain_3x_coco/retinanet_r101_fpn_mstrain_3x_coco_20210720_214650-7ee888e0.pth
+
 
   - Name: retinanet_x101_32x4d_fpn_1x_coco
     In Collection: RetinaNet
@@ -205,3 +242,15 @@ Models:
         Metrics:
           box AP: 40.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_2x_coco/retinanet_x101_64x4d_fpn_2x_coco_20200131-bca068ab.pth
+
+  - Name: retinanet_x101_64x4d_fpn_mstrain_3x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_x101_64x4d_fpn_mstrain_640-800_3x_coco.py
+    Metadata:
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_mstrain_3x_coco/retinanet_x101_64x4d_fpn_mstrain_3x_coco_20210719_051838-022c2187.pth
