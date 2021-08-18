@@ -326,7 +326,28 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         return losses
 
     def simple_test(self, x, proposal_list, img_metas, rescale=False):
-        """Test without augmentation."""
+        """Test without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Features from upstream network. Each
+                has shape (batch_size, c, h, w).
+            proposal_list (list(Tensor)): Proposals from rpn head.
+                Each has shape (num_proposals, 5), last dimension
+                5 represent (x1, y1, x2, y2, score).
+            img_metas (list[dict]): Meta information of images.
+            rescale (bool): Whether to rescale the results to
+                the original image. Default: True.
+
+        Returns:
+            list[list[np.ndarray]] or list[tuple]: When no mask branch,
+            it is bbox results of each image and classes with type
+            `list[list[np.ndarray]]`. The outer list
+            corresponds to each image. The inner list
+            corresponds to each class. When the model has mask branch,
+            it contains bbox results and mask results.
+            The outer list corresponds to each image, and first element
+            of tuple is bbox results, second element is mask results.
+        """
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)
         else:
@@ -381,7 +402,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     if rois[j].shape[0] > 0:
                         bbox_label = cls_score[j][:, :-1].argmax(dim=1)
                         refine_rois = bbox_head.regress_by_class(
-                            rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
+                            rois[j], bbox_label, bbox_pred[j], img_metas[j])
                         refine_rois_list.append(refine_rois)
                 rois = torch.cat(refine_rois_list)
 

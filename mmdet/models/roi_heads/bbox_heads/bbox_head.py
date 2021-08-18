@@ -455,9 +455,15 @@ class BBoxHead(BaseModule):
         """Regress the bbox for the predicted class. Used in Cascade R-CNN.
 
         Args:
-            rois (Tensor): shape (n, 4) or (n, 5)
-            label (Tensor): shape (n, )
-            bbox_pred (Tensor): shape (n, 4*(#class)) or (n, 4)
+            rois (Tensor): Rois from `rpn_head` or last stage
+                `bbox_head`, has shape (num_proposals, 4) or
+                (num_proposals, 5).
+            label (Tensor): Only used when `self.reg_class_agnostic`
+                is False, has shape (num_proposals, ).
+            bbox_pred (Tensor): Regression prediction of
+                current stage `bbox_head`. When `self.reg_class_agnostic`
+                is False, it has shape (n, num_classes * 4), otherwise
+                it has shape (n, 4).
             img_meta (dict): Image meta info.
 
         Returns:
