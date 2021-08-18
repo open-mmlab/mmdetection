@@ -102,7 +102,7 @@ class BaseAnchorOptimizer:
         return bbox_whs, img_shapes
 
     def get_zero_center_bbox_tensor(self):
-        """Get a tensor of bboxes centered at (0,0).
+        """Get a tensor of bboxes centered at (0, 0).
 
         Returns:
             (Tensor): Tensor of bboxes with shape (num_bboxes, 4)
@@ -116,6 +116,16 @@ class BaseAnchorOptimizer:
 
     def optimize(self):
         raise NotImplementedError
+
+    def save_result(self, anchors, path=None):
+        anchor_results = []
+        for w, h in anchors:
+            anchor_results.append([round(w), round(h)])
+        self.logger.info(f'Anchor optimize result:{anchor_results}')
+        if path:
+            json_path = osp.join(path, 'anchor_optimize_result.json')
+            mmcv.dump(anchor_results, json_path)
+            self.logger.info(f'Result saved in {json_path}')
 
 
 class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
@@ -189,16 +199,6 @@ class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
         converged = (closest == assignments).all()
         return converged, closest
 
-    def save_result(self, anchors, path=None):
-        anchor_results = []
-        for w, h in anchors:
-            anchor_results.append([round(w), round(h)])
-        self.logger.info(f'Anchor cluster result:{anchor_results}')
-        if path:
-            json_path = osp.join(path, 'anchor_optimize_result.json')
-            mmcv.dump(anchor_results, json_path)
-            self.logger.info(f'Result saved in {json_path}')
-
 
 class YOLODEAnchorOptimizer(BaseAnchorOptimizer):
     """YOLO anchor optimizer using differential evolution algorithm.
@@ -206,14 +206,54 @@ class YOLODEAnchorOptimizer(BaseAnchorOptimizer):
     Args:
         num_anchors (int) : Number of anchors.
         iters (int): Maximum iterations for k-means.
+        strategy (str): The differential evolution strategy to use.
+            Should be one of:
+
+                - 'best1bin'
+                - 'best1exp'
+                - 'rand1exp'
+                - 'randtobest1exp'
+                - 'currenttobest1exp'
+                - 'best2exp'
+                - 'rand2exp'
+                - 'randtobest1bin'
+                - 'currenttobest1bin'
+                - 'best2bin'
+                - 'rand2bin'
+                - 'rand1bin'
+
+            Default: 'best1bin'.
+        population_size (int): Total population size of evolution algorithm.
+            Default: 15.
+        convergence_thr (float): Tolerance for convergence, the
+            optimizing stops when ``np.std(pop) <= abs(convergence_thr)
+            + convergence_thr * np.abs(np.mean(population_energies))``,
+            respectively. Default: 0.0001.
+        mutation (tuple[float]): Range of dithering randomly changes the
+            mutation constant. Default: (0.5, 1).
+        recombination (float): Recombination constant of crossover probability.
+            Default: 0.7.
     """
 
-    def __init__(self, num_anchors, iters, **kwargs):
+    def __init__(self,
+                 num_anchors,
+                 iters,
+                 strategy='best1bin',
+                 population_size=15,
+                 convergence_thr=0.0001,
+                 mutation=(0.5, 1),
+                 recombination=0.7,
+                 **kwargs):
 
         super(YOLODEAnchorOptimizer, self).__init__(**kwargs)
 
         self.num_anchors = num_anchors
         self.iters = iters
+        self.strategy = strategy
+        self.population_size = population_size
+        self.convergence_thr = convergence_thr
+        self.mutation = mutation
+        self.recombination = recombination
 
     def optimize(self):
         anchors = self.differential_evolution()
@@ -230,12 +270,12 @@ class YOLODEAnchorOptimizer(BaseAnchorOptimizer):
             func=self.avg_iou_cost,
             bounds=bounds,
             args=(bboxes, ),
-            strategy='best1bin',
+            strategy=self.strategy,
             maxiter=self.iters,
-            popsize=15,
-            tol=0.0001,
-            mutation=(0.5, 1),
-            recombination=0.7,
+            popsize=self.population_size,
+            tol=self.convergence_thr,
+            mutation=self.mutation,
+            recombination=self.recombination,
             updating='immediate',
             disp=True)
         self.logger.info(
@@ -257,17 +297,6 @@ class YOLODEAnchorOptimizer(BaseAnchorOptimizer):
         max_ious, _ = ious.max(1)
         cost = 1 - max_ious.mean().item()
         return cost
-
-    def save_result(self, anchors, path=None):
-        anchor_results = []
-        for w, h in anchors:
-            anchor_results.append([round(w), round(h)])
-        self.logger.info(
-            f'Anchor differential evolution result:{anchor_results}')
-        if path:
-            json_path = osp.join(path, 'anchor_optimize_result.json')
-            mmcv.dump(anchor_results, json_path)
-            self.logger.info(f'Result saved in {json_path}')
 
 
 def main():
@@ -311,7 +340,7 @@ def main():
             out_dir=args.output_dir)
     else:
         raise NotImplementedError(
-            f'Only support k-means and differential evolution, '
+            f'Only support k-means and differential_evolution, '
             f'but get {args.algorithm}')
 
     optimizer.optimize()
