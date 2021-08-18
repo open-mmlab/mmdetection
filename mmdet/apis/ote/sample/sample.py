@@ -13,7 +13,6 @@
 # and limitations under the License.
 
 import argparse
-import os
 import os.path as osp
 import sys
 from ote_sdk.entities.inference_parameters import InferenceParameters

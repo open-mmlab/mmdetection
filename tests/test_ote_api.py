@@ -392,12 +392,12 @@ class TestOTEAPI(unittest.TestCase):
         # Performance should be the same after reloading
         performance_after_reloading = self.eval(task, output_model, val_dataset)
         performance_delta = performance_after_reloading.score.value - validation_performance.score.value
-        perf_delta_tolerance = 0.0005
+        perf_delta_tolerance = 0.0
 
-        self.assertLess(np.abs(performance_delta), perf_delta_tolerance,
-                        msg=f'Expected no or very small performance difference after reloading. Performance delta '
-                            f'({validation_performance.score.value} vs {performance_after_reloading.score.value}) was '
-                            f'larger than the tolerance of {perf_delta_tolerance}')
+        self.assertEqual(np.abs(performance_delta), perf_delta_tolerance,
+                         msg=f'Expected no performance difference after reloading. Performance delta '
+                             f'({validation_performance.score.value} vs {performance_after_reloading.score.value}) was '
+                             f'larger than the tolerance of {perf_delta_tolerance}')
 
         print(f'Performance: {validation_performance.score.value:.4f}')
         print(f'Performance after reloading: {performance_after_reloading.score.value:.4f}')
@@ -415,6 +415,7 @@ class TestOTEAPI(unittest.TestCase):
             export_performance = ov_task.evaluate(resultset)
             print(export_performance)
             performance_delta = export_performance.score.value - validation_performance.score.value
+            perf_delta_tolerance = 0.0005
             self.assertLess(np.abs(performance_delta), perf_delta_tolerance,
                         msg=f'Expected no or very small performance difference after export. Performance delta '
                             f'({validation_performance.score.value} vs {export_performance.score.value}) was '
