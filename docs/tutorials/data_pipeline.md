@@ -146,7 +146,7 @@ For each operation, we list the related dict fields that are added/updated/remov
 
 ## Extend and use custom pipelines
 
-1. Write a new pipeline e.g., `my_pipeline.py`. It takes a dict as input and returns a dict.
+1. Write a new pipeline in a file, e.g., in `my_pipeline.py`. It takes a dict as input and returns a dict.
 
     ```python
     import random
@@ -154,7 +154,13 @@ For each operation, we list the related dict fields that are added/updated/remov
 
     @PIPELINES.register_module()
     class MyTransform:
-        def __init__(self, p=.5):
+        """Add your transform
+
+        Args:
+            p (float): Probability of shifts. Default 0.5.
+        """
+
+        def __init__(self, p=0.5):
             self.p = p
 
         def __call__(self, results):
@@ -163,11 +169,11 @@ For each operation, we list the related dict fields that are added/updated/remov
             return results
     ```
 
-2. Import and use the pipeline in your config file. 
+2. Import and use the pipeline in your config file.
    Make sure the import is relative to where your train script is located.
 
     ```python
-    custom_imports = dict(imports=['my_pipeline'], allow_failed_imports=False)
+    custom_imports = dict(imports=['path.to.my_pipeline'], allow_failed_imports=False)
 
     img_norm_cfg = dict(
         mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -177,32 +183,3 @@ For each operation, we list the related dict fields that are added/updated/remov
         dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
         dict(type='RandomFlip', flip_ratio=0.5),
         dict(type='Normalize', **img_norm_cfg),
-        dict(type='Pad', size_divisor=32),
-        dict(type='MyTransform', p=0.2),
-        dict(type='DefaultFormatBundle'),
-        dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
-    ]
-    ```
-
-3. Visualize the output of your augmentation pipeline
-
-    ```python
-    import numpy as np
-    from mmcv import Config
-    from mmdet.datasets import build_dataset,build_dataloader
-    from mmcv.visualization import imshow_bboxes
-
-    cfg = Config.fromfile("configs/yourconfig.py") # point to your config.py
-    ds = build_dataset(cfg.data.train) # change 'train' to 'test' if you want to visualize your test pipeline
-
-    num_images = 8 # visualize a batch of num_images
-    batch = next(iter(build_dataloader(ds,num_images,1)))
-    for i in range(num_images):
-        bboxes = batch["gt_bboxes"].data[0][i]
-        bboxes = np.array([x.numpy() for x in bboxes])
-
-        img = batch["img"].data[0][i]
-        img = np.moveaxis(img.numpy(), 0, -1)
-
-        imshow_bboxes(img, bboxes) # use out_file : str if you want to save the output
-    ```
