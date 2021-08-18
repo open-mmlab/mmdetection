@@ -139,7 +139,7 @@ test_pipeline = [
 
 ## 拓展和使用自定义的流程
 
-1. 在任意文件里写一个新的流程，例如在`my_pipeline.py`，它以一个字典作为输入并且输出一个字典：
+1. 在任意文件里写一个新的流程，例如在 `my_pipeline.py`，它以一个字典作为输入并且输出一个字典：
 
     ```python
     import random
@@ -192,14 +192,14 @@ test_pipeline = [
     from mmcv.visualization import imshow_bboxes
 
 
-    cfg = Config.fromfile("configs/yourconfig.py") # point to your config.py
-    ds = build_dataset(cfg.data.train)      # change 'train' to 'test' if you want to visualize your test pipeline
-    num_images = 8                          # visualize a batch of num_images
+    cfg = Config.fromfile("configs/yourconfig.py")    # config.py 的地址
+    ds = build_dataset(cfg.data.train)      # 如果希望对测试流程进行可视化操作，可以将 'train' 换成 'test'。
+    num_images = 8                          # 可视化图像数量
     batch = next(iter(build_dataloader(ds,num_images,1)))
     for i in range(num_images):
         bboxes = batch["gt_bboxes"].data[0][i]
         bboxes = np.array([x.numpy() for x in bboxes])
         img = batch["img"].data[0][i]
         img = np.moveaxis(img.numpy(), 0, -1)
-        imshow_bboxes(img, bboxes)          # use out_file : str if you want to save the output
+        imshow_bboxes(img, bboxes)          # 使用 out_file(str) 如果你想保存可视化结果
     ```
