@@ -46,7 +46,6 @@ class SparseRCNN(TwoStageDetector):
 
         assert proposals is None, 'Sparse R-CNN does not support' \
                                   ' external proposals'
-        assert gt_masks is None, 'Sparse R-CNN does not instance segmentation'
 
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \
@@ -80,14 +79,14 @@ class SparseRCNN(TwoStageDetector):
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \
             self.rpn_head.simple_test_rpn(x, img_metas)
-        bbox_results = self.roi_head.simple_test(
+        results = self.roi_head.simple_test(
             x,
             proposal_boxes,
             proposal_features,
             img_metas,
             imgs_whwh=imgs_whwh,
             rescale=rescale)
-        return bbox_results
+        return results
 
     def forward_dummy(self, img):
         """Used for computing network flops.
