@@ -74,7 +74,9 @@ def single_gpu_test(model,
         for _ in range(batch_size):
             prog_bar.update()
 
-    # Currently only SOLO will run this branch,
+    # Currently only SOLO will run this branch, reorganize
+    # predictions into the the format agreed with the
+    # :func:`evaluate` of `obj:`dataset`
     if isinstance(results[0], DetectionResults):
         format_results = []
         for item in results:
@@ -138,7 +140,9 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 
-    # Avoid CUDA OOM, Currently only used in SOLO
+    # Currently only SOLO will run this branch, reorganize
+    # predictions into the the format agreed with the
+    # :func:`evaluate` of `obj:`dataset`
     if isinstance(results[0], DetectionResults):
         format_results = []
         for item in results:
