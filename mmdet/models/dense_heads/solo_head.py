@@ -319,7 +319,7 @@ class SOLOHead(BaseMaskHead):
                   corresponding point in single level
                   is positive, has shape (num_grid **2)
         """
-        device = gt_labels[0].device
+        device = gt_labels.device
         gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
                               (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
 

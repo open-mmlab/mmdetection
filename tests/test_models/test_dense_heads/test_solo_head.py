@@ -45,8 +45,14 @@ def test_solo_head_loss():
     gt_labels = [torch.LongTensor([])]
     gt_masks = [torch.empty((0, 550, 550))]
     gt_bboxes_ignore = None
-    empty_gt_losses = self.loss(mask_preds, cls_preds, gt_bboxes, gt_labels,
-                                gt_masks, img_metas, gt_bboxes_ignore)
+    empty_gt_losses = self.loss(
+        mask_preds,
+        cls_preds,
+        gt_labels,
+        gt_masks,
+        img_metas,
+        gt_bboxes,
+        gt_bboxes_ignore=gt_bboxes_ignore)
     # When there is no truth, the cls loss should be nonzero but there should
     # be no box loss.
     empty_mask_loss = empty_gt_losses['loss_mask']
@@ -61,9 +67,15 @@ def test_solo_head_loss():
         torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
     ]
     gt_labels = [torch.LongTensor([2])]
-    gt_masks = [(torch.rand((1, 550, 550)) > 0.5).float()]
-    one_gt_losses = self.loss(mask_preds, cls_preds, gt_bboxes, gt_labels,
-                              gt_masks, img_metas, gt_bboxes_ignore)
+    gt_masks = [(torch.rand((1, 256, 256)) > 0.5).float()]
+    one_gt_losses = self.loss(
+        mask_preds,
+        cls_preds,
+        gt_labels,
+        gt_masks,
+        img_metas,
+        gt_bboxes,
+        gt_bboxes_ignore=gt_bboxes_ignore)
     onegt_mask_loss = one_gt_losses['loss_mask']
     onegt_cls_loss = one_gt_losses['loss_cls']
     assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
