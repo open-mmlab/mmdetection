@@ -152,6 +152,7 @@ For each operation, we list the related dict fields that are added/updated/remov
     import random
     from mmdet.datasets import PIPELINES
 
+
     @PIPELINES.register_module()
     class MyTransform:
         """Add your transform
