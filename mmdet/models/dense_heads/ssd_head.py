@@ -326,12 +326,6 @@ class SSDHead(AnchorHead):
         for i in range(num_images):
             all_anchors.append(torch.cat(anchor_list[i]))
 
-        # check NaN and Inf
-        assert torch.isfinite(all_cls_scores).all().item(), \
-            'classification scores become infinite or NaN!'
-        assert torch.isfinite(all_bbox_preds).all().item(), \
-            'bbox predications become infinite or NaN!'
-
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             all_cls_scores,
