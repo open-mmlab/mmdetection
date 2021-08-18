@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
 
 from mmcv.runner import BaseModule
@@ -42,12 +43,13 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 ignored, shape (num_ignored_gts, 4).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            positive_infos (:obj:`DetectionResults`): Contains the
-                positive information after label assign process in
-                a outside `bbox_head`, Only used in some detect-seg
-                fashion algorithms, like `YOLACT`, `CondInst`, etc.
-                If label assign only exist in `mask_head`, it would
-                be None, like SOLO.
+            positive_infos (:obj:`DetectionResults`): Only exist
+                when there is a `bbox_head` in `SingleStageInstanceSegmentor`
+                like `YOLACT`, `CondInst`, etc. It contains the
+                information of positive samples.
+                If there is only `mask_head` in `SingleStageInstanceSegmentor`,
+                it would be None, like SOLO. All value in it should has
+                shape (num_positive, *).
 
           Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -85,9 +87,8 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
             det_results (list[obj:`DetectionResults`]): Detection
-                Results of each image after the post process.Would
-                only be used in detect-segment fashion algorithm,
-                like `YOLACT`.
+                Results of each image after the post process. Only exist
+                if there is a `bbox_head`, like `YOLACT`, `CondInst`, etc.
 
         Returns:
             list[obj:`DetectionResults`]: Instance segmentation

@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
 
@@ -101,15 +102,16 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
         # CondInst, yolact
         if self.bbox_head:
-            # bbox_head_results is a tuple
+            # bbox_head_preds is a tuple
             bbox_head_preds = self.bbox_head(x)
             # positive_infos is a obj:`DetectionResults`
             # It contains the information about the positive samples
-            # CondInst, Yolact
+            # CondInst, YOLACT
             det_losses, positive_infos = self.bbox_head.loss(
                 *bbox_head_preds,
                 gt_bboxes=gt_bboxes,
                 gt_labels=gt_labels,
+                gt_masks=gt_masks,
                 img_metas=img_metas,
                 gt_bboxes_ignore=gt_bboxes_ignore)
             losses.update(det_losses)
@@ -141,7 +143,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
         Returns:
             list[:obj:`DetectionResults`]: Processed results of multiple
-            images.Each :obj:`DetectionResults` usually contains
+            images. Each :obj:`DetectionResults` usually contains
             following keys.
 
                 - scores (Tensor): Classification scores, has shape
@@ -154,7 +156,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         if self.bbox_head:
             # det_results is a obj:`DetectionResults`
             outs = self.bbox_head(feat)
-            results_list = self.bbox_head.get_bboxes(
+            results_list = self.bbox_head.get_results(
                 *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)
         else:
             results_list = None
