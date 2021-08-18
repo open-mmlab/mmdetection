@@ -216,7 +216,7 @@ class HRNet(BaseModule):
                 - block(str): The type of convolution block.
                 - num_blocks(tuple): The number of blocks in each branch.
                     The length must be equal to num_branches.
-                - num_channels(tuple): the number of channels in each branch.
+                - num_channels(tuple): The number of channels in each branch.
                     The length must be equal to num_branches.
         in_channels (int): Number of input image channels. Default: 3.
         conv_cfg (dict): Dictionary to construct and config conv layer.
