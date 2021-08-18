@@ -7,7 +7,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply,
-                        reduce_mean)
+                        reduce_mean, multiclass_nms)
 from mmdet.models.utils import build_transformer
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
@@ -701,7 +701,25 @@ class DETRHead(AnchorFreeHead):
         # forward of this head requires img_metas
         outs = self.forward(feats, img_metas)
         results_list = self.get_bboxes(*outs, img_metas, rescale=rescale)
-        return results_list
+
+        # applying nms to results_list
+        cfg = self.test_cfg
+        results_list_nms = list()
+        for results in results_list:
+            bboxes, labels = results
+            # in mmdet2.0, the fg class id is from 0 to #classes-1,
+            # the bg class id is #classes
+            scores = F.one_hot(labels, self.num_classes+1) * bboxes[:, 4:]
+            bboxes_nms, labels_nms = multiclass_nms(
+                bboxes[:, :4],
+                scores,
+                score_thr=cfg.get('score_thr', 0),
+                nms_cfg=cfg.get('nms', {'iou_threshold': 0.6}),
+                max_num=cfg.get('max_per_img', 100),
+                return_inds=False)
+            results_list_nms.append((bboxes_nms, labels_nms))
+
+        return results_list_nms
 
     def forward_onnx(self, feats, img_metas):
         """Forward function for exporting to ONNX.
