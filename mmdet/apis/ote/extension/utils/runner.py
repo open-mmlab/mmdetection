@@ -22,8 +22,8 @@ from mmcv.runner import get_dist_info
 @RUNNERS.register_module()
 class EpochRunnerWithCancel(EpochBasedRunner):
     """
-    Simple modification to EpochBasedRunner to allow cancelling the training during an epoch. The early stopping hook
-    should set the runner.should_stop flag to True if stopping is required.
+    Simple modification to EpochBasedRunner to allow cancelling the training during an epoch. 
+    The early stopping hook should set the runner.should_stop flag to True if stopping is required.
     """
 
     def __init__(self, *args, **kwargs):
