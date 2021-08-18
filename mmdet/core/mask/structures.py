@@ -637,8 +637,8 @@ class PolygonMasks(BaseInstanceMasks):
                 resized_poly = []
                 for p in poly_per_obj:
                     p = p.copy()
-                    p[0::2] *= w_scale
-                    p[1::2] *= h_scale
+                    p[0::2] = p[0::2] * w_scale
+                    p[1::2] = p[1::2] * h_scale
                     resized_poly.append(p)
                 resized_masks.append(resized_poly)
             resized_masks = PolygonMasks(resized_masks, *out_shape)
@@ -690,8 +690,8 @@ class PolygonMasks(BaseInstanceMasks):
                 for p in poly_per_obj:
                     # pycocotools will clip the boundary
                     p = p.copy()
-                    p[0::2] -= bbox[0]
-                    p[1::2] -= bbox[1]
+                    p[0::2] = p[0::2] - bbox[0]
+                    p[1::2] = p[1::2] - bbox[1]
                     cropped_poly_per_obj.append(p)
                 cropped_masks.append(cropped_poly_per_obj)
             cropped_masks = PolygonMasks(cropped_masks, h, w)
@@ -736,12 +736,12 @@ class PolygonMasks(BaseInstanceMasks):
                 p = p.copy()
                 # crop
                 # pycocotools will clip the boundary
-                p[0::2] -= bbox[0]
-                p[1::2] -= bbox[1]
+                p[0::2] = p[0::2] - bbox[0]
+                p[1::2] = p[1::2] - bbox[1]
 
                 # resize
-                p[0::2] *= w_scale
-                p[1::2] *= h_scale
+                p[0::2] = p[0::2] * w_scale
+                p[1::2] = p[1::2] * h_scale
                 resized_mask.append(p)
             resized_masks.append(resized_mask)
         return PolygonMasks(resized_masks, *out_shape)
