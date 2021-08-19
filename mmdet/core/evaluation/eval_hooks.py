@@ -87,8 +87,10 @@ class EvalHook(Hook):
         assert isinstance(by_epoch, bool), '``by_epoch`` should be a boolean'
 
         if start is not None and start < 0:
-            raise ValueError(f'The evaluation start epoch {start} is smaller '
-                             f'than 0')
+            warnings.warn(
+                f'The evaluation start epoch {start} is smaller than 0, '
+                f'use 0 instead', UserWarning)
+            start = 0
 
         self.dataloader = dataloader
         self.interval = interval
@@ -391,8 +393,12 @@ class DistEvalHook(EvalHook):
         self.tmpdir = tmpdir
         self.gpu_collect = gpu_collect
 
-    def braodcast(self, data):
+    def broadcast(self, data):
         broadcast_obj = [data]
+        if not dist.is_initialized():
+            os.environ['MASTER_ADDR'] = 'localhost'
+            os.environ['MASTER_PORT'] = '29500'
+            dist.init_process_group(backend='nccl', rank='0', world_size='1')
         dist.broadcast_object_list(broadcast_obj, src=0)
         return broadcast_obj[0]
 
@@ -440,7 +446,7 @@ class DistEvalHook(EvalHook):
                 else:
                     broadcast_data = runner.log_buffer.output[self.save_best]
 
-        score = self.braodcast(broadcast_data)
+        score = self.broadcast(broadcast_data)
         if runner.rank != 0 and self.save_best:
             setattr(runner, self.save_best, score)
 
