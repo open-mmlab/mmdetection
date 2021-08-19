@@ -7,18 +7,9 @@ from mmcv.cnn import ConvModule
 
 from mmdet.core import mask_matrix_nms, multi_apply
 from mmdet.core.results.results import DetectionResults
+from mmdet.core.utils import center_of_mass
 from mmdet.models.builder import HEADS, build_loss
 from .base_mask_head import BaseMaskHead
-
-
-def center_of_mass(mask):
-    h, w = mask.shape
-    grid_h = torch.arange(h, device=mask.device)[:, None]
-    grid_w = torch.arange(w, device=mask.device)
-    normalizer = mask.sum().float().clamp(min=1e-6)
-    center_h = (mask * grid_h).sum() / normalizer
-    center_w = (mask * grid_w).sum() / normalizer
-    return center_h, center_w
 
 
 @HEADS.register_module()
@@ -35,7 +26,8 @@ class SOLOHead(BaseMaskHead):
             Default: 4
         strides (tuple): Downsample factor of each feature map.
         scale_ranges (tuple[tuple[int, int]]): Area range of multiple
-            level mask.
+            level mask, in the format [(min1, max1), (min2, max2), ...].
+            A range of (16, 64) means the area range between (16, 64).
         pos_scale (float): Constant scale factor to control the center region.
         num_grids (list): Divided image into a uniform grids, each feature map
             has a different grid value. The number of output channels is
@@ -92,7 +84,7 @@ class SOLOHead(BaseMaskHead):
         self.num_grids = num_grids
         # number of FPN feats
         self.num_levels = len(strides)
-        assert self.num_levels == len(self.strides)
+        assert self.num_levels == len(scale_ranges) == len(num_grids)
         self.scale_ranges = scale_ranges
         self.pos_scale = pos_scale
 
@@ -145,7 +137,9 @@ class SOLOHead(BaseMaskHead):
                     feats[4], size=feats[3].shape[-2:], mode='bilinear'))
 
     def forward(self, feats):
-        assert len(feats) == self.num_levels
+        assert len(feats) == self.num_levels == 5, \
+            f'SOLO head only support the input length is 5, ' \
+            f'but get {len(feats)}'
         feats = self.resize_feats(feats)
         mlvl_mask_preds = []
         mlvl_cls_preds = []
@@ -645,7 +639,9 @@ class DecoupledSOLOHead(SOLOHead):
             self.feat_channels, self.cls_out_channels, 3, padding=1)
 
     def forward(self, feats):
-        assert len(feats) == self.num_levels
+        assert len(feats) == self.num_levels == 5, \
+            f'Decoupled SOLO head only support the input ' \
+            f'length is 5, but get {len(feats)}'
         feats = self.resize_feats(feats)
         mask_preds_x = []
         mask_preds_y = []

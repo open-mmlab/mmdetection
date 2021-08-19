@@ -82,3 +82,24 @@ def flip_tensor(src_tensor, flip_direction):
     else:
         out_tensor = torch.flip(src_tensor, [2, 3])
     return out_tensor
+
+
+def center_of_mass(mask):
+    """Calculate the center point of the mask.
+
+    Args:
+        mask (Tensor): The mask to be calculated, has shape (h, w).
+
+    Returns:
+        tuple[Tensor]: the coordinates of the center point of the mask.
+
+            - center_h (Tensor): the center point of the height.
+            - center_w (Tensor): the center point of the width.
+    """
+    h, w = mask.shape
+    grid_h = torch.arange(h, device=mask.device)[:, None]
+    grid_w = torch.arange(w, device=mask.device)
+    normalizer = mask.sum().float().clamp(min=1e-6)
+    center_h = (mask * grid_h).sum() / normalizer
+    center_w = (mask * grid_w).sum() / normalizer
+    return center_h, center_w

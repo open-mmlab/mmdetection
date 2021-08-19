@@ -59,8 +59,8 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             img_metas (list[dict]): List of image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
-            det_results (list[obj:`InstanceResults`]): Detection
-                Results of each image after the post process.
+            det_results (list[obj:`DetectionResults`]): Detection
+                results of each image after the post process.
 
         Returns:
             list[obj:`DetectionResults`]: Instance segmentation
