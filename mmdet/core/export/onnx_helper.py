@@ -58,6 +58,9 @@ def get_k_for_topk(k, size):
     Returns:
         tuple: (int or Tensor): The final K for TopK.
     """
+    if torch.is_tensor(k):
+        size = torch.tensor(size, device=k.device)
+
     ret_k = -1
     if k <= 0 or size <= 0:
         return ret_k
@@ -119,14 +122,15 @@ def add_dummy_nms_for_onnx(boxes,
     score_threshold = torch.tensor([score_threshold], dtype=torch.float32)
     batch_size = scores.shape[0]
     num_class = scores.shape[2]
+    device = scores.device
 
-    nms_pre = torch.tensor(pre_top_k, device=scores.device, dtype=torch.long)
+    nms_pre = torch.tensor(pre_top_k, device=device, dtype=torch.long)
     nms_pre = get_k_for_topk(nms_pre, boxes.shape[1])
 
     if nms_pre > 0:
         max_scores, _ = scores.max(-1)
         _, topk_inds = max_scores.topk(nms_pre)
-        batch_inds = torch.arange(batch_size).view(
+        batch_inds = torch.arange(batch_size, device=device).view(
             -1, 1).expand_as(topk_inds).long()
         # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
         transformed_inds = boxes.shape[1] * batch_inds + topk_inds
@@ -182,7 +186,8 @@ def add_dummy_nms_for_onnx(boxes,
 
     if nms_after > 0:
         _, topk_inds = scores.topk(nms_after)
-        batch_inds = torch.arange(batch_size).view(-1, 1).expand_as(topk_inds)
+        batch_inds = torch.arange(
+            batch_size, device=device).view(-1, 1).expand_as(topk_inds)
         # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
         transformed_inds = scores.shape[1] * batch_inds + topk_inds
         scores = scores.reshape(-1, 1)[transformed_inds, :].reshape(

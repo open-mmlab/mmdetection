@@ -102,11 +102,13 @@ def build_model_from_cfg(config_path, checkpoint_path, cfg_options=None):
     return model
 
 
-def preprocess_example_input(input_config):
+def preprocess_example_input(input_config, device):
     """Prepare an example input image for ``generate_inputs_and_wrap_model``.
 
     Args:
         input_config (dict): customized config describing the example input.
+        device (<class 'torch.device'>): device type (CPU or CUDA)
+            for the one_img.
 
     Returns:
         tuple: (one_img, one_meta), tensor of the example input image and \
@@ -147,6 +149,7 @@ def preprocess_example_input(input_config):
     one_img = one_img.transpose(2, 0, 1)
     one_img = torch.from_numpy(one_img).unsqueeze(0).float().requires_grad_(
         True)
+    one_img = one_img.to(device)
     (_, C, H, W) = input_shape
     one_meta = {
         'img_shape': (H, W, C),

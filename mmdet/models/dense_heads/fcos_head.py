@@ -394,7 +394,7 @@ class FCOSHead(AnchorFreeHead):
             if nms_pre > 0:
                 max_scores, _ = (scores * centerness[..., None]).max(-1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                batch_inds = torch.arange(batch_size).view(
+                batch_inds = torch.arange(batch_size, device=device).view(
                     -1, 1).expand_as(topk_inds).long()
                 # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
                 if torch.onnx.is_in_onnx_export():
