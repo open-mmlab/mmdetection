@@ -20,8 +20,7 @@ def contains_header(lines):
 def parse_args():
     parser = argparse.ArgumentParser(description='Add header to all files')
     parser.add_argument('src', type=str, help='source files to add header')
-    parser.add_argument(
-        '--exclude', default='configs', type=str, help='exclude folder')
+    parser.add_argument('--exclude', type=str, help='exclude folder')
     parser.add_argument(
         '--suffix',
         type=str,
