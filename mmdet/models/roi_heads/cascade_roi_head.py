@@ -621,5 +621,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.test_cfg, max_shape)
             segm_results = segm_results.reshape(batch_size,
                                                 det_bboxes.shape[1],
-                                                max_shape[0], max_shape[1])
+                                                segm_results.shape[1],
+                                                segm_results.shape[2])
             return det_bboxes, det_labels, segm_results

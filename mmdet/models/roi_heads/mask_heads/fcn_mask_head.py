@@ -320,7 +320,13 @@ class FCNMaskHead(BaseModule):
             ori_shape (Tuple): original image height and width, shape (2,)
 
         Returns:
-            Tensor: a mask of shape (N, img_h, img_w).
+            Tensor: tensor with masks.
+            If rcnn_test_cfg.rescale_mask_to_input_shape == True,
+                then masks will be returned with the shape of the input image.
+                It will return masks with shape (N, img_h, img_w).
+            If rcnn_test_cfg.rescale_mask_to_input_shape == False,
+                then post-processing will not be applied to masks.
+                It will return masks with shape (N, 28, 28).
         """
 
         mask_pred = mask_pred.sigmoid()
@@ -332,8 +338,11 @@ class FCNMaskHead(BaseModule):
         if not self.class_agnostic:
             box_inds = torch.arange(mask_pred.shape[0])
             mask_pred = mask_pred[box_inds, labels][:, None]
-        masks, _ = _do_paste_mask(
-            mask_pred, bboxes, img_h, img_w, skip_empty=False)
+        if rcnn_test_cfg.rescale_mask_to_input_shape:
+            masks, _ = _do_paste_mask(
+                mask_pred, bboxes, img_h, img_w, skip_empty=False)
+        else:
+            masks = mask_pred.squeeze(dim=1)
         if threshold >= 0:
             # should convert to float to avoid problems in TRT
             masks = (masks >= threshold).to(dtype=torch.float)
