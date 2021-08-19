@@ -317,7 +317,8 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             n = boxes.shape[0]
             if n == 0:
                 reg_targets.append(points.new_zeros((m, 4)) - INF)
-                flattened_hms.append(points.new_zeros((m, 1)))
+                flattened_hms.append(points.new_zeros(m))
+                pos_indices.append(points.new_zeros(m).bool())
                 continue
             left = points[:, 0].view(m, 1) - boxes[:, 0].view(1, n)
             top = points[:, 1].view(m, 1) - boxes[:, 1].view(1, n)
@@ -534,13 +535,12 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                     nms_indices = nms_indices[valid_mask]
         scores = torch.sqrt(scores)
         if rescale:
-            bboxes /= bboxes.new_tensor(scale_factors).unsqueeze(1)
-        if scores.size(0) > max_num:
-            cfg_nms = cfg.nms.copy()
-            cfg_nms['max_num'] = max_num
-            proposals, _ = batched_nms(bboxes, scores, nms_indices, cfg_nms)
-        else:
-            proposals = torch.cat([bboxes, scores[:, None]], dim=-1)
+            bboxes /= bboxes.new_tensor(scale_factors)
+
+        cfg_nms = cfg.nms.copy()
+        cfg_nms['max_num'] = max_num
+        proposals, _ = batched_nms(bboxes, scores, nms_indices, cfg_nms)
+
         return proposals
 
     def get_points(self, featmap_sizes, dtype, device):
