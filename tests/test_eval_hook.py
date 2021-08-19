@@ -1,16 +1,14 @@
-import os
 import os.path as osp
-import tempfile
-import unittest.mock as mock
-from collections import OrderedDict
-from unittest.mock import MagicMock, patch
-import torch.distributed as dist
 import pytest
+import tempfile
 import torch
 import torch.nn as nn
+import unittest.mock as mock
+from collections import OrderedDict
 from mmcv.runner import EpochBasedRunner, build_optimizer
 from mmcv.utils import get_logger
 from torch.utils.data import DataLoader, Dataset
+from unittest.mock import MagicMock, patch
 
 from mmdet.core import DistEvalHook, EvalHook
 
@@ -114,10 +112,6 @@ def test_eval_hook(EvalHookCls):
 
     data_loader = DataLoader(test_dataset, batch_size=1)
     eval_hook = EvalHookCls(data_loader, save_best=None)
-    if isinstance(eval_hook, DistEvalHook) and not dist.is_initialized():
-        os.environ['MASTER_ADDR'] = 'localhost'
-        os.environ['MASTER_PORT'] = '29500'
-        dist.init_process_group(backend='nccl', rank=0, world_size=1)
     with tempfile.TemporaryDirectory() as tmpdir:
         logger = get_logger('test_eval')
         runner = EpochBasedRunner(

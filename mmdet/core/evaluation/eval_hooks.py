@@ -1,9 +1,8 @@
 import os
 import os.path as osp
+import torch.distributed as dist
 import warnings
 from math import inf
-
-import torch.distributed as dist
 from mmcv.runner import Hook
 from mmcv.utils import is_seq_of
 from torch.nn.modules.batchnorm import _BatchNorm
@@ -395,7 +394,8 @@ class DistEvalHook(EvalHook):
 
     def broadcast(self, data):
         broadcast_obj = [data]
-        dist.broadcast_object_list(broadcast_obj, src=0)
+        if dist.is_initialized():
+            dist.broadcast_object_list(broadcast_obj, src=0)
         return broadcast_obj[0]
 
     def _do_evaluate(self, runner):
