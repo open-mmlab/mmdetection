@@ -26,8 +26,8 @@
 python tools/deployment/pytorch2openvino.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
-	${PYTORCH2ONNX_ARGS} \
-	--not_strip_doc_string \
+    ${PYTORCH2ONNX_ARGS} \
+    --not_strip_doc_string \
 ```
 
 ### Description of all arguments
@@ -46,8 +46,8 @@ python tools/deployment/pytorch2openvino.py \
     --output-file checkpoints/yolo/yolov3_d53_mstrain-608_273e_coco.onnx \
     --shape 608 608 \
     --dynamic-export \
-	--opset-version 11 \
-	--not_strip_doc_string
+    --opset-version 11 \
+    --not_strip_doc_string
 ```
 
 ## List of supported models exportable to OpenVINO
@@ -64,5 +64,4 @@ The table below lists the models that are guaranteed to be exportable to OpenVIN
 | Faster R-CNN |        `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`         |       Y       ||                                                                               |
 | Cascade R-CNN| `configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py`              |       Y       ||                                                                               |
 |  Mask R-CNN  |          `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`           |       Y       ||                                                                               |
-| Cascade Mask R-CNN  |   `configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py`|       Y       |
-|                                                                               |
+| Cascade Mask R-CNN  |  `configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py` |       Y       ||                                                                               |
