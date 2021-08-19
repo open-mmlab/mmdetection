@@ -1,13 +1,5 @@
 import importlib
 import inspect
-from functools import partial
-
-import onnx
-
-
-def update_default_args_value(func, **updated_args):
-    new_func = partial(func, **updated_args)
-    return new_func
 
 
 class OpenvinoExportHelper():
@@ -53,54 +45,3 @@ class OpenvinoExportHelper():
             text = name.replace(pattern, '')
             print(f'Patch {text} applied')
         print()
-
-    @staticmethod
-    def rename_input_onnx(onnx_model_path, old_name, new_name):
-        """Changes the input name of the model.
-
-        Useful for use in tests from OTEDetection.
-        """
-        onnx_model = onnx.load(onnx_model_path)
-        for node in onnx_model.graph.node:
-            for i in range(len(node.input)):
-                if node.input[i] == old_name:
-                    node.input[i] = new_name
-
-        for input in onnx_model.graph.input:
-            if input.name == old_name:
-                input.name = new_name
-
-        onnx.save(onnx_model, onnx_model_path)
-
-    @staticmethod
-    def __apply_fixes_from_module(module_name, skip_fixes):
-        """Applies all fixes from the specified file. If you want to disable a
-        specific fix, then add it to 'skip_fixes'.
-
-        To use a fix, its name must start with 'fix_'.
-        """
-        pattern = 'fix_'
-        fix_functions = OpenvinoExportHelper.__get_funtions_with_pattern(
-            module_name, pattern)
-
-        print(f'\t Fixes {module_name}')
-        for name, function in fix_functions:
-            fix_name = name.replace(pattern, '')
-            if name in skip_fixes:
-                print(f'Fix {fix_name} skipped.')
-            else:
-                function()
-                print(f'Fix {fix_name} applied.')
-        print()
-
-    @staticmethod
-    def apply_fixes(skip_fixes=[]):
-        """This function applies fixes, contained in the 'openvino_wrapper'
-        package.
-
-        If you want to disable a specific fix, then add it to 'skip_fixes'.
-        """
-
-        modules = ['mmdetection']
-        for module in modules:
-            OpenvinoExportHelper.__apply_fixes_from_module(module, skip_fixes)

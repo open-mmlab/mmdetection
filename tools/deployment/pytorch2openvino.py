@@ -1,10 +1,11 @@
 import argparse
 import os
 import subprocess
+from functools import partial
 from subprocess import CalledProcessError, run
 
 import onnx
-from openvino_wrapper import OpenvinoExportHelper, update_default_args_value
+from openvino_wrapper import OpenvinoExportHelper
 
 
 def parse_args_wrapper(args_list=None):
@@ -15,12 +16,6 @@ def parse_args_wrapper(args_list=None):
         action='store_true',
         help='If is, does not strip the field "doc_string"'
         'from the exported model, which information about the stack trace.')
-    parser.add_argument(
-        '--skip_fixes',
-        type=str,
-        nargs='+',
-        default=[],
-        help='The names of the fixes to be skipped.')
 
     args, other_args_list = parser.parse_known_args(args=args_list)
     return args, other_args_list
@@ -31,6 +26,17 @@ def parse_args(args_list=None):
     from pytorch2onnx import parse_args as parse_args_pytorch2onnx
     pytorch2onnx_args = parse_args_pytorch2onnx(args_list)
     return wrapper_args, pytorch2onnx_args
+
+
+def update_default_args_value(func, **updated_args):
+    new_func = partial(func, **updated_args)
+    return new_func
+
+
+def update_strip_doc_string():
+    from torch import onnx
+    onnx.export = update_default_args_value(
+        onnx.export, strip_doc_string=False)
 
 
 def run_pytorch2onnx(args):
@@ -104,18 +110,10 @@ def run_mo(config_path, model_onnx_path):
     print(f'Successfully exported OpenVINO model: {model_xml}, {model_bin}')
 
 
-def update_strip_doc_string():
-    from torch import onnx
-    onnx.export = update_default_args_value(
-        onnx.export, strip_doc_string=False)
-
-
 def main(args=None):
     wrapper_args, pytorch2onnx_args = parse_args(args)
 
     check_output_path(pytorch2onnx_args.output_file)
-
-    OpenvinoExportHelper.apply_fixes(wrapper_args.skip_fixes)
 
     if wrapper_args.not_strip_doc_string:
         update_strip_doc_string()

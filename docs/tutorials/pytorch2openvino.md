@@ -28,7 +28,6 @@ python tools/deployment/pytorch2openvino.py \
     ${CHECKPOINT_FILE} \
 	${PYTORCH2ONNX_ARGS} \
 	--not_strip_doc_string \
-	--skip_fixes
 ```
 
 ### Description of all arguments
@@ -37,7 +36,6 @@ python tools/deployment/pytorch2openvino.py \
 - `checkpoint` : The path of a model checkpoint file.
 - `pytorch2onnx_args`: Script arguments for export to ONNX. The list of possible values for `pytorch2onnx_args` can be found [here](pytorch2onnx.md#how-to-convert-models-from-pytorch-to-onnx).
 - `--not_strip_doc_string`: If this argument is used, then fields with debug information will remain in the ONNX graph.
-- `--skip_fixes`: The specified patch functions will be skipped during the export.
 
 Example:
 
