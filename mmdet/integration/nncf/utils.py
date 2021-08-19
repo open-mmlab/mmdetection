@@ -37,7 +37,7 @@ def load_checkpoint(model, filename, map_location=None, strict=False):
     Returns:
         dict or OrderedDict: The loaded checkpoint.
     """
-    from nncf import load_state
+    from nncf.torch import load_state
 
     checkpoint = torch.load(filename, map_location=map_location)
     # get state_dict from checkpoint
@@ -66,7 +66,7 @@ def no_nncf_trace():
     """
 
     if is_nncf_enabled():
-        from nncf.dynamic_graph.context import no_nncf_trace as original_no_nncf_trace
+        from nncf.torch.dynamic_graph.context import no_nncf_trace as original_no_nncf_trace
         return original_no_nncf_trace()
     return nullcontext()
 
@@ -75,7 +75,7 @@ def is_in_nncf_tracing():
     if not is_nncf_enabled():
         return False
 
-    from nncf.dynamic_graph.context import get_current_context
+    from nncf.torch.dynamic_graph.context import get_current_context
 
     ctx = get_current_context()
 
