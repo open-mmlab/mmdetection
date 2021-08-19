@@ -110,7 +110,8 @@ model = dict(
             nms_pre=4000,
             score_thr=0.0001,
             min_bbox_size=0,
-            nms=dict(type='nms', iou_threshold=0.9, max_num=2000)),
+            nms=dict(type='nms', iou_threshold=0.9),
+            max_per_img=2000),
         rcnn=[
             dict(
                 assigner=dict(
@@ -166,7 +167,8 @@ model = dict(
             nms_pre=1000,
             score_thr=0.0001,
             min_bbox_size=0,
-            nms=dict(type='nms', iou_threshold=0.9, max_num=256)),
+            nms=dict(type='nms', iou_threshold=0.9),
+            max_per_img=256),
         rcnn=dict(
             score_thr=0.05,
             nms=dict(type='nms', iou_threshold=0.7),

@@ -409,8 +409,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                    reg_preds,
                    img_metas,
                    cfg=None,
-                   rescale=False,
-                   with_nms=True):
+                   rescale=False):
         """Transform network output for a batch into bbox predictions.
 
         Args:
@@ -424,8 +423,6 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 if None, test_cfg would be used. Default: None.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
 
         Returns:
             proposal_list (list[Tensor]): proposals for all images,
@@ -433,7 +430,6 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 for a single image.
         """
 
-        assert with_nms, '``with_nms`` in RPNHead should always True'
         assert len(hm_scores) == len(reg_preds)
         device = reg_preds[0].device
         num_levels = len(hm_scores)
@@ -463,8 +459,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                            img_shapes,
                            scale_factors,
                            cfg,
-                           rescale=False,
-                           with_nms=True):
+                           rescale=False):
         """Transform outputs for a single image into bbox predictions.
 
         Args:
@@ -481,14 +476,21 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
 
         Returns:
             proposal (Tensor): proposals for a single image, Tensor shape
                 (PN, 5) where PN is the number of all proposals for a single
                 image.
         """
+
+        assert 'nms' in cfg.keys(), 'RPNHead cfg should specify nms'
+        assert 'nms_pre' in cfg.keys(), 'RPNHead cfg should specify nms_pre'
+        max_num = cfg.get('max_per_img', cfg.nms.get('max_num', -1))
+        assert max_num > 0, 'RPNHead cfg should specify max_per_img or' \
+                            'cfg.nms should specify max_num'
+        assert max_num == cfg.nms.get(
+            'max_num', cfg.get('max_per_img', -1)),\
+            'Ambiguous max_per_img and cfg.nms.max_num settings'
 
         level_ids = []
         mlvl_scores = []
@@ -504,7 +506,6 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 reg_pred = reg_pred[valid_idx]
                 point = point[valid_idx]
             pre_nms_top_n = hm_score.shape[0]
-            assert cfg.get('nms_pre', -1) > 0, 'Must specify nms_pre'
             pre_nms_top_n = min(pre_nms_top_n, cfg.get('nms_pre'))
             if hm_score.shape[0] >= pre_nms_top_n:
                 ranked_scores, rank_inds = hm_score.sort(descending=True)
@@ -534,8 +535,10 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         scores = torch.sqrt(scores)
         if rescale:
             bboxes /= bboxes.new_tensor(scale_factors).unsqueeze(1)
-        if with_nms and scores.size(0) > cfg.nms.get('max_num'):
-            proposals, _ = batched_nms(bboxes, scores, nms_indices, cfg.nms)
+        if scores.size(0) > max_num:
+            cfg_nms = cfg.nms.copy()
+            cfg_nms['max_num'] = max_num
+            proposals, _ = batched_nms(bboxes, scores, nms_indices, cfg_nms)
         else:
             proposals = torch.cat([bboxes, scores[:, None]], dim=-1)
         return proposals
@@ -564,22 +567,3 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 dim=-1) + stride // 2
             mlvl_points.append(points)
         return mlvl_points
-
-    def aug_test(self, feats, img_metas, rescale=False):
-        """Test function with test time augmentation.
-
-        Args:
-            feats (list[Tensor]): the outer list indicates test-time
-                augmentations and inner Tensor should have a shape NxCxHxW,
-                which contains features for all images in the batch.
-            img_metas (list[list[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch. each dict has image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
-
-        Returns:
-            list[ndarray]: bbox results of each class
-        """
-
-        return self.aug_test_bboxes(feats, img_metas, rescale=rescale)
