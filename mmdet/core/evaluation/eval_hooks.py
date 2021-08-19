@@ -395,10 +395,6 @@ class DistEvalHook(EvalHook):
 
     def broadcast(self, data):
         broadcast_obj = [data]
-        if not dist.is_initialized():
-            os.environ['MASTER_ADDR'] = 'localhost'
-            os.environ['MASTER_PORT'] = '29500'
-            dist.init_process_group(backend='nccl', rank='0', world_size='1')
         dist.broadcast_object_list(broadcast_obj, src=0)
         return broadcast_obj[0]
 
