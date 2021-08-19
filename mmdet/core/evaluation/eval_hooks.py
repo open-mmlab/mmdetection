@@ -112,7 +112,7 @@ class EvalHook(Hook):
             self.greater_keys = self._default_greater_keys
         else:
             if not isinstance(greater_keys, (list, tuple)):
-                greater_keys = (greater_keys,)
+                greater_keys = (greater_keys, )
             assert is_seq_of(greater_keys, str)
             self.greater_keys = greater_keys
 
@@ -120,7 +120,7 @@ class EvalHook(Hook):
             self.less_keys = self._default_less_keys
         else:
             if not isinstance(less_keys, (list, tuple)):
-                less_keys = (less_keys,)
+                less_keys = (less_keys, )
             assert is_seq_of(less_keys, str)
             self.less_keys = less_keys
 
@@ -434,7 +434,11 @@ class DistEvalHook(EvalHook):
                 setattr(runner, name, val)
             if self.save_best:
                 self._save_ckpt(runner, key_score)
-                broadcast_data = runner.log_buffer.output[self.save_best]
+                if self.save_best == 'auto':
+                    broadcast_data = runner.log_buffer.output[
+                        self.key_indicator]
+                else:
+                    broadcast_data = runner.log_buffer.output[self.save_best]
 
         score = self.braodcast(broadcast_data)
         if runner.rank != 0 and self.save_best:
