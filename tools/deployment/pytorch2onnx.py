@@ -29,8 +29,17 @@ def pytorch2onnx(model,
         'input_path': input_img,
         'normalize_cfg': normalize_cfg
     }
+    '''
+    VFNet requires the DeformConv operation,
+    which is not implemented for CPU tensors.
+    So there will be many small changes to the device type.
+    '''
+    if torch.cuda.is_available():
+        model.cuda()
+    device = next(model.parameters()).device
+
     # prepare input
-    one_img, one_meta = preprocess_example_input(input_config)
+    one_img, one_meta = preprocess_example_input(input_config, device)
     img_list, img_meta_list = [one_img], [[one_meta]]
     # replace original forward function
     origin_forward = model.forward
@@ -190,7 +199,7 @@ def parse_normalize_cfg(test_pipeline):
     return norm_config
 
 
-def parse_args():
+def parse_args(args_list=None):
     parser = argparse.ArgumentParser(
         description='Convert MMDetection models to ONNX')
     parser.add_argument('config', help='test config file path')
@@ -252,12 +261,11 @@ def parse_args():
         '--dynamic-export',
         action='store_true',
         help='Whether to export onnx with dynamic axis.')
-    args = parser.parse_args()
+    args = parser.parse_args(args=args_list)
     return args
 
 
-if __name__ == '__main__':
-    args = parse_args()
+def main(args):
     warnings.warn('Arguments like `--mean`, `--std`, `--dataset` would be \
         parsed directly from config file and are deprecated and \
         will be removed in future releases.')
@@ -306,3 +314,7 @@ if __name__ == '__main__':
         test_img=args.test_img,
         do_simplify=args.simplify,
         dynamic_export=args.dynamic_export)
+
+
+if __name__ == '__main__':
+    main(parse_args())
