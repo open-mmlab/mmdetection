@@ -12,18 +12,15 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import attr
 from attr import attrs
-from sc_sdk.configuration import ModelConfig, ModelLifecycle, UIRules
-from sc_sdk.configuration.config_element_type import ElementCategory
-from sc_sdk.configuration.elements import (ParameterGroup, add_parameter_group,
-                                           configurable_boolean,
-                                           configurable_float,
-                                           configurable_integer,
-                                           string_attribute,
-                                           boolean_attribute)
-from sc_sdk.configuration.elements.primitive_parameters import set_common_metadata
-from sc_sdk.configuration.ui_rules import NullUIRules, UIRules
+from ote_sdk.configuration.elements import (ParameterGroup,
+                                            add_parameter_group,
+                                            boolean_attribute,
+                                            configurable_boolean,
+                                            configurable_float,
+                                            configurable_integer,
+                                            string_attribute)
+from sc_sdk.configuration import ModelConfig, ModelLifecycle
 
 
 @attrs

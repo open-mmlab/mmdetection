@@ -10,12 +10,12 @@ import unittest
 import warnings
 import yaml
 from concurrent.futures import ThreadPoolExecutor
+from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
-from sc_sdk.configuration.helper import convert, create
 from sc_sdk.entities.annotation import (Annotation, AnnotationScene,
                                         AnnotationSceneKind)
 from sc_sdk.entities.dataset_item import DatasetItem

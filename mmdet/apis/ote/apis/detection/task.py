@@ -14,62 +14,52 @@
 
 import copy
 import io
+import numpy as np
 import os
 import shutil
 import tempfile
 import torch
 import warnings
 from collections import defaultdict
-from typing import Optional, List, Tuple
-
-import numpy as np
-
-from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.metrics import (CurveMetric,
-                                      LineChartInfo,
-                                      MetricsGroup,
-                                      Performance,
-                                      ScoreMetric,
-                                      InfoMetric,
-                                      VisualizationType,
-                                      VisualizationInfo)
-from ote_sdk.entities.shapes.box import Box
-from ote_sdk.entities.train_parameters import TrainParameters
-from ote_sdk.entities.label import ScoredLabel
-
-from sc_sdk.configuration import cfg_helper, ModelConfig
-from sc_sdk.configuration.helper.utils import ids_to_strings
-from sc_sdk.entities.annotation import Annotation
-from sc_sdk.entities.datasets import Dataset, Subset
-from sc_sdk.entities.optimized_model import OptimizedModel, ModelPrecision
-from sc_sdk.entities.task_environment import TaskEnvironment
-
-
-from sc_sdk.entities.model import Model, ModelStatus, NullModel
-
-from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
-from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
-from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
-from sc_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
-from sc_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
-from sc_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
-from sc_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
-from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, ExportType
-from sc_sdk.usecases.tasks.interfaces.unload_interface import IUnload
-from sc_sdk.logging import logger_factory
-
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
-from mmdet.apis import train_detector, single_gpu_test, export_model
+from ote_sdk.configuration.helper.utils import ids_to_strings
+from ote_sdk.entities.inference_parameters import InferenceParameters
+from ote_sdk.entities.label import ScoredLabel
+from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
+                                      MetricsGroup, Performance, ScoreMetric,
+                                      VisualizationInfo, VisualizationType)
+from ote_sdk.entities.shapes.box import Box
+from ote_sdk.entities.train_parameters import TrainParameters
+from sc_sdk.configuration import cfg_helper
+from sc_sdk.entities.annotation import Annotation
+from sc_sdk.entities.datasets import Dataset, Subset
+from sc_sdk.entities.model import Model, ModelStatus, NullModel
+from sc_sdk.entities.optimized_model import ModelPrecision, OptimizedModel
+from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
+from sc_sdk.entities.task_environment import TaskEnvironment
+from sc_sdk.logging import logger_factory
+from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
+from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
+from sc_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
+from sc_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
+                                                               IExportTask)
+from sc_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
+from sc_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
+from sc_sdk.usecases.tasks.interfaces.unload_interface import IUnload
+from typing import List, Optional, Tuple
+
+from mmdet.apis import export_model, single_gpu_test, train_detector
+from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
+                                                        prepare_for_testing,
+                                                        prepare_for_training,
+                                                        set_hyperparams)
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.config_utils import (patch_config, set_hyperparams, prepare_for_training,
-    prepare_for_testing)
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
-from mmdet.datasets import build_dataset, build_dataloader
+from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
-
 
 logger = logger_factory.get_logger("OTEDetectionTask")
 

@@ -15,8 +15,8 @@
 import argparse
 import os.path as osp
 import sys
+from ote_sdk.configuration.helper import create
 from ote_sdk.entities.inference_parameters import InferenceParameters
-from sc_sdk.configuration.helper import create
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.datasets import Subset
 from sc_sdk.entities.model import Model, ModelStatus, NullModel
