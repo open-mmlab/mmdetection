@@ -1965,14 +1965,14 @@ class Mosaic:
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
            output. Default to (0.5, 1.5).
         min_bbox_size (int | float): The minimum pixel for filtering
-            invalid bboxes after the mosaic pipeline. Default to 1.
+            invalid bboxes after the mosaic pipeline. Default to 0.
         pad_val (int): Pad value. Default to 114.
     """
 
     def __init__(self,
                  img_scale=(640, 640),
                  center_ratio_range=(0.5, 1.5),
-                 min_bbox_size=1,
+                 min_bbox_size=0,
                  pad_val=114):
         assert isinstance(img_scale, tuple)
         self.img_scale = img_scale
