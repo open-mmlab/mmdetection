@@ -16,7 +16,9 @@ class SyncRandomSizeHook(Hook):
             by 32, and then change the dataset output image size.
             Default: (14, 26).
         img_scale (tuple[int]): Size of input image. Default: (640, 640).
-        interval (int): The interval of change image size. Default: 10.
+        interval (int): The interval of change image size. Default: 1.
+            interval represent by epoch since cant modify dataset parm when
+            dataloader running.
         device (torch.device | str): device for returned tensors.
             Default: 'cuda'.
     """
@@ -24,7 +26,7 @@ class SyncRandomSizeHook(Hook):
     def __init__(self,
                  ratio_range=(14, 26),
                  img_scale=(640, 640),
-                 interval=10,
+                 interval=1,
                  device='cuda'):
         self.rank, world_size = get_dist_info()
         self.is_distributed = world_size > 1
@@ -33,7 +35,7 @@ class SyncRandomSizeHook(Hook):
         self.interval = interval
         self.device = device
 
-    def after_train_iter(self, runner):
+    def after_train_epoch(self, runner):
         """Change the dataset output image size."""
         if self.ratio_range is not None and (runner.iter +
                                              1) % self.interval == 0:
