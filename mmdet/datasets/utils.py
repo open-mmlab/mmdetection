@@ -116,7 +116,7 @@ class NumClassCheckHook(Hook):
 
     def _check_head(self, runner):
         """Check whether the `num_classes` in head matches the length of
-        `CLASSSES` in `dataset`.
+        `CLASSES` in `dataset`.
 
         Args:
             runner (obj:`EpochBasedRunner`): Epoch based Runner.
