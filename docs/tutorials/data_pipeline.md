@@ -193,21 +193,7 @@ For each operation, we list the related dict fields that are added/updated/remov
 
 3. Visualize the output of your augmentation pipeline
 
-    ```python
-    import numpy as np
-    from mmcv import Config
-    from mmdet.datasets import build_dataset,build_dataloader
-    from mmcv.visualization import imshow_bboxes
-
-
-    cfg = Config.fromfile("configs/yourconfig.py") # point to your config.py
-    ds = build_dataset(cfg.data.train)      # change 'train' to 'test' if you want to visualize your test pipeline
-    num_images = 8                          # visualize a batch of num_images
-    batch = next(iter(build_dataloader(ds,num_images,1)))
-    for i in range(num_images):
-        bboxes = batch["gt_bboxes"].data[0][i]
-        bboxes = np.array([x.numpy() for x in bboxes])
-        img = batch["img"].data[0][i]
-        img = np.moveaxis(img.numpy(), 0, -1)
-        imshow_bboxes(img, bboxes)          # use out_file : str if you want to save the output
-    ```
+   To visualize the output of your agmentation pipeline, `tools/misc/browse_dataset.py`
+   can help the user to browse a detection dataset (both images and bounding box annotations)
+   visually, or save the image to a designated directory. More detials can refer to
+   [useful_tools](../useful_tools.md)

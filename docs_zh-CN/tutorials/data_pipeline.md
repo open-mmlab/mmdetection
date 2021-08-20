@@ -185,21 +185,6 @@ test_pipeline = [
 
 3. 可视化增强数据处理流程的结果
 
-    ```python
-    import numpy as np
-    from mmcv import Config
-    from mmdet.datasets import build_dataset,build_dataloader
-    from mmcv.visualization import imshow_bboxes
-
-
-    cfg = Config.fromfile("configs/yourconfig.py")    # config.py 的地址
-    ds = build_dataset(cfg.data.train)      # 如果希望对测试流程进行可视化操作，可以将 'train' 换成 'test'。
-    num_images = 8                          # 可视化图像数量
-    batch = next(iter(build_dataloader(ds,num_images,1)))
-    for i in range(num_images):
-        bboxes = batch["gt_bboxes"].data[0][i]
-        bboxes = np.array([x.numpy() for x in bboxes])
-        img = batch["img"].data[0][i]
-        img = np.moveaxis(img.numpy(), 0, -1)
-        imshow_bboxes(img, bboxes)          # 使用 out_file(str) 如果你想保存可视化结果
-    ```
+   如果想要可视化增强处理数据流程的结果，可以使用 `tools/misc/browse_dataset.py` 直观
+   地浏览检测数据集（图像和标注信息），或将图像保存到指定目录。
+   使用方法请参考[日志分析](../useful_tools.md)
