@@ -37,7 +37,7 @@ class SyncRandomSizeHook(Hook):
 
     def after_train_epoch(self, runner):
         """Change the dataset output image size."""
-        if self.ratio_range is not None and (runner.iter +
+        if self.ratio_range is not None and (runner.epoch +
                                              1) % self.interval == 0:
             # Due to DDP and DP get the device behavior inconsistent,
             # so we did not get the device from runner.model.
