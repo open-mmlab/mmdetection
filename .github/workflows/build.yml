@@ -1,6 +1,8 @@
 name: build
 
-on: [push, pull_request]
+on:
+  issue_comment:
+    types: [created, edited]
 
 jobs:
   # lint:
@@ -23,6 +25,7 @@ jobs:
   #         interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 80 mmdet
 
   build_cpu:
+    if: contains(github.event.comment.html_url, '/pull/') && (github.event.comment.body == 'run tests')
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -59,6 +62,7 @@ jobs:
           coverage run --branch --source mmdet -m pytest -k "not test_models.py and not test_ote_api.py" tests/
 
   build_cuda:
+    if: contains(github.event.comment.html_url, '/pull/') && (github.event.comment.body == 'run tests')
     runs-on: ubuntu-latest
 
     env:

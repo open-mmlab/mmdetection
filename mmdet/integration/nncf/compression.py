@@ -90,14 +90,15 @@ def wrap_nncf_model(model,
 
     check_nncf_is_enabled()
 
-    from nncf import (NNCFConfig, create_compressed_model,
-                      register_default_init_args)
-    from nncf.dynamic_graph.io_handling import nncf_model_input, wrap_nncf_model_outputs_with_objwalk
-    from nncf.dynamic_graph.trace_tensor import TracedTensor
-    from nncf.initialization import InitializingDataLoader
+    from nncf import NNCFConfig
+    from nncf.torch import create_compressed_model
+    from nncf.torch import register_default_init_args
+    from nncf.torch.dynamic_graph.io_handling import nncf_model_input
+    from nncf.torch.dynamic_graph.io_handling import wrap_nncf_model_outputs_with_objwalk
+    from nncf.torch.dynamic_graph.trace_tensor import TracedTensor
+    from nncf.torch.initialization import PTInitializingDataLoader
 
-    class MMInitializeDataLoader(InitializingDataLoader):
-
+    class MMInitializeDataLoader(PTInitializingDataLoader):
         def get_inputs(self, dataloader_output):
             # redefined InitializingDataLoader because
             # of DataContainer format in mmdet
@@ -138,10 +139,10 @@ def wrap_nncf_model(model,
             'Please, note that this first loading is made before addition of '
             'NNCF FakeQuantize nodes to the model, so there may be some '
             'warnings on unexpected keys')
-        resuming_state_dict = load_checkpoint(model, checkpoint_path)
+        compression_state = load_checkpoint(model, checkpoint_path)
         logger.info(f'Loaded NNCF checkpoint from {checkpoint_path}')
     else:
-        resuming_state_dict = None
+        compression_state = None
 
     if "nncf_compress_postprocessing" in cfg:
         # NB: This parameter is used to choose if we should try to make NNCF compression
@@ -223,7 +224,7 @@ def wrap_nncf_model(model,
                                                           nncf_config,
                                                           dummy_forward_fn=dummy_forward,
                                                           wrap_inputs_fn=wrap_inputs,
-                                                          resuming_state_dict=resuming_state_dict)
+                                                          compression_state=compression_state)
     model.export = export_method.__get__(model)
 
     return compression_ctrl, model
@@ -232,7 +233,7 @@ def wrap_nncf_model(model,
 def get_uncompressed_model(module):
     if not is_nncf_enabled():
         return module
-    from nncf.nncf_network import NNCFNetwork
+    from nncf.torch.nncf_network import NNCFNetwork
     if isinstance(module, NNCFNetwork):
         return module.get_nncf_wrapped_model()
     return module

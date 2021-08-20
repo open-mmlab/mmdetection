@@ -262,7 +262,7 @@ class MMDatasetAdapter(Dataset):
         if self.ann_files[subset] is None:
             return False
         from mmdet.datasets.pipelines import LoadImageFromFile, LoadAnnotations
-        pipeline = [LoadImageFromFile(), LoadAnnotations(with_bbox=True)]
+        pipeline = [dict(type='LoadImageFromFile'), dict(type='LoadAnnotations', with_bbox=True)]
         self.coco_dataset = CocoDataset(ann_file=self.ann_files[subset],
                                         pipeline=pipeline,
                                         data_root=self.data_roots[subset],

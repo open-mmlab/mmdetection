@@ -22,11 +22,6 @@ Please see [getting_started.md](docs/getting_started.md) for the basic usage. Th
 
 This project allows making compression of the models by [NNCF](https://github.com/openvinotoolkit/nncf_pytorch) framework.
 
-At the moment the following compression methods are supported:
-* int8 quantization
-* sparsity
-* filter pruning
-
 See details in [nncf_compression.md](docs/nncf_compression.md).
 
 ## Model Zoo
