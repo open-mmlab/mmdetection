@@ -31,7 +31,7 @@ from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
                                       MetricsGroup, Performance, ScoreMetric,
                                       VisualizationInfo, VisualizationType)
 from ote_sdk.entities.shapes.box import Box
-from ote_sdk.entities.train_parameters import TrainParameters
+from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
 from sc_sdk.configuration import cfg_helper
 from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset, Subset
@@ -41,7 +41,6 @@ from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
-from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from sc_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from sc_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
                                                                IExportTask)
@@ -56,6 +55,7 @@ from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
                                                         prepare_for_training,
                                                         set_hyperparams)
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
+from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
@@ -99,7 +99,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         self._training_work_dir = None
         self._is_training = False
         self._should_stop = False
-        self._time_monitor = None
 
 
     def _load_model(self, model: Model):
@@ -260,10 +259,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
         # Create new model if training from scratch.
         old_model = copy.deepcopy(self._model)
-        # if train_parameters is not None and train_parameters.train_on_empty_model:
-        #     logger.info("Training from scratch, creating new model")
-        #     # FIXME. Isn't it an overkill? Consider calling init_weights instead.
-        #     self._model = self._create_model(config=config, from_scratch=True)
 
         # Evaluate model performance before training.
         _, initial_performance = self._infer_detector(self._model, config, val_dataset, True)
@@ -275,14 +270,17 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             self._model = old_model
             self._should_stop = False
             self._is_training = False
-            self._time_monitor = None
             self._training_work_dir = None
             return
 
         # Run training.
-        self._time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda _: None)
+        if train_parameters is not None:
+            update_progress_callback = train_parameters.update_progress
+        else:
+            update_progress_callback = default_progress_callback
+        time_monitor = TrainingProgressCallback(update_progress_callback)
         learning_curves = defaultdict(OTELoggerHook.Curve)
-        training_config = prepare_for_training(config, train_dataset, val_dataset, self._time_monitor, learning_curves)
+        training_config = prepare_for_training(config, train_dataset, val_dataset, time_monitor, learning_curves)
         self._training_work_dir = training_config.work_dir
         mm_train_dataset = build_dataset(training_config.data.train)
         self._is_training = True
@@ -296,7 +294,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             self._model = old_model
             self._should_stop = False
             self._is_training = False
-            self._time_monitor = None
             return
 
         # Load the best weights and check if model has improved.
@@ -328,7 +325,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             self._model = old_model
 
         self._is_training = False
-        self._time_monitor = None
 
 
     def save_model(self, output_model: Model):
@@ -339,17 +335,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
         torch.save(modelinfo, buffer)
         output_model.set_data("weights.pth", buffer.getvalue())
-
-
-    def get_training_progress(self) -> float:
-        """
-        Calculate the progress of the current training
-
-        :return: training progress in percent
-        """
-        if self._time_monitor is not None:
-            return self._time_monitor.get_progress()
-        return -1.0
 
 
     def cancel_training(self):

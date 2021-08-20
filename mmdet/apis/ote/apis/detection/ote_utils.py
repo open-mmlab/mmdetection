@@ -17,9 +17,12 @@ import os
 import subprocess
 import tempfile
 import yaml
+from typing import Optional
+
+from ote_sdk.entities.train_parameters import UpdateProgressCallback
 from sc_sdk.entities.label import Color, Label, distinct_colors
-from sc_sdk.entities.label_schema import (LabelGroup, LabelGroupType,
-                                          LabelSchema)
+from sc_sdk.entities.label_schema import LabelGroup, LabelGroupType, LabelSchema
+from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 
 
 def generate_label_schema(label_names):
@@ -66,3 +69,12 @@ def reload_hyper_parameters(model_template):
     subprocess.run(f'cp {template_file} {temp_folder}', check=True, shell=True)
     model_template.hyper_parameters.load_parameters(os.path.join(temp_folder, 'template.yaml'))
     assert model_template.hyper_parameters.data
+
+
+class TrainingProgressCallback(TimeMonitorCallback):
+    def __init__(self, update_progress_callback: Optional[UpdateProgressCallback] = None):
+        super().__init__(0, 0, 0, 0, update_progress_callback=update_progress_callback)
+
+    def on_train_batch_end(self, batch, logs=None):
+        super().on_train_batch_end(batch, logs)
+        self.update_progress_callback(self.get_progress())

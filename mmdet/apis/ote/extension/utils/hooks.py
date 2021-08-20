@@ -24,7 +24,7 @@ from mmcv.utils import print_log
 from sc_sdk.logging import logger_factory
 
 
-logger = logger_factory.get_logger("MMDetectionTask")
+logger = logger_factory.get_logger("OTEDetectionTask.Hooks")
 
 
 @HOOKS.register_module()

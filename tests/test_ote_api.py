@@ -10,12 +10,15 @@ import unittest
 import warnings
 import yaml
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
+
 from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
+from ote_sdk.entities.train_parameters import TrainParameters
 from sc_sdk.entities.annotation import (Annotation, AnnotationScene,
                                         AnnotationSceneKind)
 from sc_sdk.entities.dataset_item import DatasetItem
@@ -291,6 +294,34 @@ class TestOTEAPI(unittest.TestCase):
         train_future.result()
         self.assertLess(time.time() - start_time, 25)  # stopping process has to happen in less than 25 seconds
 
+    def test_training_progress_tracking(self):
+        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
+
+        task = OTEDetectionTask(task_environment=detection_environment)
+        self.addCleanup(task._delete_scratch_space)
+
+        print('Task initialized, model training starts.')
+        training_progress_curve = []
+
+        def progress_callback(progress: float, score: Optional[float] = None):
+            training_progress_curve.append(progress)
+
+        train_parameters = TrainParameters
+        train_parameters.update_progress = progress_callback
+        output_model = Model(
+                NullProject(),
+                NullModelStorage(),
+                dataset,
+                detection_environment.get_model_configuration(),
+                model_status=ModelStatus.NOT_READY)
+        task.train(dataset, output_model, train_parameters)
+
+        self.assertGreater(len(training_progress_curve), 0)
+        training_progress_curve = np.asarray(training_progress_curve)
+        self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
+
     @staticmethod
     def eval(task: OTEDetectionTask, model: Model, dataset: Dataset) -> Performance:
         start_time = time.time()
@@ -419,7 +450,6 @@ class TestOTEAPI(unittest.TestCase):
                         msg=f'Expected no or very small performance difference after export. Performance delta '
                             f'({validation_performance.score.value} vs {export_performance.score.value}) was '
                             f'larger than the tolerance of {perf_delta_tolerance}')
-
 
     def test_training_custom_mobilenetssd_256(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
