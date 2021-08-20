@@ -86,11 +86,6 @@ def eval_recalls(gts,
         ndarray: recalls of different ious and proposal nums
     """
 
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
-
     img_num = len(gts)
     assert img_num == len(proposals)
     proposal_nums, iou_thrs = set_recall_param(proposal_nums, iou_thrs)
@@ -107,7 +102,9 @@ def eval_recalls(gts,
             ious = np.zeros((0, img_proposal.shape[0]), dtype=np.float32)
         else:
             ious = bbox_overlaps(
-                gts[i], img_proposal[:prop_num, :4], extra_length=extra_length)
+                gts[i],
+                img_proposal[:prop_num, :4],
+                use_legacy_coordinate=use_legacy_coordinate)
         all_ious.append(ious)
     all_ious = np.array(all_ious)
     recalls = _recalls(all_ious, proposal_nums, iou_thrs)

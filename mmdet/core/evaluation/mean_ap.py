@@ -115,7 +115,8 @@ def tpfp_imagenet(det_bboxes,
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
         return tp, fp
-    ious = bbox_overlaps(det_bboxes, gt_bboxes - 1, extra_length=extra_length)
+    ious = bbox_overlaps(
+        det_bboxes, gt_bboxes - 1, use_legacy_coordinate=use_legacy_coordinate)
     gt_w = gt_bboxes[:, 2] - gt_bboxes[:, 0] + extra_length
     gt_h = gt_bboxes[:, 3] - gt_bboxes[:, 1] + extra_length
     iou_thrs = np.minimum((gt_w * gt_h) / ((gt_w + 10.0) * (gt_h + 10.0)),
