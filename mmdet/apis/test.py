@@ -11,7 +11,7 @@ from mmcv.image import tensor2imgs
 from mmcv.runner import get_dist_info
 
 from mmdet.core import encode_mask_results
-from mmdet.core.results.results import DetectionResults
+from mmdet.core.results.results import Results
 
 
 def single_gpu_test(model,
@@ -26,13 +26,13 @@ def single_gpu_test(model,
     for i, data in enumerate(data_loader):
         with torch.no_grad():
 
-            # Currently only SOLO will return :obj:`DetectionResults`
+            # Currently only SOLO will return :obj:`Results`
             # but in the future, the outputs of all the models would
-            # be unified as :obj:`DetectionResults`
+            # be unified as :obj:`Results`
             result = model(return_loss=False, rescale=True, **data)
 
         # Avoid CUDA OOM, Currently only used in SOLO
-        if isinstance(result[0], DetectionResults):
+        if isinstance(result[0], Results):
             result = [item.cpu() for item in result]
 
         batch_size = len(result)
@@ -77,7 +77,7 @@ def single_gpu_test(model,
     # Currently only SOLO will run this branch, reorganize
     # predictions into the the format agreed with the
     # :func:`evaluate` of `obj:`dataset`
-    if isinstance(results[0], DetectionResults):
+    if isinstance(results[0], Results):
         format_results = []
         for item in results:
             format_item = item.format_results()
@@ -120,13 +120,13 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     for i, data in enumerate(data_loader):
         with torch.no_grad():
 
-            # Currently only solo will return :obj:`DetectionResults`
+            # Currently only solo will return :obj:`Results`
             # but in the future, the outputs of all the models would
-            # be unified as :obj:`DetectionResults`
+            # be unified as :obj:`Results`
             result = model(return_loss=False, rescale=True, **data)
 
             # Avoid CUDA OOM
-            if isinstance(result[0], DetectionResults):
+            if isinstance(result[0], Results):
                 result = [item.cpu() for item in result]
 
             # encode mask results
@@ -143,7 +143,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     # Currently only SOLO will run this branch, reorganize
     # predictions into the the format agreed with the
     # :func:`evaluate` of `obj:`dataset`
-    if isinstance(results[0], DetectionResults):
+    if isinstance(results[0], Results):
         format_results = []
         for item in results:
             format_item = item.format_results()
