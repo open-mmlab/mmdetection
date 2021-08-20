@@ -1,3 +1,23 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+"""Optimize anchor settings on a specific dataset.
+
+This script provides two method to optimize YOLO anchors including k-means
+anchor cluster and differential evolution. You can use ``--algorithm k-means``
+and ``--algorithm differential_evolution`` to switch two method.
+
+Example:
+    Use k-means anchor cluster::
+
+        python tools/analysis_tools/optimize_anchors.py ${CONFIG} \
+        --algorithm k-means --input-shape ${INPUT_SHAPE [WIDTH HEIGHT]} \
+        --output-dir ${OUTPUT_DIR}
+    Use differential evolution to optimize anchors::
+
+        python tools/analysis_tools/optimize_anchors.py ${CONFIG} \
+        --algorithm differential_evolution \
+        --input-shape ${INPUT_SHAPE [WIDTH HEIGHT]} \
+        --output-dir ${OUTPUT_DIR}
+"""
 import argparse
 import os.path as osp
 
@@ -78,7 +98,7 @@ class BaseAnchorOptimizer:
         """Get widths and heights of bboxes and shapes of images.
 
         Returns:
-            tuple[array, array]: Array of bbox shapes and array of image
+            tuple[np.ndarray]: Array of bbox shapes and array of image
             shapes with shape (num_bboxes, 2) in [width, height] format.
         """
         self.logger.info('Collecting bboxes from annotation...')
@@ -105,7 +125,7 @@ class BaseAnchorOptimizer:
         """Get a tensor of bboxes centered at (0, 0).
 
         Returns:
-            (Tensor): Tensor of bboxes with shape (num_bboxes, 4)
+            Tensor: Tensor of bboxes with shape (num_bboxes, 4)
             in [xmin, ymin, xmax, ymax] format.
         """
         whs = torch.from_numpy(self.bbox_whs).to(

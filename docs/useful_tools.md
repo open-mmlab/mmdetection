@@ -188,7 +188,7 @@ python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
 --model-name ${MODEL_NAME}
 ```
 
-***Note**: ${MODEL_STORE} needs to be an absolute path to a folder.
+**Note**: ${MODEL_STORE} needs to be an absolute path to a folder.
 
 ### 2. Build `mmdet-serve` docker image
 
