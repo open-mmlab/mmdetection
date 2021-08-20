@@ -154,8 +154,8 @@ class SingleStageInstanceSegmentor(BaseDetector):
         """
         feat = self.extract_feat(img)
         if self.bbox_head:
-            # det_results is a obj:`DetectionResults`
             outs = self.bbox_head(feat)
+            # results_list is list[obj:`DetectionResults`]
             results_list = self.bbox_head.get_results(
                 *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)
         else:

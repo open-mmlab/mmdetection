@@ -35,8 +35,8 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 Each has shape (B, C, H, W).
             gt_labels (Tensor): Ground truth labels of each box,
                 shape (num_gts,).
-            gt_masks (None | Tensor) : true segmentation masks for each box
-                used if the architecture supports a segmentation task.
+            gt_masks (None | Tensor) : Masks for each bbox, shape
+                (num_gts, h , w).
             gt_bboxes (Tensor): Ground truth bboxes of the image,
                 shape (num_gts, 4).
             gt_bboxes_ignore (Tensor): Ground truth bboxes to be
@@ -48,7 +48,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 like `YOLACT`, `CondInst`, etc. It contains the
                 information of positive samples.
                 If there is only `mask_head` in `SingleStageInstanceSegmentor`,
-                it would be None, like SOLO. All value in it should has
+                it would be None, like SOLO. All values in it should have
                 shape (num_positive, *).
 
           Returns:
@@ -87,7 +87,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
             det_results (list[obj:`DetectionResults`]): Detection
-                Results of each image after the post process. Only exist
+                results of each image after the post process. Only exist
                 if there is a `bbox_head`, like `YOLACT`, `CondInst`, etc.
 
         Returns:
