@@ -2,15 +2,15 @@
 
 ## 支持新的数据格式
 
-为了支持新的数据格式，可以选择将数据转换成现成的格式（COCO或者PASCAL）或将其转换成中间格式。当然也可以选择以离线的形式（在训练之前使用脚本转换）或者在线的形式（实现一个新的dataset在训练中进行转换）来转换数据。
+为了支持新的数据格式，可以选择将数据转换成现成的格式（ COCO 或者PASCAL ）或将其转换成中间格式。当然也可以选择以离线的形式（在训练之前使用脚本转换）或者在线的形式（实现一个新的 dataset 在训练中进行转换）来转换数据。
 
-在MMDetection中，建议将数据转换成COCO格式并以离线的方式进行，因此在完成数据转换后只需修改配置文件中的标注数据的路径和类别即可。
+在 MMDetection 中，建议将数据转换成 COCO 格式并以离线的方式进行，因此在完成数据转换后只需修改配置文件中的标注数据的路径和类别即可。
 
-### 调整新的数据格式为现有的数据格式
+### 将新的数据格式转换为现有的数据格式
 
-最简单的方法就是将你的数据集转换成现有的数据格式（COCO或者PASCAL VOC）
+最简单的方法就是将你的数据集转换成现有的数据格式（ COCO 或者 PASCAL VOC）
 
-COCO格式的json标注文件有如下必要的键：
+COCO 格式的 json 标注文件有如下必要的键：
 
 ```python
 'images': [
@@ -29,7 +29,7 @@ COCO格式的json标注文件有如下必要的键：
             247.09,
             ...
             219.03,
-            249.06]],  # 如果有mask标签
+            249.06]],  # 如果有 mask 标签
         'area': 1035.749,
         'iscrowd': 0,
         'image_id': 1268,
@@ -45,25 +45,25 @@ COCO格式的json标注文件有如下必要的键：
  ]
 ```
 
-在json文件中有三个必要的键：
+在 json 文件中有三个必要的键：
 
-- `images`: 包含多个图片以及它们的信息的数组，比如 `file_name`，`height`，`width`，和 `id`。
+- `images`: 包含多个图片以及它们的信息的数组，例如 `file_name`、`height`、`width`和 `id`。
 - `annotations`: 包含多个实例标注信息的数组。
-- `categories`: 包含多个类别名字和ID的数组。
+- `categories`: 包含多个类别名字和 ID 的数组。
 
-在数据预处理之后，使用现成的数据格式来训练自定义的新数据集还有两步要做（以COCO为例）：
+在数据预处理之后，使用现有的数据格式来训练自定义的新数据集还有两步要做（以 COCO 为例）：
 
 1. 为自定义数据集修改配置文件。
 2. 检查自定义数据集的标注。
 
-这里给出用包含5个类别的自定义数据集（COCO格式）训练现成的Cascade MaskRCNN R50 FPN检测器为例，来展示如上的两个步骤。
+这里我们举一个例子来展示上面的两个步骤，这个例子使用包括 5 个类别的 COCO 格式的数据集来训练一个现有的 Cascade MaskRCNN R50 FPN 检测器
 
 #### 1. 为自定义数据集修改配置文件
 
 配置文件的修改涉及两个方面：
 
-1. `data`部分。需要在`data.train`，`data.val`和`data.test`中添加`classes`。
-2. `model`部分中的`num_classes`。需要将默认值（COCO数据集中为80）修改为自定义数据集中的类别数。
+1. `data`部分。需要在`data.train`、`data.val`和`data.test`中添加`classes`。
+2. `model`部分中的`num_classes`。需要将默认值（ COCO 数据集中为 80 ）修改为自定义数据集中的类别数。
 
 `configs/my_custom_config.py`内容如下：
 
@@ -86,7 +86,7 @@ data = dict(
         img_prefix='path/to/your/train/image_data'),
     val=dict(
         type=dataset_type,
-        # 将类别名字添加至`classes`字段中
+        # 将类别名字添加至 `classes` 字段中
         classes=classes,
         ann_file='path/to/your/val/annotation_data',
         img_prefix='path/to/your/val/image_data'),
@@ -105,29 +105,29 @@ model = dict(
         bbox_head=[
             dict(
                 type='Shared2FCBBoxHead',
-                # 将所有的`num_classes`默认值修改为5（原来为80）
+                # 将所有的 `num_classes` 默认值修改为 5（原来为 80）
                 num_classes=5),
             dict(
                 type='Shared2FCBBoxHead',
-                # 将所有的`num_classes`默认值修改为5（原来为80）
+                # 将所有的 `num_classes` 默认值修改为 5（原来为 80）
                 num_classes=5),
             dict(
                 type='Shared2FCBBoxHead',
-                # 将所有的`num_classes`默认值修改为5（原来为80）
+                # 将所有的 `num_classes` 默认值修改为 5（原来为 80）
                 num_classes=5)],
-    # 将所有的`num_classes`默认值修改为5（原来为80）
+    # 将所有的 `num_classes` 默认值修改为 5（原来为 80）
     mask_head=dict(num_classes=5)))
 ```
 
 #### 2. 检查自定义数据集的标注
 
-假设你自己的数据集是COCO格式，那么需要保证数据的标注没有问题：
+假设你自己的数据集是 COCO 格式，那么需要保证数据的标注没有问题：
 
-1. 标注文件中`categories`的长度要与配置中的`classes`元组长度相匹配，它们都表示有几类。（如例子中有5个类别）
-2. 配置文件中`classes`字段应与标注文件里`categories`下的`name`有相同的元素且顺序一致。MMDetection会自动将`categories`中不连续的`id`映射成连续的索引，因此`categories`下的`name`的字符串顺序会影响标签的索引。同时，配置文件中的`classes`的字符串顺序也会影响到预测框可视化时的标签。
-3. `annotations`中的`category_id`必须是合法的值。比如所有`category_id`的值都应该属于`categories`中的`id`。
+1. 标注文件中`categories`的长度要与配置中的`classes`元组长度相匹配，它们都表示有几类。（如例子中有 5 个类别）
+2. 配置文件中`classes`字段应与标注文件里`categories`下的`name`有相同的元素且顺序一致。MMDetection 会自动将`categories`中不连续的`id`映射成连续的索引，因此`categories`下的`name`的字符串顺序会影响标签的索引。同时，配置文件中的`classes`的字符串顺序也会影响到预测框可视化时的标签。
+3. `annotations`中的`category_id`必须是有效的值。比如所有`category_id`的值都应该属于`categories`中的`id`。
 
-下面标注的例子是合法的：
+下面是一个有效标注的例子：
 
 ```python
 
@@ -137,7 +137,7 @@ model = dict(
             247.09,
             ...
             219.03,
-            249.06]],  # if you have mask labels
+            249.06]],  #如果有 mask 标签。
         'area': 1035.749,
         'iscrowd': 0,
         'image_id': 1268,
@@ -148,25 +148,24 @@ model = dict(
     ...
 ],
 
-# MMDetection会自动将`categories`中不连续的`id`映射成连续的索引。
+# MMDetection 会自动将 `categories` 中不连续的 `id` 映射成连续的索引。
 'categories': [
     {'id': 1, 'name': 'a'}, {'id': 3, 'name': 'b'}, {'id': 4, 'name': 'c'}, {'id': 16, 'name': 'd'}, {'id': 17, 'name': 'e'},
  ]
 ```
 
-我们使用这种方式来支持CityScapes数据集。脚本在[cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/dataset_converters/cityscapes.py) 并且我们提供了微调的[configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).
+我们使用这种方式来支持 CityScapes 数据集。脚本在[cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/dataset_converters/cityscapes.py) 并且我们提供了微调的[configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).
 
 **注意**
 
-1. 对于实例分割数据集, **MMDetection目前只支持评估COCO格式的mask AP**.
+1. 对于实例分割数据集, **MMDetection 目前只支持评估 COCO 格式的 mask AP**.
 2. 推荐训练之前进行离线转换，这样就可以继续使用`CocoDataset`且只需修改标注文件的路径以及训练的种类。
 
 ### 调整新的数据格式为中间格式
 
-如果不想将标注格式转换为COCO或者PASCAL格式也是可行的。实际上，我们定义了一种简单的标注格式并且与所有现成的数据格式兼容，也能进行离线或者在线转换。
+如果不想将标注格式转换为 COCO 或者 PASCAL 格式也是可行的。实际上，我们定义了一种简单的标注格式并且与所有现有的数据格式兼容，也能进行离线或者在线转换。
 
-数据集的标注是包含多个字典（dict）的列表，每个字典（dict）都与一张图片对应。测试时需要用到`filename` （相对路径）， `width`，`height`三个字段；训练时则额外需要`ann`。`ann`也是一个包含了至少两个字段的字典：
-`bboxes`和`labels`，它们都是numpy array。有些数据集可能会提供如：crowd/difficult/ignored bboxes标注，那么我们使用`bboxes_ignore`以及`labels_ignore`来包含它们。
+数据集的标注是包含多个字典（ dict ）的列表，每个字典（ dict ）都与一张图片对应。测试时需要用到`filename` （相对路径）， `width`，`height`三个字段；训练时则额外需要`ann`。`ann`也是至少包含了两个字段的字典：`bboxes`和`labels`，它们都是 numpy array。有些数据集可能会提供如：crowd/difficult/ignored bboxes 标注，那么我们使用`bboxes_ignore`以及`labels_ignore`来包含它们。
 
 下面给出一个例子。
 
@@ -188,16 +187,15 @@ model = dict(
 ]
 ```
 
-处理自定义数据集的两种方法。
+有两种方法处理自定义数据。
 
 - 在线转换（online conversion）
 
-  You can write a new Dataset class inherited from `CustomDataset`, and overwrite two methods
-  可以新写一个继承自`CustomDataset`的Dataset类，并重写`load_annotations(self, ann_file)`以及`get_ann_info(self, idx)`这两个方法，正如[CocoDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/coco.py)与[VOCDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/voc.py).
+  可以新写一个继承自`CustomDataset`的 Dataset 类，并重写`load_annotations(self, ann_file)`以及`get_ann_info(self, idx)`这两个方法，正如[CocoDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/coco.py)与[VOCDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/voc.py).
 
 - 离线转换（offline conversion）
 
-  可以将标注格式转换为上述的任意格式并将其保存为pickle或者json文件，正如[pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/dataset_converters/pascal_voc.py)。
+  可以将标注格式转换为上述的任意格式并将其保存为 pickle 或者 json 文件，例如[pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/dataset_converters/pascal_voc.py)。
   然后使用`CustomDataset`。
 
 ### 自定义数据集的例子：
@@ -220,7 +218,7 @@ model = dict(
 30 40 50 60 3
 ```
 
-我们可以在`mmdet/datasets/my_dataset.py`中创建一个新的dataset用以加载数据。
+我们可以在`mmdet/datasets/my_dataset.py`中创建一个新的 dataset 用以加载数据。
 
 ```python
 import mmcv
@@ -282,10 +280,10 @@ dataset_A_train = dict(
 )
 ```
 
-## 使用dataset包装器自定义数据集
+## 使用 dataset 包装器自定义数据集
 
-MMDetection也支持非常多的数据集包装器（wrapper）来混合数据集或在训练时修改数据集的分布。
-最近MMDetection支持如下三种数据集包装：
+MMDetection 也支持非常多的数据集包装器（wrapper）来混合数据集或在训练时修改数据集的分布。
+最近 MMDetection 支持如下三种数据集包装：
 
 - `RepeatDataset`：将整个数据集简单地重复。
 - `ClassBalancedDataset`：以类别均衡的方式重复数据集。
@@ -300,7 +298,7 @@ MMDetection也支持非常多的数据集包装器（wrapper）来混合数据�
 dataset_A_train = dict(
         type='RepeatDataset',
         times=N,
-        dataset=dict(  # This is the original config of Dataset_A
+        dataset=dict(  # Dataset_A 的原始配置信息
             type='Dataset_A',
             ...
             pipeline=train_pipeline
@@ -317,7 +315,7 @@ dataset_A_train = dict(
 dataset_A_train = dict(
         type='ClassBalancedDataset',
         oversample_thr=1e-3,
-        dataset=dict(  # Dataset_A的原始配置信息
+        dataset=dict(  # Dataset_A 的原始配置信息
             type='Dataset_A',
             ...
             pipeline=train_pipeline
@@ -432,7 +430,7 @@ data = dict(
     test=dict(classes=classes))
 ```
 
-MMDetection V2.0也支持从文件中读取类别名称，这种方式在实际应用中很常见。
+MMDetection V2.0 也支持从文件中读取类别名称，这种方式在实际应用中很常见。
 假设存在文件`classes.txt`，其包含了如下的类别名称。
 
 ```
@@ -453,7 +451,7 @@ data = dict(
 
 **注意**
 
-- 在MMDetection v2.5.0之前，如果类别为集合时数据集将自动过滤掉空真实框的图片，且没办法通过设置配置将其关闭。这是一种不和预期的行为而且会引起混淆，因为当类别不是集合时数据集只有在`filter_empty_gt=True`以及`test_mode=False`的情况下才会过滤掉空真实框的图片。在MMDetection v2.5.0之后，我们将图片的过滤以及类别的修改进行解耦，如，数据集只有在`filter_empty_gt=True`和`test_mode=False`的情况下才会过滤掉空真实框的图片，无论类别是否为集合。设置类别只会影响用于训练的标注类别，用户可以自己决定是否过滤空真实框的图片。
+- 在 MMDetection v2.5.0 之前，如果类别为集合时数据集将自动过滤掉空真实框的图片，且没办法通过设置配置将其关闭。这是一种不和预期的行为而且会引起混淆，因为当类别不是集合时数据集只有在`filter_empty_gt=True`以及`test_mode=False`的情况下才会过滤掉空真实框的图片。在 MMDetection v2.5.0 之后，我们将图片的过滤以及类别的修改进行解耦，如，数据集只有在`filter_empty_gt=True`和`test_mode=False`的情况下才会过滤掉空真实框的图片，无论类别是否为集合。设置类别只会影响用于训练的标注类别，用户可以自己决定是否过滤空真实框的图片。
 - 因为中间格式只有框的标签并不包含类别的名字，所以使用`CustomDataset`时用户不能通过设置配置来过滤掉空真实框的图片。但是可以通过离线的方式来解决。
-- 当设置数据集中的`classes`时，记得修改`num_classes`。从v2.9.0(PR#4508)之后，我们实现了[NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/utils.py)来检查类别数是否一致。
+- 当设置数据集中的`classes`时，记得修改`num_classes`。从 v2.9.0 (PR#4508) 之后，我们实现了[NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/utils.py)来检查类别数是否一致。
 - 我们在未来将会重构设置数据集类别以及数据集过滤的特性，使其更加地方便用户使用。
