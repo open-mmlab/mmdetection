@@ -27,20 +27,6 @@ def single_gpu_test(model,
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
 
-        # Currently only SOLO will run this branch, reorganize
-        # predictions into the the format agreed with the
-        # :func:`evaluate` of `obj:`dataset`
-        if isinstance(result[0], Results):
-            format_result = []
-            for item in result:
-                format_item = item.format_results()
-                if 'mask_results' in format_item:
-                    format_result.append((format_item['bbox_results'],
-                                          format_item['mask_results']))
-                else:
-                    format_result.append(format_item['bbox_results'])
-            result = format_result
-
         batch_size = len(result)
         if show or out_dir:
             if batch_size == 1 and isinstance(data['img'][0], torch.Tensor):
@@ -70,8 +56,22 @@ def single_gpu_test(model,
                     out_file=out_file,
                     score_thr=show_score_thr)
 
+        # Currently only SOLO will run this branch, reorganize
+        # predictions into the the format agreed with the
+        # :func:`evaluate` of `obj:`dataset`
+        if isinstance(result[0], Results):
+            format_result = []
+            for item in result:
+                format_item = item.format_results()
+                if 'mask_results' in format_item:
+                    format_result.append((format_item['bbox_results'],
+                                          format_item['mask_results']))
+                else:
+                    format_result.append(format_item['bbox_results'])
+            result = format_result
+
         # encode mask results
-        if isinstance(result[0], tuple):
+        elif isinstance(result[0], tuple):
             result = [(bbox_results, encode_mask_results(mask_results))
                       for bbox_results, mask_results in result]
 
