@@ -19,8 +19,9 @@ from ote_sdk.configuration.elements import (ParameterGroup,
                                             configurable_boolean,
                                             configurable_float,
                                             configurable_integer,
-                                            string_attribute)
-from sc_sdk.configuration import ModelConfig, ModelLifecycle
+                                            string_attribute,
+                                            ModelConfig)
+from ote_sdk.configuration.model_lifecycle import ModelLifecycle
 
 
 @attrs

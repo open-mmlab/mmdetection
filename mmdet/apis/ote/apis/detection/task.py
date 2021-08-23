@@ -21,6 +21,8 @@ import tempfile
 import torch
 import warnings
 from collections import defaultdict
+from typing import List, Optional, Tuple
+
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
@@ -40,14 +42,12 @@ from sc_sdk.entities.optimized_model import ModelPrecision, OptimizedModel
 from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
 from sc_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.logging import logger_factory
-from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
-from sc_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
-from sc_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
-                                                               IExportTask)
-from sc_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
-from sc_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
-from sc_sdk.usecases.tasks.interfaces.unload_interface import IUnload
-from typing import List, Optional, Tuple
+from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
+from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
+from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
+from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
+from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
+from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
 
 from mmdet.apis import export_model, single_gpu_test, train_detector
 from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
