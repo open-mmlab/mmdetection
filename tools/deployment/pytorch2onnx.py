@@ -22,7 +22,8 @@ def pytorch2onnx(model,
                  verify=False,
                  test_img=None,
                  do_simplify=False,
-                 dynamic_export=None):
+                 dynamic_export=None,
+                 skip_postprocess=False):
 
     input_config = {
         'input_shape': input_shape,
@@ -32,6 +33,26 @@ def pytorch2onnx(model,
     # prepare input
     one_img, one_meta = preprocess_example_input(input_config)
     img_list, img_meta_list = [one_img], [[one_meta]]
+
+    if skip_postprocess:
+        warnings.warn('Not all models support export onnx without post '
+                      'process, especially two stage detectors!')
+        model.forward = model.forward_dummy
+        torch.onnx.export(
+            model,
+            one_img,
+            output_file,
+            input_names=['input'],
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=show,
+            opset_version=opset_version)
+
+        print(f'Successfully exported ONNX model without '
+              f'post process: {output_file}')
+        return
+
     # replace original forward function
     origin_forward = model.forward
     model.forward = partial(
@@ -252,6 +273,12 @@ def parse_args():
         '--dynamic-export',
         action='store_true',
         help='Whether to export onnx with dynamic axis.')
+    parser.add_argument(
+        '--skip-postprocess',
+        action='store_true',
+        help='Whether to export model without post process. Experimental '
+        'option. We do not guarantee the correctness of the exported '
+        'model.')
     args = parser.parse_args()
     return args
 
@@ -305,4 +332,5 @@ if __name__ == '__main__':
         verify=args.verify,
         test_img=args.test_img,
         do_simplify=args.simplify,
-        dynamic_export=args.dynamic_export)
+        dynamic_export=args.dynamic_export,
+        skip_postprocess=args.skip_postprocess)
