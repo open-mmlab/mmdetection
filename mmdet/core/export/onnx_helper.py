@@ -130,8 +130,8 @@ def add_dummy_nms_for_onnx(boxes,
     if nms_pre > 0:
         max_scores, _ = scores.max(-1)
         _, topk_inds = max_scores.topk(nms_pre)
-        batch_inds = torch.arange(batch_size, device=device).view(
-            -1, 1).expand_as(topk_inds).long()
+        batch_inds = torch.arange(
+            batch_size, device=device).view(-1, 1).expand_as(topk_inds).long()
         # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
         transformed_inds = boxes.shape[1] * batch_inds + topk_inds
         boxes = boxes.reshape(-1, 4)[transformed_inds, :].reshape(

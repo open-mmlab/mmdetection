@@ -285,8 +285,8 @@ class RPNHead(AnchorHead):
             nms_pre = get_k_for_topk(nms_pre_tensor, rpn_bbox_pred.shape[1])
             if nms_pre > 0:
                 _, topk_inds = scores.topk(nms_pre)
-                batch_inds = torch.arange(batch_size, device=device).view(
-                    -1, 1).expand_as(topk_inds)
+                batch_inds = torch.arange(
+                    batch_size, device=device).view(-1, 1).expand_as(topk_inds)
                 # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
                 # Mind k<=3480 in TensorRT for TopK
                 transformed_inds = scores.shape[1] * batch_inds + topk_inds
