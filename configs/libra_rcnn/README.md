@@ -13,6 +13,17 @@ We provide config files to reproduce the results in the CVPR 2019 paper [Libra R
   booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
   year={2019}
 }
+
+@article{pang2021towards,
+  title={Towards Balanced Learning for Instance Recognition},
+  author={Pang, Jiangmiao and Chen, Kai and Li, Qi and Xu, Zhihai and Feng, Huajun and Shi, Jianping and Ouyang, Wanli and Lin, Dahua},
+  journal={International Journal of Computer Vision},
+  volume={129},
+  number={5},
+  pages={1376--1393},
+  year={2021},
+  publisher={Springer}
+}
 ```
 
 ## Results and models
