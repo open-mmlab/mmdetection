@@ -19,8 +19,8 @@ from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
 from ote_sdk.entities.train_parameters import TrainParameters
-from sc_sdk.entities.annotation import (Annotation, AnnotationScene,
-                                        AnnotationSceneKind)
+from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
+from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, NullDatasetStorage, Subset
 from sc_sdk.entities.image import Image

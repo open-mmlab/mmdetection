@@ -22,7 +22,8 @@ import numpy as np
 from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.shapes.box import Box
 
-from sc_sdk.entities.annotation import Annotation, AnnotationScene, AnnotationSceneKind, NullMediaIdentifier
+from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
+from sc_sdk.entities.annotation import AnnotationScene, NullMediaIdentifier
 from sc_sdk.entities.datasets import Dataset, DatasetItem, NullDataset, Subset
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.image import Image

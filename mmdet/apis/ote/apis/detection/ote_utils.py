@@ -46,7 +46,7 @@ class ColorPalette:
             arg_max = np.argmax(min_distances)
             hsv_colors.append(colors_candidates[arg_max])
 
-        self.palette = [self.hsv2rgb(*hsv) for hsv in hsv_colors]
+        self.palette = [Color(*self.hsv2rgb(*hsv)) for hsv in hsv_colors]
 
     @staticmethod
     def dist(c1, c2):
