@@ -67,3 +67,33 @@ def test_mask_head_loss():
     loss_mask_iou = mask_iou_head.loss(pos_mask_iou_pred, mask_iou_targets)
     onegt_mask_iou_loss = loss_mask_iou['loss_mask_iou'].sum()
     assert onegt_mask_iou_loss.item() >= 0
+
+
+def test_rescale_mask_to_input_shape_in_onnx():
+    self = FCNMaskHead()
+    num_classes = 80
+    num_bboxes = 10
+    mask_shape = [28, 28]
+    original_shape = [800, 1200]
+    mask_pred = torch.rand(
+        [num_bboxes, num_classes] + mask_shape, dtype=torch.float32)
+    det_bboxes = torch.rand([num_bboxes, 4], dtype=torch.float32)
+    det_labels = torch.randint(0, num_classes, [num_bboxes], dtype=torch.int64)
+    from mmcv.utils.config import ConfigDict
+    rcnn_test_cfg = ConfigDict({
+        'mask_thr_binary': 0.5,
+        'rescale_mask_to_input_shape': True
+    })
+    ori_shape = torch.tensor(original_shape, dtype=torch.int64)
+
+    # Test with mask scaling
+    rcnn_test_cfg.rescale_mask_to_input_shape = True
+    masks = self.onnx_export(mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
+                             ori_shape)
+    assert masks.shape[1:] == torch.Size(original_shape)
+
+    # Test without mask scaling
+    rcnn_test_cfg.rescale_mask_to_input_shape = False
+    masks = self.onnx_export(mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
+                             ori_shape)
+    assert masks.shape[1:] == torch.Size(mask_shape)
