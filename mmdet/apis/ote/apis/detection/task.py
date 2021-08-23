@@ -34,13 +34,13 @@ from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
                                       VisualizationInfo, VisualizationType)
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
-from sc_sdk.configuration import cfg_helper
+from ote_sdk.configuration import cfg_helper
 from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset, Subset
-from sc_sdk.entities.model import Model, ModelStatus, NullModel
+from sc_sdk.entities.model import Model, ModelStatus
 from sc_sdk.entities.optimized_model import ModelPrecision, OptimizedModel
 from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
-from sc_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.logging import logger_factory
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
@@ -102,7 +102,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
 
     def _load_model(self, model: Model):
-        if model != NullModel():
+        if model is not None:
             # If a model has been trained and saved for the task already, create empty model and load weights here
             buffer = io.BytesIO(model.get_data("weights.pth"))
             model_data = torch.load(buffer, map_location=torch.device('cpu'))
@@ -307,7 +307,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         improved = final_performance > initial_performance
 
         # Return a new model if model has improved, or there is no model yet.
-        if improved or isinstance(self._task_environment.model, NullModel):
+        if improved or self._task_environment.model is None:
             if improved:
                 logger.info("Training finished, and it has an improved model")
             else:

@@ -29,7 +29,7 @@ from sc_sdk.usecases.exportable_code.inference import BaseOpenVINOInferencer
 from sc_sdk.entities.label import Label
 from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.resultset import ResultSet
-from sc_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 

@@ -19,15 +19,15 @@ from ote_sdk.configuration.helper import create
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.datasets import Subset
-from sc_sdk.entities.model import Model, ModelStatus, NullModel
+from sc_sdk.entities.model import Model, ModelStatus
 from sc_sdk.entities.model_storage import NullModelStorage
-from sc_sdk.entities.model_template import parse_model_template
+from ote_sdk.entities.model_template import parse_model_template
 from sc_sdk.entities.optimized_model import (ModelOptimizationType,
                                              ModelPrecision, OptimizedModel,
                                              TargetDevice)
 from sc_sdk.entities.project import NullProject
 from sc_sdk.entities.resultset import ResultSet
-from sc_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.logging import logger_factory
 from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType
 
@@ -82,7 +82,7 @@ def main(args):
     params = create(hyper_parameters)
     logger.info('Set hyperparameters')
     params.learning_parameters.num_iters = 10
-    environment = TaskEnvironment(model=NullModel(), hyper_parameters=params, label_schema=labels_schema, model_template=model_template)
+    environment = TaskEnvironment(model=None, hyper_parameters=params, label_schema=labels_schema, model_template=model_template)
 
     logger.info('Create base Task')
     task_impl_path = model_template.entrypoints.base
