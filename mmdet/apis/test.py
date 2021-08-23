@@ -25,15 +25,21 @@ def single_gpu_test(model,
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-
-            # Currently only SOLO will return :obj:`Results`
-            # but in the future, the outputs of all the models would
-            # be unified as :obj:`Results`
             result = model(return_loss=False, rescale=True, **data)
 
-        # Avoid CUDA OOM, Currently only used in SOLO
-        if isinstance(result[0], Results):
-            result = [item.cpu() for item in result]
+        # Currently only SOLO will run this branch, reorganize
+        # predictions into the the format agreed with the
+        # :func:`evaluate` of `obj:`dataset`
+        if isinstance(results[0], Results):
+            format_results = []
+            for item in results:
+                format_item = item.format_results()
+                if 'mask_results' in format_item:
+                    format_results.append((format_item['bbox_results'],
+                                           format_item['mask_results']))
+                else:
+                    format_results.append(format_item['bbox_results'])
+            results = format_results
 
         batch_size = len(result)
         if show or out_dir:
@@ -74,20 +80,6 @@ def single_gpu_test(model,
         for _ in range(batch_size):
             prog_bar.update()
 
-    # Currently only SOLO will run this branch, reorganize
-    # predictions into the the format agreed with the
-    # :func:`evaluate` of `obj:`dataset`
-    if isinstance(results[0], Results):
-        format_results = []
-        for item in results:
-            format_item = item.format_results()
-            if 'mask_results' in format_item:
-                format_results.append(
-                    (format_item['bbox_results'], format_item['mask_results']))
-            else:
-                format_results.append(format_item['bbox_results'])
-        results = format_results
-
     return results
 
 
@@ -120,14 +112,21 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     for i, data in enumerate(data_loader):
         with torch.no_grad():
 
-            # Currently only solo will return :obj:`Results`
-            # but in the future, the outputs of all the models would
-            # be unified as :obj:`Results`
             result = model(return_loss=False, rescale=True, **data)
 
-            # Avoid CUDA OOM
-            if isinstance(result[0], Results):
-                result = [item.cpu() for item in result]
+            # Currently only SOLO will run this branch, reorganize
+            # predictions into the the format agreed with the
+            # :func:`evaluate` of `obj:`dataset`
+            if isinstance(results[0], Results):
+                format_results = []
+                for item in results:
+                    format_item = item.format_results()
+                    if 'mask_results' in format_item:
+                        format_results.append((format_item['bbox_results'],
+                                               format_item['mask_results']))
+                    else:
+                        format_results.append(format_item['bbox_results'])
+                results = format_results
 
             # encode mask results
             elif isinstance(result[0], tuple):
@@ -139,20 +138,6 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             batch_size = len(result)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
-
-    # Currently only SOLO will run this branch, reorganize
-    # predictions into the the format agreed with the
-    # :func:`evaluate` of `obj:`dataset`
-    if isinstance(results[0], Results):
-        format_results = []
-        for item in results:
-            format_item = item.format_results()
-            if 'mask_results' in format_item:
-                format_results.append(
-                    (format_item['bbox_results'], format_item['mask_results']))
-            else:
-                format_results.append(format_item['bbox_results'])
-        results = format_results
 
     # collect results from all ranks
     if gpu_collect:
