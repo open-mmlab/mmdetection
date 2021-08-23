@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
 
 from mmcv.runner import BaseModule
@@ -27,6 +28,32 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                       gt_bboxes_ignore=None,
                       positive_infos=None,
                       **kwargs):
+        """
+
+        Args:
+            x (list[Tensor] | tuple[Tensor]): Features from FPN.
+                Each has shape (B, C, H, W).
+            gt_labels (Tensor): Ground truth labels of each box,
+                shape (num_gts,).
+            gt_masks (None | Tensor) : Masks for each bbox, shape
+                (num_gts, h , w).
+            gt_bboxes (Tensor): Ground truth bboxes of the image,
+                shape (num_gts, 4).
+            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
+                ignored, shape (num_ignored_gts, 4).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            positive_infos (:obj:`DetectionResults`): Only exist
+                when there is a `bbox_head` in `SingleStageInstanceSegmentor`
+                like `YOLACT`, `CondInst`, etc. It contains the
+                information of positive samples.
+                If there is only `mask_head` in `SingleStageInstanceSegmentor`,
+                it would be None, like SOLO. All values in it should have
+                shape (num_positive, *).
+
+          Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         if positive_infos is None:
             outs = self(x)
         else:
@@ -60,7 +87,8 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
             det_results (list[obj:`DetectionResults`]): Detection
-                results of each image after the post process.
+                results of each image after the post process. Only exist
+                if there is a `bbox_head`, like `YOLACT`, `CondInst`, etc.
 
         Returns:
             list[obj:`DetectionResults`]: Instance segmentation
@@ -74,3 +102,18 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
         results_list = self.get_results(
             *mask_inputs, rescale=rescale, det_results=det_results, **kwargs)
         return results_list
+
+    def onnx_export(self, img, img_metas):
+        """Test function without test-time augmentation.
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            Tensor: The segmentation results of shape [N, num_bboxes,
+                image_height, image_width].
+        """
+        raise NotImplementedError(f'{self.__class__.__name__} does '
+                                  f'not support ONNX EXPORT')
