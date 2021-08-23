@@ -30,16 +30,16 @@ def single_gpu_test(model,
         # Currently only SOLO will run this branch, reorganize
         # predictions into the the format agreed with the
         # :func:`evaluate` of `obj:`dataset`
-        if isinstance(results[0], Results):
-            format_results = []
-            for item in results:
+        if isinstance(result[0], Results):
+            format_result = []
+            for item in result:
                 format_item = item.format_results()
                 if 'mask_results' in format_item:
-                    format_results.append((format_item['bbox_results'],
-                                           format_item['mask_results']))
+                    format_result.append((format_item['bbox_results'],
+                                          format_item['mask_results']))
                 else:
-                    format_results.append(format_item['bbox_results'])
-            results = format_results
+                    format_result.append(format_item['bbox_results'])
+            result = format_result
 
         batch_size = len(result)
         if show or out_dir:
@@ -117,16 +117,16 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
             # Currently only SOLO will run this branch, reorganize
             # predictions into the the format agreed with the
             # :func:`evaluate` of `obj:`dataset`
-            if isinstance(results[0], Results):
-                format_results = []
-                for item in results:
+            if isinstance(result[0], Results):
+                format_result = []
+                for item in result:
                     format_item = item.format_results()
                     if 'mask_results' in format_item:
-                        format_results.append((format_item['bbox_results'],
-                                               format_item['mask_results']))
+                        format_result.append((format_item['bbox_results'],
+                                              format_item['mask_results']))
                     else:
-                        format_results.append(format_item['bbox_results'])
-                results = format_results
+                        format_result.append(format_item['bbox_results'])
+                result = format_result
 
             # encode mask results
             elif isinstance(result[0], tuple):
