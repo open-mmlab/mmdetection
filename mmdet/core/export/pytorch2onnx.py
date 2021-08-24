@@ -124,7 +124,8 @@ def preprocess_example_input(input_config, device):
         >>>             'std': (58.395, 57.12, 57.375)
         >>>             }
         >>>         }
-        >>> one_img, one_meta = preprocess_example_input(input_config)
+        >>> device = torch.device('cuda:0')
+        >>> one_img, one_meta = preprocess_example_input(input_config, device)
         >>> print(one_img.shape)
         torch.Size([1, 3, 224, 224])
         >>> print(one_meta)
@@ -133,7 +134,9 @@ def preprocess_example_input(input_config, device):
         'pad_shape': (224, 224, 3),
         'filename': '<demo>.png',
         'scale_factor': 1.0,
-        'flip': False}
+        'flip': False,
+        'show_img': array([[[...], ..., [...]]], dtype=uint8),
+        'flip_direction': None}
     """
     input_path = input_config['input_path']
     input_shape = input_config['input_shape']

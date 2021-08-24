@@ -146,7 +146,7 @@ def pytorch2onnx(model,
             input_config['input_path'] = input_img
 
         # prepare input once again
-        one_img, one_meta = preprocess_example_input(input_config)
+        one_img, one_meta = preprocess_example_input(input_config, device)
         img_list, img_meta_list = [one_img], [[one_meta]]
 
         # get pytorch output
