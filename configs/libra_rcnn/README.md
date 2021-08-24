@@ -6,7 +6,7 @@
 
 We provide config files to reproduce the results in the CVPR 2019 paper [Libra R-CNN](https://arxiv.org/pdf/1904.02701.pdf).
 
-The extended version of [Libra R-CNN](https://arxiv.org/pdf/2108.10175.pdf) is accpeted by IJCV. 
+The extended version of [Libra R-CNN](https://arxiv.org/pdf/2108.10175.pdf) is accpeted by IJCV.
 
 ```
 @inproceedings{pang2019libra,
