@@ -2,10 +2,15 @@
 import copy
 import warnings
 
+import mmcv
+import numpy as np
 import torch
 
+from mmdet.core.visualization.image import imshow_det_bboxes
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
+
+INF = 1e8
 
 
 @DETECTORS.register_module()
@@ -50,7 +55,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         self.test_cfg = test_cfg
 
     def extract_feat(self, img):
-        """Directly extract features from the backbone+neck."""
+        """Directly extract features from the backbone and neck."""
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
@@ -100,7 +105,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         x = self.extract_feat(img)
         losses = dict()
 
-        # CondInst, yolact
+        # CondInst, YOLACT
         if self.bbox_head:
             # bbox_head_preds is a tuple
             bbox_head_preds = self.bbox_head(x)
@@ -168,3 +173,101 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError
+
+    def show_result(self,
+                    img,
+                    result,
+                    score_thr=0.3,
+                    bbox_color=(72, 101, 241),
+                    text_color=(72, 101, 241),
+                    mask_color=None,
+                    thickness=2,
+                    font_size=13,
+                    win_name='',
+                    show=False,
+                    wait_time=0,
+                    out_file=None):
+        """Draw `result` over `img`.
+
+        Args:
+            img (str or Tensor): The image to be displayed.
+            result (:obj:`DetectionResults): Processed results of single
+            image. Each :obj:`DetectionResults` usually contains
+            following keys.
+
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
+
+            score_thr (float, optional): Minimum score of bboxes to be shown.
+                Default: 0.3.
+            bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
+               The tuple of color should be in BGR order. Default: 'green'
+            text_color (str or tuple(int) or :obj:`Color`):Color of texts.
+               The tuple of color should be in BGR order. Default: 'green'
+            mask_color (None or str or tuple(int) or :obj:`Color`):
+               Color of masks. The tuple of color should be in BGR order.
+               Default: None
+            thickness (int): Thickness of lines. Default: 2
+            font_size (int): Font size of texts. Default: 13
+            win_name (str): The window name. Default: ''
+            wait_time (float): Value of waitKey param.
+                Default: 0.
+            show (bool): Whether to show the image.
+                Default: False.
+            out_file (str or None): The filename to write the image.
+                Default: None.
+
+        Returns:
+            img (Tensor): Only if not `show` or `out_file`
+        """
+        assert 'masks' in result
+        img = mmcv.imread(img)
+        img = img.copy()
+
+        # creat dummy bboxes for masks
+        if 'bboxes' not in result:
+            masks = result.masks
+            w_masks = masks.any(1)
+            w = w_masks.sum(-1)
+            h_masks = masks.any(2)
+            h = h_masks.sum(-1)
+            cumsum_w = torch.cumsum(w_masks, dim=-1)
+            cumsum_w[cumsum_w == 0] = INF
+            cumsum_h = torch.cumsum(h_masks, dim=-1)
+            cumsum_h[cumsum_h == 0] = INF
+            x1 = cumsum_w.min(-1).indices
+            y1 = cumsum_h.min(-1).indices
+            bboxes = torch.stack([x1, y1, x1 + w, y1 + h], dim=-1)
+            result.bboxes = bboxes
+
+        result = result.numpy()
+        det_bboxes = np.concatenate([result.bboxes, result.scores[:, None]],
+                                    axis=-1)
+        masks = result.masks
+        labels = result.labels
+        # if out_file specified, do not show image in window
+        if out_file is not None:
+            show = False
+        # draw bounding boxes
+        img = imshow_det_bboxes(
+            img,
+            det_bboxes,
+            labels,
+            masks,
+            class_names=self.CLASSES,
+            score_thr=score_thr,
+            bbox_color=bbox_color,
+            text_color=text_color,
+            mask_color=mask_color,
+            thickness=thickness,
+            font_size=font_size,
+            win_name=win_name,
+            show=show,
+            wait_time=wait_time,
+            out_file=out_file)
+
+        if not (show or out_file):
+            return img
