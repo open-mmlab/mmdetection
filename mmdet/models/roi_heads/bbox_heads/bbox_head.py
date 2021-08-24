@@ -107,8 +107,12 @@ class BBoxHead(BaseModule):
     @auto_fp16()
     def forward(self, x):
         if self.with_avg_pool:
-            x = self.avg_pool(x)
-        x = x.view(x.size(0), -1)
+            if x.shape[0] > 0:
+                x = self.avg_pool(x)
+                x = x.view(x.size(0), -1)
+            else:
+                # Empty proposal
+                x = torch.mean(x, dim=(-1, -2))
         cls_score = self.fc_cls(x) if self.with_cls else None
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
@@ -357,7 +361,6 @@ class BBoxHead(BaseModule):
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
         if rescale and bboxes.size(0) > 0:
-
             scale_factor = bboxes.new_tensor(scale_factor)
             bboxes = (bboxes.view(bboxes.size(0), -1, 4) / scale_factor).view(
                 bboxes.size()[0], -1)

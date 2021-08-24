@@ -88,6 +88,19 @@ def test_sparse_rcnn_forward():
     loss, _ = detector._parse_losses(losses)
     assert float(loss.item()) > 0
 
+    # Test RoI forward train with an empty proposals
+    # TODO： Support
+    # feature = detector.extract_feat(imgs[0][None, :])
+    # losses = detector.roi_head.forward_train(
+    #     feature,
+    #     torch.empty((1, 0, 4)),
+    #     torch.empty((1, 0, 256)),
+    #     img_metas,
+    #     gt_bboxes=gt_bboxes,
+    #     gt_labels=gt_labels,
+    #     imgs_whwh=torch.empty((1, 4)))
+    # assert isinstance(losses, dict)
+
     # Test forward test
     detector.eval()
     with torch.no_grad():
@@ -231,6 +244,15 @@ def test_faster_rcnn_ohem_forward():
     loss, _ = detector._parse_losses(losses)
     assert float(loss.item()) > 0
 
+    # Test RoI forward train with an empty proposals
+    feature = detector.extract_feat(imgs[0][None, :])
+    losses = detector.roi_head.forward_train(
+        feature,
+        img_metas, [torch.empty((0, 5))],
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels)
+    assert isinstance(losses, dict)
+
 
 @pytest.mark.parametrize(
     'cfg_file',
@@ -296,6 +318,18 @@ def test_two_stage_forward(cfg_file):
     loss.requires_grad_(True)
     assert float(loss.item()) > 0
     loss.backward()
+
+    # Test RoI forward train with an empty proposals
+    if cfg_file in [
+            'panoptic_fpn/panoptic_fpn_r50_fpn_1x_coco.py'  # noqa: E501
+    ]:
+        mm_inputs.pop('gt_semantic_seg')
+
+    feature = detector.extract_feat(imgs[0][None, :])
+    losses = detector.roi_head.forward_train(feature, img_metas,
+                                             [torch.empty(
+                                                 (0, 5))], **mm_inputs)
+    assert isinstance(losses, dict)
 
     # Test forward test
     with torch.no_grad():

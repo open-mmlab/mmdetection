@@ -159,7 +159,10 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(
             x[:len(bbox_roi_extractor.featmap_strides)], rois)
-        if self.with_semantic and 'bbox' in self.semantic_fusion:
+
+        # bbox_feats.shape[0] > 0 is mean the number of proposal is not 0.
+        if self.with_semantic and 'bbox' in self.semantic_fusion and \
+                bbox_feats.shape[0] > 0:
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
