@@ -21,9 +21,9 @@ class SOLOHead(BaseMaskHead):
             category.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of hidden channels. Used in child classes.
-            Default: 256
+            Default: 256.
         stacked_convs (int): Number of stacking convs of the head.
-            Default: 4
+            Default: 4.
         strides (tuple): Downsample factor of each feature map.
         scale_ranges (tuple[tuple[int, int]]): Area range of multiple
             level mask, in the format [(min1, max1), (min2, max2), ...].
@@ -31,7 +31,7 @@ class SOLOHead(BaseMaskHead):
         pos_scale (float): Constant scale factor to control the center region.
         num_grids (list): Divided image into a uniform grids, each feature map
             has a different grid value. The number of output channels is
-            grid ** 2. Default: [40, 36, 24, 16, 12]
+            grid ** 2. Default: [40, 36, 24, 16, 12].
         cls_down_index (int): The index of downsample operation in
             classification branch. Default: 0.
         loss_mask (dict): Config of mask loss.
@@ -203,13 +203,13 @@ class SOLOHead(BaseMaskHead):
         Args:
             mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
                 Each element in the list has shape
-                (batch_size, num_grids**2 ,h ,w)
+                (batch_size, num_grids**2 ,h ,w).
             mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
                 (batch_size, num_classes, num_grids ,num_grids).
             gt_labels (list[Tensor]): Labels of multiple images.
             gt_masks (list[Tensor]): Ground truth masks of multiple images.
-                Each has shape (num_instances, h, w)
+                Each has shape (num_instances, h, w).
             img_metas (list[dict]): Meta information of multiple images.
             gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
                 images. Default: None.
@@ -303,7 +303,7 @@ class SOLOHead(BaseMaskHead):
 
                 - mlvl_pos_mask_targets (list[Tensor]): Each element represent
                   the binary mask targets for positive points in this
-                  level, has shape (num_pos, out_h, out_w)
+                  level, has shape (num_pos, out_h, out_w).
                 - mlvl_labels (list[Tensor]): Each element is
                   classification labels for all
                   points in this level, has shape
@@ -311,7 +311,7 @@ class SOLOHead(BaseMaskHead):
                 - mlvl_pos_masks (list[Tensor]): Each element is
                   a `BoolTensor` to represent whether the
                   corresponding point in single level
-                  is positive, has shape (num_grid **2)
+                  is positive, has shape (num_grid **2).
         """
         device = gt_labels.device
         gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
@@ -419,7 +419,7 @@ class SOLOHead(BaseMaskHead):
         Args:
             mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
                 Each element in the list has shape
-                (batch_size, num_grids**2 ,h ,w)
+                (batch_size, num_grids**2 ,h ,w).
             mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
                 (batch_size, num_classes, num_grids ,num_grids).
@@ -431,7 +431,7 @@ class SOLOHead(BaseMaskHead):
             following keys.
 
                 - scores (Tensor): Classification scores, has shape
-                  (num_instance,)
+                  (num_instance,).
                 - labels (Tensor): Has shape (num_instances,).
                 - masks (Tensor): Processed mask results, has
                   shape (num_instances, h, w).
@@ -475,7 +475,7 @@ class SOLOHead(BaseMaskHead):
              it usually contains following keys.
 
                 - scores (Tensor): Classification scores, has shape
-                  (num_instance,)
+                  (num_instance,).
                 - labels (Tensor): Has shape (num_instances,).
                 - masks (Tensor): Processed mask results, has
                   shape (num_instances, h, w).
@@ -729,7 +729,7 @@ class DecoupledSOLOHead(SOLOHead):
                 (batch_size, num_classes, num_grids ,num_grids).
             gt_labels (list[Tensor]): Labels of multiple images.
             gt_masks (list[Tensor]): Ground truth masks of multiple images.
-                Each has shape (num_instances, h, w)
+                Each has shape (num_instances, h, w).
             img_metas (list[dict]): Meta information of multiple images.
             gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
                 images. Default: None.
@@ -836,7 +836,7 @@ class DecoupledSOLOHead(SOLOHead):
 
                 - mlvl_pos_mask_targets (list[Tensor]): Each element represent
                   the binary mask targets for positive points in this
-                  level, has shape (num_pos, out_h, out_w)
+                  level, has shape (num_pos, out_h, out_w).
                 - mlvl_labels (list[Tensor]): Each element is
                   classification labels for all
                   points in this level, has shape
@@ -883,7 +883,7 @@ class DecoupledSOLOHead(SOLOHead):
             following keys.
 
                 - scores (Tensor): Classification scores, has shape
-                  (num_instance,)
+                  (num_instance,).
                 - labels (Tensor): Has shape (num_instances,).
                 - masks (Tensor): Processed mask results, has
                   shape (num_instances, h, w).
@@ -940,7 +940,7 @@ class DecoupledSOLOHead(SOLOHead):
              it usually contains following keys.
 
                 - scores (Tensor): Classification scores, has shape
-                  (num_instance,)
+                  (num_instance,).
                 - labels (Tensor): Has shape (num_instances,).
                 - masks (Tensor): Processed mask results, has
                   shape (num_instances, h, w).

@@ -21,9 +21,9 @@ def mask_matrix_nms(masks,
             after matrix nms. Default: -1.
         nms_pre (int): The max number of instances to do the matrix nms.
             Default: -1.
-        max_num (int, optional): if there are more than max_num masks after
+        max_num (int, optional): If there are more than max_num masks after
             matrix, only top max_num will be kept. Default: -1.
-        kernel (str):  'linear' or 'gaussian'.
+        kernel (str): 'linear' or 'gaussian'.
         sigma (float): std in gaussian method.
         mask_area (Tensor): The sum of seg_masks.
 
