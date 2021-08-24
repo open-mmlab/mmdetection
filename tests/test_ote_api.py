@@ -19,20 +19,19 @@ from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
 from ote_sdk.entities.train_parameters import TrainParameters
-from sc_sdk.entities.annotation import (Annotation, AnnotationScene,
-                                        AnnotationSceneKind)
+from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
+from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, NullDatasetStorage, Subset
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
-from sc_sdk.entities.model import (Model, ModelStatus, NullModel,
-                                   NullModelStorage)
-from sc_sdk.entities.model_template import parse_model_template
+from sc_sdk.entities.model import Model, ModelStatus, NullModelStorage
+from ote_sdk.entities.model_template import parse_model_template
 from sc_sdk.entities.optimized_model import (ModelOptimizationType,
                                              ModelPrecision, OptimizedModel,
                                              TargetDevice)
 from sc_sdk.entities.resultset import ResultSet
-from sc_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.tests.test_helpers import generate_random_annotated_image
 from sc_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
                                                                IExportTask)
@@ -177,7 +176,7 @@ class TestOTEAPI(unittest.TestCase):
         labels_names = ('rectangle', 'ellipse', 'triangle')
         labels_schema = generate_label_schema(labels_names)
         labels_list = labels_schema.get_labels(False)
-        environment = TaskEnvironment(model=NullModel(), hyper_parameters=params, label_schema=labels_schema,
+        environment = TaskEnvironment(model=None, hyper_parameters=params, label_schema=labels_schema,
                                       model_template=model_template)
 
         warnings.filterwarnings('ignore', message='.* coordinates .* are out of bounds.*')
@@ -343,8 +342,8 @@ class TestOTEAPI(unittest.TestCase):
         Flow of the test:
         - Creates a randomly annotated project with a small dataset containing 3 classes:
             ['rectangle', 'triangle', 'circle'].
-        - Trains a model for 10 epochs. Asserts that the returned model is not a NullModel, that
-            validation F-measure is larger than the threshold and also that OpenVINO optimization runs successfully.
+        - Trains a model for 10 epochs. Asserts that validation F-measure is larger than the threshold and
+            also that OpenVINO optimization runs successfully.
         - Reloads the model in the task and recompute the performance. Asserts that the performance
             difference between the original and the reloaded model is smaller than 1e-4. Ideally there should be no
             difference at all.
@@ -358,7 +357,7 @@ class TestOTEAPI(unittest.TestCase):
 
         print('Task initialized, model training starts.')
         # Train the task.
-        # train_task checks that the returned model is not a NullModel, that the task returns an OptimizedModel and that
+        # train_task checks that the task returns an OptimizedModel and that
         # validation f-measure is higher than the threshold, which is a pretty low bar
         # considering that the dataset is so easy
         output_model = Model(
@@ -368,7 +367,6 @@ class TestOTEAPI(unittest.TestCase):
                 detection_environment.get_model_configuration(),
                 model_status=ModelStatus.NOT_READY)
         task.train(dataset, output_model)
-        self.assertFalse(isinstance(output_model, NullModel))
 
         # Test that labels and configurable parameters are stored in model.data
         modelinfo = torch.load(io.BytesIO(output_model.get_data("weights.pth")))
