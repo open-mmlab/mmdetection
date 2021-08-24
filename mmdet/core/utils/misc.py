@@ -6,8 +6,6 @@ from six.moves import map, zip
 
 from ..mask.structures import BitmapMasks, PolygonMasks
 
-EPS = 1e-6
-
 
 def multi_apply(func, *args, **kwargs):
     """Apply function to a list of arguments.
@@ -86,11 +84,12 @@ def flip_tensor(src_tensor, flip_direction):
     return out_tensor
 
 
-def center_of_mass(mask):
+def center_of_mass(mask, esp=1e-6):
     """Calculate the center point of the mask.
 
     Args:
         mask (Tensor): The mask to be calculated, has shape (h, w).
+        esp (float): Avoid dividing by zero. Default: 1e-6.
 
     Returns:
         tuple[Tensor]: the coordinates of the center point of the mask.
@@ -101,7 +100,7 @@ def center_of_mass(mask):
     h, w = mask.shape
     grid_h = torch.arange(h, device=mask.device)[:, None]
     grid_w = torch.arange(w, device=mask.device)
-    normalizer = mask.sum().float().clamp(min=EPS)
+    normalizer = mask.sum().float().clamp(min=esp)
     center_h = (mask * grid_h).sum() / normalizer
     center_w = (mask * grid_w).sum() / normalizer
     return center_h, center_w
