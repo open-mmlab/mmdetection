@@ -6,6 +6,8 @@ from six.moves import map, zip
 
 from ..mask.structures import BitmapMasks, PolygonMasks
 
+EPS = 1e-6
+
 
 def multi_apply(func, *args, **kwargs):
     """Apply function to a list of arguments.
@@ -99,7 +101,7 @@ def center_of_mass(mask):
     h, w = mask.shape
     grid_h = torch.arange(h, device=mask.device)[:, None]
     grid_w = torch.arange(w, device=mask.device)
-    normalizer = mask.sum().float().clamp(min=1e-6)
+    normalizer = mask.sum().float().clamp(min=EPS)
     center_h = (mask * grid_h).sum() / normalizer
     center_w = (mask * grid_w).sum() / normalizer
     return center_h, center_w
