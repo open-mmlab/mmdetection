@@ -157,10 +157,6 @@ class SparseRoIHead(CascadeRoIHead):
 
     def _mask_forward_train(self, stage, x, attn_feats, sampling_results, gt_masks, rcnn_train_cfg):
 
-        if sum([len(gt_mask) for gt_mask in gt_masks])==0:
-            print('Ground Truth Not Found!')
-            loss_mask = sum([_.sum() for _ in self.mask_head[stage].parameters()]) * 0.
-            return dict(loss_mask=loss_mask)
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
         attn_feats = torch.cat([feats[res.pos_inds] for (feats, res) in zip(attn_feats, sampling_results)])
         mask_results = self._mask_forward(stage, x, pos_rois, attn_feats)

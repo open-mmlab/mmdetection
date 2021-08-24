@@ -766,8 +766,7 @@ class DynamicConv(BaseModule):
             (num_all_proposals, out_channels).
         """
         num_proposals = param_feature.size(0)
-        input_feature = input_feature.view(num_proposals, self.in_channels,
-                                           -1).permute(2, 0, 1)
+        input_feature = input_feature.flatten(2).permute(2, 0, 1)
 
         input_feature = input_feature.permute(1, 0, 2)
         parameters = self.dynamic_layer(param_feature)
