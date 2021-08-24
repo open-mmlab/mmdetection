@@ -43,8 +43,12 @@ train_pipeline = [
         saturation_range=(0.5, 1.5),
         hue_delta=18),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Resize', keep_ratio=True),
-    dict(type='Pad', pad_to_square=True, pad_val=114.0),
+    dict(
+        type='Resize',
+        img_scale=[(14 * 32, 14 * 32), (26 * 32, 26 * 32)],
+        multiscale_mode='range',
+        keep_ratio=True),
+    dict(type='Pad', size_divisor=32, pad_val=114.0),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
@@ -125,12 +129,6 @@ interval = 10
 
 custom_hooks = [
     dict(type='YOLOXModeSwitchHook', num_last_epochs=15, priority=48),
-    dict(
-        type='SyncRandomSizeHook',
-        ratio_range=(14, 26),
-        img_scale=img_scale,
-        interval=interval,
-        priority=48),
     dict(
         type='SyncNormHook',
         num_last_epochs=15,
