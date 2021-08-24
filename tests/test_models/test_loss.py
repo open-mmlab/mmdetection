@@ -155,9 +155,8 @@ def test_loss_with_ignore_index(use_sigmoid):
     assert torch.allclose(loss, loss_with_forward_ignore)
 
 
-@pytest.mark.parametrize('loss_class', [DiceLoss])
-def test_dice_loss(loss_class):
-
+def test_dice_loss():
+    loss_class = DiceLoss
     pred = torch.rand((10, 4, 4))
     target = torch.rand((10, 4, 4))
     weight = torch.rand((10))

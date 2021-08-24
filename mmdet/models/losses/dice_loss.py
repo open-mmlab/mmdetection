@@ -5,6 +5,44 @@ from ..builder import LOSSES
 from .utils import weight_reduce_loss
 
 
+def dice_loss(pred,
+              target,
+              weight=None,
+              eps=1e-3,
+              reduction='mean',
+              avg_factor=None):
+    """Calculate dice loss, which is proposed in
+        `V-Net: Fully Convolutional Neural Networks for Volumetric
+         Medical Image Segmentation <https://arxiv.org/abs/1606.04797>`_.
+
+    Args:
+        pred (torch.Tensor): The prediction, has shape (n, *)
+        target (torch.Tensor): The learning label of the prediction,
+            shape (n, *), same shape of pred.
+        weight (torch.Tensor, optional): The weight of loss for each
+            prediction, has shape (n,). Defaults to None.
+        eps (float): Avoid dividing by zero. Default: 1e-3.
+        reduction (str, optional): The method used to reduce the loss into
+            a scalar. Defaults to 'mean'.
+            Options are "none", "mean" and "sum".
+        avg_factor (int, optional): Average factor that is used to average
+            the loss. Defaults to None.
+    """
+    input = pred.contiguous().view(pred.size()[0], -1)
+    target = target.contiguous().view(target.size()[0], -1).float()
+
+    a = torch.sum(input * target, 1)
+    b = torch.sum(input * input, 1) + eps
+    c = torch.sum(target * target, 1) + eps
+    d = (2 * a) / (b + c)
+    loss = 1 - d
+    if weight is not None:
+        assert weight.ndim == loss.ndim
+        assert len(weight) == len(pred)
+    loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
+    return loss
+
+
 @LOSSES.register_module()
 class DiceLoss(nn.Module):
 
@@ -22,9 +60,9 @@ class DiceLoss(nn.Module):
                 used for sigmoid or softmax. Defaults to True.
             reduction (str, optional): The method used
                 to reduce the loss. Options are "none",
-                "mean" and "sum". Default: 'mean'.
+                "mean" and "sum". Defaults to 'mean'.
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
-            eps (float): Avoid dividing by zero. Default: 1e-3.
+            eps (float): Avoid dividing by zero. Defaults to 1e-3.
         """
         super(DiceLoss, self).__init__()
         self.use_sigmoid = use_sigmoid
@@ -42,7 +80,7 @@ class DiceLoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (torch.Tensor): The prediction, has shape (n, *)
+            pred (torch.Tensor): The prediction, has shape (n, *).
             target (torch.Tensor): The learning label of the prediction,
                 shape (n, *), same shape of pred.
             weight (torch.Tensor, optional): The weight of loss for each
@@ -53,7 +91,7 @@ class DiceLoss(nn.Module):
                 override the original reduction method of the loss.
                 Options are "none", "mean" and "sum".
             has_acted (bool): Has been activated outside, this will disable
-                the in
+                the inside sigmoid operation. Defaults to False.
 
         Returns:
             torch.Tensor: The calculated loss
@@ -69,17 +107,12 @@ class DiceLoss(nn.Module):
             else:
                 raise NotImplementedError
 
-        input = pred.contiguous().view(pred.size()[0], -1)
-        target = target.contiguous().view(target.size()[0], -1).float()
+        loss = self.loss_weight * dice_loss(
+            pred,
+            target,
+            weight,
+            eps=self.eps,
+            reduction=reduction,
+            avg_factor=avg_factor)
 
-        a = torch.sum(input * target, 1)
-        b = torch.sum(input * input, 1) + self.eps
-        c = torch.sum(target * target, 1) + self.eps
-        d = (2 * a) / (b + c)
-        loss = self.loss_weight * (1 - d)
-        if weight is not None:
-            assert weight.ndim == loss.ndim
-            assert len(weight) == len(pred)
-
-        loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
         return loss
