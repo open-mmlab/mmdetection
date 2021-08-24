@@ -102,7 +102,7 @@ def build_model_from_cfg(config_path, checkpoint_path, cfg_options=None):
     return model
 
 
-def preprocess_example_input(input_config, device):
+def preprocess_example_input(input_config, device=torch.device('cpu')):
     """Prepare an example input image for ``generate_inputs_and_wrap_model``.
 
     Args:
