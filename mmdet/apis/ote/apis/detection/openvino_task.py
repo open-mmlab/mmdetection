@@ -12,14 +12,18 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+from addict import Dict as ADDict
 from typing import Any, Dict, Tuple, List, Optional, Union
 
 import cv2
 import numpy as np
+import tempfile
+import os
 
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label import ScoredLabel
+from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from sc_sdk.entities.annotation import AnnotationScene
@@ -28,10 +32,19 @@ from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from sc_sdk.usecases.exportable_code.inference import BaseOpenVINOInferencer
 from sc_sdk.entities.label import Label
 from sc_sdk.entities.media_identifier import ImageIdentifier
+from sc_sdk.entities.optimized_model import OptimizedModel
 from sc_sdk.entities.resultset import ResultSet
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
+from sc_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
+
+
+from compression.api import DataLoader
+from compression.engines.ie_engine import IEEngine
+from compression.graph import load_model, save_model
+from compression.graph.model_utils import compress_model_weights
+from compression.pipeline.initializer import create_pipeline
 
 from .configuration import OTEDetectionConfig
 
@@ -158,6 +171,21 @@ class OpenVINODetectionInferencer(BaseOpenVINOInferencer):
         return self.model.infer(inputs)
 
 
+class ScOpenVinoDataLoader(DataLoader):
+    def __init__(self, dataset: Dataset, inferencer: BaseOpenVINOInferencer):
+        self.dataset = dataset
+        self.inferencer = inferencer
+
+    def __getitem__(self, index):
+        image = self.dataset[index].numpy
+        annotation = self.dataset[index].annotation_scene
+        inputs, metadata = self.inferencer.pre_process(image)
+
+        return (index, annotation), inputs, metadata
+
+    def __len__(self):
+        return len(self.dataset)
+
 class OpenVINODetectionTask(IInferenceTask, IEvaluationTask):
     def __init__(self, task_environment: TaskEnvironment):
         self.task_environment = task_environment
@@ -182,3 +210,63 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask):
                  output_result_set: ResultSet,
                  evaluation_metric: Optional[str] = None):
         return MetricsHelper.compute_f_measure(output_result_set).get_performance()
+
+    def optimize(self,
+                 optimization_type: OptimizationType,
+                 dataset: Optional[Dataset],
+                 output_model: OptimizedModel,
+                 optimization_parameters: Optional[OptimizationParameters]):
+
+        model_name = self.hparams.algo_backend.model_name.replace(' ', '_')
+        if optimization_type is not OptimizationType.POT:
+            raise RuntimeError("POT is the only supported optimization type for OpenVino models")
+
+        data_loader = ScOpenVinoDataLoader(dataset, self.inferencer)
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            xml_path = os.path.join(tempdir, model_name+".xml")
+            bin_path = os.path.join(tempdir, model_name+".bin")
+            open(xml_path, "wb").write(self.model.get_data("openvino.xml"))
+            open(bin_path, "wb").write(self.model.get_data("openvino.bin"))
+
+            model_config = ADDict({
+                'model_name': model_name,
+                'model': xml_path,
+                'weights': bin_path
+            })
+
+            model = load_model(model_config)
+
+        engine_config = ADDict({
+            'device': 'CPU'
+        })
+
+        stat_subset_size = self.hparams.pot_parameters.stat_subset_size
+        preset = self.hparams.pot_parameters.preset.name.lower()
+
+        algorithms = [
+            {
+                'name': 'DefaultQuantization',
+                'params': {
+                    'target_device': 'ANY',
+                    'preset': preset,
+                    'stat_subset_size': min(stat_subset_size, len(data_loader))
+                }
+            }
+        ]
+
+        engine = IEEngine(config=engine_config, data_loader=data_loader, metric=None)
+
+        pipeline = create_pipeline(algorithms, engine)
+
+        compressed_model = pipeline.run(model)
+
+        compress_model_weights(compressed_model)
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            save_model(compressed_model, tempdir, model_name=model_name)
+            output_model.set_data("openvino.xml", open(os.path.join(tempdir, model_name+".xml"), "rb").read())
+            output_model.set_data("openvino.bin", open(os.path.join(tempdir, model_name+".bin"), "rb").read())
+
+        self.model = output_model
+        self.inferencer = self.load_inferencer()

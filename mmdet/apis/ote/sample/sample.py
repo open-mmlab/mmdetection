@@ -36,6 +36,10 @@ from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
                                                      get_task_class)
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
 
+
+from sc_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
+from ote_sdk.entities.optimization_parameters import OptimizationParameters
+
 logger = logger_factory.get_logger('Sample')
 
 
@@ -141,6 +145,38 @@ def main(args):
         performance = openvino_task.evaluate(resultset)
         logger.info(str(performance))
 
+        logger.info('Run POT optimization')
+        optimized_model = OptimizedModel(
+            NullProject(),
+            NullModelStorage(),
+            dataset,
+            environment.get_model_configuration(),
+            ModelOptimizationType.POT,
+            optimization_methods=[],
+            optimization_level={},
+            precision=[ModelPrecision.FP16],
+            target_device=TargetDevice.CPU,
+            performance_improvement={},
+            model_size_reduction=1.,
+            model_status=ModelStatus.NOT_READY)
+        openvino_task.optimize(
+            OptimizationType.POT,
+            dataset.get_subset(Subset.TRAINING),
+            optimized_model,
+            OptimizationParameters())
+
+        logger.info('Get predictions on the validation set')
+        predicted_validation_dataset = openvino_task.infer(
+            validation_dataset.with_empty_annotations(),
+            InferenceParameters(is_evaluation=True))
+        resultset = ResultSet(
+            model=optimized_model,
+            ground_truth_dataset=validation_dataset,
+            prediction_dataset=predicted_validation_dataset,
+        )
+        logger.info('Performance of optimized model:')
+        performance = openvino_task.evaluate(resultset)
+        logger.info(str(performance))
 
 if __name__ == '__main__':
     sys.exit(main(parse_args()) or 0)

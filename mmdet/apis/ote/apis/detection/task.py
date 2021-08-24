@@ -32,6 +32,7 @@ from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
                                       MetricsGroup, Performance, ScoreMetric,
                                       VisualizationInfo, VisualizationType)
+from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
 from ote_sdk.configuration import cfg_helper
@@ -48,6 +49,7 @@ from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExpor
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
+from sc_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 
 from mmdet.apis import export_model, single_gpu_test, train_detector
 from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
@@ -454,6 +456,13 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             except Exception as ex:
                 raise RuntimeError("Optimization was unsuccessful.") from ex
 
+    def optimize(self,
+        optimization_type: OptimizationType,
+        dataset: Optional[Dataset],
+        output_model: OptimizedModel,
+        optimization_parameters: Optional[OptimizationParameters],
+    ):
+        pass
 
     def _delete_scratch_space(self):
         """
