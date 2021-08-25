@@ -8,7 +8,7 @@ This tutorial first elaborate the computation pipeline of losses, then give some
 
 Given the input prediction and target, as well as the weights, a loss function maps the input tensor to the final loss scalar. The mapping can be divided into four steps:
 
-1. Get **element-wise** or sample-wise loss by the loss kernel function.
+1. Get **element-wise** or **sample-wise** loss by the loss kernel function.
 
 2. Weighting the loss with a weight tensor **element-wisely**.
 

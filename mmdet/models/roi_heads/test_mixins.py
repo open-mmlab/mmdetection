@@ -1,5 +1,6 @@
-import logging
+# Copyright (c) OpenMMLab. All rights reserved.
 import sys
+import warnings
 
 import numpy as np
 import torch
@@ -7,7 +8,6 @@ import torch
 from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 
-logger = logging.getLogger(__name__)
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
 
@@ -76,10 +76,15 @@ class BBoxTestMixin:
         rois = bbox2roi(proposals)
 
         if rois.shape[0] == 0:
+            batch_size = len(proposals)
+            det_bbox = rois.new_zeros(0, 5)
+            det_label = rois.new_zeros((0, ), dtype=torch.long)
+            if rcnn_test_cfg is None:
+                det_bbox = det_bbox[:, :4]
+                det_label = rois.new_zeros(
+                    (0, self.bbox_head.fc_cls.out_features))
             # There is no proposal in the whole batch
-            return [rois.new_zeros(0, 5)] * len(proposals), [
-                rois.new_zeros((0, ), dtype=torch.long)
-            ] * len(proposals)
+            return [det_bbox] * batch_size, [det_label] * batch_size
 
         bbox_results = self._bbox_forward(x, rois)
         img_shapes = tuple(meta['img_shape'] for meta in img_metas)
@@ -112,6 +117,11 @@ class BBoxTestMixin:
                 # There is no proposal in the single image
                 det_bbox = rois[i].new_zeros(0, 5)
                 det_label = rois[i].new_zeros((0, ), dtype=torch.long)
+                if rcnn_test_cfg is None:
+                    det_bbox = det_bbox[:, :4]
+                    det_label = rois[i].new_zeros(
+                        (0, self.bbox_head.fc_cls.out_features))
+
             else:
                 det_bbox, det_label = self.bbox_head.get_bboxes(
                     rois[i],
@@ -223,7 +233,7 @@ class MaskTestMixin:
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         if isinstance(scale_factors[0], float):
-            logger.warning(
+            warnings.warn(
                 'Scale factor in img_metas should be a '
                 'ndarray with shape (4,) '
                 'arrange as (factor_w, factor_h, factor_w, factor_h), '
