@@ -149,9 +149,7 @@ def test_load_panoptic_style_json():
     assert len(ann['masks']) == 3
 
 
-def test_panoptic_evaluation():
-    if id2rgb is None:
-        return
+def _create_panoptic_gt_annotations(ann_file):
     categories = [{
         'id': 0,
         'name': 'person',
@@ -213,6 +211,7 @@ def test_panoptic_evaluation():
         'annotations': annotations,
         'categories': categories
     }
+
     # 4 is the id of the background class annotation.
     gt = np.zeros((60, 80), dtype=np.int64) + 4
     gt_bboxes = np.array([[10, 10, 10, 40], [30, 10, 10, 40], [50, 10, 10, 5]],
@@ -220,6 +219,18 @@ def test_panoptic_evaluation():
     for i in range(3):
         x, y, w, h = gt_bboxes[i]
         gt[y:y + h, x:x + w] = i + 1  # id starts from 1
+
+    gt = id2rgb(gt).astype(np.uint8)
+    img_path = osp.join(osp.dirname(ann_file), 'fake_name1.png')
+    mmcv.imwrite(gt[:, :, ::-1], img_path)
+
+    mmcv.dump(gt_json, ann_file)
+    return gt_json
+
+
+def test_panoptic_evaluation():
+    if id2rgb is None:
+        return
 
     # TP for background class, IoU=3576/4324=0.827
     # 2 the category id of the background class
@@ -238,10 +249,7 @@ def test_panoptic_evaluation():
 
     tmp_dir = tempfile.TemporaryDirectory()
     ann_file = osp.join(tmp_dir.name, 'panoptic.json')
-
-    gt = id2rgb(gt).astype(np.uint8)
-    mmcv.imwrite(gt[:, :, ::-1], osp.join(tmp_dir.name, 'fake_name1.png'))
-    mmcv.dump(gt_json, ann_file)
+    gt_json = _create_panoptic_gt_annotations(ann_file)
 
     results = [{'pan_results': pred}]
 
