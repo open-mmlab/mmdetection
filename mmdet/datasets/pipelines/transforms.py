@@ -2150,7 +2150,6 @@ class Mosaic:
         paste_coord = x1, y1, x2, y2
         return paste_coord, crop_coord
 
-
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'img_scale={self.img_scale}, '
