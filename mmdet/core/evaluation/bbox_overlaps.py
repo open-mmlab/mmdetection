@@ -16,6 +16,9 @@ def bbox_overlaps(bboxes1,
         use_legacy_coordinate (bool): Whether to use coordinate system in
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
+            Note when function is used in `VOCDataset`, it should be
+            True to align with the official implementation
+            `http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCdevkit_18-May-2011.tar`
             Default: False.
 
     Returns:
