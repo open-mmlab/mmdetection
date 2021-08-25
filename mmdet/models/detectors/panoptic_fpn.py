@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from ..builder import DETECTORS
 from .panoptic_two_stage_segmentor import TwoStagePanopticSegmentor
 

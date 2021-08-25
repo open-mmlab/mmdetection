@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import bisect
 import math
 from collections import defaultdict
