@@ -117,7 +117,7 @@ Or you can still install MMDetection manually:
     pip install -v -e .  # or "python setup.py develop"
     ```
 
-3. Install extra dependencies for Instaboost, Panoptic Segmentation, or LVIS dataset
+3. Install extra dependencies for Instaboost, Panoptic Segmentation, LVIS dataset or Albumentations.
 
     ```shell
     # for instaboost
@@ -126,6 +126,8 @@ Or you can still install MMDetection manually:
     pip install git+https://github.com/cocodataset/panopticapi.git
     # for LVIS dataset
     pip install git+https://github.com/lvis-dataset/lvis-api.git
+    # for albumentations
+    pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
     ```
 
 **Note:**
@@ -139,7 +141,7 @@ you can install it before installing MMCV.
 c. Some dependencies are optional. Simply running `pip install -v -e .` will
  only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
-d. If you would like to install `albumentations`, we suggest using `pip install albumentations>=0.3.2 --no-binary imgaug,albumentations`, which will not install `opencv-python-headless`. If you have already installed `opencv-python-headless` instead of `opencv-python`, you can simple use `pip install albumentations>=0.3.2`. More details can follow [docs](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies).
+d. If you would like to install `albumentations`, we suggest using `pip install albumentations>=0.3.2 --no-binary imgaug,albumentations`, which will not install `opencv-python-headless`. If you have already installed `opencv-python-headless` instead of `opencv-python`, you can simple use `pip install albumentations>=0.3.2`. Please refer to [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for more details.
 
 ### Install without GPU support
 
