@@ -18,16 +18,16 @@ def test_eval_recalls():
     recall = eval_recalls(
         gts, proposals, proposal_nums=2, use_legacy_coordinate=True)
     assert recall.shape == (1, 1)
-    assert 0 < recall[0][0] < 0.668
+    assert 0.66 < recall[0][0] < 0.667
     recall = eval_recalls(
         gts, proposals, proposal_nums=2, use_legacy_coordinate=False)
     assert recall.shape == (1, 1)
-    assert 0 < recall[0][0] < 0.668
+    assert 0.66 < recall[0][0] < 0.667
 
     recall = eval_recalls(
         gts, proposals, proposal_nums=2, use_legacy_coordinate=True)
     assert recall.shape == (1, 1)
-    assert 0 < recall[0][0] < 0.668
+    assert 0.66 < recall[0][0] < 0.667
     recall = eval_recalls(
         gts,
         proposals,
