@@ -9,28 +9,28 @@
 
 Compatible MMDetection and MMCV versions are shown as below. Please install the correct version of MMCV to avoid installation issues.
 
-| MMDetection version |       MMCV version       |
-| :-----------------: | :----------------------: |
-|       master        | mmcv-full>=1.3.8, <1.4.0 |
-|       2.15.1        | mmcv-full>=1.3.8, <1.4.0 |
-|       2.15.0        | mmcv-full>=1.3.8, <1.4.0 |
-|       2.14.0        | mmcv-full>=1.3.8, <1.4.0 |
-|       2.13.0        | mmcv-full>=1.3.3, <1.4.0 |
-|       2.12.0        | mmcv-full>=1.3.3, <1.4.0 |
-|       2.11.0        | mmcv-full>=1.2.4, <1.4.0 |
-|       2.10.0        | mmcv-full>=1.2.4, <1.4.0 |
-|        2.9.0        | mmcv-full>=1.2.4, <1.4.0 |
-|        2.8.0        | mmcv-full>=1.2.4, <1.4.0 |
-|        2.7.0        | mmcv-full>=1.1.5, <1.4.0 |
-|        2.6.0        | mmcv-full>=1.1.5, <1.4.0 |
-|        2.5.0        | mmcv-full>=1.1.5, <1.4.0 |
-|        2.4.0        | mmcv-full>=1.1.1, <1.4.0 |
-|        2.3.0        |     mmcv-full==1.0.5     |
-|      2.3.0rc0       |     mmcv-full>=1.0.2     |
-|        2.2.1        |       mmcv==0.6.2        |
-|        2.2.0        |       mmcv==0.6.2        |
-|        2.1.0        |   mmcv>=0.5.9, <=0.6.1   |
-|        2.0.0        |   mmcv>=0.5.1, <=0.5.8   |
+| MMDetection version |    MMCV version     |
+|:-------------------:|:-------------------:|
+| master              | mmcv-full>=1.3.8, <1.4.0 |
+| 2.15.1              | mmcv-full>=1.3.8, <1.4.0 |
+| 2.15.0              | mmcv-full>=1.3.8, <1.4.0 |
+| 2.14.0              | mmcv-full>=1.3.8, <1.4.0 |
+| 2.13.0              | mmcv-full>=1.3.3, <1.4.0 |
+| 2.12.0              | mmcv-full>=1.3.3, <1.4.0 |
+| 2.11.0              | mmcv-full>=1.2.4, <1.4.0 |
+| 2.10.0              | mmcv-full>=1.2.4, <1.4.0 |
+| 2.9.0               | mmcv-full>=1.2.4, <1.4.0 |
+| 2.8.0               | mmcv-full>=1.2.4, <1.4.0 |
+| 2.7.0               | mmcv-full>=1.1.5, <1.4.0 |
+| 2.6.0               | mmcv-full>=1.1.5, <1.4.0 |
+| 2.5.0               | mmcv-full>=1.1.5, <1.4.0 |
+| 2.4.0               | mmcv-full>=1.1.1, <1.4.0 |
+| 2.3.0               | mmcv-full==1.0.5    |
+| 2.3.0rc0            | mmcv-full>=1.0.2    |
+| 2.2.1               | mmcv==0.6.2         |
+| 2.2.0               | mmcv==0.6.2         |
+| 2.1.0               | mmcv>=0.5.9, <=0.6.1|
+| 2.0.0               | mmcv>=0.5.1, <=0.5.8|
 
 **Note:** You need to run `pip uninstall mmcv` first if you have mmcv installed.
 If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
@@ -139,7 +139,7 @@ you can install it before installing MMCV.
 c. Some dependencies are optional. Simply running `pip install -v -e .` will
  only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
-If you would like to install `albumentations`, we suggest using `pip install albumentations>=0.3.2 --no-binary imgaug,albumentations`, which will not install `opencv-python-headless`. If you have already installed `opencv-python-headless` instead of `opencv-python`, you can simple use `pip install albumentations>=0.3.2`. More details can follow [docs](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies).
+d. If you would like to install `albumentations`, we suggest using `pip install albumentations>=0.3.2 --no-binary imgaug,albumentations`, which will not install `opencv-python-headless`. If you have already installed `opencv-python-headless` instead of `opencv-python`, you can simple use `pip install albumentations>=0.3.2`. More details can follow [docs](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies).
 
 ### Install without GPU support
 
@@ -164,12 +164,12 @@ However some functionality is gone in this mode:
 If you try to run inference with a model containing above ops, an error will be raised.
 The following table lists affected algorithms.
 
-|                        Operator                         |                                          Model                                           |
-| :-----------------------------------------------------: | :--------------------------------------------------------------------------------------: |
+|                        Operator                         |                            Model                             |
+| :-----------------------------------------------------: | :----------------------------------------------------------: |
 | Deformable Convolution/Modulated Deformable Convolution | DCN、Guided Anchoring、RepPoints、CentripetalNet、VFNet、CascadeRPN、NAS-FCOS、DetectoRS |
-|                      MaskedConv2d                       |                                     Guided Anchoring                                     |
-|                         CARAFE                          |                                          CARAFE                                          |
-|                      SyncBatchNorm                      |                                         ResNeSt                                          |
+|                      MaskedConv2d                       |                       Guided Anchoring                       |
+|                         CARAFE                          |                            CARAFE                            |
+|                      SyncBatchNorm                      |                           ResNeSt                            |
 
 **Notice:** MMDetection does not support training with CPU for now.
 
