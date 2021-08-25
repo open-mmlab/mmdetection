@@ -56,7 +56,7 @@ COCO 格式的 json 标注文件有如下必要的字段：
 1. 为自定义数据集修改配置文件。
 2. 检查自定义数据集的标注。
 
-这里我们举一个例子来展示上面的两个步骤，这个例子使用包括 5 个类别的 COCO 格式的数据集来训练一个现有的 Cascade Mask RCNN R50 FPN 检测器
+这里我们举一个例子来展示上面的两个步骤，这个例子使用包括 5 个类别的 COCO 格式的数据集来训练一个现有的 Cascade Mask R-CNN R50-FPN 检测器
 
 #### 1. 为自定义数据集修改配置文件
 
@@ -80,7 +80,7 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
-        # 将类别名字添加至`classes`字段中
+        # 将类别名字添加至 `classes` 字段中
         classes=classes,
         ann_file='path/to/your/train/annotation_data',
         img_prefix='path/to/your/train/image_data'),
@@ -92,14 +92,14 @@ data = dict(
         img_prefix='path/to/your/val/image_data'),
     test=dict(
         type=dataset_type,
-        # 将类别名字添加至`classes`字段中
+        # 将类别名字添加至 `classes` 字段中
         classes=classes,
         ann_file='path/to/your/test/annotation_data',
         img_prefix='path/to/your/test/image_data'))
 
 # 2. 模型设置
 
-# 将所有的`num_classes`默认值修改为5（原来为80）
+# 将所有的 `num_classes` 默认值修改为5（原来为80）
 model = dict(
     roi_head=dict(
         bbox_head=[
@@ -165,7 +165,7 @@ model = dict(
 
 如果不想将标注格式转换为 COCO 或者 PASCAL 格式也是可行的。实际上，我们定义了一种简单的标注格式并且与所有现有的数据格式兼容，也能进行离线或者在线转换。
 
-数据集的标注是包含多个字典（ dict ）的列表，每个字典（ dict ）都与一张图片对应。测试时需要用到 `filename` （相对路径）， `width`，`height`三个字段；训练时则额外需要 `ann`。`ann` 也是至少包含了两个字段的字典：`bboxes` 和 `labels`，它们都是 numpy array。有些数据集可能会提供如：crowd/difficult/ignored bboxes 标注，那么我们使用 `bboxes_ignore` 以及 `labels_ignore` 来包含它们。
+数据集的标注是包含多个字典（dict）的列表，每个字典（dict）都与一张图片对应。测试时需要用到 `filename`（相对路径）、`width` 和 `height` 三个字段；训练时则额外需要 `ann`。`ann` 也是至少包含了两个字段的字典：`bboxes` 和 `labels`，它们都是 numpy array。有些数据集可能会提供如：crowd/difficult/ignored bboxes 标注，那么我们使用 `bboxes_ignore` 以及 `labels_ignore` 来包含它们。
 
 下面给出一个例子。
 
@@ -270,7 +270,7 @@ class MyDataset(CustomDataset):
 
 ```
 
-配置文件中，可以使用`MyDataset`进行如下修改
+配置文件中，可以使用 `MyDataset` 进行如下修改
 
 ```python
 dataset_A_train = dict(
@@ -308,7 +308,7 @@ dataset_A_train = dict(
 
 ### 类别均衡数据集（Class balanced dataset）
 
-使用`ClassBalancedDataset`作为包装器在类别的出现的频率上重复数据集。数据集需要实例化 `self.get_cat_ids(idx)` 函数以支持 `ClassBalancedDataset`。
+使用 `ClassBalancedDataset` 作为包装器在类别的出现的频率上重复数据集。数据集需要实例化 `self.get_cat_ids(idx)` 函数以支持 `ClassBalancedDataset`。
 比如，以 `oversample_thr=1e-3` 来重复数据集 `Dataset_A`，其配置如下：
 
 ```python
