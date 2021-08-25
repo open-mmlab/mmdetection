@@ -3,7 +3,7 @@ import os
 import re
 from argparse import ArgumentParser
 
-from numpy import array, float32
+import numpy as np
 
 from mmdet.apis import (async_inference_detector, inference_detector,
                         init_detector, show_result_pyplot)
@@ -14,11 +14,11 @@ def parse_args():
     parser.add_argument('img', help='Image file')
     parser.add_argument('config', help='Config file')
     parser.add_argument('checkpoint', help='Checkpoint file')
-    parser.add_argument('model_name', help='serve model name')
+    parser.add_argument('model_name', help='The model name in the server')
     parser.add_argument(
-        '--inference_adr',
+        '--inference-adr',
         default='127.0.0.1:8080',
-        help='serve inference port address')
+        help='server inference port address')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
@@ -58,8 +58,8 @@ async def async_main(args):
 def res_format(str_res, model):
     res_str = re.sub('[\\s\\[\\]\\{\\}\\"]*', '', str_res)
     anchor_set = re.split(',|:', res_str)
-    cls_set = [[] for i in range(model.CLASSES.__len__())]
-    for i in range(0, anchor_set.__len__(), 7):
+    cls_set = [[] for i in range(len(model.CLASSES))]
+    for i in range(0, len(anchor_set), 7):
         cls_set[model.CLASSES.index(anchor_set[i])].append([
             float(anchor_set[i + 1]),
             float(anchor_set[i + 2]),
@@ -69,10 +69,10 @@ def res_format(str_res, model):
         ])
     result = []
     for cls in cls_set:
-        if cls.__len__() == 0:
-            result.append(array(cls, dtype=float32).reshape((0, 5)))
+        if len(cls) == 0:
+            result.append(np.array(cls, dtype=np.float32).reshape((0, 5)))
         else:
-            result.append(array(cls, dtype=float32))
+            result.append(np.array(cls, dtype=np.float32))
     return result
 
 
@@ -86,7 +86,7 @@ def serve_inference(args):
         args.img,
         format_result,
         score_thr=args.score_thr,
-        title='serve_result')
+        title='server_result')
 
 
 def compare_res(args):
