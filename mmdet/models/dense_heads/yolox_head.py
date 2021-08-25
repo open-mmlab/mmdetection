@@ -275,7 +275,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         flatten_bboxes = self._bbox_decode(flatten_priors, flatten_bbox_preds)
 
         if rescale:
-            flatten_bboxes[..., :4] /= flatten_bboxes.new_tensor(scale_factors)
+            flatten_bboxes[..., :4] /= flatten_bboxes.new_tensor(
+                scale_factors).unsqueeze(1)
 
         result_list = []
         for img_id in range(len(img_metas)):
