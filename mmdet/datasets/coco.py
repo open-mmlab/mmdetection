@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import itertools
 import logging
 import os.path as osp
