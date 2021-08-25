@@ -11,7 +11,7 @@ class OpenvinoExportHelper():
         """Returns a list of function and function names from the specified
         module, that match a pattern."""
         module = importlib.import_module(
-            '.' + module_name, package='openvino_wrapper')
+            '.' + module_name, package='mmdet.core.export.openvino_wrapper')
         function_members = inspect.getmembers(module, inspect.isfunction)
         selected_functions = []
         for name, func in function_members:

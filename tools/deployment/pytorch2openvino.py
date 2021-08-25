@@ -5,7 +5,8 @@ from functools import partial
 from subprocess import CalledProcessError, run
 
 import onnx
-from openvino_wrapper import OpenvinoExportHelper
+
+from mmdet.core.export.openvino_wrapper import OpenvinoExportHelper
 
 
 def parse_args_wrapper(args_list=None):
