@@ -1,12 +1,12 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from torch.nn import functional as F
 
 
 def interpolate_as(source, target, mode='bilinear', align_corners=False):
-    """Interpolate the source to the shape of the target.
+    """Interpolate the `source` to the shape of the `target`.
 
-    Interpolate the source to the shape of target. The input must be a
-    Tensor, but the target can be a Tensor or a np.ndarray with the shape
-    (..., target_h, target_w).
+    The `source` must be a Tensor, but the `target` can be a Tensor or a
+    np.ndarray with the shape (..., target_h, target_w).
 
     Args:
         source (Tensor): A 3D/4D Tensor with the shape (N, H, W) or
@@ -23,7 +23,7 @@ def interpolate_as(source, target, mode='bilinear', align_corners=False):
     assert len(target.shape) >= 2
 
     def _interpolate_as(source, target, mode='bilinear', align_corners=False):
-        """Interpolate the source (4D) to the shape of the target."""
+        """Interpolate the `source` (4D) to the shape of the `target`."""
         target_h, target_w = target.shape[-2:]
         source_h, source_w = source.shape[-2:]
         if target_h != source_h or target_w != source_w:

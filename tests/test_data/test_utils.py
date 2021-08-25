@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import pytest
 
 from mmdet.datasets import get_loading_pipeline, replace_ImageToTensor

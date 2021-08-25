@@ -6,12 +6,25 @@
 
 We provide config files to reproduce the results in the CVPR 2019 paper [Libra R-CNN](https://arxiv.org/pdf/1904.02701.pdf).
 
+The extended version of [Libra R-CNN](https://arxiv.org/pdf/2108.10175.pdf) is accpeted by IJCV.
+
 ```
 @inproceedings{pang2019libra,
   title={Libra R-CNN: Towards Balanced Learning for Object Detection},
   author={Pang, Jiangmiao and Chen, Kai and Shi, Jianping and Feng, Huajun and Ouyang, Wanli and Dahua Lin},
   booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
   year={2019}
+}
+
+@article{pang2021towards,
+  title={Towards Balanced Learning for Instance Recognition},
+  author={Pang, Jiangmiao and Chen, Kai and Li, Qi and Xu, Zhihai and Feng, Huajun and Shi, Jianping and Ouyang, Wanli and Lin, Dahua},
+  journal={International Journal of Computer Vision},
+  volume={129},
+  number={5},
+  pages={1376--1393},
+  year={2021},
+  publisher={Springer}
 }
 ```
 
