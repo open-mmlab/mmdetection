@@ -5,7 +5,7 @@ import tempfile
 import mmcv
 import numpy as np
 
-from mmdet.datasets import CocoPanopticDataset
+from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET, CocoPanopticDataset
 
 try:
     from panopticapi.utils import id2rgb
@@ -169,8 +169,8 @@ def _create_panoptic_gt_annotations(ann_file):
 
     images = [{
         'id': 0,
-        'width': 800,
-        'height': 600,
+        'width': 80,
+        'height': 60,
         'file_name': 'fake_name1.jpg',
     }]
 
@@ -245,7 +245,7 @@ def test_panoptic_evaluation():
     pred_labels = np.array([0, 0, 1], dtype=np.int64)
     for i in range(3):
         x, y, w, h = pred_bboxes[i]
-        pred[y:y + h, x:x + w] = (i + 1) * 1000 + pred_labels[i]
+        pred[y:y + h, x:x + w] = (i + 1) * INSTANCE_OFFSET + pred_labels[i]
 
     tmp_dir = tempfile.TemporaryDirectory()
     ann_file = osp.join(tmp_dir.name, 'panoptic.json')
