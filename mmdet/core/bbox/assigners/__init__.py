@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .approx_max_iou_assigner import ApproxMaxIoUAssigner
 from .assign_result import AssignResult
 from .atss_assigner import ATSSAssigner

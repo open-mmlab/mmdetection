@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .assigners import (AssignResult, BaseAssigner, CenterRegionAssigner,
                         MaxIoUAssigner, RegionAssigner)
 from .builder import build_assigner, build_bbox_coder, build_sampler
