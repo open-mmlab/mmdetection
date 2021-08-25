@@ -2457,7 +2457,7 @@ class RandomAffine:
         width = img.shape[1] + self.border[1] * 2
 
         # Center
-        center_matrix = np.eye(3)
+        center_matrix = np.eye(3, dtype=np.float32)
         center_matrix[0, 2] = -img.shape[1] / 2  # x translation (pixels)
         center_matrix[1, 2] = -img.shape[0] / 2  # y translation (pixels)
 
@@ -2562,21 +2562,24 @@ class RandomAffine:
     @staticmethod
     def _get_rotation_matrix(rotate_degrees):
         radian = math.radians(rotate_degrees)
-        rotation_matrix = np.array([[np.cos(radian), -np.sin(radian), 0.],
-                                    [np.sin(radian),
-                                     np.cos(radian), 0.], [0., 0., 1.]])
+        rotation_matrix = np.array(
+            [[np.cos(radian), -np.sin(radian), 0.],
+             [np.sin(radian), np.cos(radian), 0.], [0., 0., 1.]],
+            dtype=np.float32)
         return rotation_matrix
 
     @staticmethod
     def _get_scaling_matrix(scale_ratio):
-        scaling_matrix = np.array([[scale_ratio, 0., 0.],
-                                   [0., scale_ratio, 0.], [0., 0., 1.]])
+        scaling_matrix = np.array(
+            [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
+            dtype=np.float32)
         return scaling_matrix
 
     @staticmethod
     def _get_share_matrix(scale_ratio):
-        scaling_matrix = np.array([[scale_ratio, 0., 0.],
-                                   [0., scale_ratio, 0.], [0., 0., 1.]])
+        scaling_matrix = np.array(
+            [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
+            dtype=np.float32)
         return scaling_matrix
 
     @staticmethod
@@ -2584,10 +2587,12 @@ class RandomAffine:
         x_radian = math.radians(x_shear_degrees)
         y_radian = math.radians(y_shear_degrees)
         shear_matrix = np.array([[1, np.tan(x_radian), 0.],
-                                 [np.tan(y_radian), 1, 0.], [0., 0., 1.]])
+                                 [np.tan(y_radian), 1, 0.], [0., 0., 1.]],
+                                dtype=np.float32)
         return shear_matrix
 
     @staticmethod
     def _get_translation_matrix(x, y):
-        translation_matrix = np.array([[1, 0., x], [0., 1, y], [0., 0., 1.]])
+        translation_matrix = np.array([[1, 0., x], [0., 1, y], [0., 0., 1.]],
+                                      dtype=np.float32)
         return translation_matrix
