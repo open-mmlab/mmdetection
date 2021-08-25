@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import mmcv
 import torch
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule

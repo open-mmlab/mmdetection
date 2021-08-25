@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 
 from mmcv.cnn import MODELS as MMCV_MODELS
