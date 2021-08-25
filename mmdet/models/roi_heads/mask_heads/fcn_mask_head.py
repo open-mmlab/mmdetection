@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from warnings import warn
 
 import numpy as np

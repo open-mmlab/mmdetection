@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .base_sampler import BaseSampler
 from .combined_sampler import CombinedSampler
 from .instance_balanced_pos_sampler import InstanceBalancedPosSampler
