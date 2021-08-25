@@ -107,7 +107,7 @@ def test_bbox_overlaps_2d(eps=1e-7):
     assert ious.size() == (bboxes1.size(0), bboxes2.size(0))
 
 
-def test_recall_overlaps():
+def test_voc_recall_overlaps():
 
     def _construct_bbox(num_bbox=None):
         img_h = int(np.random.randint(3, 1000))
