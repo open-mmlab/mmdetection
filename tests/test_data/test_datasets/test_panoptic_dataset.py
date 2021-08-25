@@ -213,14 +213,16 @@ def test_panoptic_evaluation():
         'annotations': annotations,
         'categories': categories
     }
-
+    # 4 is the id of background class
     gt = np.zeros((60, 80), dtype=np.int64) + 4
     gt_bboxes = np.array([[10, 10, 10, 40], [30, 10, 10, 40], [50, 10, 10, 5]],
                          dtype=np.int64)
     for i in range(3):
         x, y, w, h = gt_bboxes[i]
-        gt[y:y + h, x:x + w] = i + 1
+        gt[y:y + h, x:x + w] = i + 1  # id starts from 1
+
     # TP for background class, IoU=3576/4324=0.827
+    # 2 the category_id of the background class
     pred = np.zeros((60, 80), dtype=np.int64) + 2
     pred_bboxes = np.array(
         [
