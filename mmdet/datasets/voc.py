@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from collections import OrderedDict
 
 from mmcv.utils import print_log
@@ -69,20 +70,31 @@ class VOCDataset(XMLDataset):
             mean_aps = []
             for iou_thr in iou_thrs:
                 print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')
+                # Follow the official implementation,
+                # http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCdevkit_18-May-2011.tar
+                # we should use the legacy coordinate system in mmdet 1.x,
+                # which means w, h should be computed as 'x2 - x1 + 1` and
+                # `y2 - y1 + 1`
                 mean_ap, _ = eval_map(
                     results,
                     annotations,
                     scale_ranges=None,
                     iou_thr=iou_thr,
                     dataset=ds_name,
-                    logger=logger)
+                    logger=logger,
+                    use_legacy_coordinate=True)
                 mean_aps.append(mean_ap)
                 eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)
             eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
         elif metric == 'recall':
             gt_bboxes = [ann['bboxes'] for ann in annotations]
             recalls = eval_recalls(
-                gt_bboxes, results, proposal_nums, iou_thrs, logger=logger)
+                gt_bboxes,
+                results,
+                proposal_nums,
+                iou_thrs,
+                logger=logger,
+                use_legacy_coordinate=True)
             for i, num in enumerate(proposal_nums):
                 for j, iou_thr in enumerate(iou_thrs):
                     eval_results[f'recall@{num}@{iou_thr}'] = recalls[i, j]

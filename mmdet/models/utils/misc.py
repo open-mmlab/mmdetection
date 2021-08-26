@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from torch.nn import functional as F
 
 

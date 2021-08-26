@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from ..builder import BBOX_SAMPLERS, build_sampler
 from .base_sampler import BaseSampler
 

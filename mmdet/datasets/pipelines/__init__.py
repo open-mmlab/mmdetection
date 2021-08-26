@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .auto_augment import (AutoAugment, BrightnessTransform, ColorTransform,
                            ContrastTransform, EqualizeTransform, Rotate, Shear,
                            Translate)
