@@ -18,24 +18,24 @@ from ..builder import BACKBONES
 from ..utils import PatchEmbed, nchw_to_nlc, nlc_to_nchw, pvt_convert
 
 
-class ConvFFN(BaseModule):
-    """An implementation of ConvFFN of PVT.
+class MixFFN(BaseModule):
+    """An implementation of MixFFN of PVT.
 
-    The differences between ConvFFN & FFN:
+    The differences between MixFFN & FFN:
         1. Use 1X1 Conv to replace Linear layer.
         2. Introduce 3X3 Depth-wise Conv to encode positional information.
 
     Args:
         embed_dims (int): The feature dimension. Same as
-            `MultiheadAttention`. Defaults: 256.
+            `MultiheadAttention`.
         feedforward_channels (int): The hidden dimension of FFNs.
-            Defaults: 1024.
         act_cfg (dict, optional): The activation config for FFNs.
-            Default: dict(type='ReLU')
+            Default: dict(type='GELU').
         ffn_drop (float, optional): Probability of an element to be
             zeroed in FFN. Default 0.0.
         dropout_layer (obj:`ConfigDict`): The dropout_layer used
             when adding the shortcut.
+            Default: None.
         use_conv (bool): If True, add 3x3 DWConv between two Linear layers.
             Defaults: False.
         init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
@@ -50,12 +50,12 @@ class ConvFFN(BaseModule):
                  dropout_layer=None,
                  use_conv=False,
                  init_cfg=None):
-        super(ConvFFN, self).__init__(init_cfg=init_cfg)
+        super(MixFFN, self).__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
         self.feedforward_channels = feedforward_channels
         self.act_cfg = act_cfg
-        self.activate = build_activation_layer(act_cfg)
+        activate = build_activation_layer(act_cfg)
 
         in_channels = embed_dims
         fc1 = Conv2d(
@@ -81,7 +81,7 @@ class ConvFFN(BaseModule):
             stride=1,
             bias=True)
         drop = nn.Dropout(ffn_drop)
-        layers = [fc1, self.activate, drop, fc2, drop]
+        layers = [fc1, activate, drop, fc2, drop]
         if use_conv:
             layers.insert(1, dw_conv)
         self.layers = Sequential(*layers)
@@ -112,16 +112,13 @@ class SpatialReductionAttention(MultiheadAttention):
             Default: 0.0.
         dropout_layer (obj:`ConfigDict`): The dropout_layer used
             when adding the shortcut. Default: None.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
-            Default: None.
-        batch_first (bool): Key, Query and Value are shape of
-            (batch, n, embed_dim)
-            or (n, batch, embed_dim). Default: False.
-        qkv_bias (bool): enable bias for qkv if True. Default True.
+        qkv_bias (bool): enable bias for qkv if True. Default: True.
         norm_cfg (dict): Config dict for normalization layer.
             Default: dict(type='LN').
         sr_ratio (int): The ratio of spatial reduction of Spatial Reduction
             Attention of PVT. Default: 1.
+        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+            Default: None.
     """
 
     def __init__(self,
@@ -130,8 +127,7 @@ class SpatialReductionAttention(MultiheadAttention):
                  attn_drop=0.,
                  proj_drop=0.,
                  dropout_layer=None,
-                 batch_first=True,
-                 qkv_bias=False,
+                 qkv_bias=True,
                  norm_cfg=dict(type='LN'),
                  sr_ratio=1,
                  init_cfg=None):
@@ -141,7 +137,6 @@ class SpatialReductionAttention(MultiheadAttention):
             attn_drop,
             proj_drop,
             dropout_layer=dropout_layer,
-            batch_first=batch_first,
             bias=qkv_bias,
             init_cfg=init_cfg)
 
@@ -182,25 +177,22 @@ class TransformerEncoderLayer(BaseModule):
         num_heads (int): Parallel attention heads.
         feedforward_channels (int): The hidden dimension for FFNs.
         drop_rate (float): Probability of an element to be zeroed.
-            after the feed forward layer. Default 0.0.
+            after the feed forward layer. Default: 0.0.
         attn_drop_rate (float): The drop out rate for attention layer.
-            Default 0.0.
-        drop_path_rate (float): stochastic depth rate. Default 0.0.
+            Default: 0.0.
+        drop_path_rate (float): stochastic depth rate. Default: 0.0.
         qkv_bias (bool): enable bias for qkv if True.
             Default: True.
         act_cfg (dict): The activation config for FFNs.
             Default: dict(type='GELU').
         norm_cfg (dict): Config dict for normalization layer.
             Default: dict(type='LN').
-        batch_first (bool): Key, Query and Value are shape of
-            (batch, n, embed_dim)
-            or (n, batch, embed_dim). Default: False.
-        init_cfg (dict, optional): Initialization config dict.
-            Default:None.
         sr_ratio (int): The ratio of spatial reduction of Spatial Reduction
             Attention of PVT. Default: 1.
         use_conv_ffn (bool): If True, use Convolutional FFN to replace FFN.
-            Default: False
+            Default: False.
+        init_cfg (dict, optional): Initialization config dict.
+            Default: None.
     """
 
     def __init__(self,
@@ -213,7 +205,6 @@ class TransformerEncoderLayer(BaseModule):
                  qkv_bias=True,
                  act_cfg=dict(type='GELU'),
                  norm_cfg=dict(type='LN'),
-                 batch_first=True,
                  sr_ratio=1,
                  use_conv_ffn=False,
                  init_cfg=None):
@@ -228,7 +219,6 @@ class TransformerEncoderLayer(BaseModule):
             attn_drop=attn_drop_rate,
             proj_drop=drop_rate,
             dropout_layer=dict(type='DropPath', drop_prob=drop_path_rate),
-            batch_first=batch_first,
             qkv_bias=qkv_bias,
             norm_cfg=norm_cfg,
             sr_ratio=sr_ratio)
@@ -236,7 +226,7 @@ class TransformerEncoderLayer(BaseModule):
         # The ret[0] of build_norm_layer is norm name.
         self.norm2 = build_norm_layer(norm_cfg, embed_dims)[1]
 
-        self.ffn = ConvFFN(
+        self.ffn = MixFFN(
             embed_dims=embed_dims,
             feedforward_channels=feedforward_channels,
             ffn_drop=drop_rate,
@@ -256,22 +246,12 @@ class AbsolutePositionEmbedding(BaseModule):
 
     Args:
         pos_shape (int): The shape of the absolute position embedding.
-        pos_dim (int): The dimension of the absolute position embedding
+        pos_dim (int): The dimension of the absolute position embedding.
         drop_rate (float): Probability of an element to be zeroed.
-            Default 0.0
-        with_cls_token (bool): Whether concatenating class token into image
-            tokens as transformer input. Default: True.
-        output_cls_token (bool): Whether output the cls_token. If set True,
-            `with_cls_token` must be True. Default: False.
+            Default: 0.0.
     """
 
-    def __init__(self,
-                 pos_shape,
-                 pos_dim,
-                 drop_rate=0.,
-                 with_cls_token=True,
-                 output_cls_token=False,
-                 init_cfg=None):
+    def __init__(self, pos_shape, pos_dim, drop_rate=0., init_cfg=None):
         super().__init__(init_cfg=init_cfg)
 
         if isinstance(pos_shape, int):
@@ -284,12 +264,9 @@ class AbsolutePositionEmbedding(BaseModule):
                 f'but got {len(pos_shape)}'
         self.pos_shape = pos_shape
         self.pos_dim = pos_dim
-        self.with_cls_token = with_cls_token
-        self.output_cls_token = output_cls_token
 
         self.pos_embed = nn.Parameter(
-            torch.zeros(1, pos_shape[0] * pos_shape[1] + with_cls_token,
-                        pos_dim))
+            torch.zeros(1, pos_shape[0] * pos_shape[1], pos_dim))
         self.drop = nn.Dropout(p=drop_rate)
 
     def init_weights(self):
@@ -298,23 +275,19 @@ class AbsolutePositionEmbedding(BaseModule):
     def resize_pos_embed(self, pos_embed, input_shape, mode='bilinear'):
         """Resize pos_embed weights.
 
-        Resize pos_embed using bicubic interpolate method.
+        Resize pos_embed using bilinear interpolate method.
         Args:
             pos_embed (torch.Tensor): Position embedding weights.
             input_shape (tuple): Tuple for (downsampled input image height,
                 downsampled input image width).
-            with_cls_token (bool): Whether using the position embedding of
-                the class token. Default: True.
             mode (str): Algorithm used for upsampling:
                 ``'nearest'`` | ``'linear'`` | ``'bilinear'`` | ``'bicubic'`` |
-                ``'trilinear'``. Default: ``'bilinear'``
+                ``'trilinear'``. Default: ``'bilinear'``.
         Return:
-            torch.Tensor: The resized pos_embed of shape [B, L_new, C]
+            torch.Tensor: The resized pos_embed of shape [B, L_new, C].
         """
         assert pos_embed.ndim == 3, 'shape of pos_embed must be [B, L, C]'
         pos_h, pos_w = self.pos_shape
-        if self.with_cls_token:
-            cls_token_weight = pos_embed[:, 0:1]
         pos_embed_weight = pos_embed[:, (-1 * pos_h * pos_w):]
         pos_embed_weight = pos_embed_weight.reshape(
             1, pos_h, pos_w, self.pos_dim).permute(0, 3, 1, 2).contiguous()
@@ -323,8 +296,6 @@ class AbsolutePositionEmbedding(BaseModule):
         pos_embed_weight = torch.flatten(pos_embed_weight,
                                          2).transpose(1, 2).contiguous()
         pos_embed = pos_embed_weight
-        if self.with_cls_token and self.output_cls_token:
-            pos_embed = torch.cat((cls_token_weight, pos_embed), dim=1)
 
         return pos_embed
 
@@ -337,9 +308,9 @@ class AbsolutePositionEmbedding(BaseModule):
 class PyramidVisionTransformer(BaseModule):
     """Pyramid Vision Transformer (PVT)
 
-    A PyTorch implement of : `Pyramid Vision Transformer: A Versatile Backbone
-    for Dense Prediction without Convolutions` -
-        https://arxiv.org/pdf/2102.12122.pdf
+    Implementation of `Pyramid Vision Transformer: A Versatile Backbone for
+    Dense Prediction without Convolutions
+    <https://arxiv.org/pdf/2102.12122.pdf>`_.
 
     Args:
         pretrain_img_size (int | tuple[int]): The size of input image when
@@ -366,24 +337,18 @@ class PyramidVisionTransformer(BaseModule):
             Default: [8, 8, 4, 4].
         qkv_bias (bool): Enable bias for qkv if True. Default: True.
         drop_rate (float): Probability of an element to be zeroed.
-            Default 0.0
+            Default 0.0.
         attn_drop_rate (float): The drop out rate for attention layer.
-            Default 0.0
+            Default 0.0.
         drop_path_rate (float): stochastic depth rate. Default 0.1.
-        with_cls_token (bool): Whether concatenating class token into image
-            tokens as transformer input. Default: False.
-        output_cls_token (bool): Whether output the cls_token. If set True,
-            `with_cls_token` must be True. Default: False.
         use_abs_pos_embed (bool): If True, add absolute position embedding to
             the patch embedding. Defaults: True.
         use_conv_ffn (bool): If True, use Convolutional FFN to replace FFN.
-            Default: False
+            Default: False.
         act_cfg (dict): The activation config for FFNs.
             Default: dict(type='GELU').
         norm_cfg (dict): Config dict for normalization layer.
-            Default: dict(type='LN')
-        pretrain_style (str): Choose to use official or mmcls pretrain weights.
-            Default: official.
+            Default: dict(type='LN').
         pretrained (str, optional): model pretrained path. Default: None.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None.
@@ -406,14 +371,11 @@ class PyramidVisionTransformer(BaseModule):
                  drop_rate=0.,
                  attn_drop_rate=0.,
                  drop_path_rate=0.1,
-                 with_cls_token=False,
-                 output_cls_token=False,
                  use_abs_pos_embed=True,
                  norm_after_stage=False,
                  use_conv_ffn=False,
                  act_cfg=dict(type='GELU'),
                  norm_cfg=dict(type='LN', eps=1e-6),
-                 pretrain_style='official',
                  pretrained=None,
                  init_cfg=None):
         super().__init__(init_cfg=init_cfg)
@@ -426,14 +388,6 @@ class PyramidVisionTransformer(BaseModule):
             assert len(pretrain_img_size) == 2, \
                 f'The size of image should have length 1 or 2, ' \
                 f'but got {len(pretrain_img_size)}'
-
-        assert pretrain_style in [
-            'official', 'mmcls'
-        ], 'we only support official weights or mmcls weights.'
-
-        if output_cls_token:
-            assert with_cls_token is True, f'with_cls_token must be True if' \
-                f'set output_cls_token to True, but got {with_cls_token}'
 
         assert not (init_cfg and pretrained), \
             'init_cfg and pretrained cannot be setting at the same time'
@@ -459,14 +413,7 @@ class PyramidVisionTransformer(BaseModule):
 
         self.out_indices = out_indices
         assert max(out_indices) < self.num_stages
-        self.pretrain_style = pretrain_style
         self.pretrained = pretrained
-
-        self.with_cls_token = with_cls_token
-        self.output_cls_token = output_cls_token
-        if with_cls_token:
-            self.cls_token = nn.Parameter(
-                torch.zeros(1, 1, embed_dims * num_heads[-1]))
 
         # transformer encoder
         dpr = [
@@ -493,9 +440,7 @@ class PyramidVisionTransformer(BaseModule):
                 pos_embed = AbsolutePositionEmbedding(
                     pos_shape=pos_shape,
                     pos_dim=embed_dims_i,
-                    drop_rate=drop_rate,
-                    with_cls_token=i == len(num_layers) - 1,
-                    output_cls_token=with_cls_token & output_cls_token)
+                    drop_rate=drop_rate)
                 layers.append(pos_embed)
             layers.extend([
                 TransformerEncoderLayer(
@@ -522,8 +467,6 @@ class PyramidVisionTransformer(BaseModule):
 
     def init_weights(self):
         if self.init_cfg is None:
-            if self.with_cls_token:
-                trunc_normal_init(self.cls_token, std=.02)
             for m in self.modules():
                 if isinstance(m, nn.Linear):
                     trunc_normal_init(m.weight, std=.02)
@@ -552,11 +495,7 @@ class PyramidVisionTransformer(BaseModule):
             else:
                 state_dict = checkpoint
 
-            if self.pretrain_style == 'official':
-                # Because pvt backbone is not support by mmcls,
-                # so we need to convert pretrain weights to match this
-                # implementation.
-                state_dict = pvt_convert(state_dict)
+            state_dict = pvt_convert(state_dict)
             load_state_dict(self, state_dict, strict=False, logger=logger)
 
     def forward(self, x):
@@ -577,16 +516,8 @@ class PyramidVisionTransformer(BaseModule):
 
 @BACKBONES.register_module()
 class PyramidVisionTransformerV2(PyramidVisionTransformer):
-    r"""Pyramid Vision Transformer V2 (PVTv2)
-
-    A PyTorch implement of : `PVTv2: Improved Baselines with Pyramid Vision
-    Transformer` -
-        https://arxiv.org/pdf/2106.13797.pdf
-
-    PVTv2 improves the original PVT by adding three designs, including
-    overlapping patch embedding, convolutional feedforward networks, and
-    linear complexity attention layers.
-    """
+    """Implementation of `PVTv2: Improved Baselines with Pyramid Vision
+    Transformer <https://arxiv.org/pdf/2106.13797.pdf>`_."""
 
     def __init__(self, **kwargs):
         super(PyramidVisionTransformerV2, self).__init__(
