@@ -15,7 +15,6 @@ INF = 1e8
 
 @HEADS.register_module()
 class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
-
     """RPN head used in `Probabilistic two-stage detection.
 
         <https://arxiv.org/abs/2103.07461>`_.
@@ -54,7 +53,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
         >>> hm_score, reg_pred = self.forward(feats)
         >>> assert len(hm_score) == len(self.scales)
-    """  # noqa: E501
+    """
 
     def __init__(
         self,
@@ -416,7 +415,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         Args:
             hm_scores (list[Tensor]): Box scores for each scale level
                 with shape (N, 1, H, W).
-            reg_preds (list[Tensor]): Box energies / deltas for each scale
+            reg_preds (list[Tensor]): Regression predictions for each scale
                 level with shape (N, 4, H, W).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
@@ -426,7 +425,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 Default: False.
 
         Returns:
-            proposal_list (list[Tensor]): proposals for all images,
+            proposal_list (list[Tensor]): Proposals for all images,
                 Tensor shape (PN, 5) where PN is the number of all proposals
                 for a single image.
         """
@@ -464,9 +463,9 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         """Transform outputs for a single image into bbox predictions.
 
         Args:
-            hm_scores (list[Tensor]): heatmap scores of all levels for a
+            hm_scores (list[Tensor]): Heatmap scores of all levels for a
                 single image. Tensor shape [1, H, W]
-            reg_preds (list[Tensor]): regression predictions of all levels
+            reg_preds (list[Tensor]): Regression predictions of all levels
              for a single image. Tensor shape [4, H, W]
             mlvl_points (list[Tensor]): Box reference for a single scale level
                 with shape (numOfTotalPoints, 2).
@@ -479,13 +478,13 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
                 Default: False.
 
         Returns:
-            proposal (Tensor): proposals for a single image, Tensor shape
+            proposal (Tensor): Proposals for a single image, Tensor shape
                 (PN, 5) where PN is the number of all proposals for a single
                 image.
         """
 
-        assert 'nms' in cfg.keys(), 'RPNHead cfg should specify nms'
-        assert 'nms_pre' in cfg.keys(), 'RPNHead cfg should specify nms_pre'
+        assert cfg.get('nms'), 'RPNHead cfg should specify nms'
+        assert cfg.get('nms_pre'), 'RPNHead cfg should specify nms_pre'
         max_num = cfg.get('max_per_img', cfg.nms.get('max_num', -1))
         assert max_num > 0, 'RPNHead cfg should specify max_per_img or' \
                             'cfg.nms should specify max_num'
@@ -550,7 +549,6 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
             dtype (torch.dtype): Type of points.
             device (torch.device): Device of points.
-            flatten (bool): Whether to flat the points or not
         Returns:
             mlvl_points (tuple): points of each image.
         """
