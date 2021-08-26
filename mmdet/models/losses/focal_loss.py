@@ -229,8 +229,8 @@ class BinaryFocalLoss(nn.Module):
                 inputs,
                 targets,
                 pos_inds,
-                pos_weight=0.5,
-                neg_weight=0.5,
+                pos_weight=None,
+                neg_weight=None,
                 avg_factor=None,
                 reduction_override=None):
         """
@@ -238,10 +238,10 @@ class BinaryFocalLoss(nn.Module):
             inputs (torch.Tensor): Flattened heatmap prediction.
             targets (torch.Tensor): Flattened target heatmap.
             pos_inds (torch.Tensor): Indices of positive sample points.
-            pos_weight(torch.Tensor, optional): The weight of positive loss
-                for each prediction. Defaults to None.
-            neg_weight(torch.Tensor, optional): The weight of negative loss
-                for each prediction. Defaults to None.
+            pos_weight(torch.Tensor, optional): The element wise  weight of
+                positive loss. Defaults to None.
+            neg_weight(torch.Tensor, optional): The element wise  weight of
+                negative loss. Defaults to None.
             avg_factor (torch.Tensor): Average factor that is used to
                 average the loss. Defaults to None.
             reduction_override (string): Override reduction.
