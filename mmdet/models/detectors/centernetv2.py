@@ -4,9 +4,9 @@ from .two_stage import TwoStageDetector
 
 @DETECTORS.register_module()
 class CenterNetv2(TwoStageDetector):
-    """Implementation of CenterNet(Objects as Points)
+    """Implementation of `Probabilistic two-stage detection.
 
-    <https://arxiv.org/abs/1904.07850>.
+    <https://arxiv.org/abs/2103.07461>`_.
     """
 
     def __init__(self,

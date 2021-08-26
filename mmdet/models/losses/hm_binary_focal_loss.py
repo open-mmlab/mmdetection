@@ -14,14 +14,22 @@ def binary_heatmap_focal_loss(pred, target_pos_inds, alpha=2.0, gamma=4.0, beta=
 
     Args:
         pred (torch.Tensor): The prediction.
-        gaussian_target (torch.Tensor): The learning target of the prediction
-            in gaussian distribution.
+        target_pos_inds (list[torch.Tensor]): The learning target and
+            positive indices.
         alpha (float, optional): A balanced form for Focal Loss.
             Defaults to 2.0.
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 4.0.
+        beta (float, optional): A balanced form for Focal Loss.
+            Defaults to 0.25.
+        sigmoid_clamp (float, optional): A value used to determine
+                clamp range.
+        ignore_high_fp (float, optional): A threshold to ignore sample
+            points with high positive scores when calculating negative
+            loss.
     """
-    pred = torch.clamp(pred.sigmoid_(), min=sigmoid_clamp, max=1 - sigmoid_clamp)
+    pred = torch.clamp(
+    	pred.sigmoid_(), min=sigmoid_clamp, max=1 - sigmoid_clamp)
     targets = target_pos_inds[0]
     pos_inds = target_pos_inds[1]
     neg_weights = torch.pow(1 - targets, gamma)
@@ -47,20 +55,29 @@ def binary_heatmap_focal_loss(pred, target_pos_inds, alpha=2.0, gamma=4.0, beta=
 
 @LOSSES.register_module()
 class HeatmapBinaryFocalLoss(nn.Module):
-    """GaussianFocalLoss is a variant of focal loss.
+    """A Gaussian heatmap focal loss calculation, it use a small portion of
+    points as positive sample points.
 
-    More details can be found in the `paper
-    <https://arxiv.org/abs/1808.01244>`_
-    Code is modified from `kp_utils.py
-    <https://github.com/princeton-vl/CornerNet/blob/master/models/py_utils/kp_utils.py#L152>`_  # noqa: E501
-    Please notice that the target in GaussianFocalLoss is a gaussian heatmap,
-    not 0/1 binary target.
+        `Probabilistic two-stage detection
+        <https://arxiv.org/abs/2103.07461>`_
+        `Focal Loss
+        <https://arxiv.org/abs/1708.02002>`_
 
     Args:
-        alpha (float): Power of prediction.
-        gamma (float): Power of target for negative samples.
-        reduction (str): Options are "none", "mean" and "sum".
-        loss_weight (float): Loss weight of current loss.
+        alpha (float, optional): The alpha for calculating the positive
+            sample points loss modulating factor. Defaults to 2.0.
+        gamma (float, optional): The gamma for calculating the negative
+            sample points loss modulating factor. Defaults to 4.0.
+        beta (float, optional): A balanced form for Focal Loss.
+            Defaults to 0.25.
+        sigmoid_clamp (float, optional): A value used to determine
+            clamp range.
+        ignore_high_fp (float, optional): A threshold to ignore sample
+            points with high positive scores when calculating negative
+            loss.
+        reduction (string, optional): The method used to reduce the
+            loss into a scalar. Defaults to 'sum' for heatmap loss.
+        loss_weight (str, optional): Weight of agn_hm loss.
     """
 
     def __init__(self,
@@ -93,6 +110,7 @@ class HeatmapBinaryFocalLoss(nn.Module):
             pred (torch.Tensor): The prediction.
             target (torch.Tensor): The learning target of the prediction
                 in gaussian distribution.
+            pos_inds (torch.Tensor): Indices of positive sample points.
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average

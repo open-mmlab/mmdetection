@@ -1,16 +1,18 @@
 INF =10000000
 model = dict(
     type='CenterNetv2',
-    pretrained='open-mmlab://detectron2/resnet50_caffe',
     backbone=dict(
         type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False, track_running_stats=True),
+        norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
-        style='caffe'),
+        style='caffe',
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='open-mmlab://detectron2/resnet50_caffe')),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -40,7 +42,7 @@ model = dict(
     roi_head=dict(
         type='CascadeRoIHead',
         num_stages=3,
-        stage_loss_weights=[1/3, 1/3, 1/3],
+        stage_loss_weights=[1, 0.5, 0.25],
         add_agnostic_score=True,
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
@@ -184,7 +186,8 @@ data = dict(
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True),
             dict(type='Resize',
-                 img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736), (1333, 768), (1333, 800)],
+                 img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736), 
+                            (1333, 768), (1333, 800)],
                  multiscale_mode='value',
                  keep_ratio=True),
             dict(type='RandomFlip', flip_ratio=0.5),
