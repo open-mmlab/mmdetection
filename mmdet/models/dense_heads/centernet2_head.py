@@ -74,8 +74,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
             alpha=0.25,
             beta=4,
             gamma=2,
-            pos_weight=0.5,
-            neg_weight=0.5,
+            weight=0.5,
             sigmoid_clamp=1e-4,
             ignore_high_fp=0.85),
         loss_bbox=dict(type='GIoULoss', loss_weight=1.0),
@@ -269,7 +268,7 @@ class CenterNet2Head(BaseDenseHead, BBoxTestMixin):
         # Calculate heatmap loss
         num_pos_local = hm_scores.new_tensor(pos_indices.size(0)).float()
         num_pos_avg = max(reduce_mean(num_pos_local), 1.0)
-        hm_loss = self.loss_hm(hm_scores, flattened_hms, pos_indices,
+        hm_loss = self.loss_hm(hm_scores, flattened_hms, pos_indices, 0.5, 0.5,
                                num_pos_avg)
         losses = dict(
             pos_loss=hm_loss[0], neg_loss=hm_loss[1], loss_bbox=reg_loss)
