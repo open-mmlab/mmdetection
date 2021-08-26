@@ -5,7 +5,6 @@ from typing import Sequence
 
 import torch
 import torch.nn as nn
-from mmcv import to_2tuple
 from mmcv.cnn import (build_activation_layer, build_conv_layer,
                       build_norm_layer, xavier_init)
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
@@ -14,6 +13,7 @@ from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
 from mmcv.runner.base_module import BaseModule
+from mmcv.utils import to_2tuple
 from torch.nn.init import normal_
 
 from mmdet.models.utils.builder import TRANSFORMER
@@ -72,6 +72,12 @@ class PatchEmbed(BaseModule):
             stride = kernel_size
         # Use conv layer to embed
         conv_type = conv_type or 'Conv2d'
+
+        kernel_size = to_2tuple(kernel_size)
+        stride = to_2tuple(stride)
+        padding = to_2tuple(padding)
+        dilation = to_2tuple(dilation)
+
         self.projection = build_conv_layer(
             dict(type=conv_type),
             in_channels=in_channels,
@@ -85,9 +91,6 @@ class PatchEmbed(BaseModule):
             self.norm = build_norm_layer(norm_cfg, embed_dims)[1]
         else:
             self.norm = None
-
-        assert input_size, 'Please set `input_size` ' \
-                           'when `dynamic_size` is False'
 
         if input_size:
             # `init_out_size` would be used outside to
@@ -195,6 +198,7 @@ class PatchMerging(BaseModule):
         Args:
             x (Tensor): Has shape (B, H*W, C_in).
             input_size (tuple[int]): The spatial shape of x, arrange as (H, W).
+                Default: None.
 
         Returns:
             tuple: Contains merged results and its spatial shape.
@@ -218,7 +222,14 @@ class PatchMerging(BaseModule):
         x = self.sampler(x)
         # if kernel_size=2 and stride=2, x should has shape (B, 4*C, H/2*W/2)
 
-        out_size = (x.shape[2], x.shape[3])
+        out_h = (H + 2 * self.sampler.padding[0] - self.sampler.dilation[0] *
+                 (self.sampler.kernel_size[0] - 1) -
+                 1) // self.sampler.stride[0] + 1
+        out_w = (W + 2 * self.sampler.padding[1] - self.sampler.dilation[1] *
+                 (self.sampler.kernel_size[1] - 1) -
+                 1) // self.sampler.stride[1] + 1
+
+        out_size = (out_h, out_w)
         x = x.transpose(1, 2)  # B, H/2*W/2, 4*C
         x = self.norm(x) if self.norm else x
         x = self.reduction(x)

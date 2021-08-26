@@ -5,7 +5,7 @@ from mmcv.utils import ConfigDict
 
 from mmdet.models.utils.transformer import (DetrTransformerDecoder,
                                             DetrTransformerEncoder, PatchEmbed,
-                                            Transformer)
+                                            PatchMerging, Transformer)
 
 
 def test_patchembed():
@@ -28,8 +28,10 @@ def test_patchembed():
         norm_cfg=None,
     )
 
-    x1 = patch_merge_1(dummy_input)
+    x1, shape = patch_merge_1(dummy_input)
     assert x1.shape == (2, 2, 10)
+    assert shape == (1, 2)
+    assert shape[0] * shape[1] == x1.shape[1]
 
     B = 2
     H = 10
@@ -51,12 +53,16 @@ def test_patchembed():
         norm_cfg=None,
     )
 
-    patch_merge_2(dummy_input)
+    x2, shape = patch_merge_2(dummy_input)
+    assert x2.shape == (2, 1, 10)
+    assert shape == (1, 1)
+    assert shape[0] * shape[1] == x2.shape[1]
 
     stride = 2
+    input_size = (10, 10)
     dummy_input = torch.rand(B, C, H, W)
     # test stride and norm
-    patch_merge_2 = PatchEmbed(
+    patch_merge_3 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
         conv_type=None,
@@ -64,9 +70,69 @@ def test_patchembed():
         stride=stride,
         padding=0,
         dilation=2,
-        norm_cfg=dict(type='LN'))
+        norm_cfg=dict(type='LN'),
+        input_size=input_size)
 
-    patch_merge_2(dummy_input)
+    x3, shape = patch_merge_3(dummy_input)
+    assert x3.shape == (2, 1, 10)
+    assert shape == (1, 1)
+    assert shape[0] * shape[1] == x3.shape[1]
+    assert patch_merge_3.init_out_size[1] == (input_size[0] - 2 * 4 -
+                                              1) // 2 + 1
+    assert patch_merge_3.init_out_size[0] == (input_size[0] - 2 * 4 -
+                                              1) // 2 + 1
+
+
+def test_patch_merging():
+    in_c = 3
+    out_c = 4
+    kernel_size = 3
+    stride = 3
+    padding = 1
+    dilation = 1
+    bias = False
+
+    patch_merge = PatchMerging(
+        in_channels=in_c,
+        out_channels=out_c,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        dilation=dilation,
+        bias=bias)
+
+    B, L, C = 1, 100, 3
+    input_size = (10, 10)
+    x = torch.rand(B, L, C)
+    x_out, out_size = patch_merge(x, input_size)
+    assert x_out.size() == (1, 16, 4)
+    assert out_size == (4, 4)
+    assert x_out.size(1) == out_size[0] * out_size[1]
+
+    in_c = 4
+    out_c = 5
+    kernel_size = 6
+    stride = 3
+    padding = 2
+    dilation = 2
+    bias = False
+
+    patch_merge = PatchMerging(
+        in_channels=in_c,
+        out_channels=out_c,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        dilation=dilation,
+        bias=bias)
+
+    B, L, C = 1, 100, 4
+    input_size = (10, 10)
+    x = torch.rand(B, L, C)
+    x_out, out_size = patch_merge(x, input_size)
+    assert x_out.size() == (1, 4, 5)
+    assert out_size == (2, 2)
+    assert x_out.size(1) == out_size[0] * out_size[1]
 
 
 def test_detr_transformer_dencoder_encoder_layer():
