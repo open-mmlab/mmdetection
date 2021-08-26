@@ -454,7 +454,7 @@ class CocoPanopticDataset(CocoDataset):
         Args:
             results (list[dict]): Testing results of the dataset.
             metric (str | list[str]): Metrics to be evaluated. Only
-                support 'PQ' at present.
+                support 'PQ' at present. 'pq' will be regarded as 'PQ.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             jsonfile_prefix (str | None): The prefix of json files. It includes
@@ -467,6 +467,8 @@ class CocoPanopticDataset(CocoDataset):
             dict[str, float]: COCO Panoptic style evaluation metric.
         """
         metrics = metric if isinstance(metric, list) else [metric]
+        # Compatible with lowercase 'pq'
+        metrics = ['PQ' if metric == 'pq' else metric for metric in metrics]
         allowed_metrics = ['PQ']  # todo: support other metrics like 'bbox'
         for metric in metrics:
             if metric not in allowed_metrics:
