@@ -444,7 +444,7 @@ class CocoPanopticDataset(CocoDataset):
 
     def evaluate(self,
                  results,
-                 metric='pq',
+                 metric='PQ',
                  logger=None,
                  jsonfile_prefix=None,
                  classwise=False,
@@ -454,7 +454,7 @@ class CocoPanopticDataset(CocoDataset):
         Args:
             results (list[dict]): Testing results of the dataset.
             metric (str | list[str]): Metrics to be evaluated. Only
-                support 'pq' at present.
+                support 'PQ' at present.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             jsonfile_prefix (str | None): The prefix of json files. It includes
@@ -467,7 +467,7 @@ class CocoPanopticDataset(CocoDataset):
             dict[str, float]: COCO Panoptic style evaluation metric.
         """
         metrics = metric if isinstance(metric, list) else [metric]
-        allowed_metrics = ['pq']  # todo: support other metrics like 'bbox'
+        allowed_metrics = ['PQ']  # todo: support other metrics like 'bbox'
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
@@ -477,7 +477,7 @@ class CocoPanopticDataset(CocoDataset):
 
         outfile_prefix = os.path.join(tmp_dir.name, 'results') \
             if tmp_dir is not None else jsonfile_prefix
-        if 'pq' in metrics:
+        if 'PQ' in metrics:
             eval_pan_results = self.evaluate_pan_json(result_files,
                                                       outfile_prefix, logger,
                                                       classwise)
