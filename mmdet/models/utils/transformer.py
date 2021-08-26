@@ -4,7 +4,6 @@ import warnings
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import (build_activation_layer, build_conv_layer,
                       build_norm_layer, xavier_init)
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
@@ -13,7 +12,6 @@ from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
 from mmcv.runner.base_module import BaseModule
-from mmcv.utils import to_2tuple
 from torch.nn.init import normal_
 
 from mmdet.models.utils.builder import TRANSFORMER
@@ -29,7 +27,7 @@ except ImportError:
 
 
 class PatchEmbed(BaseModule):
-    """Image to Patch Embedding V2.
+    """Image to Patch Embedding.
 
     We use a conv layer to implement PatchEmbed.
 
@@ -43,8 +41,6 @@ class PatchEmbed(BaseModule):
             Default: None (Default to be equal with kernel_size).
         padding (int): The padding length of embedding conv. Default: 0.
         dilation (int): The dilation rate of embedding conv. Default: 1.
-        pad_to_patch_size (bool, optional): Whether to pad feature map shape
-            to multiple patch size. Default: True.
         norm_cfg (dict, optional): Config dict for normalization layer.
         init_cfg (`mmcv.ConfigDict`, optional): The Config for initialization.
             Default: None.
@@ -55,10 +51,9 @@ class PatchEmbed(BaseModule):
                  embed_dims=768,
                  conv_type=None,
                  kernel_size=16,
-                 stride=16,
+                 stride=None,
                  padding=0,
                  dilation=1,
-                 pad_to_patch_size=True,
                  norm_cfg=None,
                  init_cfg=None):
         super(PatchEmbed, self).__init__(init_cfg=init_cfg)
@@ -67,22 +62,6 @@ class PatchEmbed(BaseModule):
 
         if stride is None:
             stride = kernel_size
-
-        self.pad_to_patch_size = pad_to_patch_size
-
-        # The default setting of patch size is equal to kernel size.
-        patch_size = kernel_size + (dilation - 1) * 2
-        if isinstance(patch_size, int):
-            patch_size = to_2tuple(patch_size)
-        elif isinstance(patch_size, tuple):
-            if len(patch_size) == 1:
-                patch_size = to_2tuple(patch_size[0])
-            assert len(patch_size) == 2, \
-                f'The size of patch should have length 1 or 2, ' \
-                f'but got {len(patch_size)}'
-
-        self.patch_size = patch_size
-
         # Use conv layer to embed
         conv_type = conv_type or 'Conv2d'
         self.projection = build_conv_layer(
@@ -100,18 +79,6 @@ class PatchEmbed(BaseModule):
             self.norm = None
 
     def forward(self, x):
-        H, W = x.shape[2], x.shape[3]
-
-        # TODO: Process overlapping op
-        if self.pad_to_patch_size:
-            # Modify H, W to multiple of patch size.
-            if H % self.patch_size[0] != 0:
-                x = F.pad(
-                    x, (0, 0, 0, self.patch_size[0] - H % self.patch_size[0]))
-            if W % self.patch_size[1] != 0:
-                x = F.pad(
-                    x, (0, self.patch_size[1] - W % self.patch_size[1], 0, 0))
-
         x = self.projection(x)
         self.DH, self.DW = x.shape[2], x.shape[3]
         x = x.flatten(2).transpose(1, 2)

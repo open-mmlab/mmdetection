@@ -25,20 +25,19 @@ def test_patchembed():
         stride=stride,
         padding=0,
         dilation=1,
-        pad_to_patch_size=True,
         norm_cfg=None,
     )
 
     x1 = patch_merge_1(dummy_input)
-    assert x1.shape == (2, 4, 10)
+    assert x1.shape == (2, 2, 10)
 
     B = 2
-    H = 5
-    W = 6
+    H = 10
+    W = 10
     C = 3
     embed_dims = 10
-    kernel_size = 3
-    stride = 1
+    kernel_size = 5
+    stride = 2
     dummy_input = torch.rand(B, C, H, W)
     # test dilation
     patch_merge_2 = PatchEmbed(
@@ -49,7 +48,6 @@ def test_patchembed():
         stride=stride,
         padding=0,
         dilation=2,
-        pad_to_patch_size=True,
         norm_cfg=None,
     )
 
@@ -66,7 +64,6 @@ def test_patchembed():
         stride=stride,
         padding=0,
         dilation=2,
-        pad_to_patch_size=True,
         norm_cfg=dict(type='LN'))
 
     patch_merge_2(dummy_input)
