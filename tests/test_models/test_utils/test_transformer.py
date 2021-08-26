@@ -1,10 +1,75 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import pytest
+import torch
 from mmcv.utils import ConfigDict
 
 from mmdet.models.utils.transformer import (DetrTransformerDecoder,
-                                            DetrTransformerEncoder,
+                                            DetrTransformerEncoder, PatchEmbed,
                                             Transformer)
+
+
+def test_patchembed():
+    B = 2
+    H = 3
+    W = 4
+    C = 3
+    embed_dims = 10
+    kernel_size = 3
+    stride = 1
+    dummy_input = torch.rand(B, C, H, W)
+    patch_merge_1 = PatchEmbed(
+        in_channels=C,
+        embed_dims=embed_dims,
+        conv_type=None,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=0,
+        dilation=1,
+        pad_to_patch_size=True,
+        norm_cfg=None,
+    )
+
+    x1 = patch_merge_1(dummy_input)
+    assert x1.shape == (2, 4, 10)
+
+    B = 2
+    H = 5
+    W = 6
+    C = 3
+    embed_dims = 10
+    kernel_size = 3
+    stride = 1
+    dummy_input = torch.rand(B, C, H, W)
+    # test dilation
+    patch_merge_2 = PatchEmbed(
+        in_channels=C,
+        embed_dims=embed_dims,
+        conv_type=None,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=0,
+        dilation=2,
+        pad_to_patch_size=True,
+        norm_cfg=None,
+    )
+
+    patch_merge_2(dummy_input)
+
+    stride = 2
+    dummy_input = torch.rand(B, C, H, W)
+    # test stride and norm
+    patch_merge_2 = PatchEmbed(
+        in_channels=C,
+        embed_dims=embed_dims,
+        conv_type=None,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=0,
+        dilation=2,
+        pad_to_patch_size=True,
+        norm_cfg=dict(type='LN'))
+
+    patch_merge_2(dummy_input)
 
 
 def test_detr_transformer_dencoder_encoder_layer():
