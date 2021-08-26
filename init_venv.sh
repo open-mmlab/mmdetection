@@ -58,7 +58,6 @@ fi
 # install PyTorch and MMCV.
 export TORCH_VERSION=1.8.1
 export TORCHVISION_VERSION=0.9.1
-export NUMPY_VERSION=1.19.5
 export MMCV_VERSION=1.3.0
 
 if [[ -z ${CUDA_VERSION} ]]; then
@@ -85,8 +84,6 @@ else
 fi
 
 CONSTRAINTS_FILE=$(tempfile)
-echo numpy==${NUMPY_VERSION} >> ${CONSTRAINTS_FILE}
-
 cat constraints.txt >> ${CONSTRAINTS_FILE}
 
 pip install --upgrade pip || exit 1
