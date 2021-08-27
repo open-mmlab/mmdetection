@@ -85,7 +85,7 @@ def get_dataset_name(config):
     name_map = dict(
         CityscapesDataset='Cityscapes',
         CocoDataset='COCO',
-        CocoPanopticDataset='COCOPanoptic',
+        CocoPanopticDataset='COCO',
         DeepFashionDataset='Deep Fashion',
         LVISV05Dataset='LVIS v0.5',
         LVISV1Dataset='LVIS v1',

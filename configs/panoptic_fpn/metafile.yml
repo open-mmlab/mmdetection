@@ -1,7 +1,7 @@
 Collections:
   - Name: PanopticFPN
     Metadata:
-      Training Data: COCOPanoptic
+      Training Data: COCO
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
@@ -20,7 +20,7 @@ Models:
       Epochs: 12
     Results:
     - Task: Panoptic Segmentation
-      Dataset: COCOPanoptic
+      Dataset: COCO
       Metrics:
         PQ: 40.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/panoptic_fpn/panoptic_fpn_r50_fpn_1x_coco/panoptic_fpn_r50_fpn_1x_coco_20210821_101153-9668fd13.pth
@@ -33,7 +33,7 @@ Models:
       Epochs: 36
     Results:
     - Task: Panoptic Segmentation
-      Dataset: COCOPanoptic
+      Dataset: COCO
       Metrics:
         PQ: 42.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/panoptic_fpn/panoptic_fpn_r50_fpn_mstrain_3x_coco/panoptic_fpn_r50_fpn_mstrain_3x_coco_20210824_171155-5650f98b.pth
@@ -46,7 +46,7 @@ Models:
       Epochs: 12
     Results:
     - Task: Panoptic Segmentation
-      Dataset: COCOPanoptic
+      Dataset: COCO
       Metrics:
         PQ: 42.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/panoptic_fpn/panoptic_fpn_r101_fpn_1x_coco/panoptic_fpn_r101_fpn_1x_coco_20210820_193950-ab9157a2.pth
@@ -59,7 +59,7 @@ Models:
       Epochs: 36
     Results:
     - Task: Panoptic Segmentation
-      Dataset: COCOPanoptic
+      Dataset: COCO
       Metrics:
         PQ: 44.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/panoptic_fpn/panoptic_fpn_r101_fpn_mstrain_3x_coco/panoptic_fpn_r101_fpn_mstrain_3x_coco_20210823_114712-9c99acc4.pth
