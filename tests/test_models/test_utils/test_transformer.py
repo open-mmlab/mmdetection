@@ -3,9 +3,66 @@ import pytest
 import torch
 from mmcv.utils import ConfigDict
 
-from mmdet.models.utils.transformer import (DetrTransformerDecoder,
+from mmdet.models.utils.transformer import (AdaptivePadding,
+                                            DetrTransformerDecoder,
                                             DetrTransformerEncoder, PatchEmbed,
                                             PatchMerging, Transformer)
+
+
+def test_adaptive_padding():
+
+    for padding in ('same', 'corner'):
+        kernel_size = (2, 2)
+        stride = (2, 2)
+        dilation = (1, 1)
+
+        pool = AdaptivePadding(
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            padding=padding)
+        input = torch.rand(1, 1, 11, 13)
+        out = pool(input)
+        # padding to divisible by 2
+        assert (out.shape[2], out.shape[3]) == (12, 14)
+
+        kernel_size = (2, 2)
+        stride = (10, 10)
+        dilation = (1, 1)
+
+        pool = AdaptivePadding(
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            padding=padding)
+        input = torch.rand(1, 1, 10, 13)
+        out = pool(input)
+        #  no padding
+        assert (out.shape[2], out.shape[3]) == (10, 13)
+
+        kernel_size = (11, 11)
+        pool = AdaptivePadding(
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            padding=padding)
+        input = torch.rand(1, 1, 11, 13)
+        out = pool(input)
+        #  all padding
+        assert (out.shape[2], out.shape[3]) == (21, 21)
+
+        input = torch.rand(1, 1, 11, 13)
+        stride = (3, 4)
+        kernel_size = (4, 5)
+        dilation = (2, 2)
+        # actually (7, 9)
+        pool = AdaptivePadding(
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            padding=padding)
+        out = pool(input)
+        assert (out.shape[2], out.shape[3]) == (16, 21)
 
 
 def test_patch_embed():
@@ -147,7 +204,7 @@ def test_patch_merging():
     padding = 1
     dilation = 1
     bias = False
-
+    # test the case `pad_to_stride` is False
     patch_merge = PatchMerging(
         in_channels=in_c,
         out_channels=out_c,
@@ -184,6 +241,24 @@ def test_patch_merging():
         dilation=dilation,
         bias=bias)
 
+    B, L, C = 1, 100, 4
+    input_size = (10, 10)
+    x = torch.rand(B, L, C)
+    x_out, out_size = patch_merge(x, input_size)
+    assert x_out.size() == (1, 4, 5)
+    assert out_size == (2, 2)
+    assert x_out.size(1) == out_size[0] * out_size[1]
+
+    # test the case `pad_to_stride`
+    patch_merge = PatchMerging(
+        in_channels=in_c,
+        out_channels=out_c,
+        pad_to_stride=True,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        dilation=dilation,
+        bias=bias)
     B, L, C = 1, 100, 4
     input_size = (10, 10)
     x = torch.rand(B, L, C)

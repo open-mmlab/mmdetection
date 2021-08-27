@@ -29,6 +29,50 @@ except ImportError:
     from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
 
 
+class AdaptivePadding(nn.Module):
+
+    def __init__(self,
+                 kernel_size=(1, 1),
+                 stride=(1, 1),
+                 dilation=(1, 1),
+                 padding='corner'):
+        super(AdaptivePadding, self).__init__()
+
+        assert padding in ('same', 'corner')
+
+        kernel_size = to_2tuple(kernel_size)
+        stride = to_2tuple(stride)
+        padding = to_2tuple(padding)
+        dilation = to_2tuple(dilation)
+
+        self.padding = padding
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.dilation = dilation
+
+    def forward(self, x):
+        input_h, input_w = x.size()[-2:]
+        kernel_h, kernel_w = self.kernel_size
+        stride_h, stride_w = self.stride
+        output_h = math.ceil(input_h / stride_h)
+        output_w = math.ceil(input_w / stride_w)
+        pad_h = (
+            max((output_h - 1) * stride_h + (kernel_h - 1) * self.dilation[0] +
+                1 - input_h, 0))
+        pad_w = (
+            max((output_w - 1) * stride_w + (kernel_w - 1) * self.dilation[1] +
+                1 - input_w, 0))
+        if pad_h > 0 or pad_w > 0:
+            if self.padding == 'corner':
+                x = F.pad(x, [0, pad_w, 0, pad_h])
+            elif self.padding == 'same':
+                x = F.pad(x, [
+                    pad_w // 2, pad_w - pad_w // 2, pad_h // 2,
+                    pad_h - pad_h // 2
+                ])
+        return x
+
+
 class PatchEmbed(BaseModule):
     """Image to Patch Embedding.
 
@@ -37,15 +81,16 @@ class PatchEmbed(BaseModule):
     Args:
         in_channels (int): The num of input channels. Default: 3
         embed_dims (int): The dimensions of embedding. Default: 768
-        pad_to_stride (bool, optional): Whether to pad input
-            feature map to multiple strides before embedding conv.
+        adaptive_padding (bool, optional): Whether to pad input
+            to gets fully covered by filter and stride you specified..
             Default: True.
         conv_type (dict, optional): The config dict for embedding
             conv layer type selection. Default: None.
         kernel_size (int): The kernel_size of embedding conv. Default: 16.
         stride (int): The slide stride of embedding conv.
-            Default: None (Default to be equal with kernel_size).
-        padding (int): The padding length of embedding conv. Default: 0.
+            Default: None (Would be set as `kernel_size`).
+        padding (int | tuple | string ): The padding length of
+            embedding conv. Default: 0.
         dilation (int): The dilation rate of embedding conv. Default: 1.
         norm_cfg (dict, optional): Config dict for normalization layer.
             Default: None.
@@ -63,7 +108,7 @@ class PatchEmbed(BaseModule):
         pad_to_stride=True,
         conv_type=None,
         kernel_size=16,
-        stride=None,
+        stride=16,
         padding=0,
         dilation=1,
         norm_cfg=None,
@@ -82,6 +127,7 @@ class PatchEmbed(BaseModule):
 
         kernel_size = to_2tuple(kernel_size)
         stride = to_2tuple(stride)
+        # if isinstance(padding, str):
         padding = to_2tuple(padding)
         dilation = to_2tuple(dilation)
 
@@ -144,6 +190,7 @@ class PatchEmbed(BaseModule):
             stride = self.projection.stride
             H, W = x.shape[2], x.shape[3]
             # Modify H, W to multiple of patch size.
+
             if H % stride[0] != 0:
                 x = F.pad(x, (0, 0, 0, stride[0] - H % stride[0]))
             if W % stride[1] != 0:
@@ -256,7 +303,7 @@ class PatchMerging(BaseModule):
 
         # Modify H, W to multiple of stride.
         if self.pad_to_stride:
-            stride = self.projection.stride
+            stride = self.sampler.stride
             if H % stride[0] != 0:
                 x = F.pad(x, (0, 0, 0, stride[0] - H % stride[0]))
                 H = H + stride[0] - H % stride[0]
