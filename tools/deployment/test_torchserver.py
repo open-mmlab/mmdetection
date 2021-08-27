@@ -1,9 +1,8 @@
 import asyncio
-import os
-import re
 from argparse import ArgumentParser
 
 import numpy as np
+import requests
 
 from mmdet.apis import (async_inference_detector, inference_detector,
                         init_detector, show_result_pyplot)
@@ -16,7 +15,7 @@ def parse_args():
     parser.add_argument('checkpoint', help='Checkpoint file')
     parser.add_argument('model_name', help='The model name in the server')
     parser.add_argument(
-        '--inference-adr',
+        '--inference-addr',
         default='127.0.0.1:8080',
         help='server inference port address')
     parser.add_argument(
@@ -31,42 +30,40 @@ def parse_args():
     return args
 
 
-def main(args):
+def main(args, visual_result):
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
     # test a single image
     result = inference_detector(model, args.img)
     # show the results
-    show_result_pyplot(
-        model,
-        args.img,
-        result,
-        score_thr=args.score_thr,
-        title='pytorch_result')
+    if visual_result:
+        show_result_pyplot(
+            model,
+            args.img,
+            result,
+            score_thr=args.score_thr,
+            title='pytorch_result')
+    return result
 
 
-async def async_main(args):
+async def async_main(args, visual_result):
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
     # test a single image
     tasks = asyncio.create_task(async_inference_detector(model, args.img))
     result = await asyncio.gather(tasks)
     # show the results
-    show_result_pyplot(model, args.img, result[0], score_thr=args.score_thr)
+    if visual_result:
+        show_result_pyplot(
+            model, args.img, result[0], score_thr=args.score_thr)
+    return result
 
 
-def res_format(str_res, model):
-    res_str = re.sub('[\\s\\[\\]\\{\\}\\"]*', '', str_res)
-    anchor_set = re.split(',|:', res_str)
+def parse_result(tmp_res, model):
     cls_set = [[] for i in range(len(model.CLASSES))]
-    for i in range(0, len(anchor_set), 7):
-        cls_set[model.CLASSES.index(anchor_set[i])].append([
-            float(anchor_set[i + 1]),
-            float(anchor_set[i + 2]),
-            float(anchor_set[i + 3]),
-            float(anchor_set[i + 4]),
-            float(anchor_set[i + 6])
-        ])
+    for anchor in tmp_res:
+        cls_set[model.CLASSES.index(list(anchor.keys())[0])]\
+            .append([*list(anchor.values())[0], anchor['score']])
     result = []
     for cls in cls_set:
         if len(cls) == 0:
@@ -76,25 +73,28 @@ def res_format(str_res, model):
     return result
 
 
-def serve_inference(args):
-    tmp_res = os.popen('curl http://' + args.inference_adr + '/predictions/' +
-                       args.model_name + ' -T ' + args.img).read(-1)
+def serve_inference(args, visual_result):
+    url = 'http://' + args.inference_addr + '/predictions/' + args.model_name
+    tmp_res = requests.post(url, open(args.img, 'rb'))
     model = init_detector(args.config, args.checkpoint, device=args.device)
-    format_result = res_format(tmp_res, model)
-    show_result_pyplot(
-        model,
-        args.img,
-        format_result,
-        score_thr=args.score_thr,
-        title='server_result')
+    server_result = parse_result(tmp_res.json(), model)
+    if visual_result:
+        show_result_pyplot(
+            model,
+            args.img,
+            server_result,
+            score_thr=args.score_thr,
+            title='server_result')
+    return server_result
 
 
-def compare_res(args):
+def compare_res(args, visual_result=True):
     if args.async_test:
-        asyncio.run(async_main(args))
+        torch_res = asyncio.run(async_main(args), visual_result)
     else:
-        main(args)
-    serve_inference(args)
+        torch_res = main(args, visual_result)
+    server_result = serve_inference(args, visual_result)
+    assert torch_res == server_result
 
 
 if __name__ == '__main__':
