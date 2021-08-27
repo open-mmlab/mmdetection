@@ -20,6 +20,7 @@ def test_patch_embed():
     patch_merge_1 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
+        pad_to_stride=False,
         conv_type=None,
         kernel_size=kernel_size,
         stride=stride,
@@ -48,6 +49,7 @@ def test_patch_embed():
     patch_merge_2 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
+        pad_to_stride=False,
         conv_type=None,
         kernel_size=kernel_size,
         stride=stride,
@@ -72,6 +74,7 @@ def test_patch_embed():
     patch_merge_3 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
+        pad_to_stride=False,
         conv_type=None,
         kernel_size=kernel_size,
         stride=stride,
@@ -101,6 +104,7 @@ def test_patch_embed():
     patch_merge_3 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
+        pad_to_stride=False,
         conv_type=None,
         kernel_size=kernel_size,
         stride=stride,
@@ -127,6 +131,7 @@ def test_patch_merging():
     patch_merge = PatchMerging(
         in_channels=in_c,
         out_channels=out_c,
+        pad_to_stride=False,
         kernel_size=kernel_size,
         stride=stride,
         padding=padding,
@@ -152,6 +157,7 @@ def test_patch_merging():
     patch_merge = PatchMerging(
         in_channels=in_c,
         out_channels=out_c,
+        pad_to_stride=False,
         kernel_size=kernel_size,
         stride=stride,
         padding=padding,

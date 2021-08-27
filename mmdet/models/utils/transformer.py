@@ -5,6 +5,7 @@ from typing import Sequence
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.cnn import (build_activation_layer, build_conv_layer,
                       build_norm_layer, xavier_init)
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
@@ -36,8 +37,11 @@ class PatchEmbed(BaseModule):
     Args:
         in_channels (int): The num of input channels. Default: 3
         embed_dims (int): The dimensions of embedding. Default: 768
-        conv_type (dict, optional): The config dict for conv layer type
-            selection. Default: None.
+        pad_to_stride (bool, optional): Whether to pad input
+            feature map to multiple strides before embedding conv.
+            Default: True.
+        conv_type (dict, optional): The config dict for embedding
+            conv layer type selection. Default: None.
         kernel_size (int): The kernel_size of embedding conv. Default: 16.
         stride (int): The slide stride of embedding conv.
             Default: None (Default to be equal with kernel_size).
@@ -56,6 +60,7 @@ class PatchEmbed(BaseModule):
         self,
         in_channels=3,
         embed_dims=768,
+        pad_to_stride=True,
         conv_type=None,
         kernel_size=16,
         stride=None,
@@ -68,6 +73,7 @@ class PatchEmbed(BaseModule):
         super(PatchEmbed, self).__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
+        self.pad_to_stride = pad_to_stride
 
         if stride is None:
             stride = kernel_size
@@ -97,7 +103,18 @@ class PatchEmbed(BaseModule):
             # `init_out_size` would be used outside to
             # calculate the num_patches
             # when `use_abs_pos_embed` outside
+
             self.init_input_size = input_size
+
+            # Modify H, W to multiple of stride.
+            if pad_to_stride:
+                H = input_size[0]
+                W = input_size[1]
+                if H % stride[0] != 0:
+                    input_size[0] = H + stride[0] - H % stride[0]
+                if W % stride[1] != 0:
+                    input_size[1] = W + stride[0] - H % stride[0]
+
             # https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
             h_out = (input_size[0] + 2 * padding[0] - dilation[0] *
                      (kernel_size[0] - 1) - 1) // stride[0] + 1
@@ -120,6 +137,16 @@ class PatchEmbed(BaseModule):
                 - out_size (tuple[int]): Spatial shape of x, arrange as
                     (out_h, out_w).
         """
+
+        if self.pad_to_stride:
+            stride = self.projection.stride
+            H, W = x.shape[2], x.shape[3]
+            # Modify H, W to multiple of patch size.
+            if H % stride[0] != 0:
+                x = F.pad(x, (0, 0, 0, stride[0] - H % stride[0]))
+            if W % stride[1] != 0:
+                x = F.pad(x, (0, stride[1] - W % stride[1], 0, 0))
+
         x = self.projection(x)
         out_size = (x.shape[2], x.shape[3])
         x = x.flatten(2).transpose(1, 2)
@@ -139,6 +166,9 @@ class PatchMerging(BaseModule):
     Args:
         in_channels (int): The num of input channels.
         out_channels (int): The num of output channels.
+        pad_to_stride (bool, optional): Whether to pad input
+            feature map to multiple strides before unfold operation.
+            Default: True.
         kernel_size (int | tuple, optional): the kernel size in the unfold
             layer. Defaults to 2.
         stride (int | tuple, optional): the stride of the sliding blocks in the
@@ -158,6 +188,7 @@ class PatchMerging(BaseModule):
     def __init__(self,
                  in_channels,
                  out_channels,
+                 pad_to_stride=True,
                  kernel_size=2,
                  stride=None,
                  padding=0,
@@ -168,7 +199,7 @@ class PatchMerging(BaseModule):
         super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.out_channels = out_channels
-
+        self.pad_to_stride = pad_to_stride
         if stride:
             stride = stride
         else:
@@ -220,6 +251,15 @@ class PatchMerging(BaseModule):
         x = x.view(B, H, W, C).permute([0, 3, 1, 2])  # B, C, H, W
         # Use nn.Unfold to merge patch. About 25% faster than original method,
         # but need to modify pretrained model for compatibility
+
+        # Modify H, W to multiple of stride.
+        if self.pad_to_stride:
+            stride = self.projection.stride
+            if H % stride[0] != 0:
+                x = F.pad(x, (0, 0, 0, stride[0] - H % stride[0]))
+            if W % stride[1] != 0:
+                x = F.pad(x, (0, stride[1] - W % stride[1], 0, 0))
+
         x = self.sampler(x)
         # if kernel_size=2 and stride=2, x should has shape (B, 4*C, H/2*W/2)
 
