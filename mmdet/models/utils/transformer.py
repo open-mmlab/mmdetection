@@ -44,26 +44,27 @@ class PatchEmbed(BaseModule):
         padding (int): The padding length of embedding conv. Default: 0.
         dilation (int): The dilation rate of embedding conv. Default: 1.
         norm_cfg (dict, optional): Config dict for normalization layer.
-        init_cfg (`mmcv.ConfigDict`, optional): The Config for initialization.
             Default: None.
-        use_dynamic_size (bool): Whether to use dynamic outsize, corresponding
-            to use the dynamic image size during training. Default: True.
         input_size (int | tuple): The size of input, which will be
             used to calculate the out size. Only work when `dynamic_size`
             is False. Default: None.
+        init_cfg (`mmcv.ConfigDict`, optional): The Config for initialization.
+            Default: None.
     """
 
-    def __init__(self,
-                 in_channels=3,
-                 embed_dims=768,
-                 conv_type=None,
-                 kernel_size=16,
-                 stride=None,
-                 padding=0,
-                 dilation=1,
-                 norm_cfg=None,
-                 init_cfg=None,
-                 input_size=None):
+    def __init__(
+        self,
+        in_channels=3,
+        embed_dims=768,
+        conv_type=None,
+        kernel_size=16,
+        stride=None,
+        padding=0,
+        dilation=1,
+        norm_cfg=None,
+        input_size=None,
+        init_cfg=None,
+    ):
         super(PatchEmbed, self).__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
@@ -110,7 +111,7 @@ class PatchEmbed(BaseModule):
     def forward(self, x):
         """
         Args:
-            x (Tensor): Has shape (B, H*W, in_channels).
+            x (Tensor): Has shape (B, C, H, W). In most case, C is 3.
 
         Returns:
             tuple: Contains merged results and its spatial shape.

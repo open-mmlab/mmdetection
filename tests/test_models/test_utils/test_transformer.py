@@ -8,7 +8,7 @@ from mmdet.models.utils.transformer import (DetrTransformerDecoder,
                                             PatchMerging, Transformer)
 
 
-def test_patchembed():
+def test_patch_embed():
     B = 2
     H = 3
     W = 4
@@ -29,8 +29,11 @@ def test_patchembed():
     )
 
     x1, shape = patch_merge_1(dummy_input)
+    # test out shape
     assert x1.shape == (2, 2, 10)
+    # test outsize is correct
     assert shape == (1, 2)
+    # test L = out_h * out_w
     assert shape[0] * shape[1] == x1.shape[1]
 
     B = 2
@@ -54,12 +57,16 @@ def test_patchembed():
     )
 
     x2, shape = patch_merge_2(dummy_input)
+    # test out shape
     assert x2.shape == (2, 1, 10)
+    # test outsize is correct
     assert shape == (1, 1)
+    # test L = out_h * out_w
     assert shape[0] * shape[1] == x2.shape[1]
 
     stride = 2
     input_size = (10, 10)
+
     dummy_input = torch.rand(B, C, H, W)
     # test stride and norm
     patch_merge_3 = PatchEmbed(
@@ -74,13 +81,38 @@ def test_patchembed():
         input_size=input_size)
 
     x3, shape = patch_merge_3(dummy_input)
+    # test out shape
     assert x3.shape == (2, 1, 10)
+    # test outsize is correct
     assert shape == (1, 1)
+    # test L = out_h * out_w
     assert shape[0] * shape[1] == x3.shape[1]
+
+    # test thte init_out_size with nn.Unfold
     assert patch_merge_3.init_out_size[1] == (input_size[0] - 2 * 4 -
                                               1) // 2 + 1
     assert patch_merge_3.init_out_size[0] == (input_size[0] - 2 * 4 -
                                               1) // 2 + 1
+    H = 11
+    W = 12
+    input_size = (H, W)
+    dummy_input = torch.rand(B, C, H, W)
+    # test stride and norm
+    patch_merge_3 = PatchEmbed(
+        in_channels=C,
+        embed_dims=embed_dims,
+        conv_type=None,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=0,
+        dilation=2,
+        norm_cfg=dict(type='LN'),
+        input_size=input_size)
+
+    _, shape = patch_merge_3(dummy_input)
+    # when input_size equal to real input
+    # the out_size shoule be equal to `init_out_size`
+    assert shape == patch_merge_3.init_out_size
 
 
 def test_patch_merging():
