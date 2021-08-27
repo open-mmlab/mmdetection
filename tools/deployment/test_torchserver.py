@@ -63,6 +63,7 @@ def main(args):
         server_result,
         score_thr=args.score_thr,
         title='server_result')
+    assert result == server_result
 
 
 if __name__ == '__main__':
