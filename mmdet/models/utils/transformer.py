@@ -49,7 +49,7 @@ class PatchEmbed(BaseModule):
         dilation (int): The dilation rate of embedding conv. Default: 1.
         norm_cfg (dict, optional): Config dict for normalization layer.
             Default: None.
-        input_size (int | tuple): The size of input, which will be
+        input_size (int | tuple | None): The size of input, which will be
             used to calculate the out size. Only work when `dynamic_size`
             is False. Default: None.
         init_cfg (`mmcv.ConfigDict`, optional): The Config for initialization.
@@ -100,6 +100,7 @@ class PatchEmbed(BaseModule):
             self.norm = None
 
         if input_size:
+            input_size = to_2tuple(input_size)
             # `init_out_size` would be used outside to
             # calculate the num_patches
             # when `use_abs_pos_embed` outside
@@ -225,7 +226,7 @@ class PatchMerging(BaseModule):
 
         self.reduction = nn.Linear(sample_dim, out_channels, bias=bias)
 
-    def forward(self, x, input_size=None):
+    def forward(self, x, input_size):
         """
         Args:
             x (Tensor): Has shape (B, H*W, C_in).
@@ -257,8 +258,10 @@ class PatchMerging(BaseModule):
             stride = self.projection.stride
             if H % stride[0] != 0:
                 x = F.pad(x, (0, 0, 0, stride[0] - H % stride[0]))
+                H = H + stride[0] - H % stride[0]
             if W % stride[1] != 0:
                 x = F.pad(x, (0, stride[1] - W % stride[1], 0, 0))
+                W = W + stride[0] - W % stride[0]
 
         x = self.sampler(x)
         # if kernel_size=2 and stride=2, x should has shape (B, 4*C, H/2*W/2)
@@ -270,11 +273,11 @@ class PatchMerging(BaseModule):
                  (self.sampler.kernel_size[1] - 1) -
                  1) // self.sampler.stride[1] + 1
 
-        out_size = (out_h, out_w)
+        output_size = (out_h, out_w)
         x = x.transpose(1, 2)  # B, H/2*W/2, 4*C
         x = self.norm(x) if self.norm else x
         x = self.reduction(x)
-        return x, out_size
+        return x, output_size
 
 
 def inverse_sigmoid(x, eps=1e-5):
