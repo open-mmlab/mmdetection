@@ -16,7 +16,7 @@ def mask_matrix_nms(masks,
         masks (Tensor): Has shape (num_instances, h, w)
         labels (Tensor): Labels of corresponding masks,
             has shape (num_instances,).
-        scores (Tensor): Mask scores in descending order Has shape (n),
+        scores (Tensor): Mask scores in descending order, has shape (n).
         update_thr (float): Score threshold to filter the masks
             after matrix nms. Default: -1.
         nms_pre (int): The max number of instances to do the matrix nms.
