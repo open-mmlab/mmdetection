@@ -81,9 +81,6 @@ class PatchEmbed(BaseModule):
     Args:
         in_channels (int): The num of input channels. Default: 3
         embed_dims (int): The dimensions of embedding. Default: 768
-        adaptive_padding (bool, optional): Whether to pad input
-            to gets fully covered by filter and stride you specified..
-            Default: True.
         conv_type (dict, optional): The config dict for embedding
             conv layer type selection. Default: None.
         kernel_size (int): The kernel_size of embedding conv. Default: 16.
@@ -127,9 +124,19 @@ class PatchEmbed(BaseModule):
 
         kernel_size = to_2tuple(kernel_size)
         stride = to_2tuple(stride)
-        # if isinstance(padding, str):
-        padding = to_2tuple(padding)
+
         dilation = to_2tuple(dilation)
+        if isinstance(padding, str):
+
+            self.adap_padding = AdaptivePadding(
+                kernel_size=kernel_size,
+                stride=stride,
+                dilation=dilation,
+                padding=padding)
+            padding = 0
+        else:
+            self.adap_padding = None
+        padding = to_2tuple(padding)
 
         self.projection = build_conv_layer(
             dict(type=conv_type),
@@ -150,18 +157,24 @@ class PatchEmbed(BaseModule):
             # `init_out_size` would be used outside to
             # calculate the num_patches
             # when `use_abs_pos_embed` outside
-
             self.init_input_size = input_size
-
-            # Modify H, W to multiple of stride.
-            if pad_to_stride:
-                padding_h = input_size[0]
-                padding_w = input_size[1]
-                if padding_h % stride[0] != 0:
-                    padding_h = padding_h + stride[0] - padding_h % stride[0]
-                if padding_w % stride[1] != 0:
-                    padding_w = padding_w + stride[0] - padding_w % stride[0]
-                input_size = (padding_h, padding_w)
+            if self.adap_padding:
+                input_h, input_w = input_size
+                kernel_h, kernel_w = self.adap_padding.kernel_size
+                stride_h, stride_w = self.adap_padding.stride
+                output_h = math.ceil(input_h / stride_h)
+                output_w = math.ceil(input_w / stride_w)
+                pad_h = (
+                    max((output_h - 1) * stride_h +
+                        (kernel_h - 1) * self.adap_padding.dilation[0] + 1 -
+                        input_h, 0))
+                pad_w = (
+                    max((output_w - 1) * stride_w +
+                        (kernel_w - 1) * self.adap_padding.dilation[1] + 1 -
+                        input_w, 0))
+                input_h = input_h + pad_h
+                input_w = input_w + pad_w
+                input_size = (input_h, input_w)
 
             # https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
             h_out = (input_size[0] + 2 * padding[0] - dilation[0] *
@@ -186,15 +199,8 @@ class PatchEmbed(BaseModule):
                     (out_h, out_w).
         """
 
-        if self.pad_to_stride:
-            stride = self.projection.stride
-            H, W = x.shape[2], x.shape[3]
-            # Modify H, W to multiple of patch size.
-
-            if H % stride[0] != 0:
-                x = F.pad(x, (0, 0, 0, stride[0] - H % stride[0]))
-            if W % stride[1] != 0:
-                x = F.pad(x, (0, stride[1] - W % stride[1], 0, 0))
+        if self.adap_padding:
+            x = self.adap_padding(x)
 
         x = self.projection(x)
         out_size = (x.shape[2], x.shape[3])
@@ -214,6 +220,8 @@ class PatchMerging(BaseModule):
 
     Args:
         in_channels (int): The num of input channels.
+            to gets fully covered by filter and stride you specified..
+            Default: True.
         out_channels (int): The num of output channels.
         pad_to_stride (bool, optional): Whether to pad input
             feature map to multiple strides before unfold operation.
@@ -256,8 +264,20 @@ class PatchMerging(BaseModule):
 
         kernel_size = to_2tuple(kernel_size)
         stride = to_2tuple(stride)
-        padding = to_2tuple(padding)
+
         dilation = to_2tuple(dilation)
+
+        if isinstance(padding, str):
+
+            self.adap_padding = AdaptivePadding(
+                kernel_size=kernel_size,
+                stride=stride,
+                dilation=dilation,
+                padding=padding)
+            padding = 0
+        else:
+            self.adap_padding = None
+        padding = to_2tuple(padding)
 
         self.sampler = nn.Unfold(
             kernel_size=kernel_size,
@@ -301,15 +321,8 @@ class PatchMerging(BaseModule):
         # Use nn.Unfold to merge patch. About 25% faster than original method,
         # but need to modify pretrained model for compatibility
 
-        # Modify H, W to multiple of stride.
-        if self.pad_to_stride:
-            stride = self.sampler.stride
-            if H % stride[0] != 0:
-                x = F.pad(x, (0, 0, 0, stride[0] - H % stride[0]))
-                H = H + stride[0] - H % stride[0]
-            if W % stride[1] != 0:
-                x = F.pad(x, (0, stride[1] - W % stride[1], 0, 0))
-                W = W + stride[1] - W % stride[1]
+        if self.adap_padding:
+            x = self.adap_padding(x)
 
         x = self.sampler(x)
         # if kernel_size=2 and stride=2, x should has shape (B, 4*C, H/2*W/2)
