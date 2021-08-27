@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET

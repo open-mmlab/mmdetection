@@ -94,8 +94,8 @@ model = dict(
             in_channels=256,
             conv_out_channels=256,
             num_classes=183,
-            ignore_label=255,
-            loss_weight=0.2,
+            loss_seg=dict(
+                type='CrossEntropyLoss', ignore_index=255, loss_weight=0.2),
             conv_to_res=True),
         glbctx_head=dict(
             type='GlobalContextHead',

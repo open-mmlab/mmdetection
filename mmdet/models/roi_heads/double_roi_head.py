@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
 

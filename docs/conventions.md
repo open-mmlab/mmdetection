@@ -62,7 +62,7 @@ for i in range(self.num_stages):
                    if rois[j].shape[0] > 0:
                        bbox_label = cls_score[j][:, :-1].argmax(dim=1)
                        refine_roi = self.bbox_head[i].regress_by_class(
-                            rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
+                            rois[j], bbox_label, bbox_pred[j], img_metas[j])
                        refine_roi_list.append(refine_roi)
 ```
 
