@@ -44,6 +44,11 @@ Results reported in the paper:
 | ---------------------------- | ------- | ------ | ------ | ------ | ------ | ------ |
 | cascadeRCNN-CenterNet w.prob | 42.862  | 59.519 | 47.028 | 24.064 | 47.043 | 56.197 |
 
+run the centernetv2 on detectron2:
+
+|                              | AP      | AP50   | AP75   | APs    | APm    | APl    |
+| ---------------------------- | ------- | ------ | ------ | ------ | ------ | ------ |
+| cascadeRCNN-CenterNet w.prob | 42.791  | 59.516 | 46.741 | 24.419 | 47.318 | 56.449 |
 
 Results by this implementation:
 
