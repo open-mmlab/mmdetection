@@ -118,6 +118,26 @@ def test_patch_embed():
     # the out_size shoule be equal to `init_out_size`
     assert shape == patch_merge_3.init_out_size
 
+    input_size = (H, W)
+    dummy_input = torch.rand(B, C, H, W)
+    # test stride and norm
+    patch_merge_3 = PatchEmbed(
+        in_channels=C,
+        embed_dims=embed_dims,
+        pad_to_stride=True,
+        conv_type=None,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=0,
+        dilation=2,
+        norm_cfg=dict(type='LN'),
+        input_size=input_size)
+
+    _, shape = patch_merge_3(dummy_input)
+    # when input_size equal to real input
+    # the out_size shoule be equal to `init_out_size`
+    assert shape == patch_merge_3.init_out_size
+
 
 def test_patch_merging():
     in_c = 3

@@ -109,12 +109,13 @@ class PatchEmbed(BaseModule):
 
             # Modify H, W to multiple of stride.
             if pad_to_stride:
-                H = input_size[0]
-                W = input_size[1]
-                if H % stride[0] != 0:
-                    input_size[0] = H + stride[0] - H % stride[0]
-                if W % stride[1] != 0:
-                    input_size[1] = W + stride[0] - H % stride[0]
+                padding_h = input_size[0]
+                padding_w = input_size[1]
+                if padding_h % stride[0] != 0:
+                    padding_h = padding_h + stride[0] - padding_h % stride[0]
+                if padding_w % stride[1] != 0:
+                    padding_w = padding_w + stride[0] - padding_w % stride[0]
+                input_size = (padding_h, padding_w)
 
             # https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
             h_out = (input_size[0] + 2 * padding[0] - dilation[0] *
@@ -261,7 +262,7 @@ class PatchMerging(BaseModule):
                 H = H + stride[0] - H % stride[0]
             if W % stride[1] != 0:
                 x = F.pad(x, (0, stride[1] - W % stride[1], 0, 0))
-                W = W + stride[0] - W % stride[0]
+                W = W + stride[1] - W % stride[1]
 
         x = self.sampler(x)
         # if kernel_size=2 and stride=2, x should has shape (B, 4*C, H/2*W/2)
