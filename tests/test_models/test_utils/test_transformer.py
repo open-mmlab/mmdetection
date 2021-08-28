@@ -226,6 +226,100 @@ def test_patch_embed():
     # the out_size shoule be equal to `init_out_size`
     assert shape == patch_merge_3.init_out_size
 
+    # test adap padding
+    for padding in ('same', 'corner'):
+        in_c = 2
+        embed_dims = 3
+        B = 2
+
+        # test stride is 1
+        input_size = (5, 5)
+        kernel_size = (5, 5)
+        stride = (1, 1)
+        dilation = 1
+        bias = False
+
+        x = torch.rand(B, in_c, *input_size)
+        patch_embed = PatchEmbed(
+            in_channels=in_c,
+            embed_dims=embed_dims,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias)
+
+        x_out, out_size = patch_embed(x)
+        assert x_out.size() == (B, 25, 3)
+        assert out_size == (5, 5)
+        assert x_out.size(1) == out_size[0] * out_size[1]
+
+        # test kernel_size == stride
+        input_size = (5, 5)
+        kernel_size = (5, 5)
+        stride = (5, 5)
+        dilation = 1
+        bias = False
+
+        x = torch.rand(B, in_c, *input_size)
+        patch_embed = PatchEmbed(
+            in_channels=in_c,
+            embed_dims=embed_dims,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias)
+
+        x_out, out_size = patch_embed(x)
+        assert x_out.size() == (B, 1, 3)
+        assert out_size == (1, 1)
+        assert x_out.size(1) == out_size[0] * out_size[1]
+
+        # test kernel_size == stride
+        input_size = (6, 5)
+        kernel_size = (5, 5)
+        stride = (5, 5)
+        dilation = 1
+        bias = False
+
+        x = torch.rand(B, in_c, *input_size)
+        patch_embed = PatchEmbed(
+            in_channels=in_c,
+            embed_dims=embed_dims,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias)
+
+        x_out, out_size = patch_embed(x)
+        assert x_out.size() == (B, 2, 3)
+        assert out_size == (2, 1)
+        assert x_out.size(1) == out_size[0] * out_size[1]
+
+        # test different kernel_size with diffrent stride
+        input_size = (6, 5)
+        kernel_size = (6, 2)
+        stride = (6, 2)
+        dilation = 1
+        bias = False
+
+        x = torch.rand(B, in_c, *input_size)
+        patch_embed = PatchEmbed(
+            in_channels=in_c,
+            embed_dims=embed_dims,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias)
+
+        x_out, out_size = patch_embed(x)
+        assert x_out.size() == (B, 3, 3)
+        assert out_size == (1, 3)
+        assert x_out.size(1) == out_size[0] * out_size[1]
+
 
 def test_patch_merging():
 
@@ -278,22 +372,103 @@ def test_patch_merging():
     # assert out size is consistent with real output
     assert x_out.size(1) == out_size[0] * out_size[1]
 
-    # Test the model with adaptive padding
-    patch_merge = PatchMerging(
-        in_channels=in_c,
-        out_channels=out_c,
-        kernel_size=kernel_size,
-        stride=stride,
-        padding=padding,
-        dilation=dilation,
-        bias=bias)
-    B, L, C = 1, 100, 4
-    input_size = (10, 10)
-    x = torch.rand(B, L, C)
-    x_out, out_size = patch_merge(x, input_size)
-    assert x_out.size() == (1, 4, 5)
-    assert out_size == (2, 2)
-    assert x_out.size(1) == out_size[0] * out_size[1]
+    # Test with adaptive padding
+    for padding in ('same', 'corner'):
+        in_c = 2
+        out_c = 3
+        B = 2
+
+        # test stride is 1
+        input_size = (5, 5)
+        kernel_size = (5, 5)
+        stride = (1, 1)
+        dilation = 1
+        bias = False
+        L = input_size[0] * input_size[1]
+
+        x = torch.rand(B, L, in_c)
+        patch_merge = PatchMerging(
+            in_channels=in_c,
+            out_channels=out_c,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias)
+
+        x_out, out_size = patch_merge(x, input_size)
+        assert x_out.size() == (B, 25, 3)
+        assert out_size == (5, 5)
+        assert x_out.size(1) == out_size[0] * out_size[1]
+
+        # test kernel_size == stride
+        input_size = (5, 5)
+        kernel_size = (5, 5)
+        stride = (5, 5)
+        dilation = 1
+        bias = False
+        L = input_size[0] * input_size[1]
+
+        x = torch.rand(B, L, in_c)
+        patch_merge = PatchMerging(
+            in_channels=in_c,
+            out_channels=out_c,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias)
+
+        x_out, out_size = patch_merge(x, input_size)
+        assert x_out.size() == (B, 1, 3)
+        assert out_size == (1, 1)
+        assert x_out.size(1) == out_size[0] * out_size[1]
+
+        # test kernel_size == stride
+        input_size = (6, 5)
+        kernel_size = (5, 5)
+        stride = (5, 5)
+        dilation = 1
+        bias = False
+        L = input_size[0] * input_size[1]
+
+        x = torch.rand(B, L, in_c)
+        patch_merge = PatchMerging(
+            in_channels=in_c,
+            out_channels=out_c,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias)
+
+        x_out, out_size = patch_merge(x, input_size)
+        assert x_out.size() == (B, 2, 3)
+        assert out_size == (2, 1)
+        assert x_out.size(1) == out_size[0] * out_size[1]
+
+        # test different kernel_size with diffrent stride
+        input_size = (6, 5)
+        kernel_size = (6, 2)
+        stride = (6, 2)
+        dilation = 1
+        bias = False
+        L = input_size[0] * input_size[1]
+
+        x = torch.rand(B, L, in_c)
+        patch_merge = PatchMerging(
+            in_channels=in_c,
+            out_channels=out_c,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias)
+
+        x_out, out_size = patch_merge(x, input_size)
+        assert x_out.size() == (B, 3, 3)
+        assert out_size == (1, 3)
+        assert x_out.size(1) == out_size[0] * out_size[1]
 
 
 def test_detr_transformer_dencoder_encoder_layer():

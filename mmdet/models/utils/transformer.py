@@ -100,6 +100,7 @@ class PatchEmbed(BaseModule):
             of adaptive padding, support "same" and "corner" now.
             Default: "corner".
         dilation (int): The dilation rate of embedding conv. Default: 1.
+        bias (bool): Bias of embed conv. Default: False.
         norm_cfg (dict, optional): Config dict for normalization layer.
             Default: None.
         input_size (int | tuple | None): The size of input, which will be
@@ -119,6 +120,7 @@ class PatchEmbed(BaseModule):
         stride=16,
         padding='corner',
         dilation=1,
+        bias=False,
         norm_cfg=None,
         input_size=None,
         init_cfg=None,
@@ -157,7 +159,8 @@ class PatchEmbed(BaseModule):
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,
-            dilation=dilation)
+            dilation=dilation,
+            bias=bias)
 
         if norm_cfg is not None:
             self.norm = build_norm_layer(norm_cfg, embed_dims)[1]
@@ -281,7 +284,7 @@ class PatchMerging(BaseModule):
                 stride=stride,
                 dilation=dilation,
                 padding=padding)
-            # diable the padding of unfold
+            # disable the padding of unfold
             padding = 0
         else:
             self.adap_padding = None
@@ -331,6 +334,7 @@ class PatchMerging(BaseModule):
 
         if self.adap_padding:
             x = self.adap_padding(x)
+            H, W = x.shape[-2:]
 
         x = self.sampler(x)
         # if kernel_size=2 and stride=2, x should has shape (B, 4*C, H/2*W/2)
