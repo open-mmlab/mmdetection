@@ -5,6 +5,7 @@ from typing import Sequence
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.cnn import (build_activation_layer, build_conv_layer,
                       build_norm_layer, xavier_init)
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
@@ -28,6 +29,77 @@ except ImportError:
     from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
 
 
+class AdaptivePadding(nn.Module):
+    """Applies padding to input (if needed) so that input can get fully covered
+    by filter you specified. It support two modes "same" and "corner". The
+    "same" mode is same with "SAME" padding mode in TensorFlow, pad zero around
+    input. The "corner"  mode would pad zero to bottom right.
+
+    Args:
+        kernel_size (int | tuple): Size of the kernel:
+        stride (int | tuple): Stride of the filter. Default: 1:
+        dilation (int | tuple): Spacing between kernel elements.
+            Default: 1
+        padding (str): Support "same" and "corner", "corner" mode
+            would pad zero to bottom right, and "same" mode would
+            pad zero around input. Default: "corner".
+    Example:
+        >>> kernel_size = 16
+        >>> stride = 16
+        >>> dilation = 1
+        >>> input = torch.rand(1, 1, 15, 17)
+        >>> pool = AdaptivePadding(
+        >>>     kernel_size=kernel_size,
+        >>>     stride=stride,
+        >>>     dilation=dilation,
+        >>>     padding="same")
+        >>> out = pool(input)
+        >>> # padding to divisible by 16
+        >>> assert (out.shape[2], out.shape[3]) == (16, 32)
+        >>> input = torch.rand(1, 1, 16, 17)
+        >>> out = pool(input)
+        >>> assert (out.shape[2], out.shape[3]) == (16, 32)
+    """
+
+    def __init__(self, kernel_size=1, stride=1, dilation=1, padding='corner'):
+
+        super(AdaptivePadding, self).__init__()
+
+        assert padding in ('same', 'corner')
+
+        kernel_size = to_2tuple(kernel_size)
+        stride = to_2tuple(stride)
+        padding = to_2tuple(padding)
+        dilation = to_2tuple(dilation)
+
+        self.padding = padding
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.dilation = dilation
+
+    def forward(self, x):
+        input_h, input_w = x.size()[-2:]
+        kernel_h, kernel_w = self.kernel_size
+        stride_h, stride_w = self.stride
+        output_h = math.ceil(input_h / stride_h)
+        output_w = math.ceil(input_w / stride_w)
+        pad_h = (
+            max((output_h - 1) * stride_h + (kernel_h - 1) * self.dilation[0] +
+                1 - input_h, 0))
+        pad_w = (
+            max((output_w - 1) * stride_w + (kernel_w - 1) * self.dilation[1] +
+                1 - input_w, 0))
+        if pad_h > 0 or pad_w > 0:
+            if self.padding == 'corner':
+                x = F.pad(x, [0, pad_w, 0, pad_h])
+            elif self.padding == 'same':
+                x = F.pad(x, [
+                    pad_w // 2, pad_w - pad_w // 2, pad_h // 2,
+                    pad_h - pad_h // 2
+                ])
+        return x
+
+
 class PatchEmbed(BaseModule):
     """Image to Patch Embedding.
 
@@ -36,16 +108,20 @@ class PatchEmbed(BaseModule):
     Args:
         in_channels (int): The num of input channels. Default: 3
         embed_dims (int): The dimensions of embedding. Default: 768
-        conv_type (dict, optional): The config dict for conv layer type
-            selection. Default: None.
+        conv_type (dict, optional): The config dict for embedding
+            conv layer type selection. Default: None.
         kernel_size (int): The kernel_size of embedding conv. Default: 16.
         stride (int): The slide stride of embedding conv.
-            Default: None (Default to be equal with kernel_size).
-        padding (int): The padding length of embedding conv. Default: 0.
+            Default: None (Would be set as `kernel_size`).
+        padding (int | tuple | string ): The padding length of
+            embedding conv. When it is a string, it means the mode
+            of adaptive padding, support "same" and "corner" now.
+            Default: "corner".
         dilation (int): The dilation rate of embedding conv. Default: 1.
+        bias (bool): Bias of embed conv. Default: False.
         norm_cfg (dict, optional): Config dict for normalization layer.
             Default: None.
-        input_size (int | tuple): The size of input, which will be
+        input_size (int | tuple | None): The size of input, which will be
             used to calculate the out size. Only work when `dynamic_size`
             is False. Default: None.
         init_cfg (`mmcv.ConfigDict`, optional): The Config for initialization.
@@ -56,11 +132,13 @@ class PatchEmbed(BaseModule):
         self,
         in_channels=3,
         embed_dims=768,
+        pad_to_stride=True,
         conv_type=None,
         kernel_size=16,
-        stride=None,
-        padding=0,
+        stride=16,
+        padding='corner',
         dilation=1,
+        bias=False,
         norm_cfg=None,
         input_size=None,
         init_cfg=None,
@@ -68,16 +146,29 @@ class PatchEmbed(BaseModule):
         super(PatchEmbed, self).__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
+        self.pad_to_stride = pad_to_stride
 
         if stride is None:
             stride = kernel_size
+
         # Use conv layer to embed
         conv_type = conv_type or 'Conv2d'
 
         kernel_size = to_2tuple(kernel_size)
         stride = to_2tuple(stride)
-        padding = to_2tuple(padding)
         dilation = to_2tuple(dilation)
+
+        if isinstance(padding, str):
+            self.adap_padding = AdaptivePadding(
+                kernel_size=kernel_size,
+                stride=stride,
+                dilation=dilation,
+                padding=padding)
+            # disable the padding of conv
+            padding = 0
+        else:
+            self.adap_padding = None
+        padding = to_2tuple(padding)
 
         self.projection = build_conv_layer(
             dict(type=conv_type),
@@ -86,7 +177,8 @@ class PatchEmbed(BaseModule):
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,
-            dilation=dilation)
+            dilation=dilation,
+            bias=bias)
 
         if norm_cfg is not None:
             self.norm = build_norm_layer(norm_cfg, embed_dims)[1]
@@ -94,10 +186,29 @@ class PatchEmbed(BaseModule):
             self.norm = None
 
         if input_size:
+            input_size = to_2tuple(input_size)
             # `init_out_size` would be used outside to
             # calculate the num_patches
             # when `use_abs_pos_embed` outside
             self.init_input_size = input_size
+            if self.adap_padding:
+                input_h, input_w = input_size
+                kernel_h, kernel_w = self.adap_padding.kernel_size
+                stride_h, stride_w = self.adap_padding.stride
+                output_h = math.ceil(input_h / stride_h)
+                output_w = math.ceil(input_w / stride_w)
+                pad_h = (
+                    max((output_h - 1) * stride_h +
+                        (kernel_h - 1) * self.adap_padding.dilation[0] + 1 -
+                        input_h, 0))
+                pad_w = (
+                    max((output_w - 1) * stride_w +
+                        (kernel_w - 1) * self.adap_padding.dilation[1] + 1 -
+                        input_w, 0))
+                input_h = input_h + pad_h
+                input_w = input_w + pad_w
+                input_size = (input_h, input_w)
+
             # https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
             h_out = (input_size[0] + 2 * padding[0] - dilation[0] *
                      (kernel_size[0] - 1) - 1) // stride[0] + 1
@@ -120,6 +231,10 @@ class PatchEmbed(BaseModule):
                 - out_size (tuple[int]): Spatial shape of x, arrange as
                     (out_h, out_w).
         """
+
+        if self.adap_padding:
+            x = self.adap_padding(x)
+
         x = self.projection(x)
         out_size = (x.shape[2], x.shape[3])
         x = x.flatten(2).transpose(1, 2)
@@ -138,13 +253,17 @@ class PatchMerging(BaseModule):
 
     Args:
         in_channels (int): The num of input channels.
+            to gets fully covered by filter and stride you specified..
+            Default: True.
         out_channels (int): The num of output channels.
         kernel_size (int | tuple, optional): the kernel size in the unfold
             layer. Defaults to 2.
         stride (int | tuple, optional): the stride of the sliding blocks in the
             unfold layer. Default: None. (Would be set as `kernel_size`)
-        padding (int | tuple, optional): zero padding width in the unfold
-            layer. Default: 0.
+        padding (int | tuple | string ): The padding length of
+            embedding conv. When it is a string, it means the mode
+            of adaptive padding, support "same" and "corner" now.
+            Default: "corner".
         dilation (int | tuple, optional): dilation parameter in the unfold
             layer. Default: 1.
         bias (bool, optional): Whether to add bias in linear layer or not.
@@ -160,7 +279,7 @@ class PatchMerging(BaseModule):
                  out_channels,
                  kernel_size=2,
                  stride=None,
-                 padding=0,
+                 padding='corner',
                  dilation=1,
                  bias=False,
                  norm_cfg=dict(type='LN'),
@@ -168,7 +287,6 @@ class PatchMerging(BaseModule):
         super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.out_channels = out_channels
-
         if stride:
             stride = stride
         else:
@@ -176,9 +294,20 @@ class PatchMerging(BaseModule):
 
         kernel_size = to_2tuple(kernel_size)
         stride = to_2tuple(stride)
-        padding = to_2tuple(padding)
         dilation = to_2tuple(dilation)
 
+        if isinstance(padding, str):
+            self.adap_padding = AdaptivePadding(
+                kernel_size=kernel_size,
+                stride=stride,
+                dilation=dilation,
+                padding=padding)
+            # disable the padding of unfold
+            padding = 0
+        else:
+            self.adap_padding = None
+
+        padding = to_2tuple(padding)
         self.sampler = nn.Unfold(
             kernel_size=kernel_size,
             dilation=dilation,
@@ -194,7 +323,7 @@ class PatchMerging(BaseModule):
 
         self.reduction = nn.Linear(sample_dim, out_channels, bias=bias)
 
-    def forward(self, x, input_size=None):
+    def forward(self, x, input_size):
         """
         Args:
             x (Tensor): Has shape (B, H*W, C_in).
@@ -220,6 +349,11 @@ class PatchMerging(BaseModule):
         x = x.view(B, H, W, C).permute([0, 3, 1, 2])  # B, C, H, W
         # Use nn.Unfold to merge patch. About 25% faster than original method,
         # but need to modify pretrained model for compatibility
+
+        if self.adap_padding:
+            x = self.adap_padding(x)
+            H, W = x.shape[-2:]
+
         x = self.sampler(x)
         # if kernel_size=2 and stride=2, x should has shape (B, 4*C, H/2*W/2)
 
@@ -230,11 +364,11 @@ class PatchMerging(BaseModule):
                  (self.sampler.kernel_size[1] - 1) -
                  1) // self.sampler.stride[1] + 1
 
-        out_size = (out_h, out_w)
+        output_size = (out_h, out_w)
         x = x.transpose(1, 2)  # B, H/2*W/2, 4*C
         x = self.norm(x) if self.norm else x
         x = self.reduction(x)
-        return x, out_size
+        return x, output_size
 
 
 def inverse_sigmoid(x, eps=1e-5):
