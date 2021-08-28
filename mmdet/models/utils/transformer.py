@@ -31,7 +31,9 @@ except ImportError:
 
 class AdaptivePadding(nn.Module):
     """Applies padding to input (if needed) so that input can get fully covered
-    by filter you specified.
+    by filter you specified. It support two modes "same" and "corner". The
+    "same" mode is same with "SAME" padding mode in TensorFlow, pad zero around
+    input. The "corner"  mode would pad zero to bottom right.
 
     Args:
         kernel_size (int | tuple): Size of the kernel:
