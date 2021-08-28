@@ -132,7 +132,6 @@ class PatchEmbed(BaseModule):
         self,
         in_channels=3,
         embed_dims=768,
-        pad_to_stride=True,
         conv_type=None,
         kernel_size=16,
         stride=16,
@@ -146,8 +145,6 @@ class PatchEmbed(BaseModule):
         super(PatchEmbed, self).__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
-        self.pad_to_stride = pad_to_stride
-
         if stride is None:
             stride = kernel_size
 
