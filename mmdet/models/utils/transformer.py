@@ -30,12 +30,21 @@ except ImportError:
 
 
 class AdaptivePadding(nn.Module):
+    """Applies padding to input (if needed) so that input can get fully covered
+    by filter you specified.
 
-    def __init__(self,
-                 kernel_size=(1, 1),
-                 stride=(1, 1),
-                 dilation=(1, 1),
-                 padding='corner'):
+    Args:
+        kernel_size (int | tuple): Size of the kernel:
+        stride (int | tuple): Stride of the filter. Default: 1:
+        dilation (int | tuple): Spacing between kernel elements.
+            Default: 1
+        padding (str): Support "same" and "corner", "corner" mode
+            would pad zero to bottom right, and "same" mode would
+            pad zero around input. Default: "corner".
+    """
+
+    def __init__(self, kernel_size=1, stride=1, dilation=1, padding='corner'):
+
         super(AdaptivePadding, self).__init__()
 
         assert padding in ('same', 'corner')
@@ -87,7 +96,9 @@ class PatchEmbed(BaseModule):
         stride (int): The slide stride of embedding conv.
             Default: None (Would be set as `kernel_size`).
         padding (int | tuple | string ): The padding length of
-            embedding conv. Default: 0.
+            embedding conv. When it is a string, it means the mode
+            of adaptive padding, support "same" and "corner" now.
+            Default: "corner".
         dilation (int): The dilation rate of embedding conv. Default: 1.
         norm_cfg (dict, optional): Config dict for normalization layer.
             Default: None.
@@ -106,7 +117,7 @@ class PatchEmbed(BaseModule):
         conv_type=None,
         kernel_size=16,
         stride=16,
-        padding=0,
+        padding='corner',
         dilation=1,
         norm_cfg=None,
         input_size=None,
@@ -119,20 +130,21 @@ class PatchEmbed(BaseModule):
 
         if stride is None:
             stride = kernel_size
+
         # Use conv layer to embed
         conv_type = conv_type or 'Conv2d'
 
         kernel_size = to_2tuple(kernel_size)
         stride = to_2tuple(stride)
-
         dilation = to_2tuple(dilation)
-        if isinstance(padding, str):
 
+        if isinstance(padding, str):
             self.adap_padding = AdaptivePadding(
                 kernel_size=kernel_size,
                 stride=stride,
                 dilation=dilation,
                 padding=padding)
+            # disable the padding of conv
             padding = 0
         else:
             self.adap_padding = None
@@ -223,15 +235,14 @@ class PatchMerging(BaseModule):
             to gets fully covered by filter and stride you specified..
             Default: True.
         out_channels (int): The num of output channels.
-        pad_to_stride (bool, optional): Whether to pad input
-            feature map to multiple strides before unfold operation.
-            Default: True.
         kernel_size (int | tuple, optional): the kernel size in the unfold
             layer. Defaults to 2.
         stride (int | tuple, optional): the stride of the sliding blocks in the
             unfold layer. Default: None. (Would be set as `kernel_size`)
-        padding (int | tuple, optional): zero padding width in the unfold
-            layer. Default: 0.
+        padding (int | tuple | string ): The padding length of
+            embedding conv. When it is a string, it means the mode
+            of adaptive padding, support "same" and "corner" now.
+            Default: "corner".
         dilation (int | tuple, optional): dilation parameter in the unfold
             layer. Default: 1.
         bias (bool, optional): Whether to add bias in linear layer or not.
@@ -245,10 +256,9 @@ class PatchMerging(BaseModule):
     def __init__(self,
                  in_channels,
                  out_channels,
-                 pad_to_stride=True,
                  kernel_size=2,
                  stride=None,
-                 padding=0,
+                 padding='corner',
                  dilation=1,
                  bias=False,
                  norm_cfg=dict(type='LN'),
@@ -256,7 +266,6 @@ class PatchMerging(BaseModule):
         super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.pad_to_stride = pad_to_stride
         if stride:
             stride = stride
         else:
@@ -264,21 +273,20 @@ class PatchMerging(BaseModule):
 
         kernel_size = to_2tuple(kernel_size)
         stride = to_2tuple(stride)
-
         dilation = to_2tuple(dilation)
 
         if isinstance(padding, str):
-
             self.adap_padding = AdaptivePadding(
                 kernel_size=kernel_size,
                 stride=stride,
                 dilation=dilation,
                 padding=padding)
+            # diable the padding of unfold
             padding = 0
         else:
             self.adap_padding = None
-        padding = to_2tuple(padding)
 
+        padding = to_2tuple(padding)
         self.sampler = nn.Unfold(
             kernel_size=kernel_size,
             dilation=dilation,
