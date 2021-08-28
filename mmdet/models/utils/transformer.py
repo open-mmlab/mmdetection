@@ -43,6 +43,22 @@ class AdaptivePadding(nn.Module):
         padding (str): Support "same" and "corner", "corner" mode
             would pad zero to bottom right, and "same" mode would
             pad zero around input. Default: "corner".
+    Example:
+        >>> kernel_size = 16
+        >>> stride = 16
+        >>> dilation = 1
+        >>> input = torch.rand(1, 1, 15, 17)
+        >>> pool = AdaptivePadding(
+        >>>     kernel_size=kernel_size,
+        >>>     stride=stride,
+        >>>     dilation=dilation,
+        >>>     padding="same")
+        >>> out = pool(input)
+        >>> # padding to divisible by 16
+        >>> assert (out.shape[2], out.shape[3]) == (16, 32)
+        >>> input = torch.rand(1, 1, 16, 17)
+        >>> out = pool(input)
+        >>> assert (out.shape[2], out.shape[3]) == (16, 32)
     """
 
     def __init__(self, kernel_size=1, stride=1, dilation=1, padding='corner'):
