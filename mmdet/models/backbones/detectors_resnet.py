@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,

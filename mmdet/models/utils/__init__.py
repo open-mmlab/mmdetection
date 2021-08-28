@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .builder import build_linear_layer, build_transformer
 from .conv_upsample import ConvUpsample
 from .csp_layer import CSPLayer

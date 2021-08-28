@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
