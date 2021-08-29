@@ -1,3 +1,5 @@
+import torch
+
 from ..builder import DETECTORS
 from .single_stage_instance_seg import SingleStageInstanceSegmentor
 
@@ -23,3 +25,13 @@ class SOLO(SingleStageInstanceSegmentor):
             test_cfg=test_cfg,
             init_cfg=init_cfg,
             pretrained=pretrained)
+
+    def onnx_export(self, img, img_metas):
+
+        # get shape as tensor
+        img_shape = torch._shape_as_tensor(img)[2:]
+        img_metas[0]['img_shape_for_onnx'] = img_shape
+
+        feat = self.extract_feat(img)
+        masks = self.mask_head.onnx_export(feat, img_metas)
+        return masks

@@ -6,10 +6,13 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
 from mmdet.core import mask_matrix_nms, multi_apply
+# from mmdet.core.export import add_dummy_nms_for_onnx
 from mmdet.core.results.results import DetectionResults
 from mmdet.core.utils import center_of_mass
 from mmdet.models.builder import HEADS, build_loss
 from .base_mask_head import BaseMaskHead
+
+INF = 1e8
 
 
 @HEADS.register_module()
@@ -557,6 +560,117 @@ class SOLOHead(BaseMaskHead):
         results.scores = scores
 
         return results
+
+    def onnx_export(self, feats, img_metas):
+        """Test function without test-time augmentation.
+
+        Args:
+            feats (tuple[torch.Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            Tensor: The segmentation results of shape [N, num_bboxes,
+                image_height, image_width].
+        """
+
+        mlvl_mask_preds, mlvl_cls_preds = self(feats)
+        # featmap_size = mlvl_mask_preds[0].size()[-2:]
+        batch_size = mlvl_cls_preds[0].shape[0]
+        mlvl_cls_preds = [
+            item.permute(0, 2, 3, 1).view(batch_size, -1,
+                                          self.cls_out_channels)
+            for item in mlvl_cls_preds
+        ]
+
+        # To support the onnx export, we use bbox nms to do the post process
+
+        #        img_shapes = img_metas[0]['img_shape_for_onnx']
+
+        nms_pre_tensor = torch.tensor(
+            10, device=mlvl_cls_preds[0].device, dtype=torch.long)
+
+        # nms_pre_tensor = torch.tensor(
+        #     self.test_cfg.get('nms_pre', 1),
+        #     device=mlvl_cls_preds[0].device,
+        #     dtype=torch.long)
+
+        mlvl_masks = []
+        mlvl_scores = []
+
+        for cls_score, mask_pred in zip(mlvl_cls_preds, mlvl_mask_preds):
+
+            # Always keep topk op for dynamic input in onnx
+            from mmdet.core.export import get_k_for_topk
+            nms_pre = get_k_for_topk(nms_pre_tensor, mask_pred.shape[1])
+            if nms_pre > 0:
+                max_scores, _ = cls_score.max(-1)
+                _, topk_inds = max_scores.topk(nms_pre)
+                batch_inds = torch.arange(batch_size).view(
+                    -1, 1).expand_as(topk_inds)
+                cls_score = cls_score[batch_inds, topk_inds, :]
+                mask_pred = mask_pred[batch_inds, topk_inds, :]
+
+            mlvl_masks.append(mask_pred)
+            mlvl_scores.append(cls_score)
+
+        masks = torch.cat(mlvl_masks, dim=1)
+        scores = torch.cat(mlvl_scores, dim=1)
+        labels = torch.arange(self.num_classes)[None, None].expand_as(scores)
+        # topk score
+        flatten_scores = scores.reshape(batch_size, -1)
+        flatten_labels = labels.reshape(batch_size, -1)
+
+        # debug
+        masks = masks[:, :, None].repeat(1, 1, self.cls_out_channels, 1, 1)
+        masks = masks.view(batch_size, -1, *masks.size()[-2:])
+
+        masks = masks > self.test_cfg.mask_thr
+        dummy_bboxes = self.onnx_masks_to_bboxs(masks)
+        dummy_bboxes = torch.cat([dummy_bboxes, flatten_scores[..., None]],
+                                 dim=-1)
+        return dummy_bboxes, flatten_labels, masks
+
+        #
+        # # max number of instances in a batch
+        # scores_topk = (scores > self.test_cfg.score_thr).sum([1,2]).max()
+        # scores_topk = get_k_for_topk(scores_topk, flatten_scores.shape[1])
+        # _, topk_inds  = flatten_scores.topk(scores_topk)
+        # batch_inds = torch.arange(batch_size).view(
+        #     -1, 1).expand_as(topk_inds)
+        # scores = flatten_scores[batch_inds, topk_inds]
+        # labels = flatten_labels[batch_inds, topk_inds]
+        # masks_topk_inds = topk_inds // self.cls_out_channels
+        # masks = masks[batch_inds, masks_topk_inds]
+
+        # binary_masks = masks > self.test_cfg.mask_thr
+        # dummy_bboxes = self.onnx_masks_to_bboxs(binary_masks)
+
+        # upsampled_size = (featmap_size[0] * 4, featmap_size[1] * 4)
+        # mask_preds = F.interpolate(
+        #     masks, size=upsampled_size,
+        #     mode='bilinear')
+        # mask_preds = F.interpolate(
+        #     mask_preds, size=(img_shapes[0],img_shapes[1]), mode='bilinear')
+        #
+        # masks = mask_preds > self.test_cfg.mask_thr
+        # dummy_bboxes = self.onnx_masks_to_bboxs(masks)
+        # return dummy_bboxes, labels, masks
+
+    def onnx_masks_to_bboxs(self, masks):
+        w_masks = masks.any(-2)
+        w = w_masks.sum(-1)
+        h_masks = masks.any(-1)
+        h = h_masks.sum(-1)
+        cumsum_w = torch.cumsum(w_masks, dim=-1)
+        cumsum_w[cumsum_w == 0] = INF
+        cumsum_h = torch.cumsum(h_masks, dim=-1)
+        cumsum_h[cumsum_h == 0] = INF
+        x1 = cumsum_w.min(-1).indices
+        y1 = cumsum_h.min(-1).indices
+        bboxes = torch.stack([x1, y1, x1 + w, y1 + h], dim=-1)
+
+        return bboxes
 
 
 @HEADS.register_module()
