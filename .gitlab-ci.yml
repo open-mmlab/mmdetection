@@ -28,7 +28,7 @@ linting:
   script:
     - echo "Start building..."
     - pip install mmpycocotools
-    - pip install mmcv-full==latest+torch1.3.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+    - pip install mmcv-full==1.3.12 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.3.0/index.html
     - pip install -e .[all]
     - python -c "import mmdet; print(mmdet.__version__)"
     - echo "Start testing..."
