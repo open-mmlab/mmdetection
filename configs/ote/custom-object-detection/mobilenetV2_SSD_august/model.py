@@ -63,7 +63,7 @@ model = dict(
         max_per_img=200))
 
 cudnn_benchmark = True
-evaluation = dict(interval=1, metric_items=['mAP'], save_best='bbox_mAP')
+evaluation = dict(interval=1, metric='mAP', save_best='mAP')
 optimizer = dict(
     type='SGD',
     lr=0.01,
@@ -72,7 +72,7 @@ optimizer = dict(
 optimizer_config = dict()
 lr_config = dict(
     policy='ReduceLROnPlateau',
-    metric='bbox_mAP',
+    metric='mAP',
     patience=3,
     iteration_patience=600,
     interval=1,
@@ -96,5 +96,5 @@ load_from = None
 resume_from = None
 workflow = [('train', 1)]
 custom_hooks = [
-    dict(type='EarlyStoppingHook', patience=5, iteration_patience=1000, metric='bbox_mAP', interval=1, priority=75)
+    dict(type='EarlyStoppingHook', patience=5, iteration_patience=1000, metric='mAP', interval=1, priority=75)
 ]
