@@ -105,8 +105,8 @@ class PatchEmbed(BaseModule):
     Args:
         in_channels (int): The num of input channels. Default: 3
         embed_dims (int): The dimensions of embedding. Default: 768
-        conv_type (dict, optional): The config dict for embedding
-            conv layer type selection. Default: None.
+        conv_type (str): The config dict for embedding
+            conv layer type selection. Default: "Conv2d.
         kernel_size (int): The kernel_size of embedding conv. Default: 16.
         stride (int): The slide stride of embedding conv.
             Default: None (Would be set as `kernel_size`).
@@ -129,7 +129,7 @@ class PatchEmbed(BaseModule):
         self,
         in_channels=3,
         embed_dims=768,
-        conv_type=None,
+        conv_type='Conv2d',
         kernel_size=16,
         stride=16,
         padding='corner',
@@ -144,9 +144,6 @@ class PatchEmbed(BaseModule):
         self.embed_dims = embed_dims
         if stride is None:
             stride = kernel_size
-
-        # Use conv layer to do the patch embedding
-        conv_type = conv_type or 'Conv2d'
 
         kernel_size = to_2tuple(kernel_size)
         stride = to_2tuple(stride)
