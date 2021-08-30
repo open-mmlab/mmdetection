@@ -11,6 +11,7 @@ def _check_fields(results, pipeline_results, keys):
                             pipeline_results[key].to_ndarray()).all()
         else:
             assert np.equal(results[key], pipeline_results[key]).all()
+            assert results[key].dtype == pipeline_results[key].dtype
 
 
 def check_result_same(results, pipeline_results):
