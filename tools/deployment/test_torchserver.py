@@ -4,6 +4,7 @@ import numpy as np
 import requests
 
 from mmdet.apis import inference_detector, init_detector, show_result_pyplot
+from mmdet.core import bbox2result
 
 
 def parse_args():
@@ -29,29 +30,42 @@ def parse_args():
 
 
 def parse_result(tmp_res, model):
-    cls_set = [[] for i in range(len(model.CLASSES))]
+    bbox = []
+    label = []
+    score = []
     for anchor in tmp_res:
-        cls_set[model.CLASSES.index(anchor['class_name'])]\
-            .append([*anchor['bbox'], anchor['score']])
-    result = []
-    for cls in cls_set:
-        if len(cls) == 0:
-            result.append(np.array(cls, dtype=np.float32).reshape((0, 5)))
-        else:
-            result.append(np.array(cls, dtype=np.float32))
+        bbox.append(anchor['bbox'])
+        label.append(model.CLASSES.index(anchor['class_name']))
+        score.append([anchor['score']])
+    bboxes = np.append(bbox, score, axis=1)
+    labels = np.array(label)
+    result = bbox2result(bboxes, labels, len(model.CLASSES))
     return result
+
+
+def result_filter(model_result):
+    filted_result = []
+    for anchor_set in model_result:
+        delete_list = []
+        for i in range(anchor_set.shape[0]):
+            if anchor_set[i][4] < 0.5:
+                delete_list.append(i)
+        anchor_set = np.delete(anchor_set, delete_list, axis=0)
+        filted_result.append(anchor_set)
+    return filted_result
 
 
 def main(args):
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
     # test a single image
-    result = inference_detector(model, args.img)
+    model_result = inference_detector(model, args.img)
+    model_result = result_filter(model_result)
     # show the results
     show_result_pyplot(
         model,
         args.img,
-        result,
+        model_result,
         score_thr=args.score_thr,
         title='pytorch_result')
     url = 'http://' + args.inference_addr + '/predictions/' + args.model_name
@@ -63,7 +77,9 @@ def main(args):
         server_result,
         score_thr=args.score_thr,
         title='server_result')
-    assert result == server_result
+
+    for i in range(len(model.CLASSES)):
+        assert np.allclose(model_result[i], server_result[i])
 
 
 if __name__ == '__main__':
