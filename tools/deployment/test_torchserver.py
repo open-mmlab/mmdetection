@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument(
         '--inference-addr',
         default='127.0.0.1:8080',
-        help='server inference port address')
+        help='Address and port of the inference server')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
