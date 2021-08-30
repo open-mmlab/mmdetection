@@ -513,6 +513,8 @@ class SwinTransformer(BaseModule):
             pre-trained model is from the original repo. We may need
             to convert some keys to make it compatible.
             Default: False.
+        frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
+            -1 means not freezing any parameters.
         init_cfg (dict, optional): The Config for initialization.
             Defaults to None.
     """
@@ -540,8 +542,10 @@ class SwinTransformer(BaseModule):
                  with_cp=False,
                  pretrained=None,
                  convert_weights=False,
+                 frozen_stages=-1,
                  init_cfg=None):
         self.convert_weights = convert_weights
+        self.frozen_stages = frozen_stages
         if isinstance(pretrain_img_size, int):
             pretrain_img_size = to_2tuple(pretrain_img_size)
         elif isinstance(pretrain_img_size, tuple):
@@ -633,6 +637,33 @@ class SwinTransformer(BaseModule):
             layer = build_norm_layer(norm_cfg, self.num_features[i])[1]
             layer_name = f'norm{i}'
             self.add_module(layer_name, layer)
+
+    def train(self, mode=True):
+        """Convert the model into training mode while keep layers freezed."""
+        super(SwinTransformer, self).train(mode)
+        self._freeze_stages()
+
+    def _freeze_stages(self):
+        if self.frozen_stages >= 0:
+            self.patch_embed.eval()
+            for param in self.patch_embed.parameters():
+                param.requires_grad = False
+            if self.use_abs_pos_embed:
+                self.absolute_pos_embed.requires_grad = False
+            self.drop_after_pos.eval()
+
+        for i in range(1, self.frozen_stages + 1):
+
+            if (i - 1) in self.out_indices:
+                norm_layer = getattr(self, f'norm{i-1}')
+                norm_layer.eval()
+                for param in norm_layer.parameters():
+                    param.requires_grad = False
+
+            m = self.stages[i - 1]
+            m.eval()
+            for param in m.parameters():
+                param.requires_grad = False
 
     def init_weights(self):
         logger = get_root_logger()

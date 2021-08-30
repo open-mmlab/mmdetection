@@ -26,7 +26,6 @@ def test_swin_block():
 def test_swin_transformer():
     """Test Swin Transformer backbone."""
 
-    # test pretrained
     with pytest.raises(TypeError):
         # Pretrained arg must be str or None.
         SwinTransformer(pretrained=123)
@@ -76,3 +75,8 @@ def test_swin_transformer():
     assert outs[1].shape == (1, 192, 14, 18)
     assert outs[2].shape == (1, 384, 7, 9)
     assert outs[3].shape == (1, 768, 4, 5)
+
+    model = SwinTransformer(frozen_stages=4)
+    model.train()
+    for p in model.parameters():
+        assert not p.requires_grad
