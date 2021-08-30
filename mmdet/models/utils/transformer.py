@@ -52,9 +52,8 @@ class AdaptivePadding(nn.Module):
         >>>     kernel_size=kernel_size,
         >>>     stride=stride,
         >>>     dilation=dilation,
-        >>>     padding="same")
+        >>>     padding="corner")
         >>> out = adap_pad(input)
-        >>> # padding to divisible by 16
         >>> assert (out.shape[2], out.shape[3]) == (16, 32)
         >>> input = torch.rand(1, 1, 16, 17)
         >>> out = adap_pad(input)
@@ -83,12 +82,10 @@ class AdaptivePadding(nn.Module):
         stride_h, stride_w = self.stride
         output_h = math.ceil(input_h / stride_h)
         output_w = math.ceil(input_w / stride_w)
-        pad_h = (
-            max((output_h - 1) * stride_h + (kernel_h - 1) * self.dilation[0] +
-                1 - input_h, 0))
-        pad_w = (
-            max((output_w - 1) * stride_w + (kernel_w - 1) * self.dilation[1] +
-                1 - input_w, 0))
+        pad_h = max((output_h - 1) * stride_h +
+                    (kernel_h - 1) * self.dilation[0] + 1 - input_h, 0)
+        pad_w = max((output_w - 1) * stride_w +
+                    (kernel_w - 1) * self.dilation[1] + 1 - input_w, 0)
         if pad_h > 0 or pad_w > 0:
             if self.padding == 'corner':
                 x = F.pad(x, [0, pad_w, 0, pad_h])
@@ -148,7 +145,7 @@ class PatchEmbed(BaseModule):
         if stride is None:
             stride = kernel_size
 
-        # Use conv layer to embed
+        # Use conv layer to do the patch embedding
         conv_type = conv_type or 'Conv2d'
 
         kernel_size = to_2tuple(kernel_size)
@@ -194,14 +191,12 @@ class PatchEmbed(BaseModule):
                 stride_h, stride_w = self.adap_padding.stride
                 output_h = math.ceil(input_h / stride_h)
                 output_w = math.ceil(input_w / stride_w)
-                pad_h = (
-                    max((output_h - 1) * stride_h +
-                        (kernel_h - 1) * self.adap_padding.dilation[0] + 1 -
-                        input_h, 0))
-                pad_w = (
-                    max((output_w - 1) * stride_w +
-                        (kernel_w - 1) * self.adap_padding.dilation[1] + 1 -
-                        input_w, 0))
+                pad_h = max((output_h - 1) * stride_h +
+                            (kernel_h - 1) * self.adap_padding.dilation[0] +
+                            1 - input_h, 0)
+                pad_w = max((output_w - 1) * stride_w +
+                            (kernel_w - 1) * self.adap_padding.dilation[1] +
+                            1 - input_w, 0)
                 input_h = input_h + pad_h
                 input_w = input_w + pad_w
                 input_size = (input_h, input_w)
