@@ -149,7 +149,7 @@ class PatchEmbed(BaseModule):
             of adaptive padding, support "same" and "corner" now.
             Default: "corner".
         dilation (int): The dilation rate of embedding conv. Default: 1.
-        bias (bool): Bias of embed conv. Default: False.
+        bias (bool): Bias of embed conv. Default: True.
         norm_cfg (dict, optional): Config dict for normalization layer.
             Default: None.
         input_size (int | tuple | None): The size of input, which will be
@@ -168,7 +168,7 @@ class PatchEmbed(BaseModule):
         stride=16,
         padding='corner',
         dilation=1,
-        bias=False,
+        bias=True,
         norm_cfg=None,
         input_size=None,
         init_cfg=None,
