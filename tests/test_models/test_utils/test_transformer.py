@@ -113,13 +113,11 @@ def test_patch_embed():
     patch_merge_1 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
-        conv_type=None,
         kernel_size=kernel_size,
         stride=stride,
         padding=0,
         dilation=1,
-        norm_cfg=None,
-    )
+        norm_cfg=None)
 
     x1, shape = patch_merge_1(dummy_input)
     # test out shape
@@ -141,7 +139,6 @@ def test_patch_embed():
     patch_merge_2 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
-        conv_type=None,
         kernel_size=kernel_size,
         stride=stride,
         padding=0,
@@ -165,7 +162,6 @@ def test_patch_embed():
     patch_merge_3 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
-        conv_type=None,
         kernel_size=kernel_size,
         stride=stride,
         padding=0,
@@ -194,7 +190,6 @@ def test_patch_embed():
     patch_merge_3 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
-        conv_type=None,
         kernel_size=kernel_size,
         stride=stride,
         padding=0,
@@ -213,7 +208,6 @@ def test_patch_embed():
     patch_merge_3 = PatchEmbed(
         in_channels=C,
         embed_dims=embed_dims,
-        conv_type=None,
         kernel_size=kernel_size,
         stride=stride,
         padding=0,
