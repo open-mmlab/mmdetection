@@ -6,14 +6,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as cp
-from mmcv.cnn import (build_norm_layer, constant_init,
-                      trunc_normal_init)
+from mmcv.cnn import build_norm_layer, constant_init, trunc_normal_init
 from mmcv.cnn.bricks.transformer import FFN, build_dropout
 from mmcv.runner import BaseModule, ModuleList, _load_checkpoint
 from mmcv.utils import to_2tuple
 
 from ...utils import get_root_logger
 from ..builder import BACKBONES
+from ..utils.ckpt_convert import swin_converter
 from ..utils.transformer import PatchEmbed, PatchMerging
 
 
@@ -509,6 +509,10 @@ class SwinTransformer(BaseModule):
             will save some memory while slowing down the training speed.
             Default: False.
         pretrained (str, optional): model pretrained path. Default: None.
+        convert_weights (bool): The flag indicates whether the
+            pre-trained model is from the original repo. We may need
+            to convert some keys to make it compatible.
+            Default: False.
         init_cfg (dict, optional): The Config for initialization.
             Defaults to None.
     """
@@ -535,9 +539,9 @@ class SwinTransformer(BaseModule):
                  norm_cfg=dict(type='LN'),
                  with_cp=False,
                  pretrained=None,
+                 convert_weights=False,
                  init_cfg=None):
-        super(SwinTransformer, self).__init__()
-
+        self.convert_weights = convert_weights
         if isinstance(pretrain_img_size, int):
             pretrain_img_size = to_2tuple(pretrain_img_size)
         elif isinstance(pretrain_img_size, tuple):
@@ -547,17 +551,22 @@ class SwinTransformer(BaseModule):
                 f'The size of image should have length 1 or 2, ' \
                 f'but got {len(pretrain_img_size)}'
 
-        if isinstance(pretrained, str) or pretrained is None:
-            warnings.warn('DeprecationWarning: pretrained is a deprecated, '
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be setting at the same time'
+        if isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            self.init_cfg = init_cfg
         else:
             raise TypeError('pretrained must be a str or None')
+
+        super(SwinTransformer, self).__init__(init_cfg=init_cfg)
 
         num_layers = len(depths)
         self.out_indices = out_indices
         self.use_abs_pos_embed = use_abs_pos_embed
-        self.pretrained = pretrained
-        self.init_cfg = init_cfg
 
         assert strides[0] == patch_size, 'Use non-overlapping patch embed.'
 
@@ -626,8 +635,11 @@ class SwinTransformer(BaseModule):
             self.add_module(layer_name, layer)
 
     def init_weights(self):
-        if self.pretrained is None:
-            super().init_weights()
+        logger = get_root_logger()
+        if self.init_cfg is None:
+            logger.warn(f'No pre-trained weights for '
+                        f'{self.__class__.__name__}, '
+                        f'training start from scratch')
             if self.use_abs_pos_embed:
                 trunc_normal_init(self.absolute_pos_embed, std=0.02)
             for m in self.modules():
@@ -638,16 +650,24 @@ class SwinTransformer(BaseModule):
                 elif isinstance(m, nn.LayerNorm):
                     constant_init(m.bias, 0)
                     constant_init(m.weight, 1.0)
-        elif isinstance(self.pretrained, str):
-            logger = get_root_logger()
+        else:
+            assert 'checkpoint' in self.init_cfg, f'Only support ' \
+                                                  f'specify `Pretrained` in ' \
+                                                  f'`init_cfg` in ' \
+                                                  f'{self.__class__.__name__} '
             ckpt = _load_checkpoint(
-                self.pretrained, logger=logger, map_location='cpu')
+                self.init_cfg.checkpoint, logger=logger, map_location='cpu')
             if 'state_dict' in ckpt:
                 _state_dict = ckpt['state_dict']
             elif 'model' in ckpt:
                 _state_dict = ckpt['model']
             else:
                 _state_dict = ckpt
+            if self.convert_weights:
+                # Because pvt backbones are not supported by mmcls,
+                # so we need to convert pre-trained weights to match this
+                # implementation.
+                _state_dict = swin_converter(_state_dict)
 
             state_dict = OrderedDict()
             for k, v in _state_dict.items():
