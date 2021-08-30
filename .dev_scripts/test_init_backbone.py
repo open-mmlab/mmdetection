@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 """Check out backbone whether successfully load pretrained checkpoint."""
 import copy
 import os

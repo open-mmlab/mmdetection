@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .builder import build_linear_layer, build_transformer
 from .ckpt_convert import pvt_convert
 from .conv_upsample import ConvUpsample

@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 # yapf: disable
 atss = dict(
     config='configs/atss/atss_r50_fpn_1x_coco.py',
