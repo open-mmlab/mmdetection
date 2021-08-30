@@ -664,9 +664,7 @@ class SwinTransformer(BaseModule):
             else:
                 _state_dict = ckpt
             if self.convert_weights:
-                # Because pvt backbones are not supported by mmcls,
-                # so we need to convert pre-trained weights to match this
-                # implementation.
+                # supported loading weight from original repo,
                 _state_dict = swin_converter(_state_dict)
 
             state_dict = OrderedDict()

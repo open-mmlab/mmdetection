@@ -3,11 +3,9 @@ _base_ = [
     '../_base_/datasets/coco_instance.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-
+pretrained = 'https://download.openmmlab.com/mmclassification/v0/swin-transformer/swin_tiny_224_b16x64_300e_imagenet_20210616_090925-66df6be6.pth'  # noqa
 model = dict(
     type='MaskRCNN',
-    pretrained=\
-    'https://download.openmmlab.com/mmclassification/v0/swin-transformer/swin_tiny_224_b16x64_300e_imagenet_20210616_090925-66df6be6.pth',  # noqa
     backbone=dict(
         _delete_=True,
         type='SwinTransformer',
@@ -23,7 +21,8 @@ model = dict(
         drop_path_rate=0.2,
         patch_norm=True,
         out_indices=(0, 1, 2, 3),
-        with_cp=False),
+        with_cp=False,
+        init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[96, 192, 384, 768]))
 
 optimizer = dict(
