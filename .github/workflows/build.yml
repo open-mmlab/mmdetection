@@ -72,7 +72,7 @@ jobs:
           coverage report -m
 
   build_cuda:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
 
     env:
       CUDA: 10.1.105-1
