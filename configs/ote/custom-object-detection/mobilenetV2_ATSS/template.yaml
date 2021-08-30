@@ -9,10 +9,6 @@ summary: Custom Object Detection Model M Gen 2
 # Would be better to have something more precise and self-contained, e.g.:  docker image or path to Python venv activation script?
 framework: OTEDetection v2.9.1
 
-dependencies:
-- source: ../../../../mmdet/apis/ote/apis/detection/configuration.yaml
-  destination: configuration.yaml
-
 # Should be revisited?
 application:
   ~
@@ -28,7 +24,7 @@ entrypoints:
 
 # Task and hyperparameters.
 hyper_parameters:
-  base_path: "configuration.yaml"
+  base_path: ../../../../mmdet/apis/ote/apis/detection/configuration.yaml
   parameter_overrides:
     learning_parameters:
       batch_size:

@@ -10,40 +10,38 @@ import unittest
 import warnings
 import yaml
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
-
 from ote_sdk.configuration.helper import convert, create
+from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.metrics import Performance
+from ote_sdk.entities.model_template import parse_model_template
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
+from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import TrainParameters
-from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, NullDatasetStorage, Subset
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.model import Model, ModelStatus, NullModelStorage
-from ote_sdk.entities.model_template import parse_model_template
 from sc_sdk.entities.optimized_model import (ModelOptimizationType,
                                              ModelPrecision, OptimizedModel,
                                              TargetDevice)
 from sc_sdk.entities.resultset import ResultSet
-from ote_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.tests.test_helpers import generate_random_annotated_image
 from sc_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
                                                                IExportTask)
 from sc_sdk.utils.project_factory import NullProject
 from subprocess import run
+from typing import Optional
 
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
                                            OTEDetectionConfig,
                                            OTEDetectionTask)
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
-from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
-                                                     reload_hyper_parameters)
+from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
 
 
 class ModelTemplate(unittest.TestCase):
@@ -79,11 +77,6 @@ def test_set_values_as_default():
     template_dir = './configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/'
     template_file = osp.join(template_dir, 'template.yaml')
     model_template = parse_model_template(template_file, '1')
-
-    # Here we have to reload parameters manually because
-    # `parse_model_template` was called when `configuration.yaml` was not near `template.yaml.`
-    if not model_template.hyper_parameters.data:
-        reload_hyper_parameters(model_template)
 
     hyper_parameters = model_template.hyper_parameters.data
     # value that comes from template.yaml
@@ -228,11 +221,6 @@ class TestOTEAPI(unittest.TestCase):
 
     def setup_configurable_parameters(self, template_dir, num_iters=250):
         model_template = parse_model_template(osp.join(template_dir, 'template.yaml'), '1')
-
-        # Here we have to reload parameters manually because
-        # `parse_model_template` was called when `configuration.yaml` was not near `template.yaml.`
-        if not model_template.hyper_parameters.data:
-            reload_hyper_parameters(model_template)
 
         hyper_parameters = model_template.hyper_parameters.data
         set_values_as_default(hyper_parameters)
