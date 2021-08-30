@@ -52,12 +52,12 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100))
 
-evaluation = dict(interval=1, metric=['bbox'], save_best='bbox_mAP')
+evaluation = dict(interval=1, metric='mAP', save_best='mAP')
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
 lr_config = dict(
     policy='ReduceLROnPlateau',
-    metric='bbox_mAP',
+    metric='mAP',
     patience=3,
     iteration_patience=600,
     interval=1,
@@ -81,7 +81,7 @@ custom_hooks = [
     dict(
         type='EarlyStoppingHook',
         patience=5,
-        metric='bbox_mAP',
+        metric='mAP',
         interval=1,
         priority=75,
         iteration_patience=1000)
