@@ -442,6 +442,7 @@ class PyramidVisionTransformer(BaseModule):
                 kernel_size=patch_sizes[i],
                 stride=strides[i],
                 padding=paddings[i],
+                bias=True,
                 norm_cfg=norm_cfg)
 
             layers = ModuleList()
