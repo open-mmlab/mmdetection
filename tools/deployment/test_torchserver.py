@@ -21,10 +21,6 @@ def parse_args():
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
         '--score-thr', type=float, default=0.5, help='bbox score threshold')
-    parser.add_argument(
-        '--async-test',
-        action='store_true',
-        help='whether to set async options for async inference.')
     args = parser.parse_args()
     return args
 
