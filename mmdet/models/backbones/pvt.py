@@ -112,6 +112,9 @@ class SpatialReductionAttention(MultiheadAttention):
             Default: 0.0.
         dropout_layer (obj:`ConfigDict`): The dropout_layer used
             when adding the shortcut. Default: None.
+        batch_first (bool): Key, Query and Value are shape of
+            (batch, n, embed_dim)
+            or (n, batch, embed_dim). Default: False.
         qkv_bias (bool): enable bias for qkv if True. Default: True.
         norm_cfg (dict): Config dict for normalization layer.
             Default: dict(type='LN').
@@ -127,6 +130,7 @@ class SpatialReductionAttention(MultiheadAttention):
                  attn_drop=0.,
                  proj_drop=0.,
                  dropout_layer=None,
+                 batch_first=True,
                  qkv_bias=True,
                  norm_cfg=dict(type='LN'),
                  sr_ratio=1,
@@ -136,6 +140,7 @@ class SpatialReductionAttention(MultiheadAttention):
             num_heads,
             attn_drop,
             proj_drop,
+            batch_first=batch_first,
             dropout_layer=dropout_layer,
             bias=qkv_bias,
             init_cfg=init_cfg)
@@ -350,6 +355,10 @@ class PyramidVisionTransformer(BaseModule):
         norm_cfg (dict): Config dict for normalization layer.
             Default: dict(type='LN').
         pretrained (str, optional): model pretrained path. Default: None.
+        convert_weights (bool): The flag indicates whether the
+            pre-trained model is from the original repo. We may need
+            to convert some keys to make it compatible.
+            Default: True.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None.
     """
@@ -377,9 +386,11 @@ class PyramidVisionTransformer(BaseModule):
                  act_cfg=dict(type='GELU'),
                  norm_cfg=dict(type='LN', eps=1e-6),
                  pretrained=None,
+                 convert_weights=True,
                  init_cfg=None):
         super().__init__(init_cfg=init_cfg)
 
+        self.convert_weights = convert_weights
         if isinstance(pretrain_img_size, int):
             pretrain_img_size = to_2tuple(pretrain_img_size)
         elif isinstance(pretrain_img_size, tuple):
@@ -431,7 +442,6 @@ class PyramidVisionTransformer(BaseModule):
                 kernel_size=patch_sizes[i],
                 stride=strides[i],
                 padding=paddings[i],
-                pad_to_patch_size=False,
                 norm_cfg=norm_cfg)
 
             layers = ModuleList()
@@ -466,7 +476,11 @@ class PyramidVisionTransformer(BaseModule):
             cur += num_layer
 
     def init_weights(self):
+        logger = get_root_logger()
         if self.init_cfg is None:
+            logger.warn(f'No pre-trained weights for '
+                        f'{self.__class__.__name__}, '
+                        f'training start from scratch')
             for m in self.modules():
                 if isinstance(m, nn.Linear):
                     trunc_normal_init(m.weight, std=.02)
@@ -485,25 +499,33 @@ class PyramidVisionTransformer(BaseModule):
                 elif isinstance(m, AbsolutePositionEmbedding):
                     m.init_weights()
         else:
-            logger = get_root_logger()
+            assert 'checkpoint' in self.init_cfg, f'Only support ' \
+                                                  f'specify `Pretrained` in ' \
+                                                  f'`init_cfg` in ' \
+                                                  f'{self.__class__.__name__} '
             checkpoint = _load_checkpoint(
                 self.init_cfg.checkpoint, logger=logger, map_location='cpu')
+            logger.warn(f'Load pre-trained model for '
+                        f'{self.__class__.__name__} from original repo')
             if 'state_dict' in checkpoint:
                 state_dict = checkpoint['state_dict']
             elif 'model' in checkpoint:
                 state_dict = checkpoint['model']
             else:
                 state_dict = checkpoint
-
-            state_dict = pvt_convert(state_dict)
+            if self.convert_weights:
+                # Because pvt backbones are not supported by mmcls,
+                # so we need to convert pre-trained weights to match this
+                # implementation.
+                state_dict = pvt_convert(state_dict)
             load_state_dict(self, state_dict, strict=False, logger=logger)
 
     def forward(self, x):
         outs = []
 
         for i, layer in enumerate(self.layers):
-            x, H, W = layer[0](x), layer[0].DH, layer[0].DW
-            hw_shape = (H, W)
+            x, hw_shape = layer[0](x)
+
             for block in layer[1]:
                 x = block(x, hw_shape)
             x = layer[2](x)

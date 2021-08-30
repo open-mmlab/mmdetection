@@ -1,3 +1,9 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+
+# This script consists of several convert functions which
+# can modify the weights of model in original repo to be
+# pre-trained weights.
+
 from collections import OrderedDict
 
 import torch
