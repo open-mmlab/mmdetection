@@ -18,6 +18,7 @@ import os
 import shutil
 import tempfile
 import torch
+import json
 import warnings
 from collections import defaultdict
 from typing import Optional, List, Tuple, Dict
@@ -35,7 +36,6 @@ from ote_sdk.entities.metrics import (CurveMetric,
                                       VisualizationInfo)
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
-from ote_sdk.entities.train_parameters import TrainParameters
 from ote_sdk.entities.label import ScoredLabel
 
 from sc_sdk.configuration import cfg_helper, ModelConfig
@@ -52,7 +52,6 @@ from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
 from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from sc_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
-from sc_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 from sc_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from sc_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
 from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, ExportType
@@ -63,22 +62,19 @@ from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
 from mmdet.apis import train_detector, single_gpu_test, export_model
+from mmdet.apis.ote.apis.detection.config_utils import patch_config
+from mmdet.apis.ote.apis.detection.config_utils import set_hyperparams
+from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training
+from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.config_utils import (patch_config, set_hyperparams, prepare_for_training,
-    prepare_for_testing)
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
+from mmdet.apis.train import create_nncf_model
 from mmdet.datasets import build_dataset, build_dataloader
+from mmdet.integration.nncf import check_nncf_is_enabled
+from mmdet.integration.nncf import wrap_nncf_model
+from mmdet.integration.nncf.config import compose_nncf_config
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
-
-from mmdet.apis.train import create_nncf_model
-
-from mmdet.integration.nncf import check_nncf_is_enabled
-from mmdet.integration.nncf import get_nncf_metadata
-from mmdet.integration.nncf import get_nncf_config_from_meta
-from mmdet.integration.nncf import is_checkpoint_nncf
-from mmdet.integration.nncf import wrap_nncf_model
-
 
 logger = logger_factory.get_logger("OTEDetectionTask")
 
@@ -113,23 +109,26 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
 
         # NNCF part
         self.compression_ctrl = None
-        nncf_config_path = os.path.join(base_dir, 'compression_config.json')
-        import json
+        nncf_config_path = os.path.join(base_dir, hyperparams.nncf_optimization.config)
+
         with open(nncf_config_path) as nncf_config_file:
             common_nncf_config = json.load(nncf_config_file)
 
-        # TODO load cfg from checkpoint
-        nncf_base = common_nncf_config["base"]["nncf_config"]
 
-        #TODO correctly update config with training parameters
+        nncf_config = common_nncf_config["base"]["nncf_config"]
+        optimization_type = None
         if hyperparams.nncf_optimization.apply_quantization:
-            nncf_base.update(common_nncf_config["nncf_quantization"]["nncf_config"])
+            optimization_type = "nncf_quantization"
         elif hyperparams.nncf_optimization.apply_pruning:
-            nncf_base.update(common_nncf_config["nncf_pruning"]["nncf_config"])
+            optimization_type = "nncf_pruning"
+        elif hyperparams.nncf_optimization.apply_pruning_quantization:
+            optimization_type = "nncf_pruning_quantization"
         else:
-            raise ValueError("Quantization and pruning was disabled")
+            raise ValueError("Optimization was disabled")
 
-        self.config["nncf_config"] = nncf_base
+
+        compesed = compose_nncf_config(common_nncf_config, [optimization_type])
+        self.config.update(compesed)
 
         # Create and initialize PyTorch model.
         check_nncf_is_enabled()
@@ -168,7 +167,7 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
                         get_fake_input_func=get_fake_input
                     )
                 else:
-                # TODO: was only model, state_dict was depricated
+                    # TODO: was only model, state_dict was depricated
                     if 'model' in model_data:
                         model.load_state_dict(model_data['model'])
                     elif 'state_dict' in model_data:
@@ -342,7 +341,6 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
         self.is_training = True
         self.model.train()
 
-
         train_detector(model=self.model,
                        dataset=mm_train_dataset,
                        cfg=training_config,
@@ -357,20 +355,12 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
             self.time_monitor = None
             return
 
-        # Load the best weights and check if model has improved.
-        training_metrics = self._generate_training_metrics_group(learning_curves)
-        # TODO: should be best.pth?
-        #best_checkpoint_path = os.path.join(training_config.work_dir, 'latest.pth')
-        #best_checkpoint = torch.load(best_checkpoint_path)
-        #self.model.load_state_dict(best_checkpoint['state_dict'])
-
         output_model.model_status = ModelStatus.SUCCESS
 
         self.is_training = False
         self.time_monitor = None
 
     def save_model(self, output_model: Model):
-        print("SAVEMODEL_FUNC")
         buffer = io.BytesIO()
         hyperparams = self.task_environment.get_hyper_parameters(OTEDetectionConfig)
         hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
@@ -381,11 +371,13 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
                 'config': {
                     'nncf_config': self.config["nncf_config"],
                 },
+                'nncf_enable_compression': True,
             },
             'model': self.model.state_dict(),
             'config': hyperparams_str,
             'labels': labels,
-            'VERSION': 1}
+            'VERSION': 1,
+        }
 
         torch.save(modelinfo, buffer)
         output_model.set_data("weights.pth", buffer.getvalue())

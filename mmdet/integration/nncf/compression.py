@@ -120,6 +120,7 @@ def wrap_nncf_model(model,
     pathlib.Path(cfg.work_dir).mkdir(parents=True, exist_ok=True)
     nncf_config = NNCFConfig(cfg.nncf_config)
     logger = get_root_logger(cfg.log_level)
+    resuming_state_dict = None
 
     if data_loader_for_init:
         wrapped_loader = MMInitializeDataLoader(data_loader_for_init)
@@ -239,7 +240,8 @@ def wrap_nncf_model(model,
                                                           wrap_inputs_fn=wrap_inputs,
                                                           compression_state=compression_state,
                                                           dump_graphs=False)
-        load_state(model, resuming_state_dict, is_resume=True)
+        if resuming_state_dict:
+            load_state(model, resuming_state_dict, is_resume=True)
 
     model.export = export_method.__get__(model)
 

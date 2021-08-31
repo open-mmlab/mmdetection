@@ -150,6 +150,12 @@ class OTEDetectionConfig(ModelConfig):
             description="Enable pruning algorithm to get compressed model by NNCF",
             affects_outcome_of=ModelLifecycle.TRAINING
         )
+        apply_pruning_quantization = configurable_boolean(
+            default_value=False,
+            header="Apply pruning and quantization by NNCF",
+            description="Enable pruning and quantization algorithm to get compressed model by NNCF",
+            affects_outcome_of=ModelLifecycle.TRAINING
+        )
 
     learning_parameters = add_parameter_group(__LearningParameters)
     algo_backend = add_parameter_group(__AlgoBackend)
