@@ -139,12 +139,19 @@ def preprocess_example_input(input_config):
     one_img = mmcv.imread(input_path)
     one_img = mmcv.imresize(one_img, input_shape[2:][::-1])
     show_img = one_img.copy()
+    img_norm_cfg = None
     if 'normalize_cfg' in input_config.keys():
         normalize_cfg = input_config['normalize_cfg']
         mean = np.array(normalize_cfg['mean'], dtype=np.float32)
         std = np.array(normalize_cfg['std'], dtype=np.float32)
+        normalize_in_graph = normalize_cfg.get('in_graph', False)
         to_rgb = normalize_cfg.get('to_rgb', True)
-        one_img = mmcv.imnormalize(one_img, mean, std, to_rgb=to_rgb)
+        if normalize_in_graph:
+            if to_rgb:
+                one_img = mmcv.bgr2rgb(one_img)
+            img_norm_cfg = {'mean': mean, 'std': std}
+        else:
+            one_img = mmcv.imnormalize(one_img, mean, std, to_rgb=to_rgb)
     one_img = one_img.transpose(2, 0, 1)
     one_img = torch.from_numpy(one_img).unsqueeze(0).float().requires_grad_(
         True)
@@ -159,5 +166,7 @@ def preprocess_example_input(input_config):
         'show_img': show_img,
         'flip_direction': None
     }
+    if img_norm_cfg:
+        one_meta['img_norm_cfg'] = img_norm_cfg
 
     return one_img, one_meta

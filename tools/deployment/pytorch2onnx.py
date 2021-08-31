@@ -24,8 +24,11 @@ def pytorch2onnx(model,
                  test_img=None,
                  do_simplify=False,
                  dynamic_export=None,
-                 skip_postprocess=False):
+                 skip_postprocess=False,
+                 normalize_in_graph=False):
 
+    if normalize_in_graph:
+        normalize_cfg['in_graph'] = True
     input_config = {
         'input_shape': input_shape,
         'input_path': input_img,
@@ -280,6 +283,10 @@ def parse_args():
         help='Whether to export model without post process. Experimental '
         'option. We do not guarantee the correctness of the exported '
         'model.')
+    parser.add_argument(
+        '--normalize-in-graph',
+        action='store_true',
+        help='Whether to include image normalization in ONNX graph.')
     args = parser.parse_args()
     return args
 
@@ -334,4 +341,5 @@ if __name__ == '__main__':
         test_img=args.test_img,
         do_simplify=args.simplify,
         dynamic_export=args.dynamic_export,
-        skip_postprocess=args.skip_postprocess)
+        skip_postprocess=args.skip_postprocess,
+        normalize_in_graph=args.normalize_in_graph)
