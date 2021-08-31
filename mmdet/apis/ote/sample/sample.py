@@ -154,7 +154,7 @@ def main(args):
             ModelOptimizationType.POT,
             optimization_methods=[],
             optimization_level={},
-            precision=[ModelPrecision.FP16],
+            precision=[ModelPrecision.INT8],
             target_device=TargetDevice.CPU,
             performance_improvement={},
             model_size_reduction=1.,

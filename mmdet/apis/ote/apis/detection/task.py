@@ -49,8 +49,10 @@ from sc_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExpor
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
-from sc_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
-
+from sc_sdk.usecases.tasks.interfaces.optimization_interface import (
+    IOptimizationTask,
+    OptimizationType,
+)
 from mmdet.apis import export_model, single_gpu_test, train_detector
 from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
                                                         prepare_for_testing,
@@ -66,7 +68,7 @@ from mmdet.parallel import MMDataCPU
 logger = logger_factory.get_logger("OTEDetectionTask")
 
 
-class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTask, IUnload):
+class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTask, IUnload, IOptimizationTask):
 
     task_environment: TaskEnvironment
 
@@ -458,7 +460,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
     def optimize(self,
         optimization_type: OptimizationType,
-        dataset: Optional[Dataset],
+        dataset: Dataset,
         output_model: OptimizedModel,
         optimization_parameters: Optional[OptimizationParameters],
     ):

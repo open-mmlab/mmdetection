@@ -448,7 +448,7 @@ class TestOTEAPI(unittest.TestCase):
                 ModelOptimizationType.POT,
                 optimization_methods=[],
                 optimization_level={},
-                precision=[ModelPrecision.FP16],
+                precision=[ModelPrecision.INT8],
                 target_device=TargetDevice.CPU,
                 performance_improvement={},
                 model_size_reduction=1.,
@@ -457,6 +457,13 @@ class TestOTEAPI(unittest.TestCase):
 
             pot_performance = self.eval(ov_task, optimized_model, val_dataset)
             print(f'Performance of optimized model: {pot_performance.score.value:.4f}')
+
+            performance_delta = pot_performance.score.value - export_performance.score.value
+            perf_delta_tolerance = 0.01
+            self.assertLess(np.abs(performance_delta), perf_delta_tolerance,
+                        msg=f'Expected not more than one percent performance difference after pot optimization. Performance delta '
+                            f'({export_performance.score.value} vs {pot_performance.score.value}) was '
+                            f'larger than the tolerance of {perf_delta_tolerance}')
 
     def test_training_custom_mobilenetssd_256(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
@@ -473,5 +480,5 @@ class TestOTEAPI(unittest.TestCase):
     def test_training_custom_mobilenet_ssd(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD'))
 
-    def test_training_custom_mobilenet_vfnet(self):
+    def test_training_custom_resnet_vfnet(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet'))

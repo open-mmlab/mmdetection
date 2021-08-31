@@ -139,7 +139,7 @@ class OTEDetectionConfig(ModelConfig):
 
         stat_subset_size = configurable_integer(
             header="Number of data samples",
-            description="Number of data samples used for post-training optimization ",
+            description="Number of data samples used for post-training optimization",
             default_value=300,
             min_value=1,
             max_value=maxsize

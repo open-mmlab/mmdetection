@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import os
+import tempfile
+
 from addict import Dict as ADDict
 from typing import Any, Dict, Tuple, List, Optional, Union
 
 import cv2
 import numpy as np
-import tempfile
-import os
 
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.inference_parameters import InferenceParameters
@@ -28,6 +29,7 @@ from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.datasets import Dataset
+from sc_sdk.entities.model import ModelStatus
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from sc_sdk.usecases.exportable_code.inference import BaseOpenVINOInferencer
 from sc_sdk.entities.label import Label
@@ -37,8 +39,10 @@ from sc_sdk.entities.resultset import ResultSet
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
-from sc_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
-
+from sc_sdk.usecases.tasks.interfaces.optimization_interface import (
+    IOptimizationTask,
+    OptimizationType,
+)
 
 from compression.api import DataLoader
 from compression.engines.ie_engine import IEEngine
@@ -171,7 +175,7 @@ class OpenVINODetectionInferencer(BaseOpenVINOInferencer):
         return self.model.infer(inputs)
 
 
-class ScOpenVinoDataLoader(DataLoader):
+class OTEOpenVinoDataLoader(DataLoader):
     def __init__(self, dataset: Dataset, inferencer: BaseOpenVINOInferencer):
         self.dataset = dataset
         self.inferencer = inferencer
@@ -186,7 +190,7 @@ class ScOpenVinoDataLoader(DataLoader):
     def __len__(self):
         return len(self.dataset)
 
-class OpenVINODetectionTask(IInferenceTask, IEvaluationTask):
+class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
     def __init__(self, task_environment: TaskEnvironment):
         self.task_environment = task_environment
         self.hparams = self.task_environment.get_hyper_parameters(OTEDetectionConfig)
@@ -213,19 +217,19 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask):
 
     def optimize(self,
                  optimization_type: OptimizationType,
-                 dataset: Optional[Dataset],
+                 dataset: Dataset,
                  output_model: OptimizedModel,
                  optimization_parameters: Optional[OptimizationParameters]):
 
         model_name = self.hparams.algo_backend.model_name.replace(' ', '_')
         if optimization_type is not OptimizationType.POT:
-            raise RuntimeError("POT is the only supported optimization type for OpenVino models")
+            raise ValueError("POT is the only supported optimization type for OpenVino models")
 
-        data_loader = ScOpenVinoDataLoader(dataset, self.inferencer)
+        data_loader = OTEOpenVinoDataLoader(dataset, self.inferencer)
 
         with tempfile.TemporaryDirectory() as tempdir:
-            xml_path = os.path.join(tempdir, model_name+".xml")
-            bin_path = os.path.join(tempdir, model_name+".bin")
+            xml_path = os.path.join(tempdir, model_name + ".xml")
+            bin_path = os.path.join(tempdir, model_name + ".bin")
             open(xml_path, "wb").write(self.model.get_data("openvino.xml"))
             open(bin_path, "wb").write(self.model.get_data("openvino.bin"))
 
@@ -265,8 +269,9 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask):
 
         with tempfile.TemporaryDirectory() as tempdir:
             save_model(compressed_model, tempdir, model_name=model_name)
-            output_model.set_data("openvino.xml", open(os.path.join(tempdir, model_name+".xml"), "rb").read())
-            output_model.set_data("openvino.bin", open(os.path.join(tempdir, model_name+".bin"), "rb").read())
+            output_model.set_data("openvino.xml", open(os.path.join(tempdir, model_name + ".xml"), "rb").read())
+            output_model.set_data("openvino.bin", open(os.path.join(tempdir, model_name + ".bin"), "rb").read())
+        output_model.model_status = ModelStatus.SUCCESS
 
         self.model = output_model
         self.inferencer = self.load_inferencer()
