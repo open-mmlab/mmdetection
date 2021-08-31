@@ -174,7 +174,7 @@ class SpatialReductionAttention(MultiheadAttention):
         return identity + self.dropout_layer(self.proj_drop(out))
 
 
-class TransformerEncoderLayer(BaseModule):
+class PVTEncoderLayer(BaseModule):
     """Implements one encoder layer in PVT.
 
     Args:
@@ -213,7 +213,7 @@ class TransformerEncoderLayer(BaseModule):
                  sr_ratio=1,
                  use_conv_ffn=False,
                  init_cfg=None):
-        super(TransformerEncoderLayer, self).__init__(init_cfg=init_cfg)
+        super(PVTEncoderLayer, self).__init__(init_cfg=init_cfg)
 
         # The ret[0] of build_norm_layer is norm name.
         self.norm1 = build_norm_layer(norm_cfg, embed_dims)[1]
@@ -454,7 +454,7 @@ class PyramidVisionTransformer(BaseModule):
                     drop_rate=drop_rate)
                 layers.append(pos_embed)
             layers.extend([
-                TransformerEncoderLayer(
+                PVTEncoderLayer(
                     embed_dims=embed_dims_i,
                     num_heads=num_heads[i],
                     feedforward_channels=mlp_ratios[i] * embed_dims_i,
