@@ -73,4 +73,3 @@ def test_nms_input_errors():
                         update_thr=0.5)
     assert len(score) == 1
     assert score[0] == 1
-    print()
