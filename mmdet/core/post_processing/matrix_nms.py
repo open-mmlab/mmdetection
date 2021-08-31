@@ -19,11 +19,13 @@ def mask_matrix_nms(masks,
         scores (Tensor): Mask scores in descending order,
             has shape (num_instances).
         update_thr (float): Score threshold to filter the masks
-            after matrix nms. Default: -1.
+            after matrix nms. Default: -1, which means do not
+            use update_thr.
         nms_pre (int): The max number of instances to do the matrix nms.
-            Default: -1.
+            Default: -1, which means do not use nms_pre.
         max_num (int, optional): If there are more than max_num masks after
-            matrix, only top max_num will be kept. Default: -1.
+            matrix, only top max_num will be kept. Default: -1, which means
+            do not use max_num.
         kernel (str): 'linear' or 'gaussian'.
         sigma (float): std in gaussian method.
         mask_area (Tensor): The sum of seg_masks.
