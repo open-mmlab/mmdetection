@@ -1040,3 +1040,149 @@ class DecoupledSOLOHead(SOLOHead):
         results.scores = scores
 
         return results
+
+
+@HEADS.register_module()
+class DecoupledSOLOLightHead(DecoupledSOLOHead):
+    """Decoupled Light SOLO mask head used in
+    `<https://arxiv.org/abs/1912.04488>`_.
+
+    Args:
+        with_dcn (bool): Whether use dcn in mask_convs and cls_convs,
+            default: False.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+    """
+
+    def __init__(self,
+                 *args,
+                 with_dcn=False,
+                 init_cfg=[
+                     dict(type='Normal', layer='Conv2d', std=0.01),
+                     dict(
+                         type='Normal',
+                         std=0.01,
+                         bias_prob=0.01,
+                         override=dict(name='conv_mask_list_x')),
+                     dict(
+                         type='Normal',
+                         std=0.01,
+                         bias_prob=0.01,
+                         override=dict(name='conv_mask_list_y')),
+                     dict(
+                         type='Normal',
+                         std=0.01,
+                         bias_prob=0.01,
+                         override=dict(name='conv_cls'))
+                 ],
+                 **kwargs):
+        super(DecoupledSOLOHead, self).__init__(
+            *args, init_cfg=init_cfg, **kwargs)
+        self.with_dcn = with_dcn
+
+    def _init_layers(self):
+        self.mask_convs = nn.ModuleList()
+        self.cls_convs = nn.ModuleList()
+
+        for i in range(self.stacked_convs):
+            if self.with_dcn and i == self.stacked_convs - 1:
+                cfg_conv = dict(type=self.type_dcn)
+            else:
+                cfg_conv = self.conv_cfg
+
+            chn = self.in_channels + 2 if i == 0 else self.feat_channels
+            self.mask_convs.append(
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=cfg_conv,
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
+
+            chn = self.in_channels if i == 0 else self.feat_channels
+            self.cls_convs.append(
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=cfg_conv,
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
+
+        self.conv_mask_list_x = nn.ModuleList()
+        self.conv_mask_list_y = nn.ModuleList()
+        for num_grid in self.num_grids:
+            self.conv_mask_list_x.append(
+                nn.Conv2d(self.feat_channels, num_grid, 3, padding=1))
+            self.conv_mask_list_y.append(
+                nn.Conv2d(self.feat_channels, num_grid, 3, padding=1))
+        self.conv_cls = nn.Conv2d(
+            self.feat_channels, self.cls_out_channels, 3, padding=1)
+
+    def forward(self, feats):
+        assert len(feats) == self.num_levels == 5, \
+            f'Decoupled SOLO head only support the input ' \
+            f'length is 5, but get {len(feats)}'
+        feats = self.resize_feats(feats)
+        mask_preds_x = []
+        mask_preds_y = []
+        cls_preds = []
+        for i in range(self.num_levels):
+            x = feats[i]
+            mask_feat = x
+            cls_feat = x
+            # generate and concat the coordinate
+            x_range = torch.linspace(
+                -1, 1, mask_feat.shape[-1], device=mask_feat.device)
+            y_range = torch.linspace(
+                -1, 1, mask_feat.shape[-2], device=mask_feat.device)
+            y, x = torch.meshgrid(y_range, x_range)
+            y = y.expand([mask_feat.shape[0], 1, -1, -1])
+            x = x.expand([mask_feat.shape[0], 1, -1, -1])
+            coord_feat = torch.cat([x, y], 1)
+            mask_feat = torch.cat([mask_feat, coord_feat], 1)
+
+            for mask_layer in self.mask_convs:
+                mask_feat = mask_layer(mask_feat)
+
+            mask_feat = F.interpolate(
+                mask_feat, scale_factor=2, mode='bilinear')
+
+            mask_pred_x = self.conv_mask_list_x[i](mask_feat)
+            mask_pred_y = self.conv_mask_list_y[i](mask_feat)
+
+            # cls branch
+            for j, cls_layer in enumerate(self.cls_convs):
+                if j == self.cls_down_index:
+                    num_grid = self.num_grids[i]
+                    cls_feat = F.interpolate(
+                        cls_feat, size=num_grid, mode='bilinear')
+                cls_feat = cls_layer(cls_feat)
+
+            cls_pred = self.conv_cls(cls_feat)
+
+            if not self.training:
+                feat_wh = feats[0].size()[-2:]
+                upsampled_size = (feat_wh[0] * 2, feat_wh[1] * 2)
+                mask_pred_x = F.interpolate(
+                    mask_pred_x.sigmoid(),
+                    size=upsampled_size,
+                    mode='bilinear')
+                mask_pred_y = F.interpolate(
+                    mask_pred_y.sigmoid(),
+                    size=upsampled_size,
+                    mode='bilinear')
+                cls_pred = cls_pred.sigmoid()
+                # get local maximum
+                local_max = F.max_pool2d(cls_pred, 2, stride=1, padding=1)
+                keep_mask = local_max[:, :, :-1, :-1] == cls_pred
+                cls_pred = cls_pred * keep_mask
+
+            mask_preds_x.append(mask_pred_x)
+            mask_preds_y.append(mask_pred_y)
+            cls_preds.append(cls_pred)
+        return mask_preds_x, mask_preds_y, cls_preds
