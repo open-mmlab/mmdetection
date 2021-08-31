@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import math
 
 import torch
@@ -7,6 +6,7 @@ import torch.nn.functional as F
 from mmcv.cnn import (ConvModule, DepthwiseSeparableConvModule,
                       bias_init_with_prob)
 from mmcv.ops.nms import batched_nms
+from mmcv.runner import force_fp32
 
 from mmdet.core import (MlvlPointGenerator, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply)
@@ -122,6 +122,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
 
+        self.fp16_enabled = False
         self._init_layers()
 
     def _init_layers(self):
@@ -315,6 +316,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             dets, keep = batched_nms(bboxes, scores, labels, cfg.nms)
             return dets, labels[keep]
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'objectnesses'))
     def loss(self,
              cls_scores,
              bbox_preds,
