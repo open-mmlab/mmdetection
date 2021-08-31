@@ -19,6 +19,7 @@ from .config_utils import (config_from_string, config_to_string, patch_config,
                            set_values_as_default)
 from .configuration import OTEDetectionConfig
 from .openvino_task import OpenVINODetectionTask
+from .nncf_task import NNCFDetectionTask
 from .ote_utils import (generate_label_schema, get_task_class, load_template,
                         reload_hyper_parameters)
 from .task import OTEDetectionTask
@@ -32,6 +33,7 @@ __all__ = [
     OpenVINODetectionTask,
     OTEDetectionConfig,
     OTEDetectionTask,
+    NNCFDetectionTask,
     patch_config,
     prepare_for_testing,
     prepare_for_training,

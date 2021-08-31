@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import attr
+# import attr
 from attr import attrs
 from sc_sdk.configuration import ModelConfig, ModelLifecycle, UIRules
-from sc_sdk.configuration.config_element_type import ElementCategory
-from sc_sdk.configuration.elements import (ParameterGroup, add_parameter_group,
+# from sc_sdk.configuration.config_element_type import ElementCategory
+from ote_sdk.configuration.elements import (ParameterGroup, add_parameter_group,
                                            configurable_boolean,
                                            configurable_float,
                                            configurable_integer,
                                            string_attribute,
                                            boolean_attribute)
-from sc_sdk.configuration.elements.primitive_parameters import set_common_metadata
-from sc_sdk.configuration.ui_rules import NullUIRules, UIRules
+# from sc_sdk.configuration.elements.primitive_parameters import set_common_metadata
+# from sc_sdk.configuration.ui_rules import NullUIRules, UIRules
 
 
 @attrs
@@ -129,6 +129,29 @@ class OTEDetectionConfig(ModelConfig):
         model_name = string_attribute("object detection model")
         data_pipeline = string_attribute("ote_data_pipeline.py")
 
+    @attrs
+    class __NNCFOptimization(ParameterGroup):
+        header = string_attribute("Optimization by NNCF")
+        description = header
+
+        config = string_attribute(
+            value="compression_config.json"
+        )
+
+        apply_quantization = configurable_boolean(
+            default_value=False,
+            header="Apply quantization by NNCF",
+            description="Enable quantization algorithm to get compressed model by NNCF",
+            affects_outcome_of=ModelLifecycle.TRAINING
+        )
+        apply_pruning = configurable_boolean(
+            default_value=False,
+            header="Apply pruning by NNCF",
+            description="Enable pruning algorithm to get compressed model by NNCF",
+            affects_outcome_of=ModelLifecycle.TRAINING
+        )
+
     learning_parameters = add_parameter_group(__LearningParameters)
     algo_backend = add_parameter_group(__AlgoBackend)
     postprocessing = add_parameter_group(__Postprocessing)
+    nncf_optimization = add_parameter_group(__NNCFOptimization)

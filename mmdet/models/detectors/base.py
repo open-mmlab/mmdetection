@@ -146,7 +146,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         """
         if kwargs.get('forward_export'):
             logger = get_root_logger()
-            logger.info('Calling forward_export inside forward_test')
+            # logger.info('Calling forward_export inside forward_test')
             return self.forward_export(imgs, img_metas)
 
         if kwargs.get('dummy_forward'):

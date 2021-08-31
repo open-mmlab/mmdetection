@@ -20,7 +20,7 @@ import tempfile
 import torch
 import warnings
 from collections import defaultdict
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 
 import numpy as np
 
@@ -34,6 +34,7 @@ from ote_sdk.entities.metrics import (CurveMetric,
                                       VisualizationType,
                                       VisualizationInfo)
 from ote_sdk.entities.shapes.box import Box
+from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.train_parameters import TrainParameters
 from ote_sdk.entities.label import ScoredLabel
 
@@ -70,11 +71,19 @@ from mmdet.datasets import build_dataset, build_dataloader
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
 
+from mmdet.apis.train import create_nncf_model
+
+from mmdet.integration.nncf import check_nncf_is_enabled
+from mmdet.integration.nncf import get_nncf_metadata
+from mmdet.integration.nncf import get_nncf_config_from_meta
+from mmdet.integration.nncf import is_checkpoint_nncf
+from mmdet.integration.nncf import wrap_nncf_model
+
 
 logger = logger_factory.get_logger("OTEDetectionTask")
 
 
-class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTask, IUnload):
+class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluationTask, IUnload):
 
     task_environment: TaskEnvironment
 
@@ -84,56 +93,100 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
         """
         logger.info(f"Loading OTEDetectionTask.")
-        self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
-        logger.info(f"Scratch space created at {self._scratch_space}")
+        self.scratch_space = tempfile.mkdtemp(prefix="ote-det-nncf-scratch-")
+        logger.info(f"Scratch space created at {self.scratch_space}")
 
-        self._task_environment = task_environment
-        self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
+        self.task_environment = task_environment
+        self.hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
 
-        self._model_name = hyperparams.algo_backend.model_name
-        self._labels = task_environment.get_labels(False)
+        self.model_name = hyperparams.algo_backend.model_name
+        self.labels = task_environment.get_labels(False)
 
         template_file_path = task_environment.model_template.model_template_path
 
         # Get and prepare mmdet config.
         base_dir = os.path.abspath(os.path.dirname(template_file_path))
         config_file_path = os.path.join(base_dir, hyperparams.algo_backend.model)
-        self._config = Config.fromfile(config_file_path)
-        patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
-        set_hyperparams(self._config, hyperparams)
+        self.config = Config.fromfile(config_file_path)
+        patch_config(self.config, self.scratch_space, self.labels, random_seed=42)
+        set_hyperparams(self.config, hyperparams)
+
+        # NNCF part
+        self.compression_ctrl = None
+        nncf_config_path = os.path.join(base_dir, 'compression_config.json')
+        import json
+        with open(nncf_config_path) as nncf_config_file:
+            common_nncf_config = json.load(nncf_config_file)
+
+        # TODO load cfg from checkpoint
+        nncf_base = common_nncf_config["base"]["nncf_config"]
+
+        #TODO correctly update config with training parameters
+        if hyperparams.nncf_optimization.apply_quantization:
+            nncf_base.update(common_nncf_config["nncf_quantization"]["nncf_config"])
+        elif hyperparams.nncf_optimization.apply_pruning:
+            nncf_base.update(common_nncf_config["nncf_pruning"]["nncf_config"])
+        else:
+            raise ValueError("Quantization and pruning was disabled")
+
+        self.config["nncf_config"] = nncf_base
 
         # Create and initialize PyTorch model.
-        self._model = self._load_model(task_environment.model)
+        check_nncf_is_enabled()
+        self.compression_ctrl, self.model = self._load_model(task_environment.model)
 
         # Extra control variables.
-        self._training_work_dir = None
-        self._is_training = False
-        self._should_stop = False
-        self._time_monitor = None
+        self.training_work_dir = None
+        self.is_training = False
+        self.should_stop = False
+        self.time_monitor = None
 
+    @staticmethod
+    def extract_model_and_compression_states(resuming_checkpoint: Optional[Dict] = None):
+        if resuming_checkpoint is None:
+            return None, None
+        model_state_dict = resuming_checkpoint.get("model" if "model" in resuming_checkpoint else "state_dict")
+        compression_state = resuming_checkpoint.get("compression_state")
+        return model_state_dict, compression_state
 
     def _load_model(self, model: Model):
         if model != NullModel():
             # If a model has been trained and saved for the task already, create empty model and load weights here
             buffer = io.BytesIO(model.get_data("weights.pth"))
+            cfgs = model
             model_data = torch.load(buffer, map_location=torch.device('cpu'))
 
-            model = self._create_model(self._config, from_scratch=True)
-
+            model = self._create_model(self.config, from_scratch=True)
+            compression_ctrl = None
             try:
-                model.load_state_dict(model_data['model'])
+                if 'compression_state' in model_data:
+                    from mmdet.apis.fake_input import get_fake_input
+                    compression_ctrl, model = wrap_nncf_model(
+                        model,
+                        self.config,
+                        init_state_dict=model_data,
+                        get_fake_input_func=get_fake_input
+                    )
+                else:
+                # TODO: was only model, state_dict was depricated
+                    if 'model' in model_data:
+                        model.load_state_dict(model_data['model'])
+                    elif 'state_dict' in model_data:
+                        model.load_state_dict(model_data['state_dict'])
+                    else:
+                        raise ValueError("Could not load the saved model. No model ot state_dict key.")
                 logger.info(f"Loaded model weights from Task Environment")
-                logger.info(f"Model architecture: {self._model_name}")
+                logger.info(f"Model architecture: {self.model_name}")
             except BaseException as ex:
                 raise ValueError("Could not load the saved model. The model file structure is invalid.") \
                     from ex
         else:
             # If there is no trained model yet, create model with pretrained weights as defined in the model config
             # file.
-            model = self._create_model(self._config, from_scratch=False)
-            logger.info(f"No trained model in project yet. Created new model with '{self._model_name}' "
+            model = self._create_model(self.config, from_scratch=False)
+            logger.info(f"No trained model in project yet. Created new model with '{self.model_name}' "
                         f"architecture and general-purpose pretrained weights.")
-        return model
+        return compression_ctrl, model
 
     @staticmethod
     def _create_model(config: Config, from_scratch: bool = False):
@@ -162,16 +215,15 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             model = build_detector(model_cfg)
         return model
 
-
     def infer(self, dataset: Dataset, inference_parameters: Optional[InferenceParameters] = None) -> Dataset:
         """ Analyzes a dataset using the latest inference model. """
-        set_hyperparams(self._config, self._hyperparams)
+        set_hyperparams(self.config, self.hyperparams)
 
         is_evaluation = inference_parameters is not None and inference_parameters.is_evaluation
         confidence_threshold = self._get_confidence_threshold(is_evaluation)
         logger.info(f'Confidence threshold {confidence_threshold}')
 
-        prediction_results, _ = self._infer_detector(self._model, self._config, dataset, False)
+        prediction_results, _ = self._infer_detector(self.model, self.config, dataset, False)
 
         # Loop over dataset again to assign predictions. Convert from MMDetection format to OTE format
         for dataset_item, output in zip(dataset, prediction_results):
@@ -189,7 +241,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                     if probability < confidence_threshold:
                         continue
 
-                    assigned_label = [ScoredLabel(self._labels[label_idx],
+                    assigned_label = [ScoredLabel(self.labels[label_idx],
                                                   probability=probability)]
                     if coords[3] - coords[1] <= 0 or coords[2] - coords[0] <= 0:
                         continue
@@ -234,7 +286,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                  output_result_set: ResultSet,
                  evaluation_metric: Optional[str] = None):
         """ Computes performance on a resultset """
-        params = self._hyperparams
+        params = self.hyperparams
 
         result_based_confidence_threshold = params.postprocessing.result_based_confidence_threshold
 
@@ -254,99 +306,87 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                 else:
                     raise ValueError(f"Cannot compute metrics: Invalid confidence threshold!")
 
-            # self._task_environment.set_configurable_parameters(params)
+            # self.task_environment.set_configurable_parameters(params)
         logger.info(f"F-measure after evaluation: {f_measure_metrics.f_measure.value}")
         return f_measure_metrics.get_performance()
 
+    def optimize(
+        self,
+        optimization_type: OptimizationType,
+        dataset: Dataset,
+        output_model: OptimizedModel,
+        optimization_parameters: Optional[OptimizationParameters],
+    ):
+        if optimization_type is not OptimizationType.NNCF:
+            raise RuntimeError("NNCF is the only supported optimization")
 
-    def train(self, dataset: Dataset, output_model: Model, train_parameters: Optional[TrainParameters] = None):
-        """ Trains a model on a dataset """
-
-        set_hyperparams(self._config, self._hyperparams)
-
+        set_hyperparams(self.config, self.hyperparams)
         train_dataset = dataset.get_subset(Subset.TRAINING)
         val_dataset = dataset.get_subset(Subset.VALIDATION)
-        config = self._config
+        config = self.config
 
-        # Create new model if training from scratch.
-        old_model = copy.deepcopy(self._model)
-        # if train_parameters is not None and train_parameters.train_on_empty_model:
-        #     logger.info("Training from scratch, creating new model")
-        #     # FIXME. Isn't it an overkill? Consider calling init_weights instead.
-        #     self._model = self._create_model(config=config, from_scratch=True)
+        self.time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda _: None)
+        learning_curves = defaultdict(OTELoggerHook.Curve)
+        training_config = prepare_for_training(config, train_dataset, val_dataset, self.time_monitor, learning_curves)
+        mm_train_dataset = build_dataset(training_config.data.train)
 
-        # Evaluate model performance before training.
-        _, initial_performance = self._infer_detector(self._model, config, val_dataset, True)
-
-        # Check for stop signal between pre-eval and training. If training is cancelled at this point,
-        # old_model should be restored.
-        if self._should_stop:
-            logger.info('Training cancelled.')
-            self._model = old_model
-            self._should_stop = False
-            self._is_training = False
-            self._time_monitor = None
-            self._training_work_dir = None
-            return
+        if not self.compression_ctrl:
+            self.compression_ctrl, self.model = create_nncf_model(
+                self.model,
+                mm_train_dataset,
+                training_config,
+                False)
 
         # Run training.
-        self._time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda _: None)
-        learning_curves = defaultdict(OTELoggerHook.Curve)
-        training_config = prepare_for_training(config, train_dataset, val_dataset, self._time_monitor, learning_curves)
-        self._training_work_dir = training_config.work_dir
-        mm_train_dataset = build_dataset(training_config.data.train)
-        self._is_training = True
-        self._model.train()
-        train_detector(model=self._model, dataset=mm_train_dataset, cfg=training_config, validate=True)
+        self.training_work_dir = training_config.work_dir
+        self.is_training = True
+        self.model.train()
 
-        # Check for stop signal when training has stopped. If should_stop is true, training was cancelled and no new
-        # model should be returned. Old train model is restored.
-        if self._should_stop:
+
+        train_detector(model=self.model,
+                       dataset=mm_train_dataset,
+                       cfg=training_config,
+                       validate=True,
+                       compression_ctrl=self.compression_ctrl)
+
+        # Check for stop signal when training has stopped. If should_stop is true, training was cancelled
+        if self.should_stop:
             logger.info('Training cancelled.')
-            self._model = old_model
-            self._should_stop = False
-            self._is_training = False
-            self._time_monitor = None
+            self.should_stop = False
+            self.is_training = False
+            self.time_monitor = None
             return
 
         # Load the best weights and check if model has improved.
         training_metrics = self._generate_training_metrics_group(learning_curves)
-        best_checkpoint_path = os.path.join(training_config.work_dir, 'latest.pth')
-        best_checkpoint = torch.load(best_checkpoint_path)
-        self._model.load_state_dict(best_checkpoint['state_dict'])
+        # TODO: should be best.pth?
+        #best_checkpoint_path = os.path.join(training_config.work_dir, 'latest.pth')
+        #best_checkpoint = torch.load(best_checkpoint_path)
+        #self.model.load_state_dict(best_checkpoint['state_dict'])
 
-        # Evaluate model performance after training.
-        _, final_performance = self._infer_detector(self._model, config, val_dataset, True)
-        improved = final_performance > initial_performance
+        output_model.model_status = ModelStatus.SUCCESS
 
-        # Return a new model if model has improved, or there is no model yet.
-        if improved or isinstance(self._task_environment.model, NullModel):
-            if improved:
-                logger.info("Training finished, and it has an improved model")
-            else:
-                logger.info("First training round, saving the model.")
-            # Add mAP metric and loss curves
-            performance = Performance(score=ScoreMetric(value=final_performance, name="mAP"),
-                                      dashboard_metrics=training_metrics)
-            logger.info('FINAL MODEL PERFORMANCE\n' + str(performance))
-            self.save_model(output_model)
-            output_model.performance = performance
-            output_model.model_status = ModelStatus.SUCCESS
-        else:
-            logger.info("Model performance has not improved while training. No new model has been saved.")
-            # Restore old training model if training from scratch and not improved
-            self._model = old_model
-
-        self._is_training = False
-        self._time_monitor = None
-
+        self.is_training = False
+        self.time_monitor = None
 
     def save_model(self, output_model: Model):
+        print("SAVEMODEL_FUNC")
         buffer = io.BytesIO()
-        hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
+        hyperparams = self.task_environment.get_hyper_parameters(OTEDetectionConfig)
         hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
-        labels = {label.name: label.color.rgb_tuple for label in self._labels}
-        modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
+        labels = {label.name: label.color.rgb_tuple for label in self.labels}
+        modelinfo = {
+            'compression_state': self.compression_ctrl.get_compression_state(),
+            'meta': { # To be comparable with old mmdetection
+                'config': {
+                    'nncf_config': self.config["nncf_config"],
+                },
+            },
+            'model': self.model.state_dict(),
+            'config': hyperparams_str,
+            'labels': labels,
+            'VERSION': 1}
+
         torch.save(modelinfo, buffer)
         output_model.set_data("weights.pth", buffer.getvalue())
 
@@ -357,8 +397,8 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
         :return: training progress in percent
         """
-        if self._time_monitor is not None:
-            return self._time_monitor.get_progress()
+        if self.time_monitor is not None:
+            return self.time_monitor.get_progress()
         return -1.0
 
 
@@ -370,8 +410,8 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         will therefore take some time.
         """
         logger.info("Cancel training requested.")
-        self._should_stop = True
-        stop_training_filepath = os.path.join(self._training_work_dir, '.stop_training')
+        self.should_stop = True
+        stop_training_filepath = os.path.join(self.training_work_dir, '.stop_training')
         open(stop_training_filepath, 'a').close()
 
 
@@ -384,7 +424,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         output: List[MetricsGroup] = []
 
         # Model architecture
-        architecture = InfoMetric(name='Model architecture', value=self._model_name)
+        architecture = InfoMetric(name='Model architecture', value=self.model_name)
         visualization_info_architecture = VisualizationInfo(name="Model architecture",
                                                             visualisation_type=VisualizationType.TEXT)
         output.append(MetricsGroup(metrics=[architecture],
@@ -410,7 +450,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         :return confidence_threshold: float, threshold for prediction confidence
         """
 
-        hyperparams = self._hyperparams
+        hyperparams = self.hyperparams
         confidence_threshold = hyperparams.postprocessing.confidence_threshold
         result_based_confidence_threshold = hyperparams.postprocessing.result_based_confidence_threshold
         if is_evaluation:
@@ -464,10 +504,10 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                 from torch.jit._trace import TracerWarning
                 warnings.filterwarnings("ignore", category=TracerWarning)
                 if torch.cuda.is_available():
-                    model = self._model.cuda(self._config.gpu_ids[0])
+                    model = self.model.cuda(self.config.gpu_ids[0])
                 else:
-                    model = self._model.cpu()
-                export_model(model, self._config, tempdir,
+                    model = self.model.cpu()
+                export_model(model, self.config, tempdir,
                              target='openvino', precision=optimized_model_precision.name)
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
                 xml_file = [f for f in os.listdir(tempdir) if f.endswith('.xml')][0]
@@ -484,5 +524,5 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         """
         Remove model checkpoints and mmdet logs
         """
-        if os.path.exists(self._scratch_space):
-            shutil.rmtree(self._scratch_space, ignore_errors=False)
+        if os.path.exists(self.scratch_space):
+            shutil.rmtree(self.scratch_space, ignore_errors=False)

@@ -77,11 +77,19 @@ def get_nncf_config_from_meta(path):
     return nncf_config_part
 
 
+def extract_model_and_compression_states(resuming_checkpoint):
+    if resuming_checkpoint is None:
+        return None, None
+    model_state_dict = resuming_checkpoint.get("model" if "model" in resuming_checkpoint else "state_dict")
+    compression_state = resuming_checkpoint.get("compression_state")
+    return model_state_dict, compression_state
+
 def wrap_nncf_model(model,
                     cfg,
                     data_loader_for_init=None,
                     get_fake_input_func=None,
-                    is_alt_ssd_export=False):
+                    is_alt_ssd_export=False,
+                    init_state_dict=None):
     """
     The function wraps mmdet model by NNCF
     Note that the parameter `get_fake_input_func` should be the function `get_fake_input`
@@ -90,13 +98,16 @@ def wrap_nncf_model(model,
 
     check_nncf_is_enabled()
 
-    from nncf import (NNCFConfig, create_compressed_model,
-                      register_default_init_args)
-    from nncf.dynamic_graph.io_handling import nncf_model_input, wrap_nncf_model_outputs_with_objwalk
-    from nncf.dynamic_graph.trace_tensor import TracedTensor
-    from nncf.initialization import InitializingDataLoader
+    from nncf import NNCFConfig
+    from nncf.torch import create_compressed_model
+    from nncf.torch import register_default_init_args
+    from nncf.torch import load_state
+    from nncf.torch.dynamic_graph.io_handling import nncf_model_input
+    from nncf.torch.dynamic_graph.io_handling import wrap_nncf_model_outputs_with_objwalk
+    from nncf.torch.dynamic_graph.trace_tensor import TracedTensor
+    from nncf.torch.initialization import PTInitializingDataLoader
 
-    class MMInitializeDataLoader(InitializingDataLoader):
+    class MMInitializeDataLoader(PTInitializingDataLoader):
 
         def get_inputs(self, dataloader_output):
             # redefined InitializingDataLoader because
@@ -128,7 +139,7 @@ def wrap_nncf_model(model,
     else:
         checkpoint_path = None
 
-    if not data_loader_for_init and not checkpoint_path:
+    if not data_loader_for_init and not checkpoint_path and not init_state_dict:
         raise RuntimeError('Either data_loader_for_init or NNCF pre-trained '
                            'model checkpoint should be set')
 
@@ -138,10 +149,13 @@ def wrap_nncf_model(model,
             'Please, note that this first loading is made before addition of '
             'NNCF FakeQuantize nodes to the model, so there may be some '
             'warnings on unexpected keys')
-        resuming_state_dict = load_checkpoint(model, checkpoint_path)
+        compression_state = load_checkpoint(model, checkpoint_path)
         logger.info(f'Loaded NNCF checkpoint from {checkpoint_path}')
+    elif init_state_dict:
+        resuming_state_dict = init_state_dict.get("model" if "model" in init_state_dict else "state_dict")
+        compression_state = init_state_dict.get("compression_state")
     else:
-        resuming_state_dict = None
+        compression_state = None
 
     if "nncf_compress_postprocessing" in cfg:
         # NB: This parameter is used to choose if we should try to make NNCF compression
@@ -223,7 +237,10 @@ def wrap_nncf_model(model,
                                                           nncf_config,
                                                           dummy_forward_fn=dummy_forward,
                                                           wrap_inputs_fn=wrap_inputs,
-                                                          resuming_state_dict=resuming_state_dict)
+                                                          compression_state=compression_state,
+                                                          dump_graphs=False)
+        load_state(model, resuming_state_dict, is_resume=True)
+
     model.export = export_method.__get__(model)
 
     return compression_ctrl, model
@@ -232,7 +249,7 @@ def wrap_nncf_model(model,
 def get_uncompressed_model(module):
     if not is_nncf_enabled():
         return module
-    from nncf.nncf_network import NNCFNetwork
+    from nncf.torch.nncf_network import NNCFNetwork
     if isinstance(module, NNCFNetwork):
         return module.get_nncf_wrapped_model()
     return module

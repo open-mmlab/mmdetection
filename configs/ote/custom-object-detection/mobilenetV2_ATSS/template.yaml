@@ -25,6 +25,7 @@ application:
 entrypoints:
   base: mmdet.apis.ote.apis.detection.OTEDetectionTask
   openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
+  nncf: mmdet.apis.ote.apis.detection.NNCFDetectionTask
 
 # Task and hyperparameters.
 hyper_parameters:
@@ -37,6 +38,11 @@ hyper_parameters:
         default_value: 0.01
       learning_rate_warmup_iters:
         default_value: 200
+    nncf_optimization:
+      apply_quantization:
+        default_value: true
+      apply_pruning:
+        default_value: false
 
 # # Available model optimizations and their configuration.
 # optimization:
