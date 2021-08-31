@@ -164,14 +164,15 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
         """
-        img_norm_cfg = kwargs.get('img_norm_cfg', None)
-        if img_norm_cfg:
-            mean = torch.tensor(img_norm_cfg['mean'])[None, ..., None, None]
-            std = torch.tensor(img_norm_cfg['std'])[None, ..., None, None]
-            img = (img - mean) / std
 
         if torch.onnx.is_in_onnx_export():
             assert len(img_metas) == 1
+            img_norm_cfg = kwargs.get('img_norm_cfg', None)
+            if img_norm_cfg:
+                mean = torch.tensor(img_norm_cfg['mean'])[None, ..., None,
+                                                          None]
+                std = torch.tensor(img_norm_cfg['std'])[None, ..., None, None]
+                img = (img - mean) / std
             return self.onnx_export(img[0], img_metas[0])
 
         if return_loss:

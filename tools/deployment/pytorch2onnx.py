@@ -145,6 +145,8 @@ def pytorch2onnx(model,
             input_config['input_path'] = input_img
 
         # prepare input once again
+        # pytorch model does not support in graph input normalization
+        input_config['normalize_cfg']['in_graph'] = False
         one_img, one_meta = preprocess_example_input(input_config)
         img_list, img_meta_list = [one_img], [[one_meta]]
 
