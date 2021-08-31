@@ -6,8 +6,6 @@ work_dir=$(realpath "$(dirname $0)")
 
 venv_dir=$1
 PYTHON_NAME=$2
-SC_SDK_REPO=$3
-SKIP_SC_SDK_ADDITIONAL_PACKAGES=$4
 
 if [ -z "$venv_dir" ]; then
   venv_dir=$(realpath -m ${work_dir}/venv)
@@ -15,11 +13,22 @@ else
   venv_dir=$(realpath -m "$venv_dir")
 fi
 
-if [ -z "$PYTHON_NAME" ]; then
+if [[ -z $PYTHON_NAME ]]; then
   # the default option -- note that the minimal version of
   # python that is suitable for this repo is python3.7,
   # whereas the default python3 may point to python3.6
   PYTHON_NAME=python3
+fi
+
+PYTHON_VERSION=$($PYTHON_NAME --version | sed -e "s/^Python \([0-9]\.[0-9]\)\..*/\1/") || exit 1
+if [[ $PYTHON_VERSION != "3.7" && $PYTHON_VERSION != "3.8" ]]; then
+  echo "Wrong version of python: '$PYTHON_VERSION'"
+  exit 1
+fi
+
+if [[ -z $SC_SDK_REPO ]]; then
+  echo "The environment variable SC_SDK_REPO is not set -- it is required for creating virtual environment"
+  exit 1
 fi
 
 cd ${work_dir}
@@ -122,13 +131,12 @@ pip install -e . -c ${CONSTRAINTS_FILE} || exit 1
 MMDETECTION_DIR=`realpath .`
 echo "export MMDETECTION_DIR=${MMDETECTION_DIR}" >> ${venv_dir}/bin/activate
 
-if [ -n "${SC_SDK_REPO}" ]; then
-  pip install -e $SC_SDK_REPO/src/ote_sdk -c ${CONSTRAINTS_FILE} || exit 1
-  pip install -e $SC_SDK_REPO/src/sc_sdk -c ${CONSTRAINTS_FILE} || exit 1
-  pip install -e $SC_SDK_REPO/src/common/users_handler -c ${CONSTRAINTS_FILE} || exit 1
-  if [ -z "${SKIP_SC_SDK_ADDITIONAL_PACKAGES}" ]; then
-    pip install `find $SC_SDK_REPO/.cache -name *.whl` || exit 1
-  fi
+
+pip install -e $SC_SDK_REPO/src/ote_sdk -c ${CONSTRAINTS_FILE} || exit 1
+pip install -e $SC_SDK_REPO/src/sc_sdk -c ${CONSTRAINTS_FILE} || exit 1
+pip install -e $SC_SDK_REPO/src/common/users_handler -c ${CONSTRAINTS_FILE} || exit 1
+if [[ -z ${SKIP_SC_SDK_ADDITIONAL_PACKAGES} ]]; then
+  pip install `find $SC_SDK_REPO/.cache -name *.whl` || exit 1
 fi
 
 deactivate
