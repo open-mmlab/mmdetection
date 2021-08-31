@@ -141,7 +141,9 @@ you can install it before installing MMCV.
 c. Some dependencies are optional. Simply running `pip install -v -e .` will
  only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
-d. If you would like to install `albumentations`, we suggest using `pip install albumentations>=0.3.2 --no-binary imgaug,albumentations`, which will not install `opencv-python-headless`. If you have already installed `opencv-python-headless` instead of `opencv-python`, you can simple use `pip install albumentations>=0.3.2`. Please refer to [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for more details.
+d. If you would like to use `albumentations`, we suggest using
+`pip install albumentations>=0.3.2 --no-binary imgaug,albumentations`. If you simply use
+`pip install albumentations>=0.3.2`, it will install `opencv-python-headless` simultaneously (even though you have already installed `opencv-python`). We should not allow `opencv-python` and `opencv-python-headless` installed at the same time, it will cause unexpected issues. Please refer to [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for more details.
 
 ### Install without GPU support
 
