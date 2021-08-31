@@ -8,11 +8,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
                       normal_init)
+from mmcv.ops.nms import batched_nms
 from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
-                        multi_apply, multiclass_nms)
+                        multi_apply)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -258,33 +259,37 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             flatten_bboxes /= flatten_bboxes.new_tensor(
                 scale_factors).unsqueeze(1)
 
-        # In mmdet 2.x, the class_id for background is num_classes.
-        # i.e., the last column.
-        padding = flatten_bboxes.new_zeros(batch_size, flatten_bboxes.shape[1],
-                                           1)
-        flatten_cls_scores = torch.cat([flatten_cls_scores, padding], dim=-1)
+        # # In mmdet 2.x, the class_id for background is num_classes.
+        # # i.e., the last column.
+        # padding = flatten_bboxes.new_zeros(batch_size,
+        #                                    flatten_bboxes.shape[1],
+        #                                    1)
+        # flatten_cls_scores = torch.cat([flatten_cls_scores, padding], dim=-1)
 
         det_results = []
         for (mlvl_bboxes, mlvl_scores,
              mlvl_conf_scores) in zip(flatten_bboxes, flatten_cls_scores,
                                       flatten_objectness):
-            # Filtering out all predictions with conf < conf_thr
-            conf_thr = cfg.get('conf_thr', -1)
-            if conf_thr > 0:
-                conf_inds = mlvl_conf_scores.ge(conf_thr).nonzero(
-                    as_tuple=False).squeeze(1)
-                mlvl_bboxes = mlvl_bboxes[conf_inds, :]
-                mlvl_scores = mlvl_scores[conf_inds, :]
-                mlvl_conf_scores = mlvl_conf_scores[conf_inds]
-
-            det_bboxes, det_labels = multiclass_nms(
-                mlvl_bboxes,
-                mlvl_scores,
-                cfg.score_thr,
-                cfg.nms,
-                cfg.max_per_img,
-                score_factors=mlvl_conf_scores)
-            det_results.append(tuple([det_bboxes, det_labels]))
+            # # Filtering out all predictions with conf < conf_thr
+            # conf_thr = cfg.get('conf_thr', -1)
+            # if conf_thr > 0:
+            #     conf_inds = mlvl_conf_scores.ge(conf_thr).nonzero(
+            #         as_tuple=False).squeeze(1)
+            #     mlvl_bboxes = mlvl_bboxes[conf_inds, :]
+            #     mlvl_scores = mlvl_scores[conf_inds, :]
+            #     mlvl_conf_scores = mlvl_conf_scores[conf_inds]
+            #
+            # det_bboxes, det_labels = multiclass_nms(
+            #     mlvl_bboxes,
+            #     mlvl_scores,
+            #     cfg.score_thr,
+            #     cfg.nms,
+            #     cfg.max_per_img,
+            #     score_factors=mlvl_conf_scores)
+            # det_results.append(tuple([det_bboxes, det_labels]))
+            det_results.append(
+                self._bboxes_nms(mlvl_scores, mlvl_bboxes, mlvl_conf_scores,
+                                 cfg))
         return det_results
 
     def _bbox_decode(self, priors, pred_bboxes):
@@ -306,6 +311,28 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
              xys[..., 0] + whs[..., 0], xys[..., 1] + whs[..., 1]),
             dim=-1)
         return decoded_bboxes
+
+    def _bboxes_nms(self, cls_scores, bboxes, score_factor, cfg):
+        valid_mask = score_factor >= cfg.conf_thr
+        scores = cls_scores[valid_mask]
+        score_factor = score_factor[valid_mask].unsqueeze(-1).expand(
+            scores.size(0), self.num_classes)
+        bboxes = bboxes[valid_mask].unsqueeze(1).expand(
+            scores.size(0), self.num_classes, 4)
+        labels = torch.arange(
+            self.num_classes, dtype=torch.long, device=scores.device)
+        labels = labels.view(1, -1).expand_as(scores)
+
+        score_mask = scores >= cfg.score_thr
+        bboxes = bboxes[score_mask]
+        scores = scores[score_mask] * score_factor[score_mask]
+        labels = labels[score_mask]
+
+        if labels.numel() == 0:
+            return bboxes, labels
+        else:
+            dets, keep = batched_nms(bboxes, scores, labels, cfg.nms)
+            return dets, labels[keep]
 
     @force_fp32(apply_to=('pred_maps', ))
     def loss(self,
