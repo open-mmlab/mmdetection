@@ -16,7 +16,8 @@ def mask_matrix_nms(masks,
         masks (Tensor): Has shape (num_instances, h, w)
         labels (Tensor): Labels of corresponding masks,
             has shape (num_instances,).
-        scores (Tensor): Mask scores in descending order, has shape (n).
+        scores (Tensor): Mask scores in descending order,
+            has shape (num_instances).
         update_thr (float): Score threshold to filter the masks
             after matrix nms. Default: -1.
         nms_pre (int): The max number of instances to do the matrix nms.
@@ -36,11 +37,14 @@ def mask_matrix_nms(masks,
             - keep_inds (Tensor): The indexs number of
               the remaining mask in the input mask.
     """
+    assert len(labels) == len(masks) == len(scores)
     if len(labels) == 0:
         return scores.new_zeros(0), labels.new_zeros(0), masks.new_zeros(
             0, *masks.shape[-2:]), labels.new_zeros(0)
     if mask_area is None:
         mask_area = masks.sum((1, 2)).float()
+    else:
+        assert len(masks) == len(mask_area)
 
     # sort and keep top nms_pre
     scores, sort_inds = torch.sort(scores, descending=True)
