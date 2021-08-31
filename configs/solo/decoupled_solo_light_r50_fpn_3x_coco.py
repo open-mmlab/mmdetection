@@ -3,7 +3,7 @@ _base_ = './decoupled_solo_r50_fpn_3x_coco.py'
 # model settings
 model = dict(
     mask_head=dict(
-        type='DecoupledSOLOHead',
+        type='DecoupledSOLOLightHead',
         num_classes=80,
         in_channels=256,
         stacked_convs=4,
