@@ -232,59 +232,42 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             pred_maps_list[i].shape[-2:] for i in range(self.num_levels)
         ]
         multi_lvl_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes, device)
-        # convert to tensor to keep tracing
-        multi_lvl_bboxes = []
-        multi_lvl_cls_scores = []
-        multi_lvl_conf_scores = []
-        for i in range(self.num_levels):
-            # get some key info for current scale
-            pred_map = pred_maps_list[i]
-            stride = self.featmap_strides[i]
-            # (b,h, w, num_anchors*num_attrib) ->
-            # (b,h*w*num_anchors, num_attrib)
-            pred_map = pred_map.permute(0, 2, 3,
-                                        1).reshape(batch_size, -1,
-                                                   self.num_attrib)
-            # Inplace operation like
-            # ```pred_map[..., :2] = \torch.sigmoid(pred_map[..., :2])```
-            # would create constant tensor when exporting to onnx
-            pred_map[..., :2] = torch.sigmoid(pred_map[..., :2])
-            pred_map_boxes = pred_map[..., :4]
-            anchor = multi_lvl_anchors[i].expand_as(pred_map_boxes)
-            bbox_pred = self.bbox_coder.decode(anchor, pred_map_boxes, stride)
-            # conf and cls
-            conf_pred = torch.sigmoid(pred_map[..., 4])
-            cls_pred = torch.sigmoid(pred_map[..., 5:]).view(
-                batch_size, -1, self.num_classes)  # Cls pred one-hot.
+            featmap_sizes,
+            device,
+        )
+        # (b,h*w*num_anchors, num_attrib)
+        flatten_preds = [
+            pred_map.permute(0, 2, 3, 1).reshape(batch_size, -1,
+                                                 self.num_attrib)
+            for pred_map in pred_maps
+        ]
+        for anchor, pred, stride in zip(multi_lvl_anchors, flatten_preds,
+                                        self.featmap_strides):
+            pred[..., :2] = (pred[..., :2].sigmoid() - 0.5) * stride
+        flatten_preds = torch.cat(flatten_preds, dim=1)
+        flatten_bbox_preds = flatten_preds[..., :4]
+        flatten_objectness = flatten_preds[..., 4].sigmoid()
+        flatten_cls_scores = flatten_preds[..., 5:].sigmoid()
+        flatten_anchors = torch.cat(multi_lvl_anchors)
+        flatten_bboxes = self._bbox_decode(flatten_anchors, flatten_bbox_preds)
 
-            # Save the result of current scale
-            multi_lvl_bboxes.append(bbox_pred)
-            multi_lvl_cls_scores.append(cls_pred)
-            multi_lvl_conf_scores.append(conf_pred)
-
-        # Merge the results of different scales together
-        batch_mlvl_bboxes = torch.cat(multi_lvl_bboxes, dim=1)
-        batch_mlvl_scores = torch.cat(multi_lvl_cls_scores, dim=1)
-        batch_mlvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
-
-        if with_nms and (batch_mlvl_conf_scores.size(0) == 0):
+        if with_nms and (flatten_objectness.size(0) == 0):
             return torch.zeros((0, 5)), torch.zeros((0, ))
 
         if rescale:
-            batch_mlvl_bboxes /= batch_mlvl_bboxes.new_tensor(
+            flatten_bboxes /= flatten_bboxes.new_tensor(
                 scale_factors).unsqueeze(1)
 
         # In mmdet 2.x, the class_id for background is num_classes.
         # i.e., the last column.
-        padding = batch_mlvl_scores.new_zeros(batch_size,
-                                              batch_mlvl_scores.shape[1], 1)
-        batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
+        padding = flatten_bboxes.new_zeros(batch_size, flatten_bboxes.shape[1],
+                                           1)
+        flatten_cls_scores = torch.cat([flatten_cls_scores, padding], dim=-1)
 
         det_results = []
         for (mlvl_bboxes, mlvl_scores,
-             mlvl_conf_scores) in zip(batch_mlvl_bboxes, batch_mlvl_scores,
-                                      batch_mlvl_conf_scores):
+             mlvl_conf_scores) in zip(flatten_bboxes, flatten_cls_scores,
+                                      flatten_objectness):
             # Filtering out all predictions with conf < conf_thr
             conf_thr = cfg.get('conf_thr', -1)
             if conf_thr > 0:
@@ -303,6 +286,26 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 score_factors=mlvl_conf_scores)
             det_results.append(tuple([det_bboxes, det_labels]))
         return det_results
+
+    def _bbox_decode(self, priors, pred_bboxes):
+        """Apply transformation `pred_bboxes` to `boxes`.
+
+        Args:
+            priors (torch.Tensor): Basic boxes, e.g. anchors.
+            pred_bboxes (torch.Tensor): Encoded boxes with shape
+
+        Returns:
+            torch.Tensor: Decoded boxes.
+        """
+        xys = (priors[..., :2] + priors[..., 2:]) * 0.5 + pred_bboxes[..., :2]
+        whs = (priors[..., 2:] -
+               priors[..., :2]) * 0.5 * pred_bboxes[..., 2:].exp()
+
+        decoded_bboxes = torch.stack(
+            (xys[..., 0] - whs[..., 0], xys[..., 1] - whs[..., 1],
+             xys[..., 0] + whs[..., 0], xys[..., 1] + whs[..., 1]),
+            dim=-1)
+        return decoded_bboxes
 
     @force_fp32(apply_to=('pred_maps', ))
     def loss(self,
