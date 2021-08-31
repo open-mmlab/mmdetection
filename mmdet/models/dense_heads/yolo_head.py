@@ -8,12 +8,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
                       normal_init)
-from mmcv.ops.nms import batched_nms
 from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
-                        multi_apply)
+                        multi_apply, multiclass_nms)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -216,41 +215,34 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 each element represents the class label of the corresponding
                 box.
         """
-        num_levels = len(pred_maps)
-        pred_maps_list = [pred_maps[i].detach() for i in range(num_levels)]
-        scale_factors = [
-            img_metas[i]['scale_factor']
-            for i in range(pred_maps_list[0].shape[0])
-        ]
-
+        assert len(pred_maps) == self.num_levels
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(pred_maps_list) == self.num_levels
+        scale_factors = [img_meta['scale_factor'] for img_meta in img_metas]
 
-        device = pred_maps_list[0].device
-        batch_size = pred_maps_list[0].shape[0]
+        num_imgs = len(img_metas)
+        featmap_sizes = [pred_map.shape[-2:] for pred_map in pred_maps]
 
-        featmap_sizes = [
-            pred_maps_list[i].shape[-2:] for i in range(self.num_levels)
-        ]
-        multi_lvl_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes,
-            device,
-        )
-        # (b,h*w*num_anchors, num_attrib)
-        flatten_preds = [
-            pred_map.permute(0, 2, 3, 1).reshape(batch_size, -1,
-                                                 self.num_attrib)
-            for pred_map in pred_maps
-        ]
-        for anchor, pred, stride in zip(multi_lvl_anchors, flatten_preds,
-                                        self.featmap_strides):
-            pred[..., :2] = (pred[..., :2].sigmoid() - 0.5) * stride
+        mlvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, pred_maps[0].device)
+        flatten_preds = []
+        flatten_strides = []
+        for pred, stride in zip(pred_maps, self.featmap_strides):
+            pred = pred.permute(0, 2, 3, 1).reshape(num_imgs, -1,
+                                                    self.num_attrib)
+            pred[..., :2].sigmoid_()
+            flatten_preds.append(pred)
+            flatten_strides.append(
+                pred.new_tensor(stride).expand(pred.size(1)))
+
         flatten_preds = torch.cat(flatten_preds, dim=1)
         flatten_bbox_preds = flatten_preds[..., :4]
         flatten_objectness = flatten_preds[..., 4].sigmoid()
         flatten_cls_scores = flatten_preds[..., 5:].sigmoid()
-        flatten_anchors = torch.cat(multi_lvl_anchors)
-        flatten_bboxes = self._bbox_decode(flatten_anchors, flatten_bbox_preds)
+        flatten_anchors = torch.cat(mlvl_anchors)
+        flatten_strides = torch.cat(flatten_strides)
+        flatten_bboxes = self.bbox_coder.decode(flatten_anchors,
+                                                flatten_bbox_preds,
+                                                flatten_strides.unsqueeze(-1))
 
         if with_nms and (flatten_objectness.size(0) == 0):
             return torch.zeros((0, 5)), torch.zeros((0, ))
@@ -259,80 +251,33 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             flatten_bboxes /= flatten_bboxes.new_tensor(
                 scale_factors).unsqueeze(1)
 
-        # # In mmdet 2.x, the class_id for background is num_classes.
-        # # i.e., the last column.
-        # padding = flatten_bboxes.new_zeros(batch_size,
-        #                                    flatten_bboxes.shape[1],
-        #                                    1)
-        # flatten_cls_scores = torch.cat([flatten_cls_scores, padding], dim=-1)
+        # In mmdet 2.x, the class_id for background is num_classes.
+        # i.e., the last column.
+        padding = flatten_bboxes.new_zeros(num_imgs, flatten_bboxes.shape[1],
+                                           1)
+        flatten_cls_scores = torch.cat([flatten_cls_scores, padding], dim=-1)
 
         det_results = []
-        for (mlvl_bboxes, mlvl_scores,
-             mlvl_conf_scores) in zip(flatten_bboxes, flatten_cls_scores,
-                                      flatten_objectness):
-            # # Filtering out all predictions with conf < conf_thr
-            # conf_thr = cfg.get('conf_thr', -1)
-            # if conf_thr > 0:
-            #     conf_inds = mlvl_conf_scores.ge(conf_thr).nonzero(
-            #         as_tuple=False).squeeze(1)
-            #     mlvl_bboxes = mlvl_bboxes[conf_inds, :]
-            #     mlvl_scores = mlvl_scores[conf_inds, :]
-            #     mlvl_conf_scores = mlvl_conf_scores[conf_inds]
-            #
-            # det_bboxes, det_labels = multiclass_nms(
-            #     mlvl_bboxes,
-            #     mlvl_scores,
-            #     cfg.score_thr,
-            #     cfg.nms,
-            #     cfg.max_per_img,
-            #     score_factors=mlvl_conf_scores)
-            # det_results.append(tuple([det_bboxes, det_labels]))
-            det_results.append(
-                self._bboxes_nms(mlvl_scores, mlvl_bboxes, mlvl_conf_scores,
-                                 cfg))
+        for (bboxes, scores, objectness) in zip(flatten_bboxes,
+                                                flatten_cls_scores,
+                                                flatten_objectness):
+            # Filtering out all predictions with conf < conf_thr
+            conf_thr = cfg.get('conf_thr', -1)
+            if conf_thr > 0:
+                conf_inds = objectness >= conf_thr
+                bboxes = bboxes[conf_inds, :]
+                scores = scores[conf_inds, :]
+                objectness = objectness[conf_inds]
+
+            det_bboxes, det_labels = multiclass_nms(
+                bboxes,
+                scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=objectness)
+            det_results.append(tuple([det_bboxes, det_labels]))
         return det_results
-
-    def _bbox_decode(self, priors, pred_bboxes):
-        """Apply transformation `pred_bboxes` to `boxes`.
-
-        Args:
-            priors (torch.Tensor): Basic boxes, e.g. anchors.
-            pred_bboxes (torch.Tensor): Encoded boxes with shape
-
-        Returns:
-            torch.Tensor: Decoded boxes.
-        """
-        xys = (priors[..., :2] + priors[..., 2:]) * 0.5 + pred_bboxes[..., :2]
-        whs = (priors[..., 2:] -
-               priors[..., :2]) * 0.5 * pred_bboxes[..., 2:].exp()
-
-        decoded_bboxes = torch.stack(
-            (xys[..., 0] - whs[..., 0], xys[..., 1] - whs[..., 1],
-             xys[..., 0] + whs[..., 0], xys[..., 1] + whs[..., 1]),
-            dim=-1)
-        return decoded_bboxes
-
-    def _bboxes_nms(self, cls_scores, bboxes, score_factor, cfg):
-        valid_mask = score_factor >= cfg.conf_thr
-        scores = cls_scores[valid_mask]
-        score_factor = score_factor[valid_mask].unsqueeze(-1).expand(
-            scores.size(0), self.num_classes)
-        bboxes = bboxes[valid_mask].unsqueeze(1).expand(
-            scores.size(0), self.num_classes, 4)
-        labels = torch.arange(
-            self.num_classes, dtype=torch.long, device=scores.device)
-        labels = labels.view(1, -1).expand_as(scores)
-
-        score_mask = scores >= cfg.score_thr
-        bboxes = bboxes[score_mask]
-        scores = scores[score_mask] * score_factor[score_mask]
-        labels = labels[score_mask]
-
-        if labels.numel() == 0:
-            return bboxes, labels
-        else:
-            dets, keep = batched_nms(bboxes, scores, labels, cfg.nms)
-            return dets, labels[keep]
 
     @force_fp32(apply_to=('pred_maps', ))
     def loss(self,
