@@ -21,7 +21,7 @@ if [[ -z $PYTHON_NAME ]]; then
 fi
 
 PYTHON_VERSION=$($PYTHON_NAME --version | sed -e "s/^Python \([0-9]\.[0-9]\)\..*/\1/") || exit 1
-if [[ $PYTHON_VERSION != "3.7" && $PYTHON_VERSION != "3.8" ]]; then
+if [[ $PYTHON_VERSION != "3.7" && $PYTHON_VERSION != "3.8" && $PYTHON_VERSION != "3.9" ]]; then
   echo "Wrong version of python: '$PYTHON_VERSION'"
   exit 1
 fi
