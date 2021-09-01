@@ -5,6 +5,7 @@ from mmdet.core.mask import BitmapMasks, PolygonMasks
 
 
 def _check_fields(results, pipeline_results, keys):
+    """Check data in fields from two results are same."""
     for key in keys:
         if isinstance(results[key], (BitmapMasks, PolygonMasks)):
             assert np.equal(results[key].to_ndarray(),
@@ -15,6 +16,14 @@ def _check_fields(results, pipeline_results, keys):
 
 
 def check_result_same(results, pipeline_results):
+    """Check whether the `pipeline_results` is the same with the predefined
+    `results`.
+
+    Args:
+        results (dict): Predefined results which should be the standard output
+            of the transform pipeline.
+        pipeline_results (dict): Results processed by the transform pipeline.
+    """
     # check image
     _check_fields(results, pipeline_results,
                   results.get('img_fields', ['img']))
