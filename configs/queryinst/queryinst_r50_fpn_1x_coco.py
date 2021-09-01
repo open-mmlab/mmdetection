@@ -118,8 +118,8 @@ model = dict(
     test_cfg=dict(rpn=None, rcnn=dict(max_per_img=num_proposals, mask_thr_binary=0.5)))
 
 # optimizer
-optimizer = dict(_delete_=True, type='AdamW', lr=0.000025, weight_decay=0.0001)
-optimizer_config = dict(_delete_=True, grad_clip=dict(max_norm=1, norm_type=2))
+optimizer = dict(_delete_=True, type='AdamW', lr=0.0001, weight_decay=0.0001, paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+optimizer_config = dict(_delete_=True, grad_clip=dict(max_norm=0.1, norm_type=2))
 # learning policy
-lr_config = dict(policy='step', step=[8, 11])
+lr_config = dict(policy='step', step=[8, 11], warmup_iters=1000)
 runner = dict(type='EpochBasedRunner', max_epochs=12)
