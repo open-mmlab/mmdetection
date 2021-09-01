@@ -1056,6 +1056,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
     def __init__(self,
                  *args,
                  with_dcn=False,
+                 type_dcn=None,
                  init_cfg=[
                      dict(type='Normal', layer='Conv2d', std=0.01),
                      dict(
@@ -1075,9 +1076,10 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
                          override=dict(name='conv_cls'))
                  ],
                  **kwargs):
-        super(DecoupledSOLOHead, self).__init__(
+        # self.with_dcn = with_dcn
+        self.type_dcn = type_dcn
+        super(DecoupledSOLOLightHead, self).__init__(
             *args, init_cfg=init_cfg, **kwargs)
-        self.with_dcn = with_dcn
 
     def _init_layers(self):
         self.mask_convs = nn.ModuleList()
