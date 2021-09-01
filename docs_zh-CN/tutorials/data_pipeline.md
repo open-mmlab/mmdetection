@@ -163,7 +163,7 @@ test_pipeline = [
             return results
     ```
 
-2. 在配置文件里调用并使用你写的数据处理流程，需要确保在你的训练脚本中调用了准确的位置：
+2. 在配置文件里调用并使用你写的数据处理流程，需要确保你的训练脚本能够正确导入新增模块：
 
     ```python
     custom_imports = dict(imports=['path.to.my_pipeline'], allow_failed_imports=False)
@@ -183,8 +183,8 @@ test_pipeline = [
     ]
     ```
 
-3. 可视化增强数据处理流程的结果
+3. 可视化数据增强处理流程的结果
 
-   如果想要可视化增强处理数据流程的结果，可以使用 `tools/misc/browse_dataset.py` 直观
+   如果想要可视化数据增强处理流程的结果，可以使用 `tools/misc/browse_dataset.py` 直观
    地浏览检测数据集（图像和标注信息），或将图像保存到指定目录。
    使用方法请参考[日志分析](../useful_tools.md)
