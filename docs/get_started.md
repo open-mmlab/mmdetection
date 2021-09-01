@@ -117,7 +117,7 @@ Or you can still install MMDetection manually:
     pip install -v -e .  # or "python setup.py develop"
     ```
 
-3. Install extra dependencies for Instaboost, Panoptic Segmentation, LVIS dataset or Albumentations.
+3. Install extra dependencies for Instaboost, Panoptic Segmentation, LVIS dataset, or Albumentations.
 
     ```shell
     # for instaboost
@@ -143,7 +143,7 @@ c. Some dependencies are optional. Simply running `pip install -v -e .` will
 
 d. If you would like to use `albumentations`, we suggest using
 `pip install albumentations>=0.3.2 --no-binary imgaug,albumentations`. If you simply use
-`pip install albumentations>=0.3.2`, it will install `opencv-python-headless` simultaneously (even though you have already installed `opencv-python`). We should not allow `opencv-python` and `opencv-python-headless` installed at the same time, it will cause unexpected issues. Please refer to [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for more details.
+`pip install albumentations>=0.3.2`, it will install `opencv-python-headless` simultaneously (even though you have already installed `opencv-python`). We should not allow `opencv-python` and `opencv-python-headless` installed at the same time, because it might cause unexpected issues. Please refer to [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for more details.
 
 ### Install without GPU support
 
