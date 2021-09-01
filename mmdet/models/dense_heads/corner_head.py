@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from logging import warning
 from math import ceil, log
 

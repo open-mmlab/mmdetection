@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import logging
 import shutil
 import sys
@@ -116,22 +117,22 @@ def test_yolox_lrupdater_hook(multi_optimziers):
         calls = [
             call(
                 'train', {
-                    'learning_rate/model1': 4.0000000000000003e-07,
-                    'learning_rate/model2': 2.0000000000000002e-07,
+                    'learning_rate/model1': 8.000000000000001e-06,
+                    'learning_rate/model2': 4.000000000000001e-06,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 1),
             call(
                 'train', {
-                    'learning_rate/model1': 1.9600000000000002e-05,
-                    'learning_rate/model2': 9.800000000000001e-06,
+                    'learning_rate/model1': 0.00039200000000000004,
+                    'learning_rate/model2': 0.00019600000000000002,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 7),
             call(
                 'train', {
-                    'learning_rate/model1': 4.000000000000001e-05,
-                    'learning_rate/model2': 2.0000000000000005e-05,
+                    'learning_rate/model1': 0.0008000000000000001,
+                    'learning_rate/model2': 0.0004000000000000001,
                     'momentum/model1': 0.95,
                     'momentum/model2': 0.9
                 }, 10)
@@ -139,15 +140,15 @@ def test_yolox_lrupdater_hook(multi_optimziers):
     else:
         calls = [
             call('train', {
-                'learning_rate': 4.0000000000000003e-07,
+                'learning_rate': 8.000000000000001e-06,
                 'momentum': 0.95
             }, 1),
             call('train', {
-                'learning_rate': 1.9600000000000002e-05,
+                'learning_rate': 0.00039200000000000004,
                 'momentum': 0.95
             }, 7),
             call('train', {
-                'learning_rate': 4.000000000000001e-05,
+                'learning_rate': 0.0008000000000000001,
                 'momentum': 0.95
             }, 10)
         ]
@@ -257,4 +258,49 @@ def test_sync_random_size_hook():
     runner = _build_demo_runner()
     runner.register_hook_from_cfg(dict(type='SyncRandomSizeHook'))
     runner.run([loader, loader], [('train', 1), ('val', 1)])
+    shutil.rmtree(runner.work_dir)
+
+
+@pytest.mark.parametrize('set_loss', [
+    dict(set_loss_nan=False, set_loss_inf=False),
+    dict(set_loss_nan=True, set_loss_inf=False),
+    dict(set_loss_nan=False, set_loss_inf=True)
+])
+def test_check_invalid_loss_hook(set_loss):
+    # Check whether loss is valid during training.
+
+    class DemoModel(nn.Module):
+
+        def __init__(self, set_loss_nan=False, set_loss_inf=False):
+            super().__init__()
+            self.set_loss_nan = set_loss_nan
+            self.set_loss_inf = set_loss_inf
+            self.linear = nn.Linear(2, 1)
+
+        def forward(self, x):
+            return self.linear(x)
+
+        def train_step(self, x, optimizer, **kwargs):
+            if self.set_loss_nan:
+                return dict(loss=torch.tensor(float('nan')))
+            elif self.set_loss_inf:
+                return dict(loss=torch.tensor(float('inf')))
+            else:
+                return dict(loss=self(x))
+
+    loader = DataLoader(torch.ones((5, 2)))
+    runner = _build_demo_runner()
+
+    demo_model = DemoModel(**set_loss)
+    runner.model = demo_model
+    runner.register_hook_from_cfg(
+        dict(type='CheckInvalidLossHook', interval=1))
+    if not set_loss['set_loss_nan'] \
+            and not set_loss['set_loss_inf']:
+        # check loss is valid
+        runner.run([loader], [('train', 1)])
+    else:
+        # check loss is nan or inf
+        with pytest.raises(AssertionError):
+            runner.run([loader], [('train', 1)])
     shutil.rmtree(runner.work_dir)

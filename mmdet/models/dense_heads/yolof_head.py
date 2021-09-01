@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
