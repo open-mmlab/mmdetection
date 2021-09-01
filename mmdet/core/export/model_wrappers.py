@@ -35,7 +35,7 @@ class DeployBaseDetector(BaseDetector):
     def train_step(self, data, optimizer):
         raise NotImplementedError('This method is not implemented.')
 
-    def aforward_test(self, *, img, img_metas, **kwargs):
+    def forward_test(self, *, img, img_metas, **kwargs):
         raise NotImplementedError('This method is not implemented.')
 
     def async_simple_test(self, img, img_metas, **kwargs):
