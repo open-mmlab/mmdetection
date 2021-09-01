@@ -1076,7 +1076,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
                          override=dict(name='conv_cls'))
                  ],
                  **kwargs):
-        # self.with_dcn = with_dcn
+        self.with_dcn = with_dcn
         self.type_dcn = type_dcn
         super(DecoupledSOLOLightHead, self).__init__(
             *args, init_cfg=init_cfg, **kwargs)
