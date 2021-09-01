@@ -1,8 +1,11 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 import pytest
 import torch
 
 from mmdet.core import BboxOverlaps2D, bbox_overlaps
+from mmdet.core.evaluation.bbox_overlaps import \
+    bbox_overlaps as recall_overlaps
 
 
 def test_bbox_overlaps_2d(eps=1e-7):
@@ -103,3 +106,29 @@ def test_bbox_overlaps_2d(eps=1e-7):
     ious = bbox_overlaps(bboxes1, bboxes2, 'iof', eps=eps)
     assert torch.all(ious >= -1) and torch.all(ious <= 1)
     assert ious.size() == (bboxes1.size(0), bboxes2.size(0))
+
+
+def test_voc_recall_overlaps():
+
+    def _construct_bbox(num_bbox=None):
+        img_h = int(np.random.randint(3, 1000))
+        img_w = int(np.random.randint(3, 1000))
+        if num_bbox is None:
+            num_bbox = np.random.randint(1, 10)
+        x1y1 = torch.rand((num_bbox, 2))
+        x2y2 = torch.max(torch.rand((num_bbox, 2)), x1y1)
+        bboxes = torch.cat((x1y1, x2y2), -1)
+        bboxes[:, 0::2] *= img_w
+        bboxes[:, 1::2] *= img_h
+        return bboxes.numpy(), num_bbox
+
+    bboxes1, num_bbox = _construct_bbox()
+    bboxes2, _ = _construct_bbox(num_bbox)
+    ious = recall_overlaps(
+        bboxes1, bboxes2, 'iou', use_legacy_coordinate=False)
+    assert ious.shape == (num_bbox, num_bbox)
+    assert np.all(ious >= -1) and np.all(ious <= 1)
+
+    ious = recall_overlaps(bboxes1, bboxes2, 'iou', use_legacy_coordinate=True)
+    assert ious.shape == (num_bbox, num_bbox)
+    assert np.all(ious >= -1) and np.all(ious <= 1)

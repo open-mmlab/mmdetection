@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .onnx_helper import (add_dummy_nms_for_onnx, dynamic_clip_for_onnx,
                           get_k_for_topk)
 from .pytorch2onnx import (build_model_from_cfg,
