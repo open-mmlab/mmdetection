@@ -67,3 +67,12 @@ for i in range(self.num_stages):
 ```
 
 If you have customized `RoIHead`, you can refer to the above method to deal with empty proposals.
+
+## Coco Panoptic Dataset
+
+In MMDetection, we have supported the CocoPanoptic dataset. We clarify a few conventions about the implementation of `CocoPanopticDataset` here.
+
+1. In the `gt_semantic_seg`, the label `0` stands for `VOID` label and the category labels start from `1`, which is different from `coco-stuff` annotations.
+   In the rest of the annotations and returned results, the category labels start still start from `0`. This problem will be unified after supporting the setting of the padding value for `gt_semantic_seg`.
+2. In the evaluation, the panoptic result is a map with the same shape as the original image.
+   Each value in the result map has the format of `instance_id * INSTANCE_OFFSET + category_id`.
