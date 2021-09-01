@@ -56,8 +56,8 @@ def main(args):
         title='pytorch_result')
     url = 'http://' + args.inference_addr + '/predictions/' + args.model_name
     with open(args.img, 'rb') as image:
-        tmp_res = requests.post(url, image)
-    server_result = parse_result(tmp_res.json(), model.CLASSES)
+        response = requests.post(url, image)
+    server_result = parse_result(response.json(), model.CLASSES)
     show_result_pyplot(
         model,
         args.img,
