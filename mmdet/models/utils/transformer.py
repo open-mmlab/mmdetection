@@ -16,7 +16,6 @@ from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
 from mmcv.runner.base_module import BaseModule
 from mmcv.utils import to_2tuple
 from torch.nn.init import normal_
-from torch.nn.modules.utils import _pair as to_2tuple
 
 from mmdet.models.utils.builder import TRANSFORMER
 
@@ -77,8 +76,8 @@ class AdaptivePadding(nn.Module):
         self.stride = stride
         self.dilation = dilation
 
-    def forward(self, x):
-        input_h, input_w = x.size()[-2:]
+    def get_pad_shape(self, input_shape):
+        input_h, input_w = input_shape
         kernel_h, kernel_w = self.kernel_size
         stride_h, stride_w = self.stride
         output_h = math.ceil(input_h / stride_h)
@@ -87,6 +86,10 @@ class AdaptivePadding(nn.Module):
                     (kernel_h - 1) * self.dilation[0] + 1 - input_h, 0)
         pad_w = max((output_w - 1) * stride_w +
                     (kernel_w - 1) * self.dilation[1] + 1 - input_w, 0)
+        return pad_h, pad_w
+
+    def forward(self, x):
+        pad_h, pad_w = self.get_pad_shape(x.size()[-2:])
         if pad_h > 0 or pad_w > 0:
             if self.padding == 'corner':
                 x = F.pad(x, [0, pad_w, 0, pad_h])
@@ -116,7 +119,7 @@ class PatchEmbed(BaseModule):
             of adaptive padding, support "same" and "corner" now.
             Default: "corner".
         dilation (int): The dilation rate of embedding conv. Default: 1.
-        bias (bool): Bias of embed conv. Default: False.
+        bias (bool): Bias of embed conv. Default: True.
         norm_cfg (dict, optional): Config dict for normalization layer.
             Default: None.
         input_size (int | tuple | None): The size of input, which will be
@@ -135,7 +138,7 @@ class PatchEmbed(BaseModule):
         stride=16,
         padding='corner',
         dilation=1,
-        bias=False,
+        bias=True,
         norm_cfg=None,
         input_size=None,
         init_cfg=None,
@@ -184,17 +187,8 @@ class PatchEmbed(BaseModule):
             # when `use_abs_pos_embed` outside
             self.init_input_size = input_size
             if self.adap_padding:
+                pad_h, pad_w = self.adap_padding.get_pad_shape(input_size)
                 input_h, input_w = input_size
-                kernel_h, kernel_w = self.adap_padding.kernel_size
-                stride_h, stride_w = self.adap_padding.stride
-                output_h = math.ceil(input_h / stride_h)
-                output_w = math.ceil(input_w / stride_w)
-                pad_h = max((output_h - 1) * stride_h +
-                            (kernel_h - 1) * self.adap_padding.dilation[0] +
-                            1 - input_h, 0)
-                pad_w = max((output_w - 1) * stride_w +
-                            (kernel_w - 1) * self.adap_padding.dilation[1] +
-                            1 - input_w, 0)
                 input_h = input_h + pad_h
                 input_w = input_w + pad_w
                 input_size = (input_h, input_w)
