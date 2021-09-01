@@ -37,6 +37,7 @@ from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.optimized_model import OptimizedModel
 from sc_sdk.entities.resultset import ResultSet
 from ote_sdk.entities.task_environment import TaskEnvironment
+from sc_sdk.logging import logger_factory
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from sc_sdk.usecases.tasks.interfaces.optimization_interface import (
@@ -52,6 +53,7 @@ from compression.pipeline.initializer import create_pipeline
 
 from .configuration import OTEDetectionConfig
 
+logger = logger_factory.get_logger("OTEDetectionTask")
 
 def get_output(net, outputs, name):
     try:
@@ -240,8 +242,11 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
             })
 
             model = load_model(model_config)
+
             if get_nodes_by_type(model, ['FakeQuantize']):
-                raise RuntimeError("Model is already optimized by POT")
+                logger.warning("Model is already optimized by POT")
+                output_model.model_status = ModelStatus.FAILED
+                return
 
         engine_config = ADDict({
             'device': 'CPU'
