@@ -395,13 +395,9 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             loss_cls=loss_cls, loss_bbox=loss_bbox, loss_obj=loss_obj)
 
         if self.use_l1:
-            if l1_targets.numel() > 0:
-                loss_l1 = self.loss_l1(
-                    flatten_bbox_preds.view(-1, 4)[pos_masks],
-                    l1_targets) / num_total_samples
-            else:
-                # Empty positive sample
-                loss_l1 = flatten_bbox_preds.sum() * 0
+            loss_l1 = self.loss_l1(
+                flatten_bbox_preds.view(-1, 4)[pos_masks],
+                l1_targets) / num_total_samples
             loss_dict.update(loss_l1=loss_l1)
 
         return loss_dict

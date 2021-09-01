@@ -65,6 +65,9 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
         beta (float): beta parameter in smoothl1.
         eps (float): eps to avoid NaN.
     """
+    if target.numel() == 0:
+        return pred.sum() * 0
+
     pred_ctrx = (pred[:, 0] + pred[:, 2]) * 0.5
     pred_ctry = (pred[:, 1] + pred[:, 3]) * 0.5
     pred_w = pred[:, 2] - pred[:, 0]
@@ -88,6 +91,7 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
                             (target_w + eps))
     loss_dh = 1 - torch.min(target_h / (pred_h + eps), pred_h /
                             (target_h + eps))
+    # view(..., -1) does not work for empty tensor
     loss_comb = torch.stack([loss_dx, loss_dy, loss_dw, loss_dh],
                             dim=-1).view(loss_dx.size(0), -1)
 
