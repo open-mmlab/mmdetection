@@ -2162,7 +2162,7 @@ class Mosaic:
         bbox_w = bboxes[:, 2] - bboxes[:, 0]
         bbox_h = bboxes[:, 3] - bboxes[:, 1]
         valid_inds = (bbox_w > self.min_bbox_size) & \
-                     (box_h > self.min_bbox_size)
+                     (bbox_h > self.min_bbox_size)
         valid_inds = np.nonzero(valid_inds)[0]
         return bboxes[valid_inds], labels[valid_inds]
 
