@@ -113,11 +113,12 @@ def build_dataloader(dataset,
         DataLoader: A PyTorch dataloader.
     """
     rank, world_size = get_dist_info()
-    is_infinite = False
-    if dist:
-        # DistributedGroupSampler will definitely shuffle the data to satisfy
-        # that images on each GPU are in the same group
-        if runner is None or runner['type'] == 'EpochBasedRunner':
+
+    runner_type = 'EpochBasedRunner' if runner is None else runner['type']
+    if runner_type == 'EpochBasedRunner':
+        if dist:
+            # DistributedGroupSampler will definitely shuffle the data to
+            # satisfy that images on each GPU are in the same group
             if shuffle:
                 sampler = DistributedGroupSampler(
                     dataset, samples_per_gpu, world_size, rank, seed=seed)
@@ -125,18 +126,21 @@ def build_dataloader(dataset,
                 sampler = DistributedSampler(
                     dataset, world_size, rank, shuffle=False, seed=seed)
         else:
-            is_infinite = True
-            sampler = DistributedInfiniteGroupSampler(
-                dataset,
-                samples_per_gpu,
-                world_size,
-                rank,
-                seed=seed,
-                shuffle=shuffle)
+            sampler = GroupSampler(dataset,
+                                   samples_per_gpu) if shuffle else None
+    else:
+        sampler = DistributedInfiniteGroupSampler(
+            dataset,
+            samples_per_gpu,
+            world_size,
+            rank,
+            seed=seed,
+            shuffle=shuffle)
+
+    if dist:
         batch_size = samples_per_gpu
         num_workers = workers_per_gpu
     else:
-        sampler = GroupSampler(dataset, samples_per_gpu) if shuffle else None
         batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
@@ -144,7 +148,7 @@ def build_dataloader(dataset,
         worker_init_fn, num_workers=num_workers, rank=rank,
         seed=seed) if seed is not None else None
 
-    if not is_infinite:
+    if runner_type == 'EpochBasedRunner':
         data_loader = DataLoader(
             dataset,
             batch_size=batch_size,
