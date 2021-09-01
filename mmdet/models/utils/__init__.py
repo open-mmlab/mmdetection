@@ -1,3 +1,4 @@
+from .brick_wrappers import AdaptiveAvgPool2d, adaptive_avg_pool2d
 from .builder import build_linear_layer, build_transformer
 from .conv_upsample import ConvUpsample
 from .csp_layer import CSPLayer
@@ -19,5 +20,6 @@ __all__ = [
     'build_transformer', 'build_linear_layer', 'SinePositionalEncoding',
     'LearnedPositionalEncoding', 'DynamicConv', 'SimplifiedBasicBlock',
     'NormedLinear', 'NormedConv2d', 'make_divisible', 'InvertedResidual',
-    'SELayer', 'interpolate_as', 'ConvUpsample', 'CSPLayer'
+    'SELayer', 'interpolate_as', 'ConvUpsample', 'CSPLayer',
+    'adaptive_avg_pool2d', 'AdaptiveAvgPool2d'
 ]

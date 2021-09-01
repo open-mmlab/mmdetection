@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 from ..builder import HEADS, build_head, build_roi_extractor
+from ..utils.brick_wrappers import adaptive_avg_pool2d
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -159,14 +160,11 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(
             x[:len(bbox_roi_extractor.featmap_strides)], rois)
-
-        # bbox_feats.shape[0] > 0 is mean the number of proposal is not 0.
-        if self.with_semantic and 'bbox' in self.semantic_fusion and \
-                bbox_feats.shape[0] > 0:
+        if self.with_semantic and 'bbox' in self.semantic_fusion:
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
-                bbox_semantic_feat = F.adaptive_avg_pool2d(
+                bbox_semantic_feat = adaptive_avg_pool2d(
                     bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
         cls_score, bbox_pred = bbox_head(bbox_feats)
