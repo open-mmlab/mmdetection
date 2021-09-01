@@ -10,8 +10,9 @@ from mmcv.runner import get_dist_info
 from mmcv.utils import Registry, build_from_cfg
 from torch.utils.data import DataLoader
 
-from .samplers import (DistributedGroupSampler, DistributedSampler,
-                       GroupSampler, DistributedInfiniteSampler)
+from .samplers import (DistributedGroupSampler,
+                       DistributedInfiniteGroupSampler, DistributedSampler,
+                       GroupSampler)
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -105,7 +106,7 @@ def build_dataloader(dataset,
         dist (bool): Distributed training/test or not. Default: True.
         shuffle (bool): Whether to shuffle the data at every epoch.
             Default: True.
-        runner (dict): The info of runner.
+        runner (dict): The config dictionary of runner.
         kwargs: any keyword argument to be used to initialize DataLoader
 
     Returns:
@@ -125,7 +126,7 @@ def build_dataloader(dataset,
                     dataset, world_size, rank, shuffle=False, seed=seed)
         else:
             is_infinite = True
-            sampler = DistributedInfiniteSampler(
+            sampler = DistributedInfiniteGroupSampler(
                 dataset,
                 samples_per_gpu,
                 world_size,

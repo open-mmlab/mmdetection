@@ -6,7 +6,21 @@ from mmcv.runner import get_dist_info
 from torch.utils.data.sampler import Sampler
 
 
-class DistributedInfiniteSampler(Sampler):
+class DistributedInfiniteGroupSampler(Sampler):
+    """Similar to `DistributedGroupSampler` but designed for `IterationBased`
+    runner.
+
+    The implementation logic is referred to
+    https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/samplers/grouped_batch_sampler.py
+
+    Args:
+        dataset (object): The dataset.
+        samples_per_gpu (int): Batch size.
+        num_replicas (int): World size.
+        rank (int): Rank of current process.
+        seed (int): Random seed. Default: 0.
+        shuffle (bool): Whether shuffle the dataset or not.
+    """  # noqa: W605
 
     def __init__(self,
                  dataset,
@@ -30,12 +44,14 @@ class DistributedInfiniteSampler(Sampler):
         assert hasattr(self.dataset, 'flag')
         self.flag = self.dataset.flag
         self.group_sizes = np.bincount(self.flag)
+        # buffer used to save indices of each group
         self.buffer_per_group = {k: [] for k in range(len(self.group_sizes))}
 
         self.size = len(dataset)
         self.indices = self._indices_of_rank()
 
     def _infinite_indices(self):
+        """Infinitely yield a sequence of indices."""
         g = torch.Generator()
         g.manual_seed(self.seed)
         while True:
@@ -45,21 +61,24 @@ class DistributedInfiniteSampler(Sampler):
                 yield from torch.arange(self.size).tolist()
 
     def _indices_of_rank(self):
+        """Slice the infinite indices by rank."""
         yield from itertools.islice(self._infinite_indices(), self.rank, None,
                                     self.num_replicas)
 
     def __iter__(self):
-
+        # once batch size is reached, yield the indices
         for idx in self.indices:
             flag = self.flag[idx]
             group_buffer = self.buffer_per_group[flag]
             group_buffer.append(idx)
             if len(group_buffer) == self.samples_per_gpu:
-                yield group_buffer[:]  # yield a copy of the list
+                yield group_buffer[:]
                 del group_buffer[:]
 
     def __len__(self):
+        """Length of base dataset."""
         return self.size
 
     def set_epoch(self, epoch):
+        """Not supported in `IterationBased` runner."""
         raise NotImplementedError
