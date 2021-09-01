@@ -163,8 +163,8 @@ pot_parameters:
   preset:
     affects_outcome_of: NONE
     default_value: Performance
-    description: Quantization preset that defines quantization scheme.
-    editable: True
+    description: Quantization preset that defines quantization scheme
+    editable: False
     enum_name: POTQuantizationPreset
     header: Preset
     options:
@@ -177,7 +177,7 @@ pot_parameters:
       rules: []
       type: UI_RULES
     value: Performance
-    visible_in_ui: True
+    visible_in_ui: False
     warning: null
   stat_subset_size:
     affects_outcome_of: NONE
