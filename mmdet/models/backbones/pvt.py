@@ -281,6 +281,7 @@ class AbsolutePositionEmbedding(BaseModule):
         """Resize pos_embed weights.
 
         Resize pos_embed using bilinear interpolate method.
+
         Args:
             pos_embed (torch.Tensor): Position embedding weights.
             input_shape (tuple): Tuple for (downsampled input image height,
@@ -288,6 +289,7 @@ class AbsolutePositionEmbedding(BaseModule):
             mode (str): Algorithm used for upsampling:
                 ``'nearest'`` | ``'linear'`` | ``'bilinear'`` | ``'bicubic'`` |
                 ``'trilinear'``. Default: ``'bilinear'``.
+
         Return:
             torch.Tensor: The resized pos_embed of shape [B, L_new, C].
         """

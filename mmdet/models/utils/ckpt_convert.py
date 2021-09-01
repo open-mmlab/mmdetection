@@ -6,8 +6,6 @@
 
 from collections import OrderedDict
 
-
-
 import torch
 
 
@@ -82,7 +80,6 @@ def pvt_convert(ckpt):
         new_ckpt[new_k] = new_v
 
     return new_ckpt
-
 
 
 def swin_converter(ckpt):
