@@ -47,7 +47,7 @@ from sc_sdk.usecases.tasks.interfaces.optimization_interface import (
 from compression.api import DataLoader
 from compression.engines.ie_engine import IEEngine
 from compression.graph import load_model, save_model
-from compression.graph.model_utils import compress_model_weights
+from compression.graph.model_utils import compress_model_weights, get_nodes_by_type
 from compression.pipeline.initializer import create_pipeline
 
 from .configuration import OTEDetectionConfig
@@ -240,6 +240,8 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
             })
 
             model = load_model(model_config)
+            if get_nodes_by_type(model, ['FakeQuantize']):
+                raise RuntimeError("Model is already optimized by POT")
 
         engine_config = ADDict({
             'device': 'CPU'
