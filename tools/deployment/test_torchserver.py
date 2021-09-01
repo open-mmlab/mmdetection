@@ -25,30 +25,18 @@ def parse_args():
     return args
 
 
-def parse_result(tmp_res, model):
+def parse_result(input, model_class):
     bbox = []
     label = []
     score = []
-    for anchor in tmp_res:
+    for anchor in input:
         bbox.append(anchor['bbox'])
-        label.append(model.CLASSES.index(anchor['class_name']))
+        label.append(model_class.index(anchor['class_name']))
         score.append([anchor['score']])
     bboxes = np.append(bbox, score, axis=1)
     labels = np.array(label)
-    result = bbox2result(bboxes, labels, len(model.CLASSES))
+    result = bbox2result(bboxes, labels, len(model_class))
     return result
-
-
-def result_filter(model_result):
-    filted_result = []
-    for anchor_set in model_result:
-        delete_list = []
-        for i in range(anchor_set.shape[0]):
-            if anchor_set[i][4] < 0.5:
-                delete_list.append(i)
-        anchor_set = np.delete(anchor_set, delete_list, axis=0)
-        filted_result.append(anchor_set)
-    return filted_result
 
 
 def main(args):
@@ -56,7 +44,9 @@ def main(args):
     model = init_detector(args.config, args.checkpoint, device=args.device)
     # test a single image
     model_result = inference_detector(model, args.img)
-    model_result = result_filter(model_result)
+    for i, anchor_set in enumerate(model_result):
+        anchor_set = anchor_set[anchor_set[:, 4] >= 0.5]
+        model_result[i] = anchor_set
     # show the results
     show_result_pyplot(
         model,
@@ -67,7 +57,7 @@ def main(args):
     url = 'http://' + args.inference_addr + '/predictions/' + args.model_name
     with open(args.img, 'rb') as image:
         tmp_res = requests.post(url, image)
-    server_result = parse_result(tmp_res.json(), model)
+    server_result = parse_result(tmp_res.json(), model.CLASSES)
     show_result_pyplot(
         model,
         args.img,
