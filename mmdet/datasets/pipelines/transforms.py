@@ -2083,7 +2083,7 @@ class Mosaic:
             mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0,
                                              2 * self.img_scale[0])
             mosaic_labels = np.concatenate(mosaic_labels, 0)
-            
+
             mosaic_bboxes, mosaic_labels = \
                 self._filter_box_candidates(mosaic_bboxes, mosaic_labels)
 
@@ -2156,13 +2156,13 @@ class Mosaic:
 
         paste_coord = x1, y1, x2, y2
         return paste_coord, crop_coord
-    
+
     def _filter_box_candidates(self, bboxes, labels):
         """Filter out bboxes too small after Mosaic."""
-        bbox_w =bboxes[:, 2] - bboxes[:, 0]
+        bbox_w = bboxes[:, 2] - bboxes[:, 0]
         bbox_h = bboxes[:, 3] - bboxes[:, 1]
         valid_inds = (bbox_w > self.min_bbox_size) & \
-                        (bbox_h > self.min_bbox_size)
+                     (box_h > self.min_bbox_size)
         valid_inds = np.nonzero(valid_inds)[0]
         return bboxes[valid_inds], labels[valid_inds]
 
