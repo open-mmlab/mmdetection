@@ -15,6 +15,7 @@ from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.model_template import parse_model_template
+from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
@@ -33,6 +34,7 @@ from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.tests.test_helpers import generate_random_annotated_image
 from sc_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
                                                                IExportTask)
+from sc_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 from sc_sdk.utils.project_factory import NullProject
 from subprocess import run
 from typing import Optional
@@ -437,6 +439,32 @@ class TestOTEAPI(unittest.TestCase):
                             f'({validation_performance.score.value} vs {export_performance.score.value}) was '
                             f'larger than the tolerance of {perf_delta_tolerance}')
 
+            print('Run POT optimization.')
+            optimized_model = OptimizedModel(
+                NullProject(),
+                NullModelStorage(),
+                dataset,
+                detection_environment.get_model_configuration(),
+                ModelOptimizationType.POT,
+                optimization_methods=[],
+                optimization_level={},
+                precision=[ModelPrecision.INT8],
+                target_device=TargetDevice.CPU,
+                performance_improvement={},
+                model_size_reduction=1.,
+                model_status=ModelStatus.NOT_READY)
+            ov_task.optimize(OptimizationType.POT, dataset, optimized_model, OptimizationParameters())
+
+            pot_performance = self.eval(ov_task, optimized_model, val_dataset)
+            print(f'Performance of optimized model: {pot_performance.score.value:.4f}')
+
+            performance_delta = pot_performance.score.value - export_performance.score.value
+            perf_delta_tolerance = 0.01
+            self.assertLess(np.abs(performance_delta), perf_delta_tolerance,
+                        msg=f'Expected not more than one percent performance difference after pot optimization. Performance delta '
+                            f'({export_performance.score.value} vs {pot_performance.score.value}) was '
+                            f'larger than the tolerance of {perf_delta_tolerance}')
+
     def test_training_custom_mobilenetssd_256(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
 
@@ -452,5 +480,5 @@ class TestOTEAPI(unittest.TestCase):
     def test_training_custom_mobilenet_ssd(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD'))
 
-    def test_training_custom_mobilenet_vfnet(self):
+    def test_training_custom_resnet_vfnet(self):
         self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet'))

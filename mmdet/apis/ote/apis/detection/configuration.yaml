@@ -157,3 +157,44 @@ postprocessing:
 type: MODEL_CONFIG
 visible_in_ui: true
 workspace_id: ''
+pot_parameters:
+  description: POT Parameters
+  header: POT Parameters
+  preset:
+    affects_outcome_of: NONE
+    default_value: Performance
+    description: Quantization preset that defines quantization scheme
+    editable: False
+    enum_name: POTQuantizationPreset
+    header: Preset
+    options:
+      MIXED: Mixed
+      PERFORMANCE: Performance
+    type: SELECTABLE
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: Performance
+    visible_in_ui: False
+    warning: null
+  stat_subset_size:
+    affects_outcome_of: NONE
+    default_value: 300
+    description: Number of data samples used for post-training optimization
+    editable: True
+    header: Number of data samples
+    max_value: 9223372036854775807
+    min_value: 1
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 300
+    visible_in_ui: True
+    warning: null
+  type: PARAMETER_GROUP
+  visible_in_ui: true
