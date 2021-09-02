@@ -160,8 +160,10 @@ class SingleStageDetector(BaseDetector):
         # `CornerNet` and `CentripetalNet`, which 'pad_shape' is used
         # for inference
         img_metas[0]['pad_shape_for_onnx'] = img_shape
-        # TODO:move all onnx related code in bbox_head to onnx_export function
         if hasattr(self.bbox_head, 'onnx_export'):
+            if len(outs) == 2:
+                # add dummy score_facotr
+                outs = (*outs, None)
             det_bboxes, det_labels = self.bbox_head.onnx_export(
                 *outs, img_metas)
         else:
