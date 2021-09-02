@@ -18,6 +18,7 @@ def pytorch2onnx(model,
                  input_shape,
                  normalize_cfg,
                  opset_version=11,
+                 classes=None,
                  show=False,
                  output_file='tmp.onnx',
                  verify=False,
@@ -129,9 +130,19 @@ def pytorch2onnx(model,
         # check by onnx
         onnx_model = onnx.load(output_file)
         onnx.checker.check_model(onnx_model)
+        if classes is None:
+            warnings.warn('Find `classes` is None, use numbers 0, 1, ... to '
+                          'represent categories, if you want use the real '
+                          'name, please pass it to `pytorch2onnx` ')
+            num_classes = 80
+            for m in model.modules():
+                if hasattr(m, 'num_classes'):
+                    num_classes = m.num_classes
+            classes = [str(i + 1) for i in range(num_classes)]
 
+        model.CLASSES = classes
         # wrap onnx model
-        onnx_model = ONNXRuntimeDetector(output_file, model.CLASSES, 0)
+        onnx_model = ONNXRuntimeDetector(output_file, classes, 0)
         if dynamic_export:
             # scale up to test dynamic shape
             h, w = [int((_ * 1.5) // 32 * 32) for _ in input_shape[2:]]
