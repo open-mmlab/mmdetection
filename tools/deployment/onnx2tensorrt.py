@@ -187,6 +187,11 @@ def parse_args():
         type=int,
         default=1,
         help='Max workspace size in GiB')
+    parser.add_argument(
+        '--skip-normalize',
+        action='store_true',
+        help='Whether to normalize input image before passing it to the modeel'
+    )
 
     args = parser.parse_args()
     return args
@@ -233,7 +238,6 @@ if __name__ == '__main__':
     dataset = DATASETS.get(cfg.data.test['type'])
     assert (dataset is not None)
     CLASSES = dataset.CLASSES
-    normalize_cfg = parse_normalize_cfg(cfg.test_pipeline)
 
     input_config = {
         'min_shape': min_shape,
@@ -241,8 +245,11 @@ if __name__ == '__main__':
         'max_shape': max_shape,
         'input_shape': input_shape,
         'input_path': args.input_img,
-        'normalize_cfg': normalize_cfg
     }
+    if not args.skip_normalize:
+        normalize_cfg = parse_normalize_cfg(cfg.test_pipeline)
+        input_config['normalize_cfg'] = normalize_cfg
+
     # Create TensorRT engine
     onnx2tensorrt(
         args.model,
