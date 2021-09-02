@@ -49,7 +49,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.15.1 was released in 11/08/2021, which supports YOLOX.
+v2.16.0 was released in 30/08/2021.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -104,7 +104,7 @@ Supported methods:
 - [x] [Mixed Precision (FP16) Training (ArXiv'2017)](configs/fp16/README.md)
 - [x] [InstaBoost (ICCV'2019)](configs/instaboost/README.md)
 - [x] [GRoIE (ICPR'2020)](configs/groie/README.md)
-- [x] [DetectoRS (ArXix'2020)](configs/detectors/README.md)
+- [x] [DetectoRS (ArXiv'2020)](configs/detectors/README.md)
 - [x] [Generalized Focal Loss (NeurIPS'2020)](configs/gfl/README.md)
 - [x] [CornerNet (ECCV'2018)](configs/cornernet/README.md)
 - [x] [Side-Aware Boundary Localization (ECCV'2020)](configs/sabl/README.md)
@@ -112,16 +112,16 @@ Supported methods:
 - [x] [PAA (ECCV'2020)](configs/paa/README.md)
 - [x] [YOLACT (ICCV'2019)](configs/yolact/README.md)
 - [x] [CentripetalNet (CVPR'2020)](configs/centripetalnet/README.md)
-- [x] [VFNet (ArXix'2020)](configs/vfnet/README.md)
+- [x] [VFNet (ArXiv'2020)](configs/vfnet/README.md)
 - [x] [DETR (ECCV'2020)](configs/detr/README.md)
 - [x] [Deformable DETR (ICLR'2021)](configs/deformable_detr/README.md)
 - [x] [CascadeRPN (NeurIPS'2019)](configs/cascade_rpn/README.md)
 - [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
-- [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
+- [x] [AutoAssign (ArXiv'2020)](configs/autoassign/README.md)
 - [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
 - [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
-- [x] [YOLOX (ArXix'2021)](configs/yolox/README.md)
+- [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
