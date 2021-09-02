@@ -43,6 +43,7 @@ python tools/deployment/pytorch2onnx.py \
     --show \
     --verify \
     --simplify \
+    --normalize-in-graph \
 ```
 
 ### Description of all arguments
@@ -60,6 +61,7 @@ python tools/deployment/pytorch2onnx.py \
 - `--simplify`: Determines whether to simplify the exported ONNX model. If not specified, it will be set to `False`.
 - `--cfg-options`: Override some settings in the used config file, the key-value pair in `xxx=yyy` format will be merged into config file.
 - `--skip-postprocess`: Determines whether export model without post process. If not specified, it will be set to `False`. Notice: This is an experimental option. Only work for some single stage models. Users need to implement the post-process by themselves. We do not guarantee the correctness of the exported model.
+- `--normalize-in-graph`: Determines whether the exported model includes normalization of the input image. If not specified, it will be set to `False`.
 
 Example:
 
