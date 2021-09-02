@@ -77,23 +77,23 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         for img_id in range(len(img_metas)):
             img_meta = img_metas[img_id]
-            cls_score_list = select_single_mlvl(cls_scores, img_id)
-            bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
+            mlvl_cls_score = select_single_mlvl(cls_scores, img_id)
+            mlvl_bbox_pred = select_single_mlvl(bbox_preds, img_id)
             if with_score_factors:
-                score_factor_list = select_single_mlvl(score_factors, img_id)
+                mlvl_score_factor = select_single_mlvl(score_factors, img_id)
             else:
-                score_factor_list = [None for _ in range(num_levels)]
+                mlvl_score_factor = [None for _ in range(num_levels)]
 
-            results = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                              score_factor_list, img_meta, cfg,
+            results = self._get_bboxes_single(mlvl_cls_score, mlvl_bbox_pred,
+                                              mlvl_score_factor, img_meta, cfg,
                                               rescale, with_nms, **kwargs)
             result_list.append(results)
         return result_list
 
     def _get_bboxes_single(self,
-                           cls_score_list,
-                           bbox_pred_list,
-                           score_factor_list,
+                           mlvl_cls_score,
+                           mlvl_bbox_pred,
+                           mlvl_score_factor,
                            img_meta,
                            cfg,
                            rescale=False,
@@ -102,13 +102,13 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """Transform outputs of a single image into bbox predictions.
 
         Args:
-            cls_score_list (list[Tensor]): Box scores from all scale
+            mlvl_cls_score (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num_priors * num_classes, H, W).
-            bbox_pred_list (list[Tensor]): Box energies / deltas from
+            mlvl_bbox_pred (list[Tensor]): Box energies / deltas from
                 all scale levels of a single image, each item has shape
                 (num_priors * 4, H, W).
-            score_factor_list (list[Tensor]): Score factor from all scale
+            mlvl_score_factor (list[Tensor]): Score factor from all scale
                 levels of a single image, each item has shape
                 (num_priors * 1, H, W).
             img_meta (dict): Image meta info.
@@ -133,7 +133,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 - det_labels (Tensor): Predicted labels of the corresponding \
                     box with shape [num_bbox].
         """
-        if score_factor_list[0] is None:
+        if mlvl_score_factor[0] is None:
             # e.g. Retina, FreeAnchor, etc.
             with_score_factors = False
         else:
@@ -151,7 +151,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         else:
             mlvl_score_factors = None
         for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
-                zip(cls_score_list, bbox_pred_list, score_factor_list)):
+                zip(mlvl_cls_score, mlvl_bbox_pred, mlvl_score_factor)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             featmap_size_hw = cls_score.shape[-2:]
             cls_score = cls_score.permute(1, 2,
@@ -188,7 +188,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                     score_factor = score_factor[topk_inds]
             else:
                 priors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.device)
+                    featmap_size_hw, level_idx, scores.dtype, scores.device)
 
             bboxes = self.bbox_coder.decode(
                 priors, bbox_pred, max_shape=img_shape)
@@ -337,3 +337,136 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 with shape (n, ).
         """
         return self.simple_test_bboxes(feats, img_metas, rescale=rescale)
+
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
+    def onnx_export(
+        self,
+        cls_scores,
+        bbox_preds,
+        score_factors,
+        img_metas,
+    ):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                with shape (N, num_points * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_points * 4, H, W).
+            score_factors (list[Tensor]): score_factors for each s
+                cale level with shape (N, num_points * 1, H, W).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+
+        Returns:
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
+        """
+        assert len(cls_scores) == len(bbox_preds)
+
+        num_levels = len(cls_scores)
+
+        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        mlvl_points = self.prior_generator.grid_priors(featmap_sizes,
+                                                       bbox_preds[0].dtype,
+                                                       bbox_preds[0].device)
+
+        mlvl_cls_scores = [cls_scores[i].detach() for i in range(num_levels)]
+        mlvl_bbox_preds = [bbox_preds[i].detach() for i in range(num_levels)]
+
+        assert len(
+            img_metas
+        ) == 1, 'Only support one input image while in exporting to ONNX'
+        img_shape = img_metas[0]['img_shape_for_onnx']
+
+        cfg = self.test_cfg
+        assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
+        device = cls_scores[0].device
+        batch_size = cls_scores[0].shape[0]
+        # convert to tensor to keep tracing
+        nms_pre_tensor = torch.tensor(
+            cfg.get('nms_pre', -1), device=device, dtype=torch.long)
+
+        if score_factors is None:
+            with_score_factors = False
+            mlvl_score_factor = [None for _ in range(num_levels)]
+        else:
+            with_score_factors = True
+            mlvl_score_factor = [
+                score_factors[i].detach() for i in range(num_levels)
+            ]
+            mlvl_score_factors = []
+
+        mlvl_batch_bboxes = []
+        mlvl_scores = []
+
+        for cls_score, bbox_pred, score_factors, points in zip(
+                mlvl_cls_scores, mlvl_bbox_preds, mlvl_score_factor,
+                mlvl_points):
+            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            scores = cls_score.permute(0, 2, 3, 1).reshape(
+                batch_size, -1, self.cls_out_channels).sigmoid()
+            if with_score_factors:
+                score_factors = score_factors.permute(0, 2, 3, 1).reshape(
+                    batch_size, -1).sigmoid()
+            bbox_pred = bbox_pred.permute(0, 2, 3,
+                                          1).reshape(batch_size, -1, 4)
+            points = points.expand(batch_size, -1, 2)
+            # Get top-k predictionSp
+            from mmdet.core.export import get_k_for_topk
+            nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
+            if nms_pre > 0:
+                if with_score_factors:
+                    max_scores, _ = (scores * score_factors[..., None]).max(-1)
+                else:
+                    max_scores, _ = scores.max(-1)
+                _, topk_inds = max_scores.topk(nms_pre)
+                batch_inds = torch.arange(batch_size).view(
+                    -1, 1).expand_as(topk_inds).long()
+                # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
+                transformed_inds = bbox_pred.shape[1] * batch_inds + topk_inds
+                points = points.reshape(-1, 2)[transformed_inds, :].reshape(
+                    batch_size, -1, 2)
+                bbox_pred = bbox_pred.reshape(-1,
+                                              4)[transformed_inds, :].reshape(
+                                                  batch_size, -1, 4)
+                scores = scores.reshape(
+                    -1, self.num_classes)[transformed_inds, :].reshape(
+                        batch_size, -1, self.num_classes)
+                if with_score_factors:
+                    score_factors = score_factors.reshape(
+                        -1, 1)[transformed_inds].reshape(batch_size, -1)
+
+            bboxes = self.bbox_coder.decode(
+                points, bbox_pred, max_shape=img_shape)
+
+            mlvl_batch_bboxes.append(bboxes)
+            mlvl_scores.append(scores)
+            if with_score_factors:
+                mlvl_score_factors.append(score_factors)
+
+        batch_bboxes = torch.cat(mlvl_batch_bboxes, dim=1)
+
+        batch_scores = torch.cat(mlvl_scores, dim=1)
+        if with_score_factors:
+            batch_score_factors = torch.cat(mlvl_score_factors, dim=1)
+
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+
+        from mmdet.core.export import add_dummy_nms_for_onnx
+        if with_score_factors:
+            batch_scores = batch_scores * (batch_score_factors.unsqueeze(2))
+
+        max_output_boxes_per_class = cfg.nms.get('max_output_boxes_per_class',
+                                                 200)
+        iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+        score_threshold = cfg.score_thr
+        nms_pre = cfg.get('deploy_nms_pre', -1)
+        return add_dummy_nms_for_onnx(batch_bboxes, batch_scores,
+                                      max_output_boxes_per_class,
+                                      iou_threshold, score_threshold, nms_pre,
+                                      cfg.max_per_img)

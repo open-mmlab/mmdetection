@@ -161,6 +161,11 @@ class SingleStageDetector(BaseDetector):
         # for inference
         img_metas[0]['pad_shape_for_onnx'] = img_shape
         # TODO:move all onnx related code in bbox_head to onnx_export function
-        det_bboxes, det_labels = self.bbox_head.get_bboxes(*outs, img_metas)
+        if hasattr(self.bbox_head, 'onnx_export'):
+            det_bboxes, det_labels = self.bbox_head.onnx_export(
+                *outs, img_metas)
+        else:
+            det_bboxes, det_labels = self.bbox_head.get_bboxes(
+                *outs, img_metas)
 
         return det_bboxes, det_labels
