@@ -49,23 +49,6 @@ def add_logging_on_first_and_last_iter(runner):
         if isinstance(hook, LoggerHook):
             hook.every_n_inner_iters = every_n_inner_iters.__get__(hook)
 
-def create_nncf_model(model,
-                    dataset,
-                    cfg,
-                    distributed):
-    data_loader_for_init = build_dataloader(
-        dataset[0] if isinstance(dataset, (list, tuple)) else dataset,
-        1,
-        cfg.data.workers_per_gpu,
-        # cfg.gpus will be ignored if distributed
-        len(cfg.gpu_ids),
-        dist=distributed,
-        seed=cfg.seed
-    )
-
-    compression_ctrl, model = wrap_nncf_model(model, cfg, data_loader_for_init, get_fake_input)
-    return compression_ctrl, model
-
 def train_detector(model,
                    dataset,
                    cfg,
@@ -116,21 +99,9 @@ def train_detector(model,
 
     # nncf model wrapper
     nncf_enable_compression = bool(cfg.get('nncf_config'))
-
     if not compression_ctrl:
         if nncf_enable_compression:
-            data_loader_for_init = build_dataloader(
-                dataset[0],
-                1,
-                cfg.data.workers_per_gpu,
-                # cfg.gpus will be ignored if distributed
-                len(cfg.gpu_ids),
-                dist=distributed,
-                seed=cfg.seed
-            )
-
-            compression_ctrl, model = wrap_nncf_model(model, cfg, data_loader_for_init, get_fake_input)
-
+            compression_ctrl, model = wrap_nncf_model(model, cfg, data_loaders[0], get_fake_input)
 
     if torch.cuda.is_available():
         if distributed:
