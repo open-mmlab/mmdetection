@@ -368,7 +368,7 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         if labels.numel() == 0:
             return bboxes, labels
 
-        out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
+        out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1].contiguous(), labels,
                                        cfg.nms_cfg)
         out_labels = labels[keep]
 
