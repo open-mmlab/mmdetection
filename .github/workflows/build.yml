@@ -111,7 +111,6 @@ jobs:
             torch_version: torch1.8.0
             torchvision: 0.9.0+cu101
             mmcv: "latest+torch1.8.0+cu101"
-            python-version: 3.9
 
     steps:
       - uses: actions/checkout@v2
