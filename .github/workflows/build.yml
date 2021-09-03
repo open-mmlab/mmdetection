@@ -127,26 +127,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install CUDA
-        run: |
-          export INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb
-          wget http://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/${INSTALLER}
-          sudo dpkg -i ${INSTALLER}
-          wget https://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/7fa2af80.pub
-          sudo apt-key add 7fa2af80.pub
-          echo 'succeed before add key'
-          sudo apt update -qq
-          echo 'succeed after update'
-          sudo apt install -y cuda-${CUDA_SHORT/./-} cuda-cufft-dev-${CUDA_SHORT/./-}
-          echo 'succeed after install cuda and cufft'
-          sudo apt clean
-          export CUDA_HOME=/usr/local/cuda-${CUDA_SHORT}
-          export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${CUDA_HOME}/include:${LD_LIBRARY_PATH}
-          export PATH=${CUDA_HOME}/bin:${PATH}
+      # - name: Set up Python ${{ matrix.python-version }}
+      #   uses: actions/setup-python@v2
+      #   with:
+      #     python-version: ${{ matrix.python-version }}
       - name: Install Pillow
         run: pip install Pillow==6.2.2
         if: ${{matrix.torchvision < 0.5}}
