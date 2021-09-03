@@ -84,33 +84,33 @@ jobs:
           - torch: 1.3.1
             torch_version: torch1.3.1
             torchvision: 0.4.2
-            mmcv: "latest+torch1.3.0+cu101"
+            mmcv_link: "torch1.3.0"
           - torch: 1.5.1+cu101
             torch_version: torch1.5.1
             torchvision: 0.6.1+cu101
-            mmcv: "latest+torch1.5.0+cu101"
+            mmcv_link: "torch1.5.0"
           - torch: 1.6.0+cu101
             torch_version: torch1.6.0
             torchvision: 0.7.0+cu101
-            mmcv: "latest+torch1.6.0+cu101"
+            mmcv_link: "torch1.6.0"
           - torch: 1.6.0+cu101
             torch_version: torch1.6.0
             torchvision: 0.7.0+cu101
-            mmcv: "latest+torch1.6.0+cu101"
+            mmcv_link: "torch1.6.0"
             python-version: 3.6
           - torch: 1.6.0+cu101
             torch_version: torch1.6.0
             torchvision: 0.7.0+cu101
-            mmcv: "latest+torch1.6.0+cu101"
+            mmcv_link: "torch1.6.0"
             python-version: 3.8
           - torch: 1.7.0+cu101
             torch_version: torch1.7.0
             torchvision: 0.8.1+cu101
-            mmcv: "latest+torch1.7.0+cu101"
+            mmcv_link: "torch1.7.0"
           - torch: 1.8.0+cu101
             torch_version: torch1.8.0
             torchvision: 0.9.0+cu101
-            mmcv: "latest+torch1.8.0+cu101"
+            mmcv_link: "torch1.8.0"
 
     steps:
       - uses: actions/checkout@v2
@@ -133,7 +133,7 @@ jobs:
           rm -rf /var/lib/apt/lists/*
       - name: Install mmdet dependencies
         run: |
-          pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/${{matrix.mmcv}}/index.html
+          pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/${{matrix.mmcv_link}}/index.html
           pip install -r requirements.txt
           pip install git+https://github.com/cocodataset/panopticapi.git
           python -c 'import mmcv; print(mmcv.__version__)'
