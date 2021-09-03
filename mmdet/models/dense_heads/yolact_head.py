@@ -690,7 +690,7 @@ class YOLACTProtonet(BaseModule):
 
         num_imgs = x.size(0)
 
-        # The reason for not using self.is_training is that
+        # The reason for not using self.training is that
         # val workflow will have a dimension mismatch error.
         # Note that this writing method is very tricky.
         # Fix https://github.com/open-mmlab/mmdetection/issues/5978
