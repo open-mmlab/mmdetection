@@ -211,6 +211,22 @@ mmdetection
 │   │   ├── stuffthingmaps
 ```
 
+Panoptic segmentation models like PanopticFPN require additional [COCO-panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) datasets, you can download and unzip then move to the coco annotation folder. The directory should be like this.
+
+```text
+mmdetection
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── panoptic_train2017.json
+│   │   │   ├── panoptic_train2017
+│   │   │   ├── panoptic_val2017.json
+│   │   │   ├── panoptic_val2017
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
+```
+
 The [cityscapes](https://www.cityscapes-dataset.com/) annotations need to be converted into the coco format using `tools/dataset_converters/cityscapes.py`:
 
 ```shell

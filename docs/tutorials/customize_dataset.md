@@ -489,7 +489,7 @@ data = dict(
 ## COCO Panoptic Dataset
 
 Now we support COCO Panoptic Dataset, the format of panoptic annotations is different from COCO format.
-Whether it is the foreground or the background, it will exist in the annotation file.
+Both the foreground and the background will exist in the annotation file.
 The annotation json files in COCO Panoptic format has the following necessary keys:
 
 ```python
