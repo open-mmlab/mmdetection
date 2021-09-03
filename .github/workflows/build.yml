@@ -133,6 +133,7 @@ jobs:
           rm -rf /var/lib/apt/lists/*
       - name: Install mmdet dependencies
         run: |
+          python -V
           pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/${{matrix.mmcv_link}}/index.html
           pip install -r requirements.txt
           pip install git+https://github.com/cocodataset/panopticapi.git
