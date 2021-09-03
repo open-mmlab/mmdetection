@@ -124,12 +124,12 @@ jobs:
       - name: Install PyTorch
         run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
       - name: Install dependencies for compiling onnx when python=3.9
-        run: pip install protobuf && sudo apt-get install libprotobuf-dev protobuf-compiler
+        run: pip install protobuf && apt-get install libprotobuf-dev protobuf-compiler
         if: ${{matrix.python-version == '3.9'}}
       - name: Install system dependencies
         run: |
-          sudo apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6
-          sudo apt-get clean
+          apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6
+          apt-get clean
           rm -rf /var/lib/apt/lists/*
       - name: Install mmdet dependencies
         run: |
