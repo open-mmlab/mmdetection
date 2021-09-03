@@ -14,7 +14,7 @@ from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.metrics import Performance
-from ote_sdk.entities.model_template import parse_model_template
+from ote_sdk.entities.model_template import parse_model_template, TargetDevice
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
@@ -27,14 +27,14 @@ from sc_sdk.entities.datasets import Dataset, NullDatasetStorage, Subset
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.model import Model, ModelStatus, NullModelStorage
-from sc_sdk.entities.optimized_model import (ModelOptimizationType,
-                                             ModelPrecision, OptimizedModel,
-                                             TargetDevice)
+from ote_sdk.entities.model import (ModelPrecision,
+                                    ModelStatus,
+                                    ModelOptimizationType)
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.tests.test_helpers import generate_random_annotated_image
-from sc_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
+from ote_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
                                                                IExportTask)
-from sc_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 from sc_sdk.utils.project_factory import NullProject
 from subprocess import run
 from typing import Optional
@@ -49,22 +49,22 @@ from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
 class ModelTemplate(unittest.TestCase):
 
     def test_reading_mnv2_ssd_256(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml', '1')
+        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml')
 
     def test_reading_mnv2_ssd_384(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-384x384/template.yaml', '1')
+        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-384x384/template.yaml')
 
     def test_reading_mnv2_ssd_512(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-512x512/template.yaml', '1')
+        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-512x512/template.yaml')
 
     def test_reading_mnv2_ssd(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_SSD/template.yaml', '1')
+        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_SSD/template.yaml')
 
     def test_reading_mnv2_atss(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_ATSS/template.yaml', '1')
+        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_ATSS/template.yaml')
 
     def test_reading_resnet50_vfnet(self):
-        parse_model_template('./configs/ote/custom-object-detection/resnet50_VFNet/template.yaml', '1')
+        parse_model_template('./configs/ote/custom-object-detection/resnet50_VFNet/template.yaml')
 
 def test_configuration_yaml():
     configuration = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
@@ -78,7 +78,7 @@ def test_configuration_yaml():
 def test_set_values_as_default():
     template_dir = './configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/'
     template_file = osp.join(template_dir, 'template.yaml')
-    model_template = parse_model_template(template_file, '1')
+    model_template = parse_model_template(template_file)
 
     hyper_parameters = model_template.hyper_parameters.data
     # value that comes from template.yaml
@@ -222,7 +222,7 @@ class TestOTEAPI(unittest.TestCase):
         return environment, dataset
 
     def setup_configurable_parameters(self, template_dir, num_iters=250):
-        model_template = parse_model_template(osp.join(template_dir, 'template.yaml'), '1')
+        model_template = parse_model_template(osp.join(template_dir, 'template.yaml'))
 
         hyper_parameters = model_template.hyper_parameters.data
         set_values_as_default(hyper_parameters)
@@ -347,7 +347,7 @@ class TestOTEAPI(unittest.TestCase):
 
         print('Task initialized, model training starts.')
         # Train the task.
-        # train_task checks that the task returns an OptimizedModel and that
+        # train_task checks that the task returns an Model and that
         # validation f-measure is higher than the threshold, which is a pretty low bar
         # considering that the dataset is so easy
         output_model = Model(
@@ -364,15 +364,15 @@ class TestOTEAPI(unittest.TestCase):
         self.assertTrue('ellipse' in modelinfo['labels'])
 
         if isinstance(task, IExportTask):
-            exported_model = OptimizedModel(
+            exported_model = Model(
                 NullProject(),
                 NullModelStorage(),
                 dataset,
                 detection_environment.get_model_configuration(),
-                ModelOptimizationType.MO,
+                optimization_type=ModelOptimizationType.MO,
                 precision=[ModelPrecision.FP32],
                 optimization_methods=[],
-                optimization_level={},
+                optimization_objectives={},
                 target_device=TargetDevice.UNSPECIFIED,
                 performance_improvement={},
                 model_size_reduction=1.,
@@ -440,14 +440,14 @@ class TestOTEAPI(unittest.TestCase):
                             f'larger than the tolerance of {perf_delta_tolerance}')
 
             print('Run POT optimization.')
-            optimized_model = OptimizedModel(
+            optimized_model = Model(
                 NullProject(),
                 NullModelStorage(),
                 dataset,
                 detection_environment.get_model_configuration(),
-                ModelOptimizationType.POT,
+                optimization_type=ModelOptimizationType.POT,
                 optimization_methods=[],
-                optimization_level={},
+                optimization_objectives={},
                 precision=[ModelPrecision.INT8],
                 target_device=TargetDevice.CPU,
                 performance_improvement={},
