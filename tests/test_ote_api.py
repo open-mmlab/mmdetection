@@ -29,7 +29,8 @@ from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.model import Model, ModelStatus, NullModelStorage
 from ote_sdk.entities.model import (ModelPrecision,
                                     ModelStatus,
-                                    ModelOptimizationType)
+                                    ModelOptimizationType,
+                                    OptimizationMethod)
 from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.tests.test_helpers import generate_random_annotated_image
 from ote_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
@@ -446,7 +447,7 @@ class TestOTEAPI(unittest.TestCase):
                 dataset,
                 detection_environment.get_model_configuration(),
                 optimization_type=ModelOptimizationType.POT,
-                optimization_methods=[],
+                optimization_methods=OptimizationMethod.QUANTIZATION,
                 optimization_objectives={},
                 precision=[ModelPrecision.INT8],
                 target_device=TargetDevice.CPU,

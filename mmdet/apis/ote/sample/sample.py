@@ -22,7 +22,10 @@ from ote_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.datasets import Subset
 from sc_sdk.entities.model import Model
-from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelOptimizationType
+from ote_sdk.entities.model import (ModelPrecision,
+                                    ModelStatus,
+                                    ModelOptimizationType,
+                                    OptimizationMethod)
 from sc_sdk.entities.model_storage import NullModelStorage
 from sc_sdk.entities.project import NullProject
 from sc_sdk.entities.resultset import ResultSet
@@ -150,7 +153,7 @@ def main(args):
             dataset,
             environment.get_model_configuration(),
             optimization_type=ModelOptimizationType.POT,
-            optimization_methods=[],
+            optimization_methods=OptimizationMethod.QUANTIZATION,
             optimization_objectives={},
             precision=[ModelPrecision.INT8],
             target_device=TargetDevice.CPU,
