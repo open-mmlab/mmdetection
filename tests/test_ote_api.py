@@ -10,6 +10,7 @@ import unittest
 import warnings
 import yaml
 from concurrent.futures import ThreadPoolExecutor
+
 from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.id import ID
@@ -21,22 +22,26 @@ from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import TrainParameters
+from ote_sdk.entities.model import (ModelPrecision,
+                                    ModelStatus,
+                                    ModelOptimizationType,
+                                    OptimizationMethod)
+from ote_sdk.entities.resultset import ResultSetEntity
+from ote_sdk.usecases.tasks.interfaces.export_interface import (
+    ExportType,
+    IExportTask,
+    )
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
+
 from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, NullDatasetStorage, Subset
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 from sc_sdk.entities.model import Model, ModelStatus, NullModelStorage
-from ote_sdk.entities.model import (ModelPrecision,
-                                    ModelStatus,
-                                    ModelOptimizationType,
-                                    OptimizationMethod)
-from sc_sdk.entities.resultset import ResultSet
 from sc_sdk.tests.test_helpers import generate_random_annotated_image
-from ote_sdk.usecases.tasks.interfaces.export_interface import (ExportType,
-                                                               IExportTask)
-from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 from sc_sdk.utils.project_factory import NullProject
+
 from subprocess import run
 from typing import Optional
 
@@ -318,7 +323,7 @@ class TestOTEAPI(unittest.TestCase):
         result_dataset = task.infer(dataset.with_empty_annotations())
         end_time = time.time()
         print(f'{len(dataset)} analysed in {end_time - start_time} seconds')
-        result_set = ResultSet(
+        result_set = ResultSetEntity(
             model=model,
             ground_truth_dataset=dataset,
             prediction_dataset=result_dataset
@@ -426,7 +431,7 @@ class TestOTEAPI(unittest.TestCase):
             detection_environment.model = exported_model
             ov_task = OpenVINODetectionTask(detection_environment)
             predicted_validation_dataset = ov_task.infer(val_dataset.with_empty_annotations())
-            resultset = ResultSet(
+            resultset = ResultSetEntity(
                 model=output_model,
                 ground_truth_dataset=val_dataset,
                 prediction_dataset=predicted_validation_dataset,
