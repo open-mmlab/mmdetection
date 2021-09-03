@@ -317,10 +317,10 @@ python tools/model_converters/regnet2mmdet.py ${SRC} ${DST} [-h]
 
 ### Swin Transformer model to MMDetection
 
- `tools/model_converters/swim2mmdet.py` convert keys in official pretrained Swin models to MMDetection style.
+ `tools/model_converters/swin2mmdet.py` convert keys in official pretrained Swin models to MMDetection style.
 
 ```shell
-python tools/model_converters/swim2mmdet.py ${SRC} ${DST} [-h]
+python tools/model_converters/swin2mmdet.py ${SRC} ${DST} [-h]
 ```
 
 ### Detectron ResNet to Pytorch
