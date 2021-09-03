@@ -83,18 +83,18 @@ def test_rescale_mask_to_input_shape_in_onnx():
     from mmcv.utils.config import ConfigDict
     rcnn_test_cfg = ConfigDict({
         'mask_thr_binary': 0.5,
-        'rescale_mask_to_input_shape': True
+        'rescale_mask_to_input_shape_in_onnx': True
     })
     ori_shape = torch.tensor(original_shape, dtype=torch.int64)
 
     # Test with mask scaling
-    rcnn_test_cfg.rescale_mask_to_input_shape = True
+    rcnn_test_cfg.rescale_mask_to_input_shape_in_onnx = True
     masks = self.onnx_export(mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
                              ori_shape)
     assert masks.shape[1:] == torch.Size(original_shape)
 
     # Test without mask scaling
-    rcnn_test_cfg.rescale_mask_to_input_shape = False
+    rcnn_test_cfg.rescale_mask_to_input_shape_in_onnx = False
     masks = self.onnx_export(mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
                              ori_shape)
     assert masks.shape[1:] == torch.Size(mask_shape)

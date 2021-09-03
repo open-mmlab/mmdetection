@@ -322,10 +322,10 @@ class FCNMaskHead(BaseModule):
 
         Returns:
             Tensor: tensor with masks.
-            If rcnn_test_cfg.rescale_mask_to_input_shape == True,
+            If rcnn_test_cfg.rescale_mask_to_input_shape_in_onnx == True,
                 then masks will be returned with the shape of the input image.
                 It will return masks with shape (N, img_h, img_w).
-            If rcnn_test_cfg.rescale_mask_to_input_shape == False,
+            If rcnn_test_cfg.rescale_mask_to_input_shape_in_onnx == False,
                 then post-processing will not be applied to masks.
                 It will return masks with shape (N, 28, 28).
         """
@@ -339,7 +339,7 @@ class FCNMaskHead(BaseModule):
         if not self.class_agnostic:
             box_inds = torch.arange(mask_pred.shape[0])
             mask_pred = mask_pred[box_inds, labels][:, None]
-        if rcnn_test_cfg.rescale_mask_to_input_shape:
+        if rcnn_test_cfg.rescale_mask_to_input_shape_in_onnx:
             masks, _ = _do_paste_mask(
                 mask_pred, bboxes, img_h, img_w, skip_empty=False)
         else:
