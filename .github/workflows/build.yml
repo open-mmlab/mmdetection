@@ -73,11 +73,9 @@ jobs:
 
   build_cuda:
     runs-on: ubuntu-18.04
+    container:
+      image: pytorch/pytorch:1.6.0-cuda10.1-cudnn7-devel
 
-    env:
-      CUDA: 10.1.105-1
-      CUDA_SHORT: 10.1
-      UBUNTU_VERSION: ubuntu1804
     strategy:
       matrix:
         python-version: [3.7]
@@ -113,11 +111,6 @@ jobs:
             torchvision: 0.7.0+cu101
             mmcv: "latest+torch1.6.0+cu101"
             python-version: 3.8
-          - torch: 1.6.0+cu101
-            torch_version: torch1.6.0
-            torchvision: 0.7.0+cu101
-            mmcv: "latest+torch1.6.0+cu101"
-            python-version: 3.9
           - torch: 1.7.0+cu101
             torch_version: torch1.7.0
             torchvision: 0.8.1+cu101
@@ -130,6 +123,7 @@ jobs:
             torch_version: torch1.9.0
             torchvision: 0.10.0+cu101
             mmcv: "latest+torch1.9.0+cu101"
+            python-version: 3.9
 
     steps:
       - uses: actions/checkout@v2
