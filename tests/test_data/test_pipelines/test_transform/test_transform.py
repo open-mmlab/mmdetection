@@ -205,6 +205,7 @@ def test_random_crop():
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='RandomCrop', crop_size=(h - 20, w - 20))
@@ -213,6 +214,9 @@ def test_random_crop():
     assert results['img'].shape[:2] == (h - 20, w - 20)
     # All bboxes should be reserved after crop
     assert results['img_shape'][:2] == (h - 20, w - 20)
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes'].shape[0] == 8
     assert results['gt_bboxes_ignore'].shape[0] == 2
 
@@ -323,6 +327,7 @@ def test_min_iou_random_crop():
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(1, w, h)
     gt_bboxes_ignore = create_random_bboxes(1, w, h)
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='MinIoURandomCrop')
@@ -335,7 +340,8 @@ def test_min_iou_random_crop():
     with pytest.raises(AssertionError):
         crop_module(results_test)
     results = crop_module(results)
-
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
     assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
 
@@ -778,7 +784,7 @@ def test_random_shift():
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='RandomShift', shift_ratio=1.0)
@@ -787,6 +793,7 @@ def test_random_shift():
 
     assert results['img'].shape[:2] == (h, w)
     assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
     assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
 
@@ -815,7 +822,7 @@ def test_random_affine():
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='RandomAffine')
@@ -824,12 +831,13 @@ def test_random_affine():
 
     assert results['img'].shape[:2] == (h, w)
     assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
     assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
 
     # test filter bbox
     gt_bboxes = np.array([[0, 0, 1, 1], [0, 0, 3, 100]], dtype=np.float32)
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     transform = dict(
         type='RandomAffine',
@@ -846,6 +854,8 @@ def test_random_affine():
 
     assert results['gt_bboxes'].shape[0] == 0
     assert results['gt_labels'].shape[0] == 0
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
     assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
 
@@ -866,7 +876,7 @@ def test_mosaic():
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='Mosaic', img_scale=(10, 12))
@@ -879,6 +889,8 @@ def test_mosaic():
     results['mix_results'] = [copy.deepcopy(results)] * 3
     results = mosaic_module(results)
     assert results['img'].shape[:2] == (20, 24)
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
     assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
 
@@ -899,7 +911,7 @@ def test_mixup():
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='MixUp', img_scale=(10, 12))
@@ -916,5 +928,7 @@ def test_mixup():
     results['mix_results'] = [copy.deepcopy(results)]
     results = mixup_module(results)
     assert results['img'].shape[:2] == (288, 512)
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
     assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
