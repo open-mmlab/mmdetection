@@ -32,15 +32,15 @@ from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
                                       MetricsGroup, Performance, ScoreMetric,
                                       VisualizationInfo, VisualizationType)
+from ote_sdk.entities.model import ModelStatus, ModelPrecision
+from ote_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
 from ote_sdk.configuration import cfg_helper
 from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset, Subset
 from sc_sdk.entities.model import Model
-from ote_sdk.entities.model import ModelStatus, ModelPrecision
-from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
-from ote_sdk.entities.task_environment import TaskEnvironment
 from sc_sdk.logging import logger_factory
 
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
@@ -221,7 +221,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
 
     def evaluate(self,
-                 output_result_set: ResultSet,
+                 output_result_set: ResultSetEntity,
                  evaluation_metric: Optional[str] = None):
         """ Computes performance on a resultset """
         params = self._hyperparams
