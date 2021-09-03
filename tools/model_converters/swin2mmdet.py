@@ -8,7 +8,7 @@ from mmdet.models.utils.ckpt_convert import swin_converter
 def main():
     parser = argparse.ArgumentParser(
         description='Convert keys in official pretrained swin models to'
-        'MMDetection style.')
+                    'MMDetection style.')
     parser.add_argument('src', help='src detection model path')
     # The dst path must be a full path of the new checkpoint.
     parser.add_argument('dst', help='save path')
@@ -22,7 +22,7 @@ def main():
     else:
         state_dict = checkpoint
 
-    weight = swin_converter(state_dict,prefix='backbone.')
+    weight = swin_converter(state_dict)
 
     if 'state_dict' in checkpoint:
         checkpoint['state_dict'] = weight
