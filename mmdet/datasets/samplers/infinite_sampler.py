@@ -7,9 +7,9 @@ from torch.utils.data.sampler import Sampler
 
 
 class DistributedInfiniteGroupBatchSampler(Sampler):
-    """Similar to `BatchSampler` warping a `DistributedGroupSampler`, it is
-    designed for `IterationBased` runner and yield a mini-batch indices each
-    time, all indices in a batch should be in same group.
+    """Similar to `BatchSampler` warping a `DistributedGroupSampler. It is
+    designed for `IterationBased` runner and yields a mini-batch indices each
+    time, all indices in a batch should be in the same group.
 
     The implementation logic is referred to
     https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/samplers/grouped_batch_sampler.py
@@ -22,7 +22,7 @@ class DistributedInfiniteGroupBatchSampler(Sampler):
             distributed training. Default: None.
         rank (int, optional): Rank of current process. Default: None.
         seed (int): Random seed. Default: 0.
-        shuffle (bool): Whether shuffle the dataset or not. Default: False.
+        shuffle (bool): Whether shuffle the dataset or not. Default: True.
     """  # noqa: W605
 
     def __init__(self,
