@@ -220,7 +220,7 @@ class AnchorGenerator:
             featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels.
             dtype (:obj:`torch.dtype`): Dtype of priors.
-            Default: torch.float32.
+                Default: torch.float32.
             device (str): The device where the anchors will be put on.
 
         Return:
@@ -234,7 +234,7 @@ class AnchorGenerator:
         multi_level_anchors = []
         for i in range(self.num_levels):
             anchors = self.single_level_grid_priors(
-                featmap_sizes[i], dtype=dtype, level_idx=i, device=device)
+                featmap_sizes[i], level_idx=i, dtype=dtype, device=device)
             multi_level_anchors.append(anchors)
         return multi_level_anchors
 
@@ -260,9 +260,11 @@ class AnchorGenerator:
             torch.Tensor: Anchors in the overall feature maps.
         """
 
-        base_anchors = self.base_anchors[level_idx].to(device).to(dtype)
+        base_anchors = self.base_anchors[level_idx].to(device, dtype)
         feat_h, feat_w = featmap_size
         stride_w, stride_h = self.strides[level_idx]
+        # First create Range with the default dtype, than convert to
+        # target `dtype` for onnx exporting.
         shift_x = torch.arange(0, feat_w, device=device).to(dtype) * stride_w
         shift_y = torch.arange(0, feat_h, device=device).to(dtype) * stride_h
 
