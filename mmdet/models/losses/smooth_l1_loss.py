@@ -22,7 +22,10 @@ def smooth_l1_loss(pred, target, beta=1.0):
         torch.Tensor: Calculated loss
     """
     assert beta > 0
-    assert pred.size() == target.size() and target.numel() > 0
+    if target.numel() == 0:
+        return pred.sum() * 0
+
+    assert pred.size() == target.size()
     diff = torch.abs(pred - target)
     loss = torch.where(diff < beta, 0.5 * diff * diff / beta,
                        diff - 0.5 * beta)
@@ -41,7 +44,10 @@ def l1_loss(pred, target):
     Returns:
         torch.Tensor: Calculated loss
     """
-    assert pred.size() == target.size() and target.numel() > 0
+    if target.numel() == 0:
+        return pred.sum() * 0
+
+    assert pred.size() == target.size()
     loss = torch.abs(pred - target)
     return loss
 

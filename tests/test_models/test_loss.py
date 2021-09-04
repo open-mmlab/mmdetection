@@ -47,10 +47,11 @@ def test_loss_with_reduction_override(loss_class):
     IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, MSELoss, L1Loss,
     SmoothL1Loss, BalancedL1Loss
 ])
-def test_regression_losses(loss_class):
-    pred = torch.rand((10, 4))
-    target = torch.rand((10, 4))
-    weight = torch.rand((10, 4))
+@pytest.mark.parametrize('input_shape', [(10, 4), (0, 4)])
+def test_regression_losses(loss_class, input_shape):
+    pred = torch.rand(input_shape)
+    target = torch.rand(input_shape)
+    weight = torch.rand(input_shape)
 
     # Test loss forward
     loss = loss_class()(pred, target)
@@ -83,9 +84,10 @@ def test_regression_losses(loss_class):
 
 
 @pytest.mark.parametrize('loss_class', [FocalLoss, CrossEntropyLoss])
-def test_classification_losses(loss_class):
-    pred = torch.rand((10, 5))
-    target = torch.randint(0, 5, (10, ))
+@pytest.mark.parametrize('input_shape', [(10, 5), (0, 5)])
+def test_classification_losses(loss_class, input_shape):
+    pred = torch.rand(input_shape)
+    target = torch.randint(0, 5, (input_shape[0], ))
 
     # Test loss forward
     loss = loss_class()(pred, target)
@@ -114,10 +116,11 @@ def test_classification_losses(loss_class):
 
 
 @pytest.mark.parametrize('loss_class', [GHMR])
-def test_GHMR_loss(loss_class):
-    pred = torch.rand((10, 4))
-    target = torch.rand((10, 4))
-    weight = torch.rand((10, 4))
+@pytest.mark.parametrize('input_shape', [(10, 4), (0, 4)])
+def test_GHMR_loss(loss_class, input_shape):
+    pred = torch.rand(input_shape)
+    target = torch.rand(input_shape)
+    weight = torch.rand(input_shape)
 
     # Test loss forward
     loss = loss_class()(pred, target, weight)
