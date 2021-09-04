@@ -6,20 +6,23 @@ from mmcv.runner import get_dist_info
 from torch.utils.data.sampler import Sampler
 
 
-class DistributedInfiniteGroupSampler(Sampler):
-    """Similar to `DistributedGroupSampler` but designed for `IterationBased`
-    runner.
+class DistributedInfiniteGroupBatchSampler(Sampler):
+    """Similar to `BatchSampler` warping a `DistributedGroupSampler`, it is
+    designed for `IterationBased` runner and yield a mini-batch indices each
+    time, all indices in a batch should be in same group.
 
     The implementation logic is referred to
     https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/samplers/grouped_batch_sampler.py
 
     Args:
         dataset (object): The dataset.
-        samples_per_gpu (int): Batch size.
-        num_replicas (int): World size.
-        rank (int): Rank of current process.
+        samples_per_gpu (int): Number of training samples on each GPU, i.e.,
+            batch size of each GPU.
+        num_replicas (int, optional): Number of processes participating in
+            distributed training. Default: None.
+        rank (int, optional): Rank of current process. Default: None.
         seed (int): Random seed. Default: 0.
-        shuffle (bool): Whether shuffle the dataset or not.
+        shuffle (bool): Whether shuffle the dataset or not. Default: False.
     """  # noqa: W605
 
     def __init__(self,
@@ -57,6 +60,7 @@ class DistributedInfiniteGroupSampler(Sampler):
         while True:
             if self.shuffle:
                 yield from torch.randperm(self.size, generator=g).tolist()
+
             else:
                 yield from torch.arange(self.size).tolist()
 

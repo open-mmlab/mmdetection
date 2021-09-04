@@ -11,8 +11,8 @@ from mmcv.utils import Registry, build_from_cfg
 from torch.utils.data import DataLoader
 
 from .samplers import (DistributedGroupSampler,
-                       DistributedInfiniteGroupSampler, DistributedSampler,
-                       GroupSampler)
+                       DistributedInfiniteGroupBatchSampler,
+                       DistributedSampler, GroupSampler)
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -128,14 +128,20 @@ def build_dataloader(dataset,
         else:
             sampler = GroupSampler(dataset,
                                    samples_per_gpu) if shuffle else None
-    else:
-        sampler = DistributedInfiniteGroupSampler(
+    elif runner_type == 'IterBasedRunner':
+        # this is a batch sampler, which can yield
+        # a mini-batch indices each time.
+        sampler = DistributedInfiniteGroupBatchSampler(
             dataset,
             samples_per_gpu,
             world_size,
             rank,
             seed=seed,
             shuffle=shuffle)
+    else:
+        raise NotImplementedError(
+            f'Only support `EpochBasedRunner` '
+            f'and `IterBasedRunner` now, but got {runner_type}')
 
     if dist:
         batch_size = samples_per_gpu
