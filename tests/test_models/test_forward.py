@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 """pytest tests/test_forward.py."""
 import copy
 from os.path import dirname, exists, join
@@ -147,7 +148,8 @@ def test_rpn_forward():
         # 'free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
         # 'atss/atss_r50_fpn_1x_coco.py',  # not ready for topk
         'reppoints/reppoints_moment_r50_fpn_1x_coco.py',
-        'yolo/yolov3_d53_mstrain-608_273e_coco.py'
+        'yolo/yolov3_d53_mstrain-608_273e_coco.py',
+        'yolox/yolox_tiny_8x8_300e_coco.py'
     ])
 def test_single_stage_forward_gpu(cfg_file):
     if not torch.cuda.is_available():
@@ -171,6 +173,26 @@ def test_single_stage_forward_gpu(cfg_file):
     # Test forward train
     gt_bboxes = [b.cuda() for b in mm_inputs['gt_bboxes']]
     gt_labels = [g.cuda() for g in mm_inputs['gt_labels']]
+    losses = detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert isinstance(losses, dict)
+
+    # Test forward train with an empty truth batch
+    if cfg_file == 'yolox/yolox_tiny_8x8_300e_coco.py':
+        detector.bbox_head.use_l1 = True
+
+    gt_bboxes = [
+        torch.empty((0, 4), dtype=torch.float).cuda()
+        for _ in range(input_shape[0])
+    ]
+    gt_labels = [
+        torch.empty((0, ), dtype=torch.long).cuda()
+        for _ in range(input_shape[0])
+    ]
     losses = detector.forward(
         imgs,
         img_metas,

@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from collections import OrderedDict
 
 from mmcv.runner import get_dist_info

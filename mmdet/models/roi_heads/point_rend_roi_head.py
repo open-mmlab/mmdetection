@@ -1,6 +1,7 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 # Modified from https://github.com/facebookresearch/detectron2/tree/master/projects/PointRend  # noqa
-import logging
 import os
+import warnings
 
 import numpy as np
 import torch
@@ -11,8 +12,6 @@ from mmdet.core import bbox2roi, bbox_mapping, merge_aug_masks
 from .. import builder
 from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
-
-logger = logging.getLogger(__name__)
 
 
 @HEADS.register_module()
@@ -164,7 +163,7 @@ class PointRendRoIHead(StandardRoIHead):
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         if isinstance(scale_factors[0], float):
-            logger.warning(
+            warnings.warn(
                 'Scale factor in img_metas should be a '
                 'ndarray with shape (4,) '
                 'arrange as (factor_w, factor_h, factor_w, factor_h), '
