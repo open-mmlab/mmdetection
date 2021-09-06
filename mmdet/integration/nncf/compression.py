@@ -103,8 +103,6 @@ def wrap_nncf_model(model,
             # redefined InitializingDataLoader because
             # of DataContainer format in mmdet
             kwargs = {k: v.data[0] for k, v in dataloader_output.items()}
-            kwargs['img'] = [kwargs['img']]
-            kwargs['img_metas'] = [kwargs['img_metas']]
             return (), kwargs
 
     pathlib.Path(cfg.work_dir).mkdir(parents=True, exist_ok=True)
@@ -182,8 +180,7 @@ def wrap_nncf_model(model,
             ctx = model.forward_dummy_context(img_metas)
             logger.debug(f"NNCF will NOT compress a postprocessing part of the model")
         with ctx:
-            wrap_nncf_model_outputs_with_objwalk(model(img))
-
+            model(img)
 
     def wrap_inputs(args, kwargs):
         # during dummy_forward
@@ -219,12 +216,11 @@ def wrap_nncf_model(model,
 
     if 'log_dir' in nncf_config:
         os.makedirs(nncf_config['log_dir'], exist_ok=True)
-    with model.forward_nncf_initialization_context():
-        compression_ctrl, model = create_compressed_model(model,
-                                                          nncf_config,
-                                                          dummy_forward_fn=dummy_forward,
-                                                          wrap_inputs_fn=wrap_inputs,
-                                                          compression_state=compression_state)
+    compression_ctrl, model = create_compressed_model(model,
+                                                      nncf_config,
+                                                      dummy_forward_fn=dummy_forward,
+                                                      wrap_inputs_fn=wrap_inputs,
+                                                      compression_state=compression_state)
     model.export = export_method.__get__(model)
 
     return compression_ctrl, model
