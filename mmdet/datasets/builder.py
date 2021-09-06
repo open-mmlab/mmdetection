@@ -11,6 +11,7 @@ from mmcv.utils import Registry, build_from_cfg
 from torch.utils.data import DataLoader
 
 from .samplers import (DistributedGroupSampler,
+                       DistributedInfiniteBatchSampler,
                        DistributedInfiniteGroupBatchSampler,
                        DistributedSampler, GroupSampler)
 
@@ -131,13 +132,17 @@ def build_dataloader(dataset,
     elif runner_type == 'IterBasedRunner':
         # this is a batch sampler, which can yield
         # a mini-batch indices each time.
-        sampler = DistributedInfiniteGroupBatchSampler(
-            dataset,
-            samples_per_gpu,
-            world_size,
-            rank,
-            seed=seed,
-            shuffle=shuffle)
+        if shuffle:
+            sampler = DistributedInfiniteGroupBatchSampler(
+                dataset, samples_per_gpu, world_size, rank, seed=seed)
+        else:
+            sampler = DistributedInfiniteBatchSampler(
+                dataset,
+                samples_per_gpu,
+                world_size,
+                rank,
+                seed=seed,
+                shuffle=False)
     else:
         raise NotImplementedError(
             f'Only support `EpochBasedRunner` '
