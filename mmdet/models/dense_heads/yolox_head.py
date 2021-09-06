@@ -278,8 +278,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             flatten_bboxes[..., :4] /= flatten_bboxes.new_tensor(
                 scale_factors).unsqueeze(1)
 
-        dets = []
-        labels = []
+        dets = [], labels = []
         for img_id in range(len(img_metas)):
             cls_scores = flatten_cls_scores[img_id]
             score_factor = flatten_objectness[img_id]
@@ -290,7 +289,6 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         if torch.onnx.is_in_onnx_export():
             return torch.cat(dets), torch.cat(labels)
         return zip(dets, labels)
-
 
     def _bbox_decode(self, priors, bbox_preds):
         xys = (bbox_preds[..., :2] * priors[:, 2:]) + priors[:, :2]
