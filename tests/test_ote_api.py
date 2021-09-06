@@ -101,7 +101,7 @@ def test_set_values_as_default():
     hyper_parameters = create(hyper_parameters)
     assert default_value == hyper_parameters.learning_parameters.batch_size
 
-class SampleTestCase(unittest.TestCase):
+class Sample(unittest.TestCase):
     root_dir = '/tmp'
     coco_dir = osp.join(root_dir, 'data/coco')
     snapshots_dir = osp.join(root_dir, 'snapshots')
@@ -168,7 +168,7 @@ class SampleTestCase(unittest.TestCase):
         assert output.returncode == 0
 
 
-class TestOTEAPI(unittest.TestCase):
+class API(unittest.TestCase):
     """
     Collection of tests for OTE API and OTE Model Templates
     """
@@ -331,19 +331,20 @@ class TestOTEAPI(unittest.TestCase):
         performance = task.evaluate(result_set)
         return performance
 
-    def train_and_eval(self, template_dir):
-        """
-        Run training, analysis, evaluation and model optimization
+    def check_threshold(self, reference, value, delta_tolerance, message=''):
+        delta = value.score.value - reference.score.value
+        self.assertLessEqual(
+            np.abs(delta),
+            delta_tolerance,
+            msg=message +
+                f' (reference metric: {reference.score.value}, '
+                f'actual value: {value.score.value}, '
+                f'delta tolerance threshold: {delta_tolerance})'
+            )
 
-        Flow of the test:
-        - Creates a randomly annotated project with a small dataset containing 3 classes:
-            ['rectangle', 'triangle', 'circle'].
-        - Trains a model for 10 epochs. Asserts that validation F-measure is larger than the threshold and
-            also that OpenVINO optimization runs successfully.
-        - Reloads the model in the task and recompute the performance. Asserts that the performance
-            difference between the original and the reloaded model is smaller than 1e-4. Ideally there should be no
-            difference at all.
-        """
+    def end_to_end(self, template_dir, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
+        export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1):
+
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=150)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
@@ -387,10 +388,9 @@ class TestOTEAPI(unittest.TestCase):
 
         # Run inference
         validation_performance = self.eval(task, output_model, val_dataset)
-        print(f'Evaluated model to have a performance of {validation_performance}')
-        score_threshold = 0.5
-        self.assertGreater(validation_performance.score.value, score_threshold,
-            f'Expected F-measure to be higher than {score_threshold}')
+        print(f'Performance: {validation_performance.score.value:.4f}')
+        self.assertGreater(validation_performance.score.value, quality_score_threshold,
+            f'Expected F-measure to be higher than {quality_score_threshold}')
 
         print('Reloading model.')
         first_model = output_model
@@ -415,17 +415,9 @@ class TestOTEAPI(unittest.TestCase):
         print('Reevaluating model.')
         # Performance should be the same after reloading
         performance_after_reloading = self.eval(task, output_model, val_dataset)
-        performance_delta = performance_after_reloading.score.value - validation_performance.score.value
-        perf_delta_tolerance = 0.0
-
-        self.assertEqual(np.abs(performance_delta), perf_delta_tolerance,
-                         msg=f'Expected no performance difference after reloading. Performance delta '
-                             f'({validation_performance.score.value} vs {performance_after_reloading.score.value}) was '
-                             f'larger than the tolerance of {perf_delta_tolerance}')
-
-        print(f'Performance: {validation_performance.score.value:.4f}')
         print(f'Performance after reloading: {performance_after_reloading.score.value:.4f}')
-        print(f'Performance delta after reloading: {performance_delta:.6f}')
+        self.check_threshold(validation_performance, performance_after_reloading, reload_perf_delta_tolerance,
+            'Too big performance difference after model reload.')
 
         if isinstance(task, IExportTask):
             detection_environment.model = exported_model
@@ -437,13 +429,9 @@ class TestOTEAPI(unittest.TestCase):
                 prediction_dataset=predicted_validation_dataset,
             )
             export_performance = ov_task.evaluate(resultset)
-            print(export_performance)
-            performance_delta = export_performance.score.value - validation_performance.score.value
-            perf_delta_tolerance = 0.01
-            self.assertLess(np.abs(performance_delta), perf_delta_tolerance,
-                        msg=f'Expected no or very small performance difference after export. Performance delta '
-                            f'({validation_performance.score.value} vs {export_performance.score.value}) was '
-                            f'larger than the tolerance of {perf_delta_tolerance}')
+            print(f'Performance of exported model: {export_performance.score.value:.4f}')
+            self.check_threshold(validation_performance, export_performance, export_perf_delta_tolerance,
+                'Too big performance difference after OpenVINO export.')
 
             print('Run POT optimization.')
             optimized_model = Model(
@@ -463,28 +451,24 @@ class TestOTEAPI(unittest.TestCase):
 
             pot_performance = self.eval(ov_task, optimized_model, val_dataset)
             print(f'Performance of optimized model: {pot_performance.score.value:.4f}')
-
-            performance_delta = pot_performance.score.value - export_performance.score.value
-            perf_delta_tolerance = 0.1
-            self.assertLess(np.abs(performance_delta), perf_delta_tolerance,
-                        msg=f'Expected reasonable performance difference after pot optimization. Performance delta '
-                            f'({export_performance.score.value} vs {pot_performance.score.value}) was '
-                            f'larger than the tolerance of {perf_delta_tolerance}')
+            self.check_threshold(validation_performance, pot_performance, pot_perf_delta_tolerance,
+                'Too big performance difference after POT optimization.')
 
     def test_training_custom_mobilenetssd_256(self):
-        self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
 
     def test_training_custom_mobilenetssd_384(self):
-        self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-384x384'))
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-384x384'))
 
     def test_training_custom_mobilenetssd_512(self):
-        self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-512x512'))
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-512x512'))
 
     def test_training_custom_mobilenet_atss(self):
-        self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS'))
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS'))
 
     def test_training_custom_mobilenet_ssd(self):
-        self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD'))
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD'))
 
     def test_training_custom_resnet_vfnet(self):
-        self.train_and_eval(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet'))
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet'),
+                        export_perf_delta_tolerance=0.01)
