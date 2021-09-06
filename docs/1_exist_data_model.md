@@ -211,7 +211,7 @@ mmdetection
 │   │   ├── stuffthingmaps
 ```
 
-Panoptic segmentation models like PanopticFPN require additional [COCO-panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) datasets, you can download and unzip then move to the coco annotation folder. The directory should be like this.
+Panoptic segmentation models like PanopticFPN require additional [COCO Panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) datasets, you can download and unzip then move to the coco annotation folder. The directory should be like this.
 
 ```text
 mmdetection

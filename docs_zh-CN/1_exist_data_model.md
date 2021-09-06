@@ -202,7 +202,7 @@ mmdetection
 │   │   ├── stuffthingmaps
 ```
 
-PanopticFPN 等全景分割模型需要额外的 [COCO-panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) 数据集，你可以下载并解压它们到 `coco/annotations` 文件夹下。文件夹会是如下结构：
+PanopticFPN 等全景分割模型需要额外的 [COCO Panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) 数据集，你可以下载并解压它们到 `coco/annotations` 文件夹下。文件夹会是如下结构：
 
 ```text
 mmdetection
