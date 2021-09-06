@@ -90,7 +90,7 @@ def build_dataloader(dataset,
                      dist=True,
                      shuffle=True,
                      seed=None,
-                     runner=None,
+                     runner_type='EpochBasedRunner',
                      **kwargs):
     """Build PyTorch DataLoader.
 
@@ -107,7 +107,7 @@ def build_dataloader(dataset,
         dist (bool): Distributed training/test or not. Default: True.
         shuffle (bool): Whether to shuffle the data at every epoch.
             Default: True.
-        runner (dict): The config dictionary of runner.
+        runner_type (str): Type of runner. Default: `EpochBasedRunner`
         kwargs: any keyword argument to be used to initialize DataLoader
 
     Returns:
@@ -115,7 +115,6 @@ def build_dataloader(dataset,
     """
     rank, world_size = get_dist_info()
 
-    runner_type = 'EpochBasedRunner' if runner is None else runner['type']
     if runner_type == 'EpochBasedRunner':
         if dist:
             # DistributedGroupSampler will definitely shuffle the data to

@@ -60,6 +60,8 @@ def train_detector(model,
                 f'{cfg.data.imgs_per_gpu} in this experiments')
         cfg.data.samples_per_gpu = cfg.data.imgs_per_gpu
 
+    runner_type = 'EpochBasedRunner' if 'runner' not in cfg else cfg.runner[
+        'type']
     data_loaders = [
         build_dataloader(
             ds,
@@ -69,7 +71,7 @@ def train_detector(model,
             len(cfg.gpu_ids),
             dist=distributed,
             seed=cfg.seed,
-            runner=cfg.runner) for ds in dataset
+            runner_type=runner_type) for ds in dataset
     ]
 
     # put model on gpus
