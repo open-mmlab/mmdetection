@@ -8,8 +8,13 @@ Collections:
       Architecture:
         - Corner Pooling
         - Stacked Hourglass Network
-    Paper: https://arxiv.org/abs/2003.09119
+    Paper:
+      URL: https://arxiv.org/abs/2003.09119
+      Title: 'CentripetalNet: Pursuing High-quality Keypoint Pairs for Object Detection'
     README: configs/centripetalnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.5.0/mmdet/models/detectors/cornernet.py#L9
+      Version: v2.5.0
 
 Models:
   - Name: centripetalnet_hourglass104_mstest_16x6_210e_coco

@@ -11,8 +11,13 @@ Collections:
         - FPN
         - RepPoints
         - ResNet
-    Paper: https://arxiv.org/abs/1904.11490
+    Paper:
+      URL: https://arxiv.org/abs/1904.11490
+      Title: 'RepPoints: Point Set Representation for Object Detection'
     README: configs/reppoints/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc1/mmdet/models/detectors/reppoints_detector.py#L9
+      Version: v1.0rc1
 
 Models:
   - Name: bbox_r50_grid_fpn_gn-neck+head_1x_coco

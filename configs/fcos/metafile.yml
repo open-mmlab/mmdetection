@@ -10,8 +10,13 @@ Collections:
         - FPN
         - Group Normalization
         - ResNet
-    Paper: https://arxiv.org/abs/1904.01355
+    Paper:
+      URL: https://arxiv.org/abs/1904.01355
+      Title: 'FCOS: Fully Convolutional One-Stage Object Detection'
     README: configs/fcos/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc0/mmdet/models/detectors/fcos.py#L6
+      Version: v1.0rc0
 
 Models:
   - Name: fcos_r50_caffe_fpn_gn-head_1x_coco
