@@ -258,7 +258,19 @@ You should obtain a respose similar to:
   }
 ]
 ```
-
+And you can use `test_torchserver.py` to compare result of torchserver and pytorch, and visualize them.
+```shell
+python tools/deployment/test_torchserver.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} ${MODEL_NAME}
+[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}]
+```
+Example:
+```shell
+python tools/deployment/test_torchserver.py \
+demo/demo.jpg \
+configs/yolo/yolov3_d53_320_273e_coco.py \
+checkpoint/yolov3_d53_320_273e_coco-421362b6.pth \
+yolov3
+```
 ## Model Complexity
 
 `tools/analysis_tools/get_flops.py` is a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
