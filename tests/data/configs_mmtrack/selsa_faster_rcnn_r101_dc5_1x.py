@@ -6,8 +6,7 @@ model = dict(
     type='SELSA',
     pretrains=None,
     detector=dict(
-        pretrained='torchvision://resnet101',
-        backbone=dict(depth=101),
+        backbone=dict(depth=18),
         roi_head=dict(
             type='SelsaRoIHead',
             bbox_head=dict(
