@@ -98,7 +98,8 @@ model = dict(
                 class_agnostic=False,
                 norm_cfg=dict(type='BN'),
                 upsample_cfg=dict(type='deconv', scale_factor=2),
-                loss_dice=dict(type='DiceLoss', loss_weight=8.0)) for _ in range(num_stages)
+                loss_dice=dict(type='DiceLoss', loss_weight=8.0))
+            for _ in range(num_stages)
         ]),
     # training and testing settings
     train_cfg=dict(
@@ -113,13 +114,22 @@ model = dict(
                                   weight=2.0)),
                 sampler=dict(type='PseudoSampler'),
                 pos_weight=1,
-                mask_size=28,) for _ in range(num_stages)
+                mask_size=28,
+            ) for _ in range(num_stages)
         ]),
-    test_cfg=dict(rpn=None, rcnn=dict(max_per_img=num_proposals, mask_thr_binary=0.5)))
+    test_cfg=dict(
+        rpn=None, rcnn=dict(max_per_img=num_proposals, mask_thr_binary=0.5)))
 
 # optimizer
-optimizer = dict(_delete_=True, type='AdamW', lr=0.0001, weight_decay=0.0001, paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
-optimizer_config = dict(_delete_=True, grad_clip=dict(max_norm=0.1, norm_type=2))
+optimizer = dict(
+    _delete_=True,
+    type='AdamW',
+    lr=0.0001,
+    weight_decay=0.0001,
+    paramwise_cfg=dict(
+        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=0.1, norm_type=2))
 # learning policy
 lr_config = dict(policy='step', step=[8, 11], warmup_iters=1000)
 runner = dict(type='EpochBasedRunner', max_epochs=12)

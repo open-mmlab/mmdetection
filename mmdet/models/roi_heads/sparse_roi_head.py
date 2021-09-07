@@ -124,8 +124,8 @@ class SparseRoIHead(CascadeRoIHead):
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                         rois)
-        cls_score, bbox_pred, object_feats, attn_feats = bbox_head(bbox_feats,
-                                                       object_feats)
+        cls_score, bbox_pred, object_feats, attn_feats = bbox_head(
+            bbox_feats, object_feats)
         proposal_list = self.bbox_head[stage].refine_bboxes(
             rois,
             rois.new_zeros(len(rois)),  # dummy arg
@@ -156,10 +156,14 @@ class SparseRoIHead(CascadeRoIHead):
         mask_results = dict(mask_pred=mask_pred)
         return mask_results
 
-    def _mask_forward_train(self, stage, x, attn_feats, sampling_results, gt_masks, rcnn_train_cfg):
+    def _mask_forward_train(self, stage, x, attn_feats, sampling_results,
+                            gt_masks, rcnn_train_cfg):
 
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-        attn_feats = torch.cat([feats[res.pos_inds] for (feats, res) in zip(attn_feats, sampling_results)])
+        attn_feats = torch.cat([
+            feats[res.pos_inds]
+            for (feats, res) in zip(attn_feats, sampling_results)
+        ])
         mask_results = self._mask_forward(stage, x, pos_rois, attn_feats)
 
         mask_targets = self.mask_head[stage].get_targets(
@@ -252,8 +256,9 @@ class SparseRoIHead(CascadeRoIHead):
                 imgs_whwh=imgs_whwh)
 
             if self.with_mask:
-                mask_results = self._mask_forward_train(stage, x, bbox_results['attn_feats'], 
-                                            sampling_results, gt_masks, self.train_cfg[stage])
+                mask_results = self._mask_forward_train(
+                    stage, x, bbox_results['attn_feats'], sampling_results,
+                    gt_masks, self.train_cfg[stage])
                 single_stage_loss['loss_mask'] = mask_results['loss_mask']
 
             for key, value in single_stage_loss.items():
@@ -323,10 +328,10 @@ class SparseRoIHead(CascadeRoIHead):
 
         if self.with_mask:
             rois = bbox2roi(proposal_list)
-            mask_results = self._mask_forward(stage, x, rois, bbox_results['attn_feats'])
+            mask_results = self._mask_forward(stage, x, rois,
+                                              bbox_results['attn_feats'])
             mask_results['mask_pred'] = mask_results['mask_pred'].reshape(
-                num_imgs, -1, *mask_results['mask_pred'].size()[1:]
-            )
+                num_imgs, -1, *mask_results['mask_pred'].size()[1:])
 
         num_classes = self.bbox_head[-1].num_classes
         det_bboxes = []
@@ -360,20 +365,22 @@ class SparseRoIHead(CascadeRoIHead):
 
         if self.with_mask:
             if rescale and not isinstance(scale_factors[0], float):
-                    scale_factors = [
-                        torch.from_numpy(scale_factor).to(det_bboxes[0].device)
-                        for scale_factor in scale_factors
-                    ]
-            _bboxes = [
-                    det_bboxes[i][:, :4] *
-                    scale_factors[i] if rescale else det_bboxes[i][:, :4]
-                    for i in range(len(det_bboxes))
+                scale_factors = [
+                    torch.from_numpy(scale_factor).to(det_bboxes[0].device)
+                    for scale_factor in scale_factors
                 ]
+            _bboxes = [
+                det_bboxes[i][:, :4] *
+                scale_factors[i] if rescale else det_bboxes[i][:, :4]
+                for i in range(len(det_bboxes))
+            ]
             segm_results = []
             mask_pred = mask_results['mask_pred']
             for img_id in range(num_imgs):
-                mask_pred_per_img = mask_pred[img_id].flatten(0, 1)[topk_indices]
-                mask_pred_per_img = mask_pred_per_img[:, None, ...].repeat(1, num_classes, 1, 1)
+                mask_pred_per_img = mask_pred[img_id].flatten(0,
+                                                              1)[topk_indices]
+                mask_pred_per_img = mask_pred_per_img[:, None, ...].repeat(
+                    1, num_classes, 1, 1)
                 segm_result = self.mask_head[-1].get_seg_masks(
                     mask_pred_per_img, _bboxes[img_id], det_labels[img_id],
                     self.test_cfg, ori_shapes[img_id], scale_factors[img_id],
@@ -381,7 +388,7 @@ class SparseRoIHead(CascadeRoIHead):
                 segm_results.append(segm_result)
 
             ms_segm_result['ensemble'] = segm_results
-        
+
         if self.with_mask:
             results = list(
                 zip(ms_bbox_result['ensemble'], ms_segm_result['ensemble']))

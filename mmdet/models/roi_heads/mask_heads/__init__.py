@@ -15,5 +15,6 @@ from .scnet_semantic_head import SCNetSemanticHead
 __all__ = [
     'FCNMaskHead', 'HTCMaskHead', 'FusedSemanticHead', 'GridHead',
     'MaskIoUHead', 'CoarseMaskHead', 'MaskPointHead', 'SCNetMaskHead',
-    'SCNetSemanticHead', 'GlobalContextHead', 'FeatureRelayHead', 'DynamicMaskHead'
+    'SCNetSemanticHead', 'GlobalContextHead', 'FeatureRelayHead',
+    'DynamicMaskHead'
 ]

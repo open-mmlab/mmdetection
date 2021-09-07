@@ -12,9 +12,10 @@ def dice_loss(pred, target):
     x = x.reshape(n_inst, -1)
     target = target.reshape(n_inst, -1)
     intersection = (x * target).sum(dim=1)
-    union = (x ** 2.0).sum(dim=1) + (target ** 2.0).sum(dim=1) + eps
+    union = (x**2.0).sum(dim=1) + (target**2.0).sum(dim=1) + eps
     loss = 1. - (2 * intersection / union)
     return loss
+
 
 @LOSSES.register_module()
 class DiceLoss(nn.Module):
@@ -24,11 +25,7 @@ class DiceLoss(nn.Module):
         self.reduction = reduction
         self.loss_weight = loss_weight
 
-    def forward(self,
-                pred,
-                target,
-                avg_factor=None,
-                reduction_override=None):
+    def forward(self, pred, target, avg_factor=None, reduction_override=None):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)

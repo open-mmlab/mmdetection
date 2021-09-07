@@ -3,7 +3,7 @@ import torch.nn as nn
 from mmcv.runner import auto_fp16, force_fp32
 
 from mmdet.core import mask_target
-from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.utils import build_transformer
 from .fcn_mask_head import FCNMaskHead
@@ -11,7 +11,7 @@ from .fcn_mask_head import FCNMaskHead
 
 @HEADS.register_module()
 class DynamicMaskHead(FCNMaskHead):
-    
+
     def __init__(self,
                  dynamic_conv_cfg=dict(
                      type='DynamicConv',
@@ -47,7 +47,8 @@ class DynamicMaskHead(FCNMaskHead):
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             loss_mask=loss_mask)
-        assert class_agnostic is False, "DynamicMaskHead only support class_agnostic=False"
+        assert class_agnostic is False, \
+            'DynamicMaskHead only support class_agnostic=False'
         self.fp16_enabled = False
 
         self.instance_interactive_conv = build_transformer(dynamic_conv_cfg)
@@ -110,17 +111,15 @@ class DynamicMaskHead(FCNMaskHead):
         if mask_pred.size(0) == 0:
             loss_mask = mask_pred.sum()
         else:
-            loss_mask = self.loss_mask(mask_pred[torch.arange(num_pos).long(), labels, ...].sigmoid(),
-                                       mask_targets,
-                                       avg_factor=avg_factor)
+            loss_mask = self.loss_mask(
+                mask_pred[torch.arange(num_pos).long(), labels, ...].sigmoid(),
+                mask_targets,
+                avg_factor=avg_factor)
         loss['loss_mask'] = loss_mask
         return loss
 
-    def get_targets(self,
-                    sampling_results,
-                    gt_masks,
-                    rcnn_train_cfg):
-        
+    def get_targets(self, sampling_results, gt_masks, rcnn_train_cfg):
+
         pos_proposals = [res.pos_bboxes for res in sampling_results]
         pos_assigned_gt_inds = [
             res.pos_assigned_gt_inds for res in sampling_results

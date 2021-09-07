@@ -193,7 +193,8 @@ class DIIHead(BBoxHead):
         cls_score = self.fc_cls(cls_feat).view(N, num_proposals, -1)
         bbox_delta = self.fc_reg(reg_feat).view(N, num_proposals, -1)
 
-        return cls_score, bbox_delta, obj_feat.view(N, num_proposals, -1), attn_feats
+        return cls_score, bbox_delta, obj_feat.view(N, num_proposals,
+                                                    -1), attn_feats
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
