@@ -23,7 +23,6 @@ class DynamicMaskHead(FCNMaskHead):
                      act_cfg=dict(type='ReLU', inplace=True),
                      norm_cfg=dict(type='LN')),
                  num_classes=80,
-                 dropout=0.,
                  num_convs=4,
                  roi_feat_size=14,
                  in_channels=256,
