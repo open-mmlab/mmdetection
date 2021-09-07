@@ -17,12 +17,15 @@ def single_gpu_test(model,
                     data_loader,
                     show=False,
                     out_dir=None,
-                    show_score_thr=0.3):
+                    show_score_thr=0.3,
+                    time_monitor=None):
     model.eval()
     results = []
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
+        if time_monitor is not None:
+            time_monitor.on_test_batch_begin()
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
 
@@ -63,6 +66,10 @@ def single_gpu_test(model,
 
         for _ in range(batch_size):
             prog_bar.update()
+
+        if time_monitor is not None:
+            time_monitor.on_test_batch_end()
+
     return results
 
 

@@ -21,6 +21,7 @@ from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
 from ote_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.train_parameters import TrainParameters
 from ote_sdk.entities.model import (ModelPrecision,
                                     ModelStatus,
@@ -316,6 +317,29 @@ class TestOTEAPI(unittest.TestCase):
         self.assertGreater(len(training_progress_curve), 0)
         training_progress_curve = np.asarray(training_progress_curve)
         self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
+
+    def test_inference_progress_tracking(self):
+        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
+
+        task = OTEDetectionTask(task_environment=detection_environment)
+        self.addCleanup(task._delete_scratch_space)
+
+        print('Task initialized, model inference starts.')
+        inference_progress_curve = []
+
+        def inference_progress_callback(progress: float, score: Optional[float] = None):
+            inference_progress_curve.append(progress)
+
+        inference_parameters = InferenceParameters
+        inference_parameters.update_progress = inference_progress_callback
+
+        task.infer(dataset.with_empty_annotations(), inference_parameters)
+
+        self.assertGreater(len(inference_progress_curve), 0)
+        inference_progress_curve = np.asarray(inference_progress_curve)
+        self.assertTrue(np.all(inference_progress_curve[1:] >= inference_progress_curve[:-1]))
 
     @staticmethod
     def eval(task: OTEDetectionTask, model: Model, dataset: Dataset) -> Performance:

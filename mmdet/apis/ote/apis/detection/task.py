@@ -56,7 +56,7 @@ from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
                                                         prepare_for_training,
                                                         set_hyperparams)
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
+from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback, InferenceProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
@@ -157,11 +157,19 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         """ Analyzes a dataset using the latest inference model. """
         set_hyperparams(self._config, self._hyperparams)
 
-        is_evaluation = inference_parameters is not None and inference_parameters.is_evaluation
+        if inference_parameters is not None:
+            update_progress_callback = inference_parameters.update_progress
+            is_evaluation = inference_parameters.is_evaluation
+        else:
+            is_evaluation = False
+            update_progress_callback = default_progress_callback
+
+        time_monitor = InferenceProgressCallback(len(dataset), update_progress_callback)
+
         confidence_threshold = self._get_confidence_threshold(is_evaluation)
         logger.info(f'Confidence threshold {confidence_threshold}')
 
-        prediction_results, _ = self._infer_detector(self._model, self._config, dataset, False)
+        prediction_results, _ = self._infer_detector(self._model, self._config, dataset, False, time_monitor=time_monitor)
 
         # Loop over dataset again to assign predictions. Convert from MMDetection format to OTE format
         for dataset_item, output in zip(dataset, prediction_results):
@@ -195,7 +203,8 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
     @staticmethod
     def _infer_detector(model: torch.nn.Module, config: Config, dataset: Dataset,
-                        eval: Optional[bool] = False, metric_name: Optional[str] = 'mAP') -> Tuple[List, float]:
+                        eval: Optional[bool] = False, metric_name: Optional[str] = 'mAP',
+                        time_monitor: InferenceProgressCallback = None) -> Tuple[List, float]:
         model.eval()
         test_config = prepare_for_testing(config, dataset)
         mm_val_dataset = build_dataset(test_config.data.test)
@@ -212,7 +221,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         else:
             eval_model = MMDataCPU(model)
         # Use a single gpu for testing. Set in both mm_val_dataloader and eval_model
-        eval_predictions = single_gpu_test(eval_model, mm_val_dataloader, show=False)
+        eval_predictions = single_gpu_test(eval_model, mm_val_dataloader, show=False, time_monitor=time_monitor)
 
         metric = None
         if eval:
