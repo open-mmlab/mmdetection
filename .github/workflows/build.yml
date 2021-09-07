@@ -136,15 +136,12 @@ jobs:
         if: ${{matrix.python-version == '3.9'}}
       - name: Install system dependencies
         run: |
-          apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6
+          apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 python${{matrix.python-version}}-dev
           apt-get clean
           rm -rf /var/lib/apt/lists/*
       - name: Install mmdet dependencies
         run: |
           python -V
-          export LD_LIBRARY_PATH=/__t/Python/${{ matrix.python-version }}/x64/lib:$LD_LIBRARY_PATH
-          export LIBRARY_PATH=/__t/Python/${{ matrix.python-version }}/x64/lib:$LIBRARY_PATH
-          ln -s /__t/Python/${{ matrix.python-version }}/x64/lib/libpython${{ matrix.python-version }}m.so /usr/bin/
           python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/${{matrix.mmcv_link}}/index.html
           python -m pip install pycocotools
           python -m pip install -r requirements/tests.txt -r requirements/optional.txt
