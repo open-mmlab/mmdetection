@@ -131,13 +131,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install Pillow
         run: pip install Pillow==6.2.2
         if: ${{matrix.torchvision < 0.5}}
       - name: Install PyTorch
         run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
       - name: Install dependencies for compiling onnx when python=3.9
-        run: pip install protobuf && apt-get install libprotobuf-dev protobuf-compiler
+        run: pip install protobuf && sudo apt-get install libprotobuf-dev protobuf-compiler
         if: ${{matrix.python-version == '3.9'}}
       - name: Install system dependencies
         run: |
