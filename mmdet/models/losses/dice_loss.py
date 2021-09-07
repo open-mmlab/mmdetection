@@ -17,9 +17,8 @@ def dice_loss(x, target, eps=1e-5):
     Returns:
         torch.Tensor: Calculated loss
     """
-    n_inst = x.size(0)
-    x = x.reshape(n_inst, -1)
-    target = target.reshape(n_inst, -1)
+    x = x.flatten(1)
+    target = target.flatten(1)
     intersection = (x * target).sum(dim=1)
     union = (x**2.0).sum(dim=1) + (target**2.0).sum(dim=1) + eps
     loss = 1. - (2 * intersection / union)

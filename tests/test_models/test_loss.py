@@ -2,7 +2,7 @@
 import pytest
 import torch
 
-from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss,
+from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
                                  DistributionFocalLoss, FocalLoss,
                                  GaussianFocalLoss,
                                  KnowledgeDistillationKLDivLoss, L1Loss,
@@ -45,7 +45,7 @@ def test_loss_with_reduction_override(loss_class):
 
 @pytest.mark.parametrize('loss_class', [
     IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, MSELoss, L1Loss,
-    SmoothL1Loss, BalancedL1Loss
+    SmoothL1Loss, BalancedL1Loss, DiceLoss
 ])
 @pytest.mark.parametrize('input_shape', [(10, 4), (0, 4)])
 def test_regression_losses(loss_class, input_shape):
