@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.id import ID
+from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.model_template import parse_model_template, TargetDevice
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
@@ -21,7 +22,6 @@ from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
 from ote_sdk.entities.task_environment import TaskEnvironment
-from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.train_parameters import TrainParameters
 from ote_sdk.entities.model import (ModelPrecision,
                                     ModelStatus,
