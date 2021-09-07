@@ -20,6 +20,7 @@ model = dict(
         backbone=dict(
             type='ResNet',
             depth=18,
+            base_channels=2,
             num_stages=4,
             out_indices=(3, ),
             style='pytorch'),
@@ -27,9 +28,13 @@ model = dict(
         head=dict(
             type='LinearReIDHead',
             num_fcs=1,
-            in_channels=512,
-            fc_channels=1024,
-            out_channels=128,
+            in_channels=16,
+            fc_channels=32,
+            out_channels=16,
+            num_classes=8,
+            loss=dict(type='CrossEntropyLoss', loss_weight=1.0),
+            loss_pairwise=dict(
+                type='TripletLoss', margin=0.3, loss_weight=1.0),
             norm_cfg=dict(type='BN1d'),
             act_cfg=dict(type='ReLU'))),
     motion=dict(
