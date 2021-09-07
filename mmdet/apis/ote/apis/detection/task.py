@@ -166,10 +166,19 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
         time_monitor = InferenceProgressCallback(len(dataset), update_progress_callback)
 
+        def pre_hook(module, input):
+            time_monitor.on_test_batch_begin(None, None)
+
+        def hook(module, input, output):
+            time_monitor.on_test_batch_end(None, None)
+
+        pre_hook_handle = self._model.register_forward_pre_hook(pre_hook)
+        hook_handle = self._model.register_forward_hook(hook)
+
         confidence_threshold = self._get_confidence_threshold(is_evaluation)
         logger.info(f'Confidence threshold {confidence_threshold}')
 
-        prediction_results, _ = self._infer_detector(self._model, self._config, dataset, False, time_monitor=time_monitor)
+        prediction_results, _ = self._infer_detector(self._model, self._config, dataset, False)
 
         # Loop over dataset again to assign predictions. Convert from MMDetection format to OTE format
         for dataset_item, output in zip(dataset, prediction_results):
@@ -198,13 +207,15 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
             dataset_item.append_annotations(shapes)
 
+        pre_hook_handle.remove()
+        hook_handle.remove()
+
         return dataset
 
 
     @staticmethod
     def _infer_detector(model: torch.nn.Module, config: Config, dataset: Dataset,
-                        eval: Optional[bool] = False, metric_name: Optional[str] = 'mAP',
-                        time_monitor: Optional[InferenceProgressCallback] = None) -> Tuple[List, float]:
+                        eval: Optional[bool] = False, metric_name: Optional[str] = 'mAP') -> Tuple[List, float]:
         model.eval()
         test_config = prepare_for_testing(config, dataset)
         mm_val_dataset = build_dataset(test_config.data.test)
@@ -221,7 +232,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         else:
             eval_model = MMDataCPU(model)
         # Use a single gpu for testing. Set in both mm_val_dataloader and eval_model
-        eval_predictions = single_gpu_test(eval_model, mm_val_dataloader, show=False, time_monitor=time_monitor)
+        eval_predictions = single_gpu_test(eval_model, mm_val_dataloader, show=False)
 
         metric = None
         if eval:

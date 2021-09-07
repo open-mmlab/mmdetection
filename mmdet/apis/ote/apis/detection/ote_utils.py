@@ -117,9 +117,6 @@ class InferenceProgressCallback(TimeMonitorCallback):
             num_test_steps=num_test_steps,
             update_progress_callback=update_progress_callback)
 
-    def on_test_batch_begin(self, batch=None, logs=None):
-        super().on_test_batch_begin(batch, logs)
-
     def on_test_batch_end(self, batch=None, logs=None):
         super().on_test_batch_end(batch, logs)
         self.update_progress_callback(self.get_progress())
