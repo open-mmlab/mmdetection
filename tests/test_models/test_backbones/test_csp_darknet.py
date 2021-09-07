@@ -38,33 +38,18 @@ def test_csp_darknet_backbone():
 
     assert check_norm_state(model.modules(), False)
 
-    # Test CSPDarknet-P5 forward with widen_factor=1.0
-    model = CSPDarknet(arch='P5', widen_factor=1.0, out_indices=range(0, 5))
-    model.train()
-
-    assert check_norm_state(model.modules(), True)
-
-    imgs = torch.randn(1, 3, 64, 64)
-    feat = model(imgs)
-    assert len(feat) == 5
-    assert feat[0].shape == torch.Size((1, 64, 32, 32))
-    assert feat[1].shape == torch.Size((1, 128, 16, 16))
-    assert feat[2].shape == torch.Size((1, 256, 8, 8))
-    assert feat[3].shape == torch.Size((1, 512, 4, 4))
-    assert feat[4].shape == torch.Size((1, 1024, 2, 2))
-
     # Test CSPDarknet-P5 forward with widen_factor=0.5
-    model = CSPDarknet(arch='P5', widen_factor=0.5, out_indices=range(0, 5))
+    model = CSPDarknet(arch='P5', widen_factor=0.25, out_indices=range(0, 5))
     model.train()
 
     imgs = torch.randn(1, 3, 64, 64)
     feat = model(imgs)
     assert len(feat) == 5
-    assert feat[0].shape == torch.Size((1, 32, 32, 32))
-    assert feat[1].shape == torch.Size((1, 64, 16, 16))
-    assert feat[2].shape == torch.Size((1, 128, 8, 8))
-    assert feat[3].shape == torch.Size((1, 256, 4, 4))
-    assert feat[4].shape == torch.Size((1, 512, 2, 2))
+    assert feat[0].shape == torch.Size((1, 16, 32, 32))
+    assert feat[1].shape == torch.Size((1, 32, 16, 16))
+    assert feat[2].shape == torch.Size((1, 64, 8, 8))
+    assert feat[3].shape == torch.Size((1, 128, 4, 4))
+    assert feat[4].shape == torch.Size((1, 256, 2, 2))
 
     # Test CSPDarknet-P6 forward with widen_factor=0.5
     model = CSPDarknet(
@@ -85,20 +70,20 @@ def test_csp_darknet_backbone():
 
     # Test CSPDarknet forward with dict(type='ReLU')
     model = CSPDarknet(
-        widen_factor=1.0, act_cfg=dict(type='ReLU'), out_indices=range(0, 5))
+        widen_factor=0.125, act_cfg=dict(type='ReLU'), out_indices=range(0, 5))
     model.train()
 
     imgs = torch.randn(1, 3, 64, 64)
     feat = model(imgs)
     assert len(feat) == 5
-    assert feat[0].shape == torch.Size((1, 64, 32, 32))
-    assert feat[1].shape == torch.Size((1, 128, 16, 16))
-    assert feat[2].shape == torch.Size((1, 256, 8, 8))
-    assert feat[3].shape == torch.Size((1, 512, 4, 4))
-    assert feat[4].shape == torch.Size((1, 1024, 2, 2))
+    assert feat[0].shape == torch.Size((1, 8, 32, 32))
+    assert feat[1].shape == torch.Size((1, 16, 16, 16))
+    assert feat[2].shape == torch.Size((1, 32, 8, 8))
+    assert feat[3].shape == torch.Size((1, 64, 4, 4))
+    assert feat[4].shape == torch.Size((1, 128, 2, 2))
 
     # Test CSPDarknet with BatchNorm forward
-    model = CSPDarknet(widen_factor=1.0, out_indices=range(0, 5))
+    model = CSPDarknet(widen_factor=0.125, out_indices=range(0, 5))
     for m in model.modules():
         if is_norm(m):
             assert isinstance(m, _BatchNorm)
@@ -107,25 +92,25 @@ def test_csp_darknet_backbone():
     imgs = torch.randn(1, 3, 64, 64)
     feat = model(imgs)
     assert len(feat) == 5
-    assert feat[0].shape == torch.Size((1, 64, 32, 32))
-    assert feat[1].shape == torch.Size((1, 128, 16, 16))
-    assert feat[2].shape == torch.Size((1, 256, 8, 8))
-    assert feat[3].shape == torch.Size((1, 512, 4, 4))
-    assert feat[4].shape == torch.Size((1, 1024, 2, 2))
+    assert feat[0].shape == torch.Size((1, 8, 32, 32))
+    assert feat[1].shape == torch.Size((1, 16, 16, 16))
+    assert feat[2].shape == torch.Size((1, 32, 8, 8))
+    assert feat[3].shape == torch.Size((1, 64, 4, 4))
+    assert feat[4].shape == torch.Size((1, 128, 2, 2))
 
     # Test CSPDarknet with custom arch forward
     arch_ovewrite = [[32, 56, 3, True, False], [56, 224, 2, True, False],
                      [224, 512, 1, True, False]]
     model = CSPDarknet(
         arch_ovewrite=arch_ovewrite,
-        widen_factor=1.0,
+        widen_factor=0.25,
         out_indices=(0, 1, 2, 3))
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size((1, 32, 16, 16))
-    assert feat[1].shape == torch.Size((1, 56, 8, 8))
-    assert feat[2].shape == torch.Size((1, 224, 4, 4))
-    assert feat[3].shape == torch.Size((1, 512, 2, 2))
+    assert feat[0].shape == torch.Size((1, 8, 16, 16))
+    assert feat[1].shape == torch.Size((1, 14, 8, 8))
+    assert feat[2].shape == torch.Size((1, 56, 4, 4))
+    assert feat[3].shape == torch.Size((1, 128, 2, 2))
