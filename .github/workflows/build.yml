@@ -142,7 +142,7 @@ jobs:
         run: |
           python -V
           python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/${{matrix.mmcv_link}}/index.html
-          python -m pip install -r requirements.txt
+          pip install -r requirements/tests.txt -r requirements/optional.txt
           python -m pip install git+https://github.com/cocodataset/panopticapi.git
           python -c 'import mmcv; print(mmcv.__version__)'
       - name: Build and install
