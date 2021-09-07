@@ -311,43 +311,37 @@ def test_resnest_stem():
     assert model.conv1.out_channels == 64
     assert model.norm1.num_features == 64
 
-    # Test default stem_channels, with base_channels=32
-    model = ResNet(50, base_channels=32)
-    assert model.stem_channels == 32
-    assert model.conv1.out_channels == 32
-    assert model.norm1.num_features == 32
-    assert model.layer1[0].conv1.in_channels == 32
+    # Test default stem_channels, with base_channels=3
+    model = ResNet(50, base_channels=3)
+    assert model.stem_channels == 3
+    assert model.conv1.out_channels == 3
+    assert model.norm1.num_features == 3
+    assert model.layer1[0].conv1.in_channels == 3
 
-    # Test stem_channels=64
-    model = ResNet(50, stem_channels=64)
-    assert model.stem_channels == 64
-    assert model.conv1.out_channels == 64
-    assert model.norm1.num_features == 64
-    assert model.layer1[0].conv1.in_channels == 64
+    # Test stem_channels=3
+    model = ResNet(50, stem_channels=3)
+    assert model.stem_channels == 3
+    assert model.conv1.out_channels == 3
+    assert model.norm1.num_features == 3
+    assert model.layer1[0].conv1.in_channels == 3
 
-    # Test stem_channels=64, with base_channels=32
-    model = ResNet(50, stem_channels=64, base_channels=32)
-    assert model.stem_channels == 64
-    assert model.conv1.out_channels == 64
-    assert model.norm1.num_features == 64
-    assert model.layer1[0].conv1.in_channels == 64
-
-    # Test stem_channels=128
-    model = ResNet(depth=50, stem_channels=128)
-    model.train()
-    assert model.conv1.out_channels == 128
-    assert model.layer1[0].conv1.in_channels == 128
+    # Test stem_channels=3, with base_channels=2
+    model = ResNet(50, stem_channels=3, base_channels=2)
+    assert model.stem_channels == 3
+    assert model.conv1.out_channels == 3
+    assert model.norm1.num_features == 3
+    assert model.layer1[0].conv1.in_channels == 3
 
     # Test V1d stem_channels
-    model = ResNetV1d(depth=50, stem_channels=128)
+    model = ResNetV1d(depth=50, stem_channels=6)
     model.train()
-    assert model.stem[0].out_channels == 64
-    assert model.stem[1].num_features == 64
-    assert model.stem[3].out_channels == 64
-    assert model.stem[4].num_features == 64
-    assert model.stem[6].out_channels == 128
-    assert model.stem[7].num_features == 128
-    assert model.layer1[0].conv1.in_channels == 128
+    assert model.stem[0].out_channels == 3
+    assert model.stem[1].num_features == 3
+    assert model.stem[3].out_channels == 3
+    assert model.stem[4].num_features == 3
+    assert model.stem[6].out_channels == 6
+    assert model.stem[7].num_features == 6
+    assert model.layer1[0].conv1.in_channels == 6
 
 
 def test_resnet_backbone():
@@ -392,7 +386,7 @@ def test_resnet_backbone():
         ResNet(50, style='tensorflow')
 
     # Test ResNet50 norm_eval=True
-    model = ResNet(50, norm_eval=True)
+    model = ResNet(50, norm_eval=True, base_channels=1)
     model.train()
     assert check_norm_state(model.modules(), False)
 
@@ -404,7 +398,7 @@ def test_resnet_backbone():
 
     # Test ResNet50 with first stage frozen
     frozen_stages = 1
-    model = ResNet(50, frozen_stages=frozen_stages)
+    model = ResNet(50, frozen_stages=frozen_stages, base_channels=1)
     model.train()
     assert model.norm1.training is False
     for layer in [model.conv1, model.norm1]:
@@ -419,7 +413,7 @@ def test_resnet_backbone():
             assert param.requires_grad is False
 
     # Test ResNet50V1d with first stage frozen
-    model = ResNetV1d(depth=50, frozen_stages=frozen_stages)
+    model = ResNetV1d(depth=50, frozen_stages=frozen_stages, base_channels=2)
     assert len(model.stem) == 9
     model.train()
     assert check_norm_state(model.stem, False)
@@ -452,7 +446,7 @@ def test_resnet_backbone():
             assert m.with_cp
 
     # Test ResNet50 with BatchNorm forward
-    model = ResNet(50)
+    model = ResNet(50, base_channels=1)
     for m in model.modules():
         if is_norm(m):
             assert isinstance(m, _BatchNorm)
@@ -461,24 +455,24 @@ def test_resnet_backbone():
     imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size([1, 256, 8, 8])
-    assert feat[1].shape == torch.Size([1, 512, 4, 4])
-    assert feat[2].shape == torch.Size([1, 1024, 2, 2])
-    assert feat[3].shape == torch.Size([1, 2048, 1, 1])
+    assert feat[0].shape == torch.Size([1, 4, 8, 8])
+    assert feat[1].shape == torch.Size([1, 8, 4, 4])
+    assert feat[2].shape == torch.Size([1, 16, 2, 2])
+    assert feat[3].shape == torch.Size([1, 32, 1, 1])
 
     # Test ResNet50 with layers 1, 2, 3 out forward
-    model = ResNet(50, out_indices=(0, 1, 2))
+    model = ResNet(50, out_indices=(0, 1, 2), base_channels=1)
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 3
-    assert feat[0].shape == torch.Size([1, 256, 8, 8])
-    assert feat[1].shape == torch.Size([1, 512, 4, 4])
-    assert feat[2].shape == torch.Size([1, 1024, 2, 2])
+    assert feat[0].shape == torch.Size([1, 4, 8, 8])
+    assert feat[1].shape == torch.Size([1, 8, 4, 4])
+    assert feat[2].shape == torch.Size([1, 16, 2, 2])
 
     # Test ResNet50 with checkpoint forward
-    model = ResNet(50, with_cp=True)
+    model = ResNet(50, with_cp=True, base_channels=1)
     for m in model.modules():
         if is_block(m):
             assert m.with_cp
@@ -487,14 +481,16 @@ def test_resnet_backbone():
     imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size([1, 256, 8, 8])
-    assert feat[1].shape == torch.Size([1, 512, 4, 4])
-    assert feat[2].shape == torch.Size([1, 1024, 2, 2])
-    assert feat[3].shape == torch.Size([1, 2048, 1, 1])
+    assert feat[0].shape == torch.Size([1, 4, 8, 8])
+    assert feat[1].shape == torch.Size([1, 8, 4, 4])
+    assert feat[2].shape == torch.Size([1, 16, 2, 2])
+    assert feat[3].shape == torch.Size([1, 32, 1, 1])
 
     # Test ResNet50 with GroupNorm forward
     model = ResNet(
-        50, norm_cfg=dict(type='GN', num_groups=32, requires_grad=True))
+        50,
+        base_channels=4,
+        norm_cfg=dict(type='GN', num_groups=2, requires_grad=True))
     for m in model.modules():
         if is_norm(m):
             assert isinstance(m, GroupNorm)
@@ -503,10 +499,10 @@ def test_resnet_backbone():
     imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size([1, 256, 8, 8])
-    assert feat[1].shape == torch.Size([1, 512, 4, 4])
-    assert feat[2].shape == torch.Size([1, 1024, 2, 2])
-    assert feat[3].shape == torch.Size([1, 2048, 1, 1])
+    assert feat[0].shape == torch.Size([1, 16, 8, 8])
+    assert feat[1].shape == torch.Size([1, 32, 4, 4])
+    assert feat[2].shape == torch.Size([1, 64, 2, 2])
+    assert feat[3].shape == torch.Size([1, 128, 1, 1])
 
     # Test ResNet50 with 1 GeneralizedAttention after conv2, 1 NonLocal2D
     # after conv2, 1 ContextBlock after conv3 in layers 2, 3, 4
@@ -526,38 +522,38 @@ def test_resnet_backbone():
             stages=(False, True, True, False),
             position='after_conv3')
     ]
-    model = ResNet(50, plugins=plugins)
+    model = ResNet(50, plugins=plugins, base_channels=8)
     for m in model.layer1.modules():
         if is_block(m):
             assert not hasattr(m, 'context_block')
             assert not hasattr(m, 'gen_attention_block')
-            assert m.nonlocal_block.in_channels == 64
+            assert m.nonlocal_block.in_channels == 8
     for m in model.layer2.modules():
         if is_block(m):
-            assert m.nonlocal_block.in_channels == 128
-            assert m.gen_attention_block.in_channels == 128
-            assert m.context_block.in_channels == 512
+            assert m.nonlocal_block.in_channels == 16
+            assert m.gen_attention_block.in_channels == 16
+            assert m.context_block.in_channels == 64
 
     for m in model.layer3.modules():
         if is_block(m):
-            assert m.nonlocal_block.in_channels == 256
-            assert m.gen_attention_block.in_channels == 256
-            assert m.context_block.in_channels == 1024
+            assert m.nonlocal_block.in_channels == 32
+            assert m.gen_attention_block.in_channels == 32
+            assert m.context_block.in_channels == 128
 
     for m in model.layer4.modules():
         if is_block(m):
-            assert m.nonlocal_block.in_channels == 512
-            assert m.gen_attention_block.in_channels == 512
+            assert m.nonlocal_block.in_channels == 64
+            assert m.gen_attention_block.in_channels == 64
             assert not hasattr(m, 'context_block')
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size([1, 256, 8, 8])
-    assert feat[1].shape == torch.Size([1, 512, 4, 4])
-    assert feat[2].shape == torch.Size([1, 1024, 2, 2])
-    assert feat[3].shape == torch.Size([1, 2048, 1, 1])
+    assert feat[0].shape == torch.Size([1, 32, 8, 8])
+    assert feat[1].shape == torch.Size([1, 64, 4, 4])
+    assert feat[2].shape == torch.Size([1, 128, 2, 2])
+    assert feat[3].shape == torch.Size([1, 256, 1, 1])
 
     # Test ResNet50 with 1 ContextBlock after conv2, 1 ContextBlock after
     # conv3 in layers 2, 3, 4
@@ -572,7 +568,7 @@ def test_resnet_backbone():
             position='after_conv3')
     ]
 
-    model = ResNet(50, plugins=plugins)
+    model = ResNet(50, plugins=plugins, base_channels=8)
     for m in model.layer1.modules():
         if is_block(m):
             assert not hasattr(m, 'context_block')
@@ -581,14 +577,14 @@ def test_resnet_backbone():
     for m in model.layer2.modules():
         if is_block(m):
             assert not hasattr(m, 'context_block')
-            assert m.context_block1.in_channels == 512
-            assert m.context_block2.in_channels == 512
+            assert m.context_block1.in_channels == 64
+            assert m.context_block2.in_channels == 64
 
     for m in model.layer3.modules():
         if is_block(m):
             assert not hasattr(m, 'context_block')
-            assert m.context_block1.in_channels == 1024
-            assert m.context_block2.in_channels == 1024
+            assert m.context_block1.in_channels == 128
+            assert m.context_block2.in_channels == 128
 
     for m in model.layer4.modules():
         if is_block(m):
@@ -600,13 +596,13 @@ def test_resnet_backbone():
     imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size([1, 256, 8, 8])
-    assert feat[1].shape == torch.Size([1, 512, 4, 4])
-    assert feat[2].shape == torch.Size([1, 1024, 2, 2])
-    assert feat[3].shape == torch.Size([1, 2048, 1, 1])
+    assert feat[0].shape == torch.Size([1, 32, 8, 8])
+    assert feat[1].shape == torch.Size([1, 64, 4, 4])
+    assert feat[2].shape == torch.Size([1, 128, 2, 2])
+    assert feat[3].shape == torch.Size([1, 256, 1, 1])
 
     # Test ResNet50 zero initialization of residual
-    model = ResNet(50, zero_init_residual=True)
+    model = ResNet(50, zero_init_residual=True, base_channels=1)
     model.init_weights()
     for m in model.modules():
         if isinstance(m, Bottleneck):
@@ -618,19 +614,19 @@ def test_resnet_backbone():
     imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size([1, 256, 8, 8])
-    assert feat[1].shape == torch.Size([1, 512, 4, 4])
-    assert feat[2].shape == torch.Size([1, 1024, 2, 2])
-    assert feat[3].shape == torch.Size([1, 2048, 1, 1])
+    assert feat[0].shape == torch.Size([1, 4, 8, 8])
+    assert feat[1].shape == torch.Size([1, 8, 4, 4])
+    assert feat[2].shape == torch.Size([1, 16, 2, 2])
+    assert feat[3].shape == torch.Size([1, 32, 1, 1])
 
     # Test ResNetV1d forward
-    model = ResNetV1d(depth=50)
+    model = ResNetV1d(depth=50, base_channels=2)
     model.train()
 
     imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size([1, 256, 8, 8])
-    assert feat[1].shape == torch.Size([1, 512, 4, 4])
-    assert feat[2].shape == torch.Size([1, 1024, 2, 2])
-    assert feat[3].shape == torch.Size([1, 2048, 1, 1])
+    assert feat[0].shape == torch.Size([1, 8, 8, 8])
+    assert feat[1].shape == torch.Size([1, 16, 4, 4])
+    assert feat[2].shape == torch.Size([1, 32, 2, 2])
+    assert feat[3].shape == torch.Size([1, 64, 1, 1])
