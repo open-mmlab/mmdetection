@@ -136,7 +136,7 @@ jobs:
       - name: Install PyTorch
         run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
       - name: Install dependencies for compiling onnx when python=3.9
-        run: pip install protobuf && sudo apt-get install libprotobuf-dev protobuf-compiler
+        run: pip install protobuf && apt-get install libprotobuf-dev protobuf-compiler
         if: ${{matrix.python-version == '3.9'}}
       - name: Install system dependencies
         run: |
