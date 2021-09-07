@@ -250,14 +250,14 @@ def test_faster_rcnn_ohem_forward():
 @pytest.mark.parametrize(
     'cfg_file',
     [
-        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        # 'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
         'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-        'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
-        'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py',
-        'htc/htc_r50_fpn_1x_coco.py',
-        'panoptic_fpn/panoptic_fpn_r50_fpn_1x_coco.py',
-        'scnet/scnet_r50_fpn_20e_coco.py',
-        'seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py'  # noqa: E501
+        # 'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
+        # 'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py',
+        # 'htc/htc_r50_fpn_1x_coco.py',
+        # 'panoptic_fpn/panoptic_fpn_r50_fpn_1x_coco.py',
+        # 'scnet/scnet_r50_fpn_20e_coco.py',
+        # 'seesaw_loss/mask_rcnn_r50_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py'  # noqa: E501
     ])
 def test_two_stage_forward(cfg_file):
     models_with_semantic = [
