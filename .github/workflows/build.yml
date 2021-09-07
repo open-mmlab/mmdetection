@@ -143,6 +143,7 @@ jobs:
         run: |
           python -V
           python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/${{matrix.mmcv_link}}/index.html
+          python -m pip install wheel
           python -m pip install pycocotools
           python -m pip install -r requirements/tests.txt -r requirements/optional.txt
           python -m pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
