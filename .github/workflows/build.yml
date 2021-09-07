@@ -144,7 +144,7 @@ jobs:
           python -V
           export LD_LIBRARY_PATH=/__t/Python/3.7.11/x64/lib:$LD_LIBRARY_PATH
           export LIBRARY_PATH=/__t/Python/3.7.11/x64/lib:$LIBRARY_PATH
-          ln -s /__t/Python/3.7.11/x64/lib/libpython3.7m.so /usr/bin/ld/
+          ln -s /__t/Python/3.7.11/x64/lib/libpython3.7m.so /usr/bin/
           python -m pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/${{matrix.mmcv_link}}/index.html
           python -m pip install pycocotools
           python -m pip install -r requirements/tests.txt -r requirements/optional.txt
