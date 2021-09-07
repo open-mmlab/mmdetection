@@ -100,7 +100,7 @@ def get_task_class(path):
 
 
 class TrainingProgressCallback(TimeMonitorCallback):
-    def __init__(self, update_progress_callback: Optional[UpdateProgressCallback] = None):
+    def __init__(self, update_progress_callback: UpdateProgressCallback):
         super().__init__(0, 0, 0, 0, update_progress_callback=update_progress_callback)
 
     def on_train_batch_end(self, batch, logs=None):
@@ -109,7 +109,7 @@ class TrainingProgressCallback(TimeMonitorCallback):
 
 
 class InferenceProgressCallback(TimeMonitorCallback):
-    def __init__(self, num_test_steps, update_progress_callback: Optional[UpdateProgressCallback] = None):
+    def __init__(self, num_test_steps, update_progress_callback: UpdateProgressCallback):
         super().__init__(
             num_epoch=0,
             num_train_steps=0,
