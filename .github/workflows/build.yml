@@ -86,7 +86,6 @@ jobs:
             1.6.0+cu101,
             1.7.0+cu101,
             1.8.0+cu101,
-            1.9.0+cu101,
           ]
         include:
           - torch: 1.3.1
@@ -124,10 +123,6 @@ jobs:
             torch_version: torch1.8.0
             torchvision: 0.9.0+cu101
             mmcv_link: "torch1.8.0"
-          - torch: 1.9.0+cu101
-            torch_version: torch1.9.0
-            torchvision: 0.10.0+cu101
-            mmcv_link: "torch1.9.0"
 
     steps:
       - uses: actions/checkout@v2
