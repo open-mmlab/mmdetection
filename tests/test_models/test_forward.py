@@ -48,7 +48,8 @@ def _replace_r50_with_r18(model):
     model = copy.deepcopy(model)
     if model.backbone.type == 'ResNet':
         model.backbone.depth = 18
-        model.neck.in_channels = [64, 128, 256, 512]
+        model.backbone.base_channels = 2
+        model.neck.in_channels = [2, 4, 8, 16]
     return model
 
 
