@@ -126,6 +126,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 python${{matrix.python-version}}-dev
+          apt-get clean
+          rm -rf /var/lib/apt/lists/*
       - name: Install Pillow
         run: pip install Pillow==6.2.2
         if: ${{matrix.torchvision < 0.5}}
@@ -134,11 +139,6 @@ jobs:
       - name: Install dependencies for compiling onnx when python=3.9
         run: pip install protobuf && apt-get install libprotobuf-dev protobuf-compiler
         if: ${{matrix.python-version == '3.9'}}
-      - name: Install system dependencies
-        run: |
-          apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 python${{matrix.python-version}}-dev
-          apt-get clean
-          rm -rf /var/lib/apt/lists/*
       - name: Install mmdet dependencies
         run: |
           python -V
