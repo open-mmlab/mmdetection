@@ -14,8 +14,8 @@ Collections:
       Title: 'NAS-FPN: Learning Scalable Feature Pyramid Architecture for Object Detection'
     README: configs/nas_fpn/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0.0/mmdet/models/necks/nas_fpn.py#L68
-      Version: v1.0.0
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/necks/nas_fpn.py#L67
+      Version: v2.0.0
 
 Models:
   - Name: retinanet_r50_fpn_crop640_50e_coco

@@ -14,8 +14,8 @@ Collections:
       Title: 'FoveaBox: Beyond Anchor-based Object Detector'
     README: configs/foveabox/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc1/mmdet/models/detectors/fovea.py#L6
-      Version: v1.0rc1
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/fovea.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: fovea_r50_fpn_4x4_1x_coco

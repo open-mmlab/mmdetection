@@ -15,8 +15,8 @@ Collections:
       Title: 'Region Proposal by Guided Anchoring'
     README: configs/guided_anchoring/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc0/mmdet/models/anchor_heads/ga_retina_head.py#L11
-      Version: v1.0rc0
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/dense_heads/ga_retina_head.py#L10
+      Version: v2.0.0
 
 Models:
   - Name: ga_rpn_r50_caffe_fpn_1x_coco

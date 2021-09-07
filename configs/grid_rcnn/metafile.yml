@@ -16,8 +16,8 @@ Collections:
       Title: 'Grid R-CNN'
     README: configs/grid_rcnn/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc0/mmdet/models/detectors/grid_rcnn.py#L11
-      Version: v1.0rc0
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/grid_rcnn.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: grid_rcnn_r50_fpn_gn-head_2x_coco

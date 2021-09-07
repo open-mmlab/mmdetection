@@ -13,8 +13,8 @@ Collections:
       Title: 'Deformable ConvNets v2: More Deformable, Better Results'
     README: configs/dcn/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v0.5.7/mmdet/ops/dcn/modules/deform_conv.py#L10
-      Version: v0.5.7
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/ops/dcn/deform_conv.py#L15
+      Version: v2.0.0
 
 Models:
   - Name: faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco

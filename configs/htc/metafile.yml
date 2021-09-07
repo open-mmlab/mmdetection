@@ -18,8 +18,8 @@ Collections:
       Title: 'Hybrid Task Cascade for Instance Segmentation'
     README: configs/htc/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc0/mmdet/models/detectors/htc.py#L12
-      Version: v1.0rc0
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/htc.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: htc_r50_fpn_1x_coco

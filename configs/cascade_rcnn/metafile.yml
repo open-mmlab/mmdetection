@@ -17,8 +17,8 @@ Collections:
       Title: 'Cascade R-CNN: Delving into High Quality Object Detection'
     README: configs/cascade_rcnn/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v0.5.7/mmdet/models/detectors/cascade_rcnn.py#L15
-      Version: v0.5.7
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/cascade_rcnn.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: cascade_rcnn_r50_caffe_fpn_1x_coco

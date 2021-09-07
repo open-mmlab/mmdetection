@@ -13,8 +13,8 @@ Collections:
       Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
     README: configs/hrnet/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc0/mmdet/models/backbones/hrnet.py#L196
-      Version: v1.0rc0
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
 Models:
   - Name: faster_rcnn_hrnetv2p_w18_1x_coco

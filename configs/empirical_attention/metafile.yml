@@ -18,8 +18,8 @@ Collections:
       Title: 'An Empirical Study of Spatial Attention Mechanisms in Deep Networks'
     README: configs/empirical_attention/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc0/mmdet/models/plugins/generalized_attention.py#L10
-      Version: v1.0rc0
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/ops/generalized_attention.py#L10
+      Version: v2.0.0
 
 Models:
   - Name: faster_rcnn_r50_fpn_attention_1111_1x_coco

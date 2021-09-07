@@ -14,8 +14,8 @@ Collections:
       Title: 'Libra R-CNN: Towards Balanced Learning for Object Detection'
     README: configs/libra_rcnn/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc0/mmdet/models/necks/bfp.py#L11
-      Version: v1.0rc0
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/necks/bfp.py#L10
+      Version: v2.0.0
 
 Models:
   - Name: libra_faster_rcnn_r50_fpn_1x_coco

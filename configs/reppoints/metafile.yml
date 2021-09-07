@@ -16,8 +16,8 @@ Collections:
       Title: 'RepPoints: Point Set Representation for Object Detection'
     README: configs/reppoints/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v1.0rc1/mmdet/models/detectors/reppoints_detector.py#L9
-      Version: v1.0rc1
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/reppoints_detector.py#L9
+      Version: v2.0.0
 
 Models:
   - Name: bbox_r50_grid_fpn_gn-neck+head_1x_coco
