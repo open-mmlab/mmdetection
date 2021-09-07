@@ -110,11 +110,6 @@ jobs:
             torchvision: 0.7.0+cu101
             mmcv_link: "torch1.6.0"
             python-version: 3.8
-          - torch: 1.6.0+cu101
-            torch_version: torch1.6.0
-            torchvision: 0.7.0+cu101
-            mmcv_link: "torch1.6.0"
-            python-version: 3.9
           - torch: 1.7.0+cu101
             torch_version: torch1.7.0
             torchvision: 0.8.1+cu101
