@@ -63,29 +63,19 @@ class DynamicMaskHead(FCNMaskHead):
 
     @auto_fp16()
     def forward(self, roi_feat, proposal_feat):
-        """Forward function of Dynamic Instance Interactive Head.
+        """Forward function of DynamicMaskHead.
 
         Args:
             roi_feat (Tensor): Roi-pooling features with shape
-                (batch_size*num_proposals, feature_dimensions,
+                (num_gts, feature_dimensions,
                 pooling_h , pooling_w).
             proposal_feat (Tensor): Intermediate feature get from
                 diihead in last stage, has shape
-                (batch_size, num_proposals, feature_dimensions)
+                (num_gts, feature_dimensions)
 
           Returns:
-                tuple[Tensor]: Usually a tuple of classification scores
-                and bbox prediction and a intermediate feature.
-
-                    - cls_scores (Tensor): Classification scores for
-                      all proposals, has shape
-                      (batch_size, num_proposals, num_classes).
-                    - bbox_preds (Tensor): Box energies / deltas for
-                      all proposals, has shape
-                      (batch_size, num_proposals, 4).
-                    - obj_feat (Tensor): Object feature before classification
-                      and regression subnet, has shape
-                      (batch_size, num_proposal, feature_dimensions).
+            mask_pred (Tensor): Predicted foreground masks with shape
+                (num_gts, num_classes, pooling_h*2, pooling_w*2).
         """
 
         proposal_feat = proposal_feat.reshape(-1, self.in_channels)
