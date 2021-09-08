@@ -45,7 +45,8 @@ class DynamicMaskHead(FCNMaskHead):
             upsample_cfg=upsample_cfg,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
-            loss_mask=loss_mask)
+            loss_mask=loss_mask,
+            **kwargs)
         assert class_agnostic is False, \
             'DynamicMaskHead only support class_agnostic=False'
         self.fp16_enabled = False

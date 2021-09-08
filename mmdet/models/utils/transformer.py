@@ -1040,6 +1040,8 @@ class DynamicConv(BaseModule):
             by default
         input_feat_shape (int): The shape of input feature.
             Defaults to 7.
+        with_proj (bool): Project two-dimentional feature to
+            one-dimentional feature. Default to False.
         act_cfg (dict): The activation config for DynamicConv.
         norm_cfg (dict): Config dict for normalization layer. Default
             layer normalization.
@@ -1096,7 +1098,6 @@ class DynamicConv(BaseModule):
             Tensor: The output feature has shape
             (num_all_proposals, out_channels).
         """
-        num_proposals = param_feature.size(0)
         input_feature = input_feature.flatten(2).permute(2, 0, 1)
 
         input_feature = input_feature.permute(1, 0, 2)

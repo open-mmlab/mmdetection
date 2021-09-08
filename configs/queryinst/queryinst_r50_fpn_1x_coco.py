@@ -88,7 +88,6 @@ model = dict(
                     with_proj=False,
                     act_cfg=dict(type='ReLU', inplace=True),
                     norm_cfg=dict(type='LN')),
-                dropout=0.0,
                 num_convs=4,
                 num_classes=80,
                 roi_feat_size=14,
@@ -98,7 +97,7 @@ model = dict(
                 class_agnostic=False,
                 norm_cfg=dict(type='BN'),
                 upsample_cfg=dict(type='deconv', scale_factor=2),
-                loss_dice=dict(type='DiceLoss', loss_weight=8.0))
+                loss_mask=dict(type='DiceLoss', loss_weight=8.0))
             for _ in range(num_stages)
         ]),
     # training and testing settings
