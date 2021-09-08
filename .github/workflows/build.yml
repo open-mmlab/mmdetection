@@ -161,7 +161,7 @@ jobs:
 #          fail_ci_if_error: false
 
   build_cuda102:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     container:
       image: pytorch/pytorch:1.9.0-cuda10.2-cudnn7-devel
 
@@ -183,6 +183,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install system dependencies
         run: |
+          apt-get install software-properties-common
+          add-apt-repository universe
           apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 python${{matrix.python-version}}-dev
           apt-get clean
           rm -rf /var/lib/apt/lists/*
