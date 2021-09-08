@@ -184,7 +184,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update && apt-get install software-properties-common -y
-          apt-get update && add-apt-repository universe
+          apt-get update && add-apt-repository ppa:deadsnakes/ppa
           apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 python${{matrix.python-version}}-dev
           apt-get clean
           rm -rf /var/lib/apt/lists/*
