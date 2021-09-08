@@ -35,7 +35,7 @@ from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
 from ote_sdk.entities.model import ModelStatus, ModelPrecision
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
-from ote_sdk.entities.shapes.box import Box
+from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
 from ote_sdk.configuration import cfg_helper
 from sc_sdk.entities.annotation import Annotation
@@ -185,7 +185,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                         continue
 
                     shapes.append(Annotation(
-                        Box(x1=coords[0], y1=coords[1], x2=coords[2], y2=coords[3]),
+                        Rectangle(x1=coords[0], y1=coords[1], x2=coords[2], y2=coords[3]),
                         labels=assigned_label))
 
             dataset_item.append_annotations(shapes)
