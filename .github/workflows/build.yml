@@ -217,9 +217,9 @@ jobs:
           coverage xml
           coverage report -m
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.10
+        uses: codecov/codecov-action@v2
         with:
-          file: ./coverage.xml
+          files: ./coverage1.xml,./coverage2.xml
           flags: unittests
           env_vars: OS,PYTHON
           name: codecov-umbrella
