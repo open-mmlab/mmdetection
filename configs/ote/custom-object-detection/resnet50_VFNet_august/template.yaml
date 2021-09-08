@@ -9,10 +9,6 @@ summary: Custom Object Detection Model L Gen 2
 # Would be better to have something more precise and self-contained, e.g.:  docker image or path to Python venv activation script?
 framework: OTEDetection v2.9.1
 
-dependencies:
-- source: ../../../../mmdet/apis/ote/apis/detection/configuration.yaml
-  destination: configuration.yaml
-
 # Should be revisited?
 #applications:
 #  ~
@@ -28,7 +24,7 @@ entrypoints:
 
 # Task and hyperparameters.
 hyper_parameters:
-  base_path: "configuration.yaml"
+  base_path: ../../../../mmdet/apis/ote/apis/detection/configuration.yaml
   parameter_overrides:
     learning_parameters:
       batch_size:
@@ -37,8 +33,6 @@ hyper_parameters:
         default_value: 0.01
       learning_rate_warmup_iters:
         default_value: 500
-      num_checkpoints:
-        default_value: 10
 
 # Available model optimizations and their configuration.
 #optimization:
@@ -65,9 +59,9 @@ training_targets:
   - GPU
 
 # Inference options. Defined by OpenVINO capabilities, not Algo Backend or Platform.
-inference_target:
-  - GPU
-  - VPU
+#inference_target:
+#  - GPU
+#  - VPU
 
 # Some meta information, which may be used for model recommendation. In general, metrics are non-static, hence has to be updated.
 #metrics:
