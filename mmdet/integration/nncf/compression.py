@@ -108,7 +108,6 @@ def wrap_nncf_model(model,
     from nncf.torch.initialization import PTInitializingDataLoader
 
     class MMInitializeDataLoader(PTInitializingDataLoader):
-
         def get_inputs(self, dataloader_output):
             # redefined InitializingDataLoader because
             # of DataContainer format in mmdet
@@ -242,7 +241,6 @@ def wrap_nncf_model(model,
                                                           dump_graphs=False)
         if resuming_state_dict:
             load_state(model, resuming_state_dict, is_resume=True)
-
     model.export = export_method.__get__(model)
 
     return compression_ctrl, model

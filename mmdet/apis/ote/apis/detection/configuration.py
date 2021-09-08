@@ -13,16 +13,21 @@
 # and limitations under the License.
 
 from attr import attrs
-from sc_sdk.configuration import ModelConfig, ModelLifecycle
-from ote_sdk.configuration.elements import (
-    ParameterGroup,
-    add_parameter_group,
-    configurable_boolean,
-    configurable_float,
-    configurable_integer,
-    string_attribute,
-    boolean_attribute
-)
+
+from sys import maxsize
+
+from ote_sdk.configuration.elements import (ParameterGroup,
+                                            add_parameter_group,
+                                            boolean_attribute,
+                                            configurable_boolean,
+                                            configurable_float,
+                                            configurable_integer,
+                                            selectable,
+                                            string_attribute,
+                                            ModelConfig)
+from ote_sdk.configuration.model_lifecycle import ModelLifecycle
+
+from .configuration_enums import POTQuantizationPreset
 
 
 @attrs
@@ -156,7 +161,24 @@ class OTEDetectionConfig(ModelConfig):
             affects_outcome_of=ModelLifecycle.TRAINING
         )
 
+    class __POTParameter(ParameterGroup):
+        header = string_attribute("POT Parameters")
+        description = header
+
+        stat_subset_size = configurable_integer(
+            header="Number of data samples",
+            description="Number of data samples used for post-training optimization",
+            default_value=300,
+            min_value=1,
+            max_value=maxsize
+        )
+
+        preset = selectable(default_value=POTQuantizationPreset.PERFORMANCE, header="Preset",
+                            description="Quantization preset that defines quantization scheme",
+                            editable=False, visible_in_ui=False)
+
     learning_parameters = add_parameter_group(__LearningParameters)
     algo_backend = add_parameter_group(__AlgoBackend)
     postprocessing = add_parameter_group(__Postprocessing)
     nncf_optimization = add_parameter_group(__NNCFOptimization)
+    pot_parameters = add_parameter_group(__POTParameter)

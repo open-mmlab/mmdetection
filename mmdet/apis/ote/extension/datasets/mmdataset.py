@@ -22,7 +22,8 @@ import numpy as np
 from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.shapes.box import Box
 
-from sc_sdk.entities.annotation import Annotation, AnnotationScene, AnnotationSceneKind, NullMediaIdentifier
+from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
+from sc_sdk.entities.annotation import AnnotationScene, NullMediaIdentifier
 from sc_sdk.entities.datasets import Dataset, DatasetItem, NullDataset, Subset
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.image import Image
@@ -262,7 +263,7 @@ class MMDatasetAdapter(Dataset):
         if self.ann_files[subset] is None:
             return False
         from mmdet.datasets.pipelines import LoadImageFromFile, LoadAnnotations
-        pipeline = [LoadImageFromFile(), LoadAnnotations(with_bbox=True)]
+        pipeline = [dict(type='LoadImageFromFile'), dict(type='LoadAnnotations', with_bbox=True)]
         self.coco_dataset = CocoDataset(ann_file=self.ann_files[subset],
                                         pipeline=pipeline,
                                         data_root=self.data_roots[subset],

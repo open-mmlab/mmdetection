@@ -1,10 +1,34 @@
 #!/usr/bin/env bash
+set -v
+set -x
 
 work_dir=$(realpath "$(dirname $0)")
 
 venv_dir=$1
+PYTHON_NAME=$2
+
 if [ -z "$venv_dir" ]; then
-  venv_dir=venv
+  venv_dir=$(realpath -m ${work_dir}/venv)
+else
+  venv_dir=$(realpath -m "$venv_dir")
+fi
+
+if [[ -z $PYTHON_NAME ]]; then
+  # the default option -- note that the minimal version of
+  # python that is suitable for this repo is python3.7,
+  # whereas the default python3 may point to python3.6
+  PYTHON_NAME=python3
+fi
+
+PYTHON_VERSION=$($PYTHON_NAME --version | sed -e "s/^Python \([0-9]\.[0-9]\)\..*/\1/") || exit 1
+if [[ $PYTHON_VERSION != "3.7" && $PYTHON_VERSION != "3.8" && $PYTHON_VERSION != "3.9" ]]; then
+  echo "Wrong version of python: '$PYTHON_VERSION'"
+  exit 1
+fi
+
+if [[ -z $SC_SDK_REPO ]]; then
+  echo "The environment variable SC_SDK_REPO is not set -- it is required for creating virtual environment"
+  exit 1
 fi
 
 cd ${work_dir}
@@ -17,7 +41,7 @@ if [[ -e ${venv_dir} ]]; then
 fi
 
 # Create virtual environment
-python3 -m venv ${venv_dir} --prompt="detection"
+$PYTHON_NAME -m venv ${venv_dir} --prompt="detection"
 
 . ${venv_dir}/bin/activate
 
@@ -43,7 +67,6 @@ fi
 # install PyTorch and MMCV.
 export TORCH_VERSION=1.8.1
 export TORCHVISION_VERSION=0.9.1
-export NUMPY_VERSION=1.19.5
 export MMCV_VERSION=1.3.0
 
 if [[ -z ${CUDA_VERSION} ]]; then
@@ -69,45 +92,52 @@ else
   fi
 fi
 
-pip install wheel
-
 CONSTRAINTS_FILE=$(tempfile)
-echo numpy==${NUMPY_VERSION} >> ${CONSTRAINTS_FILE}
+cat constraints.txt >> ${CONSTRAINTS_FILE}
+
+pip install --upgrade pip || exit 1
+pip install wheel -c ${CONSTRAINTS_FILE} || exit 1
+pip install --upgrade setuptools -c ${CONSTRAINTS_FILE} || exit 1
 
 if [[ -z $CUDA_VERSION_CODE ]]; then
-  pip install torch==${TORCH_VERSION}+cpu torchvision==${TORCHVISION_VERSION}+cpu -f https://download.pytorch.org/whl/torch_stable.html
   echo torch==${TORCH_VERSION}+cpu >> ${CONSTRAINTS_FILE}
   echo torchvision==${TORCHVISION_VERSION}+cpu >> ${CONSTRAINTS_FILE}
+  pip install torch==${TORCH_VERSION}+cpu torchvision==${TORCHVISION_VERSION}+cpu -f https://download.pytorch.org/whl/torch_stable.html \
+          -c ${CONSTRAINTS_FILE} || exit 1
 elif [[ $CUDA_VERSION_CODE == "102" ]]; then
-  pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
   echo torch==${TORCH_VERSION} >> ${CONSTRAINTS_FILE}
   echo torchvision==${TORCHVISION_VERSION} >> ${CONSTRAINTS_FILE}
+  pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION} -c ${CONSTRAINTS_FILE} || exit 1
 else
-  pip install torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} -f https://download.pytorch.org/whl/torch_stable.html
   echo torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
   echo torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
+  pip install torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} -f https://download.pytorch.org/whl/torch_stable.html \
+          -c ${CONSTRAINTS_FILE} || exit 1
 fi
 
 if [[ -z $CUDA_VERSION_CODE ]]; then
-  pip install --no-cache-dir mmcv-full==${MMCV_VERSION} -f https://download.openmmlab.com/mmcv/dist/cpu/torch${TORCH_VERSION}/index.html -c ${CONSTRAINTS_FILE}
+  pip install --no-cache-dir mmcv-full==${MMCV_VERSION} -f https://download.openmmlab.com/mmcv/dist/cpu/torch${TORCH_VERSION}/index.html -c ${CONSTRAINTS_FILE} || exit 1
 else
-  pip install --no-cache-dir mmcv-full==${MMCV_VERSION} -f https://download.openmmlab.com/mmcv/dist/cu${CUDA_VERSION_CODE}/torch${TORCH_VERSION}/index.html -c ${CONSTRAINTS_FILE}
+  pip install --no-cache-dir mmcv-full==${MMCV_VERSION} -f https://download.openmmlab.com/mmcv/dist/cu${CUDA_VERSION_CODE}/torch${TORCH_VERSION}/index.html -c ${CONSTRAINTS_FILE} || exit 1
 fi
 
 # Install other requirements.
 # Install mmpycocotools and Polygon3 from source to make sure it is compatible with installed numpy version.
-pip install --no-cache-dir --no-binary=mmpycocotools mmpycocotools -c ${CONSTRAINTS_FILE}
-pip install --no-cache-dir --no-binary=Polygon3 Polygon3==3.0.8 -c ${CONSTRAINTS_FILE}
-cat requirements.txt | xargs -n 1 -L 1 pip install --no-cache -c ${CONSTRAINTS_FILE}
+pip install --no-cache-dir --no-binary=mmpycocotools mmpycocotools -c ${CONSTRAINTS_FILE} || exit 1
+pip install --no-cache-dir --no-binary=Polygon3 Polygon3==3.0.8 -c ${CONSTRAINTS_FILE} || exit 1
+cat requirements.txt | xargs -n 1 -L 1 pip install --no-cache -c ${CONSTRAINTS_FILE} || exit 1
 
-pip install -e . -c ${CONSTRAINTS_FILE}
+pip install -e . -c ${CONSTRAINTS_FILE} || exit 1
 MMDETECTION_DIR=`realpath .`
 echo "export MMDETECTION_DIR=${MMDETECTION_DIR}" >> ${venv_dir}/bin/activate
 
-pip install -e $SC_SDK_REPO/src/ote_sdk -c ${CONSTRAINTS_FILE}
-pip install -e $SC_SDK_REPO/src/sc_sdk -c ${CONSTRAINTS_FILE}
-pip install -e $SC_SDK_REPO/src/common/users_handler -c ${CONSTRAINTS_FILE}
-pip install `find $SC_SDK_REPO/.cache -name *.whl`
+
+pip install -e $SC_SDK_REPO/src/ote_sdk -c ${CONSTRAINTS_FILE} || exit 1
+pip install -e $SC_SDK_REPO/src/sc_sdk -c ${CONSTRAINTS_FILE} || exit 1
+pip install -e $SC_SDK_REPO/src/common/users_handler -c ${CONSTRAINTS_FILE} || exit 1
+if [[ -z ${SKIP_SC_SDK_ADDITIONAL_PACKAGES} ]]; then
+  pip install `find $SC_SDK_REPO/.cache -name *.whl` || exit 1
+fi
 
 deactivate
 

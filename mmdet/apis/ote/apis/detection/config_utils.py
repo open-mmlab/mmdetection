@@ -17,12 +17,13 @@ import glob
 import os
 import tempfile
 from collections import defaultdict
+from typing import List, Optional
+
 from mmcv import Config, ConfigDict
+from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from sc_sdk.entities.datasets import Dataset
 from sc_sdk.entities.label import Label
 from sc_sdk.logging import logger_factory
-from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
-from typing import List, Optional
 
 from .configuration import OTEDetectionConfig
 

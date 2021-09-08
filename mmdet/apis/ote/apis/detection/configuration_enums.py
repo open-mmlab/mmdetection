@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .datasets import OTEDataset, get_annotation_mmdet_format
-from .utils import (CancelTrainingHook, FixedMomentumUpdaterHook, LoadImageFromOTEDataset, EpochRunnerWithCancel,
-    LoadAnnotationFromOTEDataset, OTELoggerHook, OTEProgressHook, EarlyStoppingHook, ReduceLROnPlateauLrUpdaterHook)
+from ote_sdk.configuration import ConfigurableEnum
+
+class POTQuantizationPreset(ConfigurableEnum):
+    """
+    This Enum represents the quantization preset for post training optimization
+    """
+    PERFORMANCE = 'Performance'
+    MIXED = 'Mixed'

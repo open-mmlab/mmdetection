@@ -14,62 +14,53 @@
 
 import copy
 import io
+import numpy as np
 import os
 import shutil
 import tempfile
 import torch
 import warnings
 from collections import defaultdict
-from typing import Optional, List, Tuple
-
-import numpy as np
-
-from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.metrics import (CurveMetric,
-                                      LineChartInfo,
-                                      MetricsGroup,
-                                      Performance,
-                                      ScoreMetric,
-                                      InfoMetric,
-                                      VisualizationType,
-                                      VisualizationInfo)
-from ote_sdk.entities.shapes.box import Box
-from ote_sdk.entities.train_parameters import TrainParameters
-from ote_sdk.entities.label import ScoredLabel
-
-from sc_sdk.configuration import cfg_helper, ModelConfig
-from ote_sdk.configuration.helper.utils import ids_to_strings
-from sc_sdk.entities.annotation import Annotation
-from sc_sdk.entities.datasets import Dataset, Subset
-from sc_sdk.entities.optimized_model import OptimizedModel, ModelPrecision
-from sc_sdk.entities.task_environment import TaskEnvironment
-
-
-from sc_sdk.entities.model import Model, ModelStatus, NullModel
-
-from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
-from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
-from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
-from sc_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
-from sc_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
-from sc_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
-from sc_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
-from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, ExportType
-from sc_sdk.usecases.tasks.interfaces.unload_interface import IUnload
-from sc_sdk.logging import logger_factory
+from typing import List, Optional, Tuple
 
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
-from mmdet.apis import train_detector, single_gpu_test, export_model
+from ote_sdk.configuration.helper.utils import ids_to_strings
+from ote_sdk.entities.inference_parameters import InferenceParameters
+from ote_sdk.entities.label import ScoredLabel
+from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
+                                      MetricsGroup, Performance, ScoreMetric,
+                                      VisualizationInfo, VisualizationType)
+from ote_sdk.entities.model import ModelStatus, ModelPrecision
+from ote_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
+from ote_sdk.entities.shapes.box import Box
+from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
+from ote_sdk.configuration import cfg_helper
+from sc_sdk.entities.annotation import Annotation
+from sc_sdk.entities.datasets import Dataset, Subset
+from sc_sdk.entities.model import Model
+from sc_sdk.logging import logger_factory
+
+from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
+from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
+from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
+from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
+from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
+from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
+
+from mmdet.apis import export_model, single_gpu_test, train_detector
+from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
+                                                        prepare_for_testing,
+                                                        prepare_for_training,
+                                                        set_hyperparams)
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.config_utils import (patch_config, set_hyperparams, prepare_for_training,
-    prepare_for_testing)
+from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
-from mmdet.datasets import build_dataset, build_dataloader
+from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
-
 
 logger = logger_factory.get_logger("OTEDetectionTask")
 
@@ -109,11 +100,10 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         self._training_work_dir = None
         self._is_training = False
         self._should_stop = False
-        self._time_monitor = None
 
 
     def _load_model(self, model: Model):
-        if model != NullModel():
+        if model is not None:
             # If a model has been trained and saved for the task already, create empty model and load weights here
             buffer = io.BytesIO(model.get_data("weights.pth"))
             model_data = torch.load(buffer, map_location=torch.device('cpu'))
@@ -231,7 +221,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
 
     def evaluate(self,
-                 output_result_set: ResultSet,
+                 output_result_set: ResultSetEntity,
                  evaluation_metric: Optional[str] = None):
         """ Computes performance on a resultset """
         params = self._hyperparams
@@ -270,10 +260,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
         # Create new model if training from scratch.
         old_model = copy.deepcopy(self._model)
-        # if train_parameters is not None and train_parameters.train_on_empty_model:
-        #     logger.info("Training from scratch, creating new model")
-        #     # FIXME. Isn't it an overkill? Consider calling init_weights instead.
-        #     self._model = self._create_model(config=config, from_scratch=True)
 
         # Evaluate model performance before training.
         _, initial_performance = self._infer_detector(self._model, config, val_dataset, True)
@@ -285,14 +271,17 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             self._model = old_model
             self._should_stop = False
             self._is_training = False
-            self._time_monitor = None
             self._training_work_dir = None
             return
 
         # Run training.
-        self._time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda _: None)
+        if train_parameters is not None:
+            update_progress_callback = train_parameters.update_progress
+        else:
+            update_progress_callback = default_progress_callback
+        time_monitor = TrainingProgressCallback(update_progress_callback)
         learning_curves = defaultdict(OTELoggerHook.Curve)
-        training_config = prepare_for_training(config, train_dataset, val_dataset, self._time_monitor, learning_curves)
+        training_config = prepare_for_training(config, train_dataset, val_dataset, time_monitor, learning_curves)
         self._training_work_dir = training_config.work_dir
         mm_train_dataset = build_dataset(training_config.data.train)
         self._is_training = True
@@ -306,7 +295,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             self._model = old_model
             self._should_stop = False
             self._is_training = False
-            self._time_monitor = None
             return
 
         # Load the best weights and check if model has improved.
@@ -320,7 +308,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         improved = final_performance > initial_performance
 
         # Return a new model if model has improved, or there is no model yet.
-        if improved or isinstance(self._task_environment.model, NullModel):
+        if improved or self._task_environment.model is None:
             if improved:
                 logger.info("Training finished, and it has an improved model")
             else:
@@ -338,7 +326,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             self._model = old_model
 
         self._is_training = False
-        self._time_monitor = None
 
 
     def save_model(self, output_model: Model):
@@ -349,17 +336,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
         torch.save(modelinfo, buffer)
         output_model.set_data("weights.pth", buffer.getvalue())
-
-
-    def get_training_progress(self) -> float:
-        """
-        Calculate the progress of the current training
-
-        :return: training progress in percent
-        """
-        if self._time_monitor is not None:
-            return self._time_monitor.get_progress()
-        return -1.0
 
 
     def cancel_training(self):
@@ -453,7 +429,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
     def export(self,
                export_type: ExportType,
-               output_model: OptimizedModel):
+               output_model: Model):
         assert export_type == ExportType.OPENVINO
         optimized_model_precision = ModelPrecision.FP32
         with tempfile.TemporaryDirectory() as tempdir:

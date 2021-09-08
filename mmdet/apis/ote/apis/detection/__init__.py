@@ -37,7 +37,6 @@ __all__ = [
     patch_config,
     prepare_for_testing,
     prepare_for_training,
-    reload_hyper_parameters,
     save_config_to_file,
     set_hyperparams,
     set_values_as_default,
