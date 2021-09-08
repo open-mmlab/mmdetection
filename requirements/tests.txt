@@ -7,7 +7,7 @@ isort==4.3.21
 kwarray
 mmtrack
 onnx==1.7.0
-onnxruntime==1.5.1
+onnxruntime>=1.8.0
 pytest
 ubelt
 xdoctest>=0.10.0
