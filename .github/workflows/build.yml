@@ -183,8 +183,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install system dependencies
         run: |
-          apt-get install software-properties-common
-          add-apt-repository universe
+          apt-get update && apt-get install software-properties-common
+          apt-get update && add-apt-repository universe
           apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 python${{matrix.python-version}}-dev
           apt-get clean
           rm -rf /var/lib/apt/lists/*
