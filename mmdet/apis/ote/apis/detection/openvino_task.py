@@ -25,7 +25,7 @@ from ote_sdk.entities.id import ID
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
-from ote_sdk.entities.shapes.box import Box
+from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.datasets import Dataset
@@ -163,7 +163,7 @@ class OpenVINODetectionInferencer(BaseOpenVINOInferencer):
                 continue
             assigned_label = [ScoredLabel(self.labels[labels[i]], probability=scores[i])]
             annotations.append(Annotation(
-                Box(x1=boxes[i, 0], y1=boxes[i, 1], x2=boxes[i, 2], y2=boxes[i, 3]),
+                Rectangle(x1=boxes[i, 0], y1=boxes[i, 1], x2=boxes[i, 2], y2=boxes[i, 3]),
                 labels=assigned_label))
 
         media_identifier = ImageIdentifier(image_id=ID())
