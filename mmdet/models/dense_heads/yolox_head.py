@@ -278,7 +278,8 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             flatten_bboxes[..., :4] /= flatten_bboxes.new_tensor(
                 scale_factors).unsqueeze(1)
 
-        dets = [], labels = []
+        dets = []
+        labels = []
         for img_id in range(len(img_metas)):
             cls_scores = flatten_cls_scores[img_id]
             score_factor = flatten_objectness[img_id]
