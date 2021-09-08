@@ -283,7 +283,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             cls_scores = flatten_cls_scores[img_id]
             score_factor = flatten_objectness[img_id]
             bboxes = flatten_bboxes[img_id]
-            det, label = self._bboxes_nms(cls_scores, bboxes, score_factor, cfg)
+            det, label = self._bboxes_nms(cls_scores, bboxes, score_factor, cfg)  # noqa:E501
             labels.append(label[None])
             dets.append(det[None])
         if torch.onnx.is_in_onnx_export():
