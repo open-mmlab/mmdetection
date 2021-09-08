@@ -157,10 +157,16 @@ postprocessing:
 type: MODEL_CONFIG
 visible_in_ui: true
 workspace_id: ''
-nncf_optimization:
-  config: 'compression_config.json'
-  apply_quantization: false
-  apply_pruning: false
+
+#nncf_optimization:
+#  description: NNCF Parameters
+#  header: NNCF Parameters
+#  type: PARAMETER_GROUP
+#  visible_in_ui: true
+#  config: 'compression_config.json'
+#  apply_quantization: false
+#  apply_pruning: false
+
 pot_parameters:
   description: POT Parameters
   header: POT Parameters

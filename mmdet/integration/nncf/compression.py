@@ -20,6 +20,14 @@ def get_nncf_metadata():
     return dict(nncf_enable_compression=True, nncf_version=get_nncf_version())
 
 
+def is_state_nncf(state):
+    """
+    The function uses metadata stored in a dict_state to check if the
+    checkpoint was the result of trainning of NNCF-compressed model.
+    See the function get_nncf_metadata above.
+    """
+    return bool(state.get('meta',{}).get('nncf_enable_compression', False))
+
 def is_checkpoint_nncf(path):
     """
     The function uses metadata stored in a checkpoint to check if the
@@ -28,11 +36,10 @@ def is_checkpoint_nncf(path):
     """
     try:
         checkpoint = torch.load(path, map_location='cpu')
-        meta = checkpoint.get('meta', {})
-        nncf_enable_compression = meta.get('nncf_enable_compression', False)
-        return bool(nncf_enable_compression)
+        return is_state_nncf(checkpoint)
     except FileNotFoundError:
         return False
+
 
 
 def get_nncf_config_from_meta(path):
@@ -78,11 +85,15 @@ def get_nncf_config_from_meta(path):
 
 
 def extract_model_and_compression_states(resuming_checkpoint):
+    """
+    The function return from checkpoint state_dict and compression_state.
+    """
     if resuming_checkpoint is None:
         return None, None
     model_state_dict = resuming_checkpoint.get("model" if "model" in resuming_checkpoint else "state_dict")
     compression_state = resuming_checkpoint.get("compression_state")
     return model_state_dict, compression_state
+
 
 def wrap_nncf_model(model,
                     cfg,

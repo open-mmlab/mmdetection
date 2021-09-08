@@ -27,7 +27,7 @@ from ote_sdk.configuration.elements import (ParameterGroup,
                                             ModelConfig)
 from ote_sdk.configuration.model_lifecycle import ModelLifecycle
 
-from .configuration_enums import POTQuantizationPreset
+from .configuration_enums import POTQuantizationPreset, NNCFCompressionPreset
 
 
 @attrs
@@ -138,29 +138,13 @@ class OTEDetectionConfig(ModelConfig):
         header = string_attribute("Optimization by NNCF")
         description = header
 
-        config = string_attribute(
-            value="compression_config.json"
-        )
+        config = string_attribute("compression_config.json")
 
-        apply_quantization = configurable_boolean(
-            default_value=False,
-            header="Apply quantization by NNCF",
-            description="Enable quantization algorithm to get compressed model by NNCF",
-            affects_outcome_of=ModelLifecycle.TRAINING
-        )
-        apply_pruning = configurable_boolean(
-            default_value=False,
-            header="Apply pruning by NNCF",
-            description="Enable pruning algorithm to get compressed model by NNCF",
-            affects_outcome_of=ModelLifecycle.TRAINING
-        )
-        apply_pruning_quantization = configurable_boolean(
-            default_value=False,
-            header="Apply pruning and quantization by NNCF",
-            description="Enable pruning and quantization algorithm to get compressed model by NNCF",
-            affects_outcome_of=ModelLifecycle.TRAINING
-        )
+        preset = selectable(default_value=NNCFCompressionPreset.QUANTIZATION, header="Preset",
+                            description="NNCF preset that defines compression scheme",
+                            editable=False, visible_in_ui=False)
 
+    @attrs
     class __POTParameter(ParameterGroup):
         header = string_attribute("POT Parameters")
         description = header

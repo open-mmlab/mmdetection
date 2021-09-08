@@ -234,7 +234,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                                                             False,
                                                             False)
 
-        if output_result_set.purpose is ResultsetPurpose.EVALUATION:
+        if output_result_set.purpose is ResultSetPurpose.EVALUATION:
             # only set configurable params based on validation result set
             if result_based_confidence_threshold:
                 best_confidence_threshold = f_measure_metrics.best_confidence_threshold.value

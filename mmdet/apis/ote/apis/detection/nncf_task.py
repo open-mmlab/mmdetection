@@ -34,28 +34,28 @@ from ote_sdk.entities.metrics import (CurveMetric,
                                       InfoMetric,
                                       VisualizationType,
                                       VisualizationInfo)
-from ote_sdk.entities.shapes.box import Box
+from ote_sdk.entities.shapes.polygon import Rectangle
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.label import ScoredLabel
 
-from sc_sdk.configuration import cfg_helper, ModelConfig
+from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
 from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset, Subset
-from sc_sdk.entities.optimized_model import OptimizedModel, ModelPrecision
-from sc_sdk.entities.task_environment import TaskEnvironment
+from sc_sdk.entities.model import Model, ModelPrecision
+from ote_sdk.entities.task_environment import TaskEnvironment
 
 
 from sc_sdk.entities.model import Model, ModelStatus, NullModel
 
-from sc_sdk.entities.resultset import ResultSet, ResultsetPurpose
-from sc_sdk.usecases.evaluation.metrics_helper import MetricsHelper
-from sc_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
-from sc_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
-from sc_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
-from sc_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
-from sc_sdk.usecases.tasks.interfaces.export_interface import IExportTask, ExportType
-from sc_sdk.usecases.tasks.interfaces.unload_interface import IUnload
+from sc_sdk.entities.resultset import ResultSet, ResultSetEntity
+from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
+from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
+from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
+from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
+from ote_sdk.usecases.tasks.interfaces.export_interface import IExportTask, ExportType
+from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
 from sc_sdk.logging import logger_factory
 
 from mmcv.parallel import MMDataParallel
@@ -67,6 +67,8 @@ from mmdet.apis.ote.apis.detection.config_utils import set_hyperparams
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
+from mmdet.apis.ote.apis.detection.configuration_enums import NNCFCompressionPreset
+
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.apis.train import create_nncf_model
 from mmdet.datasets import build_dataset, build_dataloader
@@ -75,8 +77,16 @@ from mmdet.integration.nncf import wrap_nncf_model
 from mmdet.integration.nncf.config import compose_nncf_config
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
+from mmdet.integration.nncf import is_state_nncf
 
-logger = logger_factory.get_logger("OTEDetectionTask")
+
+logger = logger_factory.get_logger("NNCFDetectionTask")
+
+COMPRESSION_MAP = {
+    NNCFCompressionPreset.QUANTIZATION: "nncf_quantization",
+    NNCFCompressionPreset.PRUNING: "nncf_pruning",
+    NNCFCompressionPreset.QUANTIZATION_PRUNING: "nncf_pruning_quantization"
+}
 
 
 class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluationTask, IUnload):
@@ -114,21 +124,10 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
         with open(nncf_config_path) as nncf_config_file:
             common_nncf_config = json.load(nncf_config_file)
 
+        optimization_type = COMPRESSION_MAP[hyperparams.nncf_optimization.preset]
 
-        nncf_config = common_nncf_config["base"]["nncf_config"]
-        optimization_type = None
-        if hyperparams.nncf_optimization.apply_quantization:
-            optimization_type = "nncf_quantization"
-        elif hyperparams.nncf_optimization.apply_pruning:
-            optimization_type = "nncf_pruning"
-        elif hyperparams.nncf_optimization.apply_pruning_quantization:
-            optimization_type = "nncf_pruning_quantization"
-        else:
-            raise ValueError("Optimization was disabled")
-
-
-        compesed = compose_nncf_config(common_nncf_config, [optimization_type])
-        self.config.update(compesed)
+        optimization_config = compose_nncf_config(common_nncf_config, [optimization_type])
+        self.config.update(optimization_config)
 
         # Create and initialize PyTorch model.
         check_nncf_is_enabled()
@@ -152,13 +151,12 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
         if model != NullModel():
             # If a model has been trained and saved for the task already, create empty model and load weights here
             buffer = io.BytesIO(model.get_data("weights.pth"))
-            cfgs = model
             model_data = torch.load(buffer, map_location=torch.device('cpu'))
 
             model = self._create_model(self.config, from_scratch=True)
             compression_ctrl = None
             try:
-                if 'compression_state' in model_data:
+                if is_state_nncf(model_data):
                     from mmdet.apis.fake_input import get_fake_input
                     compression_ctrl, model = wrap_nncf_model(
                         model,
@@ -216,7 +214,6 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
 
     def infer(self, dataset: Dataset, inference_parameters: Optional[InferenceParameters] = None) -> Dataset:
         """ Analyzes a dataset using the latest inference model. """
-        set_hyperparams(self.config, self.hyperparams)
 
         is_evaluation = inference_parameters is not None and inference_parameters.is_evaluation
         confidence_threshold = self._get_confidence_threshold(is_evaluation)
@@ -246,7 +243,7 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
                         continue
 
                     shapes.append(Annotation(
-                        Box(x1=coords[0], y1=coords[1], x2=coords[2], y2=coords[3]),
+                        Rectangle(x1=coords[0], y1=coords[1], x2=coords[2], y2=coords[3]),
                         labels=assigned_label))
 
             dataset_item.append_annotations(shapes)
@@ -295,7 +292,7 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
                                                             False,
                                                             False)
 
-        if output_result_set.purpose is ResultsetPurpose.EVALUATION:
+        if output_result_set.purpose is ResultSetEntity.EVALUATION:
             # only set configurable params based on validation result set
             if result_based_confidence_threshold:
                 best_confidence_threshold = f_measure_metrics.best_confidence_threshold.value
@@ -313,13 +310,12 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
         self,
         optimization_type: OptimizationType,
         dataset: Dataset,
-        output_model: OptimizedModel,
+        output_model: Model,
         optimization_parameters: Optional[OptimizationParameters],
     ):
         if optimization_type is not OptimizationType.NNCF:
             raise RuntimeError("NNCF is the only supported optimization")
 
-        set_hyperparams(self.config, self.hyperparams)
         train_dataset = dataset.get_subset(Subset.TRAINING)
         val_dataset = dataset.get_subset(Subset.VALIDATION)
         config = self.config
@@ -485,7 +481,7 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
 
     def export(self,
                export_type: ExportType,
-               output_model: OptimizedModel):
+               output_model: Model):
         assert export_type == ExportType.OPENVINO
         optimized_model_precision = ModelPrecision.FP32
         with tempfile.TemporaryDirectory() as tempdir:
