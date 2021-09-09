@@ -89,19 +89,6 @@ def test_sparse_rcnn_forward():
     loss, _ = detector._parse_losses(losses)
     assert float(loss.item()) > 0
 
-    # Test RoI forward train with an empty proposals
-    # TODO： Support
-    # feature = detector.extract_feat(imgs[0][None, :])
-    # losses = detector.roi_head.forward_train(
-    #     feature,
-    #     torch.empty((1, 0, 4)),
-    #     torch.empty((1, 0, 256)),
-    #     img_metas,
-    #     gt_bboxes=gt_bboxes,
-    #     gt_labels=gt_labels,
-    #     imgs_whwh=torch.empty((1, 4)))
-    # assert isinstance(losses, dict)
-
     # Test forward test
     detector.eval()
     with torch.no_grad():
