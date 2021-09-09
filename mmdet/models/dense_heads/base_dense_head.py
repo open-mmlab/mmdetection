@@ -346,7 +346,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                     cls_scores,
                     bbox_preds,
                     score_factors=None,
-                    img_metas=None):
+                    img_metas=None,
+                    with_nms=True):
         """Transform network output for a batch into bbox predictions.
 
         Args:
@@ -359,14 +360,16 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default: None.
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc. Default: None.
+            with_nms (bool): Whether apply nms to the bboxes. Default: True.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where 5 represent
-                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
-                The shape of the second tensor in the tuple is (n,), and
-                each element represents the class label of the corresponding
-                box.
+            tuple[Tensor, Tensor] | list[tuple]: When `with_nms` is True,
+            it is tuple[Tensor, Tensor], first tensor bboxes with shape
+            [N, num_det, 5], 5 arrange as (x1, y1, x2, y2, score)
+            and second element is class labels of shape [N, num_det].
+            When `with_nms` is False, first tensor is bboxes with
+            shape [N, num_det, 4], second tensor is raw score has
+            shape  [N, num_det, num_classes].
         """
         assert len(cls_scores) == len(bbox_preds)
 
@@ -416,7 +419,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             scores = cls_score.permute(0, 2, 3,
                                        1).reshape(batch_size, -1,
                                                   self.cls_out_channels)
-
             if self.use_sigmoid_cls:
                 scores = scores.sigmoid()
                 nms_pre_score = scores
@@ -433,7 +435,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             # Get top-k predictions
             from mmdet.core.export import get_k_for_topk
             nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
-            if 0 < nms_pre < scores.shape[1]:
+            if nms_pre > 0:
 
                 if with_score_factors:
                     nms_pre_score = (nms_pre_score * score_factors[..., None])
@@ -477,7 +479,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 mlvl_score_factors.append(score_factors)
 
         batch_bboxes = torch.cat(mlvl_batch_bboxes, dim=1)
-
         batch_scores = torch.cat(mlvl_scores, dim=1)
         if with_score_factors:
             batch_score_factors = torch.cat(mlvl_score_factors, dim=1)
@@ -492,12 +493,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         if with_score_factors:
             batch_scores = batch_scores * (batch_score_factors.unsqueeze(2))
 
-        max_output_boxes_per_class = cfg.nms.get('max_output_boxes_per_class',
-                                                 200)
-        iou_threshold = cfg.nms.get('iou_threshold', 0.5)
-        score_threshold = cfg.score_thr
-        nms_pre = cfg.get('deploy_nms_pre', -1)
-        return add_dummy_nms_for_onnx(batch_bboxes, batch_scores,
-                                      max_output_boxes_per_class,
-                                      iou_threshold, score_threshold, nms_pre,
-                                      cfg.max_per_img)
+        if with_nms:
+            max_output_boxes_per_class = cfg.nms.get(
+                'max_output_boxes_per_class', 200)
+            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+            score_threshold = cfg.score_thr
+            nms_pre = cfg.get('deploy_nms_pre', -1)
+            return add_dummy_nms_for_onnx(batch_bboxes, batch_scores,
+                                          max_output_boxes_per_class,
+                                          iou_threshold, score_threshold,
+                                          nms_pre, cfg.max_per_img)
+        else:
+            return batch_bboxes, batch_scores

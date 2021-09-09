@@ -520,3 +520,132 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             list[ndarray]: bbox results of each class
         """
         return self.aug_test_bboxes(feats, img_metas, rescale=rescale)
+
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
+    def onnx_export(self, pred_maps, img_metas, with_nms):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            pred_maps (list[Tensor]): Raw predictions for a batch of images.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            with_nms (bool): Whether apply nms to the bboxes. Default: True.
+
+        Returns:
+            tuple[Tensor, Tensor] | list[tuple]: When `with_nms` is True,
+            it is tuple[Tensor, Tensor], first tensor bboxes with shape
+            [N, num_det, 5], 5 arrange as (x1, y1, x2, y2, score)
+            and second element is class labels of shape [N, num_det].
+            When `with_nms` is False, first tensor is bboxes with
+            shape [N, num_det, 4], second tensor is raw score has
+            shape  [N, num_det, num_classes].
+        """
+        num_levels = len(pred_maps)
+        pred_maps_list = [pred_maps[i].detach() for i in range(num_levels)]
+
+        cfg = self.test_cfg
+        assert len(pred_maps_list) == self.num_levels
+
+        device = pred_maps_list[0].device
+        batch_size = pred_maps_list[0].shape[0]
+
+        featmap_sizes = [
+            pred_maps_list[i].shape[-2:] for i in range(self.num_levels)
+        ]
+        multi_lvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, device)
+        # convert to tensor to keep tracing
+        nms_pre_tensor = torch.tensor(
+            cfg.get('nms_pre', -1), device=device, dtype=torch.long)
+
+        multi_lvl_bboxes = []
+        multi_lvl_cls_scores = []
+        multi_lvl_conf_scores = []
+        for i in range(self.num_levels):
+            # get some key info for current scale
+            pred_map = pred_maps_list[i]
+            stride = self.featmap_strides[i]
+            # (b,h, w, num_anchors*num_attrib) ->
+            # (b,h*w*num_anchors, num_attrib)
+            pred_map = pred_map.permute(0, 2, 3,
+                                        1).reshape(batch_size, -1,
+                                                   self.num_attrib)
+            # Inplace operation like
+            # ```pred_map[..., :2] = \torch.sigmoid(pred_map[..., :2])```
+            # would create constant tensor when exporting to onnx
+            pred_map_conf = torch.sigmoid(pred_map[..., :2])
+            pred_map_rest = pred_map[..., 2:]
+            pred_map = torch.cat([pred_map_conf, pred_map_rest], dim=-1)
+            pred_map_boxes = pred_map[..., :4]
+            multi_lvl_anchor = multi_lvl_anchors[i]
+            multi_lvl_anchor = multi_lvl_anchor.expand_as(pred_map_boxes)
+            bbox_pred = self.bbox_coder.decode(multi_lvl_anchor,
+                                               pred_map_boxes, stride)
+            # conf and cls
+            conf_pred = torch.sigmoid(pred_map[..., 4])
+            cls_pred = torch.sigmoid(pred_map[..., 5:]).view(
+                batch_size, -1, self.num_classes)  # Cls pred one-hot.
+
+            # Get top-k prediction
+            from mmdet.core.export import get_k_for_topk
+            nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
+            if nms_pre > 0:
+                _, topk_inds = conf_pred.topk(nms_pre)
+                batch_inds = torch.arange(batch_size).view(
+                    -1, 1).expand_as(topk_inds).long()
+                # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
+                transformed_inds = (
+                    bbox_pred.shape[1] * batch_inds + topk_inds)
+                bbox_pred = bbox_pred.reshape(-1,
+                                              4)[transformed_inds, :].reshape(
+                                                  batch_size, -1, 4)
+                cls_pred = cls_pred.reshape(
+                    -1, self.num_classes)[transformed_inds, :].reshape(
+                        batch_size, -1, self.num_classes)
+                conf_pred = conf_pred.reshape(-1, 1)[transformed_inds].reshape(
+                    batch_size, -1)
+            # Save the result of current scale
+            multi_lvl_bboxes.append(bbox_pred)
+            multi_lvl_cls_scores.append(cls_pred)
+            multi_lvl_conf_scores.append(conf_pred)
+
+        # Merge the results of different scales together
+        batch_mlvl_bboxes = torch.cat(multi_lvl_bboxes, dim=1)
+        batch_mlvl_scores = torch.cat(multi_lvl_cls_scores, dim=1)
+        batch_mlvl_conf_scores = torch.cat(multi_lvl_conf_scores, dim=1)
+
+        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
+
+        from mmdet.core.export import add_dummy_nms_for_onnx
+        conf_thr = cfg.get('conf_thr', -1)
+        score_thr = cfg.get('score_thr', -1)
+        # follow original pipeline of YOLOv3
+        if conf_thr > 0:
+            mask = (batch_mlvl_conf_scores >= conf_thr).float()
+            batch_mlvl_conf_scores *= mask
+        if score_thr > 0:
+            mask = (batch_mlvl_scores > score_thr).float()
+            batch_mlvl_scores *= mask
+        batch_mlvl_conf_scores = batch_mlvl_conf_scores.unsqueeze(2).expand_as(
+            batch_mlvl_scores)
+        batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_conf_scores
+
+        if with_nms:
+            max_output_boxes_per_class = cfg.nms.get(
+                'max_output_boxes_per_class', 200)
+            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+            # keep aligned with original pipeline, improve
+            # mAP by 1% for YOLOv3 in ONNX
+            score_threshold = 0
+            nms_pre = cfg.get('deploy_nms_pre', -1)
+            return add_dummy_nms_for_onnx(
+                batch_mlvl_bboxes,
+                batch_mlvl_scores,
+                max_output_boxes_per_class,
+                iou_threshold,
+                score_threshold,
+                nms_pre,
+                cfg.max_per_img,
+            )
+        else:
+            return batch_mlvl_bboxes, batch_mlvl_scores

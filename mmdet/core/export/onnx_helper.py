@@ -110,10 +110,6 @@ def add_dummy_nms_for_onnx(boxes,
         labels (Tensor, optional): It not None, explicit labels would be used.
             Otherwise, labels would be automatically generated using
             num_classed. Defaults to None.
-
-    Returns:
-        tuple[Tensor, Tensor]: dets of shape [N, num_det, 5] and class labels
-            of shape [N, num_det].
     """
     max_output_boxes_per_class = torch.LongTensor([max_output_boxes_per_class])
     iou_threshold = torch.tensor([iou_threshold], dtype=torch.float32)
