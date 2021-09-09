@@ -82,6 +82,7 @@ from mmdet.integration.nncf import is_state_nncf
 
 logger = logger_factory.get_logger("NNCFDetectionTask")
 
+
 COMPRESSION_MAP = {
     NNCFCompressionPreset.QUANTIZATION: "nncf_quantization",
     NNCFCompressionPreset.PRUNING: "nncf_pruning",
@@ -98,7 +99,7 @@ class NNCFDetectionTask(IOptimizationTask, IInferenceTask, IExportTask, IEvaluat
         Task for training object detection models using OTEDetection.
 
         """
-        logger.info(f"Loading OTEDetectionTask.")
+        logger.info(f"Loading NNCFDetectionTask.")
         self.scratch_space = tempfile.mkdtemp(prefix="ote-det-nncf-scratch-")
         logger.info(f"Scratch space created at {self.scratch_space}")
 

@@ -35,31 +35,8 @@ hyper_parameters:
       learning_rate_warmup_iters:
         default_value: 200
     nncf_optimization:
-      apply_quantization:
-        default_value: true
-      apply_pruning:
-        default_value: false
-      apply_pruning_quantization:
-        default_value: false
-
-# # Available model optimizations and their configuration.
-# optimization:
-#   output_format:
-#     onnx:
-#       default: true
-#     openvino:
-#       default: true
-#       input_format: BGR
-#       normalize_input: true
-#       precision: FP32
-#       pot: ~
-#   nncf:
-#     quantization:
-#       config: compression_config.json
-#       default: false
-#     sparsity:
-#       config: compression_config.json
-#       default: false
+      preset:
+        default_value: Quantization
 
 # Training resources.
 max_nodes: 1

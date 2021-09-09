@@ -157,16 +157,6 @@ postprocessing:
 type: MODEL_CONFIG
 visible_in_ui: true
 workspace_id: ''
-
-#nncf_optimization:
-#  description: NNCF Parameters
-#  header: NNCF Parameters
-#  type: PARAMETER_GROUP
-#  visible_in_ui: true
-#  config: 'compression_config.json'
-#  apply_quantization: false
-#  apply_pruning: false
-
 pot_parameters:
   description: POT Parameters
   header: POT Parameters
@@ -205,6 +195,31 @@ pot_parameters:
       type: UI_RULES
     value: 300
     visible_in_ui: True
+    warning: null
+  type: PARAMETER_GROUP
+  visible_in_ui: true
+nncf_optimization:
+  description: NNCF optimization
+  header: NNCF optimization
+  preset:
+    affects_outcome_of: NONE
+    default_value: Performance
+    description: Quantization preset that defines quantization scheme
+    editable: False
+    enum_name: NNCFCompressionPreset
+    header: Preset
+    options:
+      PRUNING: Pruning
+      QUANTIZATION: Quantization
+      QUANTIZATION_PRUNING: Quantization and pruning
+    type: SELECTABLE
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: Quantization
+    visible_in_ui: False
     warning: null
   type: PARAMETER_GROUP
   visible_in_ui: true
