@@ -696,15 +696,6 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                     rescale=rescale,
                     with_nms=with_nms))
 
-        if torch.onnx.is_in_onnx_export():
-            assert len(
-                img_metas
-            ) == 1, 'Only support one input image while in exporting to ONNX'
-
-            detections, labels = result_list[0]
-            # batch_size 1 here, [1, num_det, 5], [1, num_det]
-            return detections.unsqueeze(0), labels.unsqueeze(0)
-
         return result_list
 
     def _get_bboxes_single(self,
@@ -1033,3 +1024,60 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         clses = gather_feat(clses, inds).float()
 
         return bboxes, scores, clses
+
+    def onnx_export(self,
+                    tl_heats,
+                    br_heats,
+                    tl_embs,
+                    br_embs,
+                    tl_offs,
+                    br_offs,
+                    img_metas,
+                    rescale=False,
+                    with_nms=True):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            tl_heats (list[Tensor]): Top-left corner heatmaps for each level
+                with shape (N, num_classes, H, W).
+            br_heats (list[Tensor]): Bottom-right corner heatmaps for each
+                level with shape (N, num_classes, H, W).
+            tl_embs (list[Tensor]): Top-left corner embeddings for each level
+                with shape (N, corner_emb_channels, H, W).
+            br_embs (list[Tensor]): Bottom-right corner embeddings for each
+                level with shape (N, corner_emb_channels, H, W).
+            tl_offs (list[Tensor]): Top-left corner offsets for each level
+                with shape (N, corner_offset_channels, H, W).
+            br_offs (list[Tensor]): Bottom-right corner offsets for each level
+                with shape (N, corner_offset_channels, H, W).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            tuple[Tensor, Tensor]: First tensor bboxes with shape
+            [N, num_det, 5], 5 arrange as (x1, y1, x2, y2, score)
+            and second element is class labels of shape [N, num_det].
+        """
+        assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(
+            img_metas) == 1
+        result_list = []
+        for img_id in range(len(img_metas)):
+            result_list.append(
+                self._get_bboxes_single(
+                    tl_heats[-1][img_id:img_id + 1, :],
+                    br_heats[-1][img_id:img_id + 1, :],
+                    tl_offs[-1][img_id:img_id + 1, :],
+                    br_offs[-1][img_id:img_id + 1, :],
+                    img_metas[img_id],
+                    tl_emb=tl_embs[-1][img_id:img_id + 1, :],
+                    br_emb=br_embs[-1][img_id:img_id + 1, :],
+                    rescale=rescale,
+                    with_nms=with_nms))
+
+        detections, labels = result_list[0]
+        # batch_size 1 here, [1, num_det, 5], [1, num_det]
+        return detections.unsqueeze(0), labels.unsqueeze(0)
