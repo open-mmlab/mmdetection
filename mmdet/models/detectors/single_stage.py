@@ -160,13 +160,22 @@ class SingleStageDetector(BaseDetector):
         # `CornerNet` and `CentripetalNet`, which 'pad_shape' is used
         # for inference
         img_metas[0]['pad_shape_for_onnx'] = img_shape
+
+        if len(outs) == 2:
+            # add dummy score_facotr
+            outs = (*outs, None)
+
         if hasattr(self.bbox_head, 'onnx_export'):
-            if len(outs) == 2:
-                # add dummy score_facotr
-                outs = (*outs, None)
             det_bboxes, det_labels = self.bbox_head.onnx_export(
                 *outs, img_metas)
         else:
+            warnings.warn(
+                f'{self.__class__.__name__}  may not be'
+                f'be exported to ONNX. Please refer to the '
+                f'list of supported models,'
+                f'https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html#list-of-supported-models-exportable-to-onnx'  # noqa E501
+            )
+
             det_bboxes, det_labels = self.bbox_head.get_bboxes(
                 *outs, img_metas)
 

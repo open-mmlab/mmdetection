@@ -430,14 +430,13 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             bbox_pred = bbox_pred.permute(0, 2, 3,
                                           1).reshape(batch_size, -1, 4)
             priors = priors.expand(batch_size, -1, priors.size(-1))
-            # Get top-k predictionSp
+            # Get top-k predictions
             from mmdet.core.export import get_k_for_topk
             nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
-            if nms_pre > 0:
+            if 0 < nms_pre < scores.shape[1]:
 
                 if with_score_factors:
-                    nms_pre_score = (nms_pre_score *
-                                     score_factors[..., None]).max(-1)
+                    nms_pre_score = (nms_pre_score * score_factors[..., None])
                 else:
                     nms_pre_score = nms_pre_score
 
@@ -451,8 +450,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                     max_scores, _ = nms_pre_score[..., :-1].max(-1)
                 _, topk_inds = max_scores.topk(nms_pre)
 
-                batch_inds = torch.arange(batch_size).view(
-                    -1, 1).expand_as(topk_inds).long()
+                batch_inds = torch.arange(
+                    batch_size, device=bbox_pred.device).view(
+                        -1, 1).expand_as(topk_inds).long()
                 # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
                 transformed_inds = bbox_pred.shape[1] * batch_inds + topk_inds
                 priors = priors.reshape(
