@@ -17,7 +17,7 @@ from ote_sdk.entities.id import ID
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.model_template import parse_model_template, TargetDevice
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
-from ote_sdk.entities.shapes.box import Box
+from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
 from ote_sdk.entities.task_environment import TaskEnvironment
@@ -195,12 +195,12 @@ class API(unittest.TestCase):
             for shape in shapes:
                 shape_labels = shape.get_labels(include_empty=True)
                 shape = shape.shape
-                if isinstance(shape, (Box, Ellipse)):
+                if isinstance(shape, (Rectangle, Ellipse)):
                     box = np.array([shape.x1, shape.y1, shape.x2, shape.y2], dtype=float)
                 elif isinstance(shape, Polygon):
                     box = np.array([shape.min_x, shape.min_y, shape.max_x, shape.max_y], dtype=float)
                 box = box.clip(0, 1)
-                box_shapes.append(Annotation(Box(x1=box[0], y1=box[1], x2=box[2], y2=box[3]),
+                box_shapes.append(Annotation(Rectangle(x1=box[0], y1=box[1], x2=box[2], y2=box[3]),
                                              labels=shape_labels))
 
             image = Image(name=f'image_{i}', numpy=image_numpy, dataset_storage=NullDatasetStorage())
