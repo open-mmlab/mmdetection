@@ -15,7 +15,7 @@ Collections:
       Title: 'FCOS: Fully Convolutional One-Stage Object Detection'
     README: configs/fcos/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/faster_rcnn.py#L6
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/fcos.py#L6
       Version: v2.0.0
 
 Models:
