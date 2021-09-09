@@ -9,8 +9,13 @@ Collections:
       Architecture:
         - ResNet
         - TridentNet Block
-    Paper: https://arxiv.org/abs/1901.01892
+    Paper:
+      URL: https://arxiv.org/abs/1901.01892
+      Title: 'Scale-Aware Trident Networks for Object Detection'
     README: configs/tridentnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.8.0/mmdet/models/detectors/trident_faster_rcnn.py#L6
+      Version: v2.8.0
 
 Models:
   - Name: tridentnet_r50_caffe_1x_coco
