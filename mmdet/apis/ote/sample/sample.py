@@ -17,31 +17,31 @@ import os.path as osp
 import sys
 from ote_sdk.configuration.helper import create
 from ote_sdk.entities.inference_parameters import InferenceParameters
+from ote_sdk.entities.model import (
+    ModelEntity,
+    ModelPrecision,
+    ModelStatus,
+    ModelOptimizationType,
+    OptimizationMethod,
+)
 from ote_sdk.entities.model_template import parse_model_template, TargetDevice
-from ote_sdk.entities.task_environment import TaskEnvironment
-from sc_sdk.entities.dataset_storage import NullDatasetStorage
-from sc_sdk.entities.datasets import Subset
-from sc_sdk.entities.model import Model
-from ote_sdk.entities.model import (ModelPrecision,
-                                    ModelStatus,
-                                    ModelOptimizationType,
-                                    OptimizationMethod)
-from sc_sdk.entities.model_storage import NullModelStorage
-from sc_sdk.entities.project import NullProject
-from sc_sdk.entities.resultset import ResultSet
-from sc_sdk.logging import logger_factory
+from ote_sdk.entities.optimization_parameters import OptimizationParameters
+from ote_sdk.entities.resultset import ResultSetEntity
+from ote_sdk.entities.subset import Subset
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
+from ote_sdk.entities.task_environment import TaskEnvironment
 
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
                                                      get_task_class)
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
+from mmdet.apis.ote.extension.utils.logging import get_logger
+
+from sc_sdk.entities.dataset_storage import NullDatasetStorage
 
 
-from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
-from ote_sdk.entities.optimization_parameters import OptimizationParameters
-
-logger = logger_factory.get_logger('Sample')
+logger = get_logger("OTEDetectionTask.Sample")
 
 
 def parse_args():
@@ -88,9 +88,7 @@ def main(args):
     task = task_cls(task_environment=environment)
 
     logger.info('Train model')
-    output_model = Model(
-        NullProject(),
-        NullModelStorage(),
+    output_model = ModelEntity(
         dataset,
         environment.get_model_configuration(),
         model_status=ModelStatus.NOT_READY)
@@ -101,7 +99,7 @@ def main(args):
     predicted_validation_dataset = task.infer(
         validation_dataset.with_empty_annotations(),
         InferenceParameters(is_evaluation=True))
-    resultset = ResultSet(
+    resultset = ResultSetEntity(
         model=output_model,
         ground_truth_dataset=validation_dataset,
         prediction_dataset=predicted_validation_dataset,
@@ -112,9 +110,7 @@ def main(args):
 
     if args.export:
         logger.info('Export model')
-        exported_model = Model(
-            NullProject(),
-            NullModelStorage(),
+        exported_model = ModelEntity(
             dataset,
             environment.get_model_configuration(),
             optimization_type=ModelOptimizationType.MO,
@@ -137,7 +133,7 @@ def main(args):
         predicted_validation_dataset = openvino_task.infer(
             validation_dataset.with_empty_annotations(),
             InferenceParameters(is_evaluation=True))
-        resultset = ResultSet(
+        resultset = ResultSetEntity(
             model=output_model,
             ground_truth_dataset=validation_dataset,
             prediction_dataset=predicted_validation_dataset,
@@ -147,9 +143,7 @@ def main(args):
         logger.info(str(performance))
 
         logger.info('Run POT optimization')
-        optimized_model = Model(
-            NullProject(),
-            NullModelStorage(),
+        optimized_model = ModelEntity(
             dataset,
             environment.get_model_configuration(),
             optimization_type=ModelOptimizationType.POT,
@@ -170,7 +164,7 @@ def main(args):
         predicted_validation_dataset = openvino_task.infer(
             validation_dataset.with_empty_annotations(),
             InferenceParameters(is_evaluation=True))
-        resultset = ResultSet(
+        resultset = ResultSetEntity(
             model=optimized_model,
             ground_truth_dataset=validation_dataset,
             prediction_dataset=predicted_validation_dataset,

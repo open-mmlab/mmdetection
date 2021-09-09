@@ -21,10 +21,11 @@ from mmcv.runner.hooks import HOOKS, Hook, LoggerHook, LrUpdaterHook
 from mmcv.runner import BaseRunner, EpochBasedRunner
 from mmcv.runner.dist_utils import master_only
 from mmcv.utils import print_log
-from sc_sdk.logging import logger_factory
+
+from .logging import get_logger
 
 
-logger = logger_factory.get_logger("OTEDetectionTask.Hooks")
+logger = get_logger("server.OTEDetectionTask.Hooks")
 
 
 @HOOKS.register_module()
