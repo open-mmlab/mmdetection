@@ -10,8 +10,13 @@ Collections:
       Architecture:
         - CSPDarkNet
         - PAFPN
-    Paper: https://arxiv.org/abs/2107.08430
+    Paper:
+      URL: https://arxiv.org/abs/2107.08430
+      Title: 'YOLOX: Exceeding YOLO Series in 2021'
     README: configs/yolox/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.15.1/mmdet/models/detectors/yolox.py#L6
+      Version: v2.15.1
 
 Models:
   - Name: yolox_tiny_8x8_300e_coco

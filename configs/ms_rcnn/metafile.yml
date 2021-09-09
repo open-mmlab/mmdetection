@@ -11,8 +11,13 @@ Collections:
         - FPN
         - ResNet
         - RoIAlign
-    Paper: https://arxiv.org/abs/1903.00241
+    Paper:
+      URL: https://arxiv.org/abs/1903.00241
+      Title: 'Mask Scoring R-CNN'
     README: configs/ms_rcnn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/mask_scoring_rcnn.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: ms_rcnn_r50_caffe_fpn_1x_coco
