@@ -396,7 +396,7 @@ class ResNet(BaseModule):
 
         block_init_cfg = None
         assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
+            'init_cfg and pretrained cannot be specified at the same time'
         if isinstance(pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
