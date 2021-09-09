@@ -75,6 +75,6 @@ runner = dict(type='IterBasedRunnerWithCancel', max_iters=10000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'output'
-load_from = None
+load_from = '/usr/src/app/external/mmdetection/ote_data/MODELS/mobilenetV2_ATSS/coco_snapshot.pth'
 resume_from = None
 workflow = [('train', 1)]

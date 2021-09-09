@@ -71,6 +71,6 @@ runner = dict(type='IterBasedRunner', max_iters=10000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'output'
-load_from = None
+load_from = '/usr/src/app/external/mmdetection/ote_data/MODELS/resnet50_VFNet/coco_snapshot.pth'
 resume_from = None
 workflow = [('train', 500)]
