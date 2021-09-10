@@ -99,9 +99,8 @@ def train_detector(model,
 
     # nncf model wrapper
     nncf_enable_compression = bool(cfg.get('nncf_config'))
-    if not compression_ctrl:
-        if nncf_enable_compression:
-            compression_ctrl, model = wrap_nncf_model(model, cfg, data_loaders[0], get_fake_input)
+    if not compression_ctrl and nncf_enable_compression:
+        compression_ctrl, model = wrap_nncf_model(model, cfg, data_loaders[0], get_fake_input)
 
     if torch.cuda.is_available():
         if distributed:

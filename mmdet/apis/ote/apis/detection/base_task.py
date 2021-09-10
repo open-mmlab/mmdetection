@@ -13,66 +13,51 @@
 # and limitations under the License.
 
 import copy
-import io
 import numpy as np
 import os
 import shutil
 import tempfile
 import torch
 import warnings
-from collections import defaultdict
 from typing import List, Optional, Tuple
 
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
-from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
-                                      MetricsGroup, Performance, ScoreMetric,
-                                      VisualizationInfo, VisualizationType)
+                                      MetricsGroup, VisualizationInfo,
+                                      VisualizationType)
 from ote_sdk.entities.model import ModelStatus, ModelPrecision
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.shapes.rectangle import Rectangle
-from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
-from ote_sdk.configuration import cfg_helper
-from sc_sdk.entities.annotation import Annotation
-from sc_sdk.entities.datasets import Dataset, Subset
-from sc_sdk.entities.model import Model
-from sc_sdk.logging import logger_factory
-
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
-from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
 
-from mmdet.apis import export_model, single_gpu_test, train_detector
-from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
-                                                        prepare_for_testing,
-                                                        prepare_for_training,
-                                                        set_hyperparams)
-from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
-from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
+from sc_sdk.entities.annotation import Annotation
+from sc_sdk.entities.datasets import Dataset
+from sc_sdk.entities.model import Model
+from sc_sdk.logging import logger_factory
+
+from mmdet.apis import export_model, single_gpu_test
+from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing, set_hyperparams
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
 
-logger = logger_factory.get_logger("OTEDetectionTask")
+logger = logger_factory.get_logger("OTEBaseTask")
 
 
 class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
 
-    task_environment: TaskEnvironment
+    _task_environment: TaskEnvironment
 
     def __init__(self, task_environment: TaskEnvironment):
-        """"
-        Task for training object detection models using OTEDetection.
-        """
         self._task_environment = task_environment
 
 

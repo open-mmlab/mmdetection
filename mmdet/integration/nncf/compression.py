@@ -161,7 +161,7 @@ def wrap_nncf_model(model,
         compression_state = load_checkpoint(model, checkpoint_path)
         logger.info(f'Loaded NNCF checkpoint from {checkpoint_path}')
     elif init_state_dict:
-        resuming_state_dict = init_state_dict.get("model" if "model" in init_state_dict else "state_dict")
+        resuming_state_dict = init_state_dict.get("model")
         compression_state = init_state_dict.get("compression_state")
     else:
         compression_state = None

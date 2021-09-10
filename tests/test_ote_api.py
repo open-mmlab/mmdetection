@@ -47,7 +47,9 @@ from typing import Optional
 
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
                                            OTEDetectionConfig,
-                                           OTEDetectionTask)
+                                           OTEDetectionTask,
+                                           NNCFDetectionTask,
+                                           )
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
 
@@ -343,7 +345,7 @@ class API(unittest.TestCase):
             )
 
     def end_to_end(self, template_dir, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
-        export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1):
+        export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1, nncf_perf_delta_tolerance=0.1):
 
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=150)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
@@ -453,6 +455,35 @@ class API(unittest.TestCase):
             print(f'Performance of optimized model: {pot_performance.score.value:.4f}')
             self.check_threshold(validation_performance, pot_performance, pot_perf_delta_tolerance,
                 'Too big performance difference after POT optimization.')
+
+        if model_template.entrypoints.nncf:
+            print('Run NNCF optimization.')
+            nncf_model = Model(
+                NullProject(),
+                NullModelStorage(),
+                dataset,
+                detection_environment.get_model_configuration(),
+                data_source_dict={'weights.pth': output_model.get_data("weights.pth")},
+                optimization_type=ModelOptimizationType.NNCF,
+                optimization_methods=OptimizationMethod.QUANTIZATION,
+                optimization_objectives={},
+                precision=[ModelPrecision.INT8],
+                target_device=TargetDevice.CPU,
+                performance_improvement={},
+                model_size_reduction=1.,
+                model_status=ModelStatus.NOT_READY)
+
+            detection_environment.model = nncf_model
+
+            nncf_task = NNCFDetectionTask(task_environment=detection_environment)
+
+            nncf_task.optimize(OptimizationType.NNCF, dataset, nncf_model, OptimizationParameters())
+            nncf_task.save_model(nncf_model)
+            nncf_performance = self.eval(nncf_task, nncf_model, val_dataset)
+
+            print(f'Performance of NNCF model: {nncf_performance.score.value:.4f}')
+            self.check_threshold(validation_performance, nncf_performance, nncf_perf_delta_tolerance,
+                'Too big performance difference after NNCF optimization.')
 
     def test_training_custom_mobilenetssd_256(self):
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
