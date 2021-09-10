@@ -39,13 +39,13 @@ from ote_sdk.usecases.tasks.interfaces.export_interface import (
     IExportTask,
 )
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
+from ote_sdk.tests.test_helpers import generate_random_annotated_image
 
 from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
-from sc_sdk.tests.test_helpers import generate_random_annotated_image
 
 from subprocess import run
 from typing import Optional
