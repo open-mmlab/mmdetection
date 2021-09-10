@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import math
 import os
 from math import inf
@@ -22,10 +23,8 @@ from mmcv.runner import BaseRunner, EpochBasedRunner
 from mmcv.runner.dist_utils import master_only
 from mmcv.utils import print_log
 
-from .logging import get_logger
 
-
-logger = get_logger("server.OTEDetectionTask.Hooks")
+logger = logging.getLogger(__name__)
 
 
 @HOOKS.register_module()

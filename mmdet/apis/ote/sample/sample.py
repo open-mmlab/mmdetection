@@ -13,6 +13,7 @@
 # and limitations under the License.
 
 import argparse
+import logging
 import os.path as osp
 import sys
 from ote_sdk.configuration.helper import create
@@ -36,12 +37,11 @@ from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
                                                      get_task_class)
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
-from mmdet.apis.ote.extension.utils.logging import get_logger
 
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 
 
-logger = get_logger("OTEDetectionTask.Sample")
+logger = logging.getLogger(__name__)
 
 
 def parse_args():

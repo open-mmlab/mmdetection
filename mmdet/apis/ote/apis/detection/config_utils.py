@@ -25,12 +25,10 @@ from ote_sdk.entities.label import LabelEntity
 from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from sc_sdk.entities.datasets import Dataset
 
-from mmdet.apis.ote.extension.utils.logging import get_logger
-
 from .configuration import OTEDetectionConfig
 
 
-logger = get_logger("server.OTEDetectionTask")
+logger = logging.getLogger(__name__)
 
 
 def patch_config(config: Config, work_dir: str, labels: List[LabelEntity], random_seed: Optional[int] = None):

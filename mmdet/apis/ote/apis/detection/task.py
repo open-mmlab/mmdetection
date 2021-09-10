@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import copy
 import io
 import numpy as np
@@ -58,13 +59,12 @@ from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
-from mmdet.apis.ote.extension.utils.logging import get_logger
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
 
 
-logger = get_logger("OTEDetectionTask")
+logger = logging.getLogger(__name__)
 
 
 class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTask, IUnload):

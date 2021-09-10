@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import os
 import tempfile
 
@@ -43,8 +44,6 @@ from sc_sdk.entities.datasets import Dataset
 from sc_sdk.usecases.exportable_code.inference import BaseOpenVINOInferencer
 from sc_sdk.entities.media_identifier import ImageIdentifier
 
-from mmdet.apis.ote.extension.utils.logging import get_logger
-
 from compression.api import DataLoader
 from compression.engines.ie_engine import IEEngine
 from compression.graph import load_model, save_model
@@ -54,7 +53,8 @@ from compression.pipeline.initializer import create_pipeline
 from .configuration import OTEDetectionConfig
 
 
-logger = get_logger("server.OTEDetectionTask.Hooks")
+logger = logging.getLogger(__name__)
+
 
 def get_output(net, outputs, name):
     try:
