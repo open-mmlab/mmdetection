@@ -20,14 +20,13 @@ import random
 import subprocess
 import tempfile
 import yaml
-from ote_sdk.entities.label import Color
-from ote_sdk.entities.label_schema import LabelGroup, LabelGroupType
+from typing import Optional
+
+from ote_sdk.entities.label import Color, LabelEntity
+from ote_sdk.entities.label_schema import LabelGroup, LabelGroupType, LabelSchemaEntity
 from ote_sdk.entities.train_parameters import UpdateProgressCallback
 from ote_sdk.usecases.reporting.time_monitor_callback import \
     TimeMonitorCallback
-from sc_sdk.entities.label import Label
-from sc_sdk.entities.label_schema import LabelSchema
-from typing import Optional
 
 
 class ColorPalette:
@@ -74,12 +73,12 @@ class ColorPalette:
 def generate_label_schema(label_names):
     label_domain = "detection"
     colors = ColorPalette(len(label_names)) if len(label_names) > 0 else []
-    not_empty_labels = [Label(name=name, color=colors[i], domain=label_domain, id=i) for i, name in
+    not_empty_labels = [LabelEntity(name=name, color=colors[i], domain=label_domain, id=i) for i, name in
                         enumerate(label_names)]
-    emptylabel = Label(name=f"Empty label", color=Color(42, 43, 46),
+    emptylabel = LabelEntity(name=f"Empty label", color=Color(42, 43, 46),
                        is_empty=True, domain=label_domain, id=len(not_empty_labels))
 
-    label_schema = LabelSchema()
+    label_schema = LabelSchemaEntity()
     exclusive_group = LabelGroup(name="labels", labels=not_empty_labels, group_type=LabelGroupType.EXCLUSIVE)
     empty_group = LabelGroup(name="empty", labels=[emptylabel], group_type=LabelGroupType.EMPTY_LABEL)
     label_schema.add_group(exclusive_group)

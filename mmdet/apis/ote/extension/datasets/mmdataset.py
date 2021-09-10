@@ -19,12 +19,13 @@ from typing import List
 
 import numpy as np
 
+from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.shapes.rectangle import Rectangle
+from ote_sdk.entities.subset import Subset
 
-from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from sc_sdk.entities.annotation import AnnotationScene, NullMediaIdentifier
-from sc_sdk.entities.datasets import Dataset, DatasetItem, NullDataset, Subset
+from sc_sdk.entities.datasets import Dataset, DatasetItem, NullDataset
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.image import Image
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import copy
 import io
 import numpy as np
@@ -26,29 +27,29 @@ from typing import List, Optional, Tuple
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
+from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
+from ote_sdk.entities.annotation import Annotation
+from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
                                       MetricsGroup, Performance, ScoreMetric,
                                       VisualizationInfo, VisualizationType)
-from ote_sdk.entities.model import ModelStatus, ModelPrecision
-from ote_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity
+
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.shapes.rectangle import Rectangle
+from ote_sdk.entities.subset import Subset
+from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
-from ote_sdk.configuration import cfg_helper
-from sc_sdk.entities.annotation import Annotation
-from sc_sdk.entities.datasets import Dataset, Subset
-from sc_sdk.entities.model import Model
-from sc_sdk.logging import logger_factory
-
-from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
+
+from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import export_model, single_gpu_test, train_detector
 from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
@@ -62,7 +63,8 @@ from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
 
-logger = logger_factory.get_logger("OTEDetectionTask")
+
+logger = logging.getLogger(__name__)
 
 
 class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTask, IUnload):
@@ -102,7 +104,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         self._should_stop = False
 
 
-    def _load_model(self, model: Model):
+    def _load_model(self, model: ModelEntity):
         if model is not None:
             # If a model has been trained and saved for the task already, create empty model and load weights here
             buffer = io.BytesIO(model.get_data("weights.pth"))
@@ -133,7 +135,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         :param config: mmdetection configuration from which the model has to be built
         :param from_scratch: bool, if True does not load any weights
 
-        :return model: Model in training mode
+        :return model: ModelEntity in training mode
         """
         model_cfg = copy.deepcopy(config.model)
 
@@ -249,7 +251,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         return f_measure_metrics.get_performance()
 
 
-    def train(self, dataset: Dataset, output_model: Model, train_parameters: Optional[TrainParameters] = None):
+    def train(self, dataset: Dataset, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
         """ Trains a model on a dataset """
 
         set_hyperparams(self._config, self._hyperparams)
@@ -328,7 +330,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         self._is_training = False
 
 
-    def save_model(self, output_model: Model):
+    def save_model(self, output_model: ModelEntity):
         buffer = io.BytesIO()
         hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
         hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
@@ -429,7 +431,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
     def export(self,
                export_type: ExportType,
-               output_model: Model):
+               output_model: ModelEntity):
         assert export_type == ExportType.OPENVINO
         optimized_model_precision = ModelPrecision.FP32
         with tempfile.TemporaryDirectory() as tempdir:
