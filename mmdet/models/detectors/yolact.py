@@ -43,9 +43,9 @@ class YOLACT(SingleStageDetector):
             feat, dummy_img_metas, rescale=rescale)
         # det_bboxes will be empty for randomly generated images,
         # generate non-empty bboxes so mask_head can be executed
-        det_bboxes = torch.rand((1, 1, 5)).cuda()
-        det_labels = torch.tensor([[0]]).cuda()
-        det_coeffs = torch.rand((1, 1, 1)).cuda()
+        det_bboxes = torch.rand((1, 1, 5)).to(img.device)
+        det_labels = torch.tensor([[0]]).to(img.device)
+        det_coeffs = torch.rand((1, 1, 32)).to(img.device)
         bbox_results = [
             bbox2result(det_bbox, det_label, self.bbox_head.num_classes)
             for det_bbox, det_label in zip(det_bboxes, det_labels)

@@ -519,6 +519,7 @@ def test_yolact_forward():
         gt_masks=gt_masks,
         return_loss=True)
     assert isinstance(losses, dict)
+    detector.forward_dummy(imgs)
 
     # Test forward test
     detector.eval()
