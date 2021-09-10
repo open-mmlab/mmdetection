@@ -30,15 +30,19 @@ class YOLACT(SingleStageDetector):
 
         See `mmdetection/tools/analysis_tools/get_flops.py`
         """
-        ## img_metas do not influence the flops calculation
+        # img_metas do not influence the flops calculation
         dummy_img_metas = [
-            dict(img_shape=(300, 300), ori_shape=(300, 300), scale_factor=(1, 1)) for _ in range(len(img))
+            dict(
+                img_shape=(300, 300),
+                ori_shape=(300, 300),
+                scale_factor=(1, 1)) for _ in range(len(img))
         ]
         rescale = False
         feat = self.extract_feat(img)
         det_bboxes, det_labels, det_coeffs = self.bbox_head.simple_test(
             feat, dummy_img_metas, rescale=rescale)
-        # det_bboxes will be empty for randomly generated images, generate non-empty bboxes so mask_head can be executed
+        # det_bboxes will be empty for randomly generated images,
+        # generate non-empty bboxes so mask_head can be executed
         det_bboxes = torch.rand((1, 1, 5)).cuda()
         det_labels = torch.tensor([[0]]).cuda()
         det_coeffs = torch.rand((1, 1, 1)).cuda()
@@ -56,7 +60,6 @@ class YOLACT(SingleStageDetector):
             rescale=rescale)
 
         return list(zip(bbox_results, segm_results))
-
 
     def forward_train(self,
                       img,
