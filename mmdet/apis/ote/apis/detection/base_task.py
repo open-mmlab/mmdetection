@@ -46,6 +46,7 @@ from sc_sdk.logging import logger_factory
 
 from mmdet.apis import export_model, single_gpu_test
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing, set_hyperparams
+from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
@@ -69,7 +70,7 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
         :param config: mmdetection configuration from which the model has to be built
         :param from_scratch: bool, if True does not load any weights
 
-        :return model: Model in training mode
+        :return model: ModelEntity in training mode
         """
         model_cfg = copy.deepcopy(config.model)
 
@@ -93,7 +94,24 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
         """ Analyzes a dataset using the latest inference model. """
         set_hyperparams(self._config, self._hyperparams)
 
-        is_evaluation = inference_parameters is not None and inference_parameters.is_evaluation
+        if inference_parameters is not None:
+            update_progress_callback = inference_parameters.update_progress
+            is_evaluation = inference_parameters.is_evaluation
+        else:
+            is_evaluation = False
+            update_progress_callback = default_progress_callback
+
+        time_monitor = InferenceProgressCallback(len(dataset), update_progress_callback)
+
+        def pre_hook(module, input):
+            time_monitor.on_test_batch_begin(None, None)
+
+        def hook(module, input, output):
+            time_monitor.on_test_batch_end(None, None)
+
+        pre_hook_handle = self._model.register_forward_pre_hook(pre_hook)
+        hook_handle = self._model.register_forward_hook(hook)
+
         confidence_threshold = self._get_confidence_threshold(is_evaluation)
         logger.info(f'Confidence threshold {confidence_threshold}')
 
@@ -125,6 +143,9 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
                         labels=assigned_label))
 
             dataset_item.append_annotations(shapes)
+
+        pre_hook_handle.remove()
+        hook_handle.remove()
 
         return dataset
 
@@ -275,7 +296,7 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
 
     def export(self,
                export_type: ExportType,
-               output_model: Model):
+               output_model: ModelEntity):
         assert export_type == ExportType.OPENVINO
         optimized_model_precision = ModelPrecision.FP32
         with tempfile.TemporaryDirectory() as tempdir:

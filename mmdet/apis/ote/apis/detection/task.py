@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import copy
 import io
 import os
@@ -33,6 +34,26 @@ from sc_sdk.entities.model import Model
 from sc_sdk.logging import logger_factory
 
 from mmdet.apis import train_detector
+from ote_sdk.entities.annotation import Annotation
+from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
+from ote_sdk.entities.inference_parameters import InferenceParameters
+from ote_sdk.entities.label import ScoredLabel
+from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
+                                      MetricsGroup, Performance, ScoreMetric,
+                                      VisualizationInfo, VisualizationType)
+from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity
+
+from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
+from ote_sdk.entities.shapes.rectangle import Rectangle
+from ote_sdk.entities.subset import Subset
+from ote_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
+from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
+from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
+
+from sc_sdk.entities.datasets import Dataset
+
+from mmdet.apis import export_model, single_gpu_test, train_detector
 from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
                                                         prepare_for_training,
                                                         set_hyperparams)
@@ -42,7 +63,8 @@ from mmdet.apis.ote.apis.detection.base_task import OTEBaseTask
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.datasets import build_dataset
 
-logger = logger_factory.get_logger("OTEDetectionTask")
+
+logger = logging.getLogger(__name__)
 
 
 class OTEDetectionTask(OTEBaseTask, ITrainingTask):
@@ -80,7 +102,7 @@ class OTEDetectionTask(OTEBaseTask, ITrainingTask):
         self._should_stop = False
 
 
-    def _load_model(self, model: Model):
+    def _load_model(self, model: ModelEntity):
         if model is not None:
             # If a model has been trained and saved for the task already, create empty model and load weights here
             buffer = io.BytesIO(model.get_data("weights.pth"))
@@ -103,8 +125,7 @@ class OTEDetectionTask(OTEBaseTask, ITrainingTask):
                         f"architecture and general-purpose pretrained weights.")
         return model
 
-
-    def train(self, dataset: Dataset, output_model: Model, train_parameters: Optional[TrainParameters] = None):
+    def train(self, dataset: Dataset, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
         """ Trains a model on a dataset """
 
         set_hyperparams(self._config, self._hyperparams)
@@ -183,7 +204,7 @@ class OTEDetectionTask(OTEBaseTask, ITrainingTask):
         self._is_training = False
 
 
-    def save_model(self, output_model: Model):
+    def save_model(self, output_model: ModelEntity):
         buffer = io.BytesIO()
         hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
         hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
