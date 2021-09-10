@@ -29,8 +29,9 @@ from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
                                       MetricsGroup, VisualizationInfo,
                                       VisualizationType)
-from ote_sdk.entities.model import ModelStatus, ModelPrecision
+from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity
 from ote_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.train_parameters import default_progress_callback
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
@@ -38,10 +39,8 @@ from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
-
 from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset
-from sc_sdk.entities.model import Model
 from sc_sdk.logging import logger_factory
 
 from mmdet.apis import export_model, single_gpu_test

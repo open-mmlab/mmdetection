@@ -476,12 +476,9 @@ class API(unittest.TestCase):
 
         if model_template.entrypoints.nncf:
             print('Run NNCF optimization.')
-            nncf_model = Model(
-                NullProject(),
-                NullModelStorage(),
+            nncf_model = ModelEntity(
                 dataset,
                 detection_environment.get_model_configuration(),
-                data_source_dict={'weights.pth': output_model.get_data("weights.pth")},
                 optimization_type=ModelOptimizationType.NNCF,
                 optimization_methods=OptimizationMethod.QUANTIZATION,
                 optimization_objectives={},
@@ -490,6 +487,7 @@ class API(unittest.TestCase):
                 performance_improvement={},
                 model_size_reduction=1.,
                 model_status=ModelStatus.NOT_READY)
+            nncf_model.set_data('weights.pth', output_model.get_data("weights.pth"))
 
             detection_environment.model = nncf_model
 

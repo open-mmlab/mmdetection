@@ -25,35 +25,15 @@ from mmcv.utils import Config
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.metrics import Performance, ScoreMetric
-from ote_sdk.entities.model import ModelStatus, ModelPrecision
-from ote_sdk.entities.task_environment import TaskEnvironment
-from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
-from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
-from sc_sdk.entities.datasets import Dataset, Subset
-from sc_sdk.entities.model import Model
-from sc_sdk.logging import logger_factory
-
-from mmdet.apis import train_detector
-from ote_sdk.entities.annotation import Annotation
-from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
-from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.label import ScoredLabel
-from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
-                                      MetricsGroup, Performance, ScoreMetric,
-                                      VisualizationInfo, VisualizationType)
 from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity
-
-from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
-from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
-from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 
 from sc_sdk.entities.datasets import Dataset
 
-from mmdet.apis import export_model, single_gpu_test, train_detector
+from mmdet.apis import train_detector
 from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
                                                         prepare_for_training,
                                                         set_hyperparams)
