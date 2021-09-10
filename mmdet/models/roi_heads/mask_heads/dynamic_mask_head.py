@@ -13,6 +13,16 @@ from .fcn_mask_head import FCNMaskHead
 class DynamicMaskHead(FCNMaskHead):
 
     def __init__(self,
+                 num_convs=4,
+                 roi_feat_size=14,
+                 in_channels=256,
+                 conv_kernel_size=3,
+                 conv_out_channels=256,
+                 num_classes=80,
+                 class_agnostic=False,
+                 upsample_cfg=dict(type='deconv', scale_factor=2),
+                 conv_cfg=None,
+                 norm_cfg=None,
                  dynamic_conv_cfg=dict(
                      type='DynamicConv',
                      in_channels=256,
@@ -22,16 +32,6 @@ class DynamicMaskHead(FCNMaskHead):
                      with_proj=False,
                      act_cfg=dict(type='ReLU', inplace=True),
                      norm_cfg=dict(type='LN')),
-                 num_classes=80,
-                 num_convs=4,
-                 roi_feat_size=14,
-                 in_channels=256,
-                 conv_kernel_size=3,
-                 conv_out_channels=80,
-                 class_agnostic=False,
-                 upsample_cfg=dict(type='deconv', scale_factor=2),
-                 conv_cfg=None,
-                 norm_cfg=None,
                  loss_mask=dict(type='DiceLoss', loss_weight=8.0),
                  **kwargs):
         super(DynamicMaskHead, self).__init__(
@@ -67,15 +67,16 @@ class DynamicMaskHead(FCNMaskHead):
 
         Args:
             roi_feat (Tensor): Roi-pooling features with shape
-                (num_gts, feature_dimensions,
+                (batch_size*num_proposals, feature_dimensions,
                 pooling_h , pooling_w).
             proposal_feat (Tensor): Intermediate feature get from
                 diihead in last stage, has shape
-                (num_gts, feature_dimensions)
+                (batch_size*num_proposals, feature_dimensions)
 
           Returns:
             mask_pred (Tensor): Predicted foreground masks with shape
-                (num_gts, num_classes, pooling_h*2, pooling_w*2).
+                (batch_size*num_proposals, num_classes,
+                                        pooling_h*2, pooling_w*2).
         """
 
         proposal_feat = proposal_feat.reshape(-1, self.in_channels)
