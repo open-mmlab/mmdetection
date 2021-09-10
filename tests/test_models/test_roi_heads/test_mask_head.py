@@ -2,6 +2,7 @@
 import mmcv
 import torch
 
+from mmdet.models.builder import build_head
 from mmdet.models.roi_heads.mask_heads import (DynamicMaskHead, FCNMaskHead,
                                                MaskIoUHead)
 from .utils import _dummy_bbox_sampling
@@ -94,3 +95,29 @@ def test_mask_head_loss():
     loss_mask = dynamic_mask_head.loss(mask_pred, mask_target, pos_labels)
     loss_mask = loss_mask['loss_mask'].sum()
     assert loss_mask.item() >= 0
+
+
+def test_r3maskhead():
+    cfg = dict(
+        type='R3MaskHead',
+        num_convs=4,
+        in_channels=256,
+        conv_out_channels=256,
+        num_classes=80,
+        loss_mask=dict(
+            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))
+
+    dummy_input = torch.rand((16, 256, 14, 14))
+    mask_head = build_head(cfg)
+
+    out1 = mask_head(dummy_input, None, return_feat=False)
+    assert out1.shape == torch.Size([16, 80, 28, 28])
+
+    out2 = mask_head(dummy_input, None, return_feat=True)
+    assert isinstance(out2, list)
+    assert len(out2) == 2
+    assert out2[0].shape == torch.Size([16, 80, 28, 28])
+    assert out2[1].shape == torch.Size([16, 256, 14, 14])
+
+    out4 = mask_head(dummy_input, out2[1], return_feat=False)
+    assert out4.shape == torch.Size([16, 80, 28, 28])
