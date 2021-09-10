@@ -57,7 +57,7 @@ from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
                                                         prepare_for_training,
                                                         set_hyperparams)
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
+from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback, InferenceProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
@@ -159,7 +159,24 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         """ Analyzes a dataset using the latest inference model. """
         set_hyperparams(self._config, self._hyperparams)
 
-        is_evaluation = inference_parameters is not None and inference_parameters.is_evaluation
+        if inference_parameters is not None:
+            update_progress_callback = inference_parameters.update_progress
+            is_evaluation = inference_parameters.is_evaluation
+        else:
+            is_evaluation = False
+            update_progress_callback = default_progress_callback
+
+        time_monitor = InferenceProgressCallback(len(dataset), update_progress_callback)
+
+        def pre_hook(module, input):
+            time_monitor.on_test_batch_begin(None, None)
+
+        def hook(module, input, output):
+            time_monitor.on_test_batch_end(None, None)
+
+        pre_hook_handle = self._model.register_forward_pre_hook(pre_hook)
+        hook_handle = self._model.register_forward_hook(hook)
+
         confidence_threshold = self._get_confidence_threshold(is_evaluation)
         logger.info(f'Confidence threshold {confidence_threshold}')
 
@@ -191,6 +208,9 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                         labels=assigned_label))
 
             dataset_item.append_annotations(shapes)
+
+        pre_hook_handle.remove()
+        hook_handle.remove()
 
         return dataset
 
