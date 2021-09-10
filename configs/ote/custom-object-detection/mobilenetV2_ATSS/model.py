@@ -75,6 +75,15 @@ runner = dict(type='IterBasedRunnerWithCancel', max_iters=10000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'output'
-load_from = '/usr/src/app/external/mmdetection/ote_data/MODELS/mobilenetV2_ATSS/coco_snapshot.pth'
+
+#TODO: this is a temporary decision
+import os
+TT_API_OTHER_TESTS = os.environ.get('TT_API_OTHER_TESTS', '').lower() == 'true'
+TT_PERFORMANCE_TESTS = os.environ.get('TT_PERFORMANCE_TESTS', '').lower() == 'true'
+if TT_API_OTHER_TESTS or TT_PERFORMANCE_TESTS:
+    load_from = '/usr/src/app/external/mmdetection/ote_data/MODELS/mobilenetV2_ATSS/coco_snapshot.pth'
+else:
+    load_from = None
+
 resume_from = None
 workflow = [('train', 1)]
