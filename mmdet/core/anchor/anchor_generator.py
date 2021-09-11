@@ -260,7 +260,7 @@ class AnchorGenerator:
             torch.Tensor: Anchors in the overall feature maps.
         """
 
-        base_anchors = self.base_anchors[level_idx].to(device, dtype)
+        base_anchors = self.base_anchors[level_idx].to(device).to(dtype)
         feat_h, feat_w = featmap_size
         stride_w, stride_h = self.strides[level_idx]
         # First create Range with the default dtype, than convert to
