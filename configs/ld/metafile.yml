@@ -10,8 +10,13 @@ Collections:
       Architecture:
         - FPN
         - ResNet
-    Paper: https://arxiv.org/abs/2102.12252
+    Paper:
+      URL: https://arxiv.org/abs/2102.12252
+      Title: 'Localization Distillation for Object Detection'
     README: configs/ld/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.11.0/mmdet/models/dense_heads/ld_head.py#L11
+      Version: v2.11.0
 
 Models:
   - Name: ld_r18_gflv1_r101_fpn_coco_1x

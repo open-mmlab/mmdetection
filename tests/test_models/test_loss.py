@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import pytest
 import torch
+from mmcv.utils import digit_version
 
 from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
                                  DistributionFocalLoss, FocalLoss,
@@ -86,6 +87,12 @@ def test_regression_losses(loss_class, input_shape):
 @pytest.mark.parametrize('loss_class', [FocalLoss, CrossEntropyLoss])
 @pytest.mark.parametrize('input_shape', [(10, 5), (0, 5)])
 def test_classification_losses(loss_class, input_shape):
+    if input_shape[0] == 0 and digit_version(
+            torch.__version__) < digit_version('1.5.0'):
+        pytest.skip(
+            f'CELoss in PyTorch {torch.__version__} does not support empty'
+            f'tensor.')
+
     pred = torch.rand(input_shape)
     target = torch.randint(0, 5, (input_shape[0], ))
 

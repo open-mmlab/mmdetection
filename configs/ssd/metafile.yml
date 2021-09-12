@@ -8,8 +8,13 @@ Collections:
       Training Resources: 8x V100 GPUs
       Architecture:
         - VGG
-    Paper: https://arxiv.org/abs/1512.02325
+    Paper:
+      URL: https://arxiv.org/abs/1512.02325
+      Title: 'SSD: Single Shot MultiBox Detector'
     README: configs/ssd/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.14.0/mmdet/models/dense_heads/ssd_head.py#L16
+      Version: v2.14.0
 
 Models:
   - Name: ssd300_coco
