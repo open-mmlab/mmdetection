@@ -84,13 +84,18 @@ log_level = 'INFO'
 work_dir = 'output'
 
 #TODO: this is a temporary decision
+print('before import os', flush=True)
 import os
+print('after import os', flush=True)
 TT_API_OTHER_TESTS = os.environ.get('TT_API_OTHER_TESTS', '').lower() == 'true'
 TT_PERFORMANCE_TESTS = os.environ.get('TT_PERFORMANCE_TESTS', '').lower() == 'true'
+print(f'TT_API_OTHER_TESTS={TT_API_OTHER_TESTS}', flush=True)
 if TT_API_OTHER_TESTS or TT_PERFORMANCE_TESTS:
     load_from = '/usr/src/app/external/mmdetection/ote_data/MODELS/mobilenetV2_SSD/coco_snapshot.pth'
+    print('set load_from', flush=True)
 else:
     load_from = None
+    print('set load_from=None', flush=True)
 
 resume_from = None
 workflow = [('train', 1)]
