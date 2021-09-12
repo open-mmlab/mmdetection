@@ -11,7 +11,9 @@ train_pipeline = [
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='Collect', 
+         annotations_cfg=dict(instance_level=('gt_bboxes', 'gt_labels')),
+         input_data = ('img',),)
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -25,7 +27,9 @@ test_pipeline = [
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
+            dict(type='Collect', 
+                 annotations_cfg=dict(instance_keys=None),
+                 input_data = ('img',)),
         ])
 ]
 data = dict(

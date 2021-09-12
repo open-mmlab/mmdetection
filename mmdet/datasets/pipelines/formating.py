@@ -7,7 +7,7 @@ import torch
 from mmcv.parallel import DataContainer as DC
 
 from ..builder import PIPELINES
-
+from ..annotations import Annotations, InputData
 
 def to_tensor(data):
     """Convert objects of various python types to :obj:`torch.Tensor`.
@@ -289,11 +289,13 @@ class Collect:
     """
 
     def __init__(self,
-                 keys,
+                 input_data,
+                 annotations_cfg,
                  meta_keys=('filename', 'ori_filename', 'ori_shape',
                             'img_shape', 'pad_shape', 'scale_factor', 'flip',
                             'flip_direction', 'img_norm_cfg')):
-        self.keys = keys
+        self.annotations_cfg = annotations_cfg
+        self.input_data = input_data
         self.meta_keys = meta_keys
 
     def __call__(self, results):
@@ -315,13 +317,15 @@ class Collect:
         for key in self.meta_keys:
             img_meta[key] = results[key]
         data['img_metas'] = DC(img_meta, cpu_only=True)
-        for key in self.keys:
-            data[key] = results[key]
+        data['annotations'] = Annotations(results, **self.annotations_cfg)
+        data['input_data'] = InputData(results, self.input_data)
+        # for key in self.keys:
+        #     data[key] = results[key]
         return data
 
     def __repr__(self):
         return self.__class__.__name__ + \
-            f'(keys={self.keys}, meta_keys={self.meta_keys})'
+            f'(keys={self.annotations_cfg}, meta_keys={self.meta_keys})'
 
 
 @PIPELINES.register_module()
