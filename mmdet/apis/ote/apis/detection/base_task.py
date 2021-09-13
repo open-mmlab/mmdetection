@@ -60,6 +60,9 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
     def __init__(self, task_environment: TaskEnvironment):
         self._task_environment = task_environment
 
+        logger.info(f"Loading OTEDetectionTask.")
+        self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
+        logger.info(f"Scratch space created at {self._scratch_space}")
 
     @staticmethod
     def _create_model(config: Config, from_scratch: bool = False):

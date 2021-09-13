@@ -28,6 +28,7 @@ def is_state_nncf(state):
     """
     return bool(state.get('meta',{}).get('nncf_enable_compression', False))
 
+
 def is_checkpoint_nncf(path):
     """
     The function uses metadata stored in a checkpoint to check if the
@@ -39,7 +40,6 @@ def is_checkpoint_nncf(path):
         return is_state_nncf(checkpoint)
     except FileNotFoundError:
         return False
-
 
 
 def get_nncf_config_from_meta(path):

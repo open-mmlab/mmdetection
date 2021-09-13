@@ -13,23 +13,25 @@
 # and limitations under the License.
 
 import io
-import os
-import tempfile
-import torch
 import json
+import logging
+import os
+import torch
 from collections import defaultdict
-from typing import Optional, Dict
+from typing import Optional
 
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
+from ote_sdk.entities.model import ModelEntity
+from ote_sdk.entities.model import ModelStatus
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
+from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
-from ote_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 
-from sc_sdk.entities.datasets import Dataset, Subset
-from sc_sdk.entities.model import Model, ModelStatus, NullModel
-from sc_sdk.logging import logger_factory
+from sc_sdk.entities.datasets import Dataset
 
 from mmcv.utils import Config
 from mmdet.apis import train_detector
@@ -42,6 +44,7 @@ from mmdet.apis.ote.apis.detection.configuration_enums import NNCFCompressionPre
 from mmdet.apis.fake_input import get_fake_input
 from mmdet.apis.ote.apis.detection.base_task import OTEBaseTask
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
+from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.datasets import build_dataset
 from mmdet.datasets import build_dataloader
 from mmdet.integration.nncf import check_nncf_is_enabled
@@ -50,7 +53,7 @@ from mmdet.integration.nncf import wrap_nncf_model
 from mmdet.integration.nncf.config import compose_nncf_config
 
 
-logger = logger_factory.get_logger("NNCFDetectionTask")
+logger = logging.getLogger(__name__)
 
 
 COMPRESSION_MAP = {
@@ -64,14 +67,9 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
 
     def __init__(self, task_environment: TaskEnvironment):
         """"
-        Task for training object detection models using OTEDetection.
-
+        Task for compressing object detection models using NNCF.
         """
         super().__init__(task_environment)
-
-        logger.info(f"Loading OTEDetectionTask.")
-        self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
-        logger.info(f"Scratch space created at {self._scratch_space}")
 
         self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
 
@@ -89,7 +87,7 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
 
         # NNCF part
         self._compression_ctrl = None
-        nncf_config_path = os.path.join(base_dir, hyperparams.nncf_optimization.config)
+        nncf_config_path = os.path.join(base_dir, "compression_config.json")
 
         with open(nncf_config_path) as nncf_config_file:
             common_nncf_config = json.load(nncf_config_file)
@@ -108,9 +106,9 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
         self._is_training = False
         self._should_stop = False
 
-    def _load_model(self, model: Model):
+    def _load_model(self, model: ModelEntity):
         compression_ctrl = None
-        if model != NullModel():
+        if model is not None:
             # If a model has been trained and saved for the task already, create empty model and load weights here
             buffer = io.BytesIO(model.get_data("weights.pth"))
             model_data = torch.load(buffer, map_location=torch.device('cpu'))
@@ -162,7 +160,7 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
         self,
         optimization_type: OptimizationType,
         dataset: Dataset,
-        output_model: Model,
+        output_model: ModelEntity,
         optimization_parameters: Optional[OptimizationParameters],
     ):
         if optimization_type is not OptimizationType.NNCF:
@@ -172,11 +170,16 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
         val_dataset = dataset.get_subset(Subset.VALIDATION)
         config = self._config
 
-        time_monitor = TimeMonitorCallback(0, 0, 0, 0, update_progress_callback=lambda _: None)
+        if optimization_parameters is not None:
+            update_progress_callback = optimization_parameters.update_progress
+        else:
+            update_progress_callback = default_progress_callback
+        time_monitor = TrainingProgressCallback(update_progress_callback)
         learning_curves = defaultdict(OTELoggerHook.Curve)
         training_config = prepare_for_training(config, train_dataset, val_dataset, time_monitor, learning_curves)
         mm_train_dataset = build_dataset(training_config.data.train)
 
+        # Initialize NNCF parts if start from not compressed model
         if not self._compression_ctrl:
             self._create_compressed_model(mm_train_dataset, training_config)
 
@@ -203,7 +206,7 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
         output_model.model_status = ModelStatus.SUCCESS
         self._is_training = False
 
-    def save_model(self, output_model: Model):
+    def save_model(self, output_model: ModelEntity):
         buffer = io.BytesIO()
         hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
         hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))

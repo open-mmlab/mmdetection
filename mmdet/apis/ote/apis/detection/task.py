@@ -16,7 +16,6 @@ import logging
 import copy
 import io
 import os
-import tempfile
 import torch
 from collections import defaultdict
 from typing import Optional
@@ -54,10 +53,6 @@ class OTEDetectionTask(OTEBaseTask, ITrainingTask):
         Task for training object detection models using OTEDetection.
         """
         super().__init__(task_environment)
-
-        logger.info(f"Loading OTEDetectionTask.")
-        self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
-        logger.info(f"Scratch space created at {self._scratch_space}")
 
         self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
 

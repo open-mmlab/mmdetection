@@ -138,8 +138,6 @@ class OTEDetectionConfig(ModelConfig):
         header = string_attribute("Optimization by NNCF")
         description = header
 
-        config = string_attribute("compression_config.json")
-
         preset = selectable(default_value=NNCFCompressionPreset.QUANTIZATION, header="Preset",
                             description="NNCF preset that defines compression scheme",
                             editable=False, visible_in_ui=False)
