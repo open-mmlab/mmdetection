@@ -203,7 +203,7 @@ nncf_optimization:
   header: NNCF optimization
   preset:
     affects_outcome_of: NONE
-    default_value: Performance
+    default_value: Quantization
     description: Quantization preset that defines quantization scheme
     editable: False
     enum_name: NNCFCompressionPreset
