@@ -316,9 +316,20 @@ class Collect:
         img_meta = {}
         for key in self.meta_keys:
             img_meta[key] = results[key]
-        data['img_metas'] = DC(img_meta, cpu_only=True)
+        data['input_metas'] = DC(img_meta, cpu_only=True)
+
+        # instance = dict()
+        # for key in self.annotations_cfg['instance_level']:
+        #     instance[key] = results[key]
+        
+        # item = dict()
+        # for key in self.annotations_cfg['item_level']:
+        #     item[key] = results[key]
+
+        
         data['annotations'] = Annotations(results, **self.annotations_cfg)
-        data['input_data'] = InputData(results, self.input_data)
+        # data['input_data'] = InputData(results, self.input_data)
+        data['input_data'] = results['img']
         # for key in self.keys:
         #     data[key] = results[key]
         return data

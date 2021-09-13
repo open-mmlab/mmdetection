@@ -45,9 +45,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 losses: (dict[str, Tensor]): A dictionary of loss components.
                 proposal_list (list[Tensor]): Proposals of each image.
         """
-        gt_bboxes = annotations.instance['gt_bboxes']
-        gt_labels = annotations.instance['gt_labels']
-        gt_bboxes_ignore = annotations.instance['gt_bboxes_ignore']
+        gt_bboxes = annotations['instance']['gt_bboxes']
+        gt_labels = annotations['instance']['gt_labels']
+        gt_bboxes_ignore = None
+        # gt_bboxes_ignore = annotations['instance']['gt_bboxes_ignore']
         outs = self(x)
         if gt_labels is None:
             loss_inputs = outs + (gt_bboxes, img_metas)
