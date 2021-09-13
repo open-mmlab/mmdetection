@@ -7,8 +7,7 @@
 from collections import OrderedDict
 
 
-def swin_converter(ckpt):
-
+def swin_converter(ckpt, prefix='backbone.'):
     new_ckpt = OrderedDict()
 
     def correct_unfold_reduction_order(x):
@@ -25,9 +24,9 @@ def swin_converter(ckpt):
         return x
 
     for k, v in ckpt.items():
-        if k.startswith('head'):
+        if k.startswith('head') or k.startswith(prefix + 'head'):
             continue
-        elif k.startswith('layers'):
+        elif k.startswith('layers') or k.startswith(prefix + 'layers'):
             new_v = v
             if 'attn.' in k:
                 new_k = k.replace('attn.', 'attn.w_msa.')
@@ -47,7 +46,7 @@ def swin_converter(ckpt):
             else:
                 new_k = k
             new_k = new_k.replace('layers', 'stages', 1)
-        elif k.startswith('patch_embed'):
+        elif k.startswith('patch_embed') or k.startswith(prefix + 'patch_embed'):
             new_v = v
             if 'proj' in k:
                 new_k = k.replace('proj', 'projection')
@@ -57,6 +56,9 @@ def swin_converter(ckpt):
             new_v = v
             new_k = k
 
-        new_ckpt[new_k] = new_v
+        if new_k.startswith(prefix):
+            new_ckpt[new_k] = new_v
+        else:
+            new_ckpt[prefix + new_k] = new_v
 
     return new_ckpt

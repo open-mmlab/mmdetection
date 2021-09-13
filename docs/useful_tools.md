@@ -315,6 +315,14 @@ python tools/model_converters/upgrade_model_version.py ${IN_FILE} ${OUT_FILE} [-
 python tools/model_converters/regnet2mmdet.py ${SRC} ${DST} [-h]
 ```
 
+### Swin Transformer model to MMDetection
+
+ `tools/model_converters/swin2mmdet.py` convert keys in official pretrained Swin models to MMDetection style.
+
+```shell
+python tools/model_converters/swin2mmdet.py ${SRC} ${DST} [-h]
+```
+
 ### Detectron ResNet to Pytorch
 
 `tools/model_converters/detectron2pytorch.py` converts keys in the original detectron pretrained
