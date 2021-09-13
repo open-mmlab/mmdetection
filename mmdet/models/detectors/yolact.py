@@ -25,7 +25,7 @@ class YOLACT(SingleStageDetector):
         self.segm_head = build_head(segm_head)
         self.mask_head = build_head(mask_head)
 
-    def forward_dummy(self, img):
+    def forward_dummy(self, imgs):
         """Used for computing network flops.
 
         See `mmdetection/tools/analysis_tools/get_flops.py`
@@ -33,19 +33,19 @@ class YOLACT(SingleStageDetector):
         # img_metas do not influence the flops calculation
         dummy_img_metas = [
             dict(
-                img_shape=(300, 300),
-                ori_shape=(300, 300),
-                scale_factor=(1, 1)) for _ in range(len(img))
+                img_shape=img.shape,
+                ori_shape=img.shape,
+                scale_factor=(1, 1)) for img in range(len(imgs))
         ]
         rescale = False
-        feat = self.extract_feat(img)
+        feat = self.extract_feat(imgs)
         det_bboxes, det_labels, det_coeffs = self.bbox_head.simple_test(
             feat, dummy_img_metas, rescale=rescale)
         # det_bboxes will be empty for randomly generated images,
         # generate non-empty bboxes so mask_head can be executed
-        det_bboxes = torch.rand((1, 1, 5)).to(img.device)
-        det_labels = torch.tensor([[0]]).to(img.device)
-        det_coeffs = torch.rand((1, 1, 32)).to(img.device)
+        det_bboxes = torch.rand((1, 1, 5)).to(imgs.device)
+        det_labels = torch.tensor([[0]]).to(imgs.device)
+        det_coeffs = torch.rand((1, 1, 32)).to(imgs.device)
         bbox_results = [
             bbox2result(det_bbox, det_label, self.bbox_head.num_classes)
             for det_bbox, det_label in zip(det_bboxes, det_labels)
