@@ -1,47 +1,52 @@
 import io
 import json
-import numpy as np
 import os
 import os.path as osp
 import pytest
 import random
 import time
-import torch
 import unittest
 import warnings
-import yaml
+
 from concurrent.futures import ThreadPoolExecutor
+
+import numpy as np
+import torch
+import yaml
 
 from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.id import ID
+from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.model_template import parse_model_template, TargetDevice
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
-from ote_sdk.entities.shapes.box import Box
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
+from ote_sdk.entities.shapes.rectangle import Rectangle
+from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import TrainParameters
-from ote_sdk.entities.model import (ModelPrecision,
-                                    ModelStatus,
-                                    ModelOptimizationType,
-                                    OptimizationMethod)
+from ote_sdk.entities.model import (
+    ModelEntity,
+    ModelPrecision,
+    ModelStatus,
+    ModelOptimizationType,
+    OptimizationMethod,
+)
 from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.usecases.tasks.interfaces.export_interface import (
     ExportType,
     IExportTask,
-    )
+)
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
+from ote_sdk.tests.test_helpers import generate_random_annotated_image
 
 from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.dataset_item import DatasetItem
-from sc_sdk.entities.datasets import Dataset, NullDatasetStorage, Subset
+from sc_sdk.entities.datasets import Dataset, NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
-from sc_sdk.entities.model import Model, ModelStatus, NullModelStorage
-from sc_sdk.tests.test_helpers import generate_random_annotated_image
-from sc_sdk.utils.project_factory import NullProject
 
 from subprocess import run
 from typing import Optional
@@ -208,12 +213,12 @@ class API(unittest.TestCase):
             for shape in shapes:
                 shape_labels = shape.get_labels(include_empty=True)
                 shape = shape.shape
-                if isinstance(shape, (Box, Ellipse)):
+                if isinstance(shape, (Rectangle, Ellipse)):
                     box = np.array([shape.x1, shape.y1, shape.x2, shape.y2], dtype=float)
                 elif isinstance(shape, Polygon):
                     box = np.array([shape.min_x, shape.min_y, shape.max_x, shape.max_y], dtype=float)
                 box = box.clip(0, 1)
-                box_shapes.append(Annotation(Box(x1=box[0], y1=box[1], x2=box[2], y2=box[3]),
+                box_shapes.append(Annotation(Rectangle(x1=box[0], y1=box[1], x2=box[2], y2=box[3]),
                                              labels=shape_labels))
 
             image = Image(name=f'image_{i}', numpy=image_numpy, dataset_storage=NullDatasetStorage())
@@ -274,12 +279,11 @@ class API(unittest.TestCase):
 
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='train_thread')
 
-        output_model = Model(
-                NullProject(),
-                NullModelStorage(),
-                dataset,
-                detection_environment.get_model_configuration(),
-                model_status=ModelStatus.NOT_READY)
+        output_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY
+        )
 
         # Test stopping after some time
         start_time = time.time()
@@ -320,20 +324,42 @@ class API(unittest.TestCase):
 
         train_parameters = TrainParameters
         train_parameters.update_progress = progress_callback
-        output_model = Model(
-                NullProject(),
-                NullModelStorage(),
-                dataset,
-                detection_environment.get_model_configuration(),
-                model_status=ModelStatus.NOT_READY)
+        output_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY
+        )
         task.train(dataset, output_model, train_parameters)
 
         self.assertGreater(len(training_progress_curve), 0)
         training_progress_curve = np.asarray(training_progress_curve)
         self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
 
+    def test_inference_progress_tracking(self):
+        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
+
+        task = OTEDetectionTask(task_environment=detection_environment)
+        self.addCleanup(task._delete_scratch_space)
+
+        print('Task initialized, model inference starts.')
+        inference_progress_curve = []
+
+        def inference_progress_callback(progress: float, score: Optional[float] = None):
+            inference_progress_curve.append(progress)
+
+        inference_parameters = InferenceParameters
+        inference_parameters.update_progress = inference_progress_callback
+
+        task.infer(dataset.with_empty_annotations(), inference_parameters)
+
+        self.assertGreater(len(inference_progress_curve), 0)
+        inference_progress_curve = np.asarray(inference_progress_curve)
+        self.assertTrue(np.all(inference_progress_curve[1:] >= inference_progress_curve[:-1]))
+
     @staticmethod
-    def eval(task: OTEDetectionTask, model: Model, dataset: Dataset) -> Performance:
+    def eval(task: OTEDetectionTask, model: ModelEntity, dataset: Dataset) -> Performance:
         start_time = time.time()
         result_dataset = task.infer(dataset.with_empty_annotations())
         end_time = time.time()
@@ -372,12 +398,10 @@ class API(unittest.TestCase):
         # train_task checks that the task returns an Model and that
         # validation f-measure is higher than the threshold, which is a pretty low bar
         # considering that the dataset is so easy
-        output_model = Model(
-                NullProject(),
-                NullModelStorage(),
-                dataset,
-                detection_environment.get_model_configuration(),
-                model_status=ModelStatus.NOT_READY)
+        output_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY)
         task.train(dataset, output_model)
 
         # Test that labels and configurable parameters are stored in model.data
@@ -386,9 +410,7 @@ class API(unittest.TestCase):
         self.assertTrue('ellipse' in modelinfo['labels'])
 
         if isinstance(task, IExportTask):
-            exported_model = Model(
-                NullProject(),
-                NullModelStorage(),
+            exported_model = ModelEntity(
                 dataset,
                 detection_environment.get_model_configuration(),
                 optimization_type=ModelOptimizationType.MO,
@@ -409,9 +431,7 @@ class API(unittest.TestCase):
 
         print('Reloading model.')
         first_model = output_model
-        new_model = Model(
-            NullProject(),
-            NullModelStorage(),
+        new_model = ModelEntity(
             dataset,
             detection_environment.get_model_configuration(),
             model_status=ModelStatus.NOT_READY)
@@ -449,9 +469,7 @@ class API(unittest.TestCase):
                 'Too big performance difference after OpenVINO export.')
 
             print('Run POT optimization.')
-            optimized_model = Model(
-                NullProject(),
-                NullModelStorage(),
+            optimized_model = ModelEntity(
                 dataset,
                 detection_environment.get_model_configuration(),
                 optimization_type=ModelOptimizationType.POT,

@@ -19,12 +19,13 @@ from typing import List
 
 import numpy as np
 
-from ote_sdk.entities.label import ScoredLabel
-from ote_sdk.entities.shapes.box import Box
-
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
+from ote_sdk.entities.label import ScoredLabel
+from ote_sdk.entities.shapes.rectangle import Rectangle
+from ote_sdk.entities.subset import Subset
+
 from sc_sdk.entities.annotation import AnnotationScene, NullMediaIdentifier
-from sc_sdk.entities.datasets import Dataset, DatasetItem, NullDataset, Subset
+from sc_sdk.entities.datasets import Dataset, DatasetItem, NullDataset
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from sc_sdk.entities.image import Image
 
@@ -51,7 +52,7 @@ def get_annotation_mmdet_format(dataset_item: DatasetItem, label_list: List[str]
 
     for ann in dataset_item.get_annotations():
         box = ann.shape
-        if not isinstance(box, Box):
+        if not isinstance(box, Rectangle):
             continue
 
         gt_bboxes.append([box.x1 * width, box.y1 * height, box.x2 * width, box.y2 * height])
@@ -277,7 +278,7 @@ class MMDatasetAdapter(Dataset):
             return ScoredLabel(label=self.label_name_to_project_label(label_name))
 
         def create_gt_box(x1, y1, x2, y2, label):
-            return Annotation(Box(x1=x1, y1=y1, x2=x2, y2=y2),
+            return Annotation(Rectangle(x1=x1, y1=y1, x2=x2, y2=y2),
                               labels=[create_gt_scored_label(label)])
 
         item = self.coco_dataset[indx]
