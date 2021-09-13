@@ -16,7 +16,6 @@ from torch.utils.data import DataLoader
 
 from mmdet.core.hook import ExpMomentumEMAHook, YOLOXLrUpdaterHook
 from mmdet.core.hook.sync_norm_hook import SyncNormHook
-from mmdet.core.hook.sync_random_size_hook import SyncRandomSizeHook
 
 
 def _build_demo_runner_without_hook(runner_type='EpochBasedRunner',
@@ -246,17 +245,6 @@ def test_sync_norm_hook():
     loader = DataLoader(torch.ones((5, 2)))
     runner = _build_demo_runner()
     runner.register_hook_from_cfg(dict(type='SyncNormHook'))
-    runner.run([loader, loader], [('train', 1), ('val', 1)])
-    shutil.rmtree(runner.work_dir)
-
-
-def test_sync_random_size_hook():
-    # Only used to prevent program errors
-    SyncRandomSizeHook()
-
-    loader = DataLoader(torch.ones((5, 2)))
-    runner = _build_demo_runner()
-    runner.register_hook_from_cfg(dict(type='SyncRandomSizeHook'))
     runner.run([loader, loader], [('train', 1), ('val', 1)])
     shutil.rmtree(runner.work_dir)
 
