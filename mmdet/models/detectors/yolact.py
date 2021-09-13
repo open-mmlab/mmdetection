@@ -34,7 +34,7 @@ class YOLACT(SingleStageDetector):
         dummy_img_metas = [
             dict(
                 img_shape=img.shape, ori_shape=img.shape, scale_factor=(1, 1))
-            for img in range(len(imgs))
+            for img in imgs
         ]
         rescale = False
         feat = self.extract_feat(imgs)
