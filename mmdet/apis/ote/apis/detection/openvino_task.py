@@ -216,7 +216,7 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
     def evaluate(self,
                  output_result_set: ResultSetEntity,
                  evaluation_metric: Optional[str] = None):
-        return MetricsHelper.compute_f_measure(output_result_set).get_performance()
+        output_result_set.performance = MetricsHelper.compute_f_measure(output_result_set).get_performance()
 
     def optimize(self,
                  optimization_type: OptimizationType,

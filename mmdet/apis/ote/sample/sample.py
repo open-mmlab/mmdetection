@@ -105,8 +105,8 @@ def main(args):
         prediction_dataset=predicted_validation_dataset,
     )
     logger.info('Estimate quality on validation set')
-    performance = task.evaluate(resultset)
-    logger.info(str(performance))
+    task.evaluate(resultset)
+    logger.info(str(resultset.performance))
 
     if args.export:
         logger.info('Export model')

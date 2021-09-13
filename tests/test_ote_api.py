@@ -335,6 +335,7 @@ class API(unittest.TestCase):
         training_progress_curve = np.asarray(training_progress_curve)
         self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
 
+    @e2e_pytest_api
     def test_inference_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
@@ -369,8 +370,9 @@ class API(unittest.TestCase):
             ground_truth_dataset=dataset,
             prediction_dataset=result_dataset
         )
-        performance = task.evaluate(result_set)
-        return performance
+        task.evaluate(result_set)
+        assert result_set.performance is not None
+        return result_set.performance
 
     def check_threshold(self, reference, value, delta_tolerance, message=''):
         delta = value.score.value - reference.score.value
@@ -463,7 +465,9 @@ class API(unittest.TestCase):
                 ground_truth_dataset=val_dataset,
                 prediction_dataset=predicted_validation_dataset,
             )
-            export_performance = ov_task.evaluate(resultset)
+            ov_task.evaluate(resultset)
+            export_performance = resultset.performance
+            assert export_performance is not None
             print(f'Performance of exported model: {export_performance.score.value:.4f}')
             self.check_threshold(validation_performance, export_performance, export_perf_delta_tolerance,
                 'Too big performance difference after OpenVINO export.')
