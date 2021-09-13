@@ -2,6 +2,7 @@ import io
 import json
 import os
 import os.path as osp
+import pytest
 import random
 import time
 import unittest
@@ -58,27 +59,36 @@ from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
 
+from e2e_test_system import e2e_pytest_api
+
 
 class ModelTemplate(unittest.TestCase):
 
+    @e2e_pytest_api
     def test_reading_mnv2_ssd_256(self):
         parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml')
 
+    @e2e_pytest_api
     def test_reading_mnv2_ssd_384(self):
         parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-384x384/template.yaml')
 
+    @e2e_pytest_api
     def test_reading_mnv2_ssd_512(self):
         parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-512x512/template.yaml')
 
+    @e2e_pytest_api
     def test_reading_mnv2_ssd(self):
         parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_SSD/template.yaml')
 
+    @e2e_pytest_api
     def test_reading_mnv2_atss(self):
         parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_ATSS/template.yaml')
 
+    @e2e_pytest_api
     def test_reading_resnet50_vfnet(self):
         parse_model_template('./configs/ote/custom-object-detection/resnet50_VFNet/template.yaml')
 
+@e2e_pytest_api
 def test_configuration_yaml():
     configuration = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
     configuration_yaml_str = convert(configuration, str)
@@ -88,6 +98,7 @@ def test_configuration_yaml():
     del configuration_yaml_converted['algo_backend']
     assert configuration_yaml_converted == configuration_yaml_loaded
 
+@e2e_pytest_api
 def test_set_values_as_default():
     template_dir = './configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/'
     template_file = osp.join(template_dir, 'template.yaml')
@@ -158,6 +169,7 @@ class Sample(unittest.TestCase):
                                osp.join(cls.coco_dir, 'annotations/instances_val2017.json'),
                                cls.shorten_to)
 
+    @e2e_pytest_api
     def test_sample_on_cpu(self):
         output = run('export CUDA_VISIBLE_DEVICES=;'
                      'python mmdet/apis/ote/sample/sample.py '
@@ -166,6 +178,7 @@ class Sample(unittest.TestCase):
                      shell=True, check=True)
         assert output.returncode == 0
 
+    @e2e_pytest_api
     def test_sample_on_gpu(self):
         output = run('export CUDA_VISIBLE_DEVICES=0;'
                      'python mmdet/apis/ote/sample/sample.py '
@@ -246,6 +259,7 @@ class API(unittest.TestCase):
         hyper_parameters.postprocessing.confidence_threshold = 0.1
         return hyper_parameters, model_template
 
+    @e2e_pytest_api
     def test_cancel_training_detection(self):
         """
         Tests starting and cancelling training.
@@ -295,6 +309,7 @@ class API(unittest.TestCase):
         train_future.result()
         self.assertLess(time.time() - start_time, 25)  # stopping process has to happen in less than 25 seconds
 
+    @e2e_pytest_api
     def test_training_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
@@ -322,6 +337,7 @@ class API(unittest.TestCase):
         training_progress_curve = np.asarray(training_progress_curve)
         self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
 
+    @e2e_pytest_api
     def test_inference_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
@@ -501,21 +517,27 @@ class API(unittest.TestCase):
             self.check_threshold(validation_performance, nncf_performance, nncf_perf_delta_tolerance,
                 'Too big performance difference after NNCF optimization.')
 
+    @e2e_pytest_api
     def test_training_custom_mobilenetssd_256(self):
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
 
+    @e2e_pytest_api
     def test_training_custom_mobilenetssd_384(self):
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-384x384'))
 
+    @e2e_pytest_api
     def test_training_custom_mobilenetssd_512(self):
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-512x512'))
 
+    @e2e_pytest_api
     def test_training_custom_mobilenet_atss(self):
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS'))
 
+    @e2e_pytest_api
     def test_training_custom_mobilenet_ssd(self):
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD'))
 
+    @e2e_pytest_api
     def test_training_custom_resnet_vfnet(self):
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet'),
                         export_perf_delta_tolerance=0.01)
