@@ -13,6 +13,7 @@
 # and limitations under the License.
 
 import copy
+import logging
 import numpy as np
 import os
 import shutil
@@ -41,7 +42,6 @@ from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
 from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset
-from sc_sdk.logging import logger_factory
 
 from mmdet.apis import export_model, single_gpu_test
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing, set_hyperparams
@@ -50,7 +50,8 @@ from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
 
-logger = logger_factory.get_logger("OTEBaseTask")
+
+logger = logging.getLogger(__name__)
 
 
 class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
