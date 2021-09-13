@@ -33,9 +33,8 @@ class YOLACT(SingleStageDetector):
         # img_metas do not influence the flops calculation
         dummy_img_metas = [
             dict(
-                img_shape=img.shape,
-                ori_shape=img.shape,
-                scale_factor=(1, 1)) for img in range(len(imgs))
+                img_shape=img.shape, ori_shape=img.shape, scale_factor=(1, 1))
+            for img in range(len(imgs))
         ]
         rescale = False
         feat = self.extract_feat(imgs)
