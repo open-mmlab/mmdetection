@@ -172,10 +172,9 @@ def test_trident_resnet_backbone():
         TridentResNet(50, num_stages=4, **tridentresnet_config)
 
     model = TridentResNet(50, num_stages=3, **tridentresnet_config)
-    model.init_weights()
     model.train()
 
-    imgs = torch.randn(1, 3, 224, 224)
+    imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 1
-    assert feat[0].shape == torch.Size([3, 1024, 14, 14])
+    assert feat[0].shape == torch.Size([3, 1024, 2, 2])

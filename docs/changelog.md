@@ -1,5 +1,52 @@
 ## Changelog
 
+### v2.16.0 (30/8/2021)
+
+#### Highlights
+
+- Support [Panoptic FPN](https://arxiv.org/abs/1901.02446) and [Swin Transformer](https://arxiv.org/abs/2103.14030)
+
+#### New Features
+
+- Support [Panoptic FPN](https://arxiv.org/abs/1901.02446) and release models (#5577, #5902)
+- Support Swin Transformer backbone (#5748)
+- Release RetinaNet models pre-trained with multi-scale 3x schedule (#5636)
+- Add script to convert unlabeled image list to coco format (#5643)
+- Add hook to check whether the loss value is valid (#5674)
+- Add YOLO anchor optimizing tool (#5644)
+- Support export onnx models without post process. (#5851)
+- Support classwise evaluation in CocoPanopticDataset (#5896)
+- Adapt browse_dataset for concatenated datasets. (#5935)
+- Add `PatchEmbed` and `PatchMerging` with `AdaptivePadding` (#5952)
+
+#### Bug Fixes
+
+- Fix unit tests of YOLOX (#5859)
+- Fix lose randomness in `imshow_det_bboxes` (#5845)
+- Make output result of `ImageToTensor` contiguous (#5756)
+- Fix inference bug when calling `regress_by_class` in RoIHead in some cases (#5884)
+- Fix bug in CIoU loss where alpha should not have gradient. (#5835)
+- Fix the bug that `multiscale_output` is defined but not used in HRNet (#5887)
+- Set the priority of EvalHook to LOW. (#5882)
+- Fix a YOLOX bug when applying bbox rescaling in test mode (#5899)
+- Fix mosaic coordinate error (#5947)
+- Fix dtype of bbox in RandomAffine. (#5930)
+
+#### Improvements
+
+- Add Chinese version of `data_pipeline` and  (#5662)
+- Support to remove state dicts of EMA when publishing models. (#5858)
+- Refactor the loss function in HTC and SCNet (#5881)
+- Use warnings instead of logger.warning (#5540)
+- Use legacy coordinate in metric of VOC (#5627)
+- Add Chinese version of customize_losses (#5826)
+- Add Chinese version of model_zoo (#5827)
+
+#### Contributors
+
+A total of 19 developers contributed to this release.
+Thanks @ypwhs, @zywvvd, @collinzrj, @OceanPang, @ddonatien, @@haotian-liu, @viibridges, @Muyun99, @guigarfr, @zhaojinjian0000, @jbwang1997,@wangbo-zhao, @xvjiarui, @RangiLyu, @jshilong, @AronLin, @BIGWangYuDong, @hhaAndroid, @ZwwWayne
+
 ### v2.15.1 (11/8/2021)
 
 #### Highlights

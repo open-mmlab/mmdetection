@@ -10,8 +10,13 @@ Collections:
         - FPN
         - ResNet
         - Varifocal Loss
-    Paper: https://arxiv.org/abs/2008.13367
+    Paper:
+      URL: https://arxiv.org/abs/2008.13367
+      Title: 'VarifocalNet: An IoU-aware Dense Object Detector'
     README: configs/vfnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.6.0/mmdet/models/detectors/vfnet.py#L6
+      Version: v2.6.0
 
 Models:
   - Name: vfnet_r50_fpn_1x_coco

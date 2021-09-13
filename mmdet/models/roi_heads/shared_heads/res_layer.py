@@ -49,7 +49,7 @@ class ResLayer(BaseModule):
         self.add_module(f'layer{stage + 1}', res_layer)
 
         assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
+            'init_cfg and pretrained cannot be specified at the same time'
         if isinstance(pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is a deprecated, '
                           'please use "init_cfg" instead')
