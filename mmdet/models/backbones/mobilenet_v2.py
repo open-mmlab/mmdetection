@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 
 import torch.nn as nn
@@ -57,7 +58,7 @@ class MobileNetV2(BaseModule):
 
         self.pretrained = pretrained
         assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
+            'init_cfg and pretrained cannot be specified at the same time'
         if isinstance(pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')

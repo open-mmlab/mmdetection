@@ -1,9 +1,8 @@
-from os.path import dirname, exists, join, relpath
+# Copyright (c) OpenMMLab. All rights reserved.
+from os.path import dirname, exists, join
 from unittest.mock import Mock
 
 import pytest
-import torch
-from mmcv.runner import build_optimizer
 
 from mmdet.core import BitmapMasks, PolygonMasks
 from mmdet.datasets.builder import DATASETS
@@ -59,68 +58,6 @@ def _check_numclasscheckhook(detector, config_mod):
     compatible_check.before_val_epoch(dummy_runner)
     dummy_runner.data_loader.dataset.CLASSES = None
     compatible_check.before_val_epoch(dummy_runner)
-
-
-def test_config_build_detector():
-    """Test that all detection models defined in the configs can be
-    initialized."""
-    from mmcv import Config
-    from mmdet.models import build_detector
-
-    config_dpath = _get_config_directory()
-    print(f'Found config_dpath = {config_dpath}')
-
-    import glob
-    config_fpaths = list(glob.glob(join(config_dpath, '**', '*.py')))
-    config_fpaths = [
-        p for p in config_fpaths
-        if p.find('_base_') == -1 and p.find('common') == -1
-    ]
-    config_names = [relpath(p, config_dpath) for p in config_fpaths]
-
-    print(f'Using {len(config_names)} config files')
-
-    for config_fname in config_names:
-        config_fpath = join(config_dpath, config_fname)
-        config_mod = Config.fromfile(config_fpath)
-        print(f'Building detector, config_fpath = {config_fpath}')
-
-        # Remove pretrained keys to allow for testing in an offline environment
-        if 'pretrained' in config_mod.model:
-            config_mod.model['pretrained'] = None
-
-        detector = build_detector(config_mod.model)
-        assert detector is not None
-
-        # Check whether NumClassCheckHook is used.
-        custom_hooks = config_mod.get('custom_hooks', [])
-        assert custom_hooks is None or isinstance(custom_hooks, list)
-        check_class_num = False
-        if custom_hooks is not None:
-            hooks = [hook['type'] for hook in custom_hooks]
-            if 'NumClassCheckHook' in hooks:
-                check_class_num = True
-        if check_class_num:
-            _check_numclasscheckhook(detector, config_mod)
-
-        optimizer = build_optimizer(detector, config_mod.optimizer)
-        assert isinstance(optimizer, torch.optim.Optimizer)
-
-        if 'roi_head' in config_mod.model.keys():
-            # for two stage detector
-            # detectors must have bbox head
-            assert detector.roi_head.with_bbox and detector.with_bbox
-            assert detector.roi_head.with_mask == detector.with_mask
-
-            head_config = config_mod.model['roi_head']
-            _check_roi_head(head_config, detector.roi_head)
-
-        # else:
-        #     # for single stage detector
-        #     # detectors must have bbox head
-        #     # assert detector.with_bbox
-        #     head_config = config_mod.model['bbox_head']
-        #     _check_bbox_head(head_config, detector.bbox_head)
 
 
 def _check_roi_head(config, head):

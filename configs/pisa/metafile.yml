@@ -12,8 +12,13 @@ Collections:
         - RPN
         - ResNet
         - RoIPool
-    Paper: https://arxiv.org/abs/1904.04821
+    Paper:
+      URL: https://arxiv.org/abs/1904.04821
+      Title: 'Prime Sample Attention in Object Detection'
     README: configs/pisa/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/roi_heads/pisa_roi_head.py#L8
+      Version: v2.1.0
 
 Models:
   - Name: pisa_faster_rcnn_r50_fpn_1x_coco

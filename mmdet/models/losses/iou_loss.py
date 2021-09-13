@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import math
 import warnings
 
@@ -87,8 +88,9 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
                             (target_w + eps))
     loss_dh = 1 - torch.min(target_h / (pred_h + eps), pred_h /
                             (target_h + eps))
+    # view(..., -1) does not work for empty tensor
     loss_comb = torch.stack([loss_dx, loss_dy, loss_dw, loss_dh],
-                            dim=-1).view(loss_dx.size(0), -1)
+                            dim=-1).flatten(1)
 
     loss = torch.where(loss_comb < beta, 0.5 * loss_comb * loss_comb / beta,
                        loss_comb - 0.5 * beta)
@@ -226,9 +228,12 @@ def ciou_loss(pred, target, eps=1e-7):
     factor = 4 / math.pi**2
     v = factor * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
 
+    with torch.no_grad():
+        alpha = (ious > 0.5).float() * v / (1 - ious + v)
+
     # CIoU
-    cious = ious - (rho2 / c2 + v**2 / (1 - ious + v))
-    loss = 1 - cious
+    cious = ious - (rho2 / c2 + alpha * v)
+    loss = 1 - cious.clamp(min=-1.0, max=1.0)
     return loss
 
 
