@@ -3,6 +3,7 @@ import bisect
 import collections
 import copy
 import math
+import warnings
 from collections import defaultdict
 
 import numpy as np
@@ -301,7 +302,7 @@ class MultiImageMixDataset:
         pipeline (Sequence[dict]): Sequence of transform object or
             config dict to be composed.
         dynamic_scale (tuple[int], optional): The image scale can be changed
-            dynamically. Default to None.
+            dynamically. Default to None. It is deprecated.
         skip_type_keys (list[str], optional): Sequence of type string to
             be skip pipeline. Default to None.
     """
@@ -311,7 +312,11 @@ class MultiImageMixDataset:
                  pipeline,
                  dynamic_scale=None,
                  skip_type_keys=None):
+        warnings.warn(
+            'dynamic_scale is deprecated. The dynamic scaling is provided '
+            'by resize, we no longer need this parameter', UserWarning)
         assert isinstance(pipeline, collections.abc.Sequence)
+
         if skip_type_keys is not None:
             assert all([
                 isinstance(skip_type_key, str)
@@ -334,10 +339,7 @@ class MultiImageMixDataset:
         if hasattr(self.dataset, 'flag'):
             self.flag = dataset.flag
         self.num_samples = len(dataset)
-
-        if dynamic_scale is not None:
-            assert isinstance(dynamic_scale, tuple)
-        self._dynamic_scale = dynamic_scale
+        self.dynamic_scale = dynamic_scale
 
     def __len__(self):
         return self.num_samples
@@ -359,17 +361,10 @@ class MultiImageMixDataset:
                 ]
                 results['mix_results'] = mix_results
 
-            # if self._dynamic_scale is not None:
-            #     # Used for subsequent pipeline to automatically change
-            #     # the output image size. E.g MixUp, Resize.
-            #     results['scale'] = self._dynamic_scale
-
             results = transform(results)
 
             if 'mix_results' in results:
                 results.pop('mix_results')
-            if 'img_scale' in results:
-                results.pop('img_scale')
 
         return results
 
@@ -384,13 +379,3 @@ class MultiImageMixDataset:
             isinstance(skip_type_key, str) for skip_type_key in skip_type_keys
         ])
         self._skip_type_keys = skip_type_keys
-
-    def update_dynamic_scale(self, dynamic_scale):
-        """Update dynamic_scale. It is called by an external hook.
-
-        Args:
-            dynamic_scale (tuple[int]): The image scale can be
-               changed dynamically.
-        """
-        assert isinstance(dynamic_scale, tuple)
-        self._dynamic_scale = dynamic_scale

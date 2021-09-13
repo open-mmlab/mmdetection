@@ -27,7 +27,7 @@ train_pipeline = [
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(
         type='Resize',
-        img_scale=[(10*32, 10*32), (20*32, 20*32)],
+        img_scale=[(10 * 32, 10 * 32), (20 * 32, 20 * 32)],
         multiscale_mode='range',
         keep_ratio=True),
     dict(type='Pad', size_divisor=32, pad_val=114.0),
@@ -65,7 +65,11 @@ interval = 10
 # Execute in the order of insertion when the priority is the same.
 # The smaller the value, the higher the priority
 custom_hooks = [
-    dict(type='YOLOXModeSwitchHook', num_last_epochs=15, priority=48),
+    dict(
+        type='YOLOXModeSwitchHook',
+        num_last_epochs=15,
+        is_multiprocess=True,
+        priority=48),
     dict(
         type='SyncNormHook',
         num_last_epochs=15,

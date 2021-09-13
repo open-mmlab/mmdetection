@@ -2083,7 +2083,6 @@ class Mosaic:
 
         results['img'] = mosaic_img
         results['img_shape'] = mosaic_img.shape
-        results['ori_shape'] = mosaic_img.shape
         results['gt_bboxes'] = mosaic_bboxes
         results['gt_labels'] = mosaic_labels
 
@@ -2217,7 +2216,7 @@ class MixUp:
                  min_area_ratio=0.2,
                  max_aspect_ratio=20):
         assert isinstance(img_scale, tuple)
-        self.dynamic_scale = img_scale
+        self.img_scale = img_scale
         self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio
         self.pad_val = pad_val
@@ -2275,9 +2274,6 @@ class MixUp:
             # empty bbox
             return results
 
-        if 'scale' in results:
-            self.dynamic_scale = results['scale']
-
         retrieve_results = results['mix_results'][0]
         retrieve_img = retrieve_results['img']
 
@@ -2285,16 +2281,15 @@ class MixUp:
         is_filp = random.uniform(0, 1) > self.flip_ratio
 
         if len(retrieve_img.shape) == 3:
-            out_img = np.ones(
-                (self.dynamic_scale[0], self.dynamic_scale[1], 3),
-                dtype=retrieve_img.dtype) * self.pad_val
+            out_img = np.ones((self.img_scale[0], self.img_scale[1], 3),
+                              dtype=retrieve_img.dtype) * self.pad_val
         else:
             out_img = np.ones(
-                self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_val
+                self.img_scale, dtype=retrieve_img.dtype) * self.pad_val
 
         # 1. keep_ratio resize
-        scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
-                          self.dynamic_scale[1] / retrieve_img.shape[1])
+        scale_ratio = min(self.img_scale[0] / retrieve_img.shape[0],
+                          self.img_scale[1] / retrieve_img.shape[1])
         retrieve_img = mmcv.imresize(
             retrieve_img, (int(retrieve_img.shape[1] * scale_ratio),
                            int(retrieve_img.shape[0] * scale_ratio)))

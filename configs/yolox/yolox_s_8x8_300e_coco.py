@@ -128,7 +128,11 @@ resume_from = None
 interval = 10
 
 custom_hooks = [
-    dict(type='YOLOXModeSwitchHook', num_last_epochs=15, priority=48),
+    dict(
+        type='YOLOXModeSwitchHook',
+        num_last_epochs=15,
+        is_multiprocess=True,
+        priority=48),
     dict(
         type='SyncNormHook',
         num_last_epochs=15,

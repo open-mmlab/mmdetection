@@ -15,14 +15,20 @@ class YOLOXModeSwitchHook(Hook):
             training to close the data augmentation and switch to L1 loss.
             Default: 15.
        skip_type_keys (list[str], optional): Sequence of type string to be
-            skip pipeline. Default: ('Mosaic', 'RandomAffine', 'MixUp')
+            skip pipeline. Default: ('Mosaic', 'RandomAffine', 'MixUp').
+       is_multiprocess (bool): Determine whether it is a multi-process.
+            If num_workers in the dataloader or workers_per_gpu in
+            the configuration is greater than 0, it should be set to true.
+            Default: True.
     """
 
     def __init__(self,
                  num_last_epochs=15,
-                 skip_type_keys=('Mosaic', 'RandomAffine', 'MixUp')):
+                 skip_type_keys=('Mosaic', 'RandomAffine', 'MixUp'),
+                 is_multiprocess=True):
         self.num_last_epochs = num_last_epochs
         self.skip_type_keys = skip_type_keys
+        self.is_multiprocess = is_multiprocess
 
     def before_train_epoch(self, runner):
         """Close mosaic and mixup augmentation and switches to use L1 loss."""
@@ -32,7 +38,15 @@ class YOLOXModeSwitchHook(Hook):
         if is_module_wrapper(model):
             model = model.module
         if (epoch + 1) == runner.max_epochs - self.num_last_epochs:
-            runner.logger.info('No mosaic and mixup aug now!')
-            train_loader.dataset.update_skip_type_keys(self.skip_type_keys)
             runner.logger.info('Add additional L1 loss now!')
             model.bbox_head.use_l1 = True
+
+        if self.is_multiprocess:
+            # Due to the multi-process feature, closing the augmentation
+            # operation requires an epoch in advance.
+            closed_epoch = runner.max_epochs - self.num_last_epochs - 1
+        else:
+            closed_epoch = runner.max_epochs - self.num_last_epochs
+        if (epoch + 1) == closed_epoch:
+            runner.logger.info('No mosaic and mixup aug!')
+            train_loader.dataset.update_skip_type_keys(self.skip_type_keys)
