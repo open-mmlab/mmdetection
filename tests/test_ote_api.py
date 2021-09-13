@@ -338,6 +338,56 @@ class API(unittest.TestCase):
         self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
 
     @e2e_pytest_api
+    def test_nncf_optimize_progress_tracking(self):
+        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+
+        # Prepare pretrained weights
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
+
+        task = OTEDetectionTask(task_environment=detection_environment)
+        self.addCleanup(task._delete_scratch_space)
+
+        original_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY
+        )
+        task.train(dataset, original_model, TrainParameters)
+
+        # Create NNCFTask
+        detection_environment.model = original_model
+        nncf_task = NNCFDetectionTask(task_environment=detection_environment)
+        self.addCleanup(nncf_task._delete_scratch_space)
+
+        # Rewrite some parameters to spend less time
+        nncf_task._config["runner"]["max_iters"] = 10
+        nncf_init_cfg = nncf_task._config["nncf_config"]["compression"][0]["initializer"]
+        nncf_init_cfg["range"]["num_init_samples"] = 1
+        nncf_init_cfg["batchnorm_adaptation"]["num_bn_adaptation_samples"] = 1
+
+        print('Task initialized, model optimization starts.')
+        training_progress_curve = []
+
+        def progress_callback(progress: float, score: Optional[float] = None):
+            training_progress_curve.append(progress)
+
+        optimization_parameters = OptimizationParameters
+        optimization_parameters.update_progress = progress_callback
+        nncf_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY
+        )
+        optimization_parameters.update_progress = progress_callback
+
+        nncf_task.optimize(OptimizationType.NNCF, dataset, nncf_model, optimization_parameters)
+
+        self.assertGreater(len(training_progress_curve), 0)
+        training_progress_curve = np.asarray(training_progress_curve)
+        self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
+
+    @e2e_pytest_api
     def test_inference_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)

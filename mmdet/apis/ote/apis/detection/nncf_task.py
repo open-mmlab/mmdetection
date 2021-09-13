@@ -138,7 +138,7 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
                 raise ValueError("Could not load the saved model. The model file structure is invalid.") \
                     from ex
         else:
-            raise ValueError(f"No trained model in project. NNCF require pretrained model to compress the model")
+            raise ValueError(f"No trained model in project. NNCF require pretrained weights to compress the model")
         return compression_ctrl, model
 
     def _create_compressed_model(self, dataset, config):
