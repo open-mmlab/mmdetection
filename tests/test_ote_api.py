@@ -335,6 +335,7 @@ class API(unittest.TestCase):
         training_progress_curve = np.asarray(training_progress_curve)
         self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
 
+    @e2e_pytest_api
     def test_inference_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
