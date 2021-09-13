@@ -124,6 +124,15 @@ def add_node_names(export_name):
     onnx.save(model, export_name)
 
 
+def _get_mo_cmd():
+    for mo_cmd in ('mo', 'mo.py'):
+        try:
+            run(f'{mo_cmd} -h', stdout=DEVNULL, stderr=DEVNULL, shell=True, check=True)
+            return mo_cmd
+        except CalledProcessError:
+            pass
+    raise RuntimeError('OpenVINO Model Optimizer is not found or configured improperly')
+
 def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None,
                        input_format='bgr', precision='FP32', with_text=False):
     cfg.model.pretrained = None
@@ -138,13 +147,15 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None,
     onnx.save(onnx_model, onnx_model_path)
     output_names = ','.join(output_names)
 
+    mo_cmd = _get_mo_cmd()
+
     assert cfg.data.test.pipeline[1]['type'] == 'MultiScaleFlipAug'
     normalize = [v for v in cfg.data.test.pipeline[1]['transforms']
                  if v['type'] == 'Normalize'][0]
 
     mean_values = normalize['mean']
     scale_values = normalize['std']
-    command_line = f'mo --input_model="{onnx_model_path}" ' \
+    command_line = f'{mo_cmd} --input_model="{onnx_model_path}" ' \
                    f'--mean_values="{mean_values}" ' \
                    f'--scale_values="{scale_values}" ' \
                    f'--output_dir="{output_dir_path}" ' \
@@ -161,22 +172,17 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None,
 
     print(command_line)
 
-    try:
-        run(f'mo -h', stdout=DEVNULL, stderr=DEVNULL, shell=True, check=True)
-    except CalledProcessError:
-        raise RuntimeError('OpenVINO Model Optimizer is not found or configured improperly')
-
     run(command_line, shell=True, check=True)
 
     if with_text:
         onnx_model_path_tr_encoder = onnx_model_path.replace('.onnx', '_text_recognition_head_encoder.onnx')
-        command_line = f'mo --input_model="{onnx_model_path_tr_encoder}" ' \
+        command_line = f'{mo_cmd} --input_model="{onnx_model_path_tr_encoder}" ' \
                        f'--output_dir="{output_dir_path}"'
         print(command_line)
         run(command_line, shell=True, check=True)
 
         onnx_model_path_tr_decoder = onnx_model_path.replace('.onnx', '_text_recognition_head_decoder.onnx')
-        command_line = f'mo --input_model="{onnx_model_path_tr_decoder}" ' \
+        command_line = f'{mo_cmd} --input_model="{onnx_model_path_tr_decoder}" ' \
                        f'--output_dir="{output_dir_path}"'
         print(command_line)
         run(command_line, shell=True, check=True)

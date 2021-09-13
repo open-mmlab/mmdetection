@@ -4,8 +4,8 @@ mmpycocotools
 numpy
 six
 terminaltables
-torch>=1.7.1,<=1.8.1
-torchvision>=0.8.1,<=0.9.1
+torch>=1.7.1,<=1.9.0
+torchvision>=0.8.1,<=0.10.0
 openvino==2021.4
 openvino-dev==2021.4
 pytorchcv==0.0.55

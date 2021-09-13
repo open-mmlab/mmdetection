@@ -75,7 +75,7 @@ else
   # Remove dots from CUDA version string, if any.
   CUDA_VERSION_CODE=$(echo ${CUDA_VERSION} | sed -e "s/\.//" -e "s/\(...\).*/\1/")
   echo "Using CUDA_VERSION ${CUDA_VERSION}"
-  if [[ "${CUDA_VERSION_CODE}" != "111" ]] && [[ "${CUDA_VERSION_CODE}" != "102" ]] ; then
+  if [[ "${CUDA_VERSION_CODE}" != "111" && "${CUDA_VERSION_CODE}" != "102" ]] ; then
     echo "CUDA version must be either 10.2 or 11.1"
     exit 1
   fi
@@ -100,19 +100,19 @@ pip install wheel -c ${CONSTRAINTS_FILE} || exit 1
 pip install --upgrade setuptools -c ${CONSTRAINTS_FILE} || exit 1
 
 if [[ -z $CUDA_VERSION_CODE ]]; then
-  echo torch==${TORCH_VERSION}+cpu >> ${CONSTRAINTS_FILE}
-  echo torchvision==${TORCHVISION_VERSION}+cpu >> ${CONSTRAINTS_FILE}
   pip install torch==${TORCH_VERSION}+cpu torchvision==${TORCHVISION_VERSION}+cpu -f https://download.pytorch.org/whl/torch_stable.html \
           -c ${CONSTRAINTS_FILE} || exit 1
+  echo torch==${TORCH_VERSION}+cpu >> ${CONSTRAINTS_FILE}
+  echo torchvision==${TORCHVISION_VERSION}+cpu >> ${CONSTRAINTS_FILE}
 elif [[ $CUDA_VERSION_CODE == "102" ]]; then
+  pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION} -c ${CONSTRAINTS_FILE} || exit 1
   echo torch==${TORCH_VERSION} >> ${CONSTRAINTS_FILE}
   echo torchvision==${TORCHVISION_VERSION} >> ${CONSTRAINTS_FILE}
-  pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION} -c ${CONSTRAINTS_FILE} || exit 1
 else
-  echo torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
-  echo torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
   pip install torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} -f https://download.pytorch.org/whl/torch_stable.html \
           -c ${CONSTRAINTS_FILE} || exit 1
+  echo torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
+  echo torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
 fi
 
 if [[ -z $CUDA_VERSION_CODE ]]; then
