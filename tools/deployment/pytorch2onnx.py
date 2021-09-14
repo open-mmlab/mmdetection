@@ -71,8 +71,8 @@ def pytorch2onnx(model,
         dynamic_axes = {
             input_name: {
                 0: 'batch',
-                2: 'width',
-                3: 'height'
+                2: 'height',
+                3: 'width'
             },
             'dets': {
                 0: 'batch',
