@@ -100,6 +100,7 @@ class OTEDetectionTask(OTEBaseTask, ITrainingTask):
                         f"architecture and general-purpose pretrained weights.")
         return model
 
+
     def train(self, dataset: Dataset, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
         """ Trains a model on a dataset """
 

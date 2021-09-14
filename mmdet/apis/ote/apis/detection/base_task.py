@@ -206,7 +206,8 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
 
             # self._task_environment.set_configurable_parameters(params)
         logger.info(f"F-measure after evaluation: {f_measure_metrics.f_measure.value}")
-        return f_measure_metrics.get_performance()
+
+        output_result_set.performance = f_measure_metrics.get_performance()
 
     def cancel_training(self):
         """
