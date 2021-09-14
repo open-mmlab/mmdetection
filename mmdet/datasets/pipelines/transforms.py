@@ -1965,16 +1965,20 @@ class Mosaic:
            image. Default to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
            output. Default to (0.5, 1.5).
+        min_bbox_size (int | float): The minimum pixel for filtering
+            invalid bboxes after the mosaic pipeline. Default to 0.
         pad_val (int): Pad value. Default to 114.
     """
 
     def __init__(self,
                  img_scale=(640, 640),
                  center_ratio_range=(0.5, 1.5),
+                 min_bbox_size=0,
                  pad_val=114):
         assert isinstance(img_scale, tuple)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
+        self.min_bbox_size = min_bbox_size
         self.pad_val = pad_val
 
     def __call__(self, results):
@@ -2081,6 +2085,9 @@ class Mosaic:
                                              2 * self.img_scale[0])
             mosaic_labels = np.concatenate(mosaic_labels, 0)
 
+            mosaic_bboxes, mosaic_labels = \
+                self._filter_box_candidates(mosaic_bboxes, mosaic_labels)
+
         results['img'] = mosaic_img
         results['img_shape'] = mosaic_img.shape
         results['ori_shape'] = mosaic_img.shape
@@ -2150,6 +2157,15 @@ class Mosaic:
 
         paste_coord = x1, y1, x2, y2
         return paste_coord, crop_coord
+
+    def _filter_box_candidates(self, bboxes, labels):
+        """Filter out bboxes too small after Mosaic."""
+        bbox_w = bboxes[:, 2] - bboxes[:, 0]
+        bbox_h = bboxes[:, 3] - bboxes[:, 1]
+        valid_inds = (bbox_w > self.min_bbox_size) & \
+                     (bbox_h > self.min_bbox_size)
+        valid_inds = np.nonzero(valid_inds)[0]
+        return bboxes[valid_inds], labels[valid_inds]
 
     def __repr__(self):
         repr_str = self.__class__.__name__
