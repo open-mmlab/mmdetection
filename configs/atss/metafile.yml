@@ -10,8 +10,13 @@ Collections:
         - ATSS
         - FPN
         - ResNet
-    Paper: https://arxiv.org/abs/1912.02424
+    Paper:
+      URL: https://arxiv.org/abs/1912.02424
+      Title: 'Bridging the Gap Between Anchor-based and Anchor-free Detection via Adaptive Training Sample Selection'
     README: configs/atss/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/atss.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: atss_r50_fpn_1x_coco

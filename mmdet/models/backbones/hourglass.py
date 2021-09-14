@@ -149,8 +149,16 @@ class HourglassNet(BaseModule):
         cur_channel = stage_channels[0]
 
         self.stem = nn.Sequential(
-            ConvModule(3, 128, 7, padding=3, stride=2, norm_cfg=norm_cfg),
-            ResLayer(BasicBlock, 128, 256, 1, stride=2, norm_cfg=norm_cfg))
+            ConvModule(
+                3, cur_channel // 2, 7, padding=3, stride=2,
+                norm_cfg=norm_cfg),
+            ResLayer(
+                BasicBlock,
+                cur_channel // 2,
+                cur_channel,
+                1,
+                stride=2,
+                norm_cfg=norm_cfg))
 
         self.hourglass_modules = nn.ModuleList([
             HourglassModule(downsample_times, stage_channels, stage_blocks)

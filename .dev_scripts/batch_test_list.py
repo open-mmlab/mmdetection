@@ -46,7 +46,7 @@ centripetalnet = dict(
 )
 cornernet = dict(
     config='configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py',
-    checkpoint='cornernet_hourglass104_mstest_10x5_210e_coco_20200824_185720-5fefbf1c.pth',  # noqa
+    checkpoint='cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618-79b44c30.pth',  # noqa
     eval='bbox',
     metric=dict(bbox_mAP=41.2),
 )
@@ -276,7 +276,7 @@ rpn = dict(
 )
 sabl = [
     dict(
-        config='configs/sabl/sabl_retinanet_r50_fpn_1x_coco.py ',
+        config='configs/sabl/sabl_retinanet_r50_fpn_1x_coco.py',
         checkpoint='sabl_retinanet_r50_fpn_1x_coco-6c54fd4f.pth',
         eval='bbox',
         metric=dict(bbox_mAP=37.7),
@@ -300,12 +300,20 @@ sparse_rcnn = dict(
     eval='bbox',
     metric=dict(bbox_mAP=37.9),
 )
-ssd = dict(
-    config='configs/ssd/ssd300_coco.py',
-    checkpoint='ssd300_coco_20200307-a92d2092.pth',
-    eval='bbox',
-    metric=dict(bbox_mAP=25.6),
-)
+ssd = [
+    dict(
+        config='configs/ssd/ssd300_coco.py',
+        checkpoint='ssd300_coco_20210803_015428-d231a06e.pth',
+        eval='bbox',
+        metric=dict(bbox_mAP=25.5),
+    ),
+    dict(
+        config='configs/ssd/ssdlite_mobilenetv2_scratch_600e_coco.py',
+        checkpoint='ssdlite_mobilenetv2_scratch_600e_coco_20210629_110627-974d9307.pth',# noqa
+        eval='bbox',
+        metric=dict(bbox_mAP=21.3),
+    ),
+]
 tridentnet = dict(
     config='configs/tridentnet/tridentnet_r50_caffe_1x_coco.py',
     checkpoint='tridentnet_r50_caffe_1x_coco_20201230_141838-2ec0b530.pth',
@@ -338,8 +346,14 @@ yolof = dict(
 )
 centernet = dict(
     config='configs/centernet/centernet_resnet18_dcnv2_140e_coco.py',
-    checkpoint='centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth',  # noqa
+    checkpoint='centernet_resnet18_dcnv2_140e_coco_20210702_155131-c8cd631f.pth',  # noqa
     eval='bbox',
     metric=dict(bbox_mAP=29.5),
+)
+yolox = dict(
+    config='configs/yolox/yolox_tiny_8x8_300e_coco.py',
+    checkpoint='yolox_tiny_8x8_300e_coco_20210806_234250-4ff3b67e.pth',  # noqa
+    eval='bbox',
+    metric=dict(bbox_mAP=31.5),
 )
 # yapf: enable
