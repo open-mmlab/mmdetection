@@ -80,7 +80,6 @@ def set_hyperparams(config: Config, hyperparams: OTEDetectionConfig):
     else:  # Epoch based runner
         config.runner.max_epochs = total_iterations
     num_checkpoints = int(hyperparams.learning_parameters.num_checkpoints)
-    config.evaluation.interval = math.ceil(total_iterations / num_checkpoints)
     config.checkpoint_config.interval = math.ceil(total_iterations / num_checkpoints)
 
 

@@ -10,7 +10,7 @@ summary: Custom Object Detection Model M Gen 2
 framework: OTEDetection v2.9.1
 
 # Should be revisited?
-applications:
+application:
   ~
 
 # Optional? requirements to the dataset. Should be revisited?
@@ -28,9 +28,9 @@ hyper_parameters:
   parameter_overrides:
     learning_parameters:
       batch_size:
-        default_value: 9
+        default_value: 8
       learning_rate:
-        default_value: 0.009
+        default_value: 0.008
       learning_rate_warmup_iters:
         default_value: 200
 

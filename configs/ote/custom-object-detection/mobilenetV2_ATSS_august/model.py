@@ -58,7 +58,7 @@ model = dict(
 evaluation = dict(interval=1, metric='mAP', save_best='mAP')
 optimizer = dict(
     type='SGD',
-    lr=0.009,
+    lr=0.008,
     momentum=0.9,
     weight_decay=0.0001)
 optimizer_config = dict()
@@ -68,7 +68,7 @@ lr_config = dict(
     patience=3,
     iteration_patience=600,
     interval=1,
-    min_lr=0.000009,
+    min_lr=0.000008,
     warmup='linear',
     warmup_iters=200,
     warmup_ratio=1.0 / 3)
