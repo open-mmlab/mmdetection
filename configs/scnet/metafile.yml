@@ -10,8 +10,13 @@ Collections:
         - FPN
         - ResNet
         - SCNet
-    Paper: https://arxiv.org/abs/2012.10150
+    Paper:
+      URL: https://arxiv.org/abs/2012.10150
+      Title: 'SCNet: Training Inference Sample Consistency for Instance Segmentation'
     README: configs/scnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.9.0/mmdet/models/detectors/scnet.py#L6
+      Version: v2.9.0
 
 Models:
   - Name: scnet_r50_fpn_1x_coco

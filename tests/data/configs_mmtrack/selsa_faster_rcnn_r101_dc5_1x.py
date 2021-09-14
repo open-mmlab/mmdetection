@@ -6,8 +6,7 @@ model = dict(
     type='SELSA',
     pretrains=None,
     detector=dict(
-        pretrained='torchvision://resnet101',
-        backbone=dict(depth=101),
+        backbone=dict(depth=18, base_channels=2),
         roi_head=dict(
             type='SelsaRoIHead',
             bbox_head=dict(
@@ -15,7 +14,7 @@ model = dict(
                 num_shared_fcs=2,
                 aggregator=dict(
                     type='SelsaAggregator',
-                    in_channels=1024,
+                    in_channels=32,
                     num_attention_blocks=16)))))
 
 # dataset settings

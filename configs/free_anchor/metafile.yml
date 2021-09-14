@@ -9,8 +9,13 @@ Collections:
       Architecture:
         - FreeAnchor
         - ResNet
-    Paper: https://arxiv.org/abs/1909.02466
+    Paper:
+      URL: https://arxiv.org/abs/1909.02466
+      Title: 'FreeAnchor: Learning to Match Anchors for Visual Object Detection'
     README: configs/free_anchor/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/dense_heads/free_anchor_retina_head.py#L10
+      Version: v2.0.0
 
 Models:
   - Name: retinanet_free_anchor_r50_fpn_1x_coco

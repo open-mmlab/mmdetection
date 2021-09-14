@@ -9,8 +9,13 @@ Collections:
       Architecture:
         - Dilated Encoder
         - ResNet
-    Paper: https://arxiv.org/abs/2103.09460
+    Paper:
+      URL: https://arxiv.org/abs/2103.09460
+      Title: 'You Only Look One-level Feature'
     README: configs/yolof/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.12.0/mmdet/models/detectors/yolof.py#L6
+      Version: v2.12.0
 
 Models:
   - Name: yolof_r50_c5_8x8_1x_coco

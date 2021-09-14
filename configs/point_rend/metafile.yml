@@ -10,8 +10,13 @@ Collections:
         - PointRend
         - FPN
         - ResNet
-    Paper: https://arxiv.org/abs/1912.08193
+    Paper:
+      URL: https://arxiv.org/abs/1912.08193
+      Title: 'PointRend: Image Segmentation as Rendering'
     README: configs/point_rend/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.2.0/mmdet/models/detectors/point_rend.py#L6
+      Version: v2.2.0
 
 Models:
   - Name: point_rend_r50_caffe_fpn_mstrain_1x_coco
