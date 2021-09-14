@@ -32,16 +32,16 @@ from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
+from ote_sdk.usecases.exportable_code.inference import BaseOpenVINOInferencer
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import (
     IOptimizationTask,
     OptimizationType,
 )
-
 from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.datasets import Dataset
-from sc_sdk.usecases.exportable_code.inference import BaseOpenVINOInferencer
+
 from sc_sdk.entities.media_identifier import ImageIdentifier
 
 from compression.api import DataLoader
