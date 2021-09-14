@@ -36,29 +36,13 @@ class YOLACT(SingleStageDetector):
                 img_shape=img.shape, ori_shape=img.shape, scale_factor=(1, 1))
             for img in imgs
         ]
-        rescale = False
         feat = self.extract_feat(imgs)
-        det_bboxes, det_labels, det_coeffs = self.bbox_head.simple_test(
-            feat, dummy_img_metas, rescale=rescale)
-        # det_bboxes will be empty for randomly generated images,
-        # generate non-empty bboxes so mask_head can be executed
-        det_bboxes = torch.rand((1, 1, 5)).to(imgs.device)
-        det_labels = torch.tensor([[0]]).to(imgs.device)
+        bbox_outs = self.bbox_head(feat)
+        bboxes = torch.rand((1, 1, 4)).to(imgs.device)
         det_coeffs = torch.rand((1, 1, 32)).to(imgs.device)
-        bbox_results = [
-            bbox2result(det_bbox, det_label, self.bbox_head.num_classes)
-            for det_bbox, det_label in zip(det_bboxes, det_labels)
-        ]
-
-        segm_results = self.mask_head.simple_test(
-            feat,
-            det_bboxes,
-            det_labels,
-            det_coeffs,
-            dummy_img_metas,
-            rescale=rescale)
-
-        return list(zip(bbox_results, segm_results))
+        mask_outs = self.mask_head(feat[0], det_coeffs, bboxes,
+                                   dummy_img_metas)
+        return (bbox_outs, mask_outs)
 
     def forward_train(self,
                       img,
