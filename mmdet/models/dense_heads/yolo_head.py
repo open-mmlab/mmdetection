@@ -251,8 +251,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             flatten_bboxes /= flatten_bboxes.new_tensor(
                 scale_factors).unsqueeze(1)
 
-        # In mmdet 2.x, the class_id for background is num_classes.
-        # i.e., the last column.
         padding = flatten_bboxes.new_zeros(num_imgs, flatten_bboxes.shape[1],
                                            1)
         flatten_cls_scores = torch.cat([flatten_cls_scores, padding], dim=-1)
