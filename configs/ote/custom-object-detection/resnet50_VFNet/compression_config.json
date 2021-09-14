@@ -3,7 +3,7 @@
         "find_unused_parameters": true,
         "nncf_config": {
             "input_info": {
-                "sample_size": [1, 3, 992, 736]
+                "sample_size": [1, 3, 1333, 800]
             },
             "compression": [],
             "log_dir": "."
@@ -22,10 +22,10 @@
                     "algorithm": "quantization",
                     "initializer": {
                         "range": {
-                            "num_init_samples": 300
+                            "num_init_samples": 1000
                         },
                         "batchnorm_adaptation": {
-                            "num_bn_adaptation_samples": 300
+                            "num_bn_adaptation_samples": 1000
                         }
                     }
                 }
