@@ -268,7 +268,8 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
 
             # self._task_environment.set_configurable_parameters(params)
         logger.info(f"F-measure after evaluation: {f_measure_metrics.f_measure.value}")
-        return f_measure_metrics.get_performance()
+
+        output_result_set.performance = f_measure_metrics.get_performance()
 
 
     def train(self, dataset: Dataset, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
