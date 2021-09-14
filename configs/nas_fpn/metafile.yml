@@ -9,8 +9,13 @@ Collections:
       Architecture:
         - NAS-FPN
         - ResNet
-    Paper: https://arxiv.org/abs/1904.07392
+    Paper:
+      URL: https://arxiv.org/abs/1904.07392
+      Title: 'NAS-FPN: Learning Scalable Feature Pyramid Architecture for Object Detection'
     README: configs/nas_fpn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/necks/nas_fpn.py#L67
+      Version: v2.0.0
 
 Models:
   - Name: retinanet_r50_fpn_crop640_50e_coco

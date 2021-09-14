@@ -10,8 +10,13 @@ Collections:
         - FPN
         - Probabilistic Anchor Assignment
         - ResNet
-    Paper: https://arxiv.org/abs/2007.08103
+    Paper:
+      URL: https://arxiv.org/abs/2007.08103
+      Title: 'Probabilistic Anchor Assignment with IoU Prediction for Object Detection'
     README: configs/paa/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.4.0/mmdet/models/detectors/paa.py#L6
+      Version: v2.4.0
 
 Models:
   - Name: paa_r50_fpn_1x_coco

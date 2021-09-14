@@ -1,9 +1,12 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+import itertools
 import os
 from collections import defaultdict
 
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
+from terminaltables import AsciiTable
 
 from .api_wrappers import COCO
 from .builder import DATASETS
@@ -388,7 +391,11 @@ class CocoPanopticDataset(CocoDataset):
 
         return result_files
 
-    def evaluate_pan_json(self, result_files, outfile_prefix, logger=None):
+    def evaluate_pan_json(self,
+                          result_files,
+                          outfile_prefix,
+                          logger=None,
+                          classwise=False):
         """Evaluate PQ according to the panoptic results json file."""
         imgs = self.coco.imgs
         gt_json = self.coco.img_ann_map  # image to annotations
@@ -416,56 +423,53 @@ class CocoPanopticDataset(CocoDataset):
         pq_stat = pq_compute_multi_core(matched_annotations_list, gt_folder,
                                         pred_folder, self.categories)
 
-        eval_results = {}
-
         metrics = [('All', None), ('Things', True), ('Stuff', False)]
         pq_results = {}
 
-        output = '\n'
         for name, isthing in metrics:
-            pq_results[name], per_class_pq_results = pq_stat.pq_average(
+            pq_results[name], classwise_results = pq_stat.pq_average(
                 self.categories, isthing=isthing)
             if name == 'All':
-                pq_results['per_class'] = per_class_pq_results
-        output += ('{:10s}| {:>5s}  {:>5s}  {:>5s} {:>5s}\n'.format(
-            '', 'PQ', 'SQ', 'RQ', 'N'))
-        output += ('-' * (10 + 7 * 4) + '\n')
+                pq_results['classwise'] = classwise_results
 
-        for name, _isthing in metrics:
-            output += '{:10s}| {:5.2f}  {:5.2f}  {:5.2f} {:5d}\n'.format(
-                name, 100 * pq_results[name]['pq'],
-                100 * pq_results[name]['sq'], 100 * pq_results[name]['rq'],
-                pq_results[name]['n'])
-            eval_results[f'{name}_pq'] = pq_results[name]['pq'] * 100.0
-            eval_results[f'{name}_sq'] = pq_results[name]['sq'] * 100.0
-            eval_results[f'{name}_rq'] = pq_results[name]['rq'] * 100.0
-        print_log(output, logger=logger)
+        classwise_results = None
+        if classwise:
+            classwise_results = {
+                k: v
+                for k, v in zip(self.CLASSES, pq_results['classwise'].values())
+            }
+        print_panoptic_table(pq_results, classwise_results, logger=logger)
 
-        return eval_results
+        return parse_pq_results(pq_results)
 
     def evaluate(self,
                  results,
-                 metric='pq',
+                 metric='PQ',
                  logger=None,
                  jsonfile_prefix=None,
+                 classwise=False,
                  **kwargs):
         """Evaluation in COCO Panoptic protocol.
 
         Args:
             results (list[dict]): Testing results of the dataset.
             metric (str | list[str]): Metrics to be evaluated. Only
-                support 'pq' at present.
+                support 'PQ' at present. 'pq' will be regarded as 'PQ.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             jsonfile_prefix (str | None): The prefix of json files. It includes
                 the file path and the prefix of filename, e.g., "a/b/prefix".
                 If not specified, a temp file will be created. Default: None.
+            classwise (bool): Whether to print classwise evaluation results.
+                Default: False.
 
         Returns:
             dict[str, float]: COCO Panoptic style evaluation metric.
         """
         metrics = metric if isinstance(metric, list) else [metric]
-        allowed_metrics = ['pq']  # todo: support other metrics like 'bbox'
+        # Compatible with lowercase 'pq'
+        metrics = ['PQ' if metric == 'pq' else metric for metric in metrics]
+        allowed_metrics = ['PQ']  # todo: support other metrics like 'bbox'
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
@@ -475,11 +479,66 @@ class CocoPanopticDataset(CocoDataset):
 
         outfile_prefix = os.path.join(tmp_dir.name, 'results') \
             if tmp_dir is not None else jsonfile_prefix
-        if 'pq' in metrics:
+        if 'PQ' in metrics:
             eval_pan_results = self.evaluate_pan_json(result_files,
-                                                      outfile_prefix, logger)
+                                                      outfile_prefix, logger,
+                                                      classwise)
             eval_results.update(eval_pan_results)
 
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
+
+
+def parse_pq_results(pq_results):
+    """Parse the Panoptic Quality results."""
+    result = dict()
+    result['PQ'] = 100 * pq_results['All']['pq']
+    result['SQ'] = 100 * pq_results['All']['sq']
+    result['RQ'] = 100 * pq_results['All']['rq']
+    result['PQ_th'] = 100 * pq_results['Things']['pq']
+    result['SQ_th'] = 100 * pq_results['Things']['sq']
+    result['RQ_th'] = 100 * pq_results['Things']['rq']
+    result['PQ_st'] = 100 * pq_results['Stuff']['pq']
+    result['SQ_st'] = 100 * pq_results['Stuff']['sq']
+    result['RQ_st'] = 100 * pq_results['Stuff']['rq']
+    return result
+
+
+def print_panoptic_table(pq_results, classwise_results=None, logger=None):
+    """Print the panoptic evaluation results table.
+
+    Args:
+        pq_results(dict): The Panoptic Quality results.
+        classwise_results(dict | None): The classwise Panoptic Quality results.
+            The keys are class names and the values are metrics.
+        logger (logging.Logger | str | None): Logger used for printing
+            related information during evaluation. Default: None.
+    """
+
+    headers = ['', 'PQ', 'SQ', 'RQ', 'categories']
+    data = [headers]
+    for name in ['All', 'Things', 'Stuff']:
+        numbers = [
+            f'{(pq_results[name][k] * 100):0.3f}' for k in ['pq', 'sq', 'rq']
+        ]
+        row = [name] + numbers + [pq_results[name]['n']]
+        data.append(row)
+    table = AsciiTable(data)
+    print_log('Panoptic Evaluation Results:\n' + table.table, logger=logger)
+
+    if classwise_results is not None:
+        class_metrics = [(name, ) + tuple(f'{(metrics[k] * 100):0.3f}'
+                                          for k in ['pq', 'sq', 'rq'])
+                         for name, metrics in classwise_results.items()]
+        num_columns = min(8, len(class_metrics) * 4)
+        results_flatten = list(itertools.chain(*class_metrics))
+        headers = ['category', 'PQ', 'SQ', 'RQ'] * (num_columns // 4)
+        results_2d = itertools.zip_longest(
+            *[results_flatten[i::num_columns] for i in range(num_columns)])
+        data = [headers]
+        data += [result for result in results_2d]
+        table = AsciiTable(data)
+        print_log(
+            'Classwise Panoptic Evaluation Results:\n' + table.table,
+            logger=logger)

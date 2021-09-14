@@ -14,8 +14,13 @@ Collections:
         - ResNet
         - RoIAlign
         - SAC
-    Paper: https://arxiv.org/abs/2006.02334
+    Paper:
+      URL: https://arxiv.org/abs/2006.02334
+      Title: 'DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution'
     README: configs/detectors/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.2.0/mmdet/models/backbones/detectors_resnet.py#L205
+      Version: v2.2.0
 
 Models:
   - Name: cascade_rcnn_r50_rfp_1x_coco

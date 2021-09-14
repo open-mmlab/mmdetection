@@ -16,7 +16,7 @@ GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION crpn_fas
 echo 'configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION centripetalnet_hourglass104_mstest_16x6_210e_coco configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py $CHECKPOINT_DIR/centripetalnet_hourglass104_mstest_16x6_210e_coco_20200915_204804-3ccc61e5.pth --work-dir tools/batch_test/centripetalnet_hourglass104_mstest_16x6_210e_coco --eval bbox --cfg-option dist_params.port=29672  &
 echo 'configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py' &
-GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION cornernet_hourglass104_mstest_8x6_210e_coco configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py $CHECKPOINT_DIR/cornernet_hourglass104_mstest_10x5_210e_coco_20200824_185720-5fefbf1c.pth --work-dir tools/batch_test/cornernet_hourglass104_mstest_8x6_210e_coco --eval bbox --cfg-option dist_params.port=29673  &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION cornernet_hourglass104_mstest_8x6_210e_coco configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py $CHECKPOINT_DIR/cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618-79b44c30.pth --work-dir tools/batch_test/cornernet_hourglass104_mstest_8x6_210e_coco --eval bbox --cfg-option dist_params.port=29673  &
 echo 'configs/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco configs/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py $CHECKPOINT_DIR/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco_20200130-d68aed1e.pth --work-dir tools/batch_test/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco --eval bbox --cfg-option dist_params.port=29674  &
 echo 'configs/deformable_detr/deformable_detr_r50_16x2_50e_coco.py' &
@@ -100,7 +100,7 @@ GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION scnet_r5
 echo 'configs/sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION sparse_rcnn_r50_fpn_1x_coco configs/sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py $CHECKPOINT_DIR/sparse_rcnn_r50_fpn_1x_coco_20201222_214453-dc79b137.pth --work-dir tools/batch_test/sparse_rcnn_r50_fpn_1x_coco --eval bbox --cfg-option dist_params.port=29714  &
 echo 'configs/ssd/ssd300_coco.py' &
-GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION ssd300_coco configs/ssd/ssd300_coco.py $CHECKPOINT_DIR/ssd300_coco_20200307-a92d2092.pth --work-dir tools/batch_test/ssd300_coco --eval bbox --cfg-option dist_params.port=29715  &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION ssd300_coco configs/ssd/ssd300_coco.py $CHECKPOINT_DIR/ssd300_coco_20210803_015428-d231a06e.pth --work-dir tools/batch_test/ssd300_coco --eval bbox --cfg-option dist_params.port=29715  &
 echo 'configs/tridentnet/tridentnet_r50_caffe_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION tridentnet_r50_caffe_1x_coco configs/tridentnet/tridentnet_r50_caffe_1x_coco.py $CHECKPOINT_DIR/tridentnet_r50_caffe_1x_coco_20201230_141838-2ec0b530.pth --work-dir tools/batch_test/tridentnet_r50_caffe_1x_coco --eval bbox --cfg-option dist_params.port=29716  &
 echo 'configs/vfnet/vfnet_r50_fpn_1x_coco.py' &
@@ -112,4 +112,8 @@ GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION yolov3_d
 echo 'configs/yolof/yolof_r50_c5_8x8_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION yolof_r50_c5_8x8_1x_coco configs/yolof/yolof_r50_c5_8x8_1x_coco.py $CHECKPOINT_DIR/yolof_r50_c5_8x8_1x_coco_20210425_024427-8e864411.pth --work-dir tools/batch_test/yolof_r50_c5_8x8_1x_coco --eval bbox --cfg-option dist_params.port=29720  &
 echo 'configs/centernet/centernet_resnet18_dcnv2_140e_coco.py' &
-GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION centernet_resnet18_dcnv2_140e_coco configs/centernet/centernet_resnet18_dcnv2_140e_coco.py $CHECKPOINT_DIR/centernet_resnet18_dcnv2_140e_coco_20210520_101209-da388ba2.pth --work-dir tools/batch_test/centernet_resnet18_dcnv2_140e_coco --eval bbox --cfg-option dist_params.port=29721  &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION centernet_resnet18_dcnv2_140e_coco configs/centernet/centernet_resnet18_dcnv2_140e_coco.py $CHECKPOINT_DIR/centernet_resnet18_dcnv2_140e_coco_20210702_155131-c8cd631f.pth --work-dir tools/batch_test/centernet_resnet18_dcnv2_140e_coco --eval bbox --cfg-option dist_params.port=29721  &
+echo 'configs/yolox/yolox_tiny_8x8_300e_coco.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION yolox_tiny_8x8_300e_coco configs/yolox/yolox_tiny_8x8_300e_coco.py $CHECKPOINT_DIR/yolox_tiny_8x8_300e_coco_20210806_234250-4ff3b67e.pth --work-dir tools/batch_test/yolox_tiny_8x8_300e_coco --eval bbox --cfg-option dist_params.port=29722  &
+echo 'configs/ssd/ssdlite_mobilenetv2_scratch_600e_coco.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 tools/slurm_test.sh $PARTITION ssdlite_mobilenetv2_scratch_600e_coco configs/ssd/ssdlite_mobilenetv2_scratch_600e_coco.py $CHECKPOINT_DIR/ssdlite_mobilenetv2_scratch_600e_coco_20210629_110627-974d9307.pth --work-dir tools/batch_test/ssdlite_mobilenetv2_scratch_600e_coco --eval bbox --cfg-option dist_params.port=29723  &

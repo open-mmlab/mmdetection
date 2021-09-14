@@ -59,6 +59,7 @@ python tools/deployment/pytorch2onnx.py \
 - `--verify`: Determines whether to verify the correctness of an exported model. If not specified, it will be set to `False`.
 - `--simplify`: Determines whether to simplify the exported ONNX model. If not specified, it will be set to `False`.
 - `--cfg-options`: Override some settings in the used config file, the key-value pair in `xxx=yyy` format will be merged into config file.
+- `--skip-postprocess`: Determines whether export model without post process. If not specified, it will be set to `False`. Notice: This is an experimental option. Only work for some single stage models. Users need to implement the post-process by themselves. We do not guarantee the correctness of the exported model.
 
 Example:
 

@@ -10,8 +10,13 @@ Collections:
       Architecture:
         - ResNet
         - Transformer
-    Paper: https://arxiv.org/abs/2005.12872
+    Paper:
+      URL: https://arxiv.org/abs/2005.12872
+      Title: 'End-to-End Object Detection with Transformers'
     README: configs/detr/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.7.0/mmdet/models/detectors/detr.py#L7
+      Version: v2.7.0
 
 Models:
   - Name: detr_r50_8x2_150e_coco
