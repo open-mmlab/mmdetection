@@ -37,6 +37,6 @@ class YOLOV3(SingleStageDetector):
         img_shape = torch._shape_as_tensor(img)[2:]
         img_metas[0]['img_shape_for_onnx'] = img_shape
 
-        det_bboxes, det_labels = self.bbox_head.onnx_export(*outs)
+        det_bboxes, det_labels = self.bbox_head.onnx_export(*outs, img_metas)
 
         return det_bboxes, det_labels

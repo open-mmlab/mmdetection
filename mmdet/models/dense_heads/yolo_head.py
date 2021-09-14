@@ -488,7 +488,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         """
         return self.aug_test_bboxes(feats, img_metas, rescale=rescale)
 
-    def onnx_export(self, pred_maps):
+    @force_fp32(apply_to=('pred_maps'))
+    def onnx_export(self, pred_maps, img_metas, with_nms=True):
         num_levels = len(pred_maps)
         pred_maps_list = [pred_maps[i].detach() for i in range(num_levels)]
 
@@ -578,19 +579,22 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         batch_mlvl_conf_scores = batch_mlvl_conf_scores.unsqueeze(2).expand_as(
             batch_mlvl_scores)
         batch_mlvl_scores = batch_mlvl_scores * batch_mlvl_conf_scores
-        max_output_boxes_per_class = cfg.nms.get('max_output_boxes_per_class',
-                                                 200)
-        iou_threshold = cfg.nms.get('iou_threshold', 0.5)
-        # keep aligned with original pipeline, improve
-        # mAP by 1% for YOLOv3 in ONNX
-        score_threshold = 0
-        nms_pre = cfg.get('deploy_nms_pre', -1)
-        return add_dummy_nms_for_onnx(
-            batch_mlvl_bboxes,
-            batch_mlvl_scores,
-            max_output_boxes_per_class,
-            iou_threshold,
-            score_threshold,
-            nms_pre,
-            cfg.max_per_img,
-        )
+        if with_nms:
+            max_output_boxes_per_class = cfg.nms.get(
+                'max_output_boxes_per_class', 200)
+            iou_threshold = cfg.nms.get('iou_threshold', 0.5)
+            # keep aligned with original pipeline, improve
+            # mAP by 1% for YOLOv3 in ONNX
+            score_threshold = 0
+            nms_pre = cfg.get('deploy_nms_pre', -1)
+            return add_dummy_nms_for_onnx(
+                batch_mlvl_bboxes,
+                batch_mlvl_scores,
+                max_output_boxes_per_class,
+                iou_threshold,
+                score_threshold,
+                nms_pre,
+                cfg.max_per_img,
+            )
+        else:
+            return batch_mlvl_bboxes, batch_mlvl_scores
