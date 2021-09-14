@@ -273,7 +273,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                             cls_score)
 
                     # Empty proposal.
-                    if cls_score.shape[0] == 0:
+                    if cls_score.numel() == 0:
                         break
 
                     roi_labels = torch.where(

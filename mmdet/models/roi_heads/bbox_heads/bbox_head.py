@@ -108,11 +108,12 @@ class BBoxHead(BaseModule):
     @auto_fp16()
     def forward(self, x):
         if self.with_avg_pool:
-            if x.shape[0] > 0:
+            if x.numel() > 0:
                 x = self.avg_pool(x)
                 x = x.view(x.size(0), -1)
             else:
-                # Empty proposal
+                # avg_pool does not support empty tensor,
+                # so use torch.mean instead it
                 x = torch.mean(x, dim=(-1, -2))
         cls_score = self.fc_cls(x) if self.with_cls else None
         bbox_pred = self.fc_reg(x) if self.with_reg else None
