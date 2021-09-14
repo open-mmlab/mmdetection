@@ -86,6 +86,18 @@ class ModelTemplate(unittest.TestCase):
     def test_reading_resnet50_vfnet(self):
         parse_model_template('./configs/ote/custom-object-detection/resnet50_VFNet/template.yaml')
 
+    @e2e_pytest_api
+    def test_reading_mnv2_ssd_august(self):
+        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_SSD_august/template.yaml')
+
+    @e2e_pytest_api
+    def test_reading_mnv2_atss_august(self):
+        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_ATSS_august/template.yaml')
+
+    @e2e_pytest_api
+    def test_reading_resnet50_vfnet_august(self):
+        parse_model_template('./configs/ote/custom-object-detection/resnet50_VFNet/template.yaml')
+
 @e2e_pytest_api
 def test_configuration_yaml():
     configuration = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
@@ -98,7 +110,7 @@ def test_configuration_yaml():
 
 @e2e_pytest_api
 def test_set_values_as_default():
-    template_dir = './configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/'
+    template_dir = './configs/ote/custom-object-detection/mobilenetV2_ATSS_august'
     template_file = osp.join(template_dir, 'template.yaml')
     model_template = parse_model_template(template_file)
 
@@ -108,7 +120,7 @@ def test_set_values_as_default():
     # value that comes from OTEDetectionConfig
     value = hyper_parameters['learning_parameters']['batch_size']['value']
     assert value == 5
-    assert default_value == 64
+    assert default_value == 8
 
     # after this call value must be equal to default_value
     set_values_as_default(hyper_parameters)
@@ -121,6 +133,7 @@ class Sample(unittest.TestCase):
     root_dir = '/tmp'
     coco_dir = osp.join(root_dir, 'data/coco')
     snapshots_dir = osp.join(root_dir, 'snapshots')
+    template = './configs/ote/custom-object-detection/mobilenetV2_ATSS_august/template.yaml'
 
     custom_operations = ['ExperimentalDetectronROIFeatureExtractor',
                          'PriorBox', 'PriorBoxClustered', 'DetectionOutput',
@@ -172,7 +185,7 @@ class Sample(unittest.TestCase):
         output = run('export CUDA_VISIBLE_DEVICES=;'
                      'python mmdet/apis/ote/sample/sample.py '
                      f'--data-dir {self.coco_dir}/.. '
-                     '--export configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml',
+                     f'--export {self.template}',
                      shell=True, check=True)
         assert output.returncode == 0
 
@@ -181,7 +194,7 @@ class Sample(unittest.TestCase):
         output = run('export CUDA_VISIBLE_DEVICES=0;'
                      'python mmdet/apis/ote/sample/sample.py '
                      f'--data-dir {self.coco_dir}/.. '
-                     '--export configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml',
+                     f'--export {self.template}',
                      shell=True, check=True)
         assert output.returncode == 0
 
@@ -271,7 +284,8 @@ class API(unittest.TestCase):
 
         This test should be finished in under one minute on a workstation.
         """
-        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        # template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        template_dir = './configs/ote/custom-object-detection/mobilenetV2_ATSS_august'
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=500)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
@@ -309,7 +323,8 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_training_progress_tracking(self):
-        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        # template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        template_dir = './configs/ote/custom-object-detection/mobilenetV2_ATSS_august'
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
@@ -337,7 +352,8 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_inference_progress_tracking(self):
-        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        # template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        template_dir = './configs/ote/custom-object-detection/mobilenetV2_ATSS_august'
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
@@ -514,4 +530,17 @@ class API(unittest.TestCase):
     @e2e_pytest_api
     def test_training_custom_resnet_vfnet(self):
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet'),
+                        export_perf_delta_tolerance=0.01)
+
+    @e2e_pytest_api
+    def test_training_custom_mobilenet_atss_august(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS_august'))
+
+    @e2e_pytest_api
+    def test_training_custom_mobilenet_ssd_august(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD_august'))
+
+    @e2e_pytest_api
+    def test_training_custom_resnet_vfnet_august(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet_august'),
                         export_perf_delta_tolerance=0.01)
