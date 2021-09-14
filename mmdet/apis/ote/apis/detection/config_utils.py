@@ -14,23 +14,25 @@
 
 import copy
 import glob
+import logging
+import math
 import os
 import tempfile
 from collections import defaultdict
 from typing import List, Optional
 
 from mmcv import Config, ConfigDict
+from ote_sdk.entities.label import LabelEntity
 from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from sc_sdk.entities.datasets import Dataset
-from sc_sdk.entities.label import Label
-from sc_sdk.logging import logger_factory
 
 from .configuration import OTEDetectionConfig
 
-logger = logger_factory.get_logger("OTEDetectionTask")
+
+logger = logging.getLogger(__name__)
 
 
-def patch_config(config: Config, work_dir: str, labels: List[Label], random_seed: Optional[int] = None):
+def patch_config(config: Config, work_dir: str, labels: List[LabelEntity], random_seed: Optional[int] = None):
     # Set runner if not defined.
     if 'runner' not in config:
         config.runner = {'type': 'EpochBasedRunner'}
@@ -78,7 +80,7 @@ def set_hyperparams(config: Config, hyperparams: OTEDetectionConfig):
     else:  # Epoch based runner
         config.runner.max_epochs = total_iterations
     num_checkpoints = int(hyperparams.learning_parameters.num_checkpoints)
-    config.checkpoint_config.interval = total_iterations // num_checkpoints
+    config.checkpoint_config.interval = math.ceil(total_iterations / num_checkpoints)
 
 
 def prepare_for_testing(config: Config, dataset: Dataset) -> Config:
