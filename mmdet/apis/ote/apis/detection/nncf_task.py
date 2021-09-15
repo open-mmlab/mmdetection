@@ -179,6 +179,9 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
         training_config = prepare_for_training(config, train_dataset, val_dataset, time_monitor, learning_curves)
         mm_train_dataset = build_dataset(training_config.data.train)
 
+        if torch.cuda.is_available():
+            self._model.cuda(training_config.gpu_ids[0])
+
         # Initialize NNCF parts if start from not compressed model
         if not self._compression_ctrl:
             self._create_compressed_model(mm_train_dataset, training_config)
