@@ -521,8 +521,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         """
         return self.aug_test_bboxes(feats, img_metas, rescale=rescale)
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def onnx_export(self, pred_maps, img_metas, with_nms):
+    def onnx_export(self, pred_maps, img_metas, with_nms=True):
         """Transform network output for a batch into bbox predictions.
 
         Args:
