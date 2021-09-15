@@ -23,7 +23,7 @@ hyper_parameters:
       batch_size:
         default_value: 8
       learning_rate:
-        default_value: 0.009
+        default_value: 0.008
       learning_rate_warmup_iters:
         default_value: 200
 
