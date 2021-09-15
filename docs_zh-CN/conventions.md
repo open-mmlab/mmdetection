@@ -22,9 +22,9 @@ class BBoxHead(nn.Module):
         return losses
 ```
 
-'bbox_head.loss()' 在模型 forward 阶段会被调用。返回的字典中包含了 `'loss_bbox'`,`'loss_cls'`,`'acc'`。只有 `'loss_bbox'`, `'loss_cls'` 会被用于反向传播，`'acc'` 只会被作为评价指标来监控训练过程。
+`'bbox_head.loss()'` 在模型 forward 阶段会被调用。返回的字典中包含了 `'loss_bbox'`,`'loss_cls'`,`'acc'`。只有 `'loss_bbox'`, `'loss_cls'` 会被用于反向传播，`'acc'` 只会被作为评价指标来监控训练过程。
 
-我们默认，只有那些键的名称中包含 'loss' 的值会被用于反向传播。这个行为可以通过修改 `BaseDetector.train_step()` 来改变。
+我们默认，只有那些键的名称中包含 `'loss'` 的值会被用于反向传播。这个行为可以通过修改 `BaseDetector.train_step()` 来改变。
 
 ## 空 proposals
 
