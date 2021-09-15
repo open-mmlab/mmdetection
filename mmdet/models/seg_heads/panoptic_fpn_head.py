@@ -83,13 +83,13 @@ class PanopticFPNHead(BaseSemanticHead):
                                  new_gt_seg)
         return new_gt_seg
 
-    def loss(self, seg_preds, gt_semantic_seg, label_bias=-1):
+    def loss(self, seg_preds, gt_semantic_seg):
         """The loss of PanopticFPN head.
 
         Things classes will be merged to one class in PanopticFPN.
         """
         gt_semantic_seg = self._set_things_to_void(gt_semantic_seg)
-        return super().loss(seg_preds, gt_semantic_seg, label_bias)
+        return super().loss(seg_preds, gt_semantic_seg)
 
     def init_weights(self):
         super().init_weights()

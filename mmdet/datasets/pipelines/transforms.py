@@ -585,10 +585,12 @@ class Pad:
                  size=None,
                  size_divisor=None,
                  pad_to_square=False,
-                 pad_val=0):
+                 pad_val=0,
+                 seg_pad_val=255):
         self.size = size
         self.size_divisor = size_divisor
         self.pad_val = pad_val
+        self.seg_pad_val = seg_pad_val
         self.pad_to_square = pad_to_square
 
         if pad_to_square:
@@ -628,7 +630,9 @@ class Pad:
         ``results['pad_shape']``."""
         for key in results.get('seg_fields', []):
             results[key] = mmcv.impad(
-                results[key], shape=results['pad_shape'][:2])
+                results[key],
+                shape=results['pad_shape'][:2],
+                pad_val=self.seg_pad_val)
 
     def __call__(self, results):
         """Call function to pad images, masks, semantic segmentation maps.
