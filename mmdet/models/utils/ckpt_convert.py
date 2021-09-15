@@ -57,6 +57,6 @@ def swin_converter(ckpt):
             new_v = v
             new_k = k
 
-        new_ckpt[new_k] = new_v
+        new_ckpt['backbone.' + new_k] = new_v
 
     return new_ckpt
