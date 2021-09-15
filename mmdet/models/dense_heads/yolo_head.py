@@ -194,7 +194,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                    cfg=None,
                    rescale=False,
                    with_nms=True):
-        """Transform network output for a batch into bbox predictions.
+        """Transform network output for a batch into bbox predictions. It has
+        been accelerated since PR #5991.
 
         Args:
             pred_maps (list[Tensor]): Raw predictions for a batch of images.
