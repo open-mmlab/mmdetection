@@ -10,8 +10,13 @@ Collections:
         - FPN
         - FSAF
         - ResNet
-    Paper: https://arxiv.org/abs/1903.00621
+    Paper:
+      URL: https://arxiv.org/abs/1903.00621
+      Title: 'Feature Selective Anchor-Free Module for Single-Shot Object Detection'
     README: configs/fsaf/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/detectors/fsaf.py#L6
+      Version: v2.1.0
 
 Models:
   - Name: fsaf_r50_fpn_1x_coco

@@ -240,7 +240,7 @@ class DetectoRS_ResNet(ResNet):
                  init_cfg=None,
                  **kwargs):
         assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
+            'init_cfg and pretrained cannot be specified at the same time'
         self.pretrained = pretrained
         if init_cfg is not None:
             assert isinstance(init_cfg, dict), \

@@ -8,8 +8,13 @@ Collections:
       Training Resources: 8x TITANXP GPUs
       Architecture:
         - ResNet
-    Paper: https://arxiv.org/abs/1904.07850
+    Paper:
+      URL: https://arxiv.org/abs/1904.07850
+      Title: 'Objects as Points'
     README: configs/centernet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.13.0/mmdet/models/detectors/centernet.py#L10
+      Version: v2.13.0
 
 Models:
   - Name: centernet_resnet18_dcnv2_140e_coco
