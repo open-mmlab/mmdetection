@@ -1,5 +1,5 @@
 dataset_type = 'CocoDataset'
-img_size = (992, 736)
+img_size = (864, 864)
 img_norm_cfg = dict(mean=[0, 0, 0], std=[255, 255, 255], to_rgb=True)
 
 train_pipeline = [
@@ -39,7 +39,7 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
-        times=5,
+        times=1,
         dataset=dict(
             type=dataset_type,
             ann_file='data/coco/annotations/instances_train2017.json',
