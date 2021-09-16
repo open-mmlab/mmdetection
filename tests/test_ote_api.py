@@ -221,7 +221,7 @@ class API(unittest.TestCase):
         dataset = Dataset(NullDatasetStorage(), items)
         return environment, dataset
 
-    def setup_configurable_parameters(self, template_dir, num_iters=250):
+    def setup_configurable_parameters(self, template_dir, num_iters=10):
         model_template = parse_model_template(osp.join(template_dir, 'template.yaml'))
 
         hyper_parameters = model_template.hyper_parameters.data
@@ -286,7 +286,7 @@ class API(unittest.TestCase):
     @e2e_pytest_api
     def test_training_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
         task = OTEDetectionTask(task_environment=detection_environment)
@@ -314,7 +314,7 @@ class API(unittest.TestCase):
     @e2e_pytest_api
     def test_inference_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=2)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
         task = OTEDetectionTask(task_environment=detection_environment)
@@ -364,7 +364,7 @@ class API(unittest.TestCase):
     def end_to_end(self, template_dir, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
         export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1):
 
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
         val_dataset = dataset.get_subset(Subset.VALIDATION)
