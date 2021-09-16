@@ -32,6 +32,10 @@ from .configuration import OTEDetectionConfig
 logger = logging.getLogger(__name__)
 
 
+def is_epoch_based_runner(runner_config: ConfigDict):
+    return 'Epoch' in runner_config.type
+
+
 def patch_config(config: Config, work_dir: str, labels: List[LabelEntity], random_seed: Optional[int] = None):
     # Set runner if not defined.
     if 'runner' not in config:
@@ -40,13 +44,27 @@ def patch_config(config: Config, work_dir: str, labels: List[LabelEntity], rando
     # Check that there is no conflict in specification of number of training epochs.
     # Move global definition of epochs inside runner config.
     if 'total_epochs' in config:
-        if config.runner.type == 'EpochBasedRunner':
+        if is_epoch_based_runner(config.runner):
             if config.runner.max_epochs != config.total_epochs:
                 logger.warning('Conflicting declaration of training epochs number.')
             config.runner.max_epochs = config.total_epochs
         else:
-            logger.warning('Total number of epochs set for an iteration based runner.')
+            logger.warning(f'Total number of epochs set for an iteration based runner {config.runner.type}.')
         remove_from_config(config, 'total_epochs')
+
+    # Change runner's type.
+    if is_epoch_based_runner(config.runner):
+        logger.info(f'Replacing runner from {config.runner.type} to EpochRunnerWithCancel.')
+        config.runner.type = 'EpochRunnerWithCancel'
+    else:
+        logger.info(f'Replacing runner from {config.runner.type} to IterBasedRunnerWithCancel.')
+        config.runner.type = 'IterBasedRunnerWithCancel'
+
+    # Add training cancelation hook.
+    if 'custom_hooks' not in config:
+        config.custom_hooks = []
+    if 'CancelTrainingHook' not in {hook.type for hook in config.custom_hooks}:
+        config.custom_hooks.append({'type': 'CancelTrainingHook'})
 
     # Remove high level data pipelines definition leaving them only inside `data` section.
     remove_from_config(config, 'train_pipeline')
@@ -55,11 +73,20 @@ def patch_config(config: Config, work_dir: str, labels: List[LabelEntity], rando
     # Patch data pipeline, making it OTE-compatible.
     patch_datasets(config)
 
+    if 'log_config' not in config:
+        config.log_config = ConfigDict()
     config.log_config.hooks = []
+
+    if 'evaluation' not in config:
+        config.evaluation = ConfigDict()
     evaluation_metric = config.evaluation.get('metric')
     if evaluation_metric is not None:
         config.evaluation.save_best = evaluation_metric
-    config.evaluation.rule = 'greater'
+
+    if 'checkpoint_config' not in config:
+        config.checkpoint_config = ConfigDict()
+    config.checkpoint_config.max_keep_ckpts = 5
+    config.checkpoint_config.interval = config.evaluation.get('interval', 1)
 
     label_names = [lab.name for lab in labels]
     set_data_classes(config, label_names)
@@ -75,13 +102,10 @@ def set_hyperparams(config: Config, hyperparams: OTEDetectionConfig):
     config.data.samples_per_gpu = int(hyperparams.learning_parameters.batch_size)
     config.data.workers_per_gpu = int(hyperparams.learning_parameters.num_workers)
     total_iterations = int(hyperparams.learning_parameters.num_iters)
-    if 'IterBased' in config.runner.type:
-        config.runner.max_iters = total_iterations
-    else:  # Epoch based runner
+    if is_epoch_based_runner(config.runner):
         config.runner.max_epochs = total_iterations
-    num_checkpoints = int(hyperparams.learning_parameters.num_checkpoints)
-    config.evaluation.interval = math.ceil(total_iterations / num_checkpoints)
-    config.checkpoint_config.interval = math.ceil(total_iterations / num_checkpoints)
+    else:
+        config.runner.max_iters = total_iterations
 
 
 def prepare_for_testing(config: Config, dataset: Dataset) -> Config:
@@ -94,21 +118,14 @@ def prepare_for_testing(config: Config, dataset: Dataset) -> Config:
 def prepare_for_training(config: Config, train_dataset: Dataset, val_dataset: Dataset,
                          time_monitor: TimeMonitorCallback, learning_curves: defaultdict) -> Config:
     config = copy.deepcopy(config)
-
     prepare_work_dir(config)
-
-    # config.data.test.ote_dataset = dataset.get_subset(Subset.TESTING)
     config.data.val.ote_dataset = val_dataset
     if 'ote_dataset' in config.data.train:
         config.data.train.ote_dataset = train_dataset
     else:
         config.data.train.dataset.ote_dataset = train_dataset
-
-    if 'custom_hooks' not in config:
-        config.custom_hooks = []
     config.custom_hooks.append({'type': 'OTEProgressHook', 'time_monitor': time_monitor, 'verbose': True})
     config.log_config.hooks.append({'type': 'OTELoggerHook', 'curves': learning_curves})
-
     return config
 
 
@@ -120,14 +137,13 @@ def config_to_string(config: Config) -> str:
     :return str: string representation of the configuration
     """
     config_copy = copy.deepcopy(config)
-    # Clean config up by removing dataset and label entities as this causes the pretty text parsing to fail
+    # Clean config up by removing dataset as this causes the pretty text parsing to fail.
     config_copy.data.test.ote_dataset = None
     config_copy.data.val.ote_dataset = None
     if 'ote_dataset' in config_copy.data.train:
         config_copy.data.train.ote_dataset = None
     else:
         config_copy.data.train.dataset.ote_dataset = None
-    # config_copy.labels = [label.name for label in config.labels]
     return Config(config_copy).pretty_text
 
 
@@ -162,7 +178,7 @@ def prepare_work_dir(config: Config) -> str:
     if 'meta' not in config.runner:
         config.runner.meta = ConfigDict()
     config.runner.meta.exp_name = f"train_round_{len(checkpoint_dirs)}"
-    # Save training config for debugging. It is saved in the checkpoint dir for this training round
+    # Save training config for debugging. It is saved in the checkpoint dir for this training round.
     save_config_to_file(config)
     return train_round_checkpoint_dir
 

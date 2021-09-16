@@ -2,89 +2,62 @@ import io
 import json
 import os
 import os.path as osp
-import pytest
 import random
 import time
 import unittest
 import warnings
-
 from concurrent.futures import ThreadPoolExecutor
+from subprocess import run
+from typing import Optional
 
 import numpy as np
+import pytest
 import torch
 import yaml
-
+from e2e_test_system import e2e_pytest_api
 from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance
-from ote_sdk.entities.model_template import parse_model_template, TargetDevice
+from ote_sdk.entities.model import ModelEntity, ModelOptimizationType, ModelPrecision, ModelStatus, OptimizationMethod
+from ote_sdk.entities.model_template import TargetDevice, parse_model_template
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
+from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.shapes.ellipse import Ellipse
 from ote_sdk.entities.shapes.polygon import Polygon
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import TrainParameters
-from ote_sdk.entities.model import (
-    ModelEntity,
-    ModelPrecision,
-    ModelStatus,
-    ModelOptimizationType,
-    OptimizationMethod,
-)
-from ote_sdk.entities.resultset import ResultSetEntity
-from ote_sdk.usecases.tasks.interfaces.export_interface import (
-    ExportType,
-    IExportTask,
-)
-from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 from ote_sdk.tests.test_helpers import generate_random_annotated_image
-
+from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 
-from subprocess import run
-from typing import Optional
-
-from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
-                                           OTEDetectionConfig,
-                                           OTEDetectionTask)
+from mmdet.apis.ote.apis.detection import OpenVINODetectionTask, OTEDetectionConfig, OTEDetectionTask
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
-
-from e2e_test_system import e2e_pytest_api
 
 
 class ModelTemplate(unittest.TestCase):
 
     @e2e_pytest_api
-    def test_reading_mnv2_ssd_256(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml')
-
-    @e2e_pytest_api
-    def test_reading_mnv2_ssd_384(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-384x384/template.yaml')
-
-    @e2e_pytest_api
-    def test_reading_mnv2_ssd_512(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-512x512/template.yaml')
-
-    @e2e_pytest_api
     def test_reading_mnv2_ssd(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_SSD/template.yaml')
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD', 'template.yaml'))
 
     @e2e_pytest_api
     def test_reading_mnv2_atss(self):
-        parse_model_template('./configs/ote/custom-object-detection/mobilenetV2_ATSS/template.yaml')
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS', 'template.yaml'))
 
     @e2e_pytest_api
     def test_reading_resnet50_vfnet(self):
-        parse_model_template('./configs/ote/custom-object-detection/resnet50_VFNet/template.yaml')
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet', 'template.yaml'))
+
 
 @e2e_pytest_api
 def test_configuration_yaml():
@@ -98,7 +71,7 @@ def test_configuration_yaml():
 
 @e2e_pytest_api
 def test_set_values_as_default():
-    template_dir = './configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/'
+    template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
     template_file = osp.join(template_dir, 'template.yaml')
     model_template = parse_model_template(template_file)
 
@@ -108,7 +81,7 @@ def test_set_values_as_default():
     # value that comes from OTEDetectionConfig
     value = hyper_parameters['learning_parameters']['batch_size']['value']
     assert value == 5
-    assert default_value == 64
+    assert default_value == 8
 
     # after this call value must be equal to default_value
     set_values_as_default(hyper_parameters)
@@ -121,6 +94,7 @@ class Sample(unittest.TestCase):
     root_dir = '/tmp'
     coco_dir = osp.join(root_dir, 'data/coco')
     snapshots_dir = osp.join(root_dir, 'snapshots')
+    template = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS', 'template.yaml')
 
     custom_operations = ['ExperimentalDetectronROIFeatureExtractor',
                          'PriorBox', 'PriorBoxClustered', 'DetectionOutput',
@@ -172,7 +146,7 @@ class Sample(unittest.TestCase):
         output = run('export CUDA_VISIBLE_DEVICES=;'
                      'python mmdet/apis/ote/sample/sample.py '
                      f'--data-dir {self.coco_dir}/.. '
-                     '--export configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml',
+                     f'--export {self.template}',
                      shell=True, check=True)
         assert output.returncode == 0
 
@@ -181,7 +155,7 @@ class Sample(unittest.TestCase):
         output = run('export CUDA_VISIBLE_DEVICES=0;'
                      'python mmdet/apis/ote/sample/sample.py '
                      f'--data-dir {self.coco_dir}/.. '
-                     '--export configs/ote/custom-object-detection/mobilenet_v2-2s_ssd-256x256/template.yaml',
+                     f'--export {self.template}',
                      shell=True, check=True)
         assert output.returncode == 0
 
@@ -498,18 +472,6 @@ class API(unittest.TestCase):
             print(f'Performance of optimized model: {pot_performance.score.value:.4f}')
             self.check_threshold(validation_performance, pot_performance, pot_perf_delta_tolerance,
                 'Too big performance difference after POT optimization.')
-
-    @e2e_pytest_api
-    def test_training_custom_mobilenetssd_256(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-256x256'))
-
-    @e2e_pytest_api
-    def test_training_custom_mobilenetssd_384(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-384x384'))
-
-    @e2e_pytest_api
-    def test_training_custom_mobilenetssd_512(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenet_v2-2s_ssd-512x512'))
 
     @e2e_pytest_api
     def test_training_custom_mobilenet_atss(self):
