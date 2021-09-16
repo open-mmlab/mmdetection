@@ -14,13 +14,15 @@ import numpy as np
 import pytest
 import torch
 import yaml
+from bson import ObjectId
 from e2e_test_system import e2e_pytest_api
 from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance
-from ote_sdk.entities.model import ModelEntity, ModelOptimizationType, ModelPrecision, ModelStatus, OptimizationMethod
+from ote_sdk.entities.model import (ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus,
+                                    OptimizationMethod)
 from ote_sdk.entities.model_template import TargetDevice, parse_model_template
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.resultset import ResultSetEntity
@@ -370,7 +372,7 @@ class API(unittest.TestCase):
     def end_to_end(self, template_dir, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
         export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1):
 
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=150)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
         val_dataset = dataset.get_subset(Subset.VALIDATION)
@@ -385,47 +387,37 @@ class API(unittest.TestCase):
         output_model = ModelEntity(
             dataset,
             detection_environment.get_model_configuration(),
-            model_status=ModelStatus.NOT_READY)
+            model_status=ModelStatus.NOT_READY,
+            _id=ObjectId())
         task.train(dataset, output_model)
 
-        # Test that labels and configurable parameters are stored in model.data
+        # Test that output model is valid.
+        self.assertEqual(output_model.model_status, ModelStatus.SUCCESS)
         modelinfo = torch.load(io.BytesIO(output_model.get_data("weights.pth")))
         self.assertEqual(list(modelinfo.keys()), ['model', 'config', 'labels', 'VERSION'])
         self.assertTrue('ellipse' in modelinfo['labels'])
 
-        if isinstance(task, IExportTask):
-            exported_model = ModelEntity(
-                dataset,
-                detection_environment.get_model_configuration(),
-                optimization_type=ModelOptimizationType.MO,
-                precision=[ModelPrecision.FP32],
-                optimization_methods=[],
-                optimization_objectives={},
-                target_device=TargetDevice.UNSPECIFIED,
-                performance_improvement={},
-                model_size_reduction=1.,
-                model_status=ModelStatus.NOT_READY)
-            task.export(ExportType.OPENVINO, exported_model)
-
-        # Run inference
+        # Run inference.
         validation_performance = self.eval(task, output_model, val_dataset)
         print(f'Performance: {validation_performance.score.value:.4f}')
         self.assertGreater(validation_performance.score.value, quality_score_threshold,
             f'Expected F-measure to be higher than {quality_score_threshold}')
 
-        print('Reloading model.')
+        # Run another training round.
         first_model = output_model
         new_model = ModelEntity(
             dataset,
             detection_environment.get_model_configuration(),
-            model_status=ModelStatus.NOT_READY)
-        task._hyperparams.learning_parameters.num_iters = 10
+            model_status=ModelStatus.NOT_READY,
+            _id=ObjectId())
+        task._hyperparams.learning_parameters.num_iters = 1
         task._hyperparams.learning_parameters.num_checkpoints = 1
         task.train(dataset, new_model)
-        self.assertTrue(first_model.model_status)
+        self.assertEqual(new_model.model_status, ModelStatus.SUCCESS)
         self.assertNotEqual(first_model, new_model)
+        self.assertNotEqual(first_model.get_data("weights.pth"), new_model.get_data("weights.pth"))
 
-        # Make the new model fail
+        # Make the new model fail.
         new_model.model_status = ModelStatus.NOT_IMPROVED
         detection_environment.model = first_model
         task = OTEDetectionTask(detection_environment)
@@ -439,6 +431,18 @@ class API(unittest.TestCase):
             'Too big performance difference after model reload.')
 
         if isinstance(task, IExportTask):
+            # Run export.
+            exported_model = ModelEntity(
+                dataset,
+                detection_environment.get_model_configuration(),
+                model_status=ModelStatus.NOT_READY,
+                _id=ObjectId())
+            task.export(ExportType.OPENVINO, exported_model)
+            self.assertEqual(exported_model.model_status, ModelStatus.SUCCESS)
+            self.assertEqual(exported_model.model_format, ModelFormat.OPENVINO)
+            self.assertEqual(exported_model.optimization_type, ModelOptimizationType.MO)
+
+            # Create OpenVINO Task and evaluate the model.
             detection_environment.model = exported_model
             ov_task = OpenVINODetectionTask(detection_environment)
             predicted_validation_dataset = ov_task.infer(val_dataset.with_empty_annotations())
@@ -454,6 +458,7 @@ class API(unittest.TestCase):
             self.check_threshold(validation_performance, export_performance, export_perf_delta_tolerance,
                 'Too big performance difference after OpenVINO export.')
 
+            # Run POT optimization and evaluate the result.
             print('Run POT optimization.')
             optimized_model = ModelEntity(
                 dataset,
@@ -467,7 +472,6 @@ class API(unittest.TestCase):
                 model_size_reduction=1.,
                 model_status=ModelStatus.NOT_READY)
             ov_task.optimize(OptimizationType.POT, dataset, optimized_model, OptimizationParameters())
-
             pot_performance = self.eval(ov_task, optimized_model, val_dataset)
             print(f'Performance of optimized model: {pot_performance.score.value:.4f}')
             self.check_threshold(validation_performance, pot_performance, pot_perf_delta_tolerance,

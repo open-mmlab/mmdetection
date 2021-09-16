@@ -233,8 +233,10 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
         with tempfile.TemporaryDirectory() as tempdir:
             xml_path = os.path.join(tempdir, model_name + ".xml")
             bin_path = os.path.join(tempdir, model_name + ".bin")
-            open(xml_path, "wb").write(self.model.get_data("openvino.xml"))
-            open(bin_path, "wb").write(self.model.get_data("openvino.bin"))
+            with open(xml_path, "wb") as f:
+                f.write(self.model.get_data("openvino.xml"))
+            with open(bin_path, "wb") as f:
+                f.write(self.model.get_data("openvino.bin"))
 
             model_config = ADDict({
                 'model_name': model_name,
@@ -277,8 +279,10 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
 
         with tempfile.TemporaryDirectory() as tempdir:
             save_model(compressed_model, tempdir, model_name=model_name)
-            output_model.set_data("openvino.xml", open(os.path.join(tempdir, model_name + ".xml"), "rb").read())
-            output_model.set_data("openvino.bin", open(os.path.join(tempdir, model_name + ".bin"), "rb").read())
+            with open(os.path.join(tempdir, model_name + ".xml"), "rb") as f:
+                output_model.set_data("openvino.xml", f.read())
+            with open(os.path.join(tempdir, model_name + ".bin"), "rb") as f:
+                output_model.set_data("openvino.bin", f.read())
         output_model.model_status = ModelStatus.SUCCESS
 
         self.model = output_model
