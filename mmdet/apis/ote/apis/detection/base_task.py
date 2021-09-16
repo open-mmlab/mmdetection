@@ -210,19 +210,6 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
         output_result_set.performance = f_measure_metrics.get_performance()
 
 
-    def cancel_training(self):
-        """
-        Sends a cancel training signal to gracefully stop the optimizer. The signal consists of creating a
-        '.stop_training' file in the current work_dir. The runner checks for this file periodically.
-        The stopping mechanism allows stopping after each iteration, but validation will still be carried out. Stopping
-        will therefore take some time.
-        """
-        logger.info("Cancel training requested.")
-        self._should_stop = True
-        stop_training_filepath = os.path.join(self._training_work_dir, '.stop_training')
-        open(stop_training_filepath, 'a').close()
-
-
     def _generate_training_metrics_group(self, learning_curves) -> Optional[List[MetricsGroup]]:
         """
         Parses the mmdetection logs to get metrics from the latest training run

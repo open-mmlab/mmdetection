@@ -186,3 +186,15 @@ class OTEDetectionTask(OTEBaseTask, ITrainingTask):
         modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
         torch.save(modelinfo, buffer)
         output_model.set_data("weights.pth", buffer.getvalue())
+
+    def cancel_training(self):
+        """
+        Sends a cancel training signal to gracefully stop the optimizer. The signal consists of creating a
+        '.stop_training' file in the current work_dir. The runner checks for this file periodically.
+        The stopping mechanism allows stopping after each iteration, but validation will still be carried out. Stopping
+        will therefore take some time.
+        """
+        logger.info("Cancel training requested.")
+        self._should_stop = True
+        stop_training_filepath = os.path.join(self._training_work_dir, '.stop_training')
+        open(stop_training_filepath, 'a').close()
