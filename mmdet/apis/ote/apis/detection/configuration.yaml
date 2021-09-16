@@ -78,13 +78,13 @@ learning_parameters:
     warning: null
   num_iters:
     affects_outcome_of: TRAINING
-    default_value: 10000
+    default_value: 1
     description: Increasing this value causes the results to be more robust but training
       time will be longer.
     editable: true
     header: Number of training iterations
     max_value: 100000
-    min_value: 10
+    min_value: 1
     type: INTEGER
     ui_rules:
       action: DISABLE_EDITING

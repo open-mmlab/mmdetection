@@ -79,7 +79,7 @@ def main(args):
     logger.info('Setup environment')
     params = create(hyper_parameters)
     logger.info('Set hyperparameters')
-    params.learning_parameters.num_iters = 10
+    params.learning_parameters.num_iters = 1
     environment = TaskEnvironment(model=None, hyper_parameters=params, label_schema=labels_schema, model_template=model_template)
 
     logger.info('Create base Task')
@@ -113,13 +113,6 @@ def main(args):
         exported_model = ModelEntity(
             dataset,
             environment.get_model_configuration(),
-            optimization_type=ModelOptimizationType.MO,
-            precision=[ModelPrecision.FP32],
-            optimization_methods=[],
-            optimization_objectives={},
-            target_device=TargetDevice.UNSPECIFIED,
-            performance_improvement={},
-            model_size_reduction=1.,
             model_status=ModelStatus.NOT_READY)
         task.export(ExportType.OPENVINO, exported_model)
 
