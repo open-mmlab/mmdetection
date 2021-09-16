@@ -302,7 +302,7 @@ class API(unittest.TestCase):
 
         # stopping process has to happen in less than 35 seconds
         train_future.result()
-        assert training_progress_curve[-1] == 100
+        self.assertEqual(training_progress_curve[-1], 100)
         self.assertLess(time.time() - start_time, 35, 'Expected to stop within 35 seconds.')
 
         # Test stopping immediately (as soon as training is started).
