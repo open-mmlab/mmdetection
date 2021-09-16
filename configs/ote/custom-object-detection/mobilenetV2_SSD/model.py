@@ -19,20 +19,22 @@ model = dict(
             type='SSDAnchorGeneratorClustered',
             strides=(16, 32),
             widths=[[
-                59.91402252688701, 100.44703428492618, 137.22888697945035,
-                183.22823913364294
+                38.641007923271076, 92.49516032784699, 271.4234764938237,
+                141.53469410876247
             ],
                     [
-                        157.10841010152603, 203.7654599640001,
-                        212.95826764946042, 317.3329515135652
+                        206.04136086566515, 386.6542727907841,
+                        716.9892752215089, 453.75609561761405,
+                        788.4629155558277
                     ]],
             heights=[[
-                40.06737185376501, 100.97103306538557, 74.35819037443196,
-                73.83043437079853
+                48.9243877087132, 147.73088476194903, 158.23569788707474,
+                324.14510379107367
             ],
                      [
-                         108.31147481737037, 113.97849956820743,
-                         183.05077289009338, 167.13243858925668
+                         587.6216059488938, 381.60024152086544,
+                         323.5988913027747, 702.7486097568518,
+                         741.4865860938451
                      ]]),
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
@@ -63,36 +65,38 @@ model = dict(
         max_per_img=200))
 
 cudnn_benchmark = True
-evaluation = dict(interval=1000, metric='mAP')
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+evaluation = dict(interval=1, metric='mAP', save_best='mAP')
+optimizer = dict(
+    type='SGD',
+    lr=0.01,
+    momentum=0.9,
+    weight_decay=0.0001)
 optimizer_config = dict()
 lr_config = dict(
-    policy='CosineAnnealing',
-    min_lr=0.0001,
+    policy='ReduceLROnPlateau',
+    metric='mAP',
+    patience=3,
+    iteration_patience=600,
+    interval=1,
+    min_lr=0.00001,
     warmup='linear',
-    warmup_iters=1200,
-    warmup_ratio=0.3333333333333333)
+    warmup_iters=200,
+    warmup_ratio=1.0 / 3)
 
-checkpoint_config = dict(interval=1000)
+checkpoint_config = dict(interval=5)
 log_config = dict(
-    interval=10,
-    hooks=[dict(type='TextLoggerHook'),
-           dict(type='TensorboardLoggerHook')])
-runner = dict(type='IterBasedRunner', max_iters=10000)
+    interval=100,
+    hooks=[
+        dict(type='TextLoggerHook'),
+        dict(type='TensorboardLoggerHook')
+    ])
+runner = dict(type='EpochRunnerWithCancel', max_epochs=300)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'output'
-
-#TODO: this is a temporary decision
-import os
-TT_API_OTHER_TESTS = os.environ.get('TT_API_OTHER_TESTS', '').lower() == 'true'
-TT_PERFORMANCE_TESTS = os.environ.get('TT_PERFORMANCE_TESTS', '').lower() == 'true'
-if TT_API_OTHER_TESTS or TT_PERFORMANCE_TESTS:
-    load_from = '/usr/src/app/external/mmdetection/ote_data/MODELS/mobilenetV2_SSD/coco_snapshot.pth'
-    print(f'set load_from={load_from}', flush=True)
-else:
-    load_from = None
-del os # this del is required for mmdetection config
-
+load_from = 'https://storage.openvinotoolkit.org/repositories/openvino_training_extensions/models/object_detection/v2/mobilenet_v2-2s_ssd-992x736.pth'
 resume_from = None
 workflow = [('train', 1)]
+custom_hooks = [
+    dict(type='EarlyStoppingHook', patience=5, iteration_patience=1000, metric='mAP', interval=1, priority=75)
+]

@@ -1,37 +1,30 @@
 # Description.
-name: Custom Object Detection Gen2 ATSS
+name: Custom Object Detection ATSS
 task_type: DETECTION
 task_family: VISION
 instantiation: "CLASS"
-summary: Custom Object Detection Model M Gen 2
-
-# Algo backend.
-# Would be better to have something more precise and self-contained, e.g.:  docker image or path to Python venv activation script?
-framework: OTEDetection v2.9.1
-
-# Should be revisited?
+summary: ATSS with MobileNetV2 backbone.
 application:
   ~
 
-# # Optional? requirements to the dataset. Should be revisited?
-# dataset_requirements:
-#   ~
+# Algo backend.
+framework: OTEDetection v2.9.1
 
-# Task implementation.
+# Task implementations.
 entrypoints:
   base: mmdet.apis.ote.apis.detection.OTEDetectionTask
   openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
   nncf: mmdet.apis.ote.apis.detection.NNCFDetectionTask
 
-# Task and hyperparameters.
+# Hyperparameters.
 hyper_parameters:
   base_path: ../../../../mmdet/apis/ote/apis/detection/configuration.yaml
   parameter_overrides:
     learning_parameters:
       batch_size:
-        default_value: 10
+        default_value: 8
       learning_rate:
-        default_value: 0.01
+        default_value: 0.008
       learning_rate_warmup_iters:
         default_value: 200
     nncf_optimization:
@@ -43,22 +36,3 @@ max_nodes: 1
 training_targets:
   - GPU
   - CPU
-
-# Inference options. Defined by OpenVINO capabilities, not Algo Backend or Platform.
-inference_targets:
-  - CPU
-  - GPU
-  - VPU
-
-# # Some meta information, which may be used for model recommendation. In general, metrics are non-static, hence has to be updated.
-# metrics:
-#   - display_name: Size​
-#     key: size​
-#     unit: Mp​
-#     # FIXME
-#     value: 1.99
-#   - display_name: Complexity​
-#     key: complexity​
-#     unit: GFLOPs​
-#     # FIXME
-#     value: 3.42

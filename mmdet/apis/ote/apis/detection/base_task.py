@@ -30,7 +30,7 @@ from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
                                       MetricsGroup, VisualizationInfo,
                                       VisualizationType)
-from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity
+from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity, ModelFormat, ModelOptimizationType
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import default_progress_callback
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
@@ -209,6 +209,7 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
 
         output_result_set.performance = f_measure_metrics.get_performance()
 
+
     def cancel_training(self):
         """
         Sends a cancel training signal to gracefully stop the optimizer. The signal consists of creating a
@@ -303,6 +304,8 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
                output_model: ModelEntity):
         assert export_type == ExportType.OPENVINO
         optimized_model_precision = ModelPrecision.FP32
+        output_model.model_format = ModelFormat.OPENVINO
+        output_model.optimization_type = ModelOptimizationType.MO
         with tempfile.TemporaryDirectory() as tempdir:
             optimized_model_dir = os.path.join(tempdir, "export")
             logger.info(f'Optimized model will be temporarily saved to "{optimized_model_dir}"')
@@ -323,7 +326,9 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
                 with open(os.path.join(tempdir, xml_file), "rb") as f:
                     output_model.set_data("openvino.xml", f.read())
                 output_model.precision = [optimized_model_precision]
+                output_model.model_status = ModelStatus.SUCCESS
             except Exception as ex:
+                output_model.model_status = ModelStatus.FAILED
                 raise RuntimeError("Optimization was unsuccessful.") from ex
 
 

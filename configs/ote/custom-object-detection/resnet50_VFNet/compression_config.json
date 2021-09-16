@@ -14,7 +14,7 @@
             "lr": 0.0005
         },
         "runner": {
-            "max_iters": 0
+            "max_epochs": 0
         },
         "nncf_config": {
             "compression": [

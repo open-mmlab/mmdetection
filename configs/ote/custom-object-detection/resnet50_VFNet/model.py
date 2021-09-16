@@ -17,8 +17,7 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         start_level=1,
-        add_extra_convs=True,
-        extra_convs_on_inputs=False,
+        add_extra_convs='on_output',
         num_outs=5,
         relu_before_extra_convs=True),
     bbox_head=dict(
@@ -53,35 +52,37 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100))
 
-evaluation = dict(interval=1000, metric='mAP')
-optimizer = dict(type='SGD', lr=0.003, momentum=0.9, weight_decay=0.0001)
+evaluation = dict(interval=1, metric='mAP', save_best='mAP')
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
 lr_config = dict(
-    policy='step',
+    policy='ReduceLROnPlateau',
+    metric='mAP',
+    patience=3,
+    iteration_patience=600,
+    interval=1,
+    min_lr=1e-06,
     warmup='linear',
-    warmup_iters=1200,
-    warmup_ratio=0.3333333333333333,
-    step=[8000, 10000])
-checkpoint_config = dict(interval=1000)
+    warmup_iters=500,
+    warmup_ratio=0.3333333333333333)
+checkpoint_config = dict(interval=10)
 log_config = dict(
-    interval=10,
+    interval=50,
     hooks=[dict(type='TextLoggerHook'),
            dict(type='TensorboardLoggerHook')])
-runner = dict(type='IterBasedRunner', max_iters=10000)
+runner = dict(type='EpochRunnerWithCancel', max_epochs=300)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = 'output'
-
-#TODO: this is a temporary decision
-import os
-TT_API_OTHER_TESTS = os.environ.get('TT_API_OTHER_TESTS', '').lower() == 'true'
-TT_PERFORMANCE_TESTS = os.environ.get('TT_PERFORMANCE_TESTS', '').lower() == 'true'
-if TT_API_OTHER_TESTS or TT_PERFORMANCE_TESTS:
-    load_from = '/usr/src/app/external/mmdetection/ote_data/MODELS/resnet50_VFNet/coco_snapshot.pth'
-    print(f'set load_from={load_from}', flush=True)
-else:
-    load_from = None
-del os # this del is required for mmdetection config
-
+load_from = 'https://storage.openvinotoolkit.org/repositories/openvino_training_extensions/models/object_detection/v2/resnet50-vfnet.pth'
 resume_from = None
-workflow = [('train', 500)]
+workflow = [('train', 1)]
+custom_hooks = [
+    dict(
+        type='EarlyStoppingHook',
+        patience=5,
+        metric='mAP',
+        interval=1,
+        priority=75,
+        iteration_patience=1000)
+]

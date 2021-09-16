@@ -12,34 +12,32 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import logging
 import copy
 import io
+import logging
 import os
-import torch
 from collections import defaultdict
 from typing import Optional
 
+import torch
 from mmcv.utils import Config
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.metrics import Performance, ScoreMetric
-from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity
+from ote_sdk.entities.model import ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
-from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
+from ote_sdk.entities.train_parameters import TrainParameters, default_progress_callback
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
-
 from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import train_detector
-from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
-                                                        prepare_for_training,
-                                                        set_hyperparams)
+from mmdet.apis.ote.apis.detection.config_utils import patch_config, prepare_for_training, set_hyperparams
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
+from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback, TrainingProgressCallback
 from mmdet.apis.ote.apis.detection.base_task import OTEBaseTask
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
+
 from mmdet.datasets import build_dataset
 
 

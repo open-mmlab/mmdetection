@@ -54,12 +54,11 @@ class OTEDetectionConfig(ModelConfig):
         )
 
         num_iters = configurable_integer(
-            default_value=10000,
-            min_value=10,
+            default_value=1,
+            min_value=1,
             max_value=100000,
             header="Number of training iterations",
-            description="Increasing this value causes the results to be more robust but training time "
-            "will be longer.",
+            description="Increasing this value causes the results to be more robust but training time will be longer.",
             affects_outcome_of=ModelLifecycle.TRAINING
         )
 

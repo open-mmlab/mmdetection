@@ -129,9 +129,9 @@ class OTEProgressHook(Hook):
     def before_run(self, runner):
         total_epochs = runner.max_epochs if runner.max_epochs is not None else 1
         self.time_monitor.total_epochs = total_epochs
-        self.time_monitor.train_steps = runner.max_iters // total_epochs
+        self.time_monitor.train_steps = runner.max_iters // total_epochs if total_epochs else 1
         self.time_monitor.steps_per_epoch = self.time_monitor.train_steps + self.time_monitor.val_steps
-        self.time_monitor.total_steps = math.ceil(self.time_monitor.steps_per_epoch * total_epochs)
+        self.time_monitor.total_steps = max(math.ceil(self.time_monitor.steps_per_epoch * total_epochs), 1)
         self.time_monitor.current_step = 0
         self.time_monitor.current_epoch = 0
 
@@ -157,6 +157,10 @@ class OTEProgressHook(Hook):
 
     def after_val_iter(self, runner):
         self.time_monitor.on_test_batch_end(1)
+
+    def after_run(self, runner):
+        self.time_monitor.on_train_end(1)
+        self.time_monitor.update_progress_callback(self.time_monitor.get_progress())
 
     @property
     def progress(self):
