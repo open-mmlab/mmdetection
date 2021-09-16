@@ -71,28 +71,14 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
         """
         super().__init__(task_environment)
 
-        self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
-
-        self._model_name = hyperparams.algo_backend.model_name
-        self._labels = task_environment.get_labels(False)
-
-        template_file_path = task_environment.model_template.model_template_path
-
-        # Get and prepare mmdet config.
-        base_dir = os.path.abspath(os.path.dirname(template_file_path))
-        config_file_path = os.path.join(base_dir, hyperparams.algo_backend.model)
-        self._config = Config.fromfile(config_file_path)
-        patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
-        set_hyperparams(self._config, hyperparams)
-
         # NNCF part
         self._compression_ctrl = None
-        nncf_config_path = os.path.join(base_dir, "compression_config.json")
+        nncf_config_path = os.path.join(self._base_dir, "compression_config.json")
 
         with open(nncf_config_path) as nncf_config_file:
             common_nncf_config = json.load(nncf_config_file)
 
-        optimization_type = COMPRESSION_MAP[hyperparams.nncf_optimization.preset]
+        optimization_type = COMPRESSION_MAP[self._hyperparams.nncf_optimization.preset]
 
         optimization_config = compose_nncf_config(common_nncf_config, [optimization_type])
         self._config.update(optimization_config)

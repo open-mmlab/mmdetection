@@ -20,7 +20,6 @@ from collections import defaultdict
 from typing import Optional
 
 import torch
-from mmcv.utils import Config
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.metrics import Performance, ScoreMetric
@@ -32,7 +31,7 @@ from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import train_detector
-from mmdet.apis.ote.apis.detection.config_utils import patch_config, prepare_for_training, set_hyperparams
+from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training, set_hyperparams
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback, TrainingProgressCallback
 from mmdet.apis.ote.apis.detection.base_task import OTEBaseTask
@@ -52,27 +51,8 @@ class OTEDetectionTask(OTEBaseTask, ITrainingTask):
         """
         super().__init__(task_environment)
 
-        self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
-
-        self._model_name = hyperparams.algo_backend.model_name
-        self._labels = task_environment.get_labels(False)
-
-        template_file_path = task_environment.model_template.model_template_path
-
-        # Get and prepare mmdet config.
-        base_dir = os.path.abspath(os.path.dirname(template_file_path))
-        config_file_path = os.path.join(base_dir, hyperparams.algo_backend.model)
-        self._config = Config.fromfile(config_file_path)
-        patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
-        set_hyperparams(self._config, hyperparams)
-
         # Create and initialize PyTorch model.
         self._model = self._load_model(task_environment.model)
-
-        # Extra control variables.
-        self._training_work_dir = None
-        self._is_training = False
-        self._should_stop = False
 
 
     def _load_model(self, model: ModelEntity):

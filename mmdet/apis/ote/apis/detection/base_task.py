@@ -25,27 +25,33 @@ from typing import List, Optional, Tuple
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
+
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
                                       MetricsGroup, VisualizationInfo,
                                       VisualizationType)
 from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity, ModelFormat, ModelOptimizationType
-from ote_sdk.entities.task_environment import TaskEnvironment
-from ote_sdk.entities.train_parameters import default_progress_callback
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.shapes.rectangle import Rectangle
+from ote_sdk.entities.task_environment import TaskEnvironment
+from ote_sdk.entities.train_parameters import default_progress_callback
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
-from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
+from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
+from ote_sdk.usecases.tasks.interfaces.export_interface import IExportTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
 from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import export_model, single_gpu_test
-from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing, set_hyperparams
+from mmdet.apis.ote.apis.detection.config_utils import patch_config
+from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing
+from mmdet.apis.ote.apis.detection.config_utils import set_hyperparams
+from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback
+
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
@@ -64,6 +70,25 @@ class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
         logger.info(f"Loading OTEDetectionTask.")
         self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
         logger.info(f"Scratch space created at {self._scratch_space}")
+
+        self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
+
+        self._model_name = hyperparams.algo_backend.model_name
+        self._labels = task_environment.get_labels(False)
+
+        template_file_path = task_environment.model_template.model_template_path
+
+        # Get and prepare mmdet config.
+        self._base_dir = os.path.abspath(os.path.dirname(template_file_path))
+        config_file_path = os.path.join(self._base_dir, hyperparams.algo_backend.model)
+        self._config = Config.fromfile(config_file_path)
+        patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
+        set_hyperparams(self._config, hyperparams)
+
+        # Extra control variables.
+        self._training_work_dir = None
+        self._is_training = False
+        self._should_stop = False
 
     @staticmethod
     def _create_model(config: Config, from_scratch: bool = False):
