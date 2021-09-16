@@ -285,9 +285,16 @@ class API(unittest.TestCase):
             model_status=ModelStatus.NOT_READY
         )
 
+        training_progress_curve = []
+        def progress_callback(progress: float, score: Optional[float] = None):
+            training_progress_curve.append(progress)
+
+        train_parameters = TrainParameters
+        train_parameters.update_progress = progress_callback
+
         # Test stopping after some time
         start_time = time.time()
-        train_future = executor.submit(detection_task.train, dataset, output_model)
+        train_future = executor.submit(detection_task.train, dataset, output_model, train_parameters)
         # give train_thread some time to initialize the model
         while not detection_task._is_training:
             time.sleep(10)
@@ -295,6 +302,7 @@ class API(unittest.TestCase):
 
         # stopping process has to happen in less than 35 seconds
         train_future.result()
+        assert training_progress_curve[-1] == 100
         self.assertLess(time.time() - start_time, 35, 'Expected to stop within 35 seconds.')
 
         # Test stopping immediately (as soon as training is started).
