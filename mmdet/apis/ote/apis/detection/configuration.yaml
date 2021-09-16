@@ -91,7 +91,7 @@ learning_parameters:
       operator: AND
       rules: []
       type: UI_RULES
-    value: 10000
+    value: 1
     visible_in_ui: true
     warning: null
   num_workers:
