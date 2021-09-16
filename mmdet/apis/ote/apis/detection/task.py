@@ -12,57 +12,51 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import logging
 import copy
 import io
-import numpy as np
+import logging
 import os
 import shutil
 import tempfile
-import torch
 import warnings
 from collections import defaultdict
 from typing import List, Optional, Tuple
 
+import numpy as np
+import torch
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.annotation import Annotation
-from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label import ScoredLabel
-from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
-                                      MetricsGroup, Performance, ScoreMetric,
+from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric,
                                       VisualizationInfo, VisualizationType)
-from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity
-
+from ote_sdk.entities.model import ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
-from ote_sdk.entities.train_parameters import default_progress_callback, TrainParameters
+from ote_sdk.entities.train_parameters import TrainParameters, default_progress_callback
+from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
-
 from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import export_model, single_gpu_test, train_detector
-from mmdet.apis.ote.apis.detection.config_utils import (patch_config,
-                                                        prepare_for_testing,
-                                                        prepare_for_training,
+from mmdet.apis.ote.apis.detection.config_utils import (patch_config, prepare_for_testing, prepare_for_training,
                                                         set_hyperparams)
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback, InferenceProgressCallback
+from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback, TrainingProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
-
 
 logger = logging.getLogger(__name__)
 
@@ -455,6 +449,8 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                output_model: ModelEntity):
         assert export_type == ExportType.OPENVINO
         optimized_model_precision = ModelPrecision.FP32
+        output_model.model_format = ModelFormat.OPENVINO
+        output_model.optimization_type = ModelOptimizationType.MO
         with tempfile.TemporaryDirectory() as tempdir:
             optimized_model_dir = os.path.join(tempdir, "export")
             logger.info(f'Optimized model will be temporarily saved to "{optimized_model_dir}"')
@@ -475,7 +471,9 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
                 with open(os.path.join(tempdir, xml_file), "rb") as f:
                     output_model.set_data("openvino.xml", f.read())
                 output_model.precision = [optimized_model_precision]
+                output_model.model_status = ModelStatus.SUCCESS
             except Exception as ex:
+                output_model.model_status = ModelStatus.FAILED
                 raise RuntimeError("Optimization was unsuccessful.") from ex
 
 
