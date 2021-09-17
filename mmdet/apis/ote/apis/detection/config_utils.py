@@ -15,7 +15,6 @@
 import copy
 import glob
 import logging
-import math
 import os
 import tempfile
 from collections import defaultdict
@@ -27,7 +26,6 @@ from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from sc_sdk.entities.datasets import Dataset
 
 from .configuration import OTEDetectionConfig
-
 
 logger = logging.getLogger(__name__)
 
