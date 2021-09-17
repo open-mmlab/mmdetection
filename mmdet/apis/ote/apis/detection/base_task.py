@@ -27,12 +27,12 @@ from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
 
 from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
                                       MetricsGroup, VisualizationInfo,
                                       VisualizationType)
 from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity, ModelFormat, ModelOptimizationType
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
+from ote_sdk.entities.scored_label import ScoredLabel
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import default_progress_callback

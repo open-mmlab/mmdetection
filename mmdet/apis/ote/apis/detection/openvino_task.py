@@ -15,43 +15,36 @@
 import logging
 import os
 import tempfile
-
-from addict import Dict as ADDict
-from typing import Any, Dict, Tuple, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
-
+from addict import Dict as ADDict
+from compression.api import DataLoader
+from compression.engines.ie_engine import IEEngine
+from compression.graph import load_model, save_model
+from compression.graph.model_utils import compress_model_weights, get_nodes_by_type
+from compression.pipeline.initializer import create_pipeline
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
 from ote_sdk.entities.id import ID
 from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.label import ScoredLabel, LabelEntity
-from ote_sdk.entities.model import ModelStatus, ModelEntity
+from ote_sdk.entities.label import LabelEntity
+from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.resultset import ResultSetEntity
+from ote_sdk.entities.scored_label import ScoredLabel
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.exportable_code.inference import BaseOpenVINOInferencer
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
-from ote_sdk.usecases.tasks.interfaces.optimization_interface import (
-    IOptimizationTask,
-    OptimizationType,
-)
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
 from sc_sdk.entities.annotation import AnnotationScene
 from sc_sdk.entities.datasets import Dataset
-
 from sc_sdk.entities.media_identifier import ImageIdentifier
 
-from compression.api import DataLoader
-from compression.engines.ie_engine import IEEngine
-from compression.graph import load_model, save_model
-from compression.graph.model_utils import compress_model_weights, get_nodes_by_type
-from compression.pipeline.initializer import create_pipeline
-
 from .configuration import OTEDetectionConfig
-
 
 logger = logging.getLogger(__name__)
 
