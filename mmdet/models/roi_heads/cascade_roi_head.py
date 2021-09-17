@@ -271,6 +271,11 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     if self.bbox_head[i].custom_activation:
                         cls_score = self.bbox_head[i].loss_cls.get_activation(
                             cls_score)
+
+                    # Empty proposal.
+                    if cls_score.numel() == 0:
+                        break
+
                     roi_labels = torch.where(
                         roi_labels == self.bbox_head[i].num_classes,
                         cls_score[:, :-1].argmax(1), roi_labels)
