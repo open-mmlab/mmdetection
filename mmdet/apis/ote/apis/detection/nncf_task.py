@@ -87,11 +87,6 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
         check_nncf_is_enabled()
         self._compression_ctrl, self._model = self._load_model(task_environment.model)
 
-        # Extra control variables.
-        self._training_work_dir = None
-        self._is_training = False
-        self._should_stop = False
-
     def _load_model(self, model: ModelEntity):
         compression_ctrl = None
         if model is not None:
@@ -214,15 +209,3 @@ class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
 
         torch.save(modelinfo, buffer)
         output_model.set_data("weights.pth", buffer.getvalue())
-
-    def cancel_training(self):
-        """
-        Sends a cancel training signal to gracefully stop the optimizer. The signal consists of creating a
-        '.stop_training' file in the current work_dir. The runner checks for this file periodically.
-        The stopping mechanism allows stopping after each iteration, but validation will still be carried out. Stopping
-        will therefore take some time.
-        """
-        logger.info("Cancel training requested.")
-        self._should_stop = True
-        stop_training_filepath = os.path.join(self._training_work_dir, '.stop_training')
-        open(stop_training_filepath, 'a').close()
