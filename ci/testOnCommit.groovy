@@ -13,7 +13,7 @@ pipeline {
             }
         }
 
-        stage("Run smoke and regression tests on commit") {
+        stage("Run tests on commit") {
             steps {
                 sh """
                 env
