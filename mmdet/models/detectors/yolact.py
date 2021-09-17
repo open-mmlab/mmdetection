@@ -25,24 +25,15 @@ class YOLACT(SingleStageDetector):
         self.segm_head = build_head(segm_head)
         self.mask_head = build_head(mask_head)
 
-    def forward_dummy(self, imgs):
+    def forward_dummy(self, img):
         """Used for computing network flops.
 
         See `mmdetection/tools/analysis_tools/get_flops.py`
         """
-        # img_metas do not influence the flops calculation
-        dummy_img_metas = [
-            dict(
-                img_shape=img.shape, ori_shape=img.shape, scale_factor=(1, 1))
-            for img in imgs
-        ]
-        feat = self.extract_feat(imgs)
+        feat = self.extract_feat(img)
         bbox_outs = self.bbox_head(feat)
-        bboxes = torch.rand((1, 1, 4)).to(imgs.device)
-        det_coeffs = torch.rand((1, 1, 32)).to(imgs.device)
-        mask_outs = self.mask_head(feat[0], det_coeffs, bboxes,
-                                   dummy_img_metas)
-        return (bbox_outs, mask_outs)
+        proposals = self.mask_head.forward_dummy(feat[0])
+        return (bbox_outs, proposals)
 
     def forward_train(self,
                       img,
