@@ -139,7 +139,7 @@ class OTEDetectionConfig(ModelConfig):
 
         preset = selectable(default_value=NNCFCompressionPreset.QUANTIZATION, header="Preset",
                             description="NNCF preset that defines compression scheme",
-                            editable=False, visible_in_ui=False)
+                            editable=True, visible_in_ui=True)
 
     @attrs
     class __POTParameter(ParameterGroup):
