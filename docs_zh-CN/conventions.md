@@ -63,3 +63,9 @@ for i in range(self.num_stages):
                        refine_roi_list.append(refine_roi)
 ```
 如果你有自定义的 `RoIHead`, 你可以参考上面的方法来处理空 proposals 的情况。
+
+## 全景分割数据集
+
+在 MMDetection 中，我们支持了 COCO 全景分割数据集 `CocoPanopticDataset`。对于它的实现，我们在这里声明一些默认约定。
+
+在评估中，全景分割结果必须是一个与原图大小相同的图。结果图中每个像素的值有如此形式：`instance_id * INSTANCE_OFFSET + category_id`。
