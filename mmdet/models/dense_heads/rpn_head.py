@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 
 import torch
@@ -34,9 +35,13 @@ class RPNHead(AnchorHead):
         if self.num_convs > 1:
             rpn_convs = []
             for i in range(self.num_convs):
+                if i == 0:
+                    in_channels = self.in_channels
+                else:
+                    in_channels = self.feat_channels
                 rpn_convs.append(
                     ConvModule(
-                        self.in_channels,
+                        in_channels,
                         self.feat_channels,
                         3,
                         padding=1,
@@ -223,10 +228,10 @@ class RPNHead(AnchorHead):
             anchors, rpn_bbox_pred, max_shape=img_shape)
         ids = torch.cat(level_ids)
 
-        if cfg.min_bbox_size > 0:
+        if cfg.min_bbox_size >= 0:
             w = proposals[:, 2] - proposals[:, 0]
             h = proposals[:, 3] - proposals[:, 1]
-            valid_mask = (w >= cfg.min_bbox_size) & (h >= cfg.min_bbox_size)
+            valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
             if not valid_mask.all():
                 proposals = proposals[valid_mask]
                 scores = scores[valid_mask]

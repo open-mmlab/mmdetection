@@ -24,7 +24,7 @@
 ### Prerequisite
 
 1. Install the prerequisites following [get_started.md/Prepare environment](../get_started.md).
-2. Build custom operators for ONNX Runtime and install MMCV manually following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
+2. Build custom operators for ONNX Runtime and install MMCV manually following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
 3. Install MMdetection manually following steps 2-3 in [get_started.md/Install MMdetection](../get_started.md).
 
 ### Usage
@@ -59,6 +59,7 @@ python tools/deployment/pytorch2onnx.py \
 - `--verify`: Determines whether to verify the correctness of an exported model. If not specified, it will be set to `False`.
 - `--simplify`: Determines whether to simplify the exported ONNX model. If not specified, it will be set to `False`.
 - `--cfg-options`: Override some settings in the used config file, the key-value pair in `xxx=yyy` format will be merged into config file.
+- `--skip-postprocess`: Determines whether export model without post process. If not specified, it will be set to `False`. Notice: This is an experimental option. Only work for some single stage models. Users need to implement the post-process by themselves. We do not guarantee the correctness of the exported model.
 
 Example:
 
@@ -98,9 +99,9 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
   Note: onnxruntime-gpu is version-dependent on CUDA and CUDNN, please ensure that your
   environment meets the requirements.
 
-- Build custom operators for ONNX Runtime following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
+- Build custom operators for ONNX Runtime following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
 
-- Install TensorRT by referring to [How to build TensorRT plugins in MMCV](https://mmcv.readthedocs.io/en/latest/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv) (optional)
+- Install TensorRT by referring to [How to build TensorRT plugins in MMCV](https://mmcv.readthedocs.io/en/latest/deployment/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv) (optional)
 
 ### Usage
 
@@ -130,6 +131,16 @@ python tools/deployment/test.py \
 - `--show-score-thr`: Score threshold. Default is set to `0.3`.
 - `--cfg-options`: Override some settings in the used config file, the key-value pair in `xxx=yyy` format will be merged into config file.
 - `--eval-options`: Custom options for evaluation, the key-value pair in `xxx=yyy` format will be kwargs for `dataset.evaluate()` function
+
+Notes:
+
+- If the deployed backend platform is TensorRT, please add environment variables before running the file:
+
+  ```bash
+  export ONNX_BACKEND=MMCVTensorRT
+  ```
+
+- If you want to use the `--dynamic-export` parameter in the TensorRT backend to export ONNX, please remove the `--simplify` parameter, and vice versa.
 
 ### Results and Models
 
@@ -191,6 +202,15 @@ python tools/deployment/test.py \
 	    <td align="center">37.0</td>
 	</tr>
   <tr >
+	    <td align="center">Cascade R-CNN</td>
+	    <td align="center"><code>configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">40.3</td>
+	    <td align="center">40.3</td>
+	    <td align="center">40.1</td>
+	</tr>
+
+  <tr >
 	    <td align="center" rowspan="2">Mask R-CNN</td>
 	    <td align="center" rowspan="2"><code>configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py</code></td>
 	    <td align="center">Box AP</td>
@@ -205,12 +225,51 @@ python tools/deployment/test.py \
 	    <td align="center">33.3</td>
 	</tr>
   <tr >
+	    <td align="center" rowspan="2">Cascade Mask R-CNN</td>
+	    <td align="center" rowspan="2"><code>configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">41.2</td>
+	    <td align="center">41.2</td>
+	    <td align="center">40.9</td>
+	</tr>
+	<tr>
+	    <td align="center">Mask AP</td>
+	    <td align="center">35.9</td>
+	    <td align="center">34.8</td>
+	    <td align="center">34.5</td>
+	</tr>
+
+
+  <tr >
 	    <td align="center">CornerNet</td>
 	    <td align="center"><code>configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py</code></td>
 	    <td align="center">Box AP</td>
 	    <td align="center">40.6</td>
 	    <td align="center">40.4</td>
+		<td align="center">-</td>
 	</tr>
+  <tr >
+	    <td align="center">DETR</td>
+	    <td align="center"><code>configs/detr/detr_r50_8x2_150e_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">40.1</td>
+	    <td align="center">40.1</td>
+		<td align="center">-</td>
+  </tr>
+  <tr >
+	    <td align="center" rowspan="2">PointRend</td>
+	    <td align="center" rowspan="2"><code>configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py</code></td>
+	    <td align="center">Box AP</td>
+	    <td align="center">38.4</td>
+	    <td align="center">38.4</td>
+	    <td align="center">-</td>
+  </tr>
+  <tr>
+	    <td align="center">Mask AP</td>
+	    <td align="center">36.3</td>
+	    <td align="center">35.2</td>
+	    <td align="center">-</td>
+  </tr>
 </table>
 
 Notes:
@@ -231,25 +290,23 @@ The table below lists the models that are guaranteed to be exportable to ONNX an
 |     SSD      |                    `configs/ssd/ssd300_coco.py`                     |       Y       |        Y        |                                                                               |
 |    YOLOv3    |         `configs/yolo/yolov3_d53_mstrain-608_273e_coco.py`          |       Y       |        Y        |                                                                               |
 | Faster R-CNN |        `configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`         |       Y       |        Y        |                                                                               |
+| Cascade R-CNN| `configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py` |   Y    |   Y        |       |
 |  Mask R-CNN  |          `configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py`           |       Y       |        Y        |                                                                               |
+| Cascade Mask R-CNN  |   `configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py`   |       Y       |        Y        |       |
 |  CornerNet   | `configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py` |       Y       |        N        | no flip, no batch inference, tested with torch==1.7.0 and onnxruntime==1.5.1. |
+|     DETR     |                   `configs/detr/detr_r50_8x2_150e_coco.py`          |       Y       |        Y        | batch inference is *not recommended*                                          |
+|  PointRend   | `configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py`    |       Y       |        Y        |                                                                               |
 
 Notes:
 
 - Minimum required version of MMCV is `1.3.5`
 
 - *All models above are tested with Pytorch==1.6.0 and onnxruntime==1.5.1*, except for CornerNet. For more details about the
-torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/onnxruntime_op.md#known-issues) in mmcv.
+torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/onnxruntime_op.md#known-issues) in mmcv.
+
+- Though supported, it is *not recommended* to use batch inference in onnxruntime for `DETR`, because there is huge performance gap between ONNX and torch model (e.g. 33.5 vs 39.9 mAP on COCO for onnxruntime and torch respectively, with a batch size 2). The main reason for the gap is that these is non-negligible effect on the predicted regressions during batch inference for ONNX, since the predicted coordinates is normalized by `img_shape` (without padding) and should be converted to absolute format, but `img_shape` is not dynamically traceable thus the padded `img_shape_for_onnx` is used.
 
 - Currently only single-scale evaluation is supported with ONNX Runtime, also `mmcv::SoftNonMaxSuppression` is only supported for single image by now.
-
-- If the deployed backend platform is TensorRT, please add environment variables before running the file:
-
-  ```bash
-  export ONNX_BACKEND=MMCVTensorRT
-  ```
-
-- If you want to use the `--dynamic-export` parameter in the TensorRT backend to export ONNX, please remove the `--simplify` parameter, and vice versa.
 
 ## The Parameters of Non-Maximum Suppression in ONNX Export
 
@@ -265,8 +322,8 @@ In the process of exporting the ONNX model, we set some parameters for the NMS o
 
 ## Reminders
 
-- When the input model has custom op such as `RoIAlign` and if you want to verify the exported ONNX model, you may have to build `mmcv` with [ONNXRuntime](https://mmcv.readthedocs.io/en/latest/onnxruntime_op.html) from source.
-- `mmcv.onnx.simplify` feature is based on [onnx-simplifier](https://github.com/daquexian/onnx-simplifier). If you want to try it, please refer to [onnx in `mmcv`](https://mmcv.readthedocs.io/en/latest/onnx.html) and [onnxruntime op in `mmcv`](https://mmcv.readthedocs.io/en/latest/onnxruntime_op.html) for more information.
+- When the input model has custom op such as `RoIAlign` and if you want to verify the exported ONNX model, you may have to build `mmcv` with [ONNXRuntime](https://mmcv.readthedocs.io/en/latest/deployment/onnxruntime_op.html) from source.
+- `mmcv.onnx.simplify` feature is based on [onnx-simplifier](https://github.com/daquexian/onnx-simplifier). If you want to try it, please refer to [onnx in `mmcv`](https://mmcv.readthedocs.io/en/latest/deployment/onnx.html) and [onnxruntime op in `mmcv`](https://mmcv.readthedocs.io/en/latest/deployment/onnxruntime_op.html) for more information.
 - If you meet any problem with the listed models above, please create an issue and it would be taken care of soon. For models not included in the list, please try to dig a little deeper and debug a little bit more and hopefully solve them by yourself.
 - Because this feature is experimental and may change fast, please always try with the latest `mmcv` and `mmdetecion`.
 

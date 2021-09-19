@@ -5,13 +5,18 @@ Collections:
       Training Techniques:
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x NVIDIA V100 GPUs
+      Training Resources: 8x V100 GPUs
       Architecture:
         - AutoAssign
         - FPN
         - ResNet
-    Paper: https://arxiv.org/abs/2007.03496
+    Paper:
+      URL: https://arxiv.org/abs/2007.03496
+      Title: 'AutoAssign: Differentiable Label Assignment for Dense Object Detection'
     README: configs/autoassign/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.12.0/mmdet/models/detectors/autoassign.py#L6
+      Version: v2.12.0
 
 Models:
   - Name: autoassign_r50_fpn_8x2_1x_coco

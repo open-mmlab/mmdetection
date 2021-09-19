@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import mmcv
 
 from .version import __version__, short_version
@@ -15,7 +16,7 @@ def digit_version(version_str):
     return digit_version
 
 
-mmcv_minimum_version = '1.3.2'
+mmcv_minimum_version = '1.3.8'
 mmcv_maximum_version = '1.4.0'
 mmcv_version = digit_version(mmcv.__version__)
 

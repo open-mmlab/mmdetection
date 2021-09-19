@@ -17,7 +17,7 @@
 
 | Backbone  | Style   | Lr schd | Mem (GB) |   box AP | Config | Download |
 |:---------:|:-------:|:-------:|:--------:|:------:|:------:|:--------:|
-| R-50     | pytorch | 1x      | 4.08      |   40.4  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/autoassign/autoassign_r50_fpn_8x2_1x_coco.py)       |[model](https://download.openmmlab.com/mmdetection/v2.0/autoassign/auto_assign_r50_fpn_1x_coco/auto_assign_r50_fpn_1x_coco_20210413_115540-5e17991f.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/autoassign/auto_assign_r50_fpn_1x_coco/auto_assign_r50_fpn_1x_coco_20210413_115540-5e17991f.log.json) |
+| R-50     | caffe | 1x      | 4.08      |   40.4  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/autoassign/autoassign_r50_fpn_8x2_1x_coco.py)       |[model](https://download.openmmlab.com/mmdetection/v2.0/autoassign/auto_assign_r50_fpn_1x_coco/auto_assign_r50_fpn_1x_coco_20210413_115540-5e17991f.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/autoassign/auto_assign_r50_fpn_1x_coco/auto_assign_r50_fpn_1x_coco_20210413_115540-5e17991f.log.json) |
 
 **Note**:
 

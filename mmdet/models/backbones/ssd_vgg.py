@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 
 import torch.nn as nn
@@ -78,25 +79,28 @@ class SSDVGG(VGG, BaseModule):
         self.out_feature_indices = out_feature_indices
 
         assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be setting at the same time'
-        if isinstance(pretrained, str):
+            'init_cfg and pretrained cannot be specified at the same time'
+
+        if init_cfg is not None:
+            self.init_cfg = init_cfg
+        elif isinstance(pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
-            self.init_cfg = [dict(type='Pretrained', checkpoint=pretrained)]
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            self.init_cfg = [
+                dict(type='Kaiming', layer='Conv2d'),
+                dict(type='Constant', val=1, layer='BatchNorm2d'),
+                dict(type='Normal', std=0.01, layer='Linear'),
+            ]
+        else:
+            raise TypeError('pretrained must be a str or None')
+
         if input_size is not None:
             warnings.warn('DeprecationWarning: input_size is deprecated')
         if l2_norm_scale is not None:
             warnings.warn('DeprecationWarning: l2_norm_scale in VGG is '
                           'deprecated, it has been moved to SSDNeck.')
-        elif pretrained is None:
-            if init_cfg is None:
-                self.init_cfg = [
-                    dict(type='Kaiming', layer='Conv2d'),
-                    dict(type='Constant', val=1, layer='BatchNorm2d'),
-                    dict(type='Normal', std=0.01, layer='Linear'),
-                ]
-        else:
-            raise TypeError('pretrained must be a str or None')
 
     def init_weights(self, pretrained=None):
         super(VGG, self).init_weights()

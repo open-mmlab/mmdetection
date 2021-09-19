@@ -1,22 +1,5 @@
-_base_ = [
-    '../_base_/models/mask_rcnn_r50_fpn.py',
-    '../common/lsj_50e_coco_instance.py'
-]
+_base_ = 'mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_lsj_100e_coco.py'
 
-norm_cfg = dict(type='SyncBN', requires_grad=True)
-head_norm_cfg = dict(type='NaiveSyncBN', stats_mode='N', requires_grad=True)
-model = dict(
-    pretrained=None,
-    backbone=dict(frozen_stages=-1, norm_eval=False, norm_cfg=norm_cfg),
-    neck=dict(norm_cfg=norm_cfg),
-    rpn_head=dict(num_convs=2),
-    roi_head=dict(
-        bbox_head=dict(
-            type='Shared4Conv1FCBBoxHead',
-            conv_out_channels=256,
-            norm_cfg=head_norm_cfg),
-        mask_head=dict(norm_cfg=head_norm_cfg)))
-# optimizer
-# fp16 = dict(loss_scale=512., mode='dynamic')
-
-custom_imports = dict(imports='mmdet.models.utils.naive_syncbn')
+# Use RepeatDataset to speed up training
+# change repeat time from 4 (for 100 epochs) to 2 (for 50 epochs)
+data = dict(train=dict(times=2))

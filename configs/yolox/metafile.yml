@@ -1,0 +1,33 @@
+Collections:
+  - Name: YOLOX
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Nesterov
+        - Weight Decay
+        - Cosine Annealing Lr Updater
+      Training Resources: 8x TITANXp GPUs
+      Architecture:
+        - CSPDarkNet
+        - PAFPN
+    Paper:
+      URL: https://arxiv.org/abs/2107.08430
+      Title: 'YOLOX: Exceeding YOLO Series in 2021'
+    README: configs/yolox/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.15.1/mmdet/models/detectors/yolox.py#L6
+      Version: v2.15.1
+
+Models:
+  - Name: yolox_tiny_8x8_300e_coco
+    In Collection: YOLOX
+    Config: configs/yolox/yolox_tiny_8x8_300e_coco.py
+    Metadata:
+      Training Memory (GB): 3.6
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 31.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_8x8_300e_coco/yolox_tiny_8x8_300e_coco_20210806_234250-4ff3b67e.pth

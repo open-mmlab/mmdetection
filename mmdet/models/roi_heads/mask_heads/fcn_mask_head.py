@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from warnings import warn
 
 import numpy as np
@@ -335,7 +336,8 @@ class FCNMaskHead(BaseModule):
         masks, _ = _do_paste_mask(
             mask_pred, bboxes, img_h, img_w, skip_empty=False)
         if threshold >= 0:
-            masks = (masks >= threshold).to(dtype=torch.bool)
+            # should convert to float to avoid problems in TRT
+            masks = (masks >= threshold).to(dtype=torch.float)
         return masks
 
 

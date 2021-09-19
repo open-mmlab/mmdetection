@@ -6,7 +6,8 @@ _base_ = [
 
 model = dict(
     type='FasterRCNN',
-    pretrained='torchvision://resnet50',
+    backbone=dict(
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     rpn_head=dict(
         type='RPNHead',
         anchor_generator=dict(

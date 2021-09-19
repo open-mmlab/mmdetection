@@ -4,19 +4,18 @@ _base_ = [
 ]
 
 norm_cfg = dict(type='SyncBN', requires_grad=True)
-head_norm_cfg = dict(type='NaiveSyncBN', stats_mode='N', requires_grad=True)
+# Use MMSyncBN that handles empty tensor in head. It can be changed to
+# SyncBN after https://github.com/pytorch/pytorch/issues/36530 is fixed
+head_norm_cfg = dict(type='MMSyncBN', requires_grad=True)
 model = dict(
-    pretrained=None,
-    backbone=dict(frozen_stages=-1, norm_eval=False, norm_cfg=norm_cfg),
+    # the model is trained from scratch, so init_cfg is None
+    backbone=dict(
+        frozen_stages=-1, norm_eval=False, norm_cfg=norm_cfg, init_cfg=None),
     neck=dict(norm_cfg=norm_cfg),
-    rpn_head=dict(num_convs=2),
+    rpn_head=dict(num_convs=2),  # leads to 0.1+ mAP
     roi_head=dict(
         bbox_head=dict(
             type='Shared4Conv1FCBBoxHead',
             conv_out_channels=256,
             norm_cfg=head_norm_cfg),
         mask_head=dict(norm_cfg=head_norm_cfg)))
-# optimizer
-# fp16 = dict(loss_scale=512., mode='dynamic')
-
-custom_imports = dict(imports='mmdet.models.utils.naive_syncbn')

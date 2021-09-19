@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 import warnings
 from collections import OrderedDict
@@ -355,6 +356,12 @@ class CustomDataset(Dataset):
             if len(row_data) == 10:
                 table_data.append(row_data)
                 row_data = []
+        if len(row_data) >= 2:
+            if row_data[-1] == '0':
+                row_data = row_data[:-2]
+            if len(row_data) >= 2:
+                table_data.append([])
+                table_data.append(row_data)
 
         table = AsciiTable(table_data)
         result += table.table

@@ -14,8 +14,8 @@ model = dict(
             in_channels=256,
             conv_out_channels=256,
             num_classes=183,
-            ignore_label=255,
-            loss_weight=0.2)))
+            loss_seg=dict(
+                type='CrossEntropyLoss', ignore_index=255, loss_weight=0.2))))
 data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)

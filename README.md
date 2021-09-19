@@ -2,7 +2,12 @@
   <img src="resources/mmdet-logo.png" width="600"/>
 </div>
 
-**News**: We released the technical report on [ArXiv](https://arxiv.org/abs/1906.07155).
+[![PyPI](https://img.shields.io/pypi/v/mmdet)](https://pypi.org/project/mmdet)
+[![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmdetection.readthedocs.io/en/latest/)
+[![badge](https://github.com/open-mmlab/mmdetection/workflows/build/badge.svg)](https://github.com/open-mmlab/mmdetection/actions)
+[![codecov](https://codecov.io/gh/open-mmlab/mmdetection/branch/master/graph/badge.svg)](https://codecov.io/gh/open-mmlab/mmdetection)
+[![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
+[![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
 Documentation: https://mmdetection.readthedocs.io/
 
@@ -44,7 +49,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.13.0 was released in 01/06/2021.
+v2.16.0 was released in 30/08/2021.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -99,7 +104,7 @@ Supported methods:
 - [x] [Mixed Precision (FP16) Training (ArXiv'2017)](configs/fp16/README.md)
 - [x] [InstaBoost (ICCV'2019)](configs/instaboost/README.md)
 - [x] [GRoIE (ICPR'2020)](configs/groie/README.md)
-- [x] [DetectoRS (ArXix'2020)](configs/detectors/README.md)
+- [x] [DetectoRS (ArXiv'2020)](configs/detectors/README.md)
 - [x] [Generalized Focal Loss (NeurIPS'2020)](configs/gfl/README.md)
 - [x] [CornerNet (ECCV'2018)](configs/cornernet/README.md)
 - [x] [Side-Aware Boundary Localization (ECCV'2020)](configs/sabl/README.md)
@@ -107,16 +112,16 @@ Supported methods:
 - [x] [PAA (ECCV'2020)](configs/paa/README.md)
 - [x] [YOLACT (ICCV'2019)](configs/yolact/README.md)
 - [x] [CentripetalNet (CVPR'2020)](configs/centripetalnet/README.md)
-- [x] [VFNet (ArXix'2020)](configs/vfnet/README.md)
+- [x] [VFNet (ArXiv'2020)](configs/vfnet/README.md)
 - [x] [DETR (ECCV'2020)](configs/detr/README.md)
 - [x] [Deformable DETR (ICLR'2021)](configs/deformable_detr/README.md)
 - [x] [CascadeRPN (NeurIPS'2019)](configs/cascade_rpn/README.md)
 - [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
-- [x] [AutoAssign (ArXix'2020)](configs/autoassign/README.md)
+- [x] [AutoAssign (ArXiv'2020)](configs/autoassign/README.md)
 - [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
 - [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
-
+- [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
@@ -162,6 +167,7 @@ If you use this toolbox or benchmark in your research, please cite this project.
 ## Projects in OpenMMLab
 
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
+- [MIM](https://github.com/open-mmlab/mim): MIM Installs OpenMMLab Packages.
 - [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab image classification toolbox and benchmark.
 - [MMDetection](https://github.com/open-mmlab/mmdetection): OpenMMLab detection toolbox and benchmark.
 - [MMDetection3D](https://github.com/open-mmlab/mmdetection3d): OpenMMLab's next-generation platform for general 3D object detection.
