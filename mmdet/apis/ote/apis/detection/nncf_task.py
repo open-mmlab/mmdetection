@@ -42,7 +42,7 @@ from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.configuration_enums import NNCFCompressionPreset
 
 from mmdet.apis.fake_input import get_fake_input
-from mmdet.apis.ote.apis.detection.base_task import OTEBaseTask
+from mmdet.apis.ote.apis.detection.base_task import OTEDetectionInferenceTask
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.datasets import build_dataset
@@ -63,7 +63,7 @@ COMPRESSION_MAP = {
 }
 
 
-class NNCFDetectionTask(OTEBaseTask, IOptimizationTask):
+class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
 
     def __init__(self, task_environment: TaskEnvironment):
         """"

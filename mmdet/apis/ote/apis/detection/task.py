@@ -34,7 +34,7 @@ from mmdet.apis import train_detector
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training, set_hyperparams
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback, TrainingProgressCallback
-from mmdet.apis.ote.apis.detection.base_task import OTEBaseTask
+from mmdet.apis.ote.apis.detection.base_task import OTEDetectionInferenceTask
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 
 from mmdet.datasets import build_dataset
@@ -43,7 +43,7 @@ from mmdet.datasets import build_dataset
 logger = logging.getLogger(__name__)
 
 
-class OTEDetectionTask(OTEBaseTask, ITrainingTask):
+class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
 
     def __init__(self, task_environment: TaskEnvironment):
         """"

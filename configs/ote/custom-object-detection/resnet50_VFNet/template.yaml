@@ -12,9 +12,9 @@ framework: OTEDetection v2.9.1
 
 # Task implementations.
 entrypoints:
-  base: mmdet.apis.ote.apis.detection.OTEDetectionTask
+  base: mmdet.apis.ote.apis.detection.OTEDetectionTrainingTask
   openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
-  nncf: mmdet.apis.ote.apis.detection.NNCFDetectionTask
+  nncf: mmdet.apis.ote.apis.detection.OTEDetectionNNCFTask
 
 # Hyperparameters.
 hyper_parameters:

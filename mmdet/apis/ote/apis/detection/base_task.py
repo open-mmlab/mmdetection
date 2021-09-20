@@ -60,14 +60,14 @@ from mmdet.parallel import MMDataCPU
 logger = logging.getLogger(__name__)
 
 
-class OTEBaseTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
+class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
 
     _task_environment: TaskEnvironment
 
     def __init__(self, task_environment: TaskEnvironment):
         self._task_environment = task_environment
 
-        logger.info(f"Loading OTEDetectionTask.")
+        logger.info(f"Loading OTEDetectionInferenceTask.")
         self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
         logger.info(f"Scratch space created at {self._scratch_space}")
 

@@ -46,8 +46,8 @@ from typing import Optional
 
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
                                            OTEDetectionConfig,
-                                           OTEDetectionTask,
-                                           NNCFDetectionTask,
+                                           OTEDetectionTrainingTask,
+                                           OTEDetectionNNCFTask,
                                            )
 
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
@@ -229,7 +229,7 @@ class API(unittest.TestCase):
         dataset = Dataset(NullDatasetStorage(), items)
         return environment, dataset
 
-    def setup_configurable_parameters(self, template_dir, num_iters=10):
+    def setup_configurable_parameters(self, template_dir, num_iters=250):
         model_template = parse_model_template(osp.join(template_dir, 'template.yaml'))
 
         hyper_parameters = model_template.hyper_parameters.data
@@ -259,7 +259,7 @@ class API(unittest.TestCase):
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=500)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
-        detection_task = OTEDetectionTask(task_environment=detection_environment)
+        detection_task = OTEDetectionTrainingTask(task_environment=detection_environment)
 
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='train_thread')
 
@@ -302,10 +302,10 @@ class API(unittest.TestCase):
     @e2e_pytest_api
     def test_training_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
-        task = OTEDetectionTask(task_environment=detection_environment)
+        task = OTEDetectionTrainingTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print('Task initialized, model training starts.')
@@ -335,7 +335,7 @@ class API(unittest.TestCase):
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
-        task = OTEDetectionTask(task_environment=detection_environment)
+        task = OTEDetectionTrainingTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         original_model = ModelEntity(
@@ -347,7 +347,7 @@ class API(unittest.TestCase):
 
         # Create NNCFTask
         detection_environment.model = original_model
-        nncf_task = NNCFDetectionTask(task_environment=detection_environment)
+        nncf_task = OTEDetectionNNCFTask(task_environment=detection_environment)
         self.addCleanup(nncf_task._delete_scratch_space)
 
         # Rewrite some parameters to spend less time
@@ -380,10 +380,10 @@ class API(unittest.TestCase):
     @e2e_pytest_api
     def test_inference_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=2)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
-        task = OTEDetectionTask(task_environment=detection_environment)
+        task = OTEDetectionTrainingTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print('Task initialized, model inference starts.')
@@ -402,7 +402,7 @@ class API(unittest.TestCase):
         self.assertTrue(np.all(inference_progress_curve[1:] >= inference_progress_curve[:-1]))
 
     @staticmethod
-    def eval(task: OTEDetectionTask, model: ModelEntity, dataset: Dataset) -> Performance:
+    def eval(task: OTEDetectionTrainingTask, model: ModelEntity, dataset: Dataset) -> Performance:
         start_time = time.time()
         result_dataset = task.infer(dataset.with_empty_annotations())
         end_time = time.time()
@@ -430,11 +430,11 @@ class API(unittest.TestCase):
     def end_to_end(self, template_dir, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
         export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1, nncf_perf_delta_tolerance=0.1):
 
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
         val_dataset = dataset.get_subset(Subset.VALIDATION)
-        task = OTEDetectionTask(task_environment=detection_environment)
+        task = OTEDetectionTrainingTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print('Task initialized, model training starts.')
@@ -478,7 +478,7 @@ class API(unittest.TestCase):
         # Make the new model fail.
         new_model.model_status = ModelStatus.NOT_IMPROVED
         detection_environment.model = first_model
-        task = OTEDetectionTask(detection_environment)
+        task = OTEDetectionTrainingTask(detection_environment)
         self.assertEqual(task._task_environment.model.id, first_model.id)
 
         print('Reevaluating model.')
@@ -552,7 +552,7 @@ class API(unittest.TestCase):
 
             detection_environment.model = nncf_model
 
-            nncf_task = NNCFDetectionTask(task_environment=detection_environment)
+            nncf_task = OTEDetectionNNCFTask(task_environment=detection_environment)
 
             nncf_task.optimize(OptimizationType.NNCF, dataset, nncf_model, OptimizationParameters())
             nncf_task.save_model(nncf_model)
