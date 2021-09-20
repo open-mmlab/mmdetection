@@ -79,3 +79,8 @@ class DropBlock(nn.Module):
         factor = (1.0 if self.iter_cnt > self.warmup_iters else self.iter_cnt /
                   self.warmup_iters)
         return gamma * factor
+
+    def extra_repr(self):
+        s = ('drop_prob={drop_prob}, block_size={block_size}, '
+             'warmup_iters={warmup_iters}')
+        return s.format(**self.__dict__)
