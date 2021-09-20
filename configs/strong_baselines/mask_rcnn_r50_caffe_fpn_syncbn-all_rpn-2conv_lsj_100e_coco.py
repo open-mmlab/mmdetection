@@ -6,6 +6,7 @@ _base_ = [
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 # Use MMSyncBN that handles empty tensor in head. It can be changed to
 # SyncBN after https://github.com/pytorch/pytorch/issues/36530 is fixed
+# Requires MMCV-full after  https://github.com/open-mmlab/mmcv/pull/1205.
 head_norm_cfg = dict(type='MMSyncBN', requires_grad=True)
 model = dict(
     backbone=dict(
@@ -23,12 +24,14 @@ model = dict(
             norm_cfg=head_norm_cfg),
         mask_head=dict(norm_cfg=head_norm_cfg)))
 
-file_client_args = dict(
-    backend='petrel',
-    path_mapping=dict({
-        './data/': 's3://openmmlab/datasets/detection/',
-        'data/': 's3://openmmlab/datasets/detection/'
-    }))
+file_client_args = dict(backend='disk')
+# file_client_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
+
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 image_size = (1024, 1024)

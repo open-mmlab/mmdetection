@@ -5,12 +5,16 @@ data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 image_size = (1024, 1024)
-file_client_args = dict(
-    backend='petrel',
-    path_mapping=dict({
-        './data/': 's3://openmmlab/datasets/detection/',
-        'data/': 's3://openmmlab/datasets/detection/'
-    }))
+
+file_client_args = dict(backend='disk')
+# comment out the code below to use different file client
+# file_client_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
+
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
