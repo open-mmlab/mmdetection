@@ -13,6 +13,7 @@
 # and limitations under the License.
 
 import copy
+import io
 import logging
 import numpy as np
 import os
@@ -85,10 +86,38 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
         set_hyperparams(self._config, hyperparams)
 
+        # Create and initialize PyTorch model.
+        self._model = self._load_model(task_environment.model)
+
         # Extra control variables.
         self._training_work_dir = None
         self._is_training = False
         self._should_stop = False
+
+
+    def _load_model(self, model: ModelEntity):
+        if model is not None:
+            # If a model has been trained and saved for the task already, create empty model and load weights here
+            buffer = io.BytesIO(model.get_data("weights.pth"))
+            model_data = torch.load(buffer, map_location=torch.device('cpu'))
+
+            model = self._create_model(self._config, from_scratch=True)
+
+            try:
+                model.load_state_dict(model_data['model'])
+                logger.info(f"Loaded model weights from Task Environment")
+                logger.info(f"Model architecture: {self._model_name}")
+            except BaseException as ex:
+                raise ValueError("Could not load the saved model. The model file structure is invalid.") \
+                    from ex
+        else:
+            # If there is no trained model yet, create model with pretrained weights as defined in the model config
+            # file.
+            model = self._create_model(self._config, from_scratch=False)
+            logger.info(f"No trained model in project yet. Created new model with '{self._model_name}' "
+                        f"architecture and general-purpose pretrained weights.")
+        return model
+
 
     @staticmethod
     def _create_model(config: Config, from_scratch: bool = False):

@@ -33,7 +33,7 @@ from sc_sdk.entities.datasets import Dataset
 from mmdet.apis import train_detector
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training, set_hyperparams
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback, TrainingProgressCallback
+from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.apis.detection.inference_task import OTEDetectionInferenceTask
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 
@@ -50,33 +50,6 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
         Task for training object detection models using OTEDetection.
         """
         super().__init__(task_environment)
-
-        # Create and initialize PyTorch model.
-        self._model = self._load_model(task_environment.model)
-
-
-    def _load_model(self, model: ModelEntity):
-        if model is not None:
-            # If a model has been trained and saved for the task already, create empty model and load weights here
-            buffer = io.BytesIO(model.get_data("weights.pth"))
-            model_data = torch.load(buffer, map_location=torch.device('cpu'))
-
-            model = self._create_model(self._config, from_scratch=True)
-
-            try:
-                model.load_state_dict(model_data['model'])
-                logger.info(f"Loaded model weights from Task Environment")
-                logger.info(f"Model architecture: {self._model_name}")
-            except BaseException as ex:
-                raise ValueError("Could not load the saved model. The model file structure is invalid.") \
-                    from ex
-        else:
-            # If there is no trained model yet, create model with pretrained weights as defined in the model config
-            # file.
-            model = self._create_model(self._config, from_scratch=False)
-            logger.info(f"No trained model in project yet. Created new model with '{self._model_name}' "
-                        f"architecture and general-purpose pretrained weights.")
-        return model
 
 
     def train(self, dataset: Dataset, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):

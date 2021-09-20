@@ -46,6 +46,7 @@ from typing import Optional
 
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
                                            OTEDetectionConfig,
+                                           OTEDetectionInferenceTask,
                                            OTEDetectionTrainingTask,
                                            OTEDetectionNNCFTask,
                                            )
@@ -400,6 +401,43 @@ class API(unittest.TestCase):
         self.assertGreater(len(inference_progress_curve), 0)
         inference_progress_curve = np.asarray(inference_progress_curve)
         self.assertTrue(np.all(inference_progress_curve[1:] >= inference_progress_curve[:-1]))
+
+    @e2e_pytest_api
+    def test_inference_task(self):
+        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+
+        # Prepare pretrained weights
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=2)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
+        val_dataset = dataset.get_subset(Subset.VALIDATION)
+
+        train_task = OTEDetectionTrainingTask(task_environment=detection_environment)
+        self.addCleanup(train_task._delete_scratch_space)
+
+        trained_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY
+        )
+        train_task.train(dataset, trained_model, TrainParameters)
+        performance_after_train = self.eval(train_task, trained_model, val_dataset)
+
+        # Create InferenceTask
+        detection_environment.model = trained_model
+        inference_task = OTEDetectionInferenceTask(task_environment=detection_environment)
+        self.addCleanup(inference_task._delete_scratch_space)
+
+        performance_after_load = self.eval(inference_task, trained_model, val_dataset)
+
+        assert performance_after_train == performance_after_load
+
+        # Export
+        exported_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY,
+            _id=ObjectId())
+        inference_task.export(ExportType.OPENVINO, exported_model)
 
     @staticmethod
     def eval(task: OTEDetectionTrainingTask, model: ModelEntity, dataset: Dataset) -> Performance:

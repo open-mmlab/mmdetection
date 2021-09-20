@@ -27,16 +27,12 @@ from ote_sdk.entities.model import ModelStatus
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
-from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 
 from sc_sdk.entities.datasets import Dataset
 
-from mmcv.utils import Config
 from mmdet.apis import train_detector
-from mmdet.apis.ote.apis.detection.config_utils import patch_config
-from mmdet.apis.ote.apis.detection.config_utils import set_hyperparams
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.configuration_enums import NNCFCompressionPreset
@@ -85,9 +81,13 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
 
         # Create and initialize PyTorch model.
         check_nncf_is_enabled()
-        self._compression_ctrl, self._model = self._load_model(task_environment.model)
+        self._compression_ctrl, self._model = self._load_nncf_model(task_environment.model)
 
     def _load_model(self, model: ModelEntity):
+        # disable _model_load to load mmdet model and use _load_nncf_model
+        return None
+
+    def _load_nncf_model(self, model: ModelEntity):
         compression_ctrl = None
         if model is not None:
             # If a model has been trained and saved for the task already, create empty model and load weights here
