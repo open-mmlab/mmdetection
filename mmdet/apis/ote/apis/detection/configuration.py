@@ -156,7 +156,7 @@ class OTEDetectionConfig(ModelConfig):
 
         preset = selectable(default_value=POTQuantizationPreset.PERFORMANCE, header="Preset",
                             description="Quantization preset that defines quantization scheme",
-                            editable=False, visible_in_ui=False)
+                            editable=True, visible_in_ui=True)
 
     learning_parameters = add_parameter_group(__LearningParameters)
     algo_backend = add_parameter_group(__AlgoBackend)
