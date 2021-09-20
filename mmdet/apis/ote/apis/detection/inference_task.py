@@ -66,6 +66,9 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
     _task_environment: TaskEnvironment
 
     def __init__(self, task_environment: TaskEnvironment):
+        """"
+        Task for inference object detection models using OTEDetection.
+        """
         self._task_environment = task_environment
 
         logger.info(f"Loading OTEDetectionInferenceTask.")
