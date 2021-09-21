@@ -3,7 +3,7 @@ numpy==1.19.5
 PyYAML==5.4.1
 protobuf==3.14.0
 typing-extensions==3.7.4.3
-pytest==5.3.5
+pytest~=6.2
 pymongo==3.11.1
 python-dateutil==2.8.1
 
