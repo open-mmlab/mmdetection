@@ -27,10 +27,9 @@ from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
 
+from ote_sdk.configuration import cfg_helper
+from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo,
-                                      MetricsGroup, VisualizationInfo,
-                                      VisualizationType)
 from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity, ModelFormat, ModelOptimizationType
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.scored_label import ScoredLabel
@@ -267,30 +266,6 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         output_result_set.performance = f_measure_metrics.get_performance()
 
 
-    def _generate_training_metrics_group(self, learning_curves) -> Optional[List[MetricsGroup]]:
-        """
-        Parses the mmdetection logs to get metrics from the latest training run
-
-        :return output List[MetricsGroup]
-        """
-        output: List[MetricsGroup] = []
-
-        # Model architecture
-        architecture = InfoMetric(name='Model architecture', value=self._model_name)
-        visualization_info_architecture = VisualizationInfo(name="Model architecture",
-                                                            visualisation_type=VisualizationType.TEXT)
-        output.append(MetricsGroup(metrics=[architecture],
-                                   visualization_info=visualization_info_architecture))
-
-        # Learning curves
-        for key, curve in learning_curves.items():
-            metric_curve = CurveMetric(xs=curve.x, ys=curve.y, name=key)
-            visualization_info = LineChartInfo(name=key, x_axis_label="Epoch", y_axis_label=key)
-            output.append(MetricsGroup(metrics=[metric_curve], visualization_info=visualization_info))
-
-        return output
-
-
     def _get_confidence_threshold(self, is_evaluation: bool) -> float:
         """
         Retrieves the threshold for confidence from the configurable parameters. If
@@ -374,6 +349,16 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
             except Exception as ex:
                 output_model.model_status = ModelStatus.FAILED
                 raise RuntimeError("Optimization was unsuccessful.") from ex
+
+
+    def save_model(self, output_model: ModelEntity):
+        buffer = io.BytesIO()
+        hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
+        hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
+        labels = {label.name: label.color.rgb_tuple for label in self._labels}
+        modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
+        torch.save(modelinfo, buffer)
+        output_model.set_data("weights.pth", buffer.getvalue())
 
 
     def _delete_scratch_space(self):

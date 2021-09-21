@@ -468,7 +468,7 @@ class API(unittest.TestCase):
     def end_to_end(self, template_dir, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
         export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1, nncf_perf_delta_tolerance=0.1):
 
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
         val_dataset = dataset.get_subset(Subset.VALIDATION)

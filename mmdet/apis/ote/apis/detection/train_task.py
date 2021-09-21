@@ -13,16 +13,23 @@
 # and limitations under the License.
 
 import copy
-import io
 import logging
 import os
 from collections import defaultdict
-from typing import Optional
+from typing import Optional, List
 
 import torch
-from ote_sdk.configuration import cfg_helper
-from ote_sdk.configuration.helper.utils import ids_to_strings
-from ote_sdk.entities.metrics import Performance, ScoreMetric
+
+from ote_sdk.entities.metrics import (
+    Performance,
+    ScoreMetric,
+    CurveMetric,
+    InfoMetric,
+    LineChartInfo,
+    MetricsGroup,
+    VisualizationInfo,
+    VisualizationType,
+)
 from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
@@ -32,7 +39,6 @@ from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import train_detector
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training, set_hyperparams
-from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.apis.detection.inference_task import OTEDetectionInferenceTask
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
@@ -50,6 +56,30 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
         Task for training object detection models using OTEDetection.
         """
         super().__init__(task_environment)
+
+
+    def _generate_training_metrics_group(self, learning_curves) -> Optional[List[MetricsGroup]]:
+        """
+        Parses the mmdetection logs to get metrics from the latest training run
+
+        :return output List[MetricsGroup]
+        """
+        output: List[MetricsGroup] = []
+
+        # Model architecture
+        architecture = InfoMetric(name='Model architecture', value=self._model_name)
+        visualization_info_architecture = VisualizationInfo(name="Model architecture",
+                                                            visualisation_type=VisualizationType.TEXT)
+        output.append(MetricsGroup(metrics=[architecture],
+                                   visualization_info=visualization_info_architecture))
+
+        # Learning curves
+        for key, curve in learning_curves.items():
+            metric_curve = CurveMetric(xs=curve.x, ys=curve.y, name=key)
+            visualization_info = LineChartInfo(name=key, x_axis_label="Epoch", y_axis_label=key)
+            output.append(MetricsGroup(metrics=[metric_curve], visualization_info=visualization_info))
+
+        return output
 
 
     def train(self, dataset: Dataset, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
@@ -130,15 +160,6 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
 
         self._is_training = False
 
-
-    def save_model(self, output_model: ModelEntity):
-        buffer = io.BytesIO()
-        hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
-        hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
-        labels = {label.name: label.color.rgb_tuple for label in self._labels}
-        modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
-        torch.save(modelinfo, buffer)
-        output_model.set_data("weights.pth", buffer.getvalue())
 
     def cancel_training(self):
         """

@@ -164,7 +164,7 @@ pot_parameters:
     affects_outcome_of: NONE
     default_value: Performance
     description: Quantization preset that defines quantization scheme
-    editable: False
+    editable: True
     enum_name: POTQuantizationPreset
     header: Preset
     options:
@@ -177,7 +177,7 @@ pot_parameters:
       rules: []
       type: UI_RULES
     value: Performance
-    visible_in_ui: False
+    visible_in_ui: True
     warning: null
   stat_subset_size:
     affects_outcome_of: NONE
@@ -199,13 +199,13 @@ pot_parameters:
   type: PARAMETER_GROUP
   visible_in_ui: true
 nncf_optimization:
-  description: NNCF optimization
-  header: NNCF optimization
+  description: Optimization by NNCF
+  header: Optimization by NNCF
   preset:
     affects_outcome_of: NONE
     default_value: Quantization
-    description: Quantization preset that defines quantization scheme
-    editable: False
+    description: NNCF preset that defines compression scheme
+    editable: True
     enum_name: NNCFCompressionPreset
     header: Preset
     options:
@@ -219,7 +219,7 @@ nncf_optimization:
       rules: []
       type: UI_RULES
     value: Quantization
-    visible_in_ui: False
+    visible_in_ui: True
     warning: null
   type: PARAMETER_GROUP
-  visible_in_ui: False
+  visible_in_ui: True
