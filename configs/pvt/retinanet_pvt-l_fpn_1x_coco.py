@@ -1,6 +1,4 @@
-_base_ = [
-    'retinanet_pvt-t_fpn_1x_coco.py',
-]
+_base_ = 'retinanet_pvt-t_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         num_layers=[3, 8, 27, 3],

@@ -1,4 +1,4 @@
-_base_ = ['retinanet_pvtv2-b0_fpn_1x_coco.py']
+_base_ = 'retinanet_pvtv2-b0_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         embed_dims=64,
