@@ -65,10 +65,11 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         """"
         Task for compressing object detection models using NNCF.
         """
+        check_nncf_is_enabled()
         super().__init__(task_environment)
 
-        # NNCF part
-        self._compression_ctrl = None
+    def _load_model(self, model: ModelEntity):
+        # NNCF parts
         nncf_config_path = os.path.join(self._base_dir, "compression_config.json")
 
         with open(nncf_config_path) as nncf_config_file:
@@ -79,15 +80,6 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         optimization_config = compose_nncf_config(common_nncf_config, [optimization_type])
         self._config.update(optimization_config)
 
-        # Create and initialize PyTorch model.
-        check_nncf_is_enabled()
-        self._compression_ctrl, self._model = self._load_nncf_model(task_environment.model)
-
-    def _load_model(self, model: ModelEntity):
-        # disable _model_load to load mmdet model and use _load_nncf_model
-        return None
-
-    def _load_nncf_model(self, model: ModelEntity):
         compression_ctrl = None
         if model is not None:
             # If a model has been trained and saved for the task already, create empty model and load weights here
@@ -120,7 +112,9 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
                     from ex
         else:
             raise ValueError(f"No trained model in project. NNCF require pretrained weights to compress the model")
-        return compression_ctrl, model
+
+        self._compression_ctrl = compression_ctrl
+        return model
 
     def _create_compressed_model(self, dataset, config):
         init_dataloader = build_dataloader(
