@@ -230,7 +230,7 @@ class API(unittest.TestCase):
         dataset = Dataset(NullDatasetStorage(), items)
         return environment, dataset
 
-    def setup_configurable_parameters(self, template_dir, num_iters=250):
+    def setup_configurable_parameters(self, template_dir, num_iters=10):
         model_template = parse_model_template(osp.join(template_dir, 'template.yaml'))
 
         hyper_parameters = model_template.hyper_parameters.data
@@ -303,7 +303,7 @@ class API(unittest.TestCase):
     @e2e_pytest_api
     def test_training_progress_tracking(self):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
         task = OTEDetectionTrainingTask(task_environment=detection_environment)
@@ -333,7 +333,7 @@ class API(unittest.TestCase):
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
 
         # Prepare pretrained weights
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=2)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
         task = OTEDetectionTrainingTask(task_environment=detection_environment)
@@ -599,6 +599,7 @@ class API(unittest.TestCase):
             print(f'Performance of NNCF model: {nncf_performance.score.value:.4f}')
             self.check_threshold(validation_performance, nncf_performance, nncf_perf_delta_tolerance,
                 'Too big performance difference after NNCF optimization.')
+
 
     @e2e_pytest_api
     def test_training_custom_mobilenet_atss(self):
