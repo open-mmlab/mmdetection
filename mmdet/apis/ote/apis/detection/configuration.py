@@ -13,7 +13,6 @@
 # and limitations under the License.
 
 from attr import attrs
-
 from sys import maxsize
 
 from ote_sdk.configuration.elements import (ParameterGroup,
