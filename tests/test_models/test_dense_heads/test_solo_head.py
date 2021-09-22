@@ -28,7 +28,8 @@ def test_solo_head_loss():
         for feat_size in [4, 8, 16, 32, 64]
     ]
     mask_preds, cls_preds = self.forward(feat)
-    # Test that empty ground truth encourages the network to predict background
+    # Test that empty ground truth encourages the network to
+    # predict background.
     gt_bboxes = [torch.empty((0, 4))]
     gt_labels = [torch.LongTensor([])]
     gt_masks = [torch.empty((0, 550, 550))]
@@ -50,7 +51,7 @@ def test_solo_head_loss():
         'there should be no mask loss when there are no true masks')
 
     # When truth is non-empty then both cls and box loss should be nonzero for
-    # random inputs
+    # random inputs.
     gt_bboxes = [
         torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
     ]
@@ -69,6 +70,7 @@ def test_solo_head_loss():
     assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
     assert onegt_mask_loss.item() > 0, 'mask loss should be non-zero'
 
+    # When the length of num_grids, scale_ranges, and num_levels are not equal.
     with pytest.raises(AssertionError):
         SOLOHead(
             num_classes=4,
@@ -81,6 +83,8 @@ def test_solo_head_loss():
                 gamma=2.0,
                 alpha=0.25,
                 loss_weight=1.0))
+
+    # When input feature length is not equal to 5.
     with pytest.raises(AssertionError):
         feat = [
             torch.rand(1, 1, s // feat_size, s // feat_size)
@@ -113,7 +117,8 @@ def test_desolo_head_loss():
         for feat_size in [4, 8, 16, 32, 64]
     ]
     mask_preds_x, mask_preds_y, cls_preds = self.forward(feat)
-    # Test that empty ground truth encourages the network to predict background
+    # Test that empty ground truth encourages the network to
+    # predict background.
     gt_bboxes = [torch.empty((0, 4))]
     gt_labels = [torch.LongTensor([])]
     gt_masks = [torch.empty((0, 550, 550))]
@@ -136,7 +141,7 @@ def test_desolo_head_loss():
         'there should be no mask loss when there are no true masks')
 
     # When truth is non-empty then both cls and box loss should be nonzero for
-    # random inputs
+    # random inputs.
     gt_bboxes = [
         torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
     ]
@@ -156,6 +161,7 @@ def test_desolo_head_loss():
     assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
     assert onegt_mask_loss.item() > 0, 'mask loss should be non-zero'
 
+    # When the length of num_grids, scale_ranges, and num_levels are not equal.
     with pytest.raises(AssertionError):
         DecoupledSOLOHead(
             num_classes=4,
@@ -168,6 +174,8 @@ def test_desolo_head_loss():
                 gamma=2.0,
                 alpha=0.25,
                 loss_weight=1.0))
+
+    # When input feature length is not equal to 5.
     with pytest.raises(AssertionError):
         feat = [
             torch.rand(1, 1, s // feat_size, s // feat_size)
