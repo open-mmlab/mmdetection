@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import torch
 
-from mmdet.core import GeneralData, Instances
+from mmdet.core import GeneralData, InstanceData
 
 
 def test_results():
@@ -27,14 +27,14 @@ def test_results():
         labels=torch.rand(4),
         masks=np.random.rand(4, 2, 2))
 
-    results = GeneralData(meta=meta_info)
+    results = GeneralData(meta_info=meta_info)
     assert 'img_size' in results
     assert results.img_size == [256, 256]
     assert results['img_size'] == [256, 256]
     assert 'path' in results
     assert results.path == 'dadfaff'
 
-    results = GeneralData(meta=meta_info, data=dict(bboxes=torch.rand(5)))
+    results = GeneralData(meta_info=meta_info, data=dict(bboxes=torch.rand(5)))
     assert 'bboxes' in results
     assert len(results.bboxes) == 5
 
@@ -42,34 +42,45 @@ def test_results():
     with pytest.raises(AssertionError):
         GeneralData(data=1)
 
+    # test set data
+    results = GeneralData()
+    results.set_data(data)
+    assert 'bboxes' in results
+    assert len(results.bboxes) == 4
+    assert 'masks' in results
+    assert len(results.masks) == 4
+    # data should be a dict
+    with pytest.raises(AssertionError):
+        results.set_data(data=1)
+
     # test set_meta
     results = GeneralData()
-    results.set_meta(meta_info)
+    results.set_meta_info(meta_info)
     assert 'img_size' in results
     assert results.img_size == [256, 256]
     assert results['img_size'] == [256, 256]
     assert 'path' in results
     assert results.path == 'dadfaff'
     # can skip same value when overwrite
-    results.set_meta(meta_info)
+    results.set_meta_info(meta_info)
 
     # meta should be a dict
     with pytest.raises(AssertionError):
-        results.set_meta(meta='fjhka')
+        results.set_meta_info(meta_info='fjhka')
 
     # attribute in `_meta_info_field` is immutable once initialized
-    results.set_meta(meta_info)
+    results.set_meta_info(meta_info)
     # meta should be immutable
     with pytest.raises(AssertionError):
-        GeneralData.set_meta(dict(img_size=[254, 251]))
+        GeneralData.set_meta_info(dict(img_size=[254, 251]))
     with pytest.raises(KeyError):
         duplicate_meta_info = copy.deepcopy(meta_info)
         duplicate_meta_info['path'] = 'dada'
-        results.set_meta(duplicate_meta_info)
+        results.set_meta_info(duplicate_meta_info)
     with pytest.raises(KeyError):
         duplicate_meta_info = copy.deepcopy(meta_info)
         duplicate_meta_info['scale_factor'] = np.array([1.5, 1.6])
-        results.set_meta(duplicate_meta_info)
+        results.set_meta_info(duplicate_meta_info)
 
     # test new_results
     results = GeneralData(meta_info)
@@ -77,6 +88,27 @@ def test_results():
     for k, v in results.meta_items():
         assert k in new_results
         _equal(v, new_results[k])
+
+    results = GeneralData(meta_info, data=data)
+    temp_meta = copy.deepcopy(meta_info)
+    temp_data = copy.deepcopy(data)
+    temp_data['time'] = '12212'
+    temp_meta['img_norm'] = np.random.random(3)
+
+    new_results = results.new_results(meta_info=temp_meta, data=temp_data)
+    for k, v in new_results.meta_items():
+        if k in results:
+            _equal(v, results[k])
+        else:
+            assert _equal(v, temp_meta[k])
+            assert k == 'img_norm'
+
+    for k, v in new_results.items():
+        if k in results:
+            _equal(v, results[k])
+        else:
+            assert k == 'time'
+            assert _equal(v, temp_data[k])
 
     # test keys
     results = GeneralData(meta_info, data=dict(bboxes=10))
@@ -88,7 +120,7 @@ def test_results():
     results = GeneralData(meta_info, data=dict(bboxes=10))
     assert 'path' in results.meta_keys()
     assert len(results.meta_keys()) == len(meta_info)
-    results.set_meta(dict(workdir='fafaf'))
+    results.set_meta_info(dict(workdir='fafaf'))
     assert 'workdir' in results
     assert len(results.meta_keys()) == len(meta_info) + 1
 
@@ -109,7 +141,7 @@ def test_results():
         assert _equal(v, data[k])
 
     # test meta_items
-    results = GeneralData(meta=meta_info)
+    results = GeneralData(meta_info=meta_info)
     for k, v in results.meta_items():
         assert k in meta_info
         assert _equal(v, meta_info[k])
@@ -140,7 +172,7 @@ def test_results():
         del new_results._meta_info_fields
 
     # key in _meta_info_field is immutable
-    new_results.set_meta(meta_info)
+    new_results.set_meta_info(meta_info)
     with pytest.raises(KeyError):
         del new_results.img_size
     with pytest.raises(KeyError):
@@ -363,7 +395,7 @@ def test_instance_results():
         scale_factor=np.array([1.5, 1.5, 1, 1]))
 
     # test init
-    results = Instances(meta_info)
+    results = InstanceData(meta_info)
     assert 'path' in results
 
     # test __setattr__
@@ -484,5 +516,5 @@ def test_instance_results():
 
         results_list.append(results)
 
-    cat_resutls = Instances.cat(results_list)
+    cat_resutls = InstanceData.cat(results_list)
     assert len(cat_resutls) == num_instance * 2

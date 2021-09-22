@@ -12,8 +12,8 @@ class GeneralData(NiceRepr):
     """A general data structure of OpenMMlab.
 
     A data structure that stores the meta information,
-    annotations of image or model predictions, which
-    can be used in communication between components.
+    the annotations of the images or the model predictions,
+    which can be used in communication between components.
 
     The attributes in `GeneralData` are divided into two parts,
     the `meta_info_fields` and the `data_fields` respectively.
@@ -26,26 +26,26 @@ class GeneralData(NiceRepr):
           `set_meta` function, all information can be accessed
           with methods `meta_keys`, `meta_values`, `meta_items`.
 
-        - `data_fields`: Annotations or models predictions are
-          stored. The attributs can be accessed or modified by
+        - `data_fields`: Annotations or model predictions are
+          stored. The attributes can be accessed or modified by
           dict-like or object-like operations, such as
           `.` , `[]`, `in`, `del`, `pop(str)` `get(str)`, `keys()`,
-          `values()`, `items()`. User can also apply tensor-like methods
+          `values()`, `items()`. Users can also apply tensor-like methods
           to all obj:`torch.Tensor` in the `data_fileds`,
           such as `.cuda()`, `.cpu()`, `.numpy()`, `device`, `.to()`
           `.detach()`, `.numpy()`
 
     Args:
-        meta (dict): A dict contains the meta information
-            of image. such as `img_shape`, `scale_factor`, etc.
+        meta_info (dict): A dict contains the meta information
+            of single image. such as `img_shape`, `scale_factor`, etc.
             Default: None.
-        data (dict): A dict contains annotations of image or
+        data (dict): A dict contains annotations of single image or
             model predictions. Default: None.
 
     Examples:
         >>> from mmdet.core import GeneralData
         >>> img_meta = dict(img_shape=(800, 1196, 3), pad_shape=(800, 1216, 3))
-        >>> results = GeneralData(meta=img_meta)
+        >>> results = GeneralData(meta_info=img_meta)
         >>> img_shape in results
         True
         >>> results.det_labels = torch.LongTensor([0, 1, 2, 3])
@@ -84,30 +84,27 @@ class GeneralData(NiceRepr):
         >>> False
     """
 
-    def __init__(self, meta=None, data=None):
+    def __init__(self, meta_info=None, data=None):
 
         self._meta_info_fields = set()
         self._data_fields = set()
 
-        if meta is not None:
-            self.set_meta(meta=meta)
+        if meta_info is not None:
+            self.set_meta_info(meta_info=meta_info)
         if data is not None:
-            assert isinstance(data, dict)
-            for k, v in data.items():
-                self._data_fields.add(k)
-                self.__dict__[k] = v
+            self.set_data(data)
 
-    def set_meta(self, meta=None):
+    def set_meta_info(self, meta_info=None):
         """Add meta information.
 
         Args:
-            meta (dict): A dict contains the meta information
+            meta_info (dict): A dict contains the meta information
                 of image. such as `img_shape`, `scale_factor`, etc.
                 Default: None.
         """
-        assert isinstance(meta,
-                          dict), f'meta should be a `dict` but get {meta}'
-        meta = copy.deepcopy(meta)
+        assert isinstance(meta_info,
+                          dict), f'meta should be a `dict` but get {meta_info}'
+        meta = copy.deepcopy(meta_info)
         for k, v in meta.items():
             # should be consistent with original meta_info
             if k in self._meta_info_fields:
@@ -129,11 +126,34 @@ class GeneralData(NiceRepr):
                 self._meta_info_fields.add(k)
                 self.__dict__[k] = v
 
-    def new_results(self):
-        """Return a new results with same image meta information and empty
-        results_field."""
+    def set_data(self, data=None):
+        """Update a dict to `data_fields`.
+
+        Args:
+            data (dict): A dict contains annotations of image or
+                model predictions. Default: None.
+        """
+        assert isinstance(data,
+                          dict), f'meta should be a `dict` but get {data}'
+        for k, v in data.items():
+            self.__setattr__(k, v)
+
+    def new_results(self, meta_info=None, data=None):
+        """Return a new results with same image meta information.
+
+        Args:
+            meta_info (dict): A dict contains the meta information
+                of image. such as `img_shape`, `scale_factor`, etc.
+                Default: None.
+            data (dict): A dict contains annotations of image or
+                model predictions. Default: None.
+        """
         new_results = self.__class__()
-        new_results.set_meta(dict(self.meta_items()))
+        new_results.set_meta_info(dict(self.meta_items()))
+        if meta_info is not None:
+            new_results.set_meta_info(meta_info)
+        if data is not None:
+            new_results.set_data(data)
         return new_results
 
     def keys(self):
@@ -296,15 +316,15 @@ class GeneralData(NiceRepr):
         return repr + '\n'
 
 
-class Instances(GeneralData):
+class InstanceData(GeneralData):
     """Subclass of :class:`GeneralData`.
 
-    All value in `data_fields` should has same length.
+    All value in `data_fields` should has the same length.
 
     The code is modified from https://github.com/facebookresearch/detectron2/blob/master/detectron2/structures/instances.py # noqa E501
 
     Examples:
-        >>> from mmdet.core import Instances
+        >>> from mmdet.core import InstanceData
         >>> import numpy as np
         >>> img_meta = dict(img_shape=(800, 1196, 3), pad_shape=(800, 1216, 3))
         >>> results = Instances(img_meta)
@@ -316,7 +336,7 @@ class Instances(GeneralData):
         >>> len(results)
         4
         >>> print(resutls)
-        <Instances(
+        <InstanceData(
 
             META INFORMATION
         pad_shape: (800, 1216, 3)
@@ -334,7 +354,7 @@ class Instances(GeneralData):
         >>> sorted_results.det_labels
         tensor([0, 3, 2, 1])
         >>> print(results[results.scores > 0.5])
-        <Instances(
+        <InstanceData(
 
             META INFORMATION
         pad_shape: (800, 1216, 3)
@@ -447,7 +467,7 @@ class Instances(GeneralData):
             obj:`InstanceResults`
         """
         assert all(
-            isinstance(results, Instances) for results in instances_list)
+            isinstance(results, InstanceData) for results in instances_list)
         assert len(instances_list) > 0
         if len(instances_list) == 1:
             return instances_list[0]
