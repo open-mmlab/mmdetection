@@ -82,7 +82,6 @@ html_theme = 'pytorch_sphinx_theme'
 html_theme_path = [pytorch_sphinx_theme.get_html_theme_path()]
 
 html_theme_options = {
-    # 'logo_url': 'https://mmocr.readthedocs.io/en/latest/',
     'menu': [
         {
             'name': 'GitHub',
