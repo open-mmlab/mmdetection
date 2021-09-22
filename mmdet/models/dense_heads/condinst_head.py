@@ -125,6 +125,7 @@ def parse_dynamic_params(params, channels, weight_nums, bias_nums):
             bias_splits[l] = bias_splits[l].reshape(num_instances)
     return weight_splits, bias_splits
 
+
 def compute_locations(h, w, stride, device):
     shifts_x = torch.arange(
         0,
@@ -142,6 +143,7 @@ def compute_locations(h, w, stride, device):
     shift_y = shift_y.reshape(-1)
     locations = torch.stack((shift_x, shift_y), dim=1) + stride // 2
     return locations
+
 
 def aligned_bilinear(tensor, factor):
     assert tensor.dim() == 4
@@ -163,9 +165,10 @@ def aligned_bilinear(tensor, factor):
                    mode="replicate")
     return tensor[:, :, :oh - 1, :ow - 1]
 
+
 @HEADS.register_module()
 class CondInstHead(AnchorFreeHead):
-    """Conditional Convolutions for Instance Segmentation
+    """CondInst: Conditional Convolution for Instance Segmentation
     """
     def __init__(self,
                  num_classes,
@@ -300,6 +303,7 @@ class CondInstHead(AnchorFreeHead):
         self.weight_nums = [80, 64, 8]
         self.bias_nums = [8, 8, 1]
         self.mask_out_stride = 4
+        self.mask_feat_stride = 8
 
     def init_weights(self):
         """Initialize weights of the head."""
@@ -387,7 +391,7 @@ class CondInstHead(AnchorFreeHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None,
-             gt_masks=None,):
+             gt_masks=None):
         """Compute losses of the head.
 
         Args:
@@ -415,12 +419,6 @@ class CondInstHead(AnchorFreeHead):
         points_list, strides_list = self.get_points(
             featmap_sizes, bbox_preds[0].dtype, device=device)
 
-        cls_reg_targets = self.get_targets(
-            points_list,
-            gt_bboxes,
-            gt_labels)
-
-        (labels_list, bbox_targets_list, gt_inds_list) = cls_reg_targets
         # gt mask
         gt_masks_list = []
         for i in range(len(gt_labels)):
@@ -428,6 +426,14 @@ class CondInstHead(AnchorFreeHead):
             gt_masks_list.append(
                 torch.from_numpy(
                     np.array(gt_masks[i], dtype=np.float32)).to(gt_label.device))
+
+        cls_reg_targets = self.get_targets(
+            points_list,
+            gt_bboxes,
+            gt_masks_list,
+            gt_labels)
+
+        (labels_list, bbox_targets_list, gt_inds_list) = cls_reg_targets
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and centerness
@@ -545,13 +551,15 @@ class CondInstHead(AnchorFreeHead):
                 weights,
                 biases,
                 num_instance)
-            mask_logits = mask_logits.reshape(-1, 1, mask_feat.size(1), mask_feat.size(2)).squeeze(1)
+            mask_logits = mask_logits.reshape(-1, 1, mask_feat.size(1), mask_feat.size(2))
+            mask_logits = aligned_bilinear(mask_logits, self.mask_feat_stride // self.mask_out_stride)
+            mask_logits = mask_logits.squeeze(1)
             # pad gt mask
-            img_h, img_w = mask_feat.size(1) * 8, mask_feat.size(2) * 8
+            img_h, img_w = mask_feat.size(1) * self.mask_feat_stride, mask_feat.size(2) * self.mask_feat_stride
             h, w = gt_masks_list[i].size()[1:]
             gt_mask = F.pad(gt_masks_list[i], (0, img_w - w, 0, img_h - h), "constant", 0)
-            start = int(8 // 2)
-            gt_mask = gt_mask[:, start::8, start::8]
+            start = int(self.mask_out_stride // 2)
+            gt_mask = gt_mask[:, start::self.mask_out_stride, start::self.mask_out_stride]
             gt_mask = gt_mask.gt(0.5).float()
             gt_mask = torch.index_select(gt_mask, 0, idx_gt).contiguous()
             loss_mask += dice_coefficient(mask_logits.sigmoid(), gt_mask).sum()
@@ -838,9 +846,10 @@ class CondInstHead(AnchorFreeHead):
                 weights,
                 biases,
                 num_instance)
-            mask_logits = mask_logits.reshape(-1, 1, mask_feat.size(1), mask_feat.size(2)).sigmoid()
+            mask_logits = mask_logits.reshape(-1, 1, mask_feat.size(1), mask_feat.size(2))
+            mask_logits = aligned_bilinear(mask_logits, self.mask_feat_stride // self.mask_out_stride).sigmoid()
             if rescale:
-                pred_global_masks = aligned_bilinear(mask_logits, 8)
+                pred_global_masks = aligned_bilinear(mask_logits, self.mask_out_stride)
                 pred_global_masks = pred_global_masks[:, :, :img_shape[0], :img_shape[1]]
                 masks = F.interpolate(
                     pred_global_masks,
@@ -848,11 +857,11 @@ class CondInstHead(AnchorFreeHead):
                     mode='bilinear',
                     align_corners=False).squeeze(1)
             else:
-                masks = aligned_bilinear(mask_logits, 8).squeeze(1)
+                masks = aligned_bilinear(mask_logits, self.mask_out_stride).squeeze(1)
             masks.gt_(0.5)
         return det_bboxes, det_labels, masks
 
-    def get_targets(self, points, gt_bboxes_list, gt_labels_list):
+    def get_targets(self, points, gt_bboxes_list, gt_masks_list, gt_labels_list):
         assert len(points) == len(self.regress_ranges)
         num_levels = len(points)
         # expand regress ranges to align with points
@@ -871,6 +880,7 @@ class CondInstHead(AnchorFreeHead):
         labels_list, bbox_targets_list, gt_inds_list = multi_apply(
             self.get_targets_single,
             gt_bboxes_list,
+            gt_masks_list,
             gt_labels_list,
             points=concat_points,
             regress_ranges=concat_regress_ranges,
@@ -885,14 +895,15 @@ class CondInstHead(AnchorFreeHead):
 
         return labels_list, bbox_targets_list, gt_inds_list
 
-    def get_targets_single(self, gt_bboxes, gt_labels, points, regress_ranges,
+    def get_targets_single(self, gt_bboxes, gt_masks, gt_labels, points, regress_ranges,
                            num_points_per_lvl):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
 
         if num_gts == 0:
-            return gt_labels.new_zeros(num_points), gt_bboxes.new_zeros((num_points, 4)), \
-                   gt_labels.new_zeros(num_points), gt_labels.new_zeros(num_points)
+           raise NotImplementedError
+           return gt_labels.new_full((num_points,), self.num_classes), \
+                gt_bboxes.new_zeros((num_points, 4)), gt_bboxes.new_zeros(num_points)
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
                 gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
@@ -914,8 +925,20 @@ class CondInstHead(AnchorFreeHead):
         if self.center_sampling:
             # condition1: inside a `center bbox`
             radius = self.center_sample_radius
-            center_xs = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) / 2
-            center_ys = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) / 2
+            # use masks to determine center region
+            _, h, w = gt_masks.size()
+            yys = torch.arange(0, h, dtype=torch.float32, device=gt_masks.device)
+            xxs = torch.arange(0, w, dtype=torch.float32, device=gt_masks.device)
+
+            m00 = gt_masks.sum(dim=-1).sum(dim=-1).clamp(min=1e-6)
+            m10 = (gt_masks * xxs).sum(dim=-1).sum(dim=-1)
+            m01 = (gt_masks * yys[:, None]).sum(dim=-1).sum(dim=-1)
+            center_xs = m10 / m00
+            center_ys = m01 / m00
+
+            center_xs = center_xs[None].expand(num_points, num_gts)
+            center_ys = center_ys[None].expand(num_points, num_gts)
+
             center_gts = torch.zeros_like(gt_bboxes)
             stride = center_xs.new_zeros(center_xs.shape)
 
@@ -964,18 +987,16 @@ class CondInstHead(AnchorFreeHead):
         labels = gt_labels[min_area_inds]
         labels[min_area == INF] = self.num_classes
         bbox_targets = bbox_targets[range(num_points), min_area_inds]
-        gt_ind = min_area_inds[labels < self.num_classes]
+        pos_gt_inds = min_area_inds[labels < self.num_classes]
 
-        return labels, bbox_targets, gt_ind
+        return labels, bbox_targets, pos_gt_inds
 
     def get_points(self, featmap_sizes, dtype, device):
         """Get points according to feature map sizes.
-
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
             dtype (torch.dtype): Type of points.
             device (torch.device): Device of points.
-
         Returns:
             tuple: points of each image.
         """
@@ -1003,3 +1024,4 @@ class CondInstHead(AnchorFreeHead):
             (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
         strides = points[:,0] * 0 + stride
         return points, strides
+
