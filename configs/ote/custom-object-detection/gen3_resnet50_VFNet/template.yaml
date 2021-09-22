@@ -1,9 +1,9 @@
 # Description.
-name: Custom Object Detection SSD
+name: Custom Object Detection Gen3 VFNet
 task_type: DETECTION
 task_family: VISION
 instantiation: "CLASS"
-summary: SSD with MobileNetV2 backbone.
+summary: VFNet with ResNet-50 backbone.
 application:
   ~
 
@@ -22,11 +22,11 @@ hyper_parameters:
   parameter_overrides:
     learning_parameters:
       batch_size:
-        default_value: 10
+        default_value: 4
       learning_rate:
         default_value: 0.01
       learning_rate_warmup_iters:
-        default_value: 200
+        default_value: 500
     nncf_optimization:
       preset:
         default_value: Quantization
@@ -35,4 +35,3 @@ hyper_parameters:
 max_nodes: 1
 training_targets:
   - GPU
-  - CPU

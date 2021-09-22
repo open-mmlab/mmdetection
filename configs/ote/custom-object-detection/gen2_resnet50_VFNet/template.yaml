@@ -1,25 +1,25 @@
 # Description.
-name: Custom Object Detection 256x256
+name: Custom Object Detection Gen2 VFNet
 task_type: DETECTION
 task_family: VISION
 instantiation: "CLASS"
-summary: Fast and lightweight object detector (based on MobileNet SSD).
+summary: Custom Object Detection Model L Gen 2
 
 # Algo backend.
 # Would be better to have something more precise and self-contained, e.g.:  docker image or path to Python venv activation script?
 framework: OTEDetection v2.9.1
 
-# # Should be revisited?
-# application:
-#   ~
+# Should be revisited?
+application:
+  ~
 
-# # # Optional? requirements to the dataset. Should be revisited?
+# # Optional? requirements to the dataset. Should be revisited?
 # dataset_requirements:
 #   ~
 
 # Task implementation.
 entrypoints:
-  base: mmdet.apis.ote.apis.detection.OTEDetectionTrainingTask
+  base: mmdet.apis.ote.apis.detection.OTEDetectionTask
   openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
 
 # Task and hyperparameters.
@@ -28,11 +28,11 @@ hyper_parameters:
   parameter_overrides:
     learning_parameters:
       batch_size:
-        default_value: 64
+        default_value: 4
       learning_rate:
-        default_value: 0.05
+        default_value: 0.003
       learning_rate_warmup_iters:
-        default_value: 100
+        default_value: 1200
 
 # # Available model optimizations and their configuration.
 # optimization:
@@ -70,8 +70,10 @@ inference_targets:
 #   - display_name: Size​
 #     key: size​
 #     unit: Mp​
+#     # FIXME
 #     value: 1.99
 #   - display_name: Complexity​
 #     key: complexity​
 #     unit: GFLOPs​
-#     value: 0.86
+#     # FIXME
+#     value: 3.42
