@@ -123,6 +123,7 @@ if __name__ == '__main__':
                         sum(times_pre_image_list) / len(times_pre_image_list),
                         args.round_num)
                     print(
+                        f'{cfg_path} '
                         f'Overall fps: {fps_list}[{mean_fps}] img / s, '
                         f'times per image: '
                         f'{times_pre_image_list}[{mean_times_pre_image}] '
