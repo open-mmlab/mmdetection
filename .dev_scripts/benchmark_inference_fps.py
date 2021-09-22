@@ -72,8 +72,8 @@ def format_dict_to_markdown(result_dict):
             is_multiple_results = True
             mean_fps = value['mean_fps']
             mean_times_pre_image = value['mean_times_pre_image']
-            fps_str = ''.join([str(s) for s in fps])
-            ms_times_pre_image_str = ''.join(
+            fps_str = ','.join([str(s) for s in fps])
+            ms_times_pre_image_str = ','.join(
                 [str(s) for s in ms_times_pre_image])
             out_strs.append(f'| {name} | {fps_str} | {mean_fps} |'
                             f'{ms_times_pre_image_str} | '
@@ -83,8 +83,8 @@ def format_dict_to_markdown(result_dict):
 
     if is_multiple_results:
         out_strs[0] = '| model | fps | mean_fps |times_pre_image(ms) ' \
-                      '| mean_times_pre_image(ms) |\n |-----|----|----' \
-                      '|----|-----| \n'
+                      '| mean_times_pre_image(ms) | \n'
+        out_strs[1] = '|----|----|----|----|----| \n'
 
     print(''.join(out_strs), flush=True)
 
