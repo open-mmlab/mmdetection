@@ -795,11 +795,7 @@ class DecoupledSOLOHead(SOLOHead):
             num_pos += num_masks
             pred_mask = pred_y.sigmoid() * pred_x.sigmoid()
             loss_mask.append(
-                self.loss_mask(
-                    pred_mask,
-                    target,
-                    reduction_override='none',
-                    has_acted=True))
+                self.loss_mask(pred_mask, target, reduction_override='none'))
         if num_pos > 0:
             loss_mask = torch.cat(loss_mask).sum() / num_pos
         else:

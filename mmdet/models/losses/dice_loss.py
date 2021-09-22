@@ -48,6 +48,7 @@ class DiceLoss(nn.Module):
 
     def __init__(self,
                  use_sigmoid=True,
+                 has_acted=False,
                  reduction='mean',
                  loss_weight=1.0,
                  eps=1e-3):
@@ -69,14 +70,14 @@ class DiceLoss(nn.Module):
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.eps = eps
+        self.has_acted = has_acted
 
     def forward(self,
                 pred,
                 target,
                 weight=None,
                 reduction_override=None,
-                avg_factor=None,
-                has_acted=False):
+                avg_factor=None):
         """Forward function.
 
         Args:
@@ -101,7 +102,7 @@ class DiceLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
 
-        if not has_acted:
+        if not self.has_acted:
             if self.use_sigmoid:
                 pred = pred.sigmoid()
             else:
