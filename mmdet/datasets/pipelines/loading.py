@@ -446,11 +446,11 @@ class LoadPanopticAnnotations(LoadAnnotations):
         pan_png = rgb2id(pan_png)
 
         gt_masks = []
-        gt_seg = np.zeros_like(pan_png)  # 0 as ignore
+        gt_seg = np.zeros_like(pan_png) + 255  # 255 as ignore
 
         for mask_info in results['ann_info']['masks']:
             mask = (pan_png == mask_info['id'])
-            gt_seg = np.where(mask, mask_info['category'] + 1, gt_seg)
+            gt_seg = np.where(mask, mask_info['category'], gt_seg)
 
             # The legal thing masks
             if mask_info.get('is_thing'):
