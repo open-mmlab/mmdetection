@@ -171,8 +171,7 @@ class DIIHead(BBoxHead):
         attn_feats = proposal_feat.permute(1, 0, 2)
 
         # instance interactive
-        proposal_feat = proposal_feat.permute(1, 0,
-                                              2).reshape(-1, self.in_channels)
+        proposal_feat = attn_feats.reshape(-1, self.in_channels)
         proposal_feat_iic = self.instance_interactive_conv(
             proposal_feat, roi_feat)
         proposal_feat = proposal_feat + self.instance_interactive_conv_dropout(
