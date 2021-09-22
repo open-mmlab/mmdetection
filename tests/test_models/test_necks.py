@@ -1,9 +1,10 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.necks import (FPN, ChannelMapper, CTResNetNeck,
-                                DilatedEncoder, YOLOV3Neck)
+from mmdet.models.necks import (FPN, YOLOXPAFPN, ChannelMapper, CTResNetNeck,
+                                DilatedEncoder, SSDNeck, YOLOV3Neck)
 
 
 def test_fpn():
@@ -169,38 +170,6 @@ def test_fpn():
         outs[i].shape[1] == out_channels
         outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
 
-    # extra_convs_on_inputs=False is equal to extra convs source is 'on_output'
-    fpn_model = FPN(
-        in_channels=in_channels,
-        out_channels=out_channels,
-        add_extra_convs=True,
-        extra_convs_on_inputs=False,
-        start_level=1,
-        num_outs=5,
-    )
-    assert fpn_model.add_extra_convs == 'on_output'
-    outs = fpn_model(feats)
-    assert len(outs) == fpn_model.num_outs
-    for i in range(fpn_model.num_outs):
-        outs[i].shape[1] == out_channels
-        outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
-
-    # extra_convs_on_inputs=True is equal to extra convs source is 'on_input'
-    fpn_model = FPN(
-        in_channels=in_channels,
-        out_channels=out_channels,
-        add_extra_convs=True,
-        extra_convs_on_inputs=True,
-        start_level=1,
-        num_outs=5,
-    )
-    assert fpn_model.add_extra_convs == 'on_input'
-    outs = fpn_model(feats)
-    assert len(outs) == fpn_model.num_outs
-    for i in range(fpn_model.num_outs):
-        outs[i].shape[1] == out_channels
-        outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
-
 
 def test_channel_mapper():
     """Tests ChannelMapper."""
@@ -338,3 +307,100 @@ def test_yolov3_neck():
     for i in range(len(outs)):
         assert outs[i].shape == \
                (1, out_channels[i], feat_sizes[i], feat_sizes[i])
+
+
+def test_ssd_neck():
+    # level_strides/level_paddings must be same length
+    with pytest.raises(AssertionError):
+        SSDNeck(
+            in_channels=[8, 16],
+            out_channels=[8, 16, 32],
+            level_strides=[2],
+            level_paddings=[2, 1])
+
+    # length of out_channels must larger than in_channels
+    with pytest.raises(AssertionError):
+        SSDNeck(
+            in_channels=[8, 16],
+            out_channels=[8],
+            level_strides=[2],
+            level_paddings=[2])
+
+    # len(out_channels) - len(in_channels) must equal to len(level_strides)
+    with pytest.raises(AssertionError):
+        SSDNeck(
+            in_channels=[8, 16],
+            out_channels=[4, 16, 64],
+            level_strides=[2, 2],
+            level_paddings=[2, 2])
+
+    # in_channels must be same with out_channels[:len(in_channels)]
+    with pytest.raises(AssertionError):
+        SSDNeck(
+            in_channels=[8, 16],
+            out_channels=[4, 16, 64],
+            level_strides=[2],
+            level_paddings=[2])
+
+    ssd_neck = SSDNeck(
+        in_channels=[4],
+        out_channels=[4, 8, 16],
+        level_strides=[2, 1],
+        level_paddings=[1, 0])
+    feats = (torch.rand(1, 4, 16, 16), )
+    outs = ssd_neck(feats)
+    assert outs[0].shape == (1, 4, 16, 16)
+    assert outs[1].shape == (1, 8, 8, 8)
+    assert outs[2].shape == (1, 16, 6, 6)
+
+    # test SSD-Lite Neck
+    ssd_neck = SSDNeck(
+        in_channels=[4, 8],
+        out_channels=[4, 8, 16],
+        level_strides=[1],
+        level_paddings=[1],
+        l2_norm_scale=None,
+        use_depthwise=True,
+        norm_cfg=dict(type='BN'),
+        act_cfg=dict(type='ReLU6'))
+    assert not hasattr(ssd_neck, 'l2_norm')
+
+    from mmcv.cnn.bricks import DepthwiseSeparableConvModule
+    assert isinstance(ssd_neck.extra_layers[0][-1],
+                      DepthwiseSeparableConvModule)
+
+    feats = (torch.rand(1, 4, 8, 8), torch.rand(1, 8, 8, 8))
+    outs = ssd_neck(feats)
+    assert outs[0].shape == (1, 4, 8, 8)
+    assert outs[1].shape == (1, 8, 8, 8)
+    assert outs[2].shape == (1, 16, 8, 8)
+
+
+def test_yolox_pafpn():
+    s = 64
+    in_channels = [8, 16, 32, 64]
+    feat_sizes = [s // 2**i for i in range(4)]  # [64, 32, 16, 8]
+    out_channels = 24
+    feats = [
+        torch.rand(1, in_channels[i], feat_sizes[i], feat_sizes[i])
+        for i in range(len(in_channels))
+    ]
+    neck = YOLOXPAFPN(in_channels=in_channels, out_channels=out_channels)
+    outs = neck(feats)
+    assert len(outs) == len(feats)
+    for i in range(len(feats)):
+        assert outs[i].shape[1] == out_channels
+        assert outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
+
+    # test depth-wise
+    neck = YOLOXPAFPN(
+        in_channels=in_channels, out_channels=out_channels, use_depthwise=True)
+
+    from mmcv.cnn.bricks import DepthwiseSeparableConvModule
+    assert isinstance(neck.downsamples[0], DepthwiseSeparableConvModule)
+
+    outs = neck(feats)
+    assert len(outs) == len(feats)
+    for i in range(len(feats)):
+        assert outs[i].shape[1] == out_channels
+        assert outs[i].shape[2] == outs[i].shape[3] == s // (2**i)

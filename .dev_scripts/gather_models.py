@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import glob
 import json
@@ -29,6 +30,12 @@ def process_checkpoint(in_file, out_file):
     # remove optimizer for smaller file size
     if 'optimizer' in checkpoint:
         del checkpoint['optimizer']
+
+    # remove ema state_dict
+    for key in list(checkpoint['state_dict']):
+        if key.startswith('ema_'):
+            checkpoint['state_dict'].pop(key)
+
     # if it is necessary to remove some sensitive data in checkpoint['meta'],
     # add the code here.
     if torch.__version__ >= '1.6':
@@ -78,6 +85,7 @@ def get_dataset_name(config):
     name_map = dict(
         CityscapesDataset='Cityscapes',
         CocoDataset='COCO',
+        CocoPanopticDataset='COCO',
         DeepFashionDataset='Deep Fashion',
         LVISV05Dataset='LVIS v0.5',
         LVISV1Dataset='LVIS v1',
@@ -124,6 +132,13 @@ def convert_model_info_to_pwc(model_infos):
                     Task='Instance Segmentation',
                     Dataset=dataset_name,
                     Metrics={'mask AP': metric}))
+        if 'PQ' in model['results']:
+            metric = round(model['results']['PQ'], 1)
+            results.append(
+                OrderedDict(
+                    Task='Panoptic Segmentation',
+                    Dataset=dataset_name,
+                    Metrics={'PQ': metric}))
         pwc_model_info['Results'] = results
 
         link_string = 'https://download.openmmlab.com/mmdetection/v2.0/'
@@ -189,7 +204,10 @@ def main():
         if not isinstance(results_lut, list):
             results_lut = [results_lut]
         # case when using VOC, the evaluation key is only 'mAP'
-        results_lut = [key + '_mAP' for key in results_lut if 'mAP' not in key]
+        # when using Panoptic Dataset, the evaluation key is 'PQ'.
+        for i, key in enumerate(results_lut):
+            if 'mAP' not in key and 'PQ' not in key:
+                results_lut[i] = key + 'm_AP'
         model_performance = get_final_results(log_json_path, final_epoch,
                                               results_lut)
 

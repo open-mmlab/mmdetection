@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmcv.cnn import ConvModule, Linear
 from mmcv.runner import ModuleList, auto_fp16
 

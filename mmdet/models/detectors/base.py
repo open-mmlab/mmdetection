@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 
@@ -226,13 +227,13 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             dict: It should contain at least 3 keys: ``loss``, ``log_vars``, \
                 ``num_samples``.
 
-                - ``loss`` is a tensor for back propagation, which can be a \
-                weighted sum of multiple losses.
+                - ``loss`` is a tensor for back propagation, which can be a
+                  weighted sum of multiple losses.
                 - ``log_vars`` contains all the variables to be sent to the
-                logger.
-                - ``num_samples`` indicates the batch size (when the model is \
-                DDP, it means the batch size on each GPU), which is used for \
-                averaging the logs.
+                  logger.
+                - ``num_samples`` indicates the batch size (when the model is
+                  DDP, it means the batch size on each GPU), which is used for
+                  averaging the logs.
         """
         losses = self(**data)
         loss, log_vars = self._parse_losses(losses)
@@ -242,7 +243,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
         return outputs
 
-    def val_step(self, data, optimizer):
+    def val_step(self, data, optimizer=None):
         """The iteration step during validation.
 
         This method shares the same signature as :func:`train_step`, but used

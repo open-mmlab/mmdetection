@@ -4,7 +4,6 @@ _base_ = [
 ]
 
 model = dict(
-    pretrained='open-mmlab://detectron2/resnext101_32x8d',
     backbone=dict(
         type='ResNeXt',
         depth=101,
@@ -14,7 +13,10 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
-        style='pytorch'))
+        style='pytorch',
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='open-mmlab://detectron2/resnext101_32x8d')))
 
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

@@ -1,4 +1,6 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import math
+import warnings
 
 import mmcv
 import torch
@@ -11,7 +13,7 @@ from .utils import weighted_loss
 
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def iou_loss(pred, target, linear=False, eps=1e-6):
+def iou_loss(pred, target, linear=False, mode='log', eps=1e-6):
     """IoU loss.
 
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
@@ -23,16 +25,28 @@ def iou_loss(pred, target, linear=False, eps=1e-6):
         target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
         linear (bool, optional): If True, use linear scale of loss instead of
             log scale. Default: False.
+        mode (str): Loss scaling mode, including "linear", "square", and "log".
+            Default: 'log'
         eps (float): Eps to avoid log(0).
 
     Return:
         torch.Tensor: Loss tensor.
     """
-    ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
+    assert mode in ['linear', 'square', 'log']
     if linear:
+        mode = 'linear'
+        warnings.warn('DeprecationWarning: Setting "linear=True" in '
+                      'iou_loss is deprecated, please use "mode=`linear`" '
+                      'instead.')
+    ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
+    if mode == 'linear':
         loss = 1 - ious
-    else:
+    elif mode == 'square':
+        loss = 1 - ious**2
+    elif mode == 'log':
         loss = -ious.log()
+    else:
+        raise NotImplementedError
     return loss
 
 
@@ -74,8 +88,9 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
                             (target_w + eps))
     loss_dh = 1 - torch.min(target_h / (pred_h + eps), pred_h /
                             (target_h + eps))
+    # view(..., -1) does not work for empty tensor
     loss_comb = torch.stack([loss_dx, loss_dy, loss_dw, loss_dh],
-                            dim=-1).view(loss_dx.size(0), -1)
+                            dim=-1).flatten(1)
 
     loss = torch.where(loss_comb < beta, 0.5 * loss_comb * loss_comb / beta,
                        loss_comb - 0.5 * beta)
@@ -213,9 +228,12 @@ def ciou_loss(pred, target, eps=1e-7):
     factor = 4 / math.pi**2
     v = factor * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
 
+    with torch.no_grad():
+        alpha = (ious > 0.5).float() * v / (1 - ious + v)
+
     # CIoU
-    cious = ious - (rho2 / c2 + v**2 / (1 - ious + v))
-    loss = 1 - cious
+    cious = ious - (rho2 / c2 + alpha * v)
+    loss = 1 - cious.clamp(min=-1.0, max=1.0)
     return loss
 
 
@@ -226,19 +244,29 @@ class IoULoss(nn.Module):
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
 
     Args:
-        linear (bool): If True, use linear scale of loss instead of log scale.
-            Default: False.
+        linear (bool): If True, use linear scale of loss else determined
+            by mode. Default: False.
         eps (float): Eps to avoid log(0).
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Weight of loss.
+        mode (str): Loss scaling mode, including "linear", "square", and "log".
+            Default: 'log'
     """
 
     def __init__(self,
                  linear=False,
                  eps=1e-6,
                  reduction='mean',
-                 loss_weight=1.0):
+                 loss_weight=1.0,
+                 mode='log'):
         super(IoULoss, self).__init__()
+        assert mode in ['linear', 'square', 'log']
+        if linear:
+            mode = 'linear'
+            warnings.warn('DeprecationWarning: Setting "linear=True" in '
+                          'IOULoss is deprecated, please use "mode=`linear`" '
+                          'instead.')
+        self.mode = mode
         self.linear = linear
         self.eps = eps
         self.reduction = reduction
@@ -282,7 +310,7 @@ class IoULoss(nn.Module):
             pred,
             target,
             weight,
-            linear=self.linear,
+            mode=self.mode,
             eps=self.eps,
             reduction=reduction,
             avg_factor=avg_factor,

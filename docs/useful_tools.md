@@ -188,7 +188,7 @@ python tools/deployment/mmdet2torchserve.py ${CONFIG_FILE} ${CHECKPOINT_FILE} \
 --model-name ${MODEL_NAME}
 ```
 
-***Note**: ${MODEL_STORE} needs to be an absolute path to a folder.
+**Note**: ${MODEL_STORE} needs to be an absolute path to a folder.
 
 ### 2. Build `mmdet-serve` docker image
 
@@ -227,33 +227,53 @@ You should obtain a respose similar to:
 ```json
 [
   {
-    "dog": [
-      402.9117736816406,
-      124.19664001464844,
-      571.7910766601562,
-      292.6463623046875
+    "class_name": "dog",
+    "bbox": [
+      294.63409423828125,
+      203.99111938476562,
+      417.048583984375,
+      281.62744140625
     ],
-    "score": 0.9561963081359863
+    "score": 0.9987992644309998
   },
   {
-    "dog": [
-      293.90057373046875,
-      196.2908477783203,
-      417.4869079589844,
-      286.2522277832031
+    "class_name": "dog",
+    "bbox": [
+      404.26019287109375,
+      126.0080795288086,
+      574.5091552734375,
+      293.6662292480469
     ],
-    "score": 0.9179860353469849
+    "score": 0.9979367256164551
   },
   {
-    "dog": [
-      202.178466796875,
-      86.3709487915039,
-      311.9863586425781,
-      276.28411865234375
+    "class_name": "dog",
+    "bbox": [
+      197.2144775390625,
+      93.3067855834961,
+      307.8505554199219,
+      276.7560119628906
     ],
-    "score": 0.8933767080307007
+    "score": 0.993338406085968
   }
 ]
+```
+
+And you can use `test_torchserver.py` to compare result of torchserver and pytorch, and visualize them.
+
+```shell
+python tools/deployment/test_torchserver.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} ${MODEL_NAME}
+[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}]
+```
+
+Example:
+
+```shell
+python tools/deployment/test_torchserver.py \
+demo/demo.jpg \
+configs/yolo/yolov3_d53_320_273e_coco.py \
+checkpoint/yolov3_d53_320_273e_coco-421362b6.pth \
+yolov3
 ```
 
 ## Model Complexity
@@ -381,4 +401,49 @@ python tools/analysis_tools/eval_metric.py ${CONFIG} ${PKL_RESULTS} [-h] [--form
 
 ```shell
 python tools/misc/print_config.py ${CONFIG} [-h] [--options ${OPTIONS [OPTIONS...]}]
+```
+
+## Hyper-parameter Optimization
+
+### YOLO Anchor Optimization
+
+`tools/analysis_tools/optimize_anchors.py` provides two method to optimize YOLO anchors.
+
+One is k-means anchor cluster which refers from [darknet](https://github.com/AlexeyAB/darknet/blob/master/src/detector.c#L1421).
+
+
+```shell
+python tools/analysis_tools/optimize_anchors.py ${CONFIG} --algorithm k-means --input-shape ${INPUT_SHAPE [WIDTH HEIGHT]} --output-dir ${OUTPUT_DIR}
+```
+
+Another is using differential evolution to optimize anchors.
+
+```shell
+python tools/analysis_tools/optimize_anchors.py ${CONFIG} --algorithm differential_evolution --input-shape ${INPUT_SHAPE [WIDTH HEIGHT]} --output-dir ${OUTPUT_DIR}
+```
+
+E.g.,
+
+```shell
+python tools/analysis_tools/optimize_anchors.py configs/yolo/yolov3_d53_320_273e_coco.py --algorithm differential_evolution --input-shape 608 608 --device cuda --output-dir work_dirs
+```
+
+You will get:
+```
+loading annotations into memory...
+Done (t=9.70s)
+creating index...
+index created!
+2021-07-19 19:37:20,951 - mmdet - INFO - Collecting bboxes from annotation...
+[>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>] 117266/117266, 15874.5 task/s, elapsed: 7s, ETA:     0s
+
+2021-07-19 19:37:28,753 - mmdet - INFO - Collected 849902 bboxes.
+differential_evolution step 1: f(x)= 0.506055
+differential_evolution step 2: f(x)= 0.506055
+......
+
+differential_evolution step 489: f(x)= 0.386625
+2021-07-19 19:46:40,775 - mmdet - INFO Anchor evolution finish. Average IOU: 0.6133754253387451
+2021-07-19 19:46:40,776 - mmdet - INFO Anchor differential evolution result:[[10, 12], [15, 30], [32, 22], [29, 59], [61, 46], [57, 116], [112, 89], [154, 198], [349, 336]]
+2021-07-19 19:46:40,798 - mmdet - INFO Result saved in work_dirs/anchor_optimize_result.json
 ```

@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 from mmcv.runner import force_fp32
@@ -56,7 +57,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
                  train_cfg=None,
                  test_cfg=None,
-                 init_cfg=dict(type='Normal', layers='Conv2d', std=0.01)):
+                 init_cfg=dict(type='Normal', layer='Conv2d', std=0.01)):
         super(AnchorHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -301,14 +302,15 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             tuple: Usually returns a tuple containing learning targets.
 
                 - labels_list (list[Tensor]): Labels of each level.
-                - label_weights_list (list[Tensor]): Label weights of each \
-                    level.
+                - label_weights_list (list[Tensor]): Label weights of each
+                  level.
                 - bbox_targets_list (list[Tensor]): BBox targets of each level.
                 - bbox_weights_list (list[Tensor]): BBox weights of each level.
-                - num_total_pos (int): Number of positive samples in all \
-                    images.
-                - num_total_neg (int): Number of negative samples in all \
-                    images.
+                - num_total_pos (int): Number of positive samples in all
+                  images.
+                - num_total_neg (int): Number of negative samples in all
+                  images.
+
             additional_returns: This function enables user-defined returns from
                 `self._get_targets_single`. These returns are currently refined
                 to properties at each feature map (i.e. having HxW dimension).

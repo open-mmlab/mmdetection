@@ -1,7 +1,11 @@
 _base_ = 'ssd300_coco.py'
 input_size = 512
 model = dict(
-    backbone=dict(input_size=input_size),
+    neck=dict(
+        out_channels=(512, 1024, 512, 256, 256, 256, 256),
+        level_strides=(2, 2, 2, 2, 1),
+        level_paddings=(1, 1, 1, 1, 1),
+        last_kernel_size=4),
     bbox_head=dict(
         in_channels=(512, 1024, 512, 256, 256, 256, 256),
         anchor_generator=dict(
@@ -69,3 +73,7 @@ data = dict(
 # optimizer
 optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict(_delete_=True)
+custom_hooks = [
+    dict(type='NumClassCheckHook'),
+    dict(type='CheckInvalidLossHook', interval=50, priority='VERY_LOW')
+]

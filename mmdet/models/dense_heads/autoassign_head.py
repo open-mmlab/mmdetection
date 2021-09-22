@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -122,9 +123,10 @@ class CenterPrior(nn.Module):
 
 @HEADS.register_module()
 class AutoAssignHead(FCOSHead):
-    """AutoAssignHead head used in `AutoAssign.
+    """AutoAssignHead head used in AutoAssign.
 
-    <https://arxiv.org/abs/2007.03496>`_.
+    More details can be found in the `paper
+    <https://arxiv.org/abs/2007.03496>`_ .
 
     Args:
         force_topk (bool): Used in center prior initialization to
@@ -466,17 +468,9 @@ class AutoAssignHead(FCOSHead):
 
         concat_points = torch.cat(points, dim=0)
         # the number of points per img, per lvl
-        num_points = [center.size(0) for center in points]
         inside_gt_bbox_mask_list, bbox_targets_list = multi_apply(
             self._get_target_single, gt_bboxes_list, points=concat_points)
-        bbox_targets_list = [
-            list(bbox_targets.split(num_points, 0))
-            for bbox_targets in bbox_targets_list
-        ]
-        concat_lvl_bbox_targets = [
-            torch.cat(item, dim=0) for item in bbox_targets_list
-        ]
-        return inside_gt_bbox_mask_list, concat_lvl_bbox_targets
+        return inside_gt_bbox_mask_list, bbox_targets_list
 
     def _get_target_single(self, gt_bboxes, points):
         """Compute regression targets and each point inside or outside gt_bbox
@@ -484,7 +478,7 @@ class AutoAssignHead(FCOSHead):
 
         Args:
             gt_bboxes (Tensor): gt_bbox of single image, has shape
-                (num_gt,)
+                (num_gt, 4).
             points (Tensor): Points of all fpn level, has shape
                 (num_points, 2).
 
