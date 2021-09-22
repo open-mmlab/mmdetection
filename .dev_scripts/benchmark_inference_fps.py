@@ -114,11 +114,11 @@ if __name__ == '__main__':
                                                      args.repeat_num)
                 if args.repeat_num > 1:
                     fps_list = [round(fps_, args.round_num) for fps_ in fps]
+                    times_pre_image_list = [
+                        round(1000 / fps_, args.round_num) for fps_ in fps
+                    ]
                     mean_fps = round(
                         sum(fps_list) / len(fps_list), args.round_num)
-                    times_pre_image_list = [
-                        round(1000 / fps, args.round_num) for fps in fps_list
-                    ]
                     mean_times_pre_image = round(
                         sum(times_pre_image_list) / len(times_pre_image_list),
                         args.round_num)

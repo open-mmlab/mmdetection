@@ -144,8 +144,8 @@ def repeat_measure_inference_speed(cfg,
 
     if repeat_num > 1:
         fps_list_ = [round(fps, 1) for fps in fps_list]
+        times_pre_image_list_ = [round(1000 / fps, 1) for fps in fps_list]
         mean_fps_ = sum(fps_list_) / len(fps_list_)
-        times_pre_image_list_ = [round(1000 / fps, 1) for fps in fps_list_]
         mean_times_pre_image_ = sum(times_pre_image_list_) / len(
             times_pre_image_list_)
         print(
