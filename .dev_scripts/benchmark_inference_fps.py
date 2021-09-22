@@ -63,22 +63,28 @@ def format_dict_to_markdown(result_dict):
         '| ----- | ---- | ----- | \n'
     ]
 
+    is_multiple_results = False
     for cfg_name, value in result_dict.items():
         name = cfg_name.replace('configs/', '')
-        if value == 0:
-            out_strs.append(f'| {name} | 0 | 0 | \n')
-            continue
-
         fps = value['fps']
         ms_times_pre_image = value['ms_times_pre_image']
         if isinstance(fps, list):
+            is_multiple_results = True
             mean_fps = value['mean_fps']
             mean_times_pre_image = value['mean_times_pre_image']
-            fps = f'{fps}[{mean_fps}]'
-            ms_times_pre_image = \
-                f'{ms_times_pre_image}[{mean_times_pre_image}]'
+            fps_str = ''.join([str(s) for s in fps])
+            ms_times_pre_image_str = ''.join(
+                [str(s) for s in ms_times_pre_image])
+            out_strs.append(f'| {name} | {fps_str} | {mean_fps} |'
+                            f'{ms_times_pre_image_str} | '
+                            f'{mean_times_pre_image}| \n')
+        else:
+            out_strs.append(f'| {name} | {fps} | {ms_times_pre_image} | \n')
 
-        out_strs.append(f'| {name} | {fps} | {ms_times_pre_image} | \n')
+    if is_multiple_results:
+        out_strs[0] = '| model | fps | mean_fps |times_pre_image(ms) ' \
+                      '| mean_times_pre_image(ms) |\n |-----|----|----' \
+                      '|----|-----| \n'
 
     print(''.join(out_strs), flush=True)
 
@@ -145,7 +151,14 @@ if __name__ == '__main__':
                         ms_times_pre_image=round(1000 / fps, args.round_num))
             except Exception as e:
                 print(f'{config} error: {repr(e)}')
-                result_dict[cfg_path] = 0
+                if args.repeat_num > 1:
+                    result_dict[cfg_path] = dict(
+                        fps=[0],
+                        mean_fps=0,
+                        ms_times_pre_image=[0],
+                        mean_times_pre_image=0)
+                else:
+                    result_dict[cfg_path] = dict(fps=0, ms_times_pre_image=0)
 
     if args.out:
         mmcv.mkdir_or_exist(args.out)
