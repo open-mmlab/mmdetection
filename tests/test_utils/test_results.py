@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 import torch
 
-from mmdet.core.results.results import (DetectionResults, InstanceResults,
-                                        Results)
+from mmdet.core.results.general_data import (DetectionResults, InstanceResults,
+                                             Results)
 
 
 @pytest.mark.parametrize('num_instances', [
