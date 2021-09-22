@@ -51,7 +51,7 @@ class BBoxTestMixin:
     def simple_test_bboxes(self,
                            x,
                            img_metas,
-                           proposals,
+                           proposal_list,
                            rcnn_test_cfg,
                            rescale=False):
         """Test only det bboxes without augmentation.
@@ -72,11 +72,15 @@ class BBoxTestMixin:
                 in the second list is the labels with shape (num_boxes, ).
                 The length of both lists should be equal to batch_size.
         """
+        ms_scores=[]
+        
+        num_imgs = len(proposal_list)
+        img_shapes = tuple(meta['img_shape'] for meta in img_metas)
+        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
-        rois = bbox2roi(proposals)
+        rois = bbox2roi(proposal_list)
 
         if rois.shape[0] == 0:
-            batch_size = len(proposals)
             det_bbox = rois.new_zeros(0, 5)
             det_label = rois.new_zeros((0, ), dtype=torch.long)
             if rcnn_test_cfg is None:
@@ -84,55 +88,61 @@ class BBoxTestMixin:
                 det_label = rois.new_zeros(
                     (0, self.bbox_head.fc_cls.out_features))
             # There is no proposal in the whole batch
-            return [det_bbox] * batch_size, [det_label] * batch_size
+            return [det_bbox] * num_imgs, [det_label] * num_imgs
 
-        bbox_results = self._bbox_forward(x, rois)
-        img_shapes = tuple(meta['img_shape'] for meta in img_metas)
-        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+        for i in range(self.num_stages):
+            bbox_results = self._bbox_forward(i, x, rois)
 
-        # split batch bbox prediction back to each image
-        cls_score = bbox_results['cls_score']
-        bbox_pred = bbox_results['bbox_pred']
-        num_proposals_per_img = tuple(len(p) for p in proposals)
-        rois = rois.split(num_proposals_per_img, 0)
-        cls_score = cls_score.split(num_proposals_per_img, 0)
-
-        # some detector with_reg is False, bbox_pred will be None
-        if bbox_pred is not None:
-            # TODO move this to a sabl_roi_head
-            # the bbox prediction of some detectors like SABL is not Tensor
+            # split batch bbox prediction back to each image
+            cls_score = bbox_results['cls_score']
+            bbox_pred = bbox_results['bbox_pred']
+            num_proposals_per_img = tuple(
+                len(proposals) for proposals in proposal_list)
+            rois = rois.split(num_proposals_per_img, 0)
+            cls_score = cls_score.split(num_proposals_per_img, 0)
             if isinstance(bbox_pred, torch.Tensor):
                 bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
             else:
-                bbox_pred = self.bbox_head.bbox_pred_split(
+                bbox_pred = self.bbox_head[i].bbox_pred_split(
                     bbox_pred, num_proposals_per_img)
-        else:
-            bbox_pred = (None, ) * len(proposals)
+            ms_scores.append(cls_score)
+
+            if i < self.num_stages - 1:
+                if self.bbox_head[i].custom_activation:
+                    cls_score = [
+                        self.bbox_head[i].loss_cls.get_activation(s)
+                        for s in cls_score
+                    ]
+                refine_rois_list = []
+                for j in range(num_imgs):
+                    if rois[j].shape[0] > 0:
+                        bbox_label = cls_score[j][:, :-1].argmax(dim=1)
+                        refined_rois = self.bbox_head[i].regress_by_class(
+                            rois[j], bbox_label, bbox_pred[j], img_metas[j])
+                        refine_rois_list.append(refined_rois)
+                rois = torch.cat(refine_rois_list)
+
+        # average scores of each image by stages
+        cls_score = [
+            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+            for i in range(num_imgs)
+        ]
 
         # apply bbox post-processing to each image individually
         det_bboxes = []
         det_labels = []
-        for i in range(len(proposals)):
-            if rois[i].shape[0] == 0:
-                # There is no proposal in the single image
-                det_bbox = rois[i].new_zeros(0, 5)
-                det_label = rois[i].new_zeros((0, ), dtype=torch.long)
-                if rcnn_test_cfg is None:
-                    det_bbox = det_bbox[:, :4]
-                    det_label = rois[i].new_zeros(
-                        (0, self.bbox_head.fc_cls.out_features))
-
-            else:
-                det_bbox, det_label = self.bbox_head.get_bboxes(
-                    rois[i],
-                    cls_score[i],
-                    bbox_pred[i],
-                    img_shapes[i],
-                    scale_factors[i],
-                    rescale=rescale,
-                    cfg=rcnn_test_cfg)
+        for i in range(num_imgs):
+            det_bbox, det_label = self.bbox_head[-1].get_bboxes(
+                rois[i],
+                cls_score[i],
+                bbox_pred[i],
+                img_shapes[i],
+                scale_factors[i],
+                rescale=rescale,
+                cfg=rcnn_test_cfg)
             det_bboxes.append(det_bbox)
             det_labels.append(det_label)
+
         return det_bboxes, det_labels
 
     def aug_test_bboxes(self, feats, img_metas, proposal_list, rcnn_test_cfg):
