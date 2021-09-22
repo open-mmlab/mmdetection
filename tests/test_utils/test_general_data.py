@@ -7,13 +7,14 @@ import torch
 from mmdet.core import GeneralData, InstanceData
 
 
-def test_results():
+def _equal(a, b):
+    if isinstance(a, (torch.Tensor, np.ndarray)):
+        return (a == b).all()
+    else:
+        return a == b
 
-    def _equal(a, b):
-        if isinstance(a, (torch.Tensor, np.ndarray)):
-            return (a == b).all()
-        else:
-            return a == b
+
+def test_results():
 
     # test init
     meta_info = dict(
@@ -394,9 +395,54 @@ def test_instance_results():
         path='dadfaff',
         scale_factor=np.array([1.5, 1.5, 1, 1]))
 
+    data = dict(
+        bboxes=torch.rand(4, 4),
+        masks=torch.rand(4, 2, 2),
+        labels=np.random.rand(4),
+        size=[(i, i) for i in range(4)])
+
     # test init
     results = InstanceData(meta_info)
     assert 'path' in results
+    results = InstanceData(meta_info, data=data)
+    assert len(results) == 4
+    results.set_data(data)
+    assert len(results) == 4
+
+    meta_info = copy.deepcopy(meta_info)
+    meta_info['img_name'] = 'flag'
+
+    # test newresults
+    new_results = results.new_results(meta_info=meta_info)
+    for k, v in new_results.meta_items():
+        if k in results:
+            _equal(v, results[k])
+        else:
+            assert _equal(v, meta_info[k])
+            assert k == 'img_name'
+    # meta info is immutable
+    with pytest.raises(KeyError):
+        meta_info = copy.deepcopy(meta_info)
+        meta_info['path'] = 'fdasfdsd'
+        results.new_results(meta_info=meta_info)
+
+    # data fields should have same length
+    with pytest.raises(AssertionError):
+        temp_data = copy.deepcopy(data)
+        temp_data['bboxes'] = torch.rand(5, 4)
+        results.new_results(data=temp_data)
+
+    temp_data = copy.deepcopy(data)
+    temp_data['scores'] = torch.rand(4)
+    new_results = results.new_results(data=temp_data)
+    for k, v in new_results.items():
+        if k in results:
+            _equal(v, results[k])
+        else:
+            assert k == 'scores'
+            assert _equal(v, temp_data[k])
+
+    results = results.new_results()
 
     # test __setattr__
     # '_meta_info_field', '_data_fields' is immutable.
