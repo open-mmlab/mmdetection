@@ -71,8 +71,8 @@ def pytorch2onnx(model,
         dynamic_axes = {
             input_name: {
                 0: 'batch',
-                2: 'width',
-                3: 'height'
+                2: 'height',
+                3: 'width'
             },
             'dets': {
                 0: 'batch',
@@ -121,8 +121,16 @@ def pytorch2onnx(model,
         ), f'Requires to install onnx-simplify>={min_required_version}'
 
         input_dic = {'input': img_list[0].detach().cpu().numpy()}
-        onnxsim.simplify(
-            output_file, input_data=input_dic, custom_lib=ort_custom_op_path)
+        model_opt, check_ok = onnxsim.simplify(
+            output_file,
+            input_data=input_dic,
+            custom_lib=ort_custom_op_path,
+            dynamic_input_shape=dynamic_export)
+        if check_ok:
+            onnx.save(model_opt, output_file)
+            print(f'Successfully simplified ONNX model: {output_file}')
+        else:
+            warnings.warn('Failed to simplify ONNX model.')
     print(f'Successfully exported ONNX model: {output_file}')
 
     if verify:

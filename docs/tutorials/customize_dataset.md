@@ -54,7 +54,7 @@ After the data pre-processing, there are two steps for users to train the custom
 1. Modify the config file for using the customized dataset.
 2. Check the annotations of the customized dataset.
 
-Here we give an example to show the above two steps, which uses a customized dataset of 5 classes with COCO format to train an existing Cascade MaskRCNN R50 FPN detector.
+Here we give an example to show the above two steps, which uses a customized dataset of 5 classes with COCO format to train an existing Cascade Mask R-CNN R50-FPN detector.
 
 #### 1. Modify the config file for using the customized dataset
 
