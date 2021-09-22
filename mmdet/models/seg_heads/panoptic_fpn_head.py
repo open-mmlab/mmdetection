@@ -38,8 +38,8 @@ class PanopticFPNHead(BaseSemanticHead):
                  inner_channels=128,
                  start_level=0,
                  end_level=4,
-                 fg_range=(1, 80),
-                 bg_range=(81, 133),
+                 fg_range=(0, 79),
+                 bg_range=(80, 132),
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  init_cfg=None,
@@ -71,16 +71,22 @@ class PanopticFPNHead(BaseSemanticHead):
         self.conv_logits = nn.Conv2d(inner_channels, num_classes, 1)
 
     def _set_things_to_void(self, gt_semantic_seg):
-        """Merge thing classes to one class."""
+        """Merge thing classes to one class.
+
+        In PanopticFPN, the background labels will be reset from `0` to
+        `self.bg_nums-1`, the foreground labels will merged to `self.bg_nums`.
+        """
         gt_semantic_seg = gt_semantic_seg.int()
         fg_mask = (gt_semantic_seg >= self.fg_range[0]) * (
             gt_semantic_seg <= self.fg_range[1])
         bg_mask = (gt_semantic_seg >= self.bg_range[0]) * (
             gt_semantic_seg <= self.bg_range[1])
 
-        new_gt_seg = fg_mask.int() * (self.bg_nums + 1)
+        new_gt_seg = torch.clone(gt_semantic_seg)
         new_gt_seg = torch.where(bg_mask, gt_semantic_seg - self.fg_nums,
                                  new_gt_seg)
+        new_gt_seg = torch.where(fg_mask,
+                                 fg_mask.int() * self.bg_nums, new_gt_seg)
         return new_gt_seg
 
     def loss(self, seg_preds, gt_semantic_seg):
