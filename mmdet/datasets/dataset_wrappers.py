@@ -390,9 +390,8 @@ class MultiImageMixDataset:
         self._skip_type_keys = skip_type_keys
 
     def update_dynamic_scale(self, dynamic_scale):
-        """Update dynamic_scale.
+        """Update dynamic_scale. It is called by an external hook.
 
-        It is called by an external hook.
         Args:
             dynamic_scale (tuple[int]): The image scale can be
                changed dynamically.

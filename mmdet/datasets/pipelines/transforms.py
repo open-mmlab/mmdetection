@@ -2290,11 +2290,11 @@ class MixUp:
             # empty bbox
             return results
 
-        retrieve_results = results['mix_results'][0]
-        retrieve_img = retrieve_results['img']
-
         if 'scale' in results:
             self.dynamic_scale = results['scale']
+
+        retrieve_results = results['mix_results'][0]
+        retrieve_img = retrieve_results['img']
 
         jit_factor = random.uniform(*self.ratio_range)
         is_filp = random.uniform(0, 1) > self.flip_ratio
@@ -2307,7 +2307,7 @@ class MixUp:
             out_img = np.ones(
                 self.dynamic_scale, dtype=retrieve_img.dtype) * self.pad_val
 
-            # 1. keep_ratio resize
+        # 1. keep_ratio resize
         scale_ratio = min(self.dynamic_scale[0] / retrieve_img.shape[0],
                           self.dynamic_scale[1] / retrieve_img.shape[1])
         retrieve_img = mmcv.imresize(
