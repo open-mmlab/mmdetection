@@ -43,7 +43,7 @@ class GeneralData(NiceRepr):
             model predictions. Default: None.
 
     Examples:
-        >>> from mmdet.core.results.results import GeneralData
+        >>> from mmdet.core import GeneralData
         >>> img_meta = dict(img_shape=(800, 1196, 3), pad_shape=(800, 1216, 3))
         >>> results = GeneralData(meta=img_meta)
         >>> img_shape in results
@@ -315,7 +315,7 @@ class Instances(GeneralData):
     The code is modified from https://github.com/facebookresearch/detectron2/blob/master/detectron2/structures/instances.py # noqa E501
 
     Examples:
-        >>> from mmdet.core.results.results import Instances
+        >>> from mmdet.core import Instances
         >>> import numpy as np
         >>> img_meta = dict(img_shape=(800, 1196, 3), pad_shape=(800, 1216, 3))
         >>> results = Instances(img_meta)
