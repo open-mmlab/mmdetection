@@ -267,9 +267,17 @@ def test_sync_random_size_hook():
 
     loader = DataLoader(DemoDataset())
     runner = _build_demo_runner()
-    runner.register_hook_from_cfg(dict(type='SyncRandomSizeHook'))
+    runner.register_hook_from_cfg(
+        dict(type='SyncRandomSizeHook', device='cpu'))
     runner.run([loader, loader], [('train', 1), ('val', 1)])
     shutil.rmtree(runner.work_dir)
+
+    if torch.cuda.is_available():
+        runner = _build_demo_runner()
+        runner.register_hook_from_cfg(
+            dict(type='SyncRandomSizeHook', device='cuda'))
+        runner.run([loader, loader], [('train', 1), ('val', 1)])
+        shutil.rmtree(runner.work_dir)
 
 
 @pytest.mark.parametrize('set_loss', [
