@@ -93,7 +93,7 @@ class GeneralData(NiceRepr):
             self.set_meta(meta=meta)
         if data is not None:
             assert isinstance(data, dict)
-            for k, v in data:
+            for k, v in data.items():
                 self._data_fields.add(k)
                 self.__dict__[k] = v
 
@@ -133,7 +133,7 @@ class GeneralData(NiceRepr):
         """Return a new results with same image meta information and empty
         results_field."""
         new_results = self.__class__()
-        new_results.set_meta(self.meta_info_fields)
+        new_results.set_meta(dict(self.meta_items()))
         return new_results
 
     def keys(self):
@@ -228,17 +228,6 @@ class GeneralData(NiceRepr):
             return args[1]
         else:
             raise KeyError(f'{args[0]}')
-
-    @property
-    def data_fields(self):
-        return {k: getattr(self, k) for k in self._data_fields}
-
-    @property
-    def meta_info_fields(self):
-        return {
-            k: copy.deepcopy(getattr(self, k))
-            for k in self._meta_info_fields
-        }
 
     def __contains__(self, item):
         return item in self._data_fields or \
@@ -464,7 +453,7 @@ class Instances(GeneralData):
             return instances_list[0]
 
         cat_results = instances_list[0].new_results()
-        for k in instances_list[0]._results_field:
+        for k in instances_list[0]._data_fields:
             values = [results[k] for results in instances_list]
             v0 = values[0]
             if isinstance(v0, torch.Tensor):
