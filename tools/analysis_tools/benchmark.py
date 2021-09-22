@@ -19,6 +19,11 @@ def parse_args():
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument(
+        '--repeat-num',
+        type=int,
+        default=1,
+        help='num of repeat measure inference speed')
+    parser.add_argument(
         '--max-iter', type=int, default=2000, help='num of max iter')
     parser.add_argument(
         '--log-interval', type=int, default=50, help='interval of logging')
@@ -49,7 +54,7 @@ def parse_args():
     return args
 
 
-def measure_inferense_speed(cfg, checkpoint, max_iter, log_interval,
+def measure_inference_speed(cfg, checkpoint, max_iter, log_interval,
                             is_fuse_conv_bn):
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
@@ -66,7 +71,7 @@ def measure_inferense_speed(cfg, checkpoint, max_iter, log_interval,
     data_loader = build_dataloader(
         dataset,
         samples_per_gpu=1,
-        workers_per_gpu=cfg.data.workers_per_gpu,
+        workers_per_gpu=0,
         dist=True,
         shuffle=False)
 
@@ -123,6 +128,36 @@ def measure_inferense_speed(cfg, checkpoint, max_iter, log_interval,
     return fps
 
 
+def repeat_measure_inference_speed(cfg,
+                                   checkpoint,
+                                   max_iter,
+                                   log_interval,
+                                   is_fuse_conv_bn,
+                                   repeat_num=1):
+    assert repeat_num >= 1
+
+    fps_list = []
+    for _ in range(repeat_num):
+        fps_list.append(
+            measure_inference_speed(cfg, checkpoint, max_iter, log_interval,
+                                    is_fuse_conv_bn))
+
+    if repeat_num > 1:
+        fps_list_ = [round(fps, 1) for fps in fps_list]
+        mean_fps_ = sum(fps_list_) / len(fps_list_)
+        times_pre_image_list_ = [round(1000 / fps, 1) for fps in fps_list_]
+        mean_times_pre_image_ = sum(times_pre_image_list_) / len(
+            times_pre_image_list_)
+        print(
+            f'Overall fps: {fps_list_}[{mean_fps_:.1f}] img / s, '
+            f'times per image: '
+            f'{times_pre_image_list_}[{mean_times_pre_image_:.1f}] ms / img',
+            flush=True)
+        return fps_list
+
+    return fps_list[0]
+
+
 def main():
     args = parse_args()
 
@@ -135,8 +170,9 @@ def main():
     else:
         init_dist(args.launcher, **cfg.dist_params)
 
-    measure_inferense_speed(cfg, args.checkpoint, args.max_iter,
-                            args.log_interval, args.fuse_conv_bn)
+    repeat_measure_inference_speed(cfg, args.checkpoint, args.max_iter,
+                                   args.log_interval, args.fuse_conv_bn,
+                                   args.repeat_num)
 
 
 if __name__ == '__main__':
