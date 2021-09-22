@@ -1,3 +1,6 @@
+API Reference
+=================
+
 mmdet.apis
 --------------
 .. automodule:: mmdet.apis
