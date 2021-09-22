@@ -66,8 +66,7 @@ train_dataset = dict(
         ],
         filter_empty_gt=False,
     ),
-    pipeline=train_pipeline,
-    dynamic_scale=img_scale)
+    pipeline=train_pipeline)
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
