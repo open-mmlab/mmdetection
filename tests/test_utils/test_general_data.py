@@ -35,6 +35,21 @@ def test_results():
     assert 'path' in results
     assert results.path == 'dadfaff'
 
+    # test nice_repr
+    repr_results = results.new_results(data=data)
+    nice_repr = str(repr_results)
+    for line in nice_repr.split('\n'):
+        if 'masks' in line:
+            assert 'shape' in line
+            assert '(4, 2, 2)' in line
+        if 'bboxes' in line:
+            assert 'shape' in line
+            assert 'torch.Size([4, 4])' in line
+        if 'path' in line:
+            assert 'dadfaff' in line
+        if 'scale_factor' in line:
+            assert '[1.5 1.5]' in line
+
     results = GeneralData(meta_info=meta_info, data=dict(bboxes=torch.rand(5)))
     assert 'bboxes' in results
     assert len(results.bboxes) == 5
@@ -564,3 +579,7 @@ def test_instance_results():
 
     cat_resutls = InstanceData.cat(results_list)
     assert len(cat_resutls) == num_instance * 2
+
+    instances = InstanceData(data=dict(bboxes=torch.rand(4, 4)))
+    # cat only single instance
+    assert len(InstanceData.cat([instances])) == 4

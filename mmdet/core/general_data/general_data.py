@@ -482,8 +482,6 @@ class InstanceData(GeneralData):
                 values = np.concatenate(values, axis=0)
             elif isinstance(v0, list):
                 values = list(itertools.chain(*values))
-            elif hasattr(type(v0), 'cat'):
-                values = type(v0).cat(values)
             else:
                 raise ValueError(
                     f'Can not concat the {k} which is a {type(v0)}')
