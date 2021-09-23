@@ -10,8 +10,8 @@ from torch import distributed as dist
 
 @HOOKS.register_module()
 class SyncRandomSizeHook(Hook):
-    """Change and synchronize the random image size across ranks, currently
-    used in YOLOX. SyncRandomSizeHook is deprecated. Please use Resize pipeline
+    """Change and synchronize the random image size across ranks.
+    SyncRandomSizeHook is deprecated, please use Resize pipeline
     to achieve similar functions. Such as `dict(type='Resize', img_scale=[(448,
     448), (832, 832)], multiscale_mode='range', keep_ratio=True)`.
 
