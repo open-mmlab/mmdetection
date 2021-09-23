@@ -104,7 +104,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         if self.bbox_head:
             # bbox_head_preds is a tuple
             bbox_head_preds = self.bbox_head(x)
-            # positive_infos is a obj:`DetectionResults`
+            # positive_infos is a obj:`InstanceData`
             # It contains the information about the positive samples
             # CondInst, YOLACT
             det_losses, positive_infos = self.bbox_head.loss(
@@ -142,8 +142,8 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 Defaults to False.
 
         Returns:
-            list[:obj:`DetectionResults`]: Processed results of multiple
-            images. Each :obj:`DetectionResults` usually contains
+            list[:obj:`InstanceData`]: Processed results of multiple
+            images. Each :obj:`InstanceData` usually contains
             following keys.
 
                 - scores (Tensor): Classification scores, has shape
@@ -155,7 +155,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         feat = self.extract_feat(img)
         if self.bbox_head:
             outs = self.bbox_head(feat)
-            # results_list is list[obj:`DetectionResults`]
+            # results_list is list[obj:`InstanceData`]
             results_list = self.bbox_head.get_results(
                 *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)
         else:
