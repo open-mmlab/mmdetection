@@ -1084,7 +1084,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
             if self.with_dcn and i == self.stacked_convs - 1:
                 cfg_conv = dict(type=self.type_dcn)
             else:
-                cfg_conv = self.conv_cfg
+                cfg_conv = None
 
             chn = self.in_channels + 2 if i == 0 else self.feat_channels
             self.mask_convs.append(
