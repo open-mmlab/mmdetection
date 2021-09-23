@@ -580,8 +580,7 @@ class Pad:
         pad_to_square (bool): Whether to pad the image into a square.
             Currently only used for YOLOX. Default: False.
         pad_val (dict, optional): A dict for padding value, the default
-            value for image and masks is 0, while it is 255 for segmentation
-            map.
+            value is `dict(img=0, masks=0, seg=255)`.
     """
 
     def __init__(self,
@@ -591,10 +590,11 @@ class Pad:
                  pad_val=dict(img=0, masks=0, seg=255)):
         self.size = size
         self.size_divisor = size_divisor
-        if isinstance(pad_val, float):
-            warnings.warn('pad_val of float type is deprecated now, '
-                          f'please use pad_val=dict(img={pad_val}, '
-                          f'masks={pad_val}, seg=255) instead.')
+        if isinstance(pad_val, float) or isinstance(pad_val, int):
+            warnings.warn(
+                'pad_val of float type is deprecated now, '
+                f'please use pad_val=dict(img={pad_val}, '
+                f'masks={pad_val}, seg=255) instead.', DeprecationWarning)
             pad_val = dict(img=pad_val, masks=pad_val, seg=255)
         assert isinstance(pad_val, dict)
         self.pad_val = pad_val
