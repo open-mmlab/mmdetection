@@ -81,6 +81,5 @@ class DropBlock(nn.Module):
         return gamma * factor
 
     def extra_repr(self):
-        s = ('drop_prob={drop_prob}, block_size={block_size}, '
-             'warmup_iters={warmup_iters}')
-        return s.format(**self.__dict__)
+        return (f'drop_prob={self.drop_prob}, block_size={self.block_size}, '
+                f'warmup_iters={self.warmup_iters}')
