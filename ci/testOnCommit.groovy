@@ -17,7 +17,6 @@ pipeline {
             steps {
                 sh """
                 env
-                echo Hello
                 """
                 echo shortCommit
                 build job: "ote/util-common/ote-test-on-commit", parameters: [[$class: 'StringParameterValue', name: 'OTECOMMIT', value: shortCommit]]
