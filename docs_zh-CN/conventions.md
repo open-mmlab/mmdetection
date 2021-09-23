@@ -69,5 +69,5 @@ for i in range(self.num_stages):
 在 MMDetection 中，我们支持了 COCO 全景分割数据集 `CocoPanopticDataset`。对于它的实现，我们在这里声明一些默认约定。
 
 1. 在 mmdet<=2.16.0 时，`gt_semantic_seg` 中的前景和背景标签范围与 MMDetection 中的默认规定有所不同。标签 `0` 代表 `VOID` 标签，
-类别标签是从 `1` 开始的。这个问题在我们于流程 `Pad` 中支持设置 `seg_pad_val` 后被修复。
+类别标签是从 `1` 开始的。这个问题在我们于流程 `Pad` 中支持为 `seg` 设置填充值后被修复。
 2. 在评估中，全景分割结果必须是一个与原图大小相同的图。结果图中每个像素的值有如此形式：`instance_id * INSTANCE_OFFSET + category_id`。
