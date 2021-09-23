@@ -462,10 +462,11 @@ class InstanceData(GeneralData):
         """Concat the predictions of all :obj:`Instances` in the list.
 
         Args:
-            instances_list(list[:obj:`Instances`]): A list of :obj:`Instances`.
+            instances_list (list[:obj:`Instances`]): A list
+                of :obj:`Instances`.
 
         Returns:
-            obj:`InstanceResults`
+            obj:`InstanceData`
         """
         assert all(
             isinstance(results, InstanceData) for results in instances_list)
