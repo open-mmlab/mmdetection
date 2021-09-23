@@ -20,10 +20,10 @@ class GeneralData(NiceRepr):
 
         - `meta_info_fields`: Usually contains the
           information about the image such as filename,
-          image_shape, padding_shape, etc. All attributes in
+          image_shape, pad_shape, etc. All attributes in
           it are immutable once set,
           but the user can add new meta information with
-          `set_meta` function, all information can be accessed
+          `set_meta_info` function, all information can be accessed
           with methods `meta_info_keys`, `meta_info_values`,
           `meta_info_items`.
 
@@ -37,20 +37,20 @@ class GeneralData(NiceRepr):
           `.detach()`, `.numpy()`
 
     Args:
-        meta_info (dict): A dict contains the meta information
+        meta_info (dict, optional): A dict contains the meta information
             of single image. such as `img_shape`, `scale_factor`, etc.
             Default: None.
-        data (dict): A dict contains annotations of single image or
+        data (dict, optional): A dict contains annotations of single image or
             model predictions. Default: None.
 
     Examples:
         >>> from mmdet.core import GeneralData
         >>> img_meta = dict(img_shape=(800, 1196, 3), pad_shape=(800, 1216, 3))
-        >>> results = GeneralData(meta_info=img_meta)
-        >>> img_shape in results
+        >>> instance_data = GeneralData(meta_info=img_meta)
+        >>> img_shape in instance_data
         True
-        >>> results.det_labels = torch.LongTensor([0, 1, 2, 3])
-        >>> results["det_scores"] = torch.Tensor([0.01, 0.1, 0.2, 0.3])
+        >>> instance_data.det_labels = torch.LongTensor([0, 1, 2, 3])
+        >>> instance_data["det_scores"] = torch.Tensor([0.01, 0.1, 0.2, 0.3])
         >>> print(results)
         <GeneralData(
 
@@ -63,25 +63,25 @@ class GeneralData(NiceRepr):
         shape of det_scores: torch.Size([4])
 
         ) at 0x7f84acd10f90>
-        >>> resutls.det_scores
+        >>> instance_data.det_scores
         tensor([0.0100, 0.1000, 0.2000, 0.3000])
-        >>> results.det_labels
+        >>> instance_data.det_labels
         tensor([0, 1, 2, 3])
-        >>> results['det_labels']
+        >>> instance_data['det_labels']
         tensor([0, 1, 2, 3])
-        >>> 'det_labels' in results
+        >>> 'det_labels' in instance_data
         True
-        >>> results.img_shape
+        >>> instance_data.img_shape
         (800, 1196, 3)
-        >>> 'det_scores' in results
+        >>> 'det_scores' in instance_data
         True
-        >>> del results.det_scores
-        >>> 'det_scores' in results
+        >>> del instance_data.det_scores
+        >>> 'det_scores' in instance_data
         False
-        >>> det_labels = results.pop('det_labels', None)
+        >>> det_labels = instance_data.pop('det_labels', None)
         >>> det_labels
         tensor([0, 1, 2, 3])
-        >>> 'det_labels' in results
+        >>> 'det_labels' in instance_data
         >>> False
     """
 
@@ -95,7 +95,7 @@ class GeneralData(NiceRepr):
         if data is not None:
             self.set_data(data)
 
-    def set_meta_info(self, meta_info=None):
+    def set_meta_info(self, meta_info):
         """Add meta information.
 
         Args:
@@ -127,7 +127,7 @@ class GeneralData(NiceRepr):
                 self._meta_info_fields.add(k)
                 self.__dict__[k] = v
 
-    def set_data(self, data=None):
+    def set_data(self, data):
         """Update a dict to `data_fields`.
 
         Args:
@@ -139,23 +139,23 @@ class GeneralData(NiceRepr):
         for k, v in data.items():
             self.__setattr__(k, v)
 
-    def new_results(self, meta_info=None, data=None):
+    def new(self, meta_info=None, data=None):
         """Return a new results with same image meta information.
 
         Args:
-            meta_info (dict): A dict contains the meta information
+            meta_info (dict, optional): A dict contains the meta information
                 of image. such as `img_shape`, `scale_factor`, etc.
                 Default: None.
-            data (dict): A dict contains annotations of image or
+            data (dict, optional): A dict contains annotations of image or
                 model predictions. Default: None.
         """
-        new_results = self.__class__()
-        new_results.set_meta_info(dict(self.meta_info_items()))
+        new_data = self.__class__()
+        new_data.set_meta_info(dict(self.meta_info_items()))
         if meta_info is not None:
-            new_results.set_meta_info(meta_info)
+            new_data.set_meta_info(meta_info)
         if data is not None:
-            new_results.set_data(data)
-        return new_results
+            new_data.set_data(data)
+        return new_data
 
     def keys(self):
         """
@@ -257,52 +257,52 @@ class GeneralData(NiceRepr):
     # Tensor-like methods
     def to(self, *args, **kwargs):
         """Apply same name function to all tensors in data_fields."""
-        new_results = self.new_results()
+        new_data = self.new()
         for k, v in self.items():
             if hasattr(v, 'to'):
                 v = v.to(*args, **kwargs)
-            new_results[k] = v
-        return new_results
+            new_data[k] = v
+        return new_data
 
     # Tensor-like methods
     def cpu(self):
         """Apply same name function to all tensors in data_fields."""
-        new_results = self.new_results()
+        new_data = self.new()
         for k, v in self.items():
             if isinstance(v, torch.Tensor):
                 v = v.cpu()
-            new_results[k] = v
-        return new_results
+            new_data[k] = v
+        return new_data
 
     # Tensor-like methods
     def cuda(self):
         """Apply same name function to all tensors in data_fields."""
-        new_results = self.new_results()
+        new_data = self.new()
         for k, v in self.items():
             if isinstance(v, torch.Tensor):
                 v = v.cuda()
-            new_results[k] = v
-        return new_results
+            new_data[k] = v
+        return new_data
 
     # Tensor-like methods
     def detach(self):
         """Apply same name function to all tensors in data_fields."""
-        new_results = self.new_results()
+        new_data = self.new()
         for k, v in self.items():
             if isinstance(v, torch.Tensor):
                 v = v.detach()
-            new_results[k] = v
-        return new_results
+            new_data[k] = v
+        return new_data
 
     # Tensor-like methods
     def numpy(self):
         """Apply same name function to all tensors in data_fields."""
-        new_results = self.new_results()
+        new_data = self.new()
         for k, v in self.items():
             if isinstance(v, torch.Tensor):
                 v = v.detach().cpu().numpy()
-            new_results[k] = v
-        return new_results
+            new_data[k] = v
+        return new_data
 
     def __nice__(self):
         repr = '\n \n  META INFORMATION \n'
@@ -422,7 +422,7 @@ class InstanceData(GeneralData):
                 # keep the dimension
                 item = slice(item, None, len(self))
 
-        r_results = self.new_results()
+        new_data = self.new()
         if isinstance(item, (torch.Tensor)):
             assert item.dim() == 1, 'Only support to get the' \
                                  ' values along the first dimension.'
@@ -438,9 +438,9 @@ class InstanceData(GeneralData):
 
             for k, v in self.items():
                 if isinstance(v, torch.Tensor):
-                    r_results[k] = v[item]
+                    new_data[k] = v[item]
                 elif isinstance(v, np.ndarray):
-                    r_results[k] = v[item.cpu().numpy()]
+                    new_data[k] = v[item.cpu().numpy()]
                 elif isinstance(v, list):
                     r_list = []
                     # convert to indexes from boolTensor
@@ -450,12 +450,12 @@ class InstanceData(GeneralData):
                         indexes = item
                     for index in indexes:
                         r_list.append(v[index])
-                    r_results[k] = r_list
+                    new_data[k] = r_list
         else:
             # item is a slice
             for k, v in self.items():
-                r_results[k] = v[item]
-        return r_results
+                new_data[k] = v[item]
+        return new_data
 
     @staticmethod
     def cat(instances_list):
@@ -474,7 +474,7 @@ class InstanceData(GeneralData):
         if len(instances_list) == 1:
             return instances_list[0]
 
-        cat_results = instances_list[0].new_results()
+        new_data = instances_list[0].new()
         for k in instances_list[0]._data_fields:
             values = [results[k] for results in instances_list]
             v0 = values[0]
@@ -487,8 +487,8 @@ class InstanceData(GeneralData):
             else:
                 raise ValueError(
                     f'Can not concat the {k} which is a {type(v0)}')
-            cat_results[k] = values
-        return cat_results
+            new_data[k] = values
+        return new_data
 
     def __len__(self):
         if len(self._data_fields):
