@@ -150,7 +150,7 @@ if __name__ == '__main__':
                         fps=round(fps, args.round_num),
                         ms_times_pre_image=round(1000 / fps, args.round_num))
             except Exception as e:
-                print(f'{config} error: {repr(e)}')
+                print(f'{cfg_path} error: {repr(e)}')
                 if args.repeat_num > 1:
                     result_dict[cfg_path] = dict(
                         fps=[0],
