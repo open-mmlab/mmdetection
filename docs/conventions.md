@@ -72,6 +72,6 @@ If you have customized `RoIHead`, you can refer to the above method to deal with
 
 In MMDetection, we have supported COCO Panoptic dataset. We clarify a few conventions about the implementation of `CocoPanopticDataset` here.
 
-1. For mmdet<=2.16.0, the range of foreground and background labels in the `gt_semantic_seg` are different from the default setting of MMDetection. The label `0` stands for `VOID` label and the category labels start from `1`.
-This problem is fixed after we support setting the padding value for `seg` in pipeline `Pad`.
+1. Since mmdet=2.17.0, the category labels of semantic segmentation start from `0` and label `255` stands for `VOID` for consistency with labels of bounding boxes.
+To achieve that, the `Pad` pipeline supports setting the padding value for `seg`.
 2. In the evaluation, the panoptic result is a map with the same shape as the original image. Each value in the result map has the format of `instance_id * INSTANCE_OFFSET + category_id`.
