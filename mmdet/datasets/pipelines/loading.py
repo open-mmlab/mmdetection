@@ -427,6 +427,10 @@ class LoadPanopticAnnotations(LoadAnnotations):
     def _load_masks_and_semantic_segs(self, results):
         """Private function to load mask and semantic segmentation annotations.
 
+        In gt_semantic_seg, the foreground label is from `0` to
+        `num_things - 1`, the background label is from `num_things` to
+        `num_things + num_stuff - 1`, 255 means the ignored label (`VOID`).
+
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 

@@ -2,6 +2,7 @@
 import copy
 import inspect
 import math
+import warnings
 
 import cv2
 import mmcv
@@ -567,7 +568,7 @@ class RandomShift:
 
 @PIPELINES.register_module()
 class Pad:
-    """Pad the image & mask.
+    """Pad the image & masks & segmentation map.
 
     There are two padding modes: (1) pad to a fixed size and (2) pad to the
     minimum size that is divisible by some number.
@@ -577,20 +578,26 @@ class Pad:
         size (tuple, optional): Fixed padding size.
         size_divisor (int, optional): The divisor of padded size.
         pad_to_square (bool): Whether to pad the image into a square.
-           Currently only used for YOLOX. Default: False.
-        pad_val (float, optional): Padding value, 0 by default.
+            Currently only used for YOLOX. Default: False.
+        pad_val (dict, optional): A dict for padding value, the default
+            value for image and masks is 0, while it is 255 for segmentation
+            map.
     """
 
     def __init__(self,
                  size=None,
                  size_divisor=None,
                  pad_to_square=False,
-                 pad_val=0,
-                 seg_pad_val=255):
+                 pad_val=dict(img=0, masks=0, seg=255)):
         self.size = size
         self.size_divisor = size_divisor
+        if isinstance(pad_val, float):
+            warnings.warn('pad_val of float type is deprecated now, '
+                          f'please use pad_val=dict(img={pad_val}, '
+                          f'masks={pad_val}, seg=255) instead.')
+            pad_val = dict(img=pad_val, masks=pad_val, seg=255)
+        assert isinstance(pad_val, dict)
         self.pad_val = pad_val
-        self.seg_pad_val = seg_pad_val
         self.pad_to_square = pad_to_square
 
         if pad_to_square:
@@ -604,16 +611,17 @@ class Pad:
 
     def _pad_img(self, results):
         """Pad images according to ``self.size``."""
+        pad_val = self.pad_val.get('img', 0)
         for key in results.get('img_fields', ['img']):
             if self.pad_to_square:
                 max_size = max(results[key].shape[:2])
                 self.size = (max_size, max_size)
             if self.size is not None:
                 padded_img = mmcv.impad(
-                    results[key], shape=self.size, pad_val=self.pad_val)
+                    results[key], shape=self.size, pad_val=pad_val)
             elif self.size_divisor is not None:
                 padded_img = mmcv.impad_to_multiple(
-                    results[key], self.size_divisor, pad_val=self.pad_val)
+                    results[key], self.size_divisor, pad_val=pad_val)
             results[key] = padded_img
         results['pad_shape'] = padded_img.shape
         results['pad_fixed_size'] = self.size
@@ -622,17 +630,17 @@ class Pad:
     def _pad_masks(self, results):
         """Pad masks according to ``results['pad_shape']``."""
         pad_shape = results['pad_shape'][:2]
+        pad_val = self.pad_val.get('masks', 0)
         for key in results.get('mask_fields', []):
-            results[key] = results[key].pad(pad_shape, pad_val=self.pad_val)
+            results[key] = results[key].pad(pad_shape, pad_val=pad_val)
 
     def _pad_seg(self, results):
         """Pad semantic segmentation map according to
         ``results['pad_shape']``."""
+        pad_val = self.pad_val.get('seg', 255)
         for key in results.get('seg_fields', []):
             results[key] = mmcv.impad(
-                results[key],
-                shape=results['pad_shape'][:2],
-                pad_val=self.seg_pad_val)
+                results[key], shape=results['pad_shape'][:2], pad_val=pad_val)
 
     def __call__(self, results):
         """Call function to pad images, masks, semantic segmentation maps.
